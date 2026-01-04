@@ -34,7 +34,7 @@ Issues = "https://github.com/AI-Stats/AI-Stats/issues"
 [tool.hatch.build.targets.sdist]
 include = [
 	"src/ai_stats",
-	"src/gen/ai_stats_generated",
+	"src/gen",
 	"README.md",
 	"LICENSE",
 ]
@@ -42,7 +42,7 @@ include = [
 [tool.hatch.build.targets.wheel]
 packages = [
 	"src/ai_stats",
-	"src/gen/ai_stats_generated",
+	"src/gen",
 ]
 
 [tool.hatch.version]

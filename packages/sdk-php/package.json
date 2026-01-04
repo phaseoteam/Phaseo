@@ -3,5 +3,8 @@
   "version": "0.2.1-alpha.0",
   "private": true,
   "description": "AI Stats PHP SDK (preview) - generated client with models wrapper",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "smoke:chat": "dotenv -e .env.local -- php tests/smoke_chat.php"
+  }
 }

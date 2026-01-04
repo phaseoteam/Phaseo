@@ -1,0 +1,53 @@
+module AiStats
+  module Gen
+    AudioContentPart = Struct.new(:input_audio, :type, keyword_init: true)
+    AudioSpeechRequest = Struct.new(:format, :input, :model, :voice, keyword_init: true)
+    AudioTranscriptionRequest = Struct.new(:audio_b64, :audio_url, :language, :model, keyword_init: true)
+    AudioTranscriptionResponse = Struct.new(:text, keyword_init: true)
+    AudioTranslationRequest = Struct.new(:audio_b64, :audio_url, :language, :model, :prompt, :temperature, keyword_init: true)
+    AudioTranslationResponse = Struct.new(:text, keyword_init: true)
+    BatchRequest = Struct.new(:completion_window, :endpoint, :input_file_id, :metadata, keyword_init: true)
+    BatchRequestCounts = Struct.new(:completed, :failed, :total, keyword_init: true)
+    BatchResponse = Struct.new(:cancelled_at, :cancelling_at, :completed_at, :completion_window, :created_at, :endpoint, :error_file_id, :errors, :expired_at, :expires_at, :failed_at, :finalizing_at, :id, :in_progress_at, :input_file_id, :metadata, :object, :output_file_id, :request_counts, :status, keyword_init: true)
+    BenchmarkId = Object
+    ChatChoice = Struct.new(:finish_reason, :index, :message, keyword_init: true)
+    ChatCompletionsRequest = Struct.new(:frequency_penalty, :logit_bias, :logprobs, :max_output_tokens, :max_tool_calls, :messages, :meta, :model, :parallel_tool_calls, :presence_penalty, :reasoning, :response_format, :seed, :service_tier, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_logprobs, :top_p, :usage, :user_id, keyword_init: true)
+    ChatCompletionsResponse = Struct.new(:choices, :created, :id, :model, :object, :usage, keyword_init: true)
+    ChatMessage = Struct.new(:content, :name, :role, :tool_call_id, :tool_calls, keyword_init: true)
+    Embedding = Struct.new(:embedding, :index, :object, keyword_init: true)
+    EmbeddingsRequest = Struct.new(:dimensions, :encoding_format, :input, :model, :user, keyword_init: true)
+    EmbeddingsResponse = Struct.new(:data, :model, :object, :usage, keyword_init: true)
+    FileResponse = Struct.new(:bytes, :created_at, :filename, :id, :object, :purpose, :status, :status_details, keyword_init: true)
+    FileUploadRequest = Struct.new(:file, :purpose, keyword_init: true)
+    GenerationResponse = Struct.new(:app_id, :byok, :cost_nanos, :currency, :endpoint, :error_code, :error_message, :generation_ms, :key_id, :latency_ms, :model_id, :native_response_id, :pricing_lines, :provider, :request_id, :status_code, :stream, :success, :team_id, :throughput, :usage, keyword_init: true)
+    Image = Struct.new(:b64_json, :revised_prompt, :url, keyword_init: true)
+    ImageContentPart = Struct.new(:image_url, :type, keyword_init: true)
+    ImageModerationInput = Struct.new(:image_url, :type, keyword_init: true)
+    ImagesEditRequest = Struct.new(:image, :mask, :meta, :model, :n, :prompt, :size, :usage, :user, keyword_init: true)
+    ImagesEditResponse = Struct.new(:created, :data, keyword_init: true)
+    ImagesGenerationRequest = Struct.new(:model, :n, :prompt, :quality, :response_format, :size, :style, :user, keyword_init: true)
+    ImagesGenerationResponse = Struct.new(:created, :data, keyword_init: true)
+    ListFilesResponse = Struct.new(:data, :object, keyword_init: true)
+    MessageContentPart = Object
+    Model = Struct.new(:aliases, :endpoints, :input_types, :model_id, :name, :organisation_id, :output_types, :providers, :release_date, :status, keyword_init: true)
+    ModelId = Object
+    ModerationCategories = Struct.new(:harassment, :harassment_threatening, :hate, :hate_threatening, :self_harm, :self_harm_instructions, :self_harm_intent, :sexual, :sexual_minors, :violence, :violence_graphic, keyword_init: true)
+    ModerationCategoryScores = Struct.new(:harassment, :harassment_threatening, :hate, :hate_threatening, :self_harm, :self_harm_instructions, :self_harm_intent, :sexual, :sexual_minors, :violence, :violence_graphic, keyword_init: true)
+    ModerationResult = Struct.new(:categories, :category_scores, :flagged, keyword_init: true)
+    ModerationsRequest = Struct.new(:input, :meta, :model, keyword_init: true)
+    ModerationsResponse = Struct.new(:id, :model, :results, keyword_init: true)
+    OrganisationId = Object
+    OrganisationIdList = Object
+    ReasoningConfig = Struct.new(:effort, :summary, keyword_init: true)
+    ResponsesRequest = Struct.new(:background, :conversation, :include, :input, :input_items, :instructions, :max_output_tokens, :max_tool_calls, :meta, :metadata, :model, :parallel_tool_calls, :previous_response_id, :prompt, :prompt_cache_key, :prompt_cache_retention, :reasoning, :safety_identifier, :service_tier, :store, :stream, :stream_options, :temperature, :text, :tool_choice, :tools, :top_logprobs, :top_p, :truncation, :usage, :user, keyword_init: true)
+    ResponsesResponse = Struct.new(:content, :created, :id, :model, :object, :role, :stop_reason, :type, :usage, keyword_init: true)
+    TextContentPart = Struct.new(:text, :type, keyword_init: true)
+    TextModerationInput = Struct.new(:text, :type, keyword_init: true)
+    ToolCall = Struct.new(:function, :id, :type, keyword_init: true)
+    ToolCallContentPart = Struct.new(:function, :id, :type, keyword_init: true)
+    Usage = Struct.new(:completion_tokens, :prompt_tokens, :total_tokens, keyword_init: true)
+    VideoContentPart = Struct.new(:type, :video_url, keyword_init: true)
+    VideoGenerationRequest = Struct.new(:duration, :model, :prompt, :ratio, keyword_init: true)
+    VideoGenerationResponse = Struct.new(:created, :id, :model, :object, :output, :status, keyword_init: true)
+  end
+end
