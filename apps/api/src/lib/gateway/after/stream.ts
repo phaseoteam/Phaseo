@@ -8,6 +8,7 @@ import { handleSuccessAudit } from "./audit";
 import { recordUsageAndCharge } from "../pricing/persist";
 import { shapeUsageForClient } from "../usage";
 import { presentUsageForClient } from "./payload";
+import { emitGatewayRequestEvent } from "../observability/events";
 
 export async function handleStreamResponse(
     ctx: PipelineContext,
@@ -49,10 +50,83 @@ export async function handleStreamResponse(
                 delete next.meta;
             }
 
-            if (!includeUsage && "usage" in next) {
-                delete next.usage;
+            if (!includeUsage) {
+                if ("usage" in next) delete next.usage;
+                if (next.response && typeof next.response === "object" && "usage" in next.response) {
+                    delete next.response.usage;
+                }
             } else if (next.usage) {
-                next.usage = presentUsageForClient(next.usage);
+                if (ctx.meta.debug) {
+                    console.log("[gateway][pricing] stream frame usage", {
+                        requestId: ctx.requestId,
+                        endpoint: ctx.endpoint,
+                        provider: result.provider,
+                        usage: next.usage,
+                    });
+                }
+                if (card) {
+                    const shapedUsage = shapeUsageForClient(next.usage, {
+                        endpoint: ctx.endpoint,
+                        body: ctx.body,
+                    });
+                    const { pricedUsage } = calculatePricing(
+                        shapedUsage,
+                        card,
+                        ctx.body
+                    );
+                    if (ctx.meta.debug) {
+                        console.log("[gateway][pricing] stream frame priced usage", {
+                            requestId: ctx.requestId,
+                            endpoint: ctx.endpoint,
+                            provider: result.provider,
+                            pricing: (pricedUsage as any)?.pricing ?? null,
+                        });
+                    }
+                    next.usage = presentUsageForClient(pricedUsage);
+                } else {
+                    next.usage = presentUsageForClient(
+                        shapeUsageForClient(next.usage, {
+                            endpoint: ctx.endpoint,
+                            body: ctx.body,
+                        })
+                    );
+                }
+            } else if (next.response?.usage) {
+                if (ctx.meta.debug) {
+                    console.log("[gateway][pricing] stream response usage", {
+                        requestId: ctx.requestId,
+                        endpoint: ctx.endpoint,
+                        provider: result.provider,
+                        usage: next.response.usage,
+                    });
+                }
+                if (card) {
+                    const shapedUsage = shapeUsageForClient(next.response.usage, {
+                        endpoint: ctx.endpoint,
+                        body: ctx.body,
+                    });
+                    const { pricedUsage } = calculatePricing(
+                        shapedUsage,
+                        card,
+                        ctx.body
+                    );
+                    if (ctx.meta.debug) {
+                        console.log("[gateway][pricing] stream response priced usage", {
+                            requestId: ctx.requestId,
+                            endpoint: ctx.endpoint,
+                            provider: result.provider,
+                            pricing: (pricedUsage as any)?.pricing ?? null,
+                        });
+                    }
+                    next.response.usage = presentUsageForClient(pricedUsage);
+                } else {
+                    next.response.usage = presentUsageForClient(
+                        shapeUsageForClient(next.response.usage, {
+                            endpoint: ctx.endpoint,
+                            body: ctx.body,
+                        })
+                    );
+                }
             }
 
             // Add meta to final frame when available and requested
@@ -74,6 +148,14 @@ export async function handleStreamResponse(
             return next;
         },
         onFinalUsage: async (usageRaw: any) => {
+            if (ctx.meta.debug) {
+                console.log("[gateway][pricing] stream final usage raw", {
+                    requestId: ctx.requestId,
+                    endpoint: ctx.endpoint,
+                    provider: result.provider,
+                    usage: usageRaw,
+                });
+            }
             // console.log("[DEBUG After Stream] Final usage from stream:", usageRaw);
             const shapedUsage = shapeUsageForClient(usageRaw, { endpoint: ctx.endpoint, body: ctx.body });
 
@@ -84,7 +166,9 @@ export async function handleStreamResponse(
                 result.bill.usage = bill.usage ?? shapedUsage ?? result.bill.usage;
                 result.bill.finish_reason = bill.finish_reason ?? result.bill.finish_reason;
 
-                const totalNanosOverride = Math.round(bill.cost_cents * 1e7);
+                const totalNanosOverride =
+                    bill.usage?.pricing?.total_nanos ??
+                    Math.round(bill.cost_cents * 1e7);
 
                 await handleSuccessAudit(
                     ctx,
@@ -98,6 +182,19 @@ export async function handleStreamResponse(
                     upstreamStatus,
                     result.bill.upstream_id ?? null
                 );
+                await emitGatewayRequestEvent({
+                    ctx,
+                    result,
+                    statusCode: upstreamStatus,
+                    success: true,
+                    finishReason: bill.finish_reason ?? null,
+                    usage: result.bill.usage ?? null,
+                    pricing: {
+                        total_cents: bill.cost_cents,
+                        total_nanos: totalNanosOverride,
+                        currency: bill.currency ?? null,
+                    },
+                });
 
                 try {
                     if (totalNanosOverride > 0) {
@@ -134,6 +231,19 @@ export async function handleStreamResponse(
                     upstreamStatus,
                     result.bill.upstream_id ?? null
                 );
+                await emitGatewayRequestEvent({
+                    ctx,
+                    result,
+                    statusCode: upstreamStatus,
+                    success: true,
+                    finishReason: null,
+                    usage: null,
+                    pricing: {
+                        total_cents: 0,
+                        total_nanos: 0,
+                        currency: result.bill.currency ?? card?.currency ?? "USD",
+                    },
+                });
                 return;
             }
 
@@ -142,6 +252,17 @@ export async function handleStreamResponse(
                 card,
                 ctx.body
             );
+            if (ctx.meta.debug) {
+                console.log("[gateway][pricing] stream final priced usage", {
+                    requestId: ctx.requestId,
+                    endpoint: ctx.endpoint,
+                    provider: result.provider,
+                    pricing: (pricedUsage as any)?.pricing ?? null,
+                    totalCents,
+                    totalNanos,
+                    currency,
+                });
+            }
 
             result.bill.cost_cents = totalCents;
             result.bill.currency = currency;
@@ -159,6 +280,19 @@ export async function handleStreamResponse(
                 upstreamStatus,
                 result.bill.upstream_id ?? null
             );
+            await emitGatewayRequestEvent({
+                ctx,
+                result,
+                statusCode: upstreamStatus,
+                success: true,
+                finishReason: null,
+                usage: pricedUsage,
+                pricing: {
+                    total_cents: totalCents,
+                    total_nanos: totalNanos,
+                    currency,
+                },
+            });
 
             try {
                 if (totalNanos > 0) {

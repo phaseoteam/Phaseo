@@ -14,6 +14,7 @@ export async function handleFailureAudit(
     const beforeMs = (ctx as any)?.timing?.before?.total_ms ?? 0;
     const execMs = (ctx as any)?.timing?.execute?.total_ms ?? 0;
     const genMs = (ctx as any)?.timing?.execute?.adapter_ms ?? null;
+    const internalLatencyMs = (ctx as any)?.timing?.internal_latency_ms ?? null;
 
     // Use meta values if available, otherwise fall back to timing calculations
     const generationMs = ctx.meta.generation_ms ?? (genMs ? Math.round(genMs) : null);
@@ -32,6 +33,7 @@ export async function handleFailureAudit(
             errorMessage,
             latencyMs,
             generationMs,
+            internalLatencyMs,
             byok: (result?.keySource ?? ctx.meta.keySource) === "byok",
             keyId: ctx.meta.apiKeyId,
         });
@@ -54,6 +56,7 @@ export async function handleSuccessAudit(
 ) {
     const byok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const execTiming = (ctx as any)?.timing?.execute ?? {};
+    const internalLatencyMs = (ctx as any)?.timing?.internal_latency_ms ?? null;
 
     // Use meta values if available, otherwise fall back to timing calculations
     const generationMs = ctx.meta.generation_ms ?? Math.round(execTiming?.adapter_ms ?? result.generationTimeMs ?? 0);
@@ -95,6 +98,7 @@ export async function handleSuccessAudit(
             referer: ctx.meta.referer ?? null,
             generationMs,
             latencyMs,
+            internalLatencyMs,
             usagePriced: usageWithMultimodal,
             totalCents,
             totalNanos,

@@ -2,6 +2,7 @@
 import type { Endpoint } from "./types";
 import type { PipelineContext } from "./gateway/before/types";
 import { readAttributionHeaders } from "./gateway/after/attribution";
+import { emitGatewayRequestEvent } from "./gateway/observability/events";
 
 // Helper to extract error code from a response body
 export function extractErrorCode(body: any, fallback: string): string {
@@ -87,6 +88,10 @@ export async function handleError({
     console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
 
     const body = await safeJson(res);
+    const debugEnabled =
+        (typeof process !== "undefined" &&
+            process.env?.GATEWAY_DEBUG_ERRORS === "1") ||
+        req?.headers.get("x-gateway-debug") === "true";
     const errCode = extractErrorCode(body, stage === "before" ? "before_error" : "upstream_error");
     const description = extractErrorDescription(body);
     const attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
@@ -100,17 +105,39 @@ export async function handleError({
         body?.request_id ??
         body?.requestId ??
         "unknown";
+    console.log("Gateway error details", {
+        stage,
+        endpoint,
+        requestId: generationId,
+        model: ctx?.model ?? body?.model ?? null,
+        errorCode: errCode,
+        description: description ?? null,
+        status: statusCode,
+    });
+    if (debugEnabled) {
+        console.log("Gateway upstream debug", {
+            requestId: generationId,
+            endpoint,
+            model: ctx?.model ?? body?.model ?? null,
+            upstream: body,
+        });
+    }
     const fallbackDescription =
         description ??
         (typeof body?.error === "string" ? body.error : null) ??
         res.statusText ??
         "An error occurred while processing the request.";
-    const errorPayload = {
+    const errorPayload: Record<string, unknown> = {
         generation_id: generationId,
         status_code: statusCode,
         error: errCode,
         description: fallbackDescription,
     };
+    if (debugEnabled) {
+        errorPayload.debug = {
+            upstream: body,
+        };
+    }
 
     // Audit failure
     const auditArgs: any = {
@@ -135,6 +162,25 @@ export async function handleError({
         auditArgs.stream = ctx?.stream;
     }
     await auditFailure(auditArgs);
+    const reasonHint = typeof body?.reason === "string" ? body.reason : null;
+    const internalReason =
+        reasonHint ??
+        (errCode === "unsupported_model_or_endpoint"
+            ? ((ctx?.providers?.length ?? 0) === 0 || stage === "before" ? "no_provider_candidates" : null)
+            : (errCode === "pricing_not_configured" ? "no_provider_pricing" : null));
+    await emitGatewayRequestEvent({
+        ctx,
+        statusCode,
+        success: false,
+        errorCode: `${attribution}:${errCode}`,
+        errorMessage: description ?? fallbackDescription,
+        errorStage: stage,
+        internalReason,
+        requestId: generationId,
+        teamId: ctx?.teamId ?? body?.team_id ?? null,
+        model: ctx?.model ?? body?.model ?? null,
+        endpoint,
+    });
 
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }

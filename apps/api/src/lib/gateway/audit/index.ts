@@ -94,6 +94,7 @@ export async function auditSuccess(args: {
     nativeResponseId?: string | null;
     appTitle?: string | null; referer?: string | null;
     generationMs?: number | null; latencyMs?: number | null;
+    internalLatencyMs?: number | null;
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
@@ -153,6 +154,7 @@ export async function auditSuccess(args: {
                 errorMessage: null,
                 generationMs: args.generationMs ?? null,
                 latencyMs: args.latencyMs ?? null,
+                internalLatencyMs: args.internalLatencyMs ?? null,
                 throughput: args.throughput ?? null,
                 usage: strippedUsage ?? null,
                 pricing: {
@@ -187,6 +189,7 @@ type AuditFailureBefore = {
     errorCode: string;
     errorMessage?: string | null;
     latencyMs?: number | null;
+    internalLatencyMs?: number | null;
     keyId?: string | null;
 };
 type AuditFailureExecute = {
@@ -201,6 +204,7 @@ type AuditFailureExecute = {
     errorMessage?: string | null;
     latencyMs?: number | null;
     generationMs?: number | null;
+    internalLatencyMs?: number | null;
     byok?: boolean;
     keyId?: string | null;
 };
@@ -266,6 +270,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 errorMessage: args.errorMessage ?? null,
                 generationMs: null,
                 latencyMs: args.latencyMs ?? null,
+                internalLatencyMs: args.internalLatencyMs ?? null,
                 throughput: null,
                 usage: null,
                 pricing: null,
@@ -324,6 +329,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             errorMessage: args.errorMessage ?? null,
             generationMs: args.generationMs ?? null,
             latencyMs: args.latencyMs ?? null,
+            internalLatencyMs: args.internalLatencyMs ?? null,
             throughput: null,
             usage: null,
             pricing: null,

@@ -19,16 +19,20 @@ export function extractModel(body: any): string | null {
     if (typeof raw !== "string") return null;
     const trimmed = raw.trim();
     if (!trimmed.length) return null;
-    const colonIdx = trimmed.indexOf(":");
-    return colonIdx === -1 ? trimmed : trimmed.slice(0, colonIdx);
+    return trimmed;
 }
 
 export function buildProviderCandidates(ctx: GatewayContextData): ProviderCandidate[] {
-    return ctx.providers
-        .filter((p) => p.supportsEndpoint)
+    console.log(`[DEBUG] buildProviderCandidates: input providers:`, ctx.providers);
+    const afterSupportsFilter = ctx.providers.filter((p) => p.supportsEndpoint);
+    console.log(`[DEBUG] buildProviderCandidates: after supportsEndpoint filter:`, afterSupportsFilter);
+    const mapped = afterSupportsFilter
         .map((p) => {
             const adapter = adapterById(p.providerId);
-            if (!adapter) return null;
+            if (!adapter) {
+                console.log(`[DEBUG] buildProviderCandidates: no adapter for providerId: ${p.providerId}`);
+                return null;
+            }
             return {
                 providerId: p.providerId,
                 adapter,
@@ -39,4 +43,6 @@ export function buildProviderCandidates(ctx: GatewayContextData): ProviderCandid
             } as ProviderCandidate;
         })
         .filter(Boolean) as ProviderCandidate[];
+    console.log(`[DEBUG] buildProviderCandidates: final candidates:`, mapped);
+    return mapped;
 }

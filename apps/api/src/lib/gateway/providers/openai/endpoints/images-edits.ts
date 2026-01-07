@@ -1,33 +1,21 @@
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { ImagesEditSchema, type ImagesEditRequest } from "@/lib/schemas";
 import { buildAdapterPayload } from "../../utils";
-import { getBindings } from "@/runtime/env";
-import { resolveProviderKey, type ResolvedKey } from "../../keys";
+import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 
-const BASE_URL = "https://api.openai.com";
 
-async function resolveApiKey(args: ProviderExecuteArgs): Promise<ResolvedKey> {
-    return resolveProviderKey(args, () => getBindings().OPENAI_API_KEY);
-}
-
-function baseHeaders(key: string) {
-    return {
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json",
-    };
-}
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveApiKey(args);
+    const keyInfo = await resolveOpenAICompatKey(args);
     const { adapterPayload } = buildAdapterPayload(ImagesEditSchema, args.body, ["meta", "usage"]);
     const body: ImagesEditRequest = {
         ...adapterPayload,
         model: args.providerModelSlug || adapterPayload.model,
     };
 
-    const res = await fetch(`${BASE_URL}/v1/images/edits`, {
+    const res = await fetch(openAICompatUrl(args.providerId, "/images/edits"), {
         method: "POST",
-        headers: baseHeaders(keyInfo.key),
+        headers: openAICompatHeaders(args.providerId, keyInfo.key),
         body: JSON.stringify(body),
     });
 

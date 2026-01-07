@@ -46,6 +46,8 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
     const ts = new TransformStream();
     const writer = ts.writable.getWriter();
+    const tStart = performance.now();
+    let firstFrameAt: number | null = null;
 
     // Write one SSE JSON object as "data: {...}\n\n"
     const writeJson = async (obj: unknown) => {
@@ -70,6 +72,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         }
 
         try {
+            if (firstFrameAt !== null && typeof ctx.meta.generation_ms !== "number") {
+                ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
+            }
             await onFinalUsage(usage);
         } catch (err) {
             console.error("passthroughWithPricing onFinalUsage error:", err, {
@@ -119,17 +124,35 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         continue;
                     }
 
+                    if (firstFrameAt === null) {
+                        firstFrameAt = performance.now();
+                        if (typeof ctx.meta.latency_ms !== "number") {
+                            ctx.meta.latency_ms = Math.round(firstFrameAt - tStart);
+                        }
+                    }
+
+                    const usageCandidate = json?.usage ?? json?.response?.usage ?? null;
+                    const isFinalSnapshot = !sawFinalUsage && (
+                        json?.object === "chat.completion" ||
+                        json?.object === "response" ||
+                        usageCandidate
+                    );
+
+                    if (isFinalSnapshot) {
+                        sawFinalUsage = true;
+                        if (firstFrameAt !== null && typeof ctx.meta.generation_ms !== "number") {
+                            ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
+                        }
+                    }
+
                     // Allow caller to enrich the frame (gateway id/provider/nativeResponseId)
                     if (rewriteFrame) {
                         try { json = rewriteFrame(json) ?? json; } catch { }
                     }
 
-                    const usageCandidate = json?.usage ?? json?.response?.usage ?? null;
-
-                    // Detect final snapshot to extract usage for billing
-                    if (!sawFinalUsage && (json?.object === "chat.completion" || json?.object === "response" || usageCandidate)) {
-                        sawFinalUsage = true;
-                        await finalizeUsage(usageCandidate, "complete");
+                    // Detect final snapshot to extract usage for billing   
+                    if (isFinalSnapshot) {
+                        await finalizeUsage(usageCandidate, "complete");    
                     }
 
                     await writeJson(json);

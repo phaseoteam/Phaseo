@@ -2,11 +2,10 @@ import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import type { GatewayCompletionsResponse, GatewayCompletionsChoice, GatewayUsage } from "@gateway/types";
 import { ChatCompletionsSchema, type ChatCompletionsRequest } from "../../../../schemas";
 import { buildAdapterPayload } from "../../utils";
-import { getBindings } from "@/runtime/env";
 import { computeBill } from "../../../pricing/engine";
-import { resolveProviderKey, type ResolvedKey } from "../../keys";
+import type { ResolvedKey } from "../../keys";
+import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 
-const BASE_URL = "https://api.openai.com";
 
 type GatewayToolCall = {
     id: string;
@@ -17,16 +16,6 @@ type GatewayToolCall = {
     };
 };
 
-async function resolveApiKey(args: ProviderExecuteArgs): Promise<ResolvedKey> {
-    return resolveProviderKey(args, () => getBindings().OPENAI_API_KEY);
-}
-
-function baseHeaders(key: string) {
-    return {
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json",
-    };
-}
 
 function coerceString(value: unknown): string {
     if (typeof value === "string") return value;
@@ -173,7 +162,7 @@ function mapMessageToInputItems(
             items.push({
                 type: "message",
                 role: "assistant",
-                id: `assistant_${index}`,
+                id: `msg_${index}`,
                 status: "completed",
                 content: outputContent,
             });
@@ -301,14 +290,38 @@ function normalizeUsage(usage: any | null | undefined): GatewayUsage | undefined
         input_text_tokens: input,
         output_text_tokens: output,
     };
+    if (usage.input_tokens_details) {
+        normalized.input_details = {
+            cached_tokens: usage.input_tokens_details.cached_tokens,
+            input_images: usage.input_tokens_details.input_images,
+            input_audio: usage.input_tokens_details.input_audio,
+            input_videos: usage.input_tokens_details.input_videos,
+        };
+    }
     if (typeof usage.input_tokens_details?.cached_tokens === "number") {
         normalized.cached_read_text_tokens = usage.input_tokens_details.cached_tokens;
     }
     if (typeof usage.output_tokens_details?.reasoning_tokens === "number") {
         normalized.reasoning_tokens = usage.output_tokens_details.reasoning_tokens;
     }
+    if (usage.output_tokens_details) {
+        normalized.output_tokens_details = {
+            reasoning_tokens: usage.output_tokens_details.reasoning_tokens,
+            cached_tokens: usage.output_tokens_details.cached_tokens,
+            output_images: usage.output_tokens_details.output_images,
+            output_audio: usage.output_tokens_details.output_audio,
+            output_videos: usage.output_tokens_details.output_videos,
+        };
+    }
     if (typeof usage.output_tokens_details?.cached_tokens === "number") {
         normalized.cached_write_text_tokens = usage.output_tokens_details.cached_tokens;
+    }
+    if (usage.pricing_breakdown) {
+        (normalized as GatewayUsage & { pricing_breakdown?: unknown }).pricing_breakdown =
+            usage.pricing_breakdown;
+    }
+    if (usage.service_tier) {
+        (normalized as GatewayUsage & { service_tier?: unknown }).service_tier = usage.service_tier;
     }
     return normalized;
 }
@@ -559,6 +572,7 @@ function createOpenAIStreamResponse(
         requestId: string;
         bill: ReturnType<typeof createBill>;
         onFirstFrame?: (ms: number) => void;
+        debug?: boolean;
     }
 ) {
     if (!res.body) {
@@ -570,6 +584,13 @@ function createOpenAIStreamResponse(
     const encoder = new TextEncoder();
     const transform = new TransformStream<Uint8Array, Uint8Array>();
     const writer = transform.writable.getWriter();
+    const debugEnabled = Boolean(opts.debug);
+    const debugFrames: string[] = [];
+    const maxDebugFrames = 20;
+    let totalFrames = 0;
+    let sawResponseCompleted = false;
+    let sawResponseCreated = false;
+    let sawOutputDelta = false;
 
     let buffer = "";
     const tStart = performance.now();
@@ -659,6 +680,14 @@ function createOpenAIStreamResponse(
                 buffer = frames.pop() ?? "";
 
                 for (const raw of frames) {
+                    totalFrames += 1;
+                    if (debugEnabled) {
+                        const trimmed = raw.length > 2000 ? `${raw.slice(0, 2000)}…` : raw;
+                        debugFrames.push(trimmed);
+                        if (debugFrames.length > maxDebugFrames) {
+                            debugFrames.shift();
+                        }
+                    }
                     const { event, data } = parseSseBlock(raw);
                     if (!data || data === "[DONE]") continue;
                     let payload: any;
@@ -672,9 +701,11 @@ function createOpenAIStreamResponse(
                         case "response.created":
                             nativeResponseId = payload?.response?.id ?? payload?.id ?? nativeResponseId;
                             created = payload?.response?.created_at ?? payload?.created_at ?? created;
+                            sawResponseCreated = true;
                             break;
                         case "response.output_text.delta":
                             if (typeof payload?.delta === "string") {
+                                sawOutputDelta = true;
                                 await emitTextChunk(payload.delta, { logprobs: payload.logprobs, output_index: payload.output_index });
                             }
                             break;
@@ -710,6 +741,7 @@ function createOpenAIStreamResponse(
                         }
                         case "response.completed":
                             finalResponse = payload?.response ?? finalResponse;
+                            sawResponseCompleted = true;
                             break;
                         case "response.failed":
                         case "error":
@@ -725,6 +757,19 @@ function createOpenAIStreamResponse(
             }
 
             if (!finalNormalized) {
+                if (debugEnabled) {
+                    console.log("[gateway][openai] stream missing completion", {
+                        requestId: opts.requestId,
+                        status: res.status,
+                        headers: Object.fromEntries(res.headers.entries()),
+                        totalFrames,
+                        sawResponseCreated,
+                        sawOutputDelta,
+                        sawResponseCompleted,
+                        bufferTail: buffer.length > 2000 ? `${buffer.slice(0, 2000)}…` : buffer,
+                        debugFrames,
+                    });
+                }
                 throw new Error("openai_stream_missing_completion");
             }
 
@@ -733,6 +778,20 @@ function createOpenAIStreamResponse(
                 ...finalNormalized,
             });
         } catch (err) {
+            if (debugEnabled) {
+                console.log("[gateway][openai] stream error", {
+                    requestId: opts.requestId,
+                    status: res.status,
+                    headers: Object.fromEntries(res.headers.entries()),
+                    totalFrames,
+                    sawResponseCreated,
+                    sawOutputDelta,
+                    sawResponseCompleted,
+                    bufferTail: buffer.length > 2000 ? `${buffer.slice(0, 2000)}…` : buffer,
+                    debugFrames,
+                    error: err instanceof Error ? err.message : err,
+                });
+            }
             console.error("OpenAI streaming error:", err);
             await emit({
                 object: "error",
@@ -749,6 +808,14 @@ function createOpenAIStreamResponse(
     headers.set("x-gateway-request-id", opts.requestId);
     headers.set("x-gateway-stream-shape", "delta");
 
+    if (debugEnabled) {
+        console.log("[gateway][openai] stream opened", {
+            requestId: opts.requestId,
+            status: res.status,
+            headers: Object.fromEntries(res.headers.entries()),
+        });
+    }
+
     return {
         response: new Response(transform.readable, { status: res.status, headers }),
         usageFinalizer: async () => finalBill,
@@ -762,6 +829,7 @@ async function bufferOpenAIStreamResponse(
         pricingCard: ProviderExecuteArgs["pricingCard"];
         bill: ReturnType<typeof createBill>;
         requestId: string;
+        debug?: boolean;
     }
 ): Promise<{ normalized: GatewayCompletionsResponse; bill: ReturnType<typeof createBill>; firstFrameMs: number | null }> {
     if (!res.body) {
@@ -770,6 +838,11 @@ async function bufferOpenAIStreamResponse(
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
+    const debugEnabled = Boolean(opts.debug);
+    const debugFrames: string[] = [];
+    const maxDebugFrames = 20;
+    let totalFrames = 0;
+    let sawResponseCompleted = false;
 
     let buffer = "";
     let finalResponse: any = null;
@@ -787,6 +860,14 @@ async function bufferOpenAIStreamResponse(
         buffer = frames.pop() ?? "";
 
         for (const raw of frames) {
+            totalFrames += 1;
+            if (debugEnabled) {
+                const trimmed = raw.length > 2000 ? `${raw.slice(0, 2000)}…` : raw;
+                debugFrames.push(trimmed);
+                if (debugFrames.length > maxDebugFrames) {
+                    debugFrames.shift();
+                }
+            }
             const { event, data } = parseSseBlock(raw);
             if (!data || data === "[DONE]") continue;
             let payload: any;
@@ -797,14 +878,38 @@ async function bufferOpenAIStreamResponse(
             }
             if (event === "response.completed") {
                 finalResponse = payload?.response ?? finalResponse;
+                sawResponseCompleted = true;
             }
             if (event === "response.failed" || event === "error") {
+                if (debugEnabled) {
+                    console.log("[gateway][openai] stream failed", {
+                        requestId: opts.requestId,
+                        status: res.status,
+                        headers: Object.fromEntries(res.headers.entries()),
+                        totalFrames,
+                        sawResponseCompleted,
+                        bufferTail: buffer.length > 2000 ? `${buffer.slice(0, 2000)}…` : buffer,
+                        debugFrames,
+                        error: payload?.error ?? null,
+                    });
+                }
                 throw new Error(payload?.error?.message ?? "openai_stream_failed");
             }
         }
     }
 
     if (!finalResponse) {
+        if (debugEnabled) {
+            console.log("[gateway][openai] buffered stream missing completion", {
+                requestId: opts.requestId,
+                status: res.status,
+                headers: Object.fromEntries(res.headers.entries()),
+                totalFrames,
+                sawResponseCompleted,
+                bufferTail: buffer.length > 2000 ? `${buffer.slice(0, 2000)}…` : buffer,
+                debugFrames,
+            });
+        }
         throw new Error("openai_stream_missing_completion");
     }
 
@@ -829,9 +934,9 @@ async function execNonStreaming(
     keyInfo: ResolvedKey,
     requestPayload: Record<string, unknown>
 ): Promise<AdapterResult> {
-    const res = await fetch(`${BASE_URL}/v1/responses`, {
+    const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
         method: "POST",
-        headers: baseHeaders(key),
+        headers: openAICompatHeaders(args.providerId, key),
         body: JSON.stringify(requestPayload),
     });
 
@@ -905,9 +1010,9 @@ async function execStreaming(
     keyInfo: ResolvedKey,
     requestPayload: Record<string, unknown>
 ): Promise<AdapterResult> {
-    const res = await fetch(`${BASE_URL}/v1/responses`, {
+    const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
         method: "POST",
-        headers: baseHeaders(key),
+        headers: openAICompatHeaders(args.providerId, key),
         body: JSON.stringify(requestPayload),
     });
 
@@ -922,6 +1027,7 @@ async function execStreaming(
         pricingCard: args.pricingCard,
         requestId: args.meta.requestId,
         bill,
+        debug: args.meta.debug,
     });
 
     return {
@@ -935,7 +1041,7 @@ async function execStreaming(
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveApiKey(args);
+    const keyInfo = await resolveOpenAICompatKey(args);
     const { canonical, adapterPayload } = buildAdapterPayload(ChatCompletionsSchema, args.body, ["usage", "meta"]);
     const modifiedBody: ChatCompletionsRequest = {
         ...adapterPayload,
@@ -946,12 +1052,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const requestPayload = mapGatewayToOpenAIResponses(modifiedBody);
     const key = keyInfo.key;
 
-    const res = await fetch(`${BASE_URL}/v1/responses`, {
+    const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
         method: "POST",
-        headers: baseHeaders(key),
+        headers: openAICompatHeaders(args.providerId, key),
         body: JSON.stringify(requestPayload),
     });
-
     const bill = createBill(res);
 
     if (args.stream) {
@@ -960,7 +1065,10 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             pricingCard: args.pricingCard,
             requestId: args.meta.requestId,
             bill,
-            onFirstFrame: (ms) => { args.meta.latency_ms = ms; },
+            onFirstFrame: (ms) => {
+                args.meta.latency_ms = ms;
+            },
+            debug: args.meta.debug,
         });
         return {
             kind: "stream",
@@ -977,6 +1085,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         pricingCard: args.pricingCard,
         bill,
         requestId: args.meta.requestId,
+        debug: args.meta.debug,
     });
 
     if (firstFrameMs !== null) {

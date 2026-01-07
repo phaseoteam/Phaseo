@@ -2,22 +2,10 @@ import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import type { ResponsesRequest } from "../../../../schemas";
 import { ResponsesSchema } from "../../../../schemas";
 import { buildAdapterPayload } from "../../utils";
-import { getBindings } from "@/runtime/env";
 import { computeBill } from "../../../pricing/engine";
-import { resolveProviderKey, type ResolvedKey } from "../../keys";
+import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 
-const BASE_URL = "https://api.openai.com";
 
-async function resolveApiKey(args: ProviderExecuteArgs): Promise<ResolvedKey> {
-    return resolveProviderKey(args, () => getBindings().OPENAI_API_KEY);
-}
-
-function baseHeaders(key: string) {
-    return {
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json",
-    };
-}
 
 function createBill(res: Response) {
     return {
@@ -106,7 +94,7 @@ async function bufferResponsesStream(res: Response, args: ProviderExecuteArgs, p
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveApiKey(args);
+    const keyInfo = await resolveOpenAICompatKey(args);
     const { canonical, adapterPayload } = buildAdapterPayload(
         ResponsesSchema,
         args.body,
@@ -119,9 +107,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         stream: true, // always stream upstream to capture first-byte latency
     };
 
-    const res = await fetch(`${BASE_URL}/v1/responses`, {
+    const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
         method: "POST",
-        headers: baseHeaders(keyInfo.key),
+        headers: openAICompatHeaders(args.providerId, keyInfo.key),
         body: JSON.stringify(payload),
     });
 

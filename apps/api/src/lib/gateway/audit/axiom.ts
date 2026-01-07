@@ -32,8 +32,9 @@ export type AxiomArgs = {
     // Timings (ms)
     // End-to-end (redundant but handy)
     generationMs?: number | null;     // adapter/provider time you surface
-    latencyMs?: number | null;        // end-to-end total you want to show
+    latencyMs?: number | null;        // end-to-end total you want to show      
     throughput?: number | null;       // tokens/sec if you compute it
+    internalLatencyMs?: number | null; // request->outbound dispatch time
 
     // Usage/cost
     usage?: {
@@ -85,7 +86,9 @@ export function buildAxiomEvent(a: AxiomArgs) {
     const totalCents = a.pricing?.total_cents ?? 0;
     const totalUsd = (typeof a.pricing?.total_usd_str === "string")
         ? Number(a.pricing!.total_usd_str)
-        : (totalCents / 100);
+        : (typeof a.pricing?.total_nanos === "number"
+            ? a.pricing.total_nanos / 1_000_000_000
+            : (totalCents / 100));
 
     const tokens_per_dollar = totalUsd > 0 ? tokensTot / totalUsd : null;
 
@@ -117,6 +120,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
         generation_ms: a.generationMs ?? null,
         latency_ms: a.latencyMs ?? null,
         throughput_tps,
+        internal_latency_ms: a.internalLatencyMs ?? null,
 
         // usage
         usage_tokens_in: tokensIn,

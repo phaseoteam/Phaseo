@@ -80,12 +80,15 @@ export type ProviderCandidate = {
 export type PipelineContext = {
     endpoint: Endpoint;
     requestId: string;
+    protocol?: string;
     meta: RequestMeta;
     rawBody: any;
     body: any;
     model: string;
     teamId: string;
     stream: boolean;
+    strictness?: "off" | "warn" | "error";
+    requestPath?: string;
     providers: ProviderCandidate[];
     pricing: Record<string, PriceCard>;
     gating: {

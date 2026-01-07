@@ -7,7 +7,7 @@ export function captureTimingSnapshot(ctx: PipelineContext, timing: PipelineTimi
 }
 
 export function getBaseModel(model: string): string {
-    return model.split(":")[0];
+    return model;
 }
 
 export function calculateMaxTries(candidatesLength: number): number {

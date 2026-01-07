@@ -59,6 +59,13 @@ export async function beforeRequest(
         returnUsage,
         returnMeta,
     });
+    const requestPath = (() => {
+        try {
+            return new URL(req.url).pathname;
+        } catch {
+            return null;
+        }
+    })();
 
     const ctx: PipelineContext = {
         endpoint,
@@ -69,6 +76,7 @@ export async function beforeRequest(
         model: resolvedModel || model,
         teamId,
         stream,
+        requestPath: requestPath ?? undefined,
         providers,
         pricing: context.pricing,
         gating: {

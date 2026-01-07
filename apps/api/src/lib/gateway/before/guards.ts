@@ -93,7 +93,7 @@ export async function guardContext(args: {
     internal?: boolean;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null }>> {
     try {
-        // console.log(`[DEBUG] guardContext called with model: ${args.model}, endpoint: ${args.endpoint}`);
+        console.log(`[DEBUG] guardContext called with model: ${args.model}, endpoint: ${args.endpoint}`);
         const context = await fetchGatewayContext({
             teamId: args.teamId,
             model: args.model,
@@ -101,7 +101,8 @@ export async function guardContext(args: {
             apiKeyId: args.apiKeyId,
         });
 
-        // console.log(`[DEBUG] guardContext: context loaded, resolvedModel: ${context.resolvedModel}`);
+        console.log(`[DEBUG] guardContext: context loaded, resolvedModel: ${context.resolvedModel}`);
+        console.log(`[DEBUG] guardContext: context.providers:`, context.providers);
 
         // Key validity
         if (!context.key.ok) {
@@ -142,9 +143,9 @@ export async function guardContext(args: {
         }
 
         const providers = buildProviderCandidates(context);
-        // console.log(`[DEBUG] guardContext: providers built, count: ${providers.length}`);
+        console.log(`[DEBUG] guardContext: providers built, count: ${providers.length}`);
         if (!providers.length) {
-            // console.log(`[DEBUG] guardContext: no providers found for model ${args.model}`);
+            console.log(`[DEBUG] guardContext: no providers found for model ${args.model}`);
             return {
                 ok: false,
                 response: err("unsupported_model_or_endpoint", {
@@ -181,12 +182,19 @@ export function makeMeta(input: {
     returnMeta?: boolean;
 }): RequestMeta {
     const { referer, appTitle } = readAttributionHeaders(input.req);
+    const debugHeader = input.req.headers.get("x-gateway-debug");
+    try {
+        (globalThis as any).__pricingDebug = debugHeader === "true";
+    } catch {
+        // ignore global debug flag errors
+    }
     return {
         apiKeyId: input.apiKeyId,
         apiKeyRef: input.apiKeyRef,
         apiKeyKid: input.apiKeyKid,
         requestId: input.requestId,
         stream: input.stream,
+        debug: debugHeader === "true",
         keySource: "gateway",
         byokKeyId: null,
         referer,

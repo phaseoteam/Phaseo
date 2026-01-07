@@ -2,22 +2,10 @@
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { EmbeddingsSchema, type EmbeddingsRequest } from "../../../../schemas";
 import { sanitizePayload } from "../../utils";
-import { getBindings } from "@/runtime/env";
 import { computeBill } from "../../../pricing/engine";
-import { resolveProviderKey, type ResolvedKey } from "../../keys";
+import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 
-const BASE_URL = "https://api.openai.com";
 
-async function resolveApiKey(args: ProviderExecuteArgs): Promise<ResolvedKey> {
-    return resolveProviderKey(args, () => getBindings().OPENAI_API_KEY);
-}
-
-function baseHeaders(key: string) {
-    return {
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json",
-    };
-}
 
 function mapGatewayToOpenAIEmbeddings(body: EmbeddingsRequest) {
     return {
@@ -39,7 +27,7 @@ function mapOpenAIToGatewayEmbeddings(json: any): any {
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveApiKey(args);
+    const keyInfo = await resolveOpenAICompatKey(args);
     const key = keyInfo.key;
     const sanitizedBody = sanitizePayload(EmbeddingsSchema, args.body);
     const modifiedBody: EmbeddingsRequest = {
@@ -47,9 +35,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         model: args.providerModelSlug || args.model,
     };
     const req = mapGatewayToOpenAIEmbeddings(modifiedBody);
-    const res = await fetch(`${BASE_URL}/v1/embeddings`, {
+    const res = await fetch(openAICompatUrl(args.providerId, "/embeddings"), {
         method: "POST",
-        headers: baseHeaders(key),
+        headers: openAICompatHeaders(args.providerId, key),
         body: JSON.stringify(req),
     });
     const bill = {

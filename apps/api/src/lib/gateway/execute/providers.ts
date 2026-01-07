@@ -7,10 +7,16 @@ export async function rankProviders(
     candidates: ProviderCandidate[],
     ctx: PipelineContext
 ) {
-    return await routeProviders(candidates, {
+    const ranked = await routeProviders(candidates, {
         endpoint: ctx.endpoint,
         model: ctx.model,
         teamId: ctx.teamId,
         body: ctx.body,
     });
+    (ctx as any).routingSnapshot = ranked.map((entry) => ({
+        provider: entry.adapter.name,
+        breaker: entry.health.breaker,
+        breaker_until_ms: entry.health.breaker_until_ms,
+    }));
+    return ranked;
 }

@@ -11,11 +11,14 @@ const PRESETS: Record<Priority, { wSucc: number; wP50: number; wTail: number; wT
 };
 
 function parsePriority(model: string): { base: string; priority: Priority; strict: boolean } {
-    const [base, suffixRaw] = model.split(":");
-    const suffix = (suffixRaw ?? "").toLowerCase();
-    if (suffix === "fast") return { base, priority: "fast", strict: true };
-    if (suffix === "quick") return { base, priority: "quick", strict: true };
-    return { base, priority: "default", strict: false };
+    const lower = model.toLowerCase();
+    if (lower.endsWith(":fast")) {
+        return { base: model, priority: "fast", strict: true };
+    }
+    if (lower.endsWith(":quick")) {
+        return { base: model, priority: "quick", strict: true };
+    }
+    return { base: model, priority: "default", strict: false };
 }
 
 function normalise(v: number, min: number, max: number) {
@@ -78,6 +81,18 @@ export async function routeProviders(
     const now = Date.now();
     const viable = healths.filter(x => !(x.h.breaker === "open" && (x.h.breaker_until_ms ?? 0) > now));
     const pool = viable.length ? viable : healths;
+    console.log("[gateway] provider pool", {
+        model: ctx.model,
+        endpoint: ctx.endpoint,
+        candidates: candidates.length,
+        poolCandidates: poolCandidates.length,
+        viable: viable.length,
+        openBreakers: healths.filter(
+            (entry) =>
+                entry.h.breaker === "open" &&
+                (entry.h.breaker_until_ms ?? 0) > now
+        ).length,
+    });
 
     const latP50s = pool.map(v => v.h.lat_ewma_10s);
     const latTail = pool.map(v => Math.max(v.h.lat_ewma_60s, v.h.lat_ewma_10s * 1.6));

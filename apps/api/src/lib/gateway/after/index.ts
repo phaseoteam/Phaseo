@@ -11,6 +11,7 @@ import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndCharge } from "../pricing/persist";
 import { shapeUsageForClient } from "../usage";
+import { emitGatewayRequestEvent } from "../observability/events";
 
 export async function finalizeRequest(args: {
     pre: { ok: true; ctx: PipelineContext };
@@ -84,23 +85,35 @@ async function handleNonStreamResponse(
     const card = await ctx.timer.span("after_load_pricing", () => loadProviderPricing(ctx, result));
 
     // Calculate pricing
+    const shapedUsage = shapeUsageForClient(usageNormalized, { endpoint: ctx.endpoint, body: ctx.body });
     const { pricedUsage, totalCents, totalNanos, currency } = await ctx.timer.span("after_calculate_pricing", () => calculatePricing(
-        usageNormalized,
+        shapedUsage,
         card,
         ctx.body
     ));
+    if (ctx.meta?.debug) {
+        console.log("[gateway][pricing] non-stream priced usage", {
+            requestId: ctx.requestId,
+            endpoint: ctx.endpoint,
+            provider: result.provider,
+            pricing: (pricedUsage as any)?.pricing ?? null,
+            totalCents,
+            totalNanos,
+            currency,
+        });
+    }
 
     // console.log("[DEBUG handleNonStreamResponse] pricedUsage:", pricedUsage, "totalCents:", totalCents, "totalNanos:", totalNanos, "currency:", currency);
 
-    const shapedUsage = shapeUsageForClient(pricedUsage, { endpoint: ctx.endpoint, body: ctx.body });
+    const shapedUsageFinal = shapeUsageForClient(pricedUsage, { endpoint: ctx.endpoint, body: ctx.body });
 
     // Update payload with normalized usage
-    payload.usage = shapedUsage;
+    payload.usage = shapedUsageFinal;
 
     // Update result billing
     result.bill.cost_cents = totalCents;
     result.bill.currency = currency;
-    result.bill.usage = shapedUsage;
+    result.bill.usage = shapedUsageFinal;
 
     // Extract finish reason
     const finishReason = await ctx.timer.span("after_extract_finish_reason", () => extractFinishReason(payload));
@@ -122,6 +135,19 @@ async function handleNonStreamResponse(
             nativeResponseId ?? null
         )
     );
+    await emitGatewayRequestEvent({
+        ctx,
+        result,
+        statusCode: result.upstream.status,
+        success: true,
+        finishReason,
+        usage: shapedUsageFinal,
+        pricing: {
+            total_cents: totalCents,
+            total_nanos: totalNanos,
+            currency,
+        },
+    });
 
     // Record usage and charge wallet
     await ctx.timer.span("after_record_usage_charge", async () => {

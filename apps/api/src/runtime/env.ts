@@ -10,10 +10,51 @@ export type GatewayBindings = {
     NEXT_PUBLIC_GATEWAY_VERSION?: string;
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
+    AXIOM_WIDE_DATASET?: string;
     OPENAI_API_KEY?: string;
+    OPENAI_BASE_URL?: string;
     GOOGLE_AI_STUDIO_API_KEY?: string;
     ANTHROPIC_API_KEY?: string;
     XAI_API_KEY?: string;
+    AI21_API_KEY?: string;
+    AI21_BASE_URL?: string;
+    ALIBABA_API_KEY?: string;
+    ALIBABA_BASE_URL?: string;
+    ATLAS_CLOUD_API_KEY?: string;
+    ATLAS_CLOUD_BASE_URL?: string;
+    BASETEN_API_KEY?: string;
+    BASETEN_BASE_URL?: string;
+    CEREBRAS_API_KEY?: string;
+    CEREBRAS_BASE_URL?: string;
+    CHUTES_API_KEY?: string;
+    CHUTES_BASE_URL?: string;
+    COHERE_API_KEY?: string;
+    COHERE_BASE_URL?: string;
+    DEEPINFRA_API_KEY?: string;
+    DEEPINFRA_BASE_URL?: string;
+    DEEPSEEK_API_KEY?: string;
+    DEEPSEEK_BASE_URL?: string;
+    GROQ_API_KEY?: string;
+    GROQ_BASE_URL?: string;
+    MINIMAX_API_KEY?: string;
+    MINIMAX_BASE_URL?: string;
+    MISTRAL_API_KEY?: string;
+    MISTRAL_BASE_URL?: string;
+    MOONSHOT_API_KEY?: string;
+    MOONSHOT_BASE_URL?: string;
+    XIAOMI_MIMO_API_KEY?: string;
+    XIAOMI_MIMO_BASE_URL?: string;
+    NOVITA_API_KEY?: string;
+    NOVITA_BASE_URL?: string;
+    PARASAIL_API_KEY?: string;
+    PARASAIL_BASE_URL?: string;
+    QWEN_API_KEY?: string;
+    QWEN_BASE_URL?: string;
+    TOGETHER_API_KEY?: string;
+    TOGETHER_BASE_URL?: string;
+    AZURE_OPENAI_API_KEY?: string;
+    AZURE_OPENAI_BASE_URL?: string;
+    AZURE_OPENAI_API_VERSION?: string;
     KEY_PEPPER?: string;
     UPSTASH_REDIS_REST_URL: string;
     UPSTASH_REDIS_REST_TOKEN: string;
@@ -39,9 +80,52 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "NEXT_PUBLIC_GATEWAY_VERSION",
     "AXIOM_API_KEY",
     "AXIOM_DATASET",
+    "AXIOM_WIDE_DATASET",
     "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
     "GOOGLE_AI_STUDIO_API_KEY",
+    "ANTHROPIC_API_KEY",
     "KEY_PEPPER",
+    "XAI_API_KEY",
+    "AI21_API_KEY",
+    "AI21_BASE_URL",
+    "ALIBABA_API_KEY",
+    "ALIBABA_BASE_URL",
+    "ATLAS_CLOUD_API_KEY",
+    "ATLAS_CLOUD_BASE_URL",
+    "BASETEN_API_KEY",
+    "BASETEN_BASE_URL",
+    "CEREBRAS_API_KEY",
+    "CEREBRAS_BASE_URL",
+    "CHUTES_API_KEY",
+    "CHUTES_BASE_URL",
+    "COHERE_API_KEY",
+    "COHERE_BASE_URL",
+    "DEEPINFRA_API_KEY",
+    "DEEPINFRA_BASE_URL",
+    "DEEPSEEK_API_KEY",
+    "DEEPSEEK_BASE_URL",
+    "GROQ_API_KEY",
+    "GROQ_BASE_URL",
+    "MINIMAX_API_KEY",
+    "MINIMAX_BASE_URL",
+    "MISTRAL_API_KEY",
+    "MISTRAL_BASE_URL",
+    "MOONSHOT_API_KEY",
+    "MOONSHOT_BASE_URL",
+    "XIAOMI_MIMO_API_KEY",
+    "XIAOMI_MIMO_BASE_URL",
+    "NOVITA_API_KEY",
+    "NOVITA_BASE_URL",
+    "PARASAIL_API_KEY",
+    "PARASAIL_BASE_URL",
+    "QWEN_API_KEY",
+    "QWEN_BASE_URL",
+    "TOGETHER_API_KEY",
+    "TOGETHER_BASE_URL",
+    "AZURE_OPENAI_API_KEY",
+    "AZURE_OPENAI_BASE_URL",
+    "AZURE_OPENAI_API_VERSION",
     "UPSTASH_REDIS_REST_URL",
     "UPSTASH_REDIS_REST_TOKEN",
     "NODE_ENV",

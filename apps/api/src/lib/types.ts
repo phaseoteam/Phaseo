@@ -22,6 +22,7 @@ export type RequestMeta = {
     appTitle?: string | null;
     requestId: string;
     stream?: boolean;
+    debug?: boolean;
     keySource?: "gateway" | "byok";
     byokKeyId?: string | null;
     // Performance metrics
