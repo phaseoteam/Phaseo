@@ -1,0 +1,17 @@
+{
+  "model_id": "prime-intellect/intellect-3-2025-11-26",
+  "organisation_id": "prime-intellect",
+  "name": "Intellect 3",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-11-26T00:00:00",
+  "release_date": "2025-11-26T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

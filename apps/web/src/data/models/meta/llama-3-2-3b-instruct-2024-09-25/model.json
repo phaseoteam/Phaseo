@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct",
-      "rank": 89
+      "rank": 78
     },
     {
       "benchmark_id": "lmarena-text",
@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 65
+      "rank": 63
     }
   ]
 }

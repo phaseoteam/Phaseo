@@ -1,0 +1,23 @@
+{
+  "key": "parasail:z-ai/glm-4-6v-2025-12-08:responses",
+  "api_provider_id": "parasail",
+  "provider_slug": "parasail",
+  "api_model_id": "z-ai/glm-4-6v-2025-12-08",
+  "internal_model_id": "z-ai/glm-4-6v-2025-12-08",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text",
+    "video"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-12-08T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

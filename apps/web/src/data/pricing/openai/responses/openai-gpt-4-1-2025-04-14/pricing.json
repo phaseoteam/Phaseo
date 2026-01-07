@@ -2,7 +2,8 @@
   "key": "openai:openai/gpt-4-1-2025-04-14:responses",
   "api_provider_id": "openai",
   "provider_slug": "openai",
-  "model_id": "openai/gpt-4-1-2025-04-14",
+  "api_model_id": "openai/gpt-4-1-2025-04-14",
+  "internal_model_id": "openai/gpt-4-1-2025-04-14",
   "endpoint": "responses",
   "provider_model_slug": "gpt-4.1-2025-04-14",
   "is_active_gateway": false,
@@ -17,5 +18,45 @@
   "effective_to": null,
   "capability": {},
   "params": [],
-  "rules": []
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 5e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 8e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    }
+  ]
 }

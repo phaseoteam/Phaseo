@@ -1,0 +1,22 @@
+{
+  "key": "amazon-bedrock:amazon/nova-pro-v1:responses",
+  "api_provider_id": "amazon-bedrock",
+  "provider_slug": "amazon-bedrock",
+  "api_model_id": "amazon/nova-pro-v1",
+  "internal_model_id": "amazon/nova-pro-v1",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

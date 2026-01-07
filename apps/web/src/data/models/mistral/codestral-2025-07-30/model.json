@@ -1,0 +1,17 @@
+{
+  "model_id": "mistral/codestral-2025-07-30",
+  "organisation_id": "mistral",
+  "name": "Codestral (2025-07-30)",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-07-30T00:00:00",
+  "release_date": "2025-07-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

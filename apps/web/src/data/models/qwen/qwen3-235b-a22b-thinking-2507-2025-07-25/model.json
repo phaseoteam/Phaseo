@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 3
+      "rank": 2
     },
     {
       "benchmark_id": "livebench",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 7
+      "rank": 6
     },
     {
       "benchmark_id": "matharena-apex",

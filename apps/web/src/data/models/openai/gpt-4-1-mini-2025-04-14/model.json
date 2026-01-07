@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 29
+      "rank": 27
     },
     {
       "benchmark_id": "aime-2024",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 31
+      "rank": 27
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 29
+      "rank": 27
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 17
+      "rank": 16
     },
     {
       "benchmark_id": "factscore-halluciation-rate",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 48
+      "rank": 44
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -126,7 +126,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 15
+      "rank": 14
     },
     {
       "benchmark_id": "lmarena-text",

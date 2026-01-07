@@ -1,0 +1,23 @@
+{
+  "key": "azure:openai/gpt-4o-2024-08-06:chat.completions",
+  "api_provider_id": "azure",
+  "provider_slug": "azure",
+  "api_model_id": "openai/gpt-4o-2024-08-06",
+  "internal_model_id": "openai/gpt-4o-2024-08-06",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "file",
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2024-08-06T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

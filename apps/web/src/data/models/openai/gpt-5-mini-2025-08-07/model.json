@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 4
+      "rank": 3
     },
     {
       "benchmark_id": "erqa",
@@ -235,7 +235,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 6
+      "rank": 5
     },
     {
       "benchmark_id": "tau-2-airline",

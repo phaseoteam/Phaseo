@@ -1,0 +1,17 @@
+{
+  "model_id": "mistral/mathstral-7b-2024-07-16",
+  "organisation_id": "mistral",
+  "name": "Mathstral 7B",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2024-07-16T00:00:00",
+  "release_date": "2024-07-16T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

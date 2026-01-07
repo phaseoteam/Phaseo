@@ -4,7 +4,7 @@
   "name": "DeepSeek V3 (2025-03-24)",
   "status": "Available",
   "previous_model_id": null,
-  "announced_date": null,
+  "announced_date": "2025-03-25T00:00:00",
   "release_date": "2025-03-25T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
@@ -58,7 +58,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 18
+      "rank": 17
     },
     {
       "benchmark_id": "aime-2024",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250325",
-      "rank": 28
+      "rank": 24
     },
     {
       "benchmark_id": "confabulations",
@@ -74,7 +74,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 36
+      "rank": 34
     },
     {
       "benchmark_id": "eqbench",
@@ -82,7 +82,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 15
+      "rank": 14
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250325",
-      "rank": 40
+      "rank": 38
     },
     {
       "benchmark_id": "lmarena-text",
@@ -130,7 +130,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 14
+      "rank": 13
     }
   ]
 }

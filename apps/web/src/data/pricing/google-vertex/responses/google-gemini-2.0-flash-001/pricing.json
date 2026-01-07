@@ -1,0 +1,25 @@
+{
+  "key": "google-vertex:google/gemini-2.0-flash-001:responses",
+  "api_provider_id": "google-vertex",
+  "provider_slug": "google-vertex",
+  "api_model_id": "google/gemini-2.0-flash-001",
+  "internal_model_id": "google/gemini-2.0-flash-001",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "audio",
+    "file",
+    "image",
+    "text",
+    "video"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

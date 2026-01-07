@@ -2,6 +2,6 @@
   "api_provider_id": "cerebras",
   "api_provider_name": "Cerebras",
   "description": null,
-  "link": null,
+  "link": "https://inference-docs.cerebras.ai/",
   "country_code": "US"
 }

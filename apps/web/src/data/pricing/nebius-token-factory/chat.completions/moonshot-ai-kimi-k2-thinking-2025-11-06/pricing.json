@@ -1,0 +1,21 @@
+{
+  "key": "nebius-token-factory:moonshot-ai/kimi-k2-thinking-2025-11-06:chat.completions",
+  "api_provider_id": "nebius-token-factory",
+  "provider_slug": "nebius-token-factory",
+  "api_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+  "internal_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-11-06T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

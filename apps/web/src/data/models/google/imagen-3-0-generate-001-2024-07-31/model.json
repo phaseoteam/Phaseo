@@ -1,0 +1,18 @@
+{
+  "model_id": "google/imagen-3-0-generate-001-2024-07-31",
+  "organisation_id": "google",
+  "name": "Imagen 3.0 Generate 001",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2024-07-31T00:00:00",
+  "release_date": "2024-07-31T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "family_id": "google/imagen-3",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

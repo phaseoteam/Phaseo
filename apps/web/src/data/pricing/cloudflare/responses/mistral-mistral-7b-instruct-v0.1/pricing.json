@@ -1,0 +1,21 @@
+{
+  "key": "cloudflare:mistral/mistral-7b-instruct-v0.1:responses",
+  "api_provider_id": "cloudflare",
+  "provider_slug": "cloudflare",
+  "api_model_id": "mistral/mistral-7b-instruct-v0.1",
+  "internal_model_id": "mistral/mistral-7b-instruct-v0.1",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

@@ -1,0 +1,17 @@
+{
+  "model_id": "minimax/hailuo-2-3-fast-2025-10-28",
+  "organisation_id": "minimax",
+  "name": "Hailuo 2.3 Fast",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-10-28T00:00:00",
+  "release_date": "2025-10-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

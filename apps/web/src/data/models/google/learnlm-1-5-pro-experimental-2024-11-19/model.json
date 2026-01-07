@@ -1,0 +1,17 @@
+{
+  "model_id": "google/learnlm-1-5-pro-experimental-2024-11-19",
+  "organisation_id": "google",
+  "name": "LearnLM 1.5 Pro Experimental",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2024-11-19T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": "2025-11-17T00:00:00",
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,0 +1,23 @@
+{
+  "key": "amazon-bedrock:anthropic/claude-3-7-sonnet-2025-02-24:chat.completions",
+  "api_provider_id": "amazon-bedrock",
+  "provider_slug": "amazon-bedrock",
+  "api_model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
+  "internal_model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "file",
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-02-24T00:00:00",
+  "effective_to": "2026-02-19T00:00:00",
+  "capability": {},
+  "params": [],
+  "rules": []
+}

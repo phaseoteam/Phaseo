@@ -2,6 +2,6 @@
   "api_provider_id": "azure",
   "api_provider_name": "Azure",
   "description": null,
-  "link": null,
+  "link": "https://learn.microsoft.com/en-us/azure/ai-services/openai/",
   "country_code": "US"
 }

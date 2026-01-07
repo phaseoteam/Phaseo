@@ -2,7 +2,8 @@
   "key": "google-ai-studio:google/gemini-2-5-flash-preview-2025-05-20:chat.completions",
   "api_provider_id": "google-ai-studio",
   "provider_slug": "google-ai-studio",
-  "model_id": "google/gemini-2-5-flash-preview-2025-05-20",
+  "api_model_id": "google/gemini-2-5-flash-preview-2025-05-20",
+  "internal_model_id": "google/gemini-2-5-flash-preview-2025-05-20",
   "endpoint": "chat.completions",
   "provider_model_slug": "gemini-2-5-flash-preview-2025-05-20",
   "is_active_gateway": false,
@@ -16,7 +17,7 @@
     "text"
   ],
   "effective_from": "2025-05-20T00:00:00",
-  "effective_to": null,
+  "effective_to": "2025-07-15T00:00:00",
   "capability": {},
   "params": [],
   "rules": [

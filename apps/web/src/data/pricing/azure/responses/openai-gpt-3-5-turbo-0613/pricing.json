@@ -1,0 +1,21 @@
+{
+  "key": "azure:openai/gpt-3-5-turbo-0613:responses",
+  "api_provider_id": "azure",
+  "provider_slug": "azure",
+  "api_model_id": "openai/gpt-3-5-turbo-0613",
+  "internal_model_id": "openai/gpt-3-5-turbo-0613",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

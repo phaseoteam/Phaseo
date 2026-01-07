@@ -1,0 +1,7 @@
+{
+  "api_provider_id": "weights-and-biases",
+  "api_provider_name": "Weights & Biases",
+  "description": null,
+  "link": "https://docs.wandb.ai/inference",
+  "country_code": "US"
+}

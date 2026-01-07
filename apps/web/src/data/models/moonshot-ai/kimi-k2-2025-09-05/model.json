@@ -1,0 +1,17 @@
+{
+  "model_id": "moonshot-ai/kimi-k2-2025-09-05",
+  "organisation_id": "moonshot-ai",
+  "name": "Kimi K2 (2025-09-05)",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-09-05T00:00:00",
+  "release_date": "2025-09-05T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

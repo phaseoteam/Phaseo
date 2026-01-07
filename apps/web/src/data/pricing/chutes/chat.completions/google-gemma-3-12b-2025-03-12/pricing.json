@@ -1,0 +1,22 @@
+{
+  "key": "chutes:google/gemma-3-12b-2025-03-12:chat.completions",
+  "api_provider_id": "chutes",
+  "provider_slug": "chutes",
+  "api_model_id": "google/gemma-3-12b-2025-03-12",
+  "internal_model_id": "google/gemma-3-12b-2025-03-12",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-03-12T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "Whole",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 32
+      "rank": 30
     },
     {
       "benchmark_id": "aime-2024",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 36
+      "rank": 31
     },
     {
       "benchmark_id": "aime-2025",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 38
+      "rank": 32
     },
     {
       "benchmark_id": "eqbench",
@@ -71,7 +71,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 29
+      "rank": 28
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 22
+      "rank": 20
     },
     {
       "benchmark_id": "lmarena-text",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": "Lite",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "mmlu",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": "Lite",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "mmmu",
@@ -159,7 +159,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 7
+      "rank": 5
     },
     {
       "benchmark_id": "simpleqa",
@@ -167,7 +167,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 7
+      "rank": 5
     }
   ]
 }

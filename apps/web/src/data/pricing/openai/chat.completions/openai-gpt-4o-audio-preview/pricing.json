@@ -1,0 +1,22 @@
+{
+  "key": "openai:openai/gpt-4o-audio-preview:chat.completions",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-4o-audio-preview",
+  "internal_model_id": "openai/gpt-4o-audio-preview",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "audio",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

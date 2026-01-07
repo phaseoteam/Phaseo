@@ -1,0 +1,22 @@
+{
+  "key": "z-ai:z-ai/glm-4-5v:responses",
+  "api_provider_id": "z-ai",
+  "provider_slug": "z-ai",
+  "api_model_id": "z-ai/glm-4-5v",
+  "internal_model_id": "z-ai/glm-4-5v",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

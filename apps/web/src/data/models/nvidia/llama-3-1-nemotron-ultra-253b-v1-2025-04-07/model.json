@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 24
+      "rank": 22
     },
     {
       "benchmark_id": "gpqa-diamond",

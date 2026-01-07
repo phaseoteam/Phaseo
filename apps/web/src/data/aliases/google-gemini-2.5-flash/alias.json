@@ -1,6 +1,6 @@
 {
   "alias_slug": "google/gemini-2.5-flash",
-  "resolved_model_id": "google/gemini-2-5-flash-preview-2025-05-20",
+  "resolved_api_model_id": "google/gemini-2-5-flash-preview-2025-05-20",
   "channel": "stable",
   "is_enabled": true,
   "notes": null

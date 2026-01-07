@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 16
+      "rank": 15
     },
     {
       "benchmark_id": "aime-2025",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 28
+      "rank": 25
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 11
+      "rank": 9
     },
     {
       "benchmark_id": "if-eval",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 2
+      "rank": 1
     },
     {
       "benchmark_id": "livebench",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "2024-11-25 ",
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 3
+      "rank": 2
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 4
+      "rank": 3
     },
     {
       "benchmark_id": "mmlu-pro",

@@ -1,0 +1,25 @@
+{
+  "key": "google-vertex:google/gemini-3-pro-preview-2025-11-18:chat.completions",
+  "api_provider_id": "google-vertex",
+  "provider_slug": "google-vertex",
+  "api_model_id": "google/gemini-3-pro-preview-2025-11-18",
+  "internal_model_id": "google/gemini-3-pro-preview-2025-11-18",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "audio",
+    "file",
+    "image",
+    "text",
+    "video"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-11-18T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

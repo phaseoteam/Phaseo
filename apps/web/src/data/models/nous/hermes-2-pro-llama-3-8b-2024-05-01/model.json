@@ -1,0 +1,17 @@
+{
+  "model_id": "nous/hermes-2-pro-llama-3-8b-2024-05-01",
+  "organisation_id": "nous",
+  "name": "Hermes 2 Pro Llama 3 8B",
+  "status": "Deprecated",
+  "previous_model_id": null,
+  "announced_date": "2024-05-01T00:00:00",
+  "release_date": "2024-05-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Llama 3 Community License",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

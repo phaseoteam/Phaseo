@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 24
+      "rank": 23
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 10
+      "rank": 9
     },
     {
       "benchmark_id": "mmmu",
@@ -158,7 +158,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 13
+      "rank": 12
     },
     {
       "benchmark_id": "nyt-connections",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 11
+      "rank": 8
     },
     {
       "benchmark_id": "thematic-generalisation",

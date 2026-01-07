@@ -1,0 +1,21 @@
+{
+  "key": "novitaai:meta-llama/llama-3.2-3b-instruct:responses",
+  "api_provider_id": "novitaai",
+  "provider_slug": "novitaai",
+  "api_model_id": "meta-llama/llama-3.2-3b-instruct",
+  "internal_model_id": "meta-llama/llama-3.2-3b-instruct",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

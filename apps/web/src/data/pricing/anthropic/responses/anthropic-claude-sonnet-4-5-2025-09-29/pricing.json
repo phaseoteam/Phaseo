@@ -1,0 +1,23 @@
+{
+  "key": "anthropic:anthropic/claude-sonnet-4-5-2025-09-29:responses",
+  "api_provider_id": "anthropic",
+  "provider_slug": "anthropic",
+  "api_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+  "internal_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "file",
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-09-29T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

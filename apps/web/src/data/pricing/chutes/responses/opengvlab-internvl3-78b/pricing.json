@@ -1,0 +1,22 @@
+{
+  "key": "chutes:opengvlab/internvl3-78b:responses",
+  "api_provider_id": "chutes",
+  "provider_slug": "chutes",
+  "api_model_id": "opengvlab/internvl3-78b",
+  "internal_model_id": "opengvlab/internvl3-78b",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

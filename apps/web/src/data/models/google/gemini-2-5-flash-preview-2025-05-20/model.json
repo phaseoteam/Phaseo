@@ -6,8 +6,8 @@
   "previous_model_id": "google/gemini-2-5-flash-preview-2025-04-17",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": "2025-05-20T00:00:00",
-  "deprecation_date": "2025-07-15T00:00:00",
-  "retirement_date": null,
+  "deprecation_date": "2025-06-15T00:00:00",
+  "retirement_date": "2025-07-15T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image,video,audio",
   "output_types": "text",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 26
+      "rank": 23
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": "Lite",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "mmmu",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 9
+      "rank": 7
     },
     {
       "benchmark_id": "swe-bench",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 15
+      "rank": 13
     }
   ]
 }

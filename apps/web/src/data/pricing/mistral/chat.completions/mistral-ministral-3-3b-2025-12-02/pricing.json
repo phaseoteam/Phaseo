@@ -1,0 +1,22 @@
+{
+  "key": "mistral:mistral/ministral-3-3b-2025-12-02:chat.completions",
+  "api_provider_id": "mistral",
+  "provider_slug": "mistral",
+  "api_model_id": "mistral/ministral-3-3b-2025-12-02",
+  "internal_model_id": "mistral/ministral-3-3b-2025-12-02",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

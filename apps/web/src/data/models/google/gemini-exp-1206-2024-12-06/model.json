@@ -1,0 +1,17 @@
+{
+  "model_id": "google/gemini-exp-1206-2024-12-06",
+  "organisation_id": "google",
+  "name": "Gemini Exp 1206",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2024-12-06T00:00:00",
+  "release_date": "2024-12-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

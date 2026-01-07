@@ -1,0 +1,17 @@
+{
+  "model_id": "mistral/codestral-embed-2025-05-28",
+  "organisation_id": "mistral",
+  "name": "Codestral Embed",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-05-28T00:00:00",
+  "release_date": "2025-05-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "embeddings",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

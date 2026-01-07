@@ -6,8 +6,8 @@
   "previous_model_id": "google/gemini-2-0-flash-2025-02-05",
   "announced_date": "2025-04-17T00:00:00",
   "release_date": "2025-04-17T00:00:00",
-  "deprecation_date": "2025-07-15T00:00:00",
-  "retirement_date": null,
+  "deprecation_date": "2025-06-15T00:00:00",
+  "retirement_date": "2025-07-15T00:00:00",
   "license": "Proprietary",
   "input_types": null,
   "output_types": null,
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Whole",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 22
+      "rank": 21
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Diff-Fenced",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 22
+      "rank": 21
     },
     {
       "benchmark_id": "aime-2024",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 22
+      "rank": 20
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Lite",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "mmlu",
@@ -135,7 +135,7 @@
       "is_self_reported": true,
       "other_info": "Lite",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "mmmu",
@@ -159,7 +159,7 @@
       "is_self_reported": true,
       "other_info": "Thinking",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 8
+      "rank": 6
     },
     {
       "benchmark_id": "simpleqa",
@@ -167,7 +167,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 8
+      "rank": 6
     }
   ]
 }

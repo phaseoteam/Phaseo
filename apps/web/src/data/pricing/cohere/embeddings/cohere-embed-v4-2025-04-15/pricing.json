@@ -1,0 +1,17 @@
+{
+  "key": "cohere:cohere/embed-v4-2025-04-15:embeddings",
+  "api_provider_id": "cohere",
+  "provider_slug": "cohere",
+  "api_model_id": "cohere/embed-v4-2025-04-15",
+  "internal_model_id": "cohere/embed-v4-2025-04-15",
+  "endpoint": "embeddings",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [],
+  "output_modalities": [],
+  "effective_from": "2025-04-15T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

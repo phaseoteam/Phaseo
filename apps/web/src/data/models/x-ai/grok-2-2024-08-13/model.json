@@ -50,7 +50,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 18
+      "rank": 16
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 53
+      "rank": 48
     },
     {
       "benchmark_id": "nyt-connections",
@@ -82,7 +82,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 22
+      "rank": 20
     }
   ]
 }

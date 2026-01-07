@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 27
+      "rank": 24
     },
     {
       "benchmark_id": "confabulations",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 26
+      "rank": 23
     },
     {
       "benchmark_id": "eqbench",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 30
+      "rank": 29
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 46
+      "rank": 42
     },
     {
       "benchmark_id": "lmarena-text",
@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 42
+      "rank": 40
     },
     {
       "benchmark_id": "nyt-connections",
@@ -118,7 +118,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 18
+      "rank": 16
     }
   ]
 }

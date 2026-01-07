@@ -1,0 +1,21 @@
+{
+  "key": "perplexity:perplexity/sonar-deep-research:responses",
+  "api_provider_id": "perplexity",
+  "provider_slug": "perplexity",
+  "api_model_id": "perplexity/sonar-deep-research",
+  "internal_model_id": "perplexity/sonar-deep-research",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

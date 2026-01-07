@@ -2,7 +2,8 @@
   "key": "x-ai:x-ai/grok-4-1-thinking-2025-11-17:chat.completions",
   "api_provider_id": "x-ai",
   "provider_slug": "x-ai",
-  "model_id": "x-ai/grok-4-1-thinking-2025-11-17",
+  "api_model_id": "x-ai/grok-4-1-thinking-2025-11-17",
+  "internal_model_id": "x-ai/grok-4-1-thinking-2025-11-17",
   "endpoint": "chat.completions",
   "provider_model_slug": "grok-4-1-fast-reasoning",
   "is_active_gateway": false,
@@ -13,7 +14,7 @@
   "output_modalities": [
     "text"
   ],
-  "effective_from": "2025-11-19T00:00:00",
+  "effective_from": "2025-11-17T00:00:00",
   "effective_to": null,
   "capability": {},
   "params": [],

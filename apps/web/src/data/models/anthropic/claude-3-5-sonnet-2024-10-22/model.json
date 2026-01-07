@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 21
+      "rank": 20
     },
     {
       "benchmark_id": "aime-2024",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 38
+      "rank": 33
     },
     {
       "benchmark_id": "confabulations",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 21
+      "rank": 20
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 48
+      "rank": 44
     },
     {
       "benchmark_id": "lisanbench",
@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 14
+      "rank": 13
     },
     {
       "benchmark_id": "lmarena-text",

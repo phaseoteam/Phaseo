@@ -1,0 +1,17 @@
+{
+  "model_id": "nous/hermes-2-theta-llama-3-70b-2024-06-20",
+  "organisation_id": "nous",
+  "name": "Hermes 2 Theta Llama 3 70B",
+  "status": "Deprecated",
+  "previous_model_id": null,
+  "announced_date": "2024-06-20T00:00:00",
+  "release_date": "2024-06-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Llama 3 Community License",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

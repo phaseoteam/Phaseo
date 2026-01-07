@@ -2,7 +2,8 @@
   "key": "openai:openai/gpt-4-1-mini-2025-04-14:responses",
   "api_provider_id": "openai",
   "provider_slug": "openai",
-  "model_id": "openai/gpt-4-1-mini-2025-04-14",
+  "api_model_id": "openai/gpt-4-1-mini-2025-04-14",
+  "internal_model_id": "openai/gpt-4-1-mini-2025-04-14",
   "endpoint": "responses",
   "provider_model_slug": "gpt-4.1-mini-2025-04-14",
   "is_active_gateway": false,
@@ -17,5 +18,42 @@
   "effective_to": null,
   "capability": {},
   "params": [],
-  "rules": []
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 4e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1.6e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
 }

@@ -1,0 +1,17 @@
+{
+  "model_id": "lg/k-exaone-2025-12-31",
+  "organisation_id": "lg",
+  "name": "K EXAONE",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-12-31T00:00:00",
+  "release_date": "2025-12-31T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "8 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 3
+      "rank": 2
     },
     {
       "benchmark_id": "humaneval",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "4 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 8
+      "rank": 4
     },
     {
       "benchmark_id": "mmlu",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "5 Shot",
       "source_link": "https://x.ai/news/grok",
-      "rank": 12
+      "rank": 10
     }
   ]
 }

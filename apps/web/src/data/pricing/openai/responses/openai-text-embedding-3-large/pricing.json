@@ -1,0 +1,21 @@
+{
+  "key": "openai:openai/text-embedding-3-large:responses",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/text-embedding-3-large",
+  "internal_model_id": "openai/text-embedding-3-large",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "embeddings"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

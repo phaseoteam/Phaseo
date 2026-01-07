@@ -1,0 +1,23 @@
+{
+  "key": "google-ai-studio:google/gemini-2-5-flash-image-preview:responses",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/gemini-2-5-flash-image-preview",
+  "internal_model_id": "google/gemini-2-5-flash-image-preview",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "image",
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

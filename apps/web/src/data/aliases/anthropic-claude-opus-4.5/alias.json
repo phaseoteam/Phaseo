@@ -1,6 +1,6 @@
 {
   "alias_slug": "anthropic/claude-opus-4.5",
-  "resolved_model_id": "anthropic/claude-opus-4-5-2025-11-24",
+  "resolved_api_model_id": "anthropic/claude-opus-4-5-2025-11-24",
   "channel": "stable",
   "is_enabled": true,
   "notes": null

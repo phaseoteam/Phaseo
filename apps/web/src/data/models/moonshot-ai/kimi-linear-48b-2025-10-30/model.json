@@ -1,0 +1,17 @@
+{
+  "model_id": "moonshot-ai/kimi-linear-48b-2025-10-30",
+  "organisation_id": "moonshot-ai",
+  "name": "Kimi Linear 48B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-10-30T00:00:00",
+  "release_date": "2025-10-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

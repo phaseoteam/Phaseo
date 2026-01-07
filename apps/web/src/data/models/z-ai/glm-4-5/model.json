@@ -28,7 +28,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 7
+      "rank": 6
     },
     {
       "benchmark_id": "eqbench",
@@ -36,7 +36,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "matharena-apex",

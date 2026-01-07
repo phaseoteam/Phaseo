@@ -1,0 +1,22 @@
+{
+  "key": "sourceful:sourceful/riverflow-v2-standard-preview:chat.completions",
+  "api_provider_id": "sourceful",
+  "provider_slug": "sourceful",
+  "api_model_id": "sourceful/riverflow-v2-standard-preview",
+  "internal_model_id": "sourceful/riverflow-v2-standard-preview",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "image"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

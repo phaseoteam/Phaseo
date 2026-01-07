@@ -1,0 +1,17 @@
+{
+  "model_id": "naver-hyperclova/hyperclova-x-seed-omni-8b-2025-12-29",
+  "organisation_id": "naver-hyperclova",
+  "name": "HyperClova X Seed Omni 8B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-12-29T00:00:00",
+  "release_date": "2025-12-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "HyperCLOVA X Custom License",
+  "input_types": "text,image,video,audio",
+  "output_types": "text,image,audio",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

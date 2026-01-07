@@ -1,0 +1,22 @@
+{
+  "key": "deepinfra:microsoft/phi-4-multimodal-instruct-2025-02-01:responses",
+  "api_provider_id": "deepinfra",
+  "provider_slug": "deepinfra",
+  "api_model_id": "microsoft/phi-4-multimodal-instruct-2025-02-01",
+  "internal_model_id": "microsoft/phi-4-multimodal-instruct-2025-02-01",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-02-01T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

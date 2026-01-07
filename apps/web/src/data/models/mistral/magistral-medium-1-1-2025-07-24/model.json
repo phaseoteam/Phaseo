@@ -1,0 +1,17 @@
+{
+  "model_id": "mistral/magistral-medium-1-1-2025-07-24",
+  "organisation_id": "mistral",
+  "name": "Magistral Medium 1.1",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2025-07-24T00:00:00",
+  "release_date": "2025-07-24T00:00:00",
+  "deprecation_date": "2025-10-31T00:00:00",
+  "retirement_date": "2025-11-30T00:00:00",
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

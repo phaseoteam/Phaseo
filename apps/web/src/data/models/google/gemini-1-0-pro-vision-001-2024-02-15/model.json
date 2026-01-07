@@ -1,0 +1,17 @@
+{
+  "model_id": "google/gemini-1-0-pro-vision-001-2024-02-15",
+  "organisation_id": "google",
+  "name": "Gemini 1.0 Pro Vision 001",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2024-02-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": "2025-04-21T00:00:00",
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

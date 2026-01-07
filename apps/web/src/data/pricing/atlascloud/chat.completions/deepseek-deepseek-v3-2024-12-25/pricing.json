@@ -1,0 +1,21 @@
+{
+  "key": "atlascloud:deepseek/deepseek-v3-2024-12-25:chat.completions",
+  "api_provider_id": "atlascloud",
+  "provider_slug": "atlascloud",
+  "api_model_id": "deepseek/deepseek-v3-2024-12-25",
+  "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

@@ -171,7 +171,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 6
+      "rank": 5
     },
     {
       "benchmark_id": "eqbench",
@@ -179,7 +179,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 6
+      "rank": 5
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -195,7 +195,7 @@
       "is_self_reported": false,
       "other_info": "32k Thinking",
       "source_link": "https://livebench.ai/#/",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "livebench",
@@ -203,7 +203,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "lmarena-text",

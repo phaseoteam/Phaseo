@@ -1,6 +1,6 @@
 {
   "alias_slug": "google/gemini-3-flash",
-  "resolved_model_id": "google/gemini-3-flash-preview-2025-12-17",
+  "resolved_api_model_id": "google/gemini-3-flash-preview-2025-12-17",
   "channel": "preview",
   "is_enabled": true,
   "notes": null

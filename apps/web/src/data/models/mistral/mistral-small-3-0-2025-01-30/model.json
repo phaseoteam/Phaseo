@@ -1,0 +1,17 @@
+{
+  "model_id": "mistral/mistral-small-3-0-2025-01-30",
+  "organisation_id": "mistral",
+  "name": "Mistral Small 3.0",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2025-01-30T00:00:00",
+  "release_date": "2025-01-30T00:00:00",
+  "deprecation_date": "2025-11-06T00:00:00",
+  "retirement_date": "2025-11-30T00:00:00",
+  "license": "Apache 2.0",
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

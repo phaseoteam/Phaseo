@@ -1,0 +1,17 @@
+{
+  "model_id": "minimax/i2v-01-director-2025-02-11",
+  "organisation_id": "minimax",
+  "name": "I2V 01 Director",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-02-11T00:00:00",
+  "release_date": "2025-02-11T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

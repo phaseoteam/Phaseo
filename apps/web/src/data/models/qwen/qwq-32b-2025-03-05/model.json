@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://sciarena.allen.ai/",
-      "rank": 14
+      "rank": 13
     },
     {
       "benchmark_id": "aime-2024",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 13
+      "rank": 12
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen-ai.com/qwq-32b/",
-      "rank": 47
+      "rank": 43
     }
   ]
 }

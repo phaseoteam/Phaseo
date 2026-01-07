@@ -1,0 +1,21 @@
+{
+  "key": "mistral:mistral/codestral-embed-2505:responses",
+  "api_provider_id": "mistral",
+  "provider_slug": "mistral",
+  "api_model_id": "mistral/codestral-embed-2505",
+  "internal_model_id": "mistral/codestral-embed-2505",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "embeddings"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

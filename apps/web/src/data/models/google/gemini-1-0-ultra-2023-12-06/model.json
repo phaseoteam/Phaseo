@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://artificialanalysis.ai/models/gemini-1-0-ultra",
-      "rank": 86
+      "rank": 76
     },
     {
       "benchmark_id": "humaneval",
@@ -50,7 +50,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://openai.com/index/hello-gpt-4o/",
-      "rank": 5
+      "rank": 2
     },
     {
       "benchmark_id": "mmlu",
@@ -58,7 +58,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://openai.com/index/hello-gpt-4o/",
-      "rank": 8
+      "rank": 6
     }
   ]
 }

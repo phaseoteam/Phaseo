@@ -1,0 +1,27 @@
+{
+  "model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+  "organisation_id": "moonshot-ai",
+  "name": "Kimi K2 Thinking",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-11-06T00:00:00",
+  "release_date": "2025-11-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "family_id": "moonshotai/kimi-k2",
+  "links": [
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/moonshotai/Kimi-K2-Thinking"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://x.com/kimi_moonshot/status/1986449512538513505?s=46"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,0 +1,17 @@
+{
+  "model_id": "mistral/mistral-medium-3-0-2025-05-07",
+  "organisation_id": "mistral",
+  "name": "Mistral Medium 3.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-05-07T00:00:00",
+  "release_date": "2025-05-07T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

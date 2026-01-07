@@ -1,0 +1,21 @@
+{
+  "key": "openai:openai/gpt-3.5-turbo-instruct:chat.completions",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-3.5-turbo-instruct",
+  "internal_model_id": "openai/gpt-3.5-turbo-instruct",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

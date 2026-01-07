@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
-      "rank": 30
+      "rank": 26
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwq-32b-preview/",
-      "rank": 47
+      "rank": 43
     }
   ]
 }

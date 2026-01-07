@@ -2,12 +2,12 @@
   "model_id": "google/gemini-2-5-pro-preview-2025-06-05",
   "organisation_id": "google",
   "name": "Gemini 2.5 Pro Preview (2025-06-05)",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": "google/gemini-2-5-pro-preview-2025-05-06",
   "announced_date": "2025-06-05T00:00:00",
   "release_date": "2025-06-05T00:00:00",
-  "deprecation_date": "2026-06-17T00:00:00",
-  "retirement_date": null,
+  "deprecation_date": "2025-06-15T00:00:00",
+  "retirement_date": "2025-07-15T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image,video,audio",
   "output_types": "text",
@@ -143,7 +143,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 24
+      "rank": 22
     },
     {
       "benchmark_id": "eqbench",
@@ -151,7 +151,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 3
+      "rank": 2
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -191,7 +191,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 3
+      "rank": 2
     },
     {
       "benchmark_id": "mmmu",
@@ -231,7 +231,7 @@
       "is_self_reported": true,
       "other_info": "Multiple Attempts",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 9
+      "rank": 8
     },
     {
       "benchmark_id": "swe-bench",
@@ -239,7 +239,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 9
+      "rank": 8
     },
     {
       "benchmark_id": "thematic-generalisation",

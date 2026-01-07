@@ -1,0 +1,18 @@
+{
+  "model_id": "google/gemma-3n-e2b-2025-06-25",
+  "organisation_id": "google",
+  "name": "Gemma 3n E2B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-05-20T00:00:00",
+  "release_date": "2025-06-25T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "family_id": "google/gemma-3",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -63,7 +63,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://artificialanalysis.ai/models/jamba-1-6-large#intelligence-evaluations",
-      "rank": 80
+      "rank": 71
     },
     {
       "benchmark_id": "if-eval",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 7
+      "rank": 6
     }
   ]
 }

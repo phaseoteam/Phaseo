@@ -1,0 +1,17 @@
+{
+  "model_id": "google/chat-bison-2023-05-01",
+  "organisation_id": "google",
+  "name": "Chat Bison",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2023-05-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": "2025-04-21T00:00:00",
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

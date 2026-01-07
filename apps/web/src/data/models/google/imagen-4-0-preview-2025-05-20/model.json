@@ -1,0 +1,18 @@
+{
+  "model_id": "google/imagen-4-0-preview-2025-05-20",
+  "organisation_id": "google",
+  "name": "Imagen 4.0 Preview",
+  "status": "Retired",
+  "previous_model_id": "google/imagen-3-0-generate-002-2025-02-06",
+  "announced_date": "2025-05-20T00:00:00",
+  "release_date": "2025-05-20T00:00:00",
+  "deprecation_date": "2025-06-11T00:00:00",
+  "retirement_date": "2025-07-07T00:00:00",
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "family_id": "google/imagen-4",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

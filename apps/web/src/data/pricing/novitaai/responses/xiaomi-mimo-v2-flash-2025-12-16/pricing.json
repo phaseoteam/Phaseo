@@ -1,0 +1,61 @@
+{
+  "key": "novitaai:xiaomi/mimo-v2-flash-2025-12-16:responses",
+  "api_provider_id": "novitaai",
+  "provider_slug": "novitaai",
+  "api_model_id": "xiaomi/mimo-v2-flash-2025-12-16",
+  "internal_model_id": "xiaomi/mimo-v2-flash-2025-12-16",
+  "endpoint": "responses",
+  "provider_model_slug": "xiaomimimo/mimo-v2-flash",
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-12-16T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-01-01T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-08,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-01-01T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 3e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-01-01T00:00:00"
+    }
+  ]
+}

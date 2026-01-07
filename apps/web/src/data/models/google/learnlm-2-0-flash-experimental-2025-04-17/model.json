@@ -1,0 +1,17 @@
+{
+  "model_id": "google/learnlm-2-0-flash-experimental-2025-04-17",
+  "organisation_id": "google",
+  "name": "LearnLM 2.0 Flash Experimental",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2025-04-17T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": "2025-11-17T00:00:00",
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

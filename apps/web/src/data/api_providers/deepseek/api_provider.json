@@ -1,7 +1,7 @@
 {
   "api_provider_id": "deepseek",
-  "api_provider_name": "Deepseek",
+  "api_provider_name": "DeepSeek",
   "description": null,
   "link": "https://api-docs.deepseek.com/",
-  "country_code": "US"
+  "country_code": "CA"
 }

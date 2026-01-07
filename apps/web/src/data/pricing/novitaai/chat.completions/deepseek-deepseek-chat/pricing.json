@@ -1,0 +1,21 @@
+{
+  "key": "novitaai:deepseek/deepseek-chat:chat.completions",
+  "api_provider_id": "novitaai",
+  "provider_slug": "novitaai",
+  "api_model_id": "deepseek/deepseek-chat",
+  "internal_model_id": "deepseek/deepseek-chat",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

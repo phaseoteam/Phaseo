@@ -1,0 +1,21 @@
+{
+  "key": "novitaai:baidu/ernie-4-5-21b-a3b-thinking:responses",
+  "api_provider_id": "novitaai",
+  "provider_slug": "novitaai",
+  "api_model_id": "baidu/ernie-4-5-21b-a3b-thinking",
+  "internal_model_id": "baidu/ernie-4-5-21b-a3b-thinking",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

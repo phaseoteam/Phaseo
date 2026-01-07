@@ -1,0 +1,17 @@
+{
+  "model_id": "google/image-text-2023-06-07",
+  "organisation_id": "google",
+  "name": "Image Text",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": "2023-06-07T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": "2025-09-24T00:00:00",
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

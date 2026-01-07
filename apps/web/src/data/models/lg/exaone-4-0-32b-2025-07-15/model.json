@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B",
-      "rank": 4
+      "rank": 3
     },
     {
       "benchmark_id": "if-eval",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B",
-      "rank": 4
+      "rank": 3
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -171,7 +171,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B",
-      "rank": 4
+      "rank": 3
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -179,7 +179,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-32B",
-      "rank": 4
+      "rank": 3
     },
     {
       "benchmark_id": "tau-bench-airline",

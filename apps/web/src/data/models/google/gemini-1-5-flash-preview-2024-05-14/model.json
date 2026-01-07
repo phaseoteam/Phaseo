@@ -1,0 +1,17 @@
+{
+  "model_id": "google/gemini-1-5-flash-preview-2024-05-14",
+  "organisation_id": "google",
+  "name": "Gemini 1.5 Flash Preview (2024-05-14)",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2024-05-14T00:00:00",
+  "release_date": "2024-05-14T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

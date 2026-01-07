@@ -1,0 +1,22 @@
+{
+  "key": "anthropic:anthropic/claude-3-haiku-2024-03-13:responses",
+  "api_provider_id": "anthropic",
+  "provider_slug": "anthropic",
+  "api_model_id": "anthropic/claude-3-haiku-2024-03-13",
+  "internal_model_id": "anthropic/claude-3-haiku-2024-03-13",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2024-03-13T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

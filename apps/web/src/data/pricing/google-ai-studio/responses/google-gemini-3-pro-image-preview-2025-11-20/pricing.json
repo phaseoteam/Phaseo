@@ -1,0 +1,23 @@
+{
+  "key": "google-ai-studio:google/gemini-3-pro-image-preview-2025-11-20:responses",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/gemini-3-pro-image-preview-2025-11-20",
+  "internal_model_id": "google/gemini-3-pro-image-preview-2025-11-20",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "image",
+    "text"
+  ],
+  "effective_from": "2025-11-20T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

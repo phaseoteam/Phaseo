@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 31
+      "rank": 30
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
-      "rank": 63
+      "rank": 57
     },
     {
       "benchmark_id": "lmarena-text",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 40
+      "rank": 38
     },
     {
       "benchmark_id": "nyt-connections",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 32
+      "rank": 31
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -94,7 +94,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 22
+      "rank": 20
     }
   ]
 }

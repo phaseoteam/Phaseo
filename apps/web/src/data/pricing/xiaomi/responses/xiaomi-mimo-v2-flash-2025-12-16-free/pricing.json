@@ -1,0 +1,50 @@
+{
+  "key": "xiaomi:xiaomi/mimo-v2-flash-2025-12-16:free:responses",
+  "api_provider_id": "xiaomi",
+  "provider_slug": "xiaomi",
+  "api_model_id": "xiaomi/mimo-v2-flash-2025-12-16:free",
+  "internal_model_id": "xiaomi/mimo-v2-flash-2025-12-16",
+  "endpoint": "responses",
+  "provider_model_slug": "mimo-v2-flash",
+  "is_active_gateway": true,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-12-16T00:00:00",
+  "effective_to": "2026-01-20T06:00:00",
+  "capability": {},
+  "params": [],
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 0.0,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "Free Endpoint",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00",
+      "effective_to": "2026-01-20T06:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 0.0,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "Free Endpoint",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00",
+      "effective_to": "2026-01-20T06:00:00"
+    }
+  ]
+}

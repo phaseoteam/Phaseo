@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-3-opus-2024-03-04",
   "organisation_id": "anthropic",
   "name": "Claude 3 Opus",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "anthropic/claude-2-1-2023-11-22",
   "announced_date": "2024-03-04T00:00:00",
   "release_date": "2024-03-04T00:00:00",
@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 34
+      "rank": 32
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-3-family",
-      "rank": 60
+      "rank": 54
     },
     {
       "benchmark_id": "lisanbench",

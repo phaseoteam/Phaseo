@@ -1,0 +1,21 @@
+{
+  "key": "atlascloud:deepseek/deepseek-v3-1-terminus-2025-09-22:responses",
+  "api_provider_id": "atlascloud",
+  "provider_slug": "atlascloud",
+  "api_model_id": "deepseek/deepseek-v3-1-terminus-2025-09-22",
+  "internal_model_id": "deepseek/deepseek-v3-1-terminus-2025-09-22",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-09-22T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 28
+      "rank": 26
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
-      "rank": 49
+      "rank": 45
     },
     {
       "benchmark_id": "lmarena-text",
@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 30
+      "rank": 28
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -110,7 +110,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 14
+      "rank": 13
     }
   ]
 }

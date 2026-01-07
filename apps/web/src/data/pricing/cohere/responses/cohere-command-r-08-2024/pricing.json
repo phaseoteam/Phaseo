@@ -1,0 +1,21 @@
+{
+  "key": "cohere:cohere/command-r-08-2024:responses",
+  "api_provider_id": "cohere",
+  "provider_slug": "cohere",
+  "api_model_id": "cohere/command-r-08-2024",
+  "internal_model_id": "cohere/command-r-08-2024",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

@@ -131,7 +131,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 20
+      "rank": 18
     },
     {
       "benchmark_id": "eqbench",
@@ -139,7 +139,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 7
+      "rank": 6
     },
     {
       "benchmark_id": "factscore-halluciation-rate",
@@ -203,7 +203,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 7
+      "rank": 6
     },
     {
       "benchmark_id": "livebench",
@@ -211,7 +211,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 7
+      "rank": 6
     },
     {
       "benchmark_id": "lmarena-text",

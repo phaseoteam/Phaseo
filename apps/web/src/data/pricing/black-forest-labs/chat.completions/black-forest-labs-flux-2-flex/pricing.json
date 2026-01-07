@@ -1,0 +1,22 @@
+{
+  "key": "black-forest-labs:black-forest-labs/flux-2-flex:chat.completions",
+  "api_provider_id": "black-forest-labs",
+  "provider_slug": "black-forest-labs",
+  "api_model_id": "black-forest-labs/flux-2-flex",
+  "internal_model_id": "black-forest-labs/flux-2-flex-2025-11-25",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "image"
+  ],
+  "effective_from": "2025-11-25T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

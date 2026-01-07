@@ -1,0 +1,21 @@
+{
+  "key": "parasail:qwen/qwen3-235b-a22b-2507:responses",
+  "api_provider_id": "parasail",
+  "provider_slug": "parasail",
+  "api_model_id": "qwen/qwen3-235b-a22b-2507",
+  "internal_model_id": "qwen/qwen3-235b-a22b-2507",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

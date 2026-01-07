@@ -1,0 +1,21 @@
+{
+  "key": "liquid-ai:liquid/lfm2-8b-a1b:responses",
+  "api_provider_id": "liquid-ai",
+  "provider_slug": "liquid-ai",
+  "api_model_id": "liquid/lfm2-8b-a1b",
+  "internal_model_id": "liquid/lfm2-8b-a1b",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

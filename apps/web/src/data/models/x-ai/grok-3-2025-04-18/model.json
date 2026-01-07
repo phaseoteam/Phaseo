@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 27
+      "rank": 23
     },
     {
       "benchmark_id": "aime-2025",
@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 34
+      "rank": 29
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -66,7 +66,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 27
+      "rank": 26
     },
     {
       "benchmark_id": "gpqa-diamond",

@@ -1,0 +1,17 @@
+{
+  "model_id": "minimax/minimax-m2-1-2025-12-23",
+  "organisation_id": "minimax",
+  "name": "MiniMax M2.1",
+  "status": "Available",
+  "previous_model_id": "minimax/minimax-m2-2025-10-27",
+  "announced_date": "2025-12-23T00:00:00",
+  "release_date": "2025-12-23T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

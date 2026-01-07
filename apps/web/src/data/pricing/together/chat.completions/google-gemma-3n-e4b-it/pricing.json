@@ -1,0 +1,21 @@
+{
+  "key": "together:google/gemma-3n-e4b-it:chat.completions",
+  "api_provider_id": "together",
+  "provider_slug": "together",
+  "api_model_id": "google/gemma-3n-e4b-it",
+  "internal_model_id": "google/gemma-3n-e4b-it",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

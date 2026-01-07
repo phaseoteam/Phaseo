@@ -1,0 +1,17 @@
+{
+  "model_id": "minimax/hailuo-02-2025-06-18",
+  "organisation_id": "minimax",
+  "name": "Hailuo 02",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-06-18T00:00:00",
+  "release_date": "2025-06-18T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

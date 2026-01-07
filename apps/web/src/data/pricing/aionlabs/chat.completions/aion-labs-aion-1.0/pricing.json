@@ -1,0 +1,21 @@
+{
+  "key": "aionlabs:aion-labs/aion-1.0:chat.completions",
+  "api_provider_id": "aionlabs",
+  "provider_slug": "aionlabs",
+  "api_model_id": "aion-labs/aion-1.0",
+  "internal_model_id": "aion-labs/aion-1.0",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

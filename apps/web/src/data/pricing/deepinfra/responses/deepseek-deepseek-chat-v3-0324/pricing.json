@@ -1,0 +1,21 @@
+{
+  "key": "deepinfra:deepseek/deepseek-chat-v3-0324:responses",
+  "api_provider_id": "deepinfra",
+  "provider_slug": "deepinfra",
+  "api_model_id": "deepseek/deepseek-chat-v3-0324",
+  "internal_model_id": "deepseek/deepseek-chat-v3-0324",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

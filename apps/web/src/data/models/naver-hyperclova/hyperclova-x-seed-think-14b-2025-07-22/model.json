@@ -1,0 +1,17 @@
+{
+  "model_id": "naver-hyperclova/hyperclova-x-seed-think-14b-2025-07-22",
+  "organisation_id": "naver-hyperclova",
+  "name": "HyperClova X Seed Think 14B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-07-22T00:00:00",
+  "release_date": "2025-07-22T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "HyperCLOVA X Custom License",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

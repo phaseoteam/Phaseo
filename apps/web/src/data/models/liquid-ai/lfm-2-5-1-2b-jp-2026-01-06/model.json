@@ -1,0 +1,17 @@
+{
+  "model_id": "liquid-ai/lfm-2-5-1-2b-jp-2026-01-06",
+  "organisation_id": "liquid-ai",
+  "name": "LFM 2.5 1.2B JP",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-06T00:00:00",
+  "release_date": "2026-01-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

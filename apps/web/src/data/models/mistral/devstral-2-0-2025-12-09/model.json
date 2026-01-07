@@ -1,0 +1,17 @@
+{
+  "model_id": "mistral/devstral-2-0-2025-12-09",
+  "organisation_id": "mistral",
+  "name": "Devstral 2.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-12-09T00:00:00",
+  "release_date": "2025-12-09T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

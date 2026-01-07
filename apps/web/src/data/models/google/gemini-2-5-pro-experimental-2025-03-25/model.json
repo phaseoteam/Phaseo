@@ -1,0 +1,18 @@
+{
+  "model_id": "google/gemini-2-5-pro-experimental-2025-03-25",
+  "organisation_id": "google",
+  "name": "Gemini 2.5 Pro Experimental (2025-03-25)",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2025-03-25T00:00:00",
+  "release_date": "2025-03-25T00:00:00",
+  "deprecation_date": "2025-06-15T00:00:00",
+  "retirement_date": "2025-07-15T00:00:00",
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "family_id": "google/gemini-2-5",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

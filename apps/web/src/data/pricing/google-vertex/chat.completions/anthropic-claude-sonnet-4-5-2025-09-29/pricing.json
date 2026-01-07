@@ -1,0 +1,23 @@
+{
+  "key": "google-vertex:anthropic/claude-sonnet-4-5-2025-09-29:chat.completions",
+  "api_provider_id": "google-vertex",
+  "provider_slug": "google-vertex",
+  "api_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+  "internal_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "file",
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-09-29T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

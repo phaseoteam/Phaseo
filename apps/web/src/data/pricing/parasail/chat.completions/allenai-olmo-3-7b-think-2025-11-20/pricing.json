@@ -1,0 +1,21 @@
+{
+  "key": "parasail:allenai/olmo-3-7b-think-2025-11-20:chat.completions",
+  "api_provider_id": "parasail",
+  "provider_slug": "parasail",
+  "api_model_id": "allenai/olmo-3-7b-think-2025-11-20",
+  "internal_model_id": "allenai/olmo-3-7b-think-2025-11-20",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-11-20T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

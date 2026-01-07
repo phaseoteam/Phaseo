@@ -1,0 +1,17 @@
+{
+  "model_id": "minimax/music-1-5-2025-06-20",
+  "organisation_id": "minimax",
+  "name": "Music 1.5",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-06-20T00:00:00",
+  "release_date": "2025-06-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

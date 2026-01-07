@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 91
+      "rank": 80
     },
     {
       "benchmark_id": "lmarena-text",
@@ -55,7 +55,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 62
+      "rank": 60
     }
   ]
 }

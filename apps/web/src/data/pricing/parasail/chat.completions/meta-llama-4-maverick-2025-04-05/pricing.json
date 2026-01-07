@@ -1,0 +1,22 @@
+{
+  "key": "parasail:meta/llama-4-maverick-2025-04-05:chat.completions",
+  "api_provider_id": "parasail",
+  "provider_slug": "parasail",
+  "api_model_id": "meta/llama-4-maverick-2025-04-05",
+  "internal_model_id": "meta/llama-4-maverick-2025-04-05",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "image",
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-04-05T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

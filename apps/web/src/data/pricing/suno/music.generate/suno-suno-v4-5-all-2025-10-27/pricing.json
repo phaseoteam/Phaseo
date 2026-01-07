@@ -1,0 +1,35 @@
+{
+  "key": "suno:suno/suno-v4-5-all-2025-10-27:music.generate",
+  "api_provider_id": "suno",
+  "provider_slug": "suno",
+  "api_model_id": "suno/suno-v4-5-all-2025-10-27",
+  "internal_model_id": "suno/suno-v4-5-all-2025-10-27",
+  "endpoint": "music.generate",
+  "provider_model_slug": "V4_5ALL",
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "audio"
+  ],
+  "effective_from": "2025-10-27T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-10-27T00:00:00"
+    }
+  ]
+}

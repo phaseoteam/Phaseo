@@ -1,0 +1,17 @@
+{
+  "model_id": "moonshot-ai/kimi-vl-a3b-thinking-2025-06-21",
+  "organisation_id": "moonshot-ai",
+  "name": "Kimi VL A3B Thinking (2025-06-21)",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-06-21T00:00:00",
+  "release_date": "2025-06-21T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

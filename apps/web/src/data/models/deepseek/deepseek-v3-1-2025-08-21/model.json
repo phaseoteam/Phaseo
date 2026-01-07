@@ -1,0 +1,17 @@
+{
+  "model_id": "deepseek/deepseek-v3-1-2025-08-21",
+  "organisation_id": "deepseek",
+  "name": "DeepSeek V3.1",
+  "status": "Retired",
+  "previous_model_id": null,
+  "announced_date": "2025-08-21T00:00:00",
+  "release_date": "2025-08-21T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

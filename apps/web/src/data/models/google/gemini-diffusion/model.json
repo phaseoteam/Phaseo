@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 39
+      "rank": 33
     },
     {
       "benchmark_id": "bigcodebench",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 77
+      "rank": 68
     },
     {
       "benchmark_id": "humaneval",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 11
+      "rank": 9
     },
     {
       "benchmark_id": "swe-bench",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 22
+      "rank": 20
     }
   ]
 }

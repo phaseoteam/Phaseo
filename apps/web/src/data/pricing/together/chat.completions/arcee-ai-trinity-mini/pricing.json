@@ -1,0 +1,21 @@
+{
+  "key": "together:arcee-ai/trinity-mini:chat.completions",
+  "api_provider_id": "together",
+  "provider_slug": "together",
+  "api_model_id": "arcee-ai/trinity-mini",
+  "internal_model_id": "arcee-ai/trinity-mini-2025-12-01",
+  "endpoint": "chat.completions",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": "2025-12-01T00:00:00",
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

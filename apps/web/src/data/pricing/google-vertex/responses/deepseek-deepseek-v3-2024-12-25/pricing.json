@@ -1,0 +1,21 @@
+{
+  "key": "google-vertex:deepseek/deepseek-v3-2024-12-25:responses",
+  "api_provider_id": "google-vertex",
+  "provider_slug": "google-vertex",
+  "api_model_id": "deepseek/deepseek-v3-2024-12-25",
+  "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
+  "endpoint": "responses",
+  "provider_model_slug": null,
+  "is_active_gateway": false,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ],
+  "effective_from": null,
+  "effective_to": null,
+  "capability": {},
+  "params": [],
+  "rules": []
+}

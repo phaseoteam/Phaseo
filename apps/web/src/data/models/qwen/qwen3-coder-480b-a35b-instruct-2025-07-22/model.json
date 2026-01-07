@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": "OpenHands Scaffold, 500 Turns",
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 8
+      "rank": 7
     },
     {
       "benchmark_id": "swe-bench",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": "OpenHands Scaffold, 100 Turns",
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 8
+      "rank": 7
     },
     {
       "benchmark_id": "swe-bench-live",
