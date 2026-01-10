@@ -30,6 +30,16 @@ Generally, 4xx status codes indicate a misconfiguration on your end, such as inv
 
 5xx status codes point to gateway or provider-side issues. If you encounter these repeatedly, please report them to our support team for investigation.
 
+---
+
+## Strictness controls
+
+Use `X-AIStats-Strictness` to control how the gateway handles unsupported parameters:
+
+- `warn` (default): accept the request and log warnings.
+- `error`: reject if required parameters are unsupported.
+- `off`: best-effort behavior with no warnings.
+
 > We will always try and return helpful error messages, but if you see something unclear, please let us know!
 
 ---
