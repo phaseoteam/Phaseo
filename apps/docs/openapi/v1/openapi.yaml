@@ -212,6 +212,27 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ResponsesResponse"
+    /messages:
+        post:
+            operationId: createAnthropicMessage
+            summary: Create message
+            description: Creates a message using the Anthropic Messages API.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/AnthropicMessagesRequest"
+            responses:
+                "200":
+                    description: Message response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/AnthropicMessagesResponse"
+                        text/event-stream:
+                            schema:
+                                type: string
     /embeddings:
         post:
             operationId: createEmbedding
@@ -823,6 +844,144 @@ components:
                 completion_tokens:
                     type: integer
                 total_tokens:
+                    type: integer
+        AnthropicMessagesRequest:
+            type: object
+            required:
+                - model
+                - messages
+            properties:
+                model:
+                    type: string
+                system:
+                    oneOf:
+                        - type: string
+                        - type: array
+                          items:
+                              type: object
+                messages:
+                    type: array
+                    minItems: 1
+                    items:
+                        $ref: "#/components/schemas/AnthropicMessage"
+                max_tokens:
+                    type: integer
+                    minimum: 1
+                temperature:
+                    type: number
+                    minimum: 0
+                    maximum: 2
+                top_p:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                top_k:
+                    type: integer
+                    minimum: 1
+                tools:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/AnthropicTool"
+                tool_choice:
+                    oneOf:
+                        - type: string
+                        - type: object
+                stream:
+                    type: boolean
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+        AnthropicMessagesResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                type:
+                    type: string
+                role:
+                    type: string
+                    enum:
+                        - assistant
+                model:
+                    type: string
+                content:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/AnthropicContentBlock"
+                stop_reason:
+                    type: string
+                stop_sequence:
+                    type: string
+                usage:
+                    $ref: "#/components/schemas/AnthropicUsage"
+        AnthropicMessage:
+            type: object
+            required:
+                - role
+                - content
+            properties:
+                role:
+                    type: string
+                    enum:
+                        - user
+                        - assistant
+                content:
+                    oneOf:
+                        - type: string
+                        - type: array
+                          items:
+                              $ref: "#/components/schemas/AnthropicContentBlock"
+        AnthropicContentBlock:
+            type: object
+            properties:
+                type:
+                    type: string
+                    enum:
+                        - text
+                        - image
+                        - tool_use
+                        - tool_result
+                text:
+                    type: string
+                source:
+                    type: object
+                    properties:
+                        type:
+                            type: string
+                        media_type:
+                            type: string
+                        data:
+                            type: string
+                        url:
+                            type: string
+                id:
+                    type: string
+                name:
+                    type: string
+                input:
+                    type: object
+                tool_use_id:
+                    type: string
+                content:
+                    type: string
+        AnthropicTool:
+            type: object
+            required:
+                - name
+            properties:
+                name:
+                    type: string
+                description:
+                    type: string
+                input_schema:
+                    type: object
+        AnthropicUsage:
+            type: object
+            properties:
+                input_tokens:
+                    type: integer
+                output_tokens:
                     type: integer
         ResponsesRequest:
             type: object

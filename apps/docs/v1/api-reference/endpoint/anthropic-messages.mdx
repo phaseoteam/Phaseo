@@ -1,0 +1,21 @@
+---
+title: "Anthropic Messages"
+description: "Anthropic-compatible Messages endpoint at /v1/messages."
+---
+
+Use `/v1/messages` to send Anthropic Messages API payloads through the gateway. The gateway normalizes your request into its internal IR, routes it to a compatible provider surface, and emits Anthropic-formatted responses.
+
+## Endpoint
+
+```http
+POST /v1/messages
+```
+
+## Streaming
+
+Set `stream: true` to receive server-sent events in Anthropic format (`message_start`, `content_block_*`, `message_delta`, `message_stop`).
+
+## Notes
+
+- The gateway honors the Anthropic request shape and supports tool use fields.
+- The `X-AIStats-Strictness` header controls how unsupported parameters are handled.

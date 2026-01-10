@@ -50,18 +50,28 @@
 									"v1/developers/authentication"
 								]
 							},
-							{
-								"group": "Advanced Usage",
-								"pages": [
-									"v1/developers/best-practices",
-									"v1/developers/error-handling",
-									"v1/developers/rate-limits"
-								]
-							},
-							{
-								"group": "Research & Methodology",
-								"pages": ["v1/research/citation"]
-							}
+                                                        {
+                                                                "group": "Advanced Usage",
+                                                                "pages": [
+                                                                        "v1/developers/best-practices",
+                                                                        "v1/developers/error-handling",
+                                                                        "v1/developers/rate-limits"
+                                                                ]
+                                                        },
+                                                        {
+                                                                "group": "Gateway Architecture",
+                                                                "pages": [
+                                                                        "v1/developers/gateway-architecture/overview",
+                                                                        "v1/developers/gateway-architecture/ir-and-protocols",
+                                                                        "v1/developers/gateway-architecture/routes",
+                                                                        "v1/developers/gateway-architecture/providers",
+                                                                        "v1/developers/gateway-architecture/observability"
+                                                                ]
+                                                        },
+                                                        {
+                                                                "group": "Research & Methodology",
+                                                                "pages": ["v1/research/citation"]
+                                                        }
 						]
 					},
 					{
@@ -76,15 +86,19 @@
 									"v1/api-reference/errors"
 								]
 							},
-							{
-								"group": "Responses",
-								"pages": ["v1/api-reference/endpoint/responses"]
-							},
-							{
-								"group": "Completions",
-								"pages": [
-									"v1/api-reference/endpoint/chat-completions"
-								]
+                                                        {
+                                                                "group": "Responses",
+                                                                "pages": ["v1/api-reference/endpoint/responses"]
+                                                        },
+                                                        {
+                                                                "group": "Anthropic",
+                                                                "pages": ["v1/api-reference/endpoint/anthropic-messages"]
+                                                        },
+                                                        {
+                                                                "group": "Completions",
+                                                                "pages": [
+                                                                        "v1/api-reference/endpoint/chat-completions"
+                                                                ]
 							},
 							{
 								"group": "Images",
@@ -511,7 +525,17 @@
 						"groups": [
 							{
 								"group": "Latest updates",
-								"pages": ["v1/changelog"]
+								"pages": ["v1/changelog", "v1/data-changelog"]
+							}
+						]
+					},
+					{
+						"tab": "Migration Guides",
+						"icon": "arrow-right",
+						"groups": [
+							{
+								"group": "Guides",
+								"pages": ["v1/migration-guides/index"]
 							}
 						]
 					}
@@ -542,7 +566,7 @@
 		"links": [
 			{
 				"label": "Support",
-				"href": "mailto:daniel@phaseo.app"
+				"href": "https://github.com/AI-Stats/AI-Stats/issues"
 			}
 		],
 		"primary": {
