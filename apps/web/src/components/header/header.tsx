@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import AuthControls from "./AuthControls"; // server island
 import MainNav from "./MainNav"; // client-only nav (no data)
-import Search from "./Search/Search";
+import { SearchWrapper } from "./Search/SearchWrapper";
 import { HeaderAnnouncements } from "./HeaderAnnouncements";
 
 const releaseMessage = "Introducing Our Model Gateway";
@@ -44,7 +44,7 @@ export default function Header() {
 					{/* Right actions: desktop auth + search */}
 					<div className="hidden lg:flex items-center gap-3 shrink-0">
 						<div className="flex items-center">
-							<Search />
+							<SearchWrapper />
 						</div>
 						<Suspense
 							fallback={

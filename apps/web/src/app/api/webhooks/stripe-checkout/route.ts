@@ -45,8 +45,8 @@ async function getTeamSpending(teamId: string, supabase: any) {
         if (prevErr) console.log("[WARN] monthly spend RPC:", String(prevErr));
         if (mtdErr) console.log("[WARN] month-to-date spend RPC:", String(mtdErr));
 
-        const lastMonth = Number(prev ?? 0) / 10_000_000;
-        const mtdValue = Number(mtd ?? 0) / 10_000_000;
+        const lastMonth = Number(prev ?? 0) / 1_000_000_000;
+        const mtdValue = Number(mtd ?? 0) / 1_000_000_000;
 
         return { lastMonth, mtd: mtdValue };
     } catch (err) {
@@ -57,8 +57,8 @@ async function getTeamSpending(teamId: string, supabase: any) {
 
 /* Fees: Reverse-engineer the original amount from the total received, then apply tier-based fee */
 function computeNetAndFeeFromGross(grossNanos: number, feePct: number) {
-    const minFeeNanos = 10_000_000; // $1 in nanos
-    const grossThresholdNanos = 110_000_000; // $11 in nanos (1100 cents)
+    const minFeeNanos = 1_000_000_000; // $1 in nanos
+    const grossThresholdNanos = 11_000_000_000; // $11 in nanos (1100 cents)
 
     // Reverse-engineer: if user paid $X total including our fee, what was the original amount?
     // Original = Total / (1 + fee_rate)
@@ -172,20 +172,20 @@ export async function POST(req: Request) {
                 const { netNanos, feeNanos } = computeNetAndFeeFromGross(grossNanos, feePct);
                 // console.log(`[DEBUG] Net nanos: ${netNanos}, Fee nanos: ${feeNanos}`);
                 console.log(
-                    `[DEBUG] Net dollars: $${(netNanos / 10_000_000).toFixed(2)}, Fee dollars: $${(
-                        feeNanos / 10_000_000
+                    `[DEBUG] Net dollars: $${(netNanos / 1_000_000_000).toFixed(2)}, Fee dollars: $${(
+                        feeNanos / 1_000_000_000
                     ).toFixed(2)}`
                 );
                 console.log(
-                    `[DEBUG] Original amount (before fees): $${(netNanos / 10_000_000).toFixed(2)}`
+                    `[DEBUG] Original amount (before fees): $${(netNanos / 1_000_000_000).toFixed(2)}`
                 );
 
                 const beforeBalanceNanos = Number(wallet.balance_nanos ?? 0);
                 const afterBalanceNanos = beforeBalanceNanos + netNanos;
 
                 console.log(
-                    `[DEBUG] Balance before: $${(beforeBalanceNanos / 10_000_000).toFixed(2)}, Balance after: $${(
-                        afterBalanceNanos / 10_000_000
+                    `[DEBUG] Balance before: $${(beforeBalanceNanos / 1_000_000_000).toFixed(2)}, Balance after: $${(
+                        afterBalanceNanos / 1_000_000_000
                     ).toFixed(2)}`
                 );
 

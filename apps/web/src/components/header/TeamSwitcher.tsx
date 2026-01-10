@@ -5,15 +5,16 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-	ChevronDown,
-	LogOut,
-	CreditCard,
-	Key as KeyIcon,
-	BarChart2,
-	Check,
-	Settings,
-	LifeBuoy,
-	Users,
+        ChevronDown,
+        LogOut,
+        CreditCard,
+        Key as KeyIcon,
+        BarChart2,
+        Check,
+        Settings,
+        LifeBuoy,
+        Users,
+        MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -187,11 +188,22 @@ export default function TeamSwitcher({
 					</div>
 				)}
 
-				<DropdownMenuItem className="rounded-md py-1.5 text-sm focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
-					<Link
-						href="/settings/credits"
-						className="flex w-full items-center"
-						onClick={() => setOpen(false)}
+                                <DropdownMenuItem className="rounded-md py-1.5 text-sm focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
+                                        <Link
+                                                href="/chat"
+                                                className="flex w-full items-center"
+                                                onClick={() => setOpen(false)}
+                                        >
+                                                <MessageCircle className="mr-2 h-4 w-4" />
+                                                <span>Chat</span>
+                                        </Link>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem className="rounded-md py-1.5 text-sm focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
+                                        <Link
+                                                href="/settings/credits"
+                                                className="flex w-full items-center"
+                                                onClick={() => setOpen(false)}
 					>
 						<CreditCard className="mr-2 h-4 w-4" />
 						<span>Credits</span>

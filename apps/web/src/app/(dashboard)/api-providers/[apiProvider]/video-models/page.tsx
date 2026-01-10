@@ -1,8 +1,8 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, FilePlus } from "lucide-react";
+import { FilePlus, Video } from "lucide-react";
 import { getAPIProviderModelsCached } from "@/lib/fetchers/api-providers/getAPIProvider";
 import type { APIProviderModels } from "@/lib/fetchers/api-providers/getAPIProvider";
 import APIModelCard from "@/components/(data)/api-providers/Provider/APIModelCard";
+import ModelTypeHeader from "@/components/(data)/api-providers/Provider/ModelTypeHeader";
 import {
 	Empty,
 	EmptyHeader,
@@ -87,24 +87,28 @@ export default async function Page({
 	params: Promise<{ apiProvider: string }>;
 }) {
 	const { apiProvider } = await params;
-	const models = (await getAPIProviderModelsCached(
-		apiProvider,
-		"video"
-	)) as APIProviderModels[];
+        const models = (await getAPIProviderModelsCached(
+                apiProvider,
+                "video"
+        )) as APIProviderModels[];
+        const helperText =
+                "Models can support multiple endpoints. We group them by model and list every supported API route.";
 
-	return (
-		<APIProviderDetailShell apiProviderId={apiProvider}>
-			<Alert>
-				<Info className="h-4 w-4 text-blue-500" />
-				<AlertTitle>Note</AlertTitle>
-				<AlertDescription>
-					This page contains all models that can output video.
-				</AlertDescription>
-			</Alert>
+        return (
+                <APIProviderDetailShell apiProviderId={apiProvider}>
+                        <ModelTypeHeader
+                                title="Video models"
+                                description="Video generation, transformation, and captioning models."
+                                helper={helperText}
+                                count={models.length}
+                                icon={Video}
+                                accentClass="bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100"
+                                badgeClass="bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200"
+                        />
 
-			<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{(!models || models.length === 0) && (
-					<Empty className="col-span-full">
+                        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                                {(!models || models.length === 0) && (
+                                        <Empty className="col-span-full">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<FilePlus />

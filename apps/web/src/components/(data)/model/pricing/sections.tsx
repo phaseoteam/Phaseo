@@ -19,22 +19,85 @@ import type {
 } from "./pricingHelpers";
 import { fmtUSD } from "./pricingHelpers";
 
+function formatCountdown(iso?: string | null) {
+	if (!iso) return null;
+	const end = new Date(iso).getTime();
+	if (Number.isNaN(end)) return null;
+	const diff = end - Date.now();
+	if (diff <= 0) return "Ends now";
+	const hours = Math.floor(diff / (1000 * 60 * 60));
+	const days = Math.floor(hours / 24);
+	const remHours = hours % 24;
+	if (days > 0) return `Ends in ${days}d ${remHours}h`;
+	return `Ends in ${remHours}h`;
+}
+
 export function TierTiles({ tiers }: { tiers: TokenTier[] }) {
 	if (!tiers?.length)
 		return <div className="text-sm text-muted-foreground">—</div>;
-	
+
 	return (
 		<div className="space-y-2">
 			{tiers.map((t, i) => (
 				<div key={i}>
 					{t.label === "All usage" ? (
-						<div className="text-sm font-semibold">
-							{fmtUSD(t.per1M)}
+						<div className="space-y-1">
+							{t.basePer1M != null ? (
+								<div className="text-sm font-semibold text-emerald-600">
+									{fmtUSD(t.per1M)}
+								</div>
+							) : (
+								<div className="text-sm font-semibold">
+									{fmtUSD(t.per1M)}
+								</div>
+							)}
+							{t.basePer1M != null ? (
+								<div className="flex items-center justify-between text-xs text-muted-foreground">
+									<span className="line-through">
+										{fmtUSD(t.basePer1M)}
+									</span>
+									{formatCountdown(t.discountEndsAt) ? (
+										<Badge
+											variant="secondary"
+											className="text-[0.65rem] uppercase tracking-wide"
+										>
+											{formatCountdown(t.discountEndsAt)}
+										</Badge>
+									) : null}
+								</div>
+							) : null}
 						</div>
 					) : (
-						<div className="flex justify-between items-center">
-							<span className="text-sm font-semibold">{fmtUSD(t.per1M)}</span>
-							<span className="text-xs text-muted-foreground">{t.label}</span>
+						<div className="space-y-1">
+							<div className="flex justify-between items-center">
+								<span
+									className={
+										t.basePer1M != null
+											? "text-sm font-semibold text-emerald-600"
+											: "text-sm font-semibold"
+									}
+								>
+									{fmtUSD(t.per1M)}
+								</span>
+								<span className="text-xs text-muted-foreground">
+									{t.label}
+								</span>
+							</div>
+							{t.basePer1M != null ? (
+								<div className="flex items-center justify-between text-xs text-muted-foreground">
+									<span className="line-through">
+										{fmtUSD(t.basePer1M)}
+									</span>
+									{formatCountdown(t.discountEndsAt) ? (
+										<Badge
+											variant="secondary"
+											className="text-[0.65rem] uppercase tracking-wide"
+										>
+											{formatCountdown(t.discountEndsAt)}
+										</Badge>
+									) : null}
+								</div>
+							) : null}
 						</div>
 					)}
 				</div>
@@ -63,6 +126,19 @@ export function TokenTripleSection({
 			: segments.length === 2
 			? "grid-cols-1 sm:grid-cols-2"
 			: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+	const renderSegments = (items: typeof segments) => (
+		<div className={`grid ${gridCols} gap-3`}>
+			{items.map((s, idx) => (
+				<div key={idx} className="rounded-lg border p-3">
+					<div className="text-xs text-muted-foreground mb-2">
+						{s.label}
+					</div>
+					<TierTiles tiers={s.tiers} />
+				</div>
+			))}
+		</div>
+	);
+
 	return (
 		<div className="space-y-2">
 			<div className="flex items-center justify-between">
@@ -71,16 +147,7 @@ export function TokenTripleSection({
 					Per 1M tokens
 				</span>
 			</div>
-			<div className={`grid ${gridCols} gap-3`}>
-				{segments.map((s, idx) => (
-					<div key={idx} className="rounded-lg border p-3">
-						<div className="text-xs text-muted-foreground mb-2">
-							{s.label}
-						</div>
-						<TierTiles tiers={s.tiers} />
-					</div>
-				))}
-			</div>
+			{renderSegments(segments)}
 		</div>
 	);
 }
@@ -100,21 +167,27 @@ export function ImageGenSection({ rows }: { rows?: QualityRow[] }) {
 		<div className="space-y-2">
 			<div className="flex items-center justify-between">
 				<h4 className="text-sm font-semibold">Image generation</h4>
-				<span className="text-xs text-muted-foreground">
-					Per image
-				</span>
+				<span className="text-xs text-muted-foreground">Per image</span>
 			</div>
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 				{rows.map((q) => (
 					<div key={q.quality} className="rounded-lg border p-3">
 						<div className="text-xs text-muted-foreground mb-2">
-							{q.quality.charAt(0).toUpperCase() + q.quality.slice(1)}
+							{q.quality.charAt(0).toUpperCase() +
+								q.quality.slice(1)}
 						</div>
 						<div className="space-y-2">
 							{q.items.map((it) => (
-								<div key={it.label} className="flex justify-between items-center">
-									<span className="text-sm font-semibold">{fmtUSD(it.price)}</span>
-									<span className="text-xs text-muted-foreground">{it.label}</span>
+								<div
+									key={it.label}
+									className="flex justify-between items-center"
+								>
+									<span className="text-sm font-semibold">
+										{fmtUSD(it.price)}
+									</span>
+									<span className="text-xs text-muted-foreground">
+										{it.label}
+									</span>
 								</div>
 							))}
 						</div>
@@ -148,8 +221,12 @@ export function VideoGenSection({ rows }: { rows?: ResolutionRow[] }) {
 							.map((r, i) => (
 								<div key={i} className="rounded-lg border p-3">
 									<div className="flex justify-between items-center">
-										<span className="text-sm font-semibold">{fmtUSD(r.price)}</span>
-										<span className="text-xs text-muted-foreground">{r.resolution}</span>
+										<span className="text-sm font-semibold">
+											{fmtUSD(r.price)}
+										</span>
+										<span className="text-xs text-muted-foreground">
+											{r.resolution}
+										</span>
 									</div>
 								</div>
 							))}
@@ -180,10 +257,65 @@ export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 								</div>
 							) : (
 								<div className="flex justify-between items-center">
-									<span className="text-sm font-semibold">{fmtUSD(t.per1M)}</span>
-									<span className="text-xs text-muted-foreground">{t.label}</span>
+									<span className="text-sm font-semibold">
+										{fmtUSD(t.per1M)}
+									</span>
+									<span className="text-xs text-muted-foreground">
+										{t.label}
+									</span>
 								</div>
 							)}
+						</div>
+					))}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+export function RequestsSection({ rows }: { rows?: TokenTier[] }) {
+	if (!rows?.length) return null;
+	return (
+		<div className="space-y-2">
+			<div className="flex items-center justify-between">
+				<h4 className="text-sm font-semibold">Requests</h4>
+				<span className="text-xs text-muted-foreground">
+					Per request
+				</span>
+			</div>
+			<div className="rounded-lg border p-3">
+				<div className="space-y-2">
+					{rows.map((t, i) => (
+						<div key={i}>
+							{t.label === "All usage" ? (
+								<div className="text-sm font-semibold">
+									{fmtUSD(t.price)}
+								</div>
+							) : (
+								<div className="flex justify-between items-center">
+									<span className="text-sm font-semibold">
+										{fmtUSD(t.price)}
+									</span>
+									<span className="text-xs text-muted-foreground">
+										{t.label}
+									</span>
+								</div>
+							)}
+							{t.basePer1M != null ? (
+								<div className="flex items-center justify-between text-xs text-muted-foreground">
+									<span className="line-through">
+										{fmtUSD(t.basePer1M)}
+									</span>
+									{formatCountdown(t.discountEndsAt) ? (
+										<Badge
+											variant="secondary"
+											className="text-[0.65rem] uppercase tracking-wide"
+										>
+											{formatCountdown(t.discountEndsAt)}
+										</Badge>
+									) : null}
+								</div>
+							) : null}
 						</div>
 					))}
 				</div>

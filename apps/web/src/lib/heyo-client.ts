@@ -2,20 +2,12 @@
 
 import HEYO from "@heyo.so/js";
 
-const openChat = () => {
-	HEYO.show({ force: true });
-	HEYO.open({ force: true });
-};
-
 export function openHeyo() {
 	if (typeof window === "undefined") return;
-	if (HEYO.ready) {
-		openChat();
-		return;
+	// Initialize HEYO without auto-opening
+	if (!HEYO.ready) {
+		HEYO.onReady(() => {
+			// HEYO is ready, but we don't auto-open it
+		});
 	}
-
-	HEYO.onReady(openChat);
-	// In case HEYO is still initializing and onReady fires before this code runs,
-	// make sure we still queue the show/open calls.
-	openChat();
 }

@@ -1,7 +1,7 @@
 import { join, basename } from "path";
 import { DIR_PRICING } from "../paths";
 import { listDirs, readJsonWithHash, chunk, toInList } from "../util";
-import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
+import { client, isDryRun, logWrite, pruneRowsByColumn } from "../supa";
 import { createHash } from "crypto";
 import { ChangeTracker } from "../state";
 
@@ -42,7 +42,8 @@ type PricingJSON = {
     key: string;                      // provider:model:endpoint (not required by loader)
     api_provider_id: string;          // NOTE: matches provider_models column
     provider_slug: string;            // not stored
-    model_id: string;
+    api_model_id: string;
+    internal_model_id: string;
     endpoint: string;
     provider_model_slug?: string | null;
     is_active_gateway: boolean;
@@ -51,7 +52,6 @@ type PricingJSON = {
     effective_from?: string | null;
     effective_to?: string | null;
     capability?: Record<string, unknown>;
-    params?: any[];
     rules?: Array<{
         meter: string;
         unit?: string;
@@ -82,7 +82,8 @@ type EndpointState = {
     dirtyModels: Array<{
         id?: string;
         api_provider_id: string;
-        model_id: string;
+        internal_model_id: string;
+        api_model_id: string;
         provider_model_slug: string | null;
         endpoint: string;
         is_active_gateway: boolean;
@@ -90,9 +91,8 @@ type EndpointState = {
         output_modalities: string;
         effective_from: string | null;
         effective_to: string | null;
-        params: unknown[];
     }>;
-    keepModelIds: Set<string>;
+    keepInternalModelIds: Set<string>;
 };
 
 type PricingRuleRow = {
@@ -109,9 +109,49 @@ type PricingRuleRow = {
     priority: number;
 };
 
-export async function loadPricing(tracker: ChangeTracker) {
+function assertOk<T>(res: { data?: T; error?: any }, label: string) {
+    if (res.error) {
+        // eslint-disable-next-line no-console
+        console.error(label, {
+            message: res.error.message,
+            details: res.error.details,
+            hint: res.error.hint,
+            code: res.error.code,
+        });
+        throw new Error(`${label}: ${res.error.message}`);
+    }
+    return res.data as T;
+}
+
+async function filterExistingModels(
+    supa: any,
+    models: Array<{ internal_model_id: string }>
+) {
+    const existing = new Set<string>();
+
+    const uniqueIds = [...new Set(models.map(m => m.internal_model_id))];
+    const chunks = chunk(uniqueIds, 500);
+    for (const _ids of chunks) {
+        const data: Array<{ model_id: string }> = assertOk(
+            await supa
+                .from("data_models")
+                .select("model_id")
+                .in("model_id", _ids),
+            "select data_models (filter)"
+        );
+
+        for (const row of data ?? []) existing.add(row.model_id);
+    }
+
+    return models.filter(m => existing.has(m.internal_model_id));
+}
+
+export async function loadPricing(
+    tracker: ChangeTracker,
+    { modelId }: { modelId: string | null }
+) {
     const supa = client();
-    tracker.touchPrefix(DIR_PRICING);
+    if (!modelId) tracker.touchPrefix(DIR_PRICING);
     const providerModelIds = new Set<string>();
     const pricingRuleKeys = new Set<string>();
     let hasChanges = false;
@@ -132,18 +172,23 @@ export async function loadPricing(tracker: ChangeTracker) {
                 api_provider_id,
                 endpoint,
                 dirtyModels: [],
-                keepModelIds: new Set<string>(),
+                keepInternalModelIds: new Set<string>(),
                 ruleReplacements: [],
             };
 
             for (const mPath of modelDirs) {
                 const fp = join(mPath, "pricing.json");
                 const { data: j, hash } = await readJsonWithHash<PricingJSON>(fp);
-                const computedKey = j.key && j.key.trim() ? j.key : `${j.api_provider_id}:${j.model_id}:${j.endpoint}`;
+                if (modelId && j.internal_model_id !== modelId) continue;
+                const computedKey =
+                    j.key && j.key.trim()
+                        ? j.key
+                        : `${j.api_provider_id}:${j.api_model_id}:${j.endpoint}`;
                 const change = tracker.track(fp, hash, {
                     api_provider_id: j.api_provider_id,
                     endpoint: j.endpoint,
-                    model_id: j.model_id,
+                    internal_model_id: j.internal_model_id,
+                    api_model_id: j.api_model_id,
                     model_key: computedKey,
                 });
 
@@ -151,12 +196,13 @@ export async function loadPricing(tracker: ChangeTracker) {
                 const id = computedKey; // table requires an `id` primary key; use composed key
 
                 providerModelIds.add(id);
-                endpointState.keepModelIds.add(j.model_id);
+                endpointState.keepInternalModelIds.add(j.internal_model_id);
 
                 const providerModelRow = {
                     id,
                     api_provider_id: j.api_provider_id,
-                    model_id: j.model_id,
+                    internal_model_id: j.internal_model_id,
+                    api_model_id: j.api_model_id,
                     provider_model_slug,
                     endpoint: j.endpoint,
                     is_active_gateway: !!j.is_active_gateway,
@@ -164,7 +210,6 @@ export async function loadPricing(tracker: ChangeTracker) {
                     output_modalities: norm(j.output_modalities),
                     effective_from: j.effective_from ?? null,
                     effective_to: j.effective_to ?? null,
-                    params: j.params ?? [],
                 };
 
                 if (change.status !== "unchanged") {
@@ -182,7 +227,7 @@ export async function loadPricing(tracker: ChangeTracker) {
                 for (const r of ruleRows) {
                     const prio = r.priority ?? 100;
                     const digest = digestRule(r);
-                    const bucket = `${j.api_provider_id}|${j.model_id}|${j.endpoint}|${r.meter}|${prio}|${digest}`;
+                    const bucket = `${j.api_provider_id}|${j.api_model_id}|${j.endpoint}|${r.meter}|${prio}|${digest}`;
                     const occur = (seenBuckets.get(bucket) ?? 0) + 1;
                     seenBuckets.set(bucket, occur);
 
@@ -216,9 +261,11 @@ export async function loadPricing(tracker: ChangeTracker) {
         }
     }
 
-    const deleted = tracker.getDeleted(DIR_PRICING);
+    const deleted = tracker
+        .getDeleted(DIR_PRICING)
+        .filter(d => !modelId || d.info.meta?.internal_model_id === modelId);
     if (deleted.length) hasChanges = true;
-    const deletedByEndpoint = new Map<string, Array<{ model_key?: string; model_id?: string }>>();
+    const deletedByEndpoint = new Map<string, Array<{ model_key?: string; internal_model_id?: string }>>();
     for (const d of deleted) {
         const meta = d.info.meta || {};
         const api_provider_id = meta.api_provider_id;
@@ -226,7 +273,7 @@ export async function loadPricing(tracker: ChangeTracker) {
         if (!api_provider_id || !endpoint) continue;
         const endpointKey = `${api_provider_id}::${endpoint}`;
         const arr = deletedByEndpoint.get(endpointKey) ?? [];
-        arr.push({ model_key: meta.model_key, model_id: meta.model_id });
+        arr.push({ model_key: meta.model_key, internal_model_id: meta.internal_model_id });
         deletedByEndpoint.set(endpointKey, arr);
     }
 
@@ -234,8 +281,8 @@ export async function loadPricing(tracker: ChangeTracker) {
         const endpointState = endpoints.get(endpointKey);
         const [api_provider_id, endpoint] = endpointKey.split("::");
 
-        const keepModelIds = endpointState
-            ? [...endpointState.keepModelIds]
+        const keepInternalModelIds = endpointState
+            ? [...endpointState.keepInternalModelIds]
             : [];
 
         const dirtyProviderModels = endpointState?.dirtyModels ?? [];
@@ -253,15 +300,17 @@ export async function loadPricing(tracker: ChangeTracker) {
         if (isDryRun()) {
             for (const r of dirtyProviderModels) {
                 logWrite("public.data_api_provider_models", "UPSERT", r, {
-                    onConflict: "api_provider_id,endpoint,model_id",
+                    onConflict: "api_provider_id,endpoint,api_model_id",
                 });
             }
         } else if (dirtyProviderModels.length) {
-            for (const group of chunk(dirtyProviderModels, 500)) {
+            const existingModels = await filterExistingModels(supa, dirtyProviderModels);
+
+            for (const group of chunk(existingModels, 500)) {
                 assertOk(
                     await supa
                         .from("data_api_provider_models")
-                        .upsert(group, { onConflict: "api_provider_id,endpoint,model_id" }),
+                        .upsert(group, { onConflict: "api_provider_id,endpoint,api_model_id" }),
                     "upsert data_api_provider_models"
                 );
             }
@@ -269,25 +318,40 @@ export async function loadPricing(tracker: ChangeTracker) {
 
         // Delete rows for models removed from this endpoint
         if (!isDryRun()) {
-            if (keepModelIds.length) {
-                assertOk(
-                    await supa
-                        .from("data_api_provider_models")
-                        .delete()
-                        .eq("api_provider_id", api_provider_id)
-                        .eq("endpoint", endpoint)
-                        .not("model_id", "in", toInList(keepModelIds)),
-                    "prune data_api_provider_models"
-                );
-            } else {
-                assertOk(
-                    await supa
-                        .from("data_api_provider_models")
-                        .delete()
-                        .eq("api_provider_id", api_provider_id)
-                        .eq("endpoint", endpoint),
-                    "prune-all data_api_provider_models"
-                );
+            if (!modelId) {
+                if (keepInternalModelIds.length) {
+                    assertOk(
+                        await supa
+                            .from("data_api_provider_models")
+                            .delete()
+                            .eq("api_provider_id", api_provider_id)
+                            .eq("endpoint", endpoint)
+                            .not("internal_model_id", "in", toInList(keepInternalModelIds)),
+                        "prune data_api_provider_models"
+                    );
+                } else {
+                    assertOk(
+                        await supa
+                            .from("data_api_provider_models")
+                            .delete()
+                            .eq("api_provider_id", api_provider_id)
+                            .eq("endpoint", endpoint),
+                        "prune-all data_api_provider_models"
+                    );
+                }
+            } else if (deletedEntries.length) {
+                const deletedKeys = deletedEntries
+                    .map(entry => entry.model_key)
+                    .filter((key): key is string => !!key);
+                if (deletedKeys.length) {
+                    assertOk(
+                        await supa
+                            .from("data_api_provider_models")
+                            .delete()
+                            .in("id", deletedKeys),
+                        "delete data_api_provider_models (targeted)"
+                    );
+                }
             }
         }
 
@@ -330,18 +394,20 @@ export async function loadPricing(tracker: ChangeTracker) {
 
     if (!hasChanges) return;
 
-    await pruneRowsByColumn(
-        supa,
-        "data_api_provider_models",
-        "id",
-        providerModelIds,
-        "data_api_provider_models"
-    );
-    await pruneRowsByColumn(
-        supa,
-        "data_api_pricing_rules",
-        "model_key",
-        pricingRuleKeys,
-        "data_api_pricing_rules"
-    );
+    if (!modelId) {
+        await pruneRowsByColumn(
+            supa,
+            "data_api_provider_models",
+            "id",
+            providerModelIds,
+            "data_api_provider_models"
+        );
+        await pruneRowsByColumn(
+            supa,
+            "data_api_pricing_rules",
+            "model_key",
+            pricingRuleKeys,
+            "data_api_pricing_rules"
+        );
+    }
 }

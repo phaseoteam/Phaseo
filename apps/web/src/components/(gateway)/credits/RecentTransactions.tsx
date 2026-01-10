@@ -58,7 +58,7 @@ interface Props {
 }
 
 function formatNanos(nanos?: number | null, currency = "USD") {
-	const val = (nanos ?? 0) / 10_000_000;
+        const val = (nanos ?? 0) / 1_000_000_000;
 	try {
 		return new Intl.NumberFormat("en-US", {
 			style: "currency",

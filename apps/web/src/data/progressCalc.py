@@ -17,7 +17,7 @@ def slug(s: str) -> str:
     return s.lower().replace(' ', '-').replace('/', '-').replace('_', '-')
 
 # Path to the JSON export directory
-JSON_EXPORT_PATH = Path("../apps/web/src/data")
+JSON_EXPORT_PATH = Path(".")
 
 # Expected organisation link platforms
 EXPECTED_ORG_PLATFORMS = {
@@ -322,15 +322,39 @@ def calculate_api_provider_completion() -> float:
             scores.append(0.0)
             continue
         
-        fields = ["provider_id", "name", "description", "link", "country_code"]
+        fields = ["api_provider_id", "api_provider_name", "description", "link", "country_code"]
         field_score = sum(1 for field in fields if prov_data.get(field) is not None)
         scores.append(field_score / len(fields))
     
     return (sum(scores) / len(scores)) * 100 if scores else 0.0
 
+def get_api_provider_model_counts() -> Dict[str, int]:
+    """Count models per provider from the pricing directory."""
+    provider_model_counts = defaultdict(int)
+    
+    pricing_path = JSON_EXPORT_PATH / "pricing"
+    if not pricing_path.exists():
+        return {}
+    
+    for provider_dir in pricing_path.iterdir():
+        if not provider_dir.is_dir():
+            continue
+        provider_slug = provider_dir.name
+        
+        for endpoint_dir in provider_dir.iterdir():
+            if not endpoint_dir.is_dir():
+                continue
+            for model_dir in endpoint_dir.iterdir():
+                if model_dir.is_dir():
+                    provider_model_counts[provider_slug] += 1
+    
+    return dict(provider_model_counts)
+
+
 def get_api_provider_completion_details() -> Dict[str, Dict[str, Any]]:
     """Get detailed completion info for API providers."""
     providers = get_all_api_providers()
+    provider_model_counts = get_api_provider_model_counts()
     details = {}
     
     for prov_id in providers:
@@ -347,15 +371,13 @@ def get_api_provider_completion_details() -> Dict[str, Dict[str, Any]]:
             }
             continue
         
-        # Basic fields
         basic_fields = ["provider_id", "name", "description", "link", "country_code"]
         present_basic = [f for f in basic_fields if prov_data.get(f)]
         basic_score = len(present_basic)
         basic_status = f"✅ {basic_score}/{len(basic_fields)}" if present_basic else "❌ No data"
         
-        # Models count
-        models = prov_data.get("models", [])
-        models_count = len(models)
+        # Get model count from pricing directory
+        models_count = provider_model_counts.get(prov_id, 0)
         
         # Active gateway models
         active_gateway_count = 0
@@ -373,7 +395,6 @@ def get_api_provider_completion_details() -> Dict[str, Dict[str, Any]]:
                         if pricing_data.get("is_active_gateway"):
                             active_gateway_count += 1
         
-        # Completion calculation
         completion = (basic_score / len(basic_fields)) * 100
         
         details[prov_id] = {
@@ -386,68 +407,29 @@ def get_api_provider_completion_details() -> Dict[str, Dict[str, Any]]:
     
     return details
 
-def get_provider_models_details() -> List[Dict[str, Any]]:
-    """Get details about models available through API providers."""
-    providers = get_all_api_providers()
-    model_details = []
+
+def get_benchmark_model_count() -> Dict[str, int]:
+    """Get count of unique models that have scores for each benchmark."""
+    models_by_org = get_all_models()
+    benchmark_counts = defaultdict(int)
     
-    for prov_id in providers:
-        prov_path = JSON_EXPORT_PATH / "api_providers" / prov_id / "api_provider.json"
-        prov_data = load_json_file(prov_path)
-        
-        if not prov_data:
-            continue
-        
-        provider_name = prov_data.get("name", prov_id)
-        models = prov_data.get("models", [])
-        
-        for model_id in models:
-            if model_id is None:
+    for org_id, model_ids in models_by_org.items():
+        for model_id in model_ids:
+            short_model_id = model_id.split('/', 1)[1] if '/' in model_id else model_id
+            model_path = JSON_EXPORT_PATH / "models" / org_id / short_model_id / "model.json"
+            model_data = load_json_file(model_path)
+            
+            if not model_data:
                 continue
-            # Check if model exists in models directory
-            model_exists = False
-            for org_id in get_all_models():
-                if model_id in get_all_models()[org_id]:
-                    model_exists = True
-                    break
             
-            # Check pricing data completion
-            pricing_completion = 0.0
-            is_active_gateway = False
-            pricing_path = JSON_EXPORT_PATH / "pricing" / prov_id
-            
-            if pricing_path.exists():
-                # Check all endpoints for this model
-                for endpoint_dir in pricing_path.iterdir():
-                    if not endpoint_dir.is_dir():
-                        continue
-                    model_pricing_path = endpoint_dir / model_id / "pricing.json"
-                    if model_pricing_path.exists():
-                        pricing_data = load_json_file(model_pricing_path)
-                        
-                        # Check gateway status
-                        if pricing_data.get("is_active_gateway"):
-                            is_active_gateway = True
-                        
-                        # Calculate pricing completion
-                        pricing_fields = [
-                            "key", "api_provider_id", "provider_slug", "model_id", 
-                            "endpoint", "provider_model_slug", "is_active_gateway",
-                            "input_modalities", "output_modalities", "effective_from", "effective_to"
-                        ]
-                        present_fields = sum(1 for field in pricing_fields if pricing_data.get(field) is not None)
-                        pricing_completion = (present_fields / len(pricing_fields)) * 100
-                        break  # Found pricing for this model
-            
-            model_details.append({
-                "provider": provider_name,
-                "model_id": model_id,
-                "model_exists": model_exists,
-                "active_gateway": is_active_gateway,
-                "pricing_completion": pricing_completion
-            })
+            benchmarks = model_data.get("benchmarks", [])
+            for bench in benchmarks:
+                benchmark_id = bench.get("benchmark_id") if isinstance(bench, dict) else bench
+                if benchmark_id:
+                    benchmark_counts[benchmark_id] += 1
     
-    return model_details
+    return dict(benchmark_counts)
+
 
 def get_subscription_plan_completion_details() -> Dict[str, Dict[str, Any]]:
     """Get detailed completion info for subscription plans."""
@@ -920,71 +902,12 @@ def print_dashboard():
     console.print(org_table)
     console.print()
     
-    # Detailed API Provider Breakdown
-    console.print("[bold underline]🔌 API PROVIDER DETAILS[/bold underline]")
-    console.print()
-    
-    api_provider_details = get_api_provider_completion_details()
-    api_details = []
-    for prov_id, info in sorted(api_provider_details.items(), key=lambda x: x[1]["completion"]):
-        api_details.append([
-            prov_id, 
-            f"{info['completion']:.1f}%", 
-            info["basic_fields"], 
-            str(info["models_count"]), 
-            str(info["active_gateway_models"]), 
-            info["description"]
-        ])
-    
-    api_table = Table(show_header=True, header_style="bold cyan", title="API Provider Completion Details")
-    api_table.add_column("Provider", style="white", no_wrap=True)
-    api_table.add_column("Completion", style="yellow", justify="right")
-    api_table.add_column("Basic Fields", style="green")
-    api_table.add_column("Models Listed", style="blue", justify="right")
-    api_table.add_column("Active Gateway", style="red", justify="right")
-    api_table.add_column("Description", style="dim", max_width=40)
-    
-    for row in api_details:
-        api_table.add_row(*row)
-    
-    console.print(api_table)
-    console.print()
-    
-    # Provider Models Breakdown
-    console.print("[bold underline]🔧 PROVIDER MODELS DETAILS[/bold underline]")
-    console.print()
-    
-    provider_models = get_provider_models_details()
-    # Show models that are missing from the main models database, not active on gateway, or have incomplete pricing
-    problematic_models = [m for m in provider_models if m["model_id"] is not None and (not m["model_exists"] or not m["active_gateway"] or m["pricing_completion"] < 80.0)]
-    
-    if problematic_models:
-        models_table = Table(show_header=True, header_style="bold cyan", title="Provider Models Issues")
-        models_table.add_column("Provider", style="white", no_wrap=True)
-        models_table.add_column("Model ID", style="yellow", no_wrap=True, max_width=30)
-        models_table.add_column("Exists in DB", style="green")
-        models_table.add_column("Active Gateway", style="red")
-        models_table.add_column("Pricing Complete", style="blue", justify="right")
-        
-        for model in sorted(problematic_models, key=lambda x: (x["provider"] or "", x["model_id"] or ""))[:50]:  # Top 50
-            exists_status = "✅" if model["model_exists"] else "❌"
-            gateway_status = "✅" if model["active_gateway"] else "❌"
-            pricing_status = f"{model['pricing_completion']:.1f}%"
-            models_table.add_row(model["provider"], model["model_id"], exists_status, gateway_status, pricing_status)
-        
-        console.print(models_table)
-        console.print(f"[dim]Showing {len(problematic_models)} models with issues (missing from DB, inactive gateway, or incomplete pricing <80%)[/dim]")
-    else:
-        console.print("[green]✅ All provider models exist in database, have active gateway status, and complete pricing data[/green]")
-    
-    console.print()
-    
     # Detailed Model Breakdown
     console.print("[bold underline]🤖 MODEL DETAILS[/bold underline]")
     console.print()
     
     model_details = []
-    for model_id, completion in sorted(model_completions.items(), key=lambda x: x[1])[:50]:  # Top 50 worst
+    for model_id, completion in sorted(model_completions.items(), key=lambda x: x[1])[:20]:  # Top 20 worst
         org_id = model_to_org.get(model_id)
         short_model_id = model_id.split('/', 1)[1] if '/' in model_id else model_id
         model_path = JSON_EXPORT_PATH / "models" / (org_id or "unknown") / short_model_id / "model.json"
@@ -1079,7 +1002,7 @@ def print_dashboard():
             bench_status
         ])
     
-    model_table = Table(show_header=True, header_style="bold cyan", title="Model Completion Details (Worst 50)")
+    model_table = Table(show_header=True, header_style="bold cyan", title="Model Completion Details (Worst 20)")
     model_table.add_column("Model", style="white", no_wrap=True, max_width=30)
     model_table.add_column("Completion", style="yellow", justify="right")
     model_table.add_column("Basic Details", style="green")
@@ -1096,9 +1019,9 @@ def print_dashboard():
     console.print(model_table)
     console.print()
     
-    # Top 50 models
+    # Top 20 models
     top_model_details = []
-    for model_id, completion in sorted(model_completions.items(), key=lambda x: x[1], reverse=True)[:50]:  # Top 50 best
+    for model_id, completion in sorted(model_completions.items(), key=lambda x: x[1], reverse=True)[:20]:  # Top 20 best
         org_id = model_to_org.get(model_id)
         short_model_id = model_id.split('/', 1)[1] if '/' in model_id else model_id
         model_path = JSON_EXPORT_PATH / "models" / (org_id or "unknown") / short_model_id / "model.json"
@@ -1193,7 +1116,7 @@ def print_dashboard():
             bench_status
         ])
     
-    top_model_table = Table(show_header=True, header_style="bold cyan", title="Model Completion Details (Top 50)")
+    top_model_table = Table(show_header=True, header_style="bold cyan", title="Model Completion Details (Top 20)")
     top_model_table.add_column("Model", style="white", no_wrap=True, max_width=30)
     top_model_table.add_column("Completion", style="yellow", justify="right")
     top_model_table.add_column("Basic Details", style="green")
@@ -1240,13 +1163,16 @@ def print_dashboard():
     console.print("[bold underline]📊 BENCHMARK DETAILS[/bold underline]")
     console.print()
     
+    # Get benchmark model counts
+    benchmark_model_counts = get_benchmark_model_count()
+    
     bench_details = []
     for bench_id in get_all_benchmarks():
         bench_path = JSON_EXPORT_PATH / "benchmarks" / bench_id / "benchmark.json"
         bench_data = load_json_file(bench_path)
         
         if not bench_data:
-            bench_details.append([bench_id, "❌ No data", "❌", "❌", "❌", "❌"])
+            bench_details.append([bench_id, "❌ No data", "❌", "❌", "❌", "❌", "0"])
             continue
         
         fields = ["benchmark_id", "benchmark_name", "category", "ascending_order", "link"]
@@ -1257,8 +1183,9 @@ def print_dashboard():
         category = bench_data.get("category", "N/A")
         order = "✅" if bench_data.get("ascending_order") is not None else "❌"
         link = "✅" if bench_data.get("link") else "❌"
+        model_count = benchmark_model_counts.get(bench_id, 0)
         
-        bench_details.append([bench_id[:25], f"{completion:.1f}%", name, category, order, link])
+        bench_details.append([bench_id[:25], f"{completion:.1f}%", name, category, order, link, str(model_count)])
     
     bench_table = Table(show_header=True, header_style="bold cyan", title="Benchmark Completion Details")
     bench_table.add_column("Benchmark ID", style="white", no_wrap=True, max_width=25)
@@ -1267,11 +1194,42 @@ def print_dashboard():
     bench_table.add_column("Category", style="blue")
     bench_table.add_column("Order", style="magenta")
     bench_table.add_column("Link", style="cyan")
+    bench_table.add_column("Models w/ Scores", style="red", justify="right")
     
     for row in sorted(bench_details, key=lambda x: float(x[1].rstrip('%'))):
         bench_table.add_row(*row)
     
     console.print(bench_table)
+    console.print()
+    
+    # Detailed API Provider Breakdown
+    console.print("[bold underline]🔌 API PROVIDER DETAILS[/bold underline]")
+    console.print()
+    
+    api_provider_details = get_api_provider_completion_details()
+    api_details = []
+    for prov_id, info in sorted(api_provider_details.items(), key=lambda x: x[1]["completion"]):
+        api_details.append([
+            prov_id, 
+            f"{info['completion']:.1f}%", 
+            info["basic_fields"], 
+            str(info["models_count"]), 
+            str(info["active_gateway_models"]), 
+            info["description"]
+        ])
+    
+    api_table = Table(show_header=True, header_style="bold cyan", title="API Provider Completion Details")
+    api_table.add_column("Provider", style="white", no_wrap=True)
+    api_table.add_column("Completion", style="yellow", justify="right")
+    api_table.add_column("Basic Fields", style="green")
+    api_table.add_column("Models on Provider", style="blue", justify="right")
+    api_table.add_column("Active Gateway", style="red", justify="right")
+    api_table.add_column("Description", style="dim", max_width=40)
+    
+    for row in api_details:
+        api_table.add_row(*row)
+    
+    console.print(api_table)
     console.print()
     
     # Subscription Plans Details

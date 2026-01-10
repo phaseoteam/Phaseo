@@ -95,14 +95,14 @@ export default function AutoTopUpClient({ wallet, stripeInfo }: Props) {
 
 	const [minBefore, setMinBefore] = useState<number | "">(() => {
 		if (wallet?.auto_top_up_enabled !== true) return "";
-		const v = wallet?.low_balance_threshold ?? null; // nanos
-		return v == null ? "" : Math.round(v) / 1e6;
+                const v = wallet?.low_balance_threshold ?? null; // nanos
+                return v == null ? "" : Math.round(v) / 1e9;
 	});
 
 	const [topUpAmount, setTopUpAmount] = useState<number | "">(() => {
 		if (wallet?.auto_top_up_enabled !== true) return "";
-		const v = wallet?.auto_top_up_amount ?? null; // nanos
-		return v == null ? "" : Math.round(v) / 1e6;
+                const v = wallet?.auto_top_up_amount ?? null; // nanos
+                return v == null ? "" : Math.round(v) / 1e9;
 	});
 
 	const [saving, setSaving] = useState(false);
@@ -168,12 +168,12 @@ export default function AutoTopUpClient({ wallet, stripeInfo }: Props) {
 				enabled,
 				min_balance_nanos:
 					typeof minBefore === "number"
-						? Math.round(minBefore * 1e6)
-						: null,
+                                                ? Math.round(minBefore * 1e9)
+                                                : null,
 				top_up_amount_nanos:
 					typeof topUpAmount === "number"
-						? Math.round(topUpAmount * 1e6)
-						: null,
+                                                ? Math.round(topUpAmount * 1e9)
+                                                : null,
 				auto_top_up_account_id:
 					selectedPm && selectedPm !== "new" ? selectedPm : null,
 			};

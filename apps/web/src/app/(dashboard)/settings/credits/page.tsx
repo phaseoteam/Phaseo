@@ -11,6 +11,11 @@ import {
 	computeTierInfo,
 } from "@/components/(gateway)/credits/tiers";
 import { TierBadge } from "@/components/(gateway)/credits/TierBadge";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+	title: "Credits - Settings",
+};
 
 function money(amount: number, currency: string) {
 	return new Intl.NumberFormat("en-US", {
@@ -64,7 +69,7 @@ export default async function Page(props: {
 			wallet = w;
 			try {
 				const nanos = Number(w?.balance_nanos ?? 0);
-				initialBalance = Number((nanos / 10_000_000).toFixed(2));
+                                initialBalance = Number((nanos / 1_000_000_000).toFixed(5));
 			} catch {
 				initialBalance = 0;
 			}
@@ -196,8 +201,8 @@ export default async function Page(props: {
 			if (e2) console.log("[WARN] MTD spend (tier badge):", String(e2));
 
 			tierStats = {
-				lastMonth: Number(prev ?? 0) / 10_000_000,
-				mtd: Number(mtd ?? 0) / 10_000_000,
+                                lastMonth: Number(prev ?? 0) / 1_000_000_000,
+                                mtd: Number(mtd ?? 0) / 1_000_000_000,
 			};
 		} catch (err) {
 			console.log("[ERROR] tier stats fetch:", String(err));

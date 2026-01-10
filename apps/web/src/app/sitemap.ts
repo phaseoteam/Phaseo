@@ -47,7 +47,6 @@ const staticRoutes: Array<{
         { path: "/compare", changeFrequency: "weekly", priority: 0.7 },
         { path: "/gateway", changeFrequency: "weekly", priority: 0.7 },
         { path: "/contribute", changeFrequency: "monthly", priority: 0.6 },
-        { path: "/sources", changeFrequency: "monthly", priority: 0.6 },
         { path: "/roadmap", changeFrequency: "monthly", priority: 0.6 },
         { path: "/tools", changeFrequency: "monthly", priority: 0.65 },
         { path: "/tools/tokenizer", changeFrequency: "monthly", priority: 0.55 },

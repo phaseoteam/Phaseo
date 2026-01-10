@@ -15,7 +15,7 @@ type RawGatewayRequest = {
 };
 
 type ActiveProviderModelRow = {
-	model_id: string | null;
+	api_model_id: string | null;
 	api_provider_id: string | null;
 	effective_from?: string | null;
 	effective_to?: string | null;
@@ -273,9 +273,11 @@ async function fetchActiveGatewayModels(
 
 	const { data, error } = await client
 		.from("data_api_provider_models")
-		.select("model_id, api_provider_id, effective_from, effective_to")
+		.select("api_model_id, api_provider_id, effective_from, effective_to")
 		.eq("is_active_gateway", true)
 		.or(effectiveClause);
+
+	console.log("Supabase response for active gateway models:", { data, error });
 
 	if (error) {
 		throw new Error(error.message ?? "Failed to load supported models");
@@ -429,7 +431,7 @@ function buildMetricsFromRows(
 	const modelIds = new Set<string>();
 	const providerIds = new Set<string>();
 	for (const row of supportedModels) {
-		if (row.model_id) modelIds.add(row.model_id);
+		if (row.api_model_id) modelIds.add(row.api_model_id);
 		if (row.api_provider_id) providerIds.add(row.api_provider_id);
 	}
 
@@ -491,7 +493,7 @@ function buildFallbackMetrics(
 	const modelIds = new Set<string>();
 	const providerIds = new Set<string>();
 	for (const row of supportedModels) {
-		if (row.model_id) modelIds.add(row.model_id);
+		if (row.api_model_id) modelIds.add(row.api_model_id);
 		if (row.api_provider_id) providerIds.add(row.api_provider_id);
 	}
 

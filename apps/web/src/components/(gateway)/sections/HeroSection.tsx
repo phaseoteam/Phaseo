@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroProviderMarquee } from "./HeroProviderMarquee";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
+import { resolveLogo } from "@/lib/logos";
 
 function formatPercent(value: number | null | undefined, digits = 2): string {
 	const normalized = value == null || Number.isNaN(value) ? 0 : value;
@@ -54,8 +55,16 @@ export function HeroSection({ metrics }: HeroSectionProps) {
 	const heroProviderLogos = (() => {
 		const providerIds = metrics.supported.providerIds ?? [];
 		if (!providerIds.length) return [];
-		const unique = Array.from(new Set(providerIds));
-		return unique.slice(0, 16);
+		const seen = new Set<string>();
+		const deduped: string[] = [];
+		for (const id of providerIds) {
+			const resolved = resolveLogo(id, { fallbackToColor: false });
+			const src = resolved.src;
+			if (!src || seen.has(src)) continue;
+			seen.add(src);
+			deduped.push(id);
+		}
+		return deduped.slice(0, 16);
 	})();
 
 	return (

@@ -59,8 +59,8 @@ export default async function TieringProgress({
 		}
 	}
 
-	const lastMonth = lastMonthCents / 10_000_000;
-	const mtd = mtdCents / 10_000_000;
+        const lastMonth = lastMonthCents / 1_000_000_000;
+        const mtd = mtdCents / 1_000_000_000;
 
 	console.log("[TIER PROGRESS] lastMonth:", lastMonth, "mtd:", mtd);
 

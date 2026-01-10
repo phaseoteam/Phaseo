@@ -14,32 +14,49 @@ import { DATA_ROOT } from "./paths";
 
 const VERBOSE = process.argv.includes("--verbose");
 
-const tasks: Record<string, (tracker: ChangeTracker) => Promise<void>> = {
-    families: loadFamilies,
-    models: loadModels,
-    pricing: loadPricing,
-    benchmarks: loadBenchmarks,
-    organisations: loadOrganisations,
-    providers: loadProviders,
-    aliases: loadAliases,
-    subscription_plans: loadSubscriptionPlans,
-    all: async tracker => {
-        await loadOrganisations(tracker);
-        await loadBenchmarks(tracker);
-        await loadFamilies(tracker);
-        await loadModels(tracker);
-        await loadAliases(tracker); // optional: if you have the aliases loader
-        await loadProviders(tracker);
-        await loadPricing(tracker);
-        await loadSubscriptionPlans(tracker);
-    },
-};
+const getArgValue = (name: string) =>
+    process.argv.find(a => a.startsWith(`${name}=`) || a.startsWith(`--${name}=`))?.split("=")[1];
 
 async function main() {
-    await cleanDeleted();
+    const modelFilter = getArgValue("model");
+    if (!modelFilter) await cleanDeleted();
     const tracker = await ChangeTracker.init();
+    const requestedSection =
+        process.argv.find(a => a.startsWith("--section="))?.split("=")[1] || "all";
+    const section =
+        modelFilter && (requestedSection === "all" || requestedSection === "models")
+            ? "model"
+            : requestedSection;
 
-    const section = (process.argv.find(a => a.startsWith("--section="))?.split("=")[1]) || "all";
+    if (modelFilter && !["model", "models", "pricing"].includes(section)) {
+        console.error("The model= filter only applies to the models/pricing sections.");
+        process.exit(1);
+    }
+
+    const tasks: Record<string, (tracker: ChangeTracker) => Promise<void>> = {
+        families: loadFamilies,
+        models: tracker => loadModels(tracker, { modelId: modelFilter ?? null }),
+        pricing: tracker => loadPricing(tracker, { modelId: modelFilter ?? null }),
+        model: async tracker => {
+            await loadModels(tracker, { modelId: modelFilter ?? null });
+            await loadPricing(tracker, { modelId: modelFilter ?? null });
+        },
+        benchmarks: loadBenchmarks,
+        organisations: loadOrganisations,
+        providers: loadProviders,
+        aliases: loadAliases,
+        subscription_plans: loadSubscriptionPlans,
+        all: async tracker => {
+            await loadOrganisations(tracker);
+            await loadBenchmarks(tracker);
+            await loadFamilies(tracker);
+            await loadModels(tracker, { modelId: null });
+            await loadAliases(tracker); // optional: if you have the aliases loader
+            await loadProviders(tracker);
+            await loadPricing(tracker, { modelId: null });
+            await loadSubscriptionPlans(tracker);
+        },
+    };
     const fn = tasks[section];
     if (!fn) {
         console.error(`Unknown section '${section}'. Use one of: ${Object.keys(tasks).join(", ")}`);
@@ -50,6 +67,7 @@ async function main() {
     if (VERBOSE) console.log(`DATA_ROOT: ${DATA_ROOT}`);
 
     console.log(`>> Importing: ${section}`);
+    if (modelFilter) console.log(`>> Model filter: ${modelFilter}`);
     await fn(tracker);
     await tracker.persist({ dryRun: isDryRun() });
     console.log(">> Done.");

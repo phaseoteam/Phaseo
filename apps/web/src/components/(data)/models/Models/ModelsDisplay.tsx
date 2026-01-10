@@ -14,6 +14,10 @@ import {
 } from "@/components/ui/tooltip";
 import { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { qParser, yearParser } from "@/app/(dashboard)/models/search-params";
+import {
+	UPCOMING_TAB_VALUE,
+	UNKNOWN_TAB_VALUE,
+} from "@/lib/models/modelTabs";
 
 interface ModelsDisplayProps {
 	models: ModelCard[];
@@ -109,6 +113,19 @@ export default function ModelsDisplay({
 			<div className="mb-4 -mx-1 overflow-x-auto">
 				<div className="flex items-center justify-between px-1 pb-1 gap-2">
 					<div className="flex gap-2">
+						<Button
+							key="upcoming"
+							size="sm"
+							variant={
+								activeYear === UPCOMING_TAB_VALUE
+									? "default"
+									: "outline"
+							}
+							onClick={() => setYear(UPCOMING_TAB_VALUE)}
+							className="px-3 py-1 text-xs whitespace-nowrap rounded-full"
+						>
+							Upcoming
+						</Button>
 						{years.length > 0 &&
 							years.map((year) => (
 								<Button
@@ -125,6 +142,19 @@ export default function ModelsDisplay({
 									{year}
 								</Button>
 							))}
+						<Button
+							key="unknown"
+							size="sm"
+							variant={
+								activeYear === UNKNOWN_TAB_VALUE
+									? "default"
+									: "outline"
+							}
+							onClick={() => setYear(UNKNOWN_TAB_VALUE)}
+							className="px-3 py-1 text-xs whitespace-nowrap rounded-full"
+						>
+							Unknown
+						</Button>
 					</div>
 
 					{/* Desktop tabs aligned to the right of the years row */}

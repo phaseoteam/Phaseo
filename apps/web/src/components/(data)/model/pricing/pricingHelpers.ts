@@ -11,6 +11,9 @@ export type TokenTier = {
     per1M: number;
     price: number;
     label: string; // range or condition label
+    basePer1M?: number | null;
+    discountEndsAt?: string | null;
+    endpoint?: string | null;
     effFrom?: string | null;
     effTo?: string | null;
     ruleId?: string | null;
@@ -32,10 +35,14 @@ export type ProviderSections = {
     cacheWrites?: TokenTier[];               // NEW: cached_write_text_tokens etc.
     imageGen?: QualityRow[];
     videoGen?: ResolutionRow[];
+    requests?: TokenTier[];                  // NEW: requests pricing
     otherRules: {
         meter: string;
         unitLabel: string;
         price: number;
+        basePrice?: number | null;
+        discountEndsAt?: string | null;
+        endpoint?: string | null;
         ruleId?: string | null;
         conditions?: Condition[] | null;
     }[];
@@ -188,6 +195,10 @@ export function qualityRank(q: string) {
 /* ---------- section builder (uses fixes) ---------- */
 export function buildProviderSections(p: ProviderPricing, plan: string): ProviderSections {
     const rules = p.pricing_rules.filter(r => (r.pricing_plan || "standard") === plan);
+    const endpointByKey = new Map<string, string>();
+    for (const pm of p.provider_models) {
+        if (pm.key && pm.endpoint) endpointByKey.set(pm.key, pm.endpoint);
+    }
 
     const out: ProviderSections = {
         providerName: p.provider.api_provider_name || p.provider.api_provider_id,
@@ -195,20 +206,52 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         otherRules: [],
     };
 
-    // Deduplicate rules that are essentially the same but for different endpoints
-    // (e.g., chat.completions vs responses pricing)
-    const deduplicatedRules = rules.filter((rule, index, arr) => {
-        // Keep the first occurrence of rules with same meter, price, and conditions
-        return arr.findIndex(r => 
-            r.meter === rule.meter && 
-            r.price_per_unit === rule.price_per_unit &&
-            r.unit === rule.unit &&
-            r.unit_size === rule.unit_size &&
-            JSON.stringify(r.match) === JSON.stringify(rule.match)
-        ) === index;
+    type RuleEntry = {
+        rule: any;
+        base?: any;
+        endpoint: string | null;
+        groupKey: string;
+        dedupeKey: string;
+    };
+    const grouped = new Map<string, any[]>();
+    for (const r of rules as any[]) {
+        const endpoint = endpointByKey.get(r.model_key) ?? null;
+        const matchKey = JSON.stringify(r.match ?? []);
+        const groupKey = `${endpoint ?? "unknown"}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
+        if (!grouped.has(groupKey)) grouped.set(groupKey, []);
+        grouped.get(groupKey)!.push(r);
+    }
+
+    const entries: RuleEntry[] = [];
+    for (const [groupKey, group] of grouped) {
+        const sorted = [...group].sort((a, b) => {
+            if (a.priority !== b.priority) return b.priority - a.priority;
+            const aFrom = a.effective_from ? new Date(a.effective_from).getTime() : 0;
+            const bFrom = b.effective_from ? new Date(b.effective_from).getTime() : 0;
+            return bFrom - aFrom;
+        });
+        const current = sorted[0];
+        const base = sorted.find((r) => r.priority < current.priority);
+        const endpoint = endpointByKey.get(current.model_key) ?? null;
+        const matchKey = JSON.stringify(current.match ?? []);
+        const dedupeKey = `${current.meter}|${current.unit}|${current.unit_size}|${matchKey}`;
+        entries.push({ rule: current, base, endpoint, groupKey, dedupeKey });
+    }
+
+    const hasDiscounts = entries.some(
+        (e) => e.base && e.rule.effective_to
+    );
+    const seen = new Set<string>();
+    const filteredEntries = entries.filter((e) => {
+        if (hasDiscounts) return true;
+        if (seen.has(e.dedupeKey)) return false;
+        seen.add(e.dedupeKey);
+        return true;
     });
 
-    for (const r of deduplicatedRules as any[]) {
+    for (const entry of filteredEntries) {
+        const r = entry.rule;
+        const base = entry.base;
         const { dir, mod, unit } = parseMeter(r.meter || "");
         const unitSize = r.unit_size ?? 1;
         const price = Number(r.price_per_unit ?? 0);
@@ -219,6 +262,16 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             : [];
 
         if (!current) continue; // core shows now-effective only
+        const basePrice = base ? Number(base.price_per_unit ?? 0) : null;
+        const basePer1M =
+            basePrice != null && unit === "token"
+                ? perMillionIfTokens(
+                    unit,
+                    basePrice,
+                    base.unit_size ?? unitSize
+                )
+                : null;
+        const discountEndsAt = base && r.effective_to ? r.effective_to : null;
 
         // 1) token tiles (text/image/audio/video)
         if (unit === "token" && ["text", "image", "audio", "video"].includes(mod)) {
@@ -228,6 +281,9 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 per1M: per1M ?? 0,
                 price,
                 label,
+                basePer1M: basePer1M ?? null,
+                discountEndsAt,
+                endpoint: entry.endpoint,
                 effFrom: r.effective_from ?? null,
                 effTo: r.effective_to ?? null,
                 ruleId: r.id ?? null,
@@ -285,11 +341,33 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             continue;
         }
 
-        // 4) everything else → Advanced
+        // 4) requests (per call/request)
+        if (unit === "call" && (r.meter || "").toLowerCase().includes("request")) {
+            const label = conciseConditionLabel(conds);
+            const tier: TokenTier = {
+                per1M: 0, // Not applicable for requests
+                price,
+                label,
+                basePer1M: null,
+                discountEndsAt,
+                endpoint: entry.endpoint,
+                effFrom: r.effective_from ?? null,
+                effTo: r.effective_to ?? null,
+                ruleId: r.id ?? null,
+                isCurrent: true,
+            };
+            (out.requests ??= []).push(tier);
+            continue;
+        }
+
+        // 5) everything else → Advanced
         out.otherRules.push({
             meter: r.meter || "—",
             unitLabel: unitLabel(unit, unitSize),
             price,
+            basePrice,
+            discountEndsAt,
+            endpoint: entry.endpoint,
             ruleId: r.id ?? null,
             conditions: conds.length ? conds : null,
         });
@@ -316,6 +394,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         return mina - minb;
     });
     out.videoGen?.sort((a, b) => a.resolution.localeCompare(b.resolution));
+    out.requests?.sort((a, b) => a.price - b.price);
 
     return out;
 }

@@ -3,8 +3,14 @@ export const logoManifest = {
 		light: "/logos/ai21_light.svg",
 		dark: "/logos/ai21_dark.svg",
 	},
+	aionlabs: {
+		color: "/logos/aionlabs.svg",
+	},
 	alibaba: {
 		color: "/logos/alibaba.svg",
+	},
+	allenai: {
+		color: "/logos/allenai.svg",
 	},
 	amazon: {
 		light: "/logos/amazon_light.svg",
@@ -16,6 +22,9 @@ export const logoManifest = {
 	anthropic: {
 		light: "/logos/anthropic_light.svg",
 		dark: "/logos/anthropic_dark.svg",
+	},
+	"arcee-ai": {
+		color: "/logos/arcee-ai.svg",
 	},
 	"atlas-cloud": {
 		light: "/logos/atlas-cloud_light.svg",
@@ -37,13 +46,30 @@ export const logoManifest = {
 	bytedance: {
 		color: "/logos/bytedance.svg",
 	},
+	"bytedance-seed": {
+		color: "/logos/bytedance.svg",
+	},
 	cerebras: {
 		light: "/logos/cerebras_light.svg",
 		dark: "/logos/cerebras_dark.svg",
 	},
+	cirrascale: {
+		light: "/logos/cirrascale_light.svg",
+		dark: "/logos/cirrascale_dark.svg",
+	},
 	chutes: {
 		light: "/logos/chutes_light.svg",
 		dark: "/logos/chutes_dark.svg",
+	},
+	clarifai: {
+		color: "/logos/clarifai.svg",
+	},
+	cloudflare: {
+		color: "/logos/cloudflare.svg",
+	},
+	crusoe: {
+		light: "/logos/crusoe_light.svg",
+		dark: "/logos/crusoe_dark.svg",
 	},
 	cohere: {
 		color: "/logos/cohere.svg",
@@ -61,6 +87,23 @@ export const logoManifest = {
 	essentialai: {
 		color: "/logos/essential-ai.svg",
 	},
+	featherless: {
+		color: "/logos/featherless.svg",
+	},
+	figure: {
+		color: "/logos/figure.svg",
+	},
+	fireworks: {
+		color: "/logos/fireworks.svg",
+	},
+	friendli: {
+		light: "/logos/friendli_light.svg",
+		dark: "/logos/friendli_dark.svg",
+	},
+	gmicloud: {
+		light: "/logos/gmicloud_light.svg",
+		dark: "/logos/gmicloud_dark.svg",
+	},
 	google: {
 		color: "/logos/google.svg",
 	},
@@ -72,34 +115,41 @@ export const logoManifest = {
 		color: "/logos/google-vertex.svg",
 	},
 	grok: {
-		color: "/logos/grok.svg",
+		light: "/logos/grok_light.svg",
+		dark: "/logos/grok_dark.svg",
 	},
 	groq: {
 		color: "/logos/groq.svg",
 	},
-	github: {
-		light: "/social/github_light.svg",
-		dark: "/social/github_dark.svg",
-	},
-	// Social icons used in the footer
-	discord: {
-		color: "/social/discord.svg",
-	},
-	instagram: {
-		color: "/social/instagram.svg",
-	},
-	reddit: {
-		color: "/social/reddit.svg",
-	},
-	x: {
-		light: "/social/x_light.svg",
-		dark: "/social/x_dark.svg",
+	hyperbolic: {
+		color: "/logos/hyperbolic.svg",
 	},
 	ibm: {
 		color: "/logos/ibm.svg",
 	},
+	inception: {
+		light: "/logos/inception_light.svg",
+		dark: "/logos/inception_dark.svg",
+	},
+	inclusionai: {
+		color: "/logos/inclusionai.svg",
+	},
+	inflection: {
+		light: "/logos/inflection_light.svg",
+		dark: "/logos/inflection_dark.svg",
+	},
+	infermatic: {
+		color: "/logos/infermatic.svg",
+	},
 	lg: {
 		color: "/logos/lg.svg",
+	},
+	"liquid-ai": {
+		light: "/logos/liquid_light.svg",
+		dark: "/logos/liquid_dark.svg",
+	},
+	mancer: {
+		color: "/logos/mancer.svg",
 	},
 	meta: {
 		color: "/logos/meta.svg",
@@ -110,12 +160,26 @@ export const logoManifest = {
 	minimax: {
 		color: "/logos/minimax.svg",
 	},
+	"minimax-lightning": {
+		color: "/logos/minimax.svg",
+	},
 	mistral: {
 		color: "/logos/mistral.svg",
 	},
 	moonshotai: {
 		light: "/logos/moonshotai_light.svg",
 		dark: "/logos/moonshotai_dark.svg",
+	},
+	"moonshot-ai-turbo": {
+		light: "/logos/moonshotai_light.svg",
+		dark: "/logos/moonshotai_dark.svg",
+	},
+	morph: {
+		color: "/logos/morph.svg",
+	},
+	"nebius-token-factory": {
+		light: "/logos/nebius-token-factory_light.svg",
+		dark: "/logos/nebius-token-factory_dark.svg",
 	},
 	nous: {
 		light: "/logos/nous_light.svg",
@@ -135,33 +199,59 @@ export const logoManifest = {
 		light: "/logos/parasail_light.svg",
 		dark: "/logos/parasail_dark.svg",
 	},
+	phala: {
+		color: "/logos/phala.svg",
+	},
 	perplexity: {
 		color: "/logos/perplexity.svg",
+	},
+	"prime-intellect": {
+		light: "/logos/prime-intellect_light.svg",
+		dark: "/logos/prime-intellect_dark.svg",
 	},
 	qwen: {
 		color: "/logos/qwen.svg",
 	},
+	relace: {
+		light: "/logos/relace_light.svg",
+		dark: "/logos/relace_dark.svg",
+	},
 	scira: {
 		color: "/logos/scira.svg",
+	},
+	siliconflow: {
+		color: "/logos/siliconflow.svg",
+	},
+	sambanova: {
+		color: "/logos/sambanova.svg",
+	},
+	sourceful: {
+		light: "/logos/sourceful_light.svg",
+		dark: "/logos/sourceful_dark.svg",
 	},
 	suno: {
 		light: "/logos/suno_light.svg",
 		dark: "/logos/suno_dark.svg",
 	},
-	t3: {
-		color: "/logos/t3.svg",
-	},
 	together: {
 		color: "/logos/together.svg",
+	},
+	"weights-and-biases": {
+		color: "/logos/weights-and-biases.svg",
 	},
 	xai: {
 		light: "/logos/xai_light.svg",
 		dark: "/logos/xai_dark.svg",
 	},
+	xiaomi: {
+		color: "/logos/xiaomi.svg",
+	},
 	zai: {
 		light: "/logos/zai_light.svg",
 		dark: "/logos/zai_dark.svg",
 	},
+
+	// Languages
 	typescript: {
 		color: "/languages/typescript.svg",
 	},
@@ -191,5 +281,24 @@ export const logoManifest = {
 	rust: {
 		light: "/languages/rust_light.svg",
 		dark: "/languages/rust_dark.svg",
+	},
+
+	// Social icons used in the footer
+	discord: {
+		color: "/social/discord.svg",
+	},
+	github: {
+		light: "/social/github_light.svg",
+		dark: "/social/github_dark.svg",
+	},
+	instagram: {
+		color: "/social/instagram.svg",
+	},
+	reddit: {
+		color: "/social/reddit.svg",
+	},
+	x: {
+		light: "/social/x_light.svg",
+		dark: "/social/x_dark.svg",
 	},
 } as const;

@@ -254,18 +254,19 @@ response.raise_for_status()
 print(response.json()["choices"][0]["message"]["content"])`;
 	};
 
-	const groupedModels = useMemo(() => {
-		const groups = new Map<string, GatewaySupportedModel[]>();
-		for (const entry of models ?? []) {
-			const current = groups.get(entry.providerId) ?? [];
-			current.push(entry);
-			groups.set(entry.providerId, current);
-		}
-		return Array.from(groups.entries()).map(([providerId, entries]) => ({
-			providerId,
-			entries,
-		}));
-	}, [models]);
+    const groupedModels = useMemo(() => {
+        const groups = new Map<string, GatewaySupportedModel[]>();
+        for (const entry of models ?? []) {
+            const current = groups.get(entry.providerId) ?? [];
+            current.push(entry);
+            groups.set(entry.providerId, current);
+        }
+        return Array.from(groups.entries()).map(([providerId, entries]) => ({
+            providerId,
+            providerName: entries[0]?.providerName ?? providerId,
+            entries,
+        }));
+    }, [models]);
 
 	const selectedModel = useMemo(
 		() => (models ?? []).find((m) => m.modelId === model),
@@ -303,8 +304,9 @@ print(response.json()["choices"][0]["message"]["content"])`;
 									>
 										{selectedModel ? (
 											<span className="truncate text-left">
-												{selectedModel.providerId} /{" "}
-												{selectedModel.modelId}
+                                        {selectedModel.providerName ??
+                                            selectedModel.providerId}{" "}
+                                        {selectedModel.modelId}
 											</span>
 										) : models?.length ? (
 											"Select model..."
@@ -324,11 +326,11 @@ print(response.json()["choices"][0]["message"]["content"])`;
 											<CommandEmpty>
 												No models found.
 											</CommandEmpty>
-											{groupedModels.map((group) => (
-												<CommandGroup
-													key={group.providerId}
-													heading={group.providerId}
-												>
+                                {groupedModels.map((group) => (
+                                    <CommandGroup
+                                        key={group.providerId}
+                                        heading={group.providerName}
+                                    >
 													{group.entries.map(
 														(entry) => (
 															<CommandItem

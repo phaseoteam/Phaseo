@@ -16,11 +16,9 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
         .from('data_api_providers')
         .select('api_provider_id, api_provider_name, country_code')
         .order('api_provider_name', { ascending: true });
-
     if (error) {
         throw error;
     }
-
     if (!data || !Array.isArray(data)) return [];
 
     return data

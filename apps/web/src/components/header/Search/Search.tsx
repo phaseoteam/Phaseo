@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
 	CommandDialog,
@@ -10,46 +10,24 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-	CommandShortcut,
 } from "@/components/ui/command";
 import { DialogTitle } from "@/components/ui/dialog";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
-import {
-	Loader2,
-	Search as SearchIcon,
-	Sparkles,
-	ArrowUpRight,
-} from "lucide-react";
-import type {
-	Props,
-	ResultGroup,
-	ApiSearchResponse,
-	SearchResultItem,
-} from "./Search.types";
-import {
-	MIN_SEARCH_CHARS,
-	FETCH_DEBOUNCE_MS,
-	curatedGroups,
-} from "./Search.constants";
-import { SearchItem } from "./SearchItem";
+import { Search as SearchIcon, Sparkles } from "lucide-react";
+import { curatedGroups } from "./Search.constants";
+import { SearchRowItem } from "./SearchRowItem";
+import type { SearchData } from "@/lib/fetchers/search/getSearchData";
 
-export default function Search({ className }: Props) {
+interface Props {
+	className?: string;
+	initialData: SearchData;
+}
+
+export default function Search({ className, initialData }: Props) {
 	const router = useRouter();
 
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const [results, setResults] = useState<ResultGroup[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const [shortcutKeys, setShortcutKeys] = useState<string[]>(["Ctrl", "K"]);
-
-	useEffect(() => {
-		const isApple =
-			typeof navigator !== "undefined" &&
-			/(Mac|iPhone|iPod|iPad)/i.test(navigator.platform);
-		setShortcutKeys(isApple ? ["Cmd", "K"] : ["Ctrl", "K"]);
-	}, []);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
@@ -65,219 +43,234 @@ export default function Search({ className }: Props) {
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, []);
 
-	useEffect(() => {
-		if (!open) {
+	// Reset query when dialog closes
+	const handleOpenChange = (newOpen: boolean) => {
+		setOpen(newOpen);
+		if (!newOpen) {
 			setQuery("");
-			setResults([]);
-			setLoading(false);
-			setError(null);
 		}
-	}, [open]);
-
-	useEffect(() => {
-		const trimmed = query.trim();
-		if (!open || trimmed.length < MIN_SEARCH_CHARS) {
-			setLoading(false);
-			setError(null);
-			setResults([]);
-			return;
-		}
-
-		const controller = new AbortController();
-		let cancelled = false;
-
-		setLoading(true);
-		setError(null);
-
-		const timeoutId = window.setTimeout(async () => {
-			try {
-				const response = await fetch(
-					`/api/search?q=${encodeURIComponent(trimmed)}`,
-					{
-						signal: controller.signal,
-					}
-				);
-
-				if (!response.ok) {
-					throw new Error(
-						`Search request failed (${response.status})`
-					);
-				}
-
-				const payload = (await response.json()) as ApiSearchResponse;
-				if (!cancelled) {
-					const mappedGroups = (
-						payload.groups ?? []
-					).map<ResultGroup>((group) => ({
-						type: group.type,
-						label: group.label,
-						items: group.items.map<SearchResultItem>((item) => ({
-							...item,
-							icon: item.icon,
-						})),
-					}));
-					setResults(mappedGroups);
-				}
-			} catch (err) {
-				if (controller.signal.aborted || cancelled) {
-					return;
-				}
-				console.error("[search] request failed", err);
-				setResults([]);
-				setError(
-					"We couldn't reach search just now. Please try again."
-				);
-			} finally {
-				if (!cancelled) {
-					setLoading(false);
-				}
-			}
-		}, FETCH_DEBOUNCE_MS);
-
-		return () => {
-			cancelled = true;
-			controller.abort();
-			window.clearTimeout(timeoutId);
-		};
-	}, [open, query]);
+	};
 
 	const handleSelect = (href: string) => {
 		setOpen(false);
 		router.push(href);
 	};
 
-	const hasQuery = query.trim().length >= MIN_SEARCH_CHARS;
+	const hasQuery = query.trim().length > 0;
 
-	const groupsToRender: ResultGroup[] = hasQuery
-		? [curatedGroups[0], ...results]
-		: curatedGroups;
+	// Slice data based on whether user is searching
+	const displayLimit = hasQuery ? 50 : 6;
+	const modelsToShow = initialData.models.slice(0, displayLimit);
+	const orgsToShow = initialData.organisations.slice(0, displayLimit);
+	const benchmarksToShow = initialData.benchmarks.slice(0, displayLimit);
+	const providersToShow = initialData.apiProviders.slice(0, displayLimit);
+	const plansToShow = initialData.subscriptionPlans.slice(0, displayLimit);
+	const countriesToShow = initialData.countries.slice(0, displayLimit);
 
 	return (
 		<div className={cn("flex items-center gap-2", className)}>
 			<button
 				type="button"
 				onClick={() => setOpen(true)}
-				className={cn(
-					"hidden lg:flex h-9 w-full max-w-3xs items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm text-zinc-500 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/60 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400 dark:hover:bg-zinc-900"
-				)}
-				aria-label="Open search"
-			>
-				<SearchIcon className="size-4 shrink-0 text-zinc-500 dark:text-zinc-400" />
-				<span className="flex-1 truncate">
-					Search models, organisations, benchmarks...
-				</span>
-				<KbdGroup>
-					{shortcutKeys.map((key) => (
-						<Kbd key={key}>{key}</Kbd>
-					))}
-				</KbdGroup>
-			</button>
-
-			<button
-				type="button"
-				onClick={() => setOpen(true)}
-				className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/60 dark:text-zinc-300 dark:hover:bg-zinc-800 lg:hidden"
+				className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/60 dark:text-zinc-300 dark:hover:bg-zinc-800"
 				aria-label="Open search"
 			>
 				<SearchIcon className="size-5" />
 			</button>
 
-			<CommandDialog open={open} onOpenChange={setOpen}>
+			<CommandDialog open={open} onOpenChange={handleOpenChange}>
 				<DialogTitle className="sr-only">Search</DialogTitle>
 				<CommandInput
 					value={query}
 					onValueChange={setQuery}
-					placeholder="Search the database..."
+					placeholder="Search models, organisations, benchmarks..."
 					aria-label="Search catalogue"
 				/>
-				<CommandList className="min-h-[60vh] lg:min-h-[80vh] space-y-6">
-					{!loading && !error
-						? groupsToRender.map((group, index) => (
-								<Fragment key={group.type}>
-									<CommandGroup
-										heading={group.label}
-										className="text-xl font-semibold text-zinc-900 dark:text-zinc-50 space-y-2 pt-6 pb-4"
-									>
-										<div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-											{group.items
-												.slice(0, 9)
-												.map((item) => (
-													<SearchItem
-														key={`${group.type}-${item.id}`}
-														item={item}
-														onSelect={handleSelect}
-													/>
-												))}
-										</div>
-									</CommandGroup>
-									{index < groupsToRender.length - 1 ? (
-										<CommandSeparator />
-									) : null}
-								</Fragment>
-						  ))
-						: null}
-
+				<CommandList className="max-h-[60vh] lg:max-h-[70vh]">
 					<CommandEmpty className="py-12">
-						{loading ? (
-							<div className="flex flex-col items-center gap-3">
-								<div className="size-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-									<Loader2 className="size-6 animate-spin text-zinc-500" />
-								</div>
-								<div className="text-center">
-									<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-										Searching...
-									</p>
-									<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-										Finding the best matches
-									</p>
-								</div>
+						<div className="flex flex-col items-center gap-3">
+							<div className="size-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+								<SearchIcon className="size-6 text-zinc-400" />
 							</div>
-						) : error ? (
-							<div className="flex flex-col items-center gap-3">
-								<div className="size-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-									<SearchIcon className="size-6 text-red-600 dark:text-red-400" />
-								</div>
-								<div className="text-center">
-									<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-										Search temporarily unavailable
-									</p>
-									<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-										{error}
-									</p>
-								</div>
+							<div className="text-center">
+								<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+									No results found
+								</p>
+								<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+									Try different keywords or check your spelling
+								</p>
 							</div>
-						) : hasQuery ? (
-							<div className="flex flex-col items-center gap-3">
-								<div className="size-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-									<SearchIcon className="size-6 text-zinc-400" />
-								</div>
-								<div className="text-center">
-									<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-										No results found
-									</p>
-									<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-										Try different keywords or check your
-										spelling
-									</p>
-								</div>
-							</div>
-						) : (
-							<div className="flex flex-col items-center gap-3">
-								<div className="size-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-									<Sparkles className="size-6 text-zinc-400" />
-								</div>
-								<div className="text-center">
-									<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-										Start typing to search
-									</p>
-									<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-										Search for models, organisations,
-										benchmarks, and more
-									</p>
-								</div>
-							</div>
-						)}
+						</div>
 					</CommandEmpty>
+
+					{/* Quick Actions - Always visible when no query */}
+					{!hasQuery && curatedGroups[0] && (
+						<>
+							<CommandGroup heading={curatedGroups[0].label}>
+								{curatedGroups[0].items.map((item) => (
+									<CommandItem
+										key={item.id}
+										value={item.href}
+										onSelect={() => handleSelect(item.href)}
+										className="flex items-center gap-3 px-3 py-2.5 cursor-pointer"
+									>
+										<Sparkles className="size-[18px] shrink-0 text-zinc-400" />
+										<span className="text-sm font-medium">{item.title}</span>
+									</CommandItem>
+								))}
+							</CommandGroup>
+							<CommandSeparator />
+						</>
+					)}
+
+					{/* Models */}
+					{modelsToShow.length > 0 && (
+						<>
+							<CommandGroup heading="Models">
+								{modelsToShow.map((model) => (
+									<SearchRowItem
+										key={model.id}
+										{...model}
+										keywords={model.searchKeywords}
+										onSelect={handleSelect}
+									/>
+								))}
+							</CommandGroup>
+							<CommandSeparator />
+						</>
+					)}
+
+					{/* Organisations */}
+					{orgsToShow.length > 0 && (
+						<>
+							<CommandGroup heading="Organisations">
+								{orgsToShow.map((org) => (
+									<SearchRowItem
+										key={org.id}
+										{...org}
+										keywords={org.searchKeywords}
+										onSelect={handleSelect}
+									/>
+								))}
+							</CommandGroup>
+							<CommandSeparator />
+						</>
+					)}
+
+					{/* Benchmarks */}
+					{benchmarksToShow.length > 0 && (
+						<>
+							<CommandGroup heading="Benchmarks">
+								{benchmarksToShow.map((benchmark) => (
+									<SearchRowItem
+										key={benchmark.id}
+										{...benchmark}
+										keywords={benchmark.searchKeywords}
+										onSelect={handleSelect}
+									/>
+								))}
+							</CommandGroup>
+							<CommandSeparator />
+						</>
+					)}
+
+					{/* API Providers */}
+					{providersToShow.length > 0 && (
+						<>
+							<CommandGroup heading="API Providers">
+								{providersToShow.map((provider) => (
+									<SearchRowItem
+										key={provider.id}
+										{...provider}
+										keywords={provider.searchKeywords}
+										onSelect={handleSelect}
+									/>
+								))}
+							</CommandGroup>
+							<CommandSeparator />
+						</>
+					)}
+
+					{/* Subscription Plans */}
+					{plansToShow.length > 0 && (
+						<>
+							<CommandGroup heading="Subscription Plans">
+								{plansToShow.map((plan) => (
+									<SearchRowItem
+										key={plan.id}
+										{...plan}
+										keywords={plan.searchKeywords}
+										onSelect={handleSelect}
+									/>
+								))}
+							</CommandGroup>
+							<CommandSeparator />
+						</>
+					)}
+
+					{/* Countries */}
+					{countriesToShow.length > 0 && (
+						<>
+							<CommandGroup heading="Countries">
+								{countriesToShow.map((country) => (
+									<SearchRowItem
+										key={country.id}
+										{...country}
+										keywords={country.searchKeywords}
+										onSelect={handleSelect}
+									/>
+								))}
+							</CommandGroup>
+						</>
+					)}
+
+					{/* Featured items when no query */}
+					{!hasQuery && (
+						<>
+							{curatedGroups.slice(1).map((group) => (
+								<Fragment key={group.type}>
+									<CommandSeparator />
+									<CommandGroup heading={group.label}>
+										{group.items.map((item) => (
+											<CommandItem
+												key={item.id}
+												value={item.href}
+												onSelect={() => handleSelect(item.href)}
+												className="flex items-center gap-3 px-3 py-2.5 cursor-pointer"
+											>
+												<div className="size-[18px] shrink-0 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+													{item.logoId && (
+														<img
+															src={`https://models.dev/logos/${item.logoId}.svg`}
+															alt={item.title}
+															className="h-full w-full object-contain"
+														/>
+													)}
+													{item.flagIso && (
+														<img
+															src={`/flags/${item.flagIso}.svg`}
+															alt={item.title}
+															className="h-full w-full object-cover"
+														/>
+													)}
+												</div>
+												<div className="flex flex-1 flex-col gap-0.5 min-w-0">
+													<span className="text-sm font-medium truncate">
+														{item.title}
+													</span>
+													{item.subtitle && (
+														<span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+															{item.subtitle}
+														</span>
+													)}
+												</div>
+											</CommandItem>
+										))}
+									</CommandGroup>
+								</Fragment>
+							))}
+						</>
+					)}
 				</CommandList>
 			</CommandDialog>
 		</div>

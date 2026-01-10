@@ -8,26 +8,27 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { FileText, Calculator, Code, Terminal } from "lucide-react";
+import { FileText, Calculator, Code, Terminal, DollarSign } from "lucide-react";
 
 const tools = [
-	{
-		id: "markdown-preview",
-		title: "Markdown Previewer",
-		description: "Preview and render Markdown content in real-time.",
+        {
+                id: "markdown-preview",
+                title: "Markdown Previewer",
+                description: "Preview and render Markdown content in real-time.",
 		icon: FileText,
 		href: "/tools/markdown-preview",
 		comingSoon: false,
 	},
-	{
-		id: "request-builder",
-		title: "Request Builder",
-		description:
-			"Build API requests interactively and generate code snippets.",
-		icon: Terminal,
-		href: "/tools/request-builder",
-		comingSoon: false,
-	},
+        {
+                id: "request-builder",
+                title: "Request Builder",
+                description:
+                        "Build API requests interactively and generate code snippets.",
+                icon: Terminal,
+                href: "/tools/request-builder",
+                comingSoon: false,
+        },
+
 	// {
 	// 	id: "tokenizer",
 	// 	title: "Token Counter",
@@ -42,6 +43,14 @@ const tools = [
 		description: "Format, validate, and beautify JSON data.",
 		icon: Code,
 		href: "/tools/json-formatter",
+		comingSoon: false,
+	},
+	{
+		id: "pricing-calculator",
+		title: "Pricing Calculator",
+		description: "Calculate costs for AI model usage across different providers.",
+		icon: DollarSign,
+		href: "/tools/pricing-calculator",
 		comingSoon: false,
 	},
 ];

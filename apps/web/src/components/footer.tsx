@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { withUTM } from "@/lib/utm";
 import { Logo } from "./Logo";
 
+const startYear = 2025;
 const currentYear = new Date().getFullYear();
 const deployTime = process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "";
 
@@ -203,15 +204,6 @@ export default function Footer() {
 						>
 							<FilePlus className="h-5 w-5" />
 							<span className="text-xs">Contribute</span>
-						</Link>
-						{/* Sources */}
-						<Link
-							href="/sources"
-							aria-label="Sources"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<Book className="h-5 w-5" />
-							<span className="text-xs">Sources</span>
 						</Link>
 						{/* Database Monitor */}
 						<Link
@@ -440,23 +432,6 @@ export default function Footer() {
 								</Tooltip>
 							</TooltipProvider>
 
-							{/* Sources */}
-							<TooltipProvider delayDuration={0}>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Link
-											href="/sources"
-											aria-label="Sources"
-											className="h-9 w-9 text-primary rounded-full border border-border flex items-center justify-center transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:outline-hidden focus:ring-2 focus:ring-primary"
-										>
-											<Book className="h-4 w-4" />
-										</Link>
-									</TooltipTrigger>
-									<TooltipContent side="top" align="center">
-										Sources
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
 
 							{/* Database Monitor */}
 							<TooltipProvider delayDuration={0}>
@@ -535,7 +510,11 @@ export default function Footer() {
 
 				<div className="flex flex-col items-center justify-center">
 					<div className="text-center w-full px-4 sm:px-0">
-						&copy; {currentYear} AI Stats
+                                                &copy; {startYear}
+                                                {currentYear > startYear
+                                                        ? ` - ${currentYear}`
+                                                        : ""}{" "}
+                                                AI Stats
 						<span className="block mt-1">
 							If you run into any issues or notice any data
 							errors, please visit our GitHub and report an issue.

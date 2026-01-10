@@ -164,7 +164,7 @@ export default async function TeamsSettingsPage() {
 			if (!teamId) continue;
 			const nanos = Number(wallet?.balance_nanos ?? 0);
 			if (!Number.isFinite(nanos)) continue;
-			walletBalances[teamId] = Number((nanos / 10_000_000).toFixed(2));
+                        walletBalances[teamId] = Number((nanos / 1_000_000_000).toFixed(2));
 		}
 	}
 	return (

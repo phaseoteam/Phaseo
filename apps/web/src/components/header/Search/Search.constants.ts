@@ -1,35 +1,4 @@
-import {
-    BarChart,
-    BookOpen,
-    Building,
-    CreditCard,
-    Cpu,
-    GitCompare,
-    Globe2,
-    Plug,
-    Search as SearchIcon,
-    Sparkles,
-    TrendingUp,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import type { SearchItemIcon, ResultGroup } from "./Search.types";
-
-export const ICON_MAP: Record<SearchItemIcon, LucideIcon> = {
-    model: Cpu,
-    organisation: Building,
-    benchmark: BarChart,
-    "api-provider": Plug,
-    quick: Sparkles,
-    trending: TrendingUp,
-    recent: Sparkles,
-    plan: CreditCard,
-    country: Globe2,
-    compare: GitCompare,
-    page: BookOpen,
-};
-
-export const MIN_SEARCH_CHARS = 3;
-export const FETCH_DEBOUNCE_MS = 500;
+import type { ResultGroup } from "./Search.types";
 
 export const curatedGroups: ResultGroup[] = [
     {

@@ -34,17 +34,17 @@ export function SdkCard({ sdk }: SdkCardProps) {
 
 	return (
 		<Card className="w-full">
-			<CardContent className="p-6">
+			<CardContent className="p-4">
 				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
 						<Logo
 							id={sdk.logoId}
-							className="h-12 w-12"
-							width={48}
-							height={48}
+							className="h-10 w-10"
+							width={40}
+							height={40}
 						/>
 						<div>
-							<h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+							<h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
 								{sdk.name}
 							</h3>
 							{sdk.supported ? (
@@ -108,7 +108,7 @@ export function SdkCard({ sdk }: SdkCardProps) {
 								: "text-indigo-600 dark:text-indigo-400 border border-indigo-600 dark:border-indigo-400 pointer-events-none opacity-50"
 						}`}
 					>
-						View more
+						View library page
 					</Link>
 				</div>
 			</CardContent>

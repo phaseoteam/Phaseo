@@ -4,18 +4,18 @@ import { HelpSection } from "@/components/wrapped/help-section";
 import WrappedClient from "@/components/wrapped/wrapped-client";
 
 export const metadata = {
-	title: "AI Wrapped - Relive Your Year in AI",
+	title: "AI Stats Wrapped - Relive Your Year in AI",
 	description:
 		"Upload exports from your favorite AI copilots and transform them into a Spotify Wrapped-style story. Everything runs in your browser -- your data never leaves the page.",
 	openGraph: {
-		title: "AI Wrapped - Relive Your Year in AI",
+		title: "AI Stats Wrapped - Relive Your Year in AI",
 		description:
 			"Discover your AI conversation stats with a fun, shareable Wrapped experience.",
 		type: "website",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "AI Wrapped - Relive Your Year in AI",
+		title: "AI Stats Wrapped - Relive Your Year in AI",
 		description:
 			"Discover your AI conversation stats with a fun, shareable Wrapped experience.",
 	},

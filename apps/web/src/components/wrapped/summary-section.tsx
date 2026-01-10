@@ -7,18 +7,14 @@ import type { Summary } from "./types";
 
 interface SummarySectionProps {
 	summary: Summary | null;
-	processedCount: number;
-	processingCount: number;
 	onGenerateWrapped: () => void;
 }
 
 export default function SummarySection({
 	summary,
-	processedCount,
-	processingCount,
 	onGenerateWrapped,
 }: SummarySectionProps) {
-	const canGenerate = processedCount > 0 && processingCount === 0;
+	const canGenerate = summary !== null;
 
 	return (
 		<section className="space-y-6">
@@ -32,16 +28,9 @@ export default function SummarySection({
 					className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 px-8 py-6 text-white shadow-lg shadow-purple-500/30 transition hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
 					onClick={onGenerateWrapped}
 				>
-					<span>Generate my Wrapped</span>
+					<span>View my AI Stats Wrapped</span>
 					<ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
 				</Button>
-				{!canGenerate && (
-					<p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
-						{processingCount > 0
-							? "Wait for uploads to finish processing."
-							: "Upload at least one export to generate your Wrapped."}
-					</p>
-				)}
 			</div>
 		</section>
 	);

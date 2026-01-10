@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { RefreshCredits } from "@/app/(dashboard)/settings/credits/actions";
 import { toast } from "sonner";
-import NumberFlow from "@number-flow/react";
+import { CreditAmount } from "./CreditAmount";
 
 interface Props {
 	balance: number;
@@ -64,10 +64,8 @@ export default function CurrentCredits({ balance }: Props) {
 
 				<CardContent className="pt-4">
 					<div>
-						<NumberFlow
+						<CreditAmount
 							value={balance}
-							locales="en-US"
-							format={{ style: "currency", currency: "USD" }}
 							className={`text-3xl font-semibold font-mono ${
 								balance < 0 ? "text-red-500" : ""
 							}`}

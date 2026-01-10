@@ -47,10 +47,10 @@ export interface APIProviderModels {
     model_id: string;
     model_name: string;
     provider_model_slug?: string | null;
-    endpoint: string;
-    is_active_gateway: boolean;
-    input_modalities: string;
-    output_modalities: string;
+    endpoints?: string[] | null;
+    is_active_gateway?: boolean | null;
+    input_modalities?: string[] | string | null;
+    output_modalities?: string[] | string | null;
     release_date?: string | null;
 }
 export type ModelOutputType = 'text' | 'image' | 'video' | 'audio' | 'embeddings' | 'moderations';
@@ -79,8 +79,9 @@ export async function getAPIProviderModels(apiProviderId: string, outputType: Mo
     const { data: modelsData, error: modelsError } = await supabase
         .from('data_api_provider_models')
         .select(`
-            model_id,
+            api_model_id,
             provider_model_slug,
+            internal_model_id,
             endpoint,
             is_active_gateway,
             input_modalities,
@@ -114,18 +115,47 @@ export async function getAPIProviderModels(apiProviderId: string, outputType: Mo
         return bTime - aTime;
     });
 
-    const results: APIProviderModels[] = (modelsData as any[])
-        .map((r: any) => ({
-            model_id: r.model_id,
-            model_name: r.data_models?.name ?? r.model_name ?? '',
-            provider_model_slug: r.provider_model_slug ?? null,
-            endpoint: r.endpoint ?? '',
-            is_active_gateway: Boolean(r.is_active_gateway),
-            input_modalities: r.input_modalities ?? '',
-            output_modalities: r.output_modalities ?? '',
-            release_date: r.data_models?.release_date ?? null,
-        }))
-        .filter((m) => m.model_id);
+    // Group by model_id to merge same models with different endpoints
+    const modelMap: Map<string, APIProviderModels> = new Map();
+    for (const r of modelsData) {
+        const model_id = r.internal_model_id;
+        const endpoint = r.endpoint ?? null;
+        if (!modelMap.has(model_id)) {
+            modelMap.set(model_id, {
+                model_id,
+                model_name: r.data_models?.name ?? r.model_name ?? '',
+                provider_model_slug: r.provider_model_slug ?? null,
+                endpoints: endpoint ? [endpoint] : [],
+                is_active_gateway: r.is_active_gateway ?? null,
+                input_modalities: r.input_modalities ?? null,
+                output_modalities: r.output_modalities ?? null,
+                release_date: r.data_models?.release_date ?? null,
+            });
+        } else {
+            const existing = modelMap.get(model_id)!;
+            if (endpoint && !existing.endpoints!.includes(endpoint)) {
+                existing.endpoints!.push(endpoint);
+            }
+            // Assume other fields are consistent
+        }
+    }
+
+    const results: APIProviderModels[] = Array.from(modelMap.values()).filter((m) => m.model_id);
+
+    // Sort results again by release_date desc, then name asc
+    results.sort((a, b) => {
+        const aDate = a.release_date ?? null;
+        const bDate = b.release_date ?? null;
+
+        const aTime = aDate ? new Date(aDate).getTime() : Number.NEGATIVE_INFINITY;
+        const bTime = bDate ? new Date(bDate).getTime() : Number.NEGATIVE_INFINITY;
+
+        if (aTime === bTime) {
+            return a.model_name.localeCompare(b.model_name);
+        }
+
+        return bTime - aTime;
+    });
 
     return results;
 }

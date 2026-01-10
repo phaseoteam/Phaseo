@@ -8,6 +8,7 @@ export interface ModelCard {
     organisation_id: string;
     organisation_name: string | null;
     organisation_colour: string | null;
+    status?: string | null;
     release_date?: string | null;
     announcement_date?: string | null;
     primary_date: string | null;
@@ -64,6 +65,7 @@ export function mapRawToModelCard(
         organisation_name: raw.organisation?.name ?? null,
         organisation_colour:
             raw.organisation?.colour ?? raw.organisation?.color ?? null,
+        status: raw.status ?? null,
         release_date: raw.release_date ?? null,
         announcement_date: raw.announcement_date ?? null,
         primary_date: null,
@@ -90,6 +92,7 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
     const baseSelect = `
             model_id,
             name,
+            status,
             organisation_id,
             release_date,
             announcement_date,

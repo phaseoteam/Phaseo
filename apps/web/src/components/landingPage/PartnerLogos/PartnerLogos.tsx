@@ -1,5 +1,5 @@
 import PartnerLogosClient from "./PartnerLogosClient";
-import { listKnownLogos } from "@/lib/logos";
+import { listKnownLogos, resolveLogo } from "@/lib/logos";
 
 const customProviderLogos: string[] = ["/social/hugging_face.svg"];
 
@@ -25,26 +25,36 @@ function getProviderLogos(): string[] {
 		excludedProviderLogos.map(normaliseDescriptor)
 	);
 
-	const knownLogos = listKnownLogos()
-		.filter(({ id, assets }) => {
-			// Exclude logos with assets in /languages/
-			const hasLanguageAsset = Object.values(assets).some((asset) =>
-				asset?.startsWith("/languages/")
-			);
-			if (hasLanguageAsset) return false;
+	const allLogos = [
+		...listKnownLogos()
+			.filter(({ id, assets }) => {
+				const hasLanguageAsset = Object.values(assets).some((asset) =>
+					asset?.startsWith("/languages/")
+				);
+				if (hasLanguageAsset) return false;
 
-			const normalisedId = normaliseDescriptor(id);
-			if (exclusionSet.has(normalisedId)) return false;
-			const pathCandidate = normaliseDescriptor(`/logos/${id}.svg`);
-			return !exclusionSet.has(pathCandidate);
-		})
-		.map(({ id }) => id);
+				const normalisedId = normaliseDescriptor(id);
+				if (exclusionSet.has(normalisedId)) return false;
+				const pathCandidate = normaliseDescriptor(`/logos/${id}.svg`);
+				return !exclusionSet.has(pathCandidate);
+			})
+			.map(({ id }) => id),
+		...customProviderLogos.filter(
+			(src) => !exclusionSet.has(normaliseDescriptor(src))
+		),
+	];
 
-	const customLogos = customProviderLogos.filter(
-		(src) => !exclusionSet.has(normaliseDescriptor(src))
-	);
+	const seen = new Set<string>();
+	const deduped: string[] = [];
+	for (const id of allLogos) {
+		const resolved = resolveLogo(id, { fallbackToColor: false });
+		const src = resolved.src;
+		if (!src || seen.has(src)) continue;
+		seen.add(src);
+		deduped.push(id);
+	}
 
-	return [...knownLogos, ...customLogos];
+	return deduped;
 }
 
 export default function PartnerLogos() {

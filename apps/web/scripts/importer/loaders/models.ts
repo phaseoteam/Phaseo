@@ -54,9 +54,12 @@ type ModelFileMeta = {
     previous_model_id: string | null;
 };
 
-export async function loadModels(tracker: ChangeTracker) {
+export async function loadModels(
+    tracker: ChangeTracker,
+    { modelId }: { modelId: string | null }
+) {
     const supa = client();
-    tracker.touchPrefix(DIR_MODELS);
+    if (!modelId) tracker.touchPrefix(DIR_MODELS);
 
     // ---------- 1) Read ALL JSON up front (no DB reads) ----------
     const famDirs = await listDirs(DIR_FAMILIES);
@@ -78,6 +81,10 @@ export async function loadModels(tracker: ChangeTracker) {
         for (const md of modelDirs) {
             const fp = join(md, "model.json");
             const { data: modelJson, hash } = await readJsonWithHash<ModelJSON>(fp);
+            if (modelId && modelJson.model_id !== modelId) {
+                models.push(modelJson);
+                continue;
+            }
             const change = tracker.track(fp, hash, {
                 model_id: modelJson.model_id,
                 organisation_id: modelJson.organisation_id,
@@ -97,7 +104,7 @@ export async function loadModels(tracker: ChangeTracker) {
         }
     }
 
-    const deletedModels = tracker.getDeleted(DIR_MODELS);
+    const deletedModels = modelId ? [] : tracker.getDeleted(DIR_MODELS);
     const deletedParents = new Set<string>();
     for (const d of deletedModels) {
         const meta = d.info.meta as ModelFileMeta | undefined;
@@ -105,6 +112,10 @@ export async function loadModels(tracker: ChangeTracker) {
     }
 
     deletedParents.forEach(p => timelineHints.add(p));
+
+    if (modelId && !models.some(m => m.model_id === modelId)) {
+        throw new Error(`Model '${modelId}' not found in ${DIR_MODELS}`);
+    }
 
     const hasChanges = changedModels.size > 0 || deletedModels.length > 0;
     if (!hasChanges) return;
@@ -370,8 +381,22 @@ export async function loadModels(tracker: ChangeTracker) {
         }
     }
 
-    await pruneRowsByColumn(supa, "data_model_links", "model_id", modelIds, "data_model_links");
-    await pruneRowsByColumn(supa, "data_model_details", "model_id", modelIds, "data_model_details");
-    await pruneRowsByColumn(supa, "data_benchmark_results", "model_id", modelIds, "data_benchmark_results");
-    await pruneRowsByColumn(supa, "data_models", "model_id", modelIds, "data_models");
+    if (!modelId) {
+        await pruneRowsByColumn(supa, "data_model_links", "model_id", modelIds, "data_model_links");
+        await pruneRowsByColumn(
+            supa,
+            "data_model_details",
+            "model_id",
+            modelIds,
+            "data_model_details"
+        );
+        await pruneRowsByColumn(
+            supa,
+            "data_benchmark_results",
+            "model_id",
+            modelIds,
+            "data_benchmark_results"
+        );
+        await pruneRowsByColumn(supa, "data_models", "model_id", modelIds, "data_models");
+    }
 }

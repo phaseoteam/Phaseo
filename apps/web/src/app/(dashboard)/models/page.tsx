@@ -7,6 +7,10 @@ import {
 import { loadModelsSearchParams } from "./search-params";
 import type { Metadata } from "next";
 import type { SearchParams } from "nuqs/server";
+import {
+	UPCOMING_TAB_VALUE,
+	UNKNOWN_TAB_VALUE,
+} from "@/lib/models/modelTabs";
 
 export const metadata: Metadata = {
 	title: "AI models - Compare Benchmarks, Pricing & Providers",
@@ -82,18 +86,35 @@ function getYearPagination(
 		}
 	}
 
+	const upcomingModels = models.filter(
+		(model) => model.status === "Rumoured"
+	);
+	const unknownModels = models.filter(
+		(model) => getModelYear(model) === null
+	);
+
 	const years = Array.from(yearSet).sort((a, b) => b - a);
 	const defaultYear: number | null = years.length > 0 ? years[0] : null;
 
 	let activeYear: number | null = defaultYear;
-	if (yearParam && years.includes(yearParam)) {
+	if (yearParam === UPCOMING_TAB_VALUE) {
+		activeYear = UPCOMING_TAB_VALUE;
+	} else if (yearParam === UNKNOWN_TAB_VALUE) {
+		activeYear = UNKNOWN_TAB_VALUE;
+	} else if (yearParam && years.includes(yearParam)) {
 		activeYear = yearParam;
 	}
 
 	const paginatedModels =
-		activeYear === null
-			? models
-			: models.filter((model) => getModelYear(model) === activeYear);
+		activeYear === UPCOMING_TAB_VALUE
+			? upcomingModels
+			: activeYear === UNKNOWN_TAB_VALUE
+				? unknownModels
+				: activeYear === null
+					? models
+					: models.filter(
+							(model) => getModelYear(model) === activeYear
+						);
 
 	return { years, activeYear, paginatedModels };
 }

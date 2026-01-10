@@ -1,13 +1,17 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import getModelPricing, {
-	type ProviderPricing,
+    type ProviderPricing,
 } from "@/lib/fetchers/models/getModelPricing";
+import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import { withUTM } from "@/lib/utm";
 
 export default async function ModelPricing({ modelId }: { modelId: string }) {
-	const providers: ProviderPricing[] = await getModelPricing(modelId);
+    const [providers, header] = await Promise.all([
+        getModelPricing(modelId),
+        getModelOverviewHeader(modelId),
+    ]);
 
 	// Only consider providers that actually have pricing rules
 	const providersWithRules = (providers || []).filter(
@@ -45,5 +49,10 @@ export default async function ModelPricing({ modelId }: { modelId: string }) {
 		);
 	}
 
-	return <ModelPricingClient providers={providersWithRules} />;
+    return (
+        <ModelPricingClient
+            providers={providersWithRules}
+            creatorOrgId={header?.organisation_id ?? null}
+        />
+    );
 }

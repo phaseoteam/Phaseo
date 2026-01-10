@@ -21,7 +21,6 @@ export interface PricingRule {
 
 export interface ProviderModel {
     id: string;                 // you’re storing composed key in `id`
-    key: string;                // generated column on table (provider:model:endpoint)
     api_provider_id: string;
     provider_model_slug?: string | null;
     model_id: string;
@@ -60,10 +59,9 @@ export default async function getModelPricing(modelId: string): Promise<Provider
         .from("data_api_provider_models")
         .select(`
       id,
-      key,
       api_provider_id,
       provider_model_slug,
-      model_id,
+      api_model_id,
       endpoint,
       is_active_gateway,
       input_modalities,
@@ -74,14 +72,14 @@ export default async function getModelPricing(modelId: string): Promise<Provider
       updated_at,
       provider:data_api_providers(api_provider_id, api_provider_name, link, country_code)
     `)
-        .eq("model_id", modelId);
+        .eq("internal_model_id", modelId);
 
     if (pmError) throw new Error(pmError.message || "Failed to fetch provider models");
 
     const providerModels = (pms || []) as any[];
 
     // Gather keys to fetch rules against
-    const modelKeys = Array.from(new Set(providerModels.map(pm => pm.key))).filter(Boolean);
+    const modelKeys = Array.from(new Set(providerModels.map(pm => pm.id))).filter(Boolean);
     const nowFilter = {
         // effective_from <= now()
         lte_from: new Date().toISOString(),
@@ -134,7 +132,6 @@ export default async function getModelPricing(modelId: string): Promise<Provider
         // normalise provider model record
         providerMap.get(pid)!.provider_models.push({
             id: pm.id,
-            key: pm.key,
             api_provider_id: pm.api_provider_id,
             provider_model_slug: pm.provider_model_slug,
             model_id: pm.model_id,
@@ -153,7 +150,7 @@ export default async function getModelPricing(modelId: string): Promise<Provider
     const byKeyToProvider = new Map<string, string>();
     for (const [pid, entry] of providerMap) {
         for (const pm of entry.provider_models) {
-            byKeyToProvider.set(pm.key, pid);
+            byKeyToProvider.set(pm.id, pid);
         }
     }
     for (const rule of rules as PricingRule[]) {

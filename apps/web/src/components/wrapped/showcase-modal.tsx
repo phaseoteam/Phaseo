@@ -19,14 +19,13 @@ import {
 } from "lucide-react";
 import { SlideLayout } from "./slide-layout";
 import { formatNumber, PROVIDERS } from "./utils";
-import type { Summary, Slide, ProviderKey, ProviderState } from "./types";
+import type { Summary, Slide } from "./types";
 
 interface ShowcaseModalProps {
 	isOpen: boolean;
 	step: number;
 	summary: Summary | null;
 	slides: Slide[];
-	providerState: Record<ProviderKey, ProviderState>;
 	onClose: () => void;
 	onStepChange: (step: number) => void;
 }
@@ -36,7 +35,6 @@ export default function ShowcaseModal({
 	step,
 	summary,
 	slides,
-	providerState,
 	onClose,
 	onStepChange,
 }: ShowcaseModalProps) {
@@ -48,17 +46,6 @@ export default function ShowcaseModal({
 		try {
 			const payload = {
 				summary,
-				providers: Object.fromEntries(
-					PROVIDERS.map((provider) => [
-						provider.key,
-						{
-							file:
-								providerState[provider.key]?.file?.name ?? null,
-							metrics:
-								providerState[provider.key]?.metrics ?? null,
-						},
-					])
-				),
 				generatedAt: new Date().toISOString(),
 			};
 			const blob = new Blob([JSON.stringify(payload, null, 2)], {
@@ -67,7 +54,7 @@ export default function ShowcaseModal({
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement("a");
 			link.href = url;
-			link.download = "ai-wrapped-summary.json";
+			link.download = "ai-stats-wrapped-summary.json";
 			link.click();
 			URL.revokeObjectURL(url);
 		} finally {

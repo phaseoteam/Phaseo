@@ -1,4 +1,4 @@
-// components/providers/APIModelCard.tsx
+﻿// components/providers/APIModelCard.tsx
 "use client";
 
 import React, { useMemo } from "react";
@@ -6,12 +6,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-	Tooltip,
-	TooltipTrigger,
-	TooltipContent,
-	TooltipProvider,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
 	HoverCard,
 	HoverCardTrigger,
@@ -30,20 +25,9 @@ import {
 	Braces,
 	Eye,
 	Bot,
-	ArrowRight,
 	Link2,
 } from "lucide-react";
-
-export type APIProviderModels = {
-	model_id: string;
-	model_name: string;
-	endpoint?: string | null;
-	is_active_gateway?: boolean | null;
-	input_modalities?: string[] | string | null;
-	output_modalities?: string[] | string | null;
-	provider_model_slug?: string | null;
-	// release_date?: string | null; // intentionally unused
-};
+import type { APIProviderModels } from "@/lib/fetchers/api-providers/getAPIProvider";
 
 // --- modality utils ----------------------------------------------------------
 
@@ -95,10 +79,7 @@ function ModBadge({ name, disabled }: { name: string; disabled?: boolean }) {
 			)}
 		>
 			<Icon
-				className={cn(
-					"h-3.5 w-3.5",
-					disabled ? "text-neutral-300" : ""
-				)}
+				className={cn("h-3.5 w-3.5", disabled ? "text-neutral-300" : "")}
 			/>
 			{capitalize(name)}
 		</span>
@@ -124,28 +105,26 @@ const ENDPOINT_META: Record<
 	"image.generations": {
 		label: "Image Generations",
 		icon: ImageIcon,
-		className:
-			"bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
+		className: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 	},
 	embeddings: {
 		label: "Embeddings",
 		icon: Braces,
-		className:
-			"bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
+		className: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
 	},
 	"audio.speech": {
 		label: "Audio Speech",
 		icon: AudioLines,
-		className:
-			"bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	},
 	"video.generations": {
 		label: "Video Generations",
 		icon: Video,
-		className:
-			"bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200",
+		className: "bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200",
 	},
 };
+
+const ENDPOINT_INLINE_LIMIT = 2;
 
 function getEndpointMeta(endpoint?: string | null): {
 	label: string;
@@ -206,6 +185,12 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 		() => toList(model.output_modalities),
 		[model.output_modalities]
 	);
+	const endpoints = useMemo(() => {
+		const list = (model.endpoints ?? []).filter(Boolean) as string[];
+		return Array.from(new Set(list));
+	}, [model.endpoints]);
+	const inlineEndpoints = endpoints.slice(0, ENDPOINT_INLINE_LIMIT);
+	const overflowEndpoints = endpoints.slice(ENDPOINT_INLINE_LIMIT);
 
 	// Only show modalities that are actually available on the model.
 	// Preserve the order defined in KNOWN_MODALITIES, then append any
@@ -223,10 +208,8 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 	}, [outputs]);
 
 	return (
-		<div className="group relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-sm transition hover:shadow-md">
-			{/* header: wraps cleanly, no tall right column */}
-			<div className="flex flex-wrap items-start justify-between gap-2 pl-2">
-				{/* title + model id stacked, then badge row */}
+		<div className="group relative overflow-hidden rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+			<div className="flex items-start justify-between gap-3">
 				<div className="min-w-0 flex-1">
 					<h3 className="text-base sm:text-lg font-semibold leading-tight line-clamp-2 sm:line-clamp-1 break-words">
 						{model.model_name}
@@ -234,9 +217,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 
 					{/* model id + copy */}
 					<div className="mt-1 flex items-center gap-2 text-sm text-neutral-500">
-						<code className="font-mono break-all">
-							{model.model_id}
-						</code>
+						<code className="font-mono break-all">{model.model_id}</code>
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button
@@ -245,11 +226,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 									className="h-6 w-6 opacity-0 transition group-hover:opacity-100"
 									onClick={async () => {
 										const ok = await copy(model.model_id);
-										toast(
-											ok
-												? "Copied model ID"
-												: "Copy failed"
-										);
+										toast(ok ? "Copied model ID" : "Copy failed");
 									}}
 									aria-label="Copy model id"
 								>
@@ -259,37 +236,78 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 							<TooltipContent>Copy model ID</TooltipContent>
 						</Tooltip>
 					</div>
+				</div>
 
-					{/* Gateway + Endpoint + AKA row */}
-					<div className="mt-2 flex items-center gap-2">
-						<span
-							className={cn(
-								"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
-								model.is_active_gateway
-									? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-									: "bg-neutral-50 text-neutral-600 ring-neutral-200"
-							)}
-						>
-							{model.is_active_gateway ? (
-								<CheckCircle2 className="h-3.5 w-3.5" />
-							) : (
-								<Circle className="h-3.5 w-3.5" />
-							)}
-							{model.is_active_gateway
-								? "Gateway: Active"
-								: "Gateway: Inactive"}
-						</span>
+				<span
+					className={cn(
+						"inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+						model.is_active_gateway
+							? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+							: "bg-neutral-50 text-neutral-600 ring-neutral-200"
+					)}
+				>
+					{model.is_active_gateway ? (
+						<CheckCircle2 className="h-3.5 w-3.5" />
+					) : (
+						<Circle className="h-3.5 w-3.5" />
+					)}
+					{model.is_active_gateway
+						? "Gateway: Active"
+						: "Gateway: Inactive"}
+				</span>
+			</div>
 
-						<EndpointPill endpoint={model.endpoint} />
+			<Separator className="my-3" />
 
-						{model.provider_model_slug && (
-							<HoverCard openDelay={80} closeDelay={80}>
+			<div className="pl-2 space-y-2">
+				<div className="grid gap-2 sm:grid-cols-[auto,1fr] sm:items-center">
+					<div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+						Endpoints
+					</div>
+					<div className="flex flex-wrap items-center gap-1.5">
+						{inlineEndpoints.length > 0 ? (
+							inlineEndpoints.map((ep) => (
+								<EndpointPill key={ep} endpoint={ep} />
+							))
+						) : (
+							<EndpointPill endpoint={null} />
+						)}
+						{overflowEndpoints.length > 0 && (
+							<HoverCard openDelay={300} closeDelay={80}>
+								<HoverCardTrigger asChild>
+									<span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-600">
+										+{overflowEndpoints.length} more
+									</span>
+								</HoverCardTrigger>
+								<HoverCardContent className="w-72">
+									<div className="space-y-2">
+										<div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+											All endpoints
+										</div>
+										<div className="flex flex-wrap gap-1.5">
+											{endpoints.map((ep) => (
+												<EndpointPill key={`all-${ep}`} endpoint={ep} />
+											))}
+										</div>
+									</div>
+								</HoverCardContent>
+							</HoverCard>
+						)}
+					</div>
+				</div>
+
+				{model.provider_model_slug && (
+					<div className="grid gap-2 sm:grid-cols-[auto,1fr] sm:items-center">
+						<div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+							Provider alias
+						</div>
+						<div>
+							<HoverCard openDelay={800} closeDelay={80}>
 								<HoverCardTrigger asChild>
 									<Badge
 										variant="secondary"
 										className={cn(
 											"cursor-help select-none flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-medium",
-											// subtle gradient, soft border, small shadow, and a gentle hover lift
 											"bg-gradient-to-b from-neutral-50 to-white text-neutral-800 ring-1 ring-inset ring-neutral-200 shadow-sm transition-transform hover:scale-105 hover:shadow-md"
 										)}
 										aria-label="Provider alias"
@@ -297,16 +315,12 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 										<span className="inline-flex items-center justify-center rounded-full bg-neutral-100 p-0.5">
 											<Bot className="h-3 w-3 text-neutral-700" />
 										</span>
-										<span className="tracking-wide">
-											AKA
-										</span>
+										<span className="tracking-wide">AKA</span>
 									</Badge>
 								</HoverCardTrigger>
 								<HoverCardContent className="w-80">
 									<div className="space-y-2">
-										<div className="text-sm font-medium">
-											Provider alias
-										</div>
+										<div className="text-sm font-medium">Provider alias</div>
 										<div className="flex items-center justify-between gap-2">
 											<code className="font-mono text-sm break-all">
 												{model.provider_model_slug}
@@ -318,11 +332,9 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 														size="icon"
 														className="h-7 w-7 shrink-0"
 														onClick={async () => {
-															const ok =
-																await copy(
-																	model.provider_model_slug ||
-																		""
-																);
+															const ok = await copy(
+																model.provider_model_slug || ""
+															);
 															toast(
 																ok
 																	? "Copied provider alias"
@@ -334,22 +346,19 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 														<Copy className="h-3.5 w-3.5" />
 													</Button>
 												</TooltipTrigger>
-												<TooltipContent>
-													Copy alias
-												</TooltipContent>
+												<TooltipContent>Copy alias</TooltipContent>
 											</Tooltip>
 										</div>
 										<p className="text-xs text-neutral-500">
-											This is what the provider calls this
-											model. Use it when calling their
-											native API.
+											This is what the provider calls this model. Use it when
+											calling their native API.
 										</p>
 									</div>
 								</HoverCardContent>
 							</HoverCard>
-						)}
+						</div>
 					</div>
-				</div>
+				)}
 			</div>
 
 			<Separator className="my-3" />

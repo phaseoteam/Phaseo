@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { UploadSection } from "@/components/wrapped/upload-section";
 import SummarySection from "@/components/wrapped/summary-section";
 import ShowcaseModal from "@/components/wrapped/showcase-modal";
 import { SlideLayout } from "@/components/wrapped/slide-layout";
@@ -28,7 +27,6 @@ import { motion, AnimatePresence } from "motion/react";
 import {
 	PROVIDERS,
 	DAY_NAMES,
-	simulateProviderParse,
 	aggregateSummary,
 	formatNumber,
 } from "@/components/wrapped/utils";
@@ -41,72 +39,60 @@ import type {
 	Slide,
 } from "@/components/wrapped/types";
 
-const DEFAULT_PROVIDER_STATE: ProviderState = {
-	status: "idle",
+// Stub for Supabase RPC call
+const fetchUserStats = async (): Promise<Summary | null> => {
+	// TODO: Replace with actual Supabase RPC call
+	// const { data, error } = await supabase.rpc('get_user_ai_stats');
+	// if (error) throw error;
+	// return data;
+
+	// For now, return mock data
+	return {
+		totalTokens: 125000,
+		totalMessages: 2500,
+		totalWords: 50000,
+		totalMinutes: 120,
+		averageResponseSeconds: 2.5,
+		topHour: 14,
+		topDay: "Wednesday",
+		providersBreakdown: [
+			{ key: "chatgpt", name: "ChatGPT", tokens: 75000, messages: 1500, responseMinutes: 75, accent: "from-green-500 to-emerald-500", description: "OpenAI's ChatGPT" },
+			{ key: "claude", name: "Claude", tokens: 35000, messages: 800, responseMinutes: 35, accent: "from-orange-500 to-red-500", description: "Anthropic's Claude" },
+			{ key: "gemini", name: "Gemini", tokens: 15000, messages: 200, responseMinutes: 10, accent: "from-blue-500 to-cyan-500", description: "Google's Gemini" },
+		],
+		longestThread: { messages: 45, provider: "chatgpt" },
+		largestPrompt: { words: 1250, provider: "claude" },
+		bestStreak: { days: 7, provider: "chatgpt" },
+		topWords: ["help", "create", "analyze", "explain", "generate"],
+		funFact: "You asked more questions than you gave answers this year!",
+		emojiMood: "🤖",
+	};
 };
 
 export default function WrappedClient() {
-	const [providerState, setProviderState] = useState<
-		Record<ProviderKey, ProviderState>
-	>(
-		() =>
-			Object.fromEntries(
-				PROVIDERS.map((provider) => [
-					provider.key,
-					{ ...DEFAULT_PROVIDER_STATE },
-				])
-			) as Record<ProviderKey, ProviderState>
-	);
+	const [summary, setSummary] = useState<Summary | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 
 	const [showcaseOpen, setShowcaseOpen] = useState(false);
 	const [showcaseStep, setShowcaseStep] = useState(0);
-	const summary = useMemo(
-		() => aggregateSummary(PROVIDERS, providerState),
-		[providerState]
-	);
 
-	const handleFileForProvider = useCallback(
-		async (provider: ProviderConfig, file?: File) => {
-			setProviderState((prev) => ({
-				...prev,
-				[provider.key]: file
-					? {
-							file,
-							status: "processing",
-					  }
-					: { ...DEFAULT_PROVIDER_STATE },
-			}));
-
-			if (!file) return;
-
+	useEffect(() => {
+		const loadStats = async () => {
 			try {
-				await file.text();
-				const metrics = await simulateProviderParse(provider, file);
-
-				setProviderState((prev) => ({
-					...prev,
-					[provider.key]: {
-						file,
-						status: "ready",
-						metrics,
-					},
-				}));
-			} catch (error) {
-				setProviderState((prev) => ({
-					...prev,
-					[provider.key]: {
-						file,
-						status: "error",
-						error:
-							error instanceof Error
-								? error.message
-								: "Unable to parse this export.",
-					},
-				}));
+				setLoading(true);
+				const stats = await fetchUserStats();
+				setSummary(stats);
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "Failed to load stats");
+			} finally {
+				setLoading(false);
 			}
-		},
-		[]
-	);
+		};
+
+		loadStats();
+	}, []);
+
 	useEffect(() => {
 		if (showcaseOpen) {
 			document.body.style.overflow = "hidden";
@@ -484,38 +470,38 @@ export default function WrappedClient() {
 		];
 	}, [summary]);
 
-	const processedCount = PROVIDERS.filter(
-		(p) => providerState[p.key]?.status === "ready"
-	).length;
-
-	const processingCount = PROVIDERS.filter(
-		(p) => providerState[p.key]?.status === "processing"
-	).length;
-
 	return (
 		<main className="relative mx-auto max-w-6xl space-y-12 px-4 sm:px-6 lg:px-8">
-			<UploadSection
-				providers={PROVIDERS}
-				providerState={providerState}
-				onFileSelected={handleFileForProvider}
-			/>
+			{loading && (
+				<div className="flex items-center justify-center py-12">
+					<div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+						<Loader2 className="h-5 w-5 animate-spin" />
+						Loading your AI stats...
+					</div>
+				</div>
+			)}
 
-			<SummarySection
-				summary={summary}
-				processedCount={processedCount}
-				processingCount={processingCount}
-				onGenerateWrapped={() => {
-					setShowcaseStep(0);
-					setShowcaseOpen(true);
-				}}
-			/>
+			{error && (
+				<div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+					<p className="text-red-800 dark:text-red-200">Error: {error}</p>
+				</div>
+			)}
+
+			{!loading && !error && summary && (
+				<SummarySection
+					summary={summary}
+					onGenerateWrapped={() => {
+						setShowcaseStep(0);
+						setShowcaseOpen(true);
+					}}
+				/>
+			)}
 
 			<ShowcaseModal
 				isOpen={showcaseOpen}
 				step={showcaseStep}
 				summary={summary}
 				slides={slides}
-				providerState={providerState}
 				onClose={() => setShowcaseOpen(false)}
 				onStepChange={setShowcaseStep}
 			/>

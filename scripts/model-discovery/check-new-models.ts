@@ -1,6 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { providerConfig } from "./providers.js";
+import {
+	fetchProviderModels,
+	hasRequiredEnvVars,
+	checkModelExists,
+	normalizeModelKey,
+} from "./client.js";
+import type { ProviderResult } from "./types.js";
 
 const REPO_ROOT = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const MODELS_ROOT = path.join(REPO_ROOT, "apps", "web", "src", "data", "models");
@@ -13,117 +21,13 @@ const PRICING_ROOT = path.join(
 	"pricing"
 );
 
-const providerSlugMap: Record<string, string> = {
-	"google-ai-studio": "google",
-};
-
-interface Provider {
+interface ProviderEntry {
 	name: string;
 	fetchModels: () => Promise<string[]>;
 }
 
-function normalizeModelKey(value: string): string {
-	return value.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-async function fetchOpenAIModels(): Promise<string[]> {
-	const apiKey = process.env.OPENAI_API_KEY;
-	if (!apiKey) return [];
-	try {
-		const response = await fetch("https://api.openai.com/v1/models", {
-			headers: { Authorization: `Bearer ${apiKey}` }
-		});
-		if (!response.ok) return [];
-		const data = await response.json();
-		return data.data.map((m: any) => `openai/${m.id}`);
-	} catch {
-		return [];
-	}
-}
-
-async function fetchAnthropicModels(): Promise<string[]> {
-	const apiKey = process.env.ANTHROPIC_API_KEY;
-	if (!apiKey) return [];
-	try {
-		const response = await fetch("https://api.anthropic.com/v1/models", {
-			headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01" }
-		});
-		if (!response.ok) return [];
-		const data = await response.json();
-		return data.data.map((m: any) => `anthropic/${m.id}`);
-	} catch {
-		return [];
-	}
-}
-
-async function fetchMistralModels(): Promise<string[]> {
-	const apiKey = process.env.MISTRAL_API_KEY;
-	if (!apiKey) return [];
-	try {
-		const response = await fetch("https://api.mistral.ai/v1/models", {
-			headers: { Authorization: `Bearer ${apiKey}` }
-		});
-		if (!response.ok) return [];
-		const data = await response.json();
-		return data.data.map((m: any) => `mistral/${m.id}`);
-	} catch {
-		return [];
-	}
-}
-
-async function fetchXAIModels(): Promise<string[]> {
-	const apiKey = process.env.XAI_API_KEY;
-	if (!apiKey) return [];
-	try {
-		const response = await fetch("https://api.x.ai/v1/models", {
-			headers: { Authorization: `Bearer ${apiKey}` }
-		});
-		if (!response.ok) return [];
-		const data = await response.json();
-		return data.data.map((m: any) => `x-ai/${m.id}`);
-	} catch {
-		return [];
-	}
-}
-
-async function fetchDeepSeekModels(): Promise<string[]> {
-	const apiKey = process.env.DEEPSEEK_API_KEY;
-	if (!apiKey) return [];
-	try {
-		const response = await fetch("https://api.deepseek.com/models", {
-			headers: { Authorization: `Bearer ${apiKey}` }
-		});
-		if (!response.ok) return [];
-		const data = await response.json();
-		return data.data.map((m: any) => `deepseek/${m.id}`);
-	} catch {
-		return [];
-	}
-}
-
-async function fetchGoogleModels(): Promise<string[]> {
-	const apiKey = process.env.GOOGLE_API_KEY;
-	if (!apiKey) return [];
-	try {
-		const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-		if (!response.ok) return [];
-		const data = await response.json();
-		return data.models.map((m: any) => `google/${m.name.split('/')[1]}`);
-	} catch {
-		return [];
-	}
-}
-
-const providers: Provider[] = [
-	{ name: "OpenAI", fetchModels: fetchOpenAIModels },
-	{ name: "Mistral", fetchModels: fetchMistralModels },
-	{ name: "Anthropic", fetchModels: fetchAnthropicModels },
-	{ name: "Google", fetchModels: fetchGoogleModels },
-	{ name: "xAI", fetchModels: fetchXAIModels },
-	{ name: "DeepSeek", fetchModels: fetchDeepSeekModels },
-];
-
 function listModelFiles(root: string): string[] {
+	if (!fs.existsSync(root)) return [];
 	const entries = fs.readdirSync(root, { withFileTypes: true });
 	const files: string[] = [];
 
@@ -176,7 +80,7 @@ function getExistingModelIds(): Set<string> {
 			const raw = fs.readFileSync(file, "utf-8");
 			const data = JSON.parse(raw);
 			if (data.model_id) ids.add(data.model_id);
-		} catch { }
+		} catch {}
 	}
 	return ids;
 }
@@ -195,8 +99,7 @@ function getExistingProviderModelSlugs(): Set<string> {
 					: typeof data.api_provider_id === "string"
 						? data.api_provider_id
 						: "";
-			const providerPrefix =
-				providerSlugMap[providerSlug] ?? providerSlug;
+			const providerPrefix = providerSlug;
 			const providerModelSlug =
 				typeof data.provider_model_slug === "string"
 					? data.provider_model_slug
@@ -209,7 +112,7 @@ function getExistingProviderModelSlugs(): Set<string> {
 			} else if (modelId) {
 				ids.add(modelId);
 			}
-		} catch { }
+		} catch {}
 	}
 
 	return ids;
@@ -229,13 +132,40 @@ async function sendDiscordWebhook(message: string) {
 	}
 	try {
 		await fetch(webhookUrl, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(payload)
 		});
 	} catch (error) {
 		console.error("Failed to send Discord webhook:", error);
 	}
+}
+
+async function fetchAllProviderModels(): Promise<ProviderResult[]> {
+	const results: ProviderResult[] = [];
+
+	for (const provider of providerConfig) {
+		console.log(`Checking ${provider.name}...`);
+
+		if (!hasRequiredEnvVars(provider)) {
+			console.log(`  Skipping ${provider.name}: missing API key`);
+			continue;
+		}
+
+		const startTime = Date.now();
+		const models = await fetchProviderModels(provider);
+		const responseTime = Date.now() - startTime;
+
+		console.log(`  Fetched ${models.length} models from ${provider.name} (${responseTime}ms)`);
+
+		results.push({
+			provider: provider.id,
+			models,
+			timestamp: new Date().toISOString(),
+		});
+	}
+
+	return results;
 }
 
 async function main() {
@@ -248,18 +178,18 @@ async function main() {
 	);
 	console.log(`Found ${existing.size} existing models.`);
 
+	const results = await fetchAllProviderModels();
 	const newModels: { provider: string; models: string[] }[] = [];
 
-	for (const provider of providers) {
-		console.log(`Checking ${provider.name}...`);
-		const models = await provider.fetchModels();
-		console.log(`Fetched ${models.length} models from ${provider.name}.`);
-		const newOnes = models.filter((model) => {
-			if (existing.has(model)) return false;
-			return !existingNormalized.has(normalizeModelKey(model));
+	for (const result of results) {
+		if (result.models.length === 0) continue;
+
+		const newOnes = result.models.filter((model) => {
+			return !existing.has(model) && !checkModelExists(existing, result.provider, model.split("/")[1]);
 		});
+
 		if (newOnes.length > 0) {
-			newModels.push({ provider: provider.name, models: newOnes });
+			newModels.push({ provider: result.provider, models: newOnes });
 		}
 	}
 

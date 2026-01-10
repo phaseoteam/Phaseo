@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 export interface ModelAvailabilityItem {
     id: string;
     api_provider_id: string;
-    model_id: string;
+    api_model_id: string;
     provider_model_slug: string | null;
     endpoint: string;
     is_active_gateway: boolean;
@@ -32,7 +32,7 @@ export default async function getModelAvailability(modelId: string): Promise<Mod
         .select(`
             id,
             api_provider_id,
-            model_id,
+            api_model_id,
             provider_model_slug,
             endpoint,
             is_active_gateway,
@@ -42,15 +42,13 @@ export default async function getModelAvailability(modelId: string): Promise<Mod
             effective_to,
             created_at,
             updated_at,
-            params,
-            key,
             provider: data_api_providers (
                 api_provider_id,
                 api_provider_name,
                 country_code
             )
         `)
-        .eq("model_id", modelId)
+        .eq("internal_model_id", modelId)
         .is("effective_to", null) // Only active records
         .order("api_provider_id", { ascending: true });
 

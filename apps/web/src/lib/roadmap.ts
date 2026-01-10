@@ -110,10 +110,10 @@ export const MILESTONES: RoadmapMilestone[] = [
     {
         key: "sources",
         title: "Sources",
-        status: "Planned",
-        due: "Dec 2025",
+        status: "Shipped",
+        shippedAt: "2025-12-29",
         description:
-            "Transparent citations for every data point with badges and one-click links to our sources.",
+            "Sources now live directly within each page, displayed alongside the relevant content.",
         icon: "BookOpen",
     },
     {
@@ -179,6 +179,15 @@ export const MILESTONES: RoadmapMilestone[] = [
         description:
             "Predefined configurations and presets for common AI use cases.",
         icon: "Sparkles",
+    },
+    {
+        key: "anthropic-compatibility",
+        title: "Anthropic Compatibility",
+        status: "Planned",
+        due: "Feb 2026",
+        description:
+            "Integrate Anthropic models into the platform for enhanced compatibility and support.",
+        icon: "Bot",
     },
 
 ];
