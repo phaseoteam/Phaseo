@@ -1,0 +1,197 @@
+// src/lib/gateway/error-handler.ts
+import type { Endpoint } from "./types";
+import type { PipelineContext } from "@pipeline/before/types";
+import { readAttributionHeaders } from "@pipeline/after/attribution";
+import { emitGatewayRequestEvent } from "@observability/events";
+
+// Helper to extract error code from a response body
+export function extractErrorCode(body: any, fallback: string): string {
+    const e = body?.error ?? body?.code ?? body?.error_code ?? body?.type;
+    if (typeof e === "string") return e;
+    if (typeof e === "number") return String(e);
+    if (e && typeof e === "object") {
+        if (typeof e.code === "string") return e.code;
+        if (typeof e.type === "string") return e.type;
+        if (typeof e.error === "string") return e.error;
+        if (typeof e.message === "string") return e.message.slice(0, 120);
+    }
+    if (typeof body?.message === "string") return body.message.slice(0, 120);
+    return fallback;
+}
+
+// Helper to extract a user-facing description from a response body
+export function extractErrorDescription(body: any): string | null {
+    if (typeof body?.description === "string") return body.description;
+    if (typeof body?.message === "string") return body.message;
+    if (typeof body?.reason === "string") return body.reason;
+    if (Array.isArray(body?.details) && body.details.length > 0) {
+        const first = body.details[0];
+        const path = Array.isArray(first?.path) ? first.path.join(".") : null;
+        const message = typeof first?.message === "string" ? first.message : null;
+        if (message && path) return `${message} at ${path}`;
+        if (message) return message;
+    }
+    const e = body?.error ?? body;
+    if (e && typeof e === "object") {
+        if (typeof e.description === "string") return e.description;
+        if (typeof e.message === "string") return e.message;
+        if (typeof e.error_description === "string") return e.error_description;
+    }
+    if (typeof body?.error_description === "string") return body.error_description;
+    if (typeof e === "string") return e;
+    if (Array.isArray(body?.errors)) return body.errors.map((x: any) => (typeof x === 'string' ? x : JSON.stringify(x))).join(', ').slice(0, 200);
+    return null;
+}
+
+// Classify error attribution for error header
+export function classifyAttribution({ stage, status, errorCode, body }: { stage: "before" | "execute"; status?: number | null; errorCode?: string | null; body?: any }): "user" | "upstream" {
+    if (stage === "before") return "user";
+    const s = Number(status ?? 0);
+    if (Number.isFinite(s)) {
+        if (s >= 500) return "upstream";
+        if (s === 408) return "upstream";
+        if (s === 429) return "upstream";
+        if (s >= 400 && s < 500) return "user";
+    }
+    const code = (errorCode || "").toLowerCase();
+    if (code.includes("timeout") || code.includes("overload") || code.includes("rate")) return "upstream";
+    if (code.includes("invalid") || code.includes("validation") || code.includes("unauth") || code.includes("forbidden") || code.includes("quota") || code.includes("insufficient")) return "user";
+    const msg = (typeof body?.message === 'string' ? body.message : '') + ' ' + (typeof body?.error === 'string' ? body.error : '');
+    const m = msg.toLowerCase();
+    if (m.includes("timeout") || m.includes("overload") || m.includes("rate limit")) return "upstream";
+    if (m.includes("invalid") || m.includes("unauthorized") || m.includes("forbidden") || m.includes("bad request")) return "user";
+    return "upstream";
+}
+
+// Helper to safely parse JSON from a Response
+export async function safeJson(res: Response): Promise<any> {
+    try { return await res.clone().json(); } catch { return {}; }
+}
+
+// Main error handler function for before/execute errors
+export async function handleError({
+    stage,
+    res,
+    endpoint,
+    ctx,
+    timingHeader,
+    auditFailure,
+    req,
+}: {
+    stage: "before" | "execute",
+    res: Response,
+    endpoint: Endpoint,
+    ctx?: PipelineContext,
+    timingHeader?: string,
+    auditFailure: (args: any) => Promise<void>,
+    req?: Request,
+}): Promise<Response> {
+    const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
+    if (timingHeader) {
+        headers.set("Server-Timing", timingHeader);
+        headers.set("Timing-Allow-Origin", "*");
+    }
+
+    console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
+
+    const body = await safeJson(res);
+    const debugEnabled =
+        (typeof process !== "undefined" &&
+            process.env?.GATEWAY_DEBUG_ERRORS === "1") ||
+        req?.headers.get("x-gateway-debug") === "true";
+    const errCode = extractErrorCode(body, stage === "before" ? "before_error" : "upstream_error");
+    const description = extractErrorDescription(body);
+    const attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
+    headers.set("X-Gateway-Error-Attribution", attribution);
+
+    const attributionHeaders = req ? readAttributionHeaders(req) : { referer: null, appTitle: null };
+    const statusCode = res.status ?? (stage === "before" ? 500 : 502);
+    const generationId =
+        ctx?.requestId ??
+        body?.generation_id ??
+        body?.request_id ??
+        body?.requestId ??
+        "unknown";
+    console.log("Gateway error details", {
+        stage,
+        endpoint,
+        requestId: generationId,
+        model: ctx?.model ?? body?.model ?? null,
+        errorCode: errCode,
+        description: description ?? null,
+        status: statusCode,
+    });
+    if (debugEnabled) {
+        console.log("Gateway upstream debug", {
+            requestId: generationId,
+            endpoint,
+            model: ctx?.model ?? body?.model ?? null,
+            upstream: body,
+        });
+    }
+    const fallbackDescription =
+        description ??
+        (typeof body?.error === "string" ? body.error : null) ??
+        res.statusText ??
+        "An error occurred while processing the request.";
+    const errorPayload: Record<string, unknown> = {
+        generation_id: generationId,
+        status_code: statusCode,
+        error: errCode,
+        description: fallbackDescription,
+    };
+    if (errCode === "validation_error" && Array.isArray(body?.details)) {
+        errorPayload.details = body.details;
+    }
+    if (debugEnabled) {
+        errorPayload.debug = {
+            upstream: body,
+        };
+    }
+
+    // Audit failure
+    const auditArgs: any = {
+        stage,
+        requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
+        teamId: ctx?.teamId ?? body?.team_id ?? null,
+        endpoint,
+        model: ctx?.model ?? body?.model,
+        appTitle: ctx?.meta?.appTitle ?? body?.meta?.appTitle ?? attributionHeaders.appTitle ?? null,
+        referer: ctx?.meta?.referer ?? body?.meta?.referer ?? attributionHeaders.referer ?? null,
+        statusCode,
+        errorCode: `${attribution}:${errCode}`,
+        errorMessage: description ?? fallbackDescription,
+        before: ctx ? (ctx as any)?.timing?.before ?? null : body?.timing?.before ?? null,
+        execute: ctx ? (ctx as any)?.timing?.execute ?? null : null,
+        latencyMs: ctx ? Math.round(((ctx as any)?.timing?.before?.total_ms ?? 0) + ((ctx as any)?.timing?.execute?.total_ms ?? 0)) : (body?.timing?.before?.total_ms ? Math.round(body.timing.before.total_ms) : null),
+        generationMs: ctx ? ((ctx as any)?.timing?.execute?.adapter_ms ? Math.round((ctx as any).timing.execute.adapter_ms) : null) : null,
+        byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
+        keyId: ctx?.meta?.apiKeyId ?? null,
+    };
+    if (stage === "execute") {
+        auditArgs.stream = ctx?.stream;
+    }
+    await auditFailure(auditArgs);
+    const reasonHint = typeof body?.reason === "string" ? body.reason : null;
+    const internalReason =
+        reasonHint ??
+        (errCode === "unsupported_model_or_endpoint"
+            ? ((ctx?.providers?.length ?? 0) === 0 || stage === "before" ? "no_provider_candidates" : null)
+            : (errCode === "pricing_not_configured" ? "no_provider_pricing" : null));
+    await emitGatewayRequestEvent({
+        ctx,
+        statusCode,
+        success: false,
+        errorCode: `${attribution}:${errCode}`,
+        errorMessage: description ?? fallbackDescription,
+        errorStage: stage,
+        internalReason,
+        requestId: generationId,
+        teamId: ctx?.teamId ?? body?.team_id ?? null,
+        model: ctx?.model ?? body?.model ?? null,
+        endpoint,
+    });
+
+    return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
+}
+
