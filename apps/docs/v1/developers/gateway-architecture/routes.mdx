@@ -1,0 +1,25 @@
+---
+title: "Routes and Pipeline"
+description: "How HTTP routes map to the gateway pipeline."
+---
+
+The gateway uses Hono to register protocol-accurate routes. The routes call into a shared pipeline that handles auth, validation, routing, execution, and formatting.
+
+## Routes
+
+`apps/api/src/routes` is the entry point for API endpoints:
+
+- `index.ts` registers all route groups.
+- `main-endpoints.ts` wires OpenAI and Anthropic compatible endpoints.
+- `healthz-route.ts`, `models-route.ts`, `analytics-route.ts` cover utility endpoints.
+- `files-routes.ts` and `batches-routes.ts` handle file and batch endpoints.
+
+## Pipeline stages
+
+`apps/api/src/lib/gateway` contains the core pipeline:
+
+- `before/` handles auth, JSON parsing, validation, and context fetches.
+- `execute/` selects providers and performs upstream calls.
+- `after/` normalizes responses, handles streaming, and records billing data.
+- `pipeline.ts` ties the stages together for legacy endpoints.
+- `ir-handler.ts` drives the IR-based pipeline for protocol-compatible routes.

@@ -1,0 +1,42 @@
+---
+title: "IR and Protocols"
+description: "How the gateway normalizes requests and maps protocols to IR."
+---
+
+The gateway uses an intermediate representation (IR) to avoid N x M converters. Each protocol converts to IR once, and each provider surface converts from IR once.
+
+## IR folder
+
+`apps/api/src/ir` defines the normalized request and response shapes.
+
+- `types.ts` defines IR request/response types, content parts, tool definitions, and metadata.
+- `streaming.ts` defines the internal streaming event shape used by emitters.
+
+## Protocol folders
+
+`apps/api/src/protocols` holds protocol-specific logic.
+
+### OpenAI Chat
+
+`apps/api/src/protocols/openai/chat` includes:
+
+- `to_ir.ts` converts chat completion requests into IR.
+- `from_ir.ts` converts IR into OpenAI chat request payloads.
+- `response_to_ir.ts` normalizes OpenAI chat responses back into IR.
+
+### OpenAI Responses
+
+`apps/api/src/protocols/openai/responses` includes:
+
+- `to_ir.ts` converts Responses API requests into IR.
+- `from_ir.ts` converts IR into Responses API payloads.
+- `response_to_ir.ts` normalizes Responses API outputs into IR.
+
+### Anthropic Messages
+
+`apps/api/src/protocols/anthropic/messages` includes:
+
+- `schema.ts` defines Zod validation for Messages API requests.
+- `to_ir.ts` converts Messages API payloads into IR.
+- `from_ir.ts` converts IR responses into Anthropic format.
+- `stream.ts` converts OpenAI-compatible SSE into Anthropic streaming events.

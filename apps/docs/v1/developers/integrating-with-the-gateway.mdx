@@ -39,11 +39,13 @@ AI_STATS_API_KEY="aistats_v1_k_xx_xxx"
 
 Pick the endpoint that matches your use case. The Gateway normalises payloads across providers, so request shapes are consistent:
 
-| Endpoint                | When to use it                                     |
-| ----------------------- | -------------------------------------------------- |
-| `/v1/chat/completions`  | Conversational interfaces, agents, and assistants. |
-| `/v1/moderations`       | Safety and content policy checks.                  |
-| `/v1/images/embeddings` | Image generation from text prompts.                |
+| Endpoint               | When to use it                                     |
+| ---------------------- | -------------------------------------------------- |
+| `/v1/chat/completions` | Conversational interfaces, agents, and assistants. |
+| `/v1/responses`        | Multi-step reasoning and structured responses.     |
+| `/v1/messages`         | Anthropic-compatible messages API.                 |
+| `/v1/moderations`      | Safety and content policy checks.                  |
+| `/v1/images/generations` | Image generation from text prompts.              |
 
 More endpoints are coming soon. We will keep the API compatible as we expand.
 

@@ -1,0 +1,25 @@
+---
+title: "Observability"
+description: "Audit logging, wide events, and timing utilities."
+---
+
+The gateway emits structured telemetry for both auditing and operational analysis.
+
+## Audit logging
+
+`apps/api/src/lib/gateway/audit` handles durable request logging and billing records:
+
+- `index.ts` writes request rows to the database and triggers Axiom audit events.
+- `axiom.ts` formats and sends audit events to Axiom.
+
+## Wide event logging
+
+`apps/api/src/lib/gateway/observability` emits a single wide event per request:
+
+- `axiom.ts` sends generic events to Axiom datasets.
+- `events.ts` builds the `gateway.request` event with routing, timing, and usage fields.
+
+## Timing and streaming
+
+- `apps/api/src/lib/gateway/telemetry/timer.ts` captures spans and builds Server-Timing headers.
+- `apps/api/src/lib/gateway/after/streaming.ts` rewrites SSE frames and captures final usage for billing.

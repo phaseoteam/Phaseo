@@ -1,0 +1,25 @@
+---
+title: "Gateway Architecture Overview"
+description: "High-level map of the API gateway folders and their responsibilities."
+---
+
+This section documents how the gateway codebase is organized. It is written to help you find the right folder quickly and understand what each file does.
+
+## apps/api/src layout
+
+| Folder | Purpose | Key files |
+| --- | --- | --- |
+| `apps/api/src/routes` | HTTP routing and endpoint registration. | `index.ts`, `main-endpoints.ts`, `healthz-route.ts`, `models-route.ts` |
+| `apps/api/src/lib/gateway` | Request pipeline, adapters, pricing, and telemetry. | `pipeline.ts`, `execute/`, `before/`, `after/` |
+| `apps/api/src/ir` | Intermediate representation (IR) for normalized requests/responses. | `types.ts`, `streaming.ts` |
+| `apps/api/src/protocols` | Protocol-specific parsing and emitters. | `openai/`, `anthropic/` |
+| `apps/api/src/router` | Surface selection and strictness handling. | `surfaces.ts`, `strictness.ts`, `param_classifier.ts` |
+| `apps/api/src/runtime` | Runtime env bindings and helpers. | `env.ts` |
+| `apps/api/src/lib` | Shared schemas, error handler, and utilities. | `schemas.ts`, `types.ts`, `error-handler.ts` |
+
+## How requests flow
+
+1. Routes register protocol-accurate endpoints under `apps/api/src/routes`.
+2. Protocol parsers map request bodies into the IR (`apps/api/src/ir`).
+3. The gateway pipeline selects providers and executes upstream calls.
+4. Responses are normalized back into IR and emitted in the original protocol shape.

@@ -1,0 +1,323 @@
+---
+title: "ID Handling"
+description: "Understanding request and response ID tracking in the AI Stats Gateway"
+---
+
+## Overview
+
+The AI Stats Gateway tracks multiple types of IDs throughout the request lifecycle to enable debugging, correlation, and proper attribution. This document explains the different ID types and how they're used.
+
+## ID Types
+
+### 1. Gateway Request ID (`id` / `requestId`)
+
+**Purpose**: Primary identifier for tracking requests through the gateway
+
+**Format**: `req_<random>`
+
+**Scope**: Gateway-generated, consistent across all protocols
+
+**Usage**:
+- Primary `id` field in all response formats
+- Used for audit logs, billing, and analytics
+- Correlates client requests with gateway processing
+- Stable identifier regardless of which provider serves the request
+
+**Example**: `req_7k3m9p2x5n`
+
+### 2. Native Response ID (`nativeResponseId` / `nativeId`)
+
+**Purpose**: Provider's original response identifier
+
+**Format**: Provider-specific (e.g., `chatcmpl-*` for OpenAI, custom IDs for other providers)
+
+**Scope**: Extracted from provider response body
+
+**Usage**:
+- Debugging and correlation with provider systems
+- Useful when investigating provider-specific issues
+- Preserved but not exposed as primary ID
+- Available in gateway metadata or extension fields
+
+**Examples**:
+- OpenAI: `chatcmpl-8jK3mL9pQ2xN`
+- Anthropic: `msg_01Abc123def`
+
+### 3. Upstream Request ID (`upstreamRequestId` / `upstream_id`)
+
+**Purpose**: Provider's request tracking header
+
+**Format**: Provider-specific header value
+
+**Scope**: Extracted from HTTP response headers (e.g., `x-request-id`, `request-id`)
+
+**Usage**:
+- HTTP-level correlation with provider systems
+- Useful for investigating network issues or rate limiting
+- Distinct from response body ID
+- Captured separately from native response ID
+
+**Examples**:
+- Header: `x-request-id: req-123abc456def`
+- Header: `request-id: 789xyz012ghi`
+
+## ID Flow Through Pipeline
+
+```
+┌──────────────┐
+│ Client       │
+│ Request      │
+└──────┬───────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│ 1. Gateway Entry                       │
+│    • Generate requestId (req_xxx)      │
+│    • Store in pipeline context         │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│ 2. Protocol Decode                     │
+│    • Transform to IR                   │
+│    • No ID handling (request-level)    │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│ 3. Provider Execution                  │
+│    • Send to upstream provider         │
+│    • Capture upstream_id from headers  │
+│    • Extract nativeId from body        │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌────────────────────────────────────────┐
+│ 4. Protocol Encode                     │
+│    • Map requestId → response.id       │
+│    • Include nativeResponseId          │
+│    • Protocol-specific formatting      │
+└──────┬─────────────────────────────────┘
+       │
+       ▼
+┌──────────────┐
+│ Client       │
+│ Response     │
+└──────────────┘
+```
+
+## Protocol-Specific Behavior
+
+### Consistent Format Across All Protocols
+
+**All protocols now use identical ID structure**:
+
+#### OpenAI Chat Completions
+
+```json
+{
+  "id": "req_gateway123",             // Gateway request ID (primary)
+  "nativeResponseId": "chatcmpl-456", // Provider's response ID
+  "object": "chat.completion",
+  "created": 1234567890,
+  "model": "gpt-4",
+  "choices": [...],
+  "usage": {...}
+}
+```
+
+#### OpenAI Responses API
+
+```json
+{
+  "id": "req_gateway123",             // Gateway request ID (primary)
+  "nativeResponseId": "resp-789",     // Provider's response ID
+  "object": "response",
+  "created_at": 1234567890,
+  "status": "completed",
+  "output": [...],
+  "usage": {...}
+}
+```
+
+#### Anthropic Messages
+
+```json
+{
+  "id": "req_gateway123",             // Gateway request ID (primary)
+  "nativeResponseId": "msg_01Abc",    // Provider's response ID
+  "type": "message",
+  "role": "assistant",
+  "content": [...],
+  "usage": {...}
+}
+```
+
+### Key Points
+
+- **Identical structure**: All protocols have the same two ID fields
+- **No special cases**: No `_gateway` metadata or protocol-specific formats
+- **Simple and consistent**: Easy to understand and debug
+- **Non-breaking for OpenAI**: OpenAI protocols already had this structure
+- **Breaking for Anthropic**: Adds `nativeResponseId` at top level (see migration notes)
+
+## Streaming ID Handling
+
+During streaming responses, IDs are handled efficiently:
+
+### Caching Strategy
+
+```typescript
+// Cache native ID from first chunk
+let cachedNativeId: string | undefined;
+
+// For each chunk:
+if (!cachedNativeId && chunk.id) {
+  cachedNativeId = chunk.id;
+}
+
+// Use cached value for subsequent chunks
+if (!chunk.nativeResponseId && cachedNativeId) {
+  chunk.nativeResponseId = cachedNativeId;
+}
+
+// Always use gateway request ID
+chunk.id = requestId;
+```
+
+### Benefits
+
+- **Performance**: Avoid checking every chunk for ID
+- **Reliability**: Works even if provider doesn't send ID in every chunk
+- **Consistency**: Ensures all chunks have proper ID fields
+
+## Payload Enrichment
+
+The gateway enriches response payloads with ID metadata:
+
+```typescript
+// Separate semantic concerns
+payload.nativeResponseId = extractedFromBody ?? null;
+payload.upstreamRequestId = headerValue ?? null;
+payload.provider = "openai";
+```
+
+**Important**: `nativeResponseId` and `upstreamRequestId` are semantically different:
+- `nativeResponseId`: From response body, represents the completion/message
+- `upstreamRequestId`: From HTTP headers, represents the HTTP request
+
+## Debugging with IDs
+
+### Finding Request Logs
+
+Use the gateway request ID:
+```bash
+# Search logs
+grep "req_7k3m9p2x5n" audit.log
+
+# Query analytics
+SELECT * FROM requests WHERE id = 'req_7k3m9p2x5n'
+```
+
+### Correlating with Provider
+
+Use the native response ID or upstream request ID:
+```bash
+# OpenAI logs
+grep "chatcmpl-8jK3mL9pQ2xN" openai-logs.txt
+
+# Anthropic logs
+grep "msg_01Abc123def" anthropic-logs.txt
+
+# HTTP request correlation
+grep "x-request-id: req-123abc456def" provider-access.log
+```
+
+### Full Request Trace
+
+Gateway logs include all three IDs:
+```json
+{
+  "requestId": "req_gateway123",
+  "nativeResponseId": "chatcmpl-456",
+  "upstreamRequestId": "req-789xyz",
+  "provider": "openai",
+  "model": "gpt-4",
+  "status": "completed"
+}
+```
+
+## Validation and Warnings
+
+The gateway validates ID presence during transformation:
+
+```
+[ID-VALIDATION] Provider openai did not return response ID in OpenAI Chat format
+```
+
+These warnings help identify:
+- Provider API changes
+- Malformed responses
+- Integration issues
+
+## Best Practices
+
+### For Gateway Users
+
+1. **Use gateway request ID** (`id`) as your primary reference
+2. **Store `nativeResponseId`** if you need to contact provider support
+3. **Log all IDs** for comprehensive debugging
+4. **Same format everywhere** - no protocol-specific handling needed
+
+### For Gateway Developers
+
+1. **Always generate request ID** at gateway entry
+2. **Extract both body and header IDs** from provider responses
+3. **Keep IDs separate** - don't mix semantic concerns
+4. **Preserve IDs through pipeline** - never discard tracking information
+5. **Use appropriate ID** for each protocol's primary `id` field
+
+## Migration Notes
+
+### v1.1.x → v1.2.0
+
+**OpenAI Responses API Breaking Change**:
+```diff
+  {
+-   "id": "chatcmpl-provider123",  // Provider ID (old)
++   "id": "req_gateway123",         // Gateway ID (new)
++   "nativeResponseId": "chatcmpl-provider123", // Provider ID (new field)
+    "object": "response",
+    ...
+  }
+```
+
+**Migration**:
+- If you're using the `id` field for provider correlation, use `nativeResponseId` instead
+- If you're using the `id` field for gateway tracking, no changes needed (now works correctly)
+
+**Anthropic Messages Enhancement**:
+```diff
+  {
+    "id": "req_gateway123",
++   "nativeResponseId": "msg_01Abc",  // New field
+    "type": "message",
+    ...
+  }
+```
+
+**Migration**:
+- New `nativeResponseId` field is additive
+- Same structure as OpenAI protocols (consistent across all APIs)
+- Use `nativeResponseId` for provider correlation
+- No `_gateway` metadata object - just simple top-level fields
+
+## Summary
+
+| ID Type | Purpose | Scope | Primary Use |
+|---------|---------|-------|-------------|
+| Gateway Request ID | Client-facing identifier | Gateway-generated | Response `id` field |
+| Native Response ID | Provider correlation | Provider response body | Debugging, support |
+| Upstream Request ID | HTTP correlation | Provider response headers | Network debugging |
+
+All three IDs serve distinct purposes and should be preserved separately throughout the request lifecycle.
