@@ -1,6 +1,5 @@
 import Hero from "./Hero";
 import Quickstart from "./Quickstart";
-import Streaming from "./Streaming";
 import Errors from "./Errors";
 import Support from "./Support";
 import Unavailable from "./Unavailable";
@@ -19,30 +18,20 @@ export default function ModelGateway({ metadata }: ModelGatewayProps) {
 	const supportedEndpoints = Array.from(
 		new Set(metadata.activeProviders.map((p) => p.endpoint).filter(Boolean))
 	);
-	const normalizedEndpoint = endpoint?.toLowerCase() ?? null;
-	const supportsStreaming =
-		!normalizedEndpoint || normalizedEndpoint === "chat.completions";
-
-	return (
-		<div className="space-y-8">
-			<Hero metadata={metadata} />
-			{isAvailable ? (
+        return (
+                <div className="space-y-8">
+                        <Hero metadata={metadata} />
+                        {isAvailable ? (
 				<div className="space-y-8">
-					<Quickstart
-						modelId={metadata.modelId}
-						aliases={metadata.aliases}
-						endpoint={endpoint}
-						supportedEndpoints={supportedEndpoints}
-					/>
-					{supportsStreaming ? (
-						<Streaming
-							modelId={metadata.modelId}
-							endpoint={endpoint}
-						/>
-					) : null}
-					<Errors />
-					<Support />
-				</div>
+                                        <Quickstart
+                                                modelId={metadata.modelId}      
+                                                aliases={metadata.aliases}      
+                                                endpoint={endpoint}
+                                                supportedEndpoints={supportedEndpoints}
+                                        />
+                                        <Errors />
+                                        <Support />
+                                </div>
 			) : (
 				<Unavailable modelId={metadata.modelId} />
 			)}

@@ -7,6 +7,22 @@ const ROOT = path.join(process.cwd(), 'src/data');
 const readJson = (p: string): any => JSON.parse(fs.readFileSync(p, 'utf-8'));
 const listDirs = (p: string) => fs.existsSync(p) ? fs.readdirSync(p, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name) : [];
 const exists = (p: string) => fs.existsSync(p);
+const listPricingFiles = (root: string) => {
+  const files: string[] = [];
+  if (!fs.existsSync(root)) return files;
+  const providers = listDirs(root);
+  for (const provider of providers) {
+    const providerRoot = path.join(root, provider);
+    for (const levelOne of listDirs(providerRoot)) {
+      const levelOneRoot = path.join(providerRoot, levelOne);
+      for (const levelTwo of listDirs(levelOneRoot)) {
+        const filePath = path.join(levelOneRoot, levelTwo, 'pricing.json');
+        if (exists(filePath)) files.push(filePath);
+      }
+    }
+  }
+  return files;
+};
 
 // Collect references up-front -------------------------------------------
 const organisationsDir = path.join(ROOT, 'organisations');
@@ -212,24 +228,16 @@ describe('API Providers', () => {
 
 // Pricing ----------------------------------------------------------------
 describe('Pricing', () => {
-  const providers = listDirs(pricingDir);
-  for (const prov of providers) {
-    const epRoot = path.join(pricingDir, prov);
-    for (const ep of listDirs(epRoot)) {
-      const mRoot = path.join(epRoot, ep);
-      for (const md of listDirs(mRoot)) {
-        const prPath = path.join(mRoot, md, 'pricing.json');
-        if (!exists(prPath)) continue;
-        test(`${prov}/${ep}/${md} pricing safety`, () => {
-          const j = readJson(prPath);
-          const errs = checkPricingEntrySafety(j);
-          // check relationships too
-          if (j.api_provider_id) expect(apiProviderIds.has(j.api_provider_id)).toBe(true);
-          if (j.model_id) expect(modelIds.has(j.model_id)).toBe(true);
-          expect(errs).toEqual([]);
-        });
-      }
-    }
+  const pricingFiles = listPricingFiles(pricingDir);
+  for (const prPath of pricingFiles) {
+    test(`${path.relative(pricingDir, prPath)} pricing safety`, () => {
+      const j = readJson(prPath);
+      const errs = checkPricingEntrySafety(j);
+      // check relationships too
+      if (j.api_provider_id) expect(apiProviderIds.has(j.api_provider_id)).toBe(true);
+      if (j.model_id) expect(modelIds.has(j.model_id)).toBe(true);
+      expect(errs).toEqual([]);
+    });
   }
 });
 

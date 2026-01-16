@@ -1,0 +1,59 @@
+[
+  {
+    "api_model_id": "black-forest-labs/flux-2-flex",
+    "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-flex",
+    "provider_model_slug": null,
+    "internal_model_id": "black-forest-labs/flux-2-flex-2025-11-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image",
+    "effective_from": "2025-11-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-max",
+    "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-max",
+    "provider_model_slug": null,
+    "internal_model_id": "black-forest-labs/flux-2-max-2025-12-16",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image",
+    "effective_from": "2025-12-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-pro",
+    "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-pro",
+    "provider_model_slug": null,
+    "internal_model_id": "black-forest-labs/flux-2-pro-2025-11-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image",
+    "effective_from": "2025-11-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

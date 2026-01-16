@@ -87,28 +87,28 @@ export default async function Page({
 	params: Promise<{ apiProvider: string }>;
 }) {
 	const { apiProvider } = await params;
-        const models = (await getAPIProviderModelsCached(
-                apiProvider,
-                "video"
-        )) as APIProviderModels[];
-        const helperText =
-                "Models can support multiple endpoints. We group them by model and list every supported API route.";
+	const models = (await getAPIProviderModelsCached(
+		apiProvider,
+		"video"
+	)) as APIProviderModels[];
+	const helperText =
+		"Models can support multiple endpoints. We group them by model and list every supported API route.";
 
-        return (
-                <APIProviderDetailShell apiProviderId={apiProvider}>
-                        <ModelTypeHeader
-                                title="Video models"
-                                description="Video generation, transformation, and captioning models."
-                                helper={helperText}
-                                count={models.length}
-                                icon={Video}
-                                accentClass="bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100"
-                                badgeClass="bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200"
-                        />
+	return (
+		<APIProviderDetailShell apiProviderId={apiProvider}>
+			<ModelTypeHeader
+				title="Video models"
+				description="Video generation, transformation, and captioning models."
+				helper={helperText}
+				count={models.length}
+				icon={Video}
+				accentClass="bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100"
+				badgeClass="bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200"
+			/>
 
-                        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                                {(!models || models.length === 0) && (
-                                        <Empty className="col-span-full">
+			<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+				{(!models || models.length === 0) && (
+					<Empty className="col-span-full">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<FilePlus />

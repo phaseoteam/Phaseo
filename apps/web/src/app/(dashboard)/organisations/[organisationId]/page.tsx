@@ -5,6 +5,7 @@ import OrganisationDetailShell from "@/components/(data)/organisation/Organisati
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { withUTM } from "@/lib/utm";
+import Script from "next/script";
 
 async function fetchOrganisation(organisationId: string) {
 	try {
@@ -83,6 +84,104 @@ export default async function Page({
 
 	const organisation = await getOrganisationDataCached(organisationId, 12);
 
+	// Generate structured data and FAQs for SEO
+	const generateStructuredData = () => {
+		if (!organisation) return null;
+
+		const orgName = organisation.name || "AI Organization";
+		const modelCount = organisation.recent_models?.length || 0;
+		const description = organisation.description || `${orgName} is an AI organization tracked on AI Stats.`;
+
+		// Organization Schema
+		const organizationSchema = {
+			"@context": "https://schema.org",
+			"@type": "Organization",
+			"name": orgName,
+			"description": description,
+			"url": organisation.website || `https://aistats.org/organisations/${organisationId}`,
+		};
+
+		// FAQ Schema
+		const faqSchema = {
+			"@context": "https://schema.org",
+			"@type": "FAQPage",
+			"mainEntity": [
+				{
+					"@type": "Question",
+					"name": `What is ${orgName}?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `${orgName} is an AI organization tracked on AI Stats. ${description} You can view their models, gateway availability, pricing information, and latest releases on AI Stats.`,
+					},
+				},
+				{
+					"@type": "Question",
+					"name": `What models does ${orgName} offer?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": modelCount
+							? `${orgName} has ${modelCount} models tracked on AI Stats. View the complete model catalog, compare benchmarks, check pricing across providers, and see API availability for each model.`
+							: `${orgName} models are tracked on AI Stats. Check the organization page for their complete model catalog, benchmarks, pricing, and API availability.`,
+					},
+				},
+				{
+					"@type": "Question",
+					"name": `How do I access ${orgName} models?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `${orgName} models can be accessed through various API providers and gateways. Visit the organization page on AI Stats to see which providers offer ${orgName} models, compare pricing, and view API documentation links.`,
+					},
+				},
+				{
+					"@type": "Question",
+					"name": `What are the latest models from ${orgName}?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `See the latest model releases from ${orgName} on AI Stats. We track new model launches, updates, and version releases. Check the Recent Models section for the newest additions to ${orgName}'s lineup.`,
+					},
+				},
+				{
+					"@type": "Question",
+					"name": `How does ${orgName} pricing compare to other providers?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `Compare ${orgName} pricing against other AI organizations on AI Stats. View detailed token pricing, calculate costs with our pricing calculator, and see real-world pricing data across different API providers and deployment options.`,
+					},
+				},
+			],
+		};
+
+		// Breadcrumb Schema
+		const breadcrumbSchema = {
+			"@context": "https://schema.org",
+			"@type": "BreadcrumbList",
+			"itemListElement": [
+				{
+					"@type": "ListItem",
+					"position": 1,
+					"name": "Home",
+					"item": "https://aistats.org",
+				},
+				{
+					"@type": "ListItem",
+					"position": 2,
+					"name": "Organizations",
+					"item": "https://aistats.org/organisations",
+				},
+				{
+					"@type": "ListItem",
+					"position": 3,
+					"name": orgName,
+					"item": `https://aistats.org/organisations/${organisationId}`,
+				},
+			],
+		};
+
+		return { organizationSchema, faqSchema, breadcrumbSchema };
+	};
+
+	const structuredData = generateStructuredData();
+
 	if (!organisation) {
 		return (
 			<main className="flex min-h-screen flex-col">
@@ -138,8 +237,35 @@ export default async function Page({
 	// console.log("Latest Models:", organisation.recent_models);
 
 	return (
-		<OrganisationDetailShell organisationId={organisationId}>
-			<OrganisationPageContent organisation={organisation} />
-		</OrganisationDetailShell>
+		<>
+			{structuredData && (
+				<>
+					<Script
+						id="organisation-org-schema"
+						type="application/ld+json"
+						dangerouslySetInnerHTML={{
+							__html: JSON.stringify(structuredData.organizationSchema),
+						}}
+					/>
+					<Script
+						id="organisation-faq-schema"
+						type="application/ld+json"
+						dangerouslySetInnerHTML={{
+							__html: JSON.stringify(structuredData.faqSchema),
+						}}
+					/>
+					<Script
+						id="organisation-breadcrumb-schema"
+						type="application/ld+json"
+						dangerouslySetInnerHTML={{
+							__html: JSON.stringify(structuredData.breadcrumbSchema),
+						}}
+					/>
+				</>
+			)}
+			<OrganisationDetailShell organisationId={organisationId}>
+				<OrganisationPageContent organisation={organisation} />
+			</OrganisationDetailShell>
+		</>
 	);
 }

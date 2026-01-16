@@ -34,7 +34,7 @@ export const anthropicSurface: Surface = {
                 const requestBody = {
                         ...requestPayload,
                         model: args.providerModelSlug || args.ir.model,
-                        stream: args.ir.stream,
+                        stream: true,
                 };
                 const requestPayloadJson = JSON.stringify(requestBody);
                 const mappedRequest = args.meta.echoUpstreamRequest ? requestPayloadJson : undefined;
@@ -84,11 +84,11 @@ export const anthropicSurface: Surface = {
                                 mappedRequest,
                         };
                 } else {
-			// Non-streaming response
-			const json = await res.json();
+                        // Buffer streaming response into a final snapshot
+                        const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(res);
 
-			// CRITICAL: Convert to IR with proper tool_use extraction
-                        const ir = anthropicMessagesToIR(json, args.requestId, args.ir.model, args.providerId);
+                        // CRITICAL: Convert to IR with proper tool_use extraction
+                        const ir = anthropicMessagesToIR(message, args.requestId, args.ir.model, args.providerId);
 
 			// Calculate pricing
 			if (ir.usage) {
@@ -107,11 +107,54 @@ export const anthropicSurface: Surface = {
                                 keySource: keyInfo.source,
                                 byokKeyId: keyInfo.byokId,
                                 mappedRequest,
-                                rawResponse: json,
+                                rawResponse: message,
+                                timing: {
+                                        latencyMs: firstFrameMs ?? undefined,
+                                        generationMs: totalMs ?? undefined,
+                                },
                         };
                 }
-	},
+        },
 };
+
+async function bufferAnthropicStreamToMessage(res: Response): Promise<{ message: any; firstFrameMs: number | null; totalMs: number | null }> {
+        if (!res.body) throw new Error("anthropic_stream_missing_body");
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = "";
+        let final: any = null;
+        const tStart = performance.now();
+        let firstFrameMs: number | null = null;
+
+        while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                if (firstFrameMs === null) {
+                        firstFrameMs = Math.round(performance.now() - tStart);
+                }
+                buf += dec.decode(value, { stream: true });
+                const frames = buf.split(/\n\n/);
+                buf = frames.pop() ?? "";
+                for (const raw of frames) {
+                        const lines = raw.split("\n");
+                        let data = "";
+                        for (const line of lines) {
+                                const l = line.replace(/\r$/, "");
+                                if (l.startsWith("data:")) data += l.slice(5).trimStart();
+                        }
+                        if (!data || data === "[DONE]") continue;
+                        let payload: any;
+                        try { payload = JSON.parse(data); } catch { continue; }
+                        if (payload?.type === "message_stop" || payload?.type === "message") {
+                                final = payload?.message ?? payload;
+                        }
+                }
+        }
+
+        if (!final) throw new Error("anthropic_stream_missing_completion");
+        const totalMs = Math.round(performance.now() - tStart);
+        return { message: final, firstFrameMs, totalMs };
+}
 
 /**
  * Transform IR request to Anthropic Messages format

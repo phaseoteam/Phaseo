@@ -93,11 +93,18 @@ export async function auditSuccess(args: {
     stream: boolean; byok: boolean;
     nativeResponseId?: string | null;
     appTitle?: string | null; referer?: string | null;
+    requestMethod?: string | null;
+    requestPath?: string | null;
+    requestUrl?: string | null;
+    userAgent?: string | null;
+    clientIp?: string | null;
+    cfRay?: string | null;
     generationMs?: number | null; latencyMs?: number | null;
     internalLatencyMs?: number | null;
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
+    extraJson?: string | null;
 }) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -145,8 +152,15 @@ export async function auditSuccess(args: {
                 endpoint: args.endpoint,
                 stream: args.stream,
                 isByok: args.byok,
+                stage: "execute",
                 appTitle: args.appTitle ?? null,
                 referer: args.referer ?? null,
+                requestMethod: args.requestMethod ?? null,
+                requestPath: args.requestPath ?? null,
+                requestUrl: args.requestUrl ?? null,
+                userAgent: args.userAgent ?? null,
+                clientIp: args.clientIp ?? null,
+                cfRay: args.cfRay ?? null,
                 nativeResponseId: args.nativeResponseId ?? null,
                 statusCode: args.statusCode,
                 success: true,
@@ -163,10 +177,12 @@ export async function auditSuccess(args: {
                     total_usd_str: args.usagePriced?.pricing?.total_usd_str ?? null,
                     currency: args.currency,
                     lines_json: JSON.stringify(pricingLines),
+                    lines: pricingLines,
                 },
                 finishReason: args.finishReason ?? null,
                 env: bindings.NODE_ENV ?? null,
                 apiVersion: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,
+                extraJson: args.extraJson ?? null,
             }), "axiom_audit_success_ingest");
         } catch (err) {
             console.error("[audit] Axiom ingest failed (non-blocking)", err);
@@ -191,6 +207,15 @@ type AuditFailureBefore = {
     latencyMs?: number | null;
     internalLatencyMs?: number | null;
     keyId?: string | null;
+    appTitle?: string | null;
+    referer?: string | null;
+    requestMethod?: string | null;
+    requestPath?: string | null;
+    requestUrl?: string | null;
+    userAgent?: string | null;
+    clientIp?: string | null;
+    cfRay?: string | null;
+    extraJson?: string | null;
 };
 type AuditFailureExecute = {
     stage: "execute";
@@ -207,6 +232,15 @@ type AuditFailureExecute = {
     internalLatencyMs?: number | null;
     byok?: boolean;
     keyId?: string | null;
+    appTitle?: string | null;
+    referer?: string | null;
+    requestMethod?: string | null;
+    requestPath?: string | null;
+    requestUrl?: string | null;
+    userAgent?: string | null;
+    clientIp?: string | null;
+    cfRay?: string | null;
+    extraJson?: string | null;
 };
 
 export async function auditFailure(args: AuditFailureBefore | AuditFailureExecute) {
@@ -247,10 +281,12 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             });
 
             let supabaseError: Error | null = null;
-            try {
-                await runSupabase(row, "supabase_audit_failure_before_upsert");
-            } catch (err) {
-                supabaseError = err instanceof Error ? err : new Error(String(err));
+            if (args.teamId) {
+                try {
+                    await runSupabase(row, "supabase_audit_failure_before_upsert");
+                } catch (err) {
+                    supabaseError = err instanceof Error ? err : new Error(String(err));
+                }
             }
 
             await runAxiom({
@@ -261,8 +297,15 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 endpoint: args.endpoint,
                 stream: false,
                 isByok: false,
-                appTitle: null,
-                referer: null,
+                stage: "before",
+                appTitle: args.appTitle ?? null,
+                referer: args.referer ?? null,
+                requestMethod: args.requestMethod ?? null,
+                requestPath: args.requestPath ?? null,
+                requestUrl: args.requestUrl ?? null,
+                userAgent: args.userAgent ?? null,
+                clientIp: args.clientIp ?? null,
+                cfRay: args.cfRay ?? null,
                 nativeResponseId: null,
                 statusCode: args.statusCode,
                 success: false,
@@ -277,6 +320,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 finishReason: null,
                 env: bindings.NODE_ENV ?? null,
                 apiVersion: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,
+                extraJson: args.extraJson ?? null,
             }, "axiom_audit_failure_before_ingest");
 
             if (supabaseError) throw supabaseError;
@@ -306,10 +350,12 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         });
 
         let supabaseError: Error | null = null;
-        try {
-            await runSupabase(row, "supabase_audit_failure_execute_upsert");
-        } catch (err) {
-            supabaseError = err instanceof Error ? err : new Error(String(err));
+        if (args.teamId) {
+            try {
+                await runSupabase(row, "supabase_audit_failure_execute_upsert");
+            } catch (err) {
+                supabaseError = err instanceof Error ? err : new Error(String(err));
+            }
         }
 
         await runAxiom({
@@ -320,8 +366,15 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             endpoint: args.endpoint,
             stream: !!args.stream,
             isByok: !!args.byok,
-            appTitle: null,
-            referer: null,
+            stage: "execute",
+            appTitle: args.appTitle ?? null,
+            referer: args.referer ?? null,
+            requestMethod: args.requestMethod ?? null,
+            requestPath: args.requestPath ?? null,
+            requestUrl: args.requestUrl ?? null,
+            userAgent: args.userAgent ?? null,
+            clientIp: args.clientIp ?? null,
+            cfRay: args.cfRay ?? null,
             nativeResponseId: null,
             statusCode: args.statusCode,
             success: false,
@@ -336,6 +389,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             finishReason: null,
             env: bindings.NODE_ENV ?? null,
             apiVersion: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,
+            extraJson: args.extraJson ?? null,
         }, "axiom_audit_failure_execute_ingest");
 
         if (supabaseError) throw supabaseError;

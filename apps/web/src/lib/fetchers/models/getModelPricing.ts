@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/client";
 
 /** mirrors new rules schema */
 export interface PricingRule {
-    id: string;                 // uuid
+    id: string;                 // rule_id
     model_key: string;          // `${provider}:${model}:${endpoint}`
     pricing_plan: string;       // standard|batch|flex|priority
     meter: string;              // e.g. input_text_tokens
@@ -20,7 +20,7 @@ export interface PricingRule {
 }
 
 export interface ProviderModel {
-    id: string;                 // you’re storing composed key in `id`
+    id: string;                 // provider_api_model_id
     api_provider_id: string;
     provider_model_slug?: string | null;
     model_id: string;
@@ -47,138 +47,176 @@ export interface ProviderPricing {
     pricing_rules: PricingRule[];
 }
 
-/**
- * Fetch pricing information for a model grouped by provider, for rules "active now".
- * If you want to show historical/future windows, add a param and relax the WHERE.
- */
 export default async function getModelPricing(modelId: string): Promise<ProviderPricing[]> {
+    // console.log(`[getModelPricing] Starting for modelId: ${modelId}`);
     const supabase = await createClient();
 
-    // 1) Provider models for this modelId
-    const { data: pms, error: pmError } = await supabase
+    // Fetch provider models with capabilities and provider info in one query
+    const { data: pmRows, error: pmError } = await supabase
         .from("data_api_provider_models")
         .select(`
-      id,
-      api_provider_id,
-      provider_model_slug,
-      api_model_id,
-      endpoint,
-      is_active_gateway,
-      input_modalities,
-      output_modalities,
-      effective_from,
-      effective_to,
-      created_at,
-      updated_at,
-      provider:data_api_providers(api_provider_id, api_provider_name, link, country_code)
-    `)
-        .eq("internal_model_id", modelId);
+            provider_api_model_id,
+            provider_id,
+            api_model_id,
+            provider_model_slug,
+            internal_model_id,
+            is_active_gateway,
+            input_modalities,
+            output_modalities,
+            effective_from,
+            effective_to,
+            created_at,
+            updated_at,
+            data_api_provider_model_capabilities!inner (
+                capability_id,
+                params,
+                status
+            ),
+            data_api_providers (
+                api_provider_name,
+                link,
+                country_code
+            )
+        `)
+        .eq("internal_model_id", modelId)
+        .neq("data_api_provider_model_capabilities.status", "disabled");
 
     if (pmError) throw new Error(pmError.message || "Failed to fetch provider models");
 
-    const providerModels = (pms || []) as any[];
+    // console.log(`[getModelPricing] Fetched ${pmRows?.length || 0} provider model rows for providers: ${(pmRows ?? []).map(r => r.provider_id).join(', ')}`);
 
-    // Gather keys to fetch rules against
-    const modelKeys = Array.from(new Set(providerModels.map(pm => pm.id))).filter(Boolean);
-    const nowFilter = {
-        // effective_from <= now()
-        lte_from: new Date().toISOString(),
-    };
-
-    // 2) Current rules for those keys
-    let rules: any[] = [];
-    if (modelKeys.length) {
-        const { data: r, error: prErr } = await supabase
-            .from("data_api_pricing_rules")
-            .select(`
-        id,
-        model_key,
-        pricing_plan,
-        meter,
-        unit,
-        unit_size,
-        price_per_unit,
-        currency,
-        tiering_mode,
-        note,
-        match,
-        priority,
-        effective_from,
-        effective_to
-      `)
-            .in("model_key", modelKeys)
-            .lte("effective_from", nowFilter.lte_from)
-            .or("effective_to.is.null,effective_to.gt." + nowFilter.lte_from)
-            .order("priority", { ascending: false })
-            .order("effective_from", { ascending: false });
-
-        if (prErr) throw new Error(prErr.message || "Failed to fetch pricing rules");
-        rules = (r || []).map(x => ({ ...x, price_per_unit: Number(x.price_per_unit) }));
-    }
-
-    // 3) Group by provider
+    // Build provider models list
+    const providerModels: any[] = [];
     const providerMap = new Map<string, ProviderPricing>();
 
-    for (const pm of providerModels) {
-        const pid: string = pm.api_provider_id;
+    for (const row of (pmRows ?? []) as any[]) {
+        // console.log(`[getModelPricing] Processing row:`, JSON.stringify(row, null, 2));
+        const pid = row.provider_id;
         if (!providerMap.has(pid)) {
-            const prov = pm.provider || { api_provider_id: pid, api_provider_name: pid };
             providerMap.set(pid, {
-                provider: prov,
+                provider: {
+                    api_provider_id: pid,
+                    api_provider_name: row.data_api_providers?.api_provider_name || pid,
+                    link: row.data_api_providers?.link || null,
+                    country_code: row.data_api_providers?.country_code || null,
+                },
                 provider_models: [],
                 pricing_rules: [],
             });
         }
-        // normalise provider model record
-        providerMap.get(pid)!.provider_models.push({
-            id: pm.id,
-            api_provider_id: pm.api_provider_id,
-            provider_model_slug: pm.provider_model_slug,
-            model_id: pm.model_id,
-            endpoint: pm.endpoint,
-            is_active_gateway: pm.is_active_gateway,
-            input_modalities: pm.input_modalities,
-            output_modalities: pm.output_modalities,
-            effective_from: pm.effective_from,
-            effective_to: pm.effective_to,
-            created_at: pm.created_at,
-            updated_at: pm.updated_at,
+
+        providerModels.push({
+            id: row.provider_api_model_id,
+            api_provider_id: row.provider_id,
+            provider_model_slug: row.provider_model_slug,
+            model_id: row.api_model_id,
+            endpoint: row.data_api_provider_model_capabilities[0].capability_id,
+            is_active_gateway: row.is_active_gateway,
+            input_modalities: Array.isArray(row.input_modalities)
+                ? row.input_modalities.join(",")
+                : row.input_modalities ?? "",
+            output_modalities: Array.isArray(row.output_modalities)
+                ? row.output_modalities.join(",")
+                : row.output_modalities ?? "",
+            effective_from: row.effective_from,
+            effective_to: row.effective_to,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            params: row.data_api_provider_model_capabilities[0].params ?? [],
+        });
+
+        // Add to provider
+        const entry = providerMap.get(pid)!;
+        entry.provider_models.push({
+            id: row.provider_api_model_id,
+            api_provider_id: row.provider_id,
+            provider_model_slug: row.provider_model_slug,
+            model_id: row.api_model_id,
+            endpoint: row.data_api_provider_model_capabilities[0].capability_id,
+            is_active_gateway: row.is_active_gateway,
+            input_modalities: Array.isArray(row.input_modalities)
+                ? row.input_modalities.join(",")
+                : row.input_modalities ?? "",
+            output_modalities: Array.isArray(row.output_modalities)
+                ? row.output_modalities.join(",")
+                : row.output_modalities ?? "",
+            effective_from: row.effective_from,
+            effective_to: row.effective_to,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
         });
     }
 
-    // Attach rules based on model_key → find owning provider via provider_models
+    // console.log(`[getModelPricing] Built ${providerModels.length} provider models, ${providerMap.size} providers: ${Array.from(providerMap.keys()).join(', ')}`);
+    const modelKeys = Array.from(
+        new Set(
+            providerModels.map(
+                (pm) => `${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`
+            )
+        )
+    ).filter(Boolean);
+
+    // console.log(`[getModelPricing] Model keys: ${modelKeys.join(', ')}`);
+
+    // Fetch all rules for those keys in one query
+    let rules: PricingRule[] = [];
+    if (modelKeys.length) {
+        const { data: r, error: prErr } = await supabase
+            .from("data_api_pricing_rules")
+            .select(
+                "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, tiering_mode, note, priority, effective_from, effective_to, match"
+            )
+            .in("model_key", modelKeys)
+            .order("priority", { ascending: false })
+            .order("effective_from", { ascending: false });
+
+        if (prErr) throw new Error(prErr.message || "Failed to fetch pricing rules");
+
+        rules = (r || []).map((x: any) => ({
+            id: x.rule_id,
+            model_key: x.model_key,
+            pricing_plan: x.pricing_plan ?? "standard",
+            meter: x.meter,
+            unit: x.unit ?? "token",
+            unit_size: Number(x.unit_size ?? 1),
+            price_per_unit: Number(x.price_per_unit),
+            currency: x.currency ?? "USD",
+            tiering_mode: x.tiering_mode ?? null,
+            note: x.note ?? null,
+            match: x.match ?? [],
+            priority: Number(x.priority ?? 100),
+            effective_from: x.effective_from,
+            effective_to: x.effective_to ?? null,
+        }));
+
+        // console.log(`[getModelPricing] Fetched ${rules.length} pricing rules: ${rules.slice(0, 5).map(r => `${r.id} (${r.meter})`).join(', ')}${rules.length > 5 ? '...' : ''}`);
+    }
+
+    // Attach rules to providers
     const byKeyToProvider = new Map<string, string>();
     for (const [pid, entry] of providerMap) {
         for (const pm of entry.provider_models) {
-            byKeyToProvider.set(pm.id, pid);
+            byKeyToProvider.set(
+                `${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`,
+                pid
+            );
         }
     }
-    for (const rule of rules as PricingRule[]) {
+    for (const rule of rules) {
         const pid = byKeyToProvider.get(rule.model_key);
-        if (!pid) continue; // orphaned rule (shouldn’t happen)
+        if (!pid) continue;
         providerMap.get(pid)!.pricing_rules.push(rule);
     }
 
-    // Fill missing provider names if any
-    const missing = [...providerMap.values()]
-        .filter(p => !p.provider.api_provider_name || p.provider.api_provider_name === p.provider.api_provider_id)
-        .map(p => p.provider.api_provider_id);
-    if (missing.length) {
-        const { data: provs } = await supabase
-            .from("data_api_providers")
-            .select("api_provider_id, api_provider_name, link, country_code")
-            .in("api_provider_id", Array.from(new Set(missing)));
-        (provs || []).forEach(p => {
-            const slot = providerMap.get(p.api_provider_id);
-            if (slot) slot.provider = p;
-        });
-    }
-
-    return [...providerMap.values()].sort((a, b) => {
+    const result = [...providerMap.values()].sort((a, b) => {
         const an = a.provider.api_provider_name || a.provider.api_provider_id;
         const bn = b.provider.api_provider_name || b.provider.api_provider_id;
         return an.localeCompare(bn);
     });
+
+    // console.log(`[getModelPricing] Returning ${result.length} providers with pricing: ${result.map(p => p.provider.api_provider_name || p.provider.api_provider_id).join(', ')}`);
+
+    return result;
 }
 
 /**
@@ -194,9 +232,9 @@ export async function getModelPricingCached(modelId: string): Promise<ProviderPr
     cacheLife("days");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
-    cacheTag("data:api_pricing_rules");
-    cacheTag("data:api_provider_models");
+    cacheTag("data:data_api_pricing_rules");
+    cacheTag("data:data_api_provider_models");
 
-    console.log("[fetch] HIT DB for model pricing", modelId);
+    // console.log("[fetch] HIT DB for model pricing", modelId);
     return getModelPricing(modelId);
 }

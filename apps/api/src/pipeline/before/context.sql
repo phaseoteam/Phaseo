@@ -48,7 +48,7 @@ begin
   resolved_model := coalesce(
     (
       select a.api_model_id
-      from public.data_api_aliases a
+      from public.data_api_model_aliases a
       where a.alias_slug = base_model
         and a.is_enabled = true
         and a.api_model_id is not null
@@ -156,13 +156,18 @@ begin
 
   -- provider candidates (BYOK) + pricing, fully qualifying params
   with provider_rows as (
-    select distinct m.api_provider_id as provider_id, m.provider_model_slug
+    select distinct m.provider_id, m.provider_model_slug
     from public.data_api_provider_models m
+    join public.data_api_provider_model_capabilities c
+      on c.provider_api_model_id = m.provider_api_model_id
     where m.api_model_id = resolved_model
-      and m.endpoint = gateway_fetch_request_context.endpoint
+      and c.capability_id = gateway_fetch_request_context.endpoint
+      and c.status = 'active'
       and m.is_active_gateway
       and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
       and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
+      and (c.effective_from is null or c.effective_from <= now() at time zone 'utc')
+      and (c.effective_to   is null or (now() at time zone 'utc') < c.effective_to)
   )
   select
     coalesce(
@@ -198,7 +203,9 @@ begin
           with rules as (
             select r.*
             from public.data_api_pricing_rules r
-            where r.model_key = (pr.provider_id || ':' || resolved_model || ':' || gateway_fetch_request_context.endpoint)
+            where r.model_key =
+              pr.provider_id || ':' || resolved_model || ':' || gateway_fetch_request_context.endpoint
+              and r.capability_id = gateway_fetch_request_context.endpoint
               and (r.effective_from is null or r.effective_from <= now() at time zone 'utc')
               and (r.effective_to   is null or (now() at time zone 'utc') < r.effective_to)
           ),
@@ -206,7 +213,7 @@ begin
             select
               jsonb_agg(
                 jsonb_build_object(
-                  'id', r.id,
+                  'id', r.rule_id,
                   'pricing_plan', r.pricing_plan,
                   'meter', r.meter,
                   'unit', r.unit,

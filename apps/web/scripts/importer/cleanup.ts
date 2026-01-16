@@ -27,7 +27,9 @@ export async function cleanDeleted() {
     const families: string[] = [];
     const organisations: string[] = [];
     const providers: string[] = [];
-    const pricing: string[] = [];
+    const pricingKeys: string[] = [];
+    const pricingProviderModels: string[] = [];
+    const pricingCapabilities: Array<{ provider_api_model_id: string; capability_id: string }> = [];
     const aliases: string[] = [];
 
     for (const { path, meta } of toDelete) {
@@ -42,7 +44,14 @@ export async function cleanDeleted() {
         } else if (path.startsWith(DIR_PROVIDERS)) {
             if (meta?.api_provider_id) providers.push(meta.api_provider_id);
         } else if (path.startsWith(DIR_PRICING)) {
-            if (meta?.model_key) pricing.push(meta.model_key);
+            if (meta?.pricing_key) pricingKeys.push(meta.pricing_key);
+            if (meta?.provider_api_model_id) pricingProviderModels.push(meta.provider_api_model_id);
+            if (meta?.provider_api_model_id && meta?.capability_id) {
+                pricingCapabilities.push({
+                    provider_api_model_id: meta.provider_api_model_id,
+                    capability_id: meta.capability_id,
+                });
+            }
         } else if (path.startsWith(DIR_ALIASES)) {
             if (meta?.alias_slug) aliases.push(meta.alias_slug);
         }
@@ -114,24 +123,49 @@ export async function cleanDeleted() {
     }
 
     // Pricing
-    if (pricing.length) {
+    if (pricingKeys.length || pricingCapabilities.length || pricingProviderModels.length) {
         if (isDryRun()) {
-            for (const key of pricing) {
-                logWrite("public.data_api_provider_models", "DELETE", { id: key });
-                logWrite("public.data_api_pricing_rules", "DELETE", { model_key: key });
+            for (const key of pricingKeys) {
+                logWrite("public.data_api_pricing_rules", "DELETE", { key });
+            }
+            for (const cap of pricingCapabilities) {
+                logWrite("public.data_api_provider_model_capabilities", "DELETE", cap);
+            }
+            for (const id of pricingProviderModels) {
+                logWrite("public.data_api_provider_models", "DELETE", { provider_api_model_id: id });
             }
         } else {
-            assertOk(await supa.from("data_api_provider_models").delete().in("id", pricing), "delete data_api_provider_models");
-            assertOk(await supa.from("data_api_pricing_rules").delete().in("model_key", pricing), "delete data_api_pricing_rules");
+            if (pricingKeys.length) {
+                assertOk(
+                    await supa.from("data_api_pricing_rules").delete().in("key", pricingKeys),
+                    "delete data_api_pricing_rules"
+                );
+            }
+            for (const cap of pricingCapabilities) {
+                assertOk(
+                    await supa
+                        .from("data_api_provider_model_capabilities")
+                        .delete()
+                        .eq("provider_api_model_id", cap.provider_api_model_id)
+                        .eq("capability_id", cap.capability_id),
+                    "delete data_api_provider_model_capabilities"
+                );
+            }
+            if (pricingProviderModels.length) {
+                assertOk(
+                    await supa.from("data_api_provider_models").delete().in("provider_api_model_id", pricingProviderModels),
+                    "delete data_api_provider_models"
+                );
+            }
         }
     }
 
     // Aliases
     if (aliases.length) {
         if (isDryRun()) {
-            for (const slug of aliases) logWrite("public.data_aliases", "DELETE", { alias_slug: slug });
+            for (const slug of aliases) logWrite("public.data_api_model_aliases", "DELETE", { alias_slug: slug });
         } else {
-            assertOk(await supa.from("data_aliases").delete().in("alias_slug", aliases), "delete data_aliases");
+            assertOk(await supa.from("data_api_model_aliases").delete().in("alias_slug", aliases), "delete data_api_model_aliases");
         }
     }
 

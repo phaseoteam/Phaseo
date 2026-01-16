@@ -168,57 +168,83 @@ export async function getMonitorModels(
 	}
 
 	let gatewayModelsData: GatewayModel[] = [];
-	let gatewayFetchError: unknown = null;
 
-	const tryGateway = await supabase
-		.from("data_api_models")
-		.select(`
-        model_id,
-        api_provider_id,
-        key,
-        endpoint,
-        is_active_gateway,
-        input_modalities,
-        output_modalities,
-        params,
-        provider: data_api_providers!data_api_models_api_provider_id_fkey(
-          api_provider_name,
-          link
-        )
-      `);
+	const { data: providerModels, error: providerModelsError } = await supabase
+		.from("data_api_provider_models")
+		.select(
+			"provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
+		);
 
-	if (tryGateway.error) {
-		gatewayFetchError = tryGateway.error;
-		const fallback = await supabase
-			.from("data_api_provider_models")
-			.select(`
-          model_id,
-          api_provider_id,
-          key,
-          endpoint,
-          is_active_gateway,
-          input_modalities,
-          output_modalities,
-          params,
-          provider: data_api_providers!data_api_provider_models_api_provider_id_fkey(
-            api_provider_name,
-            link
-          )
-        `);
+	if (providerModelsError) {
+		throw providerModelsError;
+	}
 
-		if (!fallback.error) {
-			gatewayModelsData = (fallback.data ?? []).map(normalizeGatewayModel);
+	const providerModelIds = (providerModels ?? [])
+		.map((row) => row.provider_api_model_id)
+		.filter((id): id is string => Boolean(id));
+
+        const { data: capabilities, error: capsError } = await supabase
+                .from("data_api_provider_model_capabilities")
+                .select("provider_api_model_id, capability_id, params, status")
+                .in("provider_api_model_id", providerModelIds);
+
+	if (capsError) {
+		throw capsError;
+	}
+
+	const providerIds = Array.from(new Set((providerModels ?? []).map((row) => row.provider_id).filter(Boolean)));
+	const providerMap = new Map<string, GatewayProvider>();
+	if (providerIds.length) {
+		const { data: providers } = await supabase
+			.from("data_api_providers")
+			.select("api_provider_id, api_provider_name, link")
+			.in("api_provider_id", providerIds);
+
+		for (const provider of providers ?? []) {
+			if (provider?.api_provider_id) {
+				providerMap.set(provider.api_provider_id, {
+					api_provider_name: provider.api_provider_name ?? null,
+					link: provider.link ?? null,
+				});
+			}
 		}
-	} else {
-		gatewayModelsData = (tryGateway.data ?? []).map(normalizeGatewayModel);
+	}
+
+	const providerById = new Map<string, any>();
+	for (const row of providerModels ?? []) {
+		if (row.provider_api_model_id) {
+			providerById.set(row.provider_api_model_id, row);
+		}
+	}
+
+        for (const cap of capabilities ?? []) {
+                if (cap.status === "disabled") continue;
+                if (!cap.provider_api_model_id || !cap.capability_id) continue;
+                const pm = providerById.get(cap.provider_api_model_id);
+                if (!pm) continue;
+		const model_id = pm.internal_model_id ?? pm.api_model_id;
+		const key = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
+		gatewayModelsData.push(
+			normalizeGatewayModel({
+				model_id,
+				api_provider_id: pm.provider_id,
+				key,
+				endpoint: cap.capability_id,
+				is_active_gateway: pm.is_active_gateway,
+				input_modalities: pm.input_modalities,
+				output_modalities: pm.output_modalities,
+				params: cap.params ?? [],
+				provider: providerMap.get(pm.provider_id) ?? null,
+			})
+		);
 	}
 
 	const modelKeys =
 		gatewayModelsData?.map((pm) => pm.key).filter(Boolean) || [];
 
-	const { data: pricingData } = await supabase
-		.from("data_api_pricing_rules")
-		.select(`
+        const { data: pricingData } = await supabase
+                .from("data_api_pricing_rules")
+                .select(`
         model_key,
         meter,
         unit_size,
@@ -227,14 +253,14 @@ export async function getMonitorModels(
         effective_from,
         effective_to
       `)
-		.in("model_key", modelKeys)
-		.or("effective_to.is.null,effective_to.gt." + new Date().toISOString())
-		.order("effective_from", { ascending: false });
+                .in("model_key", modelKeys)
+                .or("effective_to.is.null,effective_to.gt." + new Date().toISOString())
+                .order("effective_from", { ascending: false });
 
-	const { data: allTiersData } = await supabase
-		.from("data_api_pricing_rules")
-		.select("pricing_plan")
-		.not("pricing_plan", "is", null);
+        const { data: allTiersData } = await supabase
+                .from("data_api_pricing_rules")
+                .select("pricing_plan")
+                .not("pricing_plan", "is", null);
 
 	const allTiers = [...new Set(allTiersData?.map((r) => r.pricing_plan) || [])]
 		.filter((tier): tier is string => Boolean(tier))
@@ -244,15 +270,15 @@ export async function getMonitorModels(
 		string,
 		{ inputPrice: number; outputPrice: number; tier: string }
 	>();
-	for (const p of pricingData ?? []) {
-		if (!pricingByKey.has(p.model_key)) {
-			pricingByKey.set(p.model_key, {
-				inputPrice: 0,
-				outputPrice: 0,
-				tier: "standard",
-			});
-		}
-		const prices = pricingByKey.get(p.model_key)!;
+        for (const p of pricingData ?? []) {
+                if (!pricingByKey.has(p.model_key)) {
+                        pricingByKey.set(p.model_key, {
+                                inputPrice: 0,
+                                outputPrice: 0,
+                                tier: "standard",
+                        });
+                }
+                const prices = pricingByKey.get(p.model_key)!;
 		if (
 			(p.meter === "input_text_tokens" || p.meter === "input_tokens") &&
 			prices.inputPrice === 0
@@ -354,9 +380,6 @@ export async function getMonitorModels(
 			modelMap.set(monitorModel.id, monitorModel);
 		}
 
-		if ((gateways?.length ?? 0) === 0 && gatewayFetchError) {
-			// Gateway fetch failed; still include base model with unlinked row above.
-		}
 	}
 
 	const allModels = Array.from(modelMap.values());

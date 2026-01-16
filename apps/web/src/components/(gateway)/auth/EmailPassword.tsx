@@ -1,12 +1,16 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { handlePasswordSignIn } from "@/app/(auth)/sign-in/actions";
+import { handlePasswordSignIn, forgotPasswordAction } from "@/app/(auth)/sign-in/actions";
+import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 
 export default function EmailPassword() {
+	const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
+
 	return (
 		<div className="grid gap-4">
 			<div className="flex items-center gap-2">
@@ -32,12 +36,13 @@ export default function EmailPassword() {
 				<div className="grid gap-3">
 					<div className="flex items-center">
 						<Label htmlFor="password">Password</Label>
-						<Link
-							href="#"
+						<button
+							type="button"
+							onClick={() => setForgotPasswordOpen(true)}
 							className="ml-auto text-sm underline-offset-4 hover:underline"
 						>
 							Forgot your password?
-						</Link>
+						</button>
 					</div>
 					<Input
 						id="password"
@@ -58,6 +63,12 @@ export default function EmailPassword() {
 					Sign up
 				</Link>
 			</div>
+
+			<ForgotPasswordDialog
+				open={forgotPasswordOpen}
+				onOpenChange={setForgotPasswordOpen}
+				onSubmit={forgotPasswordAction}
+			/>
 		</div>
 	);
 }

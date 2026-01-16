@@ -45,13 +45,14 @@ import {
 } from "lucide-react";
 
 type ChatConversationProps = {
-	activeThread: ChatThread | null;
-	isSending: boolean;
-	isAuthenticated: boolean;
-	hasApiKey: boolean;
-	onSend: (content: string) => void;
-	onEditMessage: (messageId: string, content: string) => void;
-	onRetryAssistant: (messageId: string) => void;
+    activeThread: ChatThread | null;
+    isSending: boolean;
+    isAuthenticated: boolean;
+    hasApiKey: boolean;
+    presetPrompt?: string;
+    onSend: (content: string) => void;
+    onEditMessage: (messageId: string, content: string) => void;
+    onRetryAssistant: (messageId: string) => void;
 	onBranchAssistant: (messageId: string) => void;
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
 	orgNameById: Record<string, string>;
@@ -94,13 +95,14 @@ function ensureVariants(message: ChatMessage) {
 }
 
 export function ChatConversation({
-	activeThread,
-	isSending,
-	isAuthenticated,
-	hasApiKey,
-	onSend,
-	onEditMessage,
-	onRetryAssistant,
+    activeThread,
+    isSending,
+    isAuthenticated,
+    hasApiKey,
+    presetPrompt,
+    onSend,
+    onEditMessage,
+    onRetryAssistant,
 	onBranchAssistant,
 	onSelectVariant,
 	orgNameById,
@@ -113,12 +115,13 @@ export function ChatConversation({
 	const [composer, setComposer] = useState("");
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editingValue, setEditingValue] = useState("");
-	const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
-	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-	const scrollAreaRef = useRef<HTMLDivElement | null>(null);
-	const fileInputRef = useRef<HTMLInputElement | null>(null);
-	const [attachments, setAttachments] = useState<File[]>([]);
-	const [searchEnabled, setSearchEnabled] = useState(false);
+    const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [attachments, setAttachments] = useState<File[]>([]);
+    const [searchEnabled, setSearchEnabled] = useState(false);
+    const appliedPresetRef = useRef<string | null>(null);
 
 	const latestMessageContent =
 		activeThread?.messages[activeThread.messages.length - 1]?.content ?? "";
@@ -145,12 +148,19 @@ export function ChatConversation({
 		});
 	}, [activeThread?.id]);
 
-	useEffect(() => {
-		const raf = requestAnimationFrame(() => {
-			setComposer("");
-		});
-		return () => cancelAnimationFrame(raf);
-	}, [activeThread?.id]);
+    useEffect(() => {
+        const raf = requestAnimationFrame(() => {
+            setComposer("");
+        });
+        return () => cancelAnimationFrame(raf);
+    }, [activeThread?.id]);
+
+    useEffect(() => {
+        if (!presetPrompt) return;
+        if (appliedPresetRef.current === presetPrompt) return;
+        setComposer(presetPrompt);
+        appliedPresetRef.current = presetPrompt;
+    }, [presetPrompt, activeThread?.id]);
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {

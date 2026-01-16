@@ -4,7 +4,9 @@ import { Suspense } from "react";
 import AuthControls from "./AuthControls"; // server island
 import MainNav from "./MainNav"; // client-only nav (no data)
 import { SearchWrapper } from "./Search/SearchWrapper";
+import { ChatIcon } from "./Chat/ChatIcon";
 import { HeaderAnnouncements } from "./HeaderAnnouncements";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const releaseMessage = "Introducing Our Model Gateway";
 const changelogLink =
@@ -43,12 +45,19 @@ export default function Header() {
 
 					{/* Right actions: desktop auth + search */}
 					<div className="hidden lg:flex items-center gap-3 shrink-0">
-						<div className="flex items-center">
+						<div className="flex items-center gap-1">
+							<ChatIcon />
 							<SearchWrapper />
 						</div>
 						<Suspense
 							fallback={
-								<div className="h-9 w-28 rounded-md animate-pulse" />
+								<div className="flex items-center gap-2">
+									<Skeleton className="h-10 w-32 rounded-lg" />
+									<div className="relative">
+										<Skeleton className="h-10 w-10 rounded-lg" />
+										<Skeleton className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 rounded-full" />
+									</div>
+								</div>
 							}
 						>
 							<AuthControls variant="desktop" />
@@ -59,7 +68,7 @@ export default function Header() {
 					<div className="lg:hidden">
 						<Suspense
 							fallback={
-								<div className="h-9 w-9 rounded-md animate-pulse" />
+								<Skeleton className="h-10 w-10 rounded-lg" />
 							}
 						>
 							<AuthControls variant="mobile" />

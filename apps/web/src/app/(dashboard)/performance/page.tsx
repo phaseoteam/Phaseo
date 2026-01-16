@@ -111,8 +111,7 @@ const quantizationOptions = [
 		title: "FP16 — balanced",
 		size: "≈ 50%",
 		speed: "1.6×",
-		offset:
-			"Identical vocab coverage with half the memory footprint, minimal drift.",
+		offset: "Identical vocab coverage with half the memory footprint, minimal drift.",
 		use: "Interactive apps, streaming chat, steady workloads.",
 	},
 	{
@@ -120,8 +119,7 @@ const quantizationOptions = [
 		title: "INT8 — throughput",
 		size: "≈ 25%",
 		speed: "2.4×",
-		offset:
-			"Small perplexity lift on rare tokens, big gains in tokens/sec and cold starts.",
+		offset: "Small perplexity lift on rare tokens, big gains in tokens/sec and cold starts.",
 		use: "Batch inference, agent inner loops, rapid drafts.",
 	},
 ];
@@ -186,7 +184,10 @@ export default function PerformancePage() {
 					/>
 					<div className="grid gap-6 lg:grid-cols-3">
 						{throughputProfiles.map((profile) => (
-							<ThroughputCard key={profile.id} profile={profile} />
+							<ThroughputCard
+								key={profile.id}
+								profile={profile}
+							/>
 						))}
 					</div>
 				</section>
@@ -355,11 +356,7 @@ function TokenStream({ text, duration }: { text: string; duration: number }) {
 	);
 }
 
-function LatencyLane({
-	lane,
-}: {
-	lane: (typeof latencyProfiles)[number];
-}) {
+function LatencyLane({ lane }: { lane: (typeof latencyProfiles)[number] }) {
 	return (
 		<div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/5">
 			<div
@@ -392,7 +389,10 @@ function LatencyLane({
 							className="animate-latency-dot absolute -top-1 left-0 inline-flex h-4 w-4 rounded-full bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 shadow-lg ring-2 ring-white/60 dark:from-white dark:via-slate-200 dark:to-white dark:ring-zinc-800"
 							style={
 								{
-									"--latency-duration": `${Math.max(lane.latencyMs / 300, 0.6)}s`,
+									"--latency-duration": `${Math.max(
+										lane.latencyMs / 300,
+										0.6
+									)}s`,
 								} as CSSProperties
 							}
 						>
@@ -403,7 +403,10 @@ function LatencyLane({
 						className="animate-latency-ping absolute left-0 top-0 h-2 w-full rounded-full bg-gradient-to-r from-transparent via-slate-900/20 to-transparent dark:via-white/15"
 						style={
 							{
-								"--latency-duration": `${Math.max(lane.latencyMs / 300, 0.6)}s`,
+								"--latency-duration": `${Math.max(
+									lane.latencyMs / 300,
+									0.6
+								)}s`,
 							} as CSSProperties
 						}
 						aria-hidden
@@ -441,7 +444,10 @@ function UptimeCard({ band }: { band: (typeof uptimeBands)[number] }) {
 					<div
 						className="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 dark:from-emerald-400 dark:to-emerald-500"
 						style={{
-							width: `${Math.min((band.minutesMonthly / 60) * 100, 100)}%`,
+							width: `${Math.min(
+								(band.minutesMonthly / 60) * 100,
+								100
+							)}%`,
 						}}
 					/>
 				</div>

@@ -267,7 +267,9 @@ function ensureVariants(message: ChatMessage) {
 }
 
 type ChatPlaygroundProps = {
-	models: GatewaySupportedModel[];
+    models: GatewaySupportedModel[];
+    modelParam?: string | null;
+    promptParam?: string | null;
 };
 
 type ModelOption = {
@@ -289,8 +291,8 @@ type ChatUser = {
 	avatarUrl: string | null;
 };
 
-function ChatPlaygroundContent({ models }: ChatPlaygroundProps) {
-	const [threads, setThreads] = useState<ChatThread[]>([]);
+function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygroundProps) {
+        const [threads, setThreads] = useState<ChatThread[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [isSending, setIsSending] = useState(false);
 	const [, setError] = useState<string | null>(null);
@@ -323,11 +325,17 @@ function ChatPlaygroundContent({ models }: ChatPlaygroundProps) {
 		null
 	);
 
-	const defaultModelId = models[0]?.modelId ?? "";
-	const [lastModelId, setLastModelId] = useState(defaultModelId);
-	const [personalization, setPersonalization] =
-		useState<PersonalizationSettings>({
-			name: "",
+        const defaultModelId = models[0]?.modelId ?? "";
+        const [lastModelId, setLastModelId] = useState(defaultModelId);
+        const queryModelId = (modelParam ?? "").trim();
+        const queryPrompt = promptParam ?? "";
+        const queryModelIsValid = useMemo(() => {
+                if (!queryModelId) return false;
+                return models.some((model) => model.modelId === queryModelId);
+        }, [models, queryModelId]);
+        const [personalization, setPersonalization] =
+                useState<PersonalizationSettings>({
+                        name: "",
 			role: "",
 			notes: "",
 			accentColor: "#111111",
@@ -630,11 +638,12 @@ function ChatPlaygroundContent({ models }: ChatPlaygroundProps) {
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationAccent
 				) ?? "#111111";
-			const resolvedModel =
-				(storedModel &&
-					models.some((model) => model.modelId === storedModel) &&
-					storedModel) ||
-				defaultModelId;
+                        const resolvedModel =
+                                (queryModelIsValid && queryModelId) ||
+                                (storedModel &&
+                                        models.some((model) => model.modelId === storedModel) &&
+                                        storedModel) ||
+                                defaultModelId;
 			if (!mounted) return;
 			setApiKey(storedKey);
 			setBaseUrl(storedBase);
@@ -660,7 +669,7 @@ function ChatPlaygroundContent({ models }: ChatPlaygroundProps) {
 		return () => {
 			mounted = false;
 		};
-	}, [defaultModelId, ensureInitialThread, models]);
+        }, [defaultModelId, ensureInitialThread, models, queryModelId, queryModelIsValid]);
 
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
@@ -1774,29 +1783,35 @@ function ChatPlaygroundContent({ models }: ChatPlaygroundProps) {
 		[updateActiveSettings]
 	);
 
-	const updateActiveModel = (modelId: string) => {
-		if (!activeThread) return;
-		const previousDefault = buildDefaultSystemPrompt(activeThread.modelId);
-		const nextSystemPrompt =
-			!activeThread.settings.systemPrompt ||
-			activeThread.settings.systemPrompt === previousDefault
-				? buildDefaultSystemPrompt(modelId)
-				: activeThread.settings.systemPrompt;
-		const nextThread = {
-			...activeThread,
-			modelId,
-			settings: {
-				...activeThread.settings,
-				systemPrompt: nextSystemPrompt,
-			},
-			updatedAt: nowIso(),
-		};
-		setLastModelId(modelId);
-		if (typeof window !== "undefined") {
-			window.localStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
-		}
-		updateThreadState(nextThread, !temporaryMode);
-	};
+        const updateActiveModel = useCallback((modelId: string) => {
+                if (!activeThread) return;
+                const previousDefault = buildDefaultSystemPrompt(activeThread.modelId);
+                const nextSystemPrompt =
+                        !activeThread.settings.systemPrompt ||
+                        activeThread.settings.systemPrompt === previousDefault
+                                ? buildDefaultSystemPrompt(modelId)
+                                : activeThread.settings.systemPrompt;
+                const nextThread = {
+                        ...activeThread,
+                        modelId,
+                        settings: {
+                                ...activeThread.settings,
+                                systemPrompt: nextSystemPrompt,
+                        },
+                        updatedAt: nowIso(),
+                };
+                setLastModelId(modelId);
+                if (typeof window !== "undefined") {
+                        window.localStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
+                }
+                updateThreadState(nextThread, !temporaryMode);
+        }, [activeThread, temporaryMode, updateThreadState]);
+
+        useEffect(() => {
+                if (!queryModelIsValid || !queryModelId || !activeThread) return;
+                if (activeThread.modelId === queryModelId) return;
+                updateActiveModel(queryModelId);
+        }, [activeThread, queryModelId, queryModelIsValid, updateActiveModel]);
 
 	const handleDeleteThread = async () => {
 		if (!deleteTarget) return;
@@ -1934,15 +1949,16 @@ function ChatPlaygroundContent({ models }: ChatPlaygroundProps) {
 					onSaveSettings={handleSaveSettings}
 					personalization={personalization}
 					onPersonalizationChange={setPersonalization}
+					onExportChats={handleExportChats}
 					isAdmin={isAdmin}
 					debugEnabled={debugEnabled}
 					onDebugChange={handleDebugChange}
-					onExportChats={handleExportChats}
 				/>
-				<ChatConversation
-					activeThread={activeThread}
-					isSending={isSending}
-					onSend={handleSend}
+                                <ChatConversation
+                                        activeThread={activeThread}
+                                        isSending={isSending}
+                                        presetPrompt={queryPrompt}
+                                        onSend={handleSend}
 					onEditMessage={handleEditMessage}
 					onRetryAssistant={handleRetryAssistant}
 					onBranchAssistant={handleBranchAssistant}

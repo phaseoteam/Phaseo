@@ -12,17 +12,23 @@ import { Separator } from "@/components/ui/separator";
 import { BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { resolveGatewayPath } from "./endpoint-paths";
+import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 
 export default async function Streaming({
-	modelId,
-	endpoint,
+        modelId,
+        endpoint,
 }: {
-	modelId?: string;
-	endpoint?: string | null;
+        modelId?: string;
+        endpoint?: string | null;
 }) {
-	const model = safeDecodeURIComponent(modelId) || "model_id_here";
-	const endpointPath = resolveGatewayPath(endpoint);
-	const endpointUrl = `${BASE_URL}${endpointPath}`;
+        const model = safeDecodeURIComponent(modelId) || "model_id_here";
+        const normalizedEndpoint = endpoint?.toLowerCase() ?? null;
+        const streamingPaths = new Set(["/chat/completions", "/responses"]);
+        const mapped =
+                normalizedEndpoint ? capabilityToEndpoints[normalizedEndpoint] ?? [] : [];
+        const streamingPath = mapped.find((value) => streamingPaths.has(value));
+        const endpointPath = streamingPath ?? resolveGatewayPath(endpoint);
+        const endpointUrl = `${BASE_URL}${endpointPath}`;
 
 	const curlStream = `# 1) Set your key
 export AI_STATS_API_KEY="sk-live-***"

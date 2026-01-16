@@ -24,6 +24,7 @@ type Args = {
     offset?: number;
     now?: Date;
     upcomingLimit?: number;
+    pastMonths?: number;
 };
 
 type Row = {
@@ -97,7 +98,7 @@ function compareAscending(a: ModelEvent, b: ModelEvent) {
 }
 
 export async function getRecentModelUpdatesSplit(
-    { limit = 5, offset = 0, now = new Date(), upcomingLimit = 5 }: Args = {}
+    { limit = 5, offset = 0, now = new Date(), upcomingLimit = 5, pastMonths }: Args = {}
 ): Promise<ModelEventSegments> {
     const supabase = await createClient();
 
@@ -158,7 +159,14 @@ export async function getRecentModelUpdatesSplit(
     const sortedPast = [...pastMap.values()].sort(compareDescending);
     const sortedFuture = [...futureMap.values()].sort(compareAscending);
 
-    const past = sortedPast.slice(offset, offset + limit);
+    const since = pastMonths ? new Date(now.getTime() - pastMonths * 30 * 24 * 60 * 60 * 1000) : null;
+    let filteredPast = sortedPast;
+    if (since) {
+        filteredPast = sortedPast.filter(e => new Date(e.date) >= since);
+    }
+
+    const effectiveLimit = pastMonths ? 10000 : limit;
+    const past = filteredPast.slice(offset, offset + effectiveLimit);
     const future = sortedFuture.slice(0, upcomingLimit);
 
     return { past, future };

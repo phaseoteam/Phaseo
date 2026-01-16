@@ -11,6 +11,7 @@ import {
 	XCircle,
 	Network,
 	Clock,
+	AlertTriangle,
 } from "lucide-react";
 import {
 	Tooltip,
@@ -37,6 +38,7 @@ import {
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { Logo } from "@/components/Logo";
+import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 
 export default function ProviderCard({
 	provider,
@@ -50,79 +52,68 @@ export default function ProviderCard({
 		[provider, plan]
 	);
 
-	const hasActiveGateway = provider.provider_models.some(
-		(pm) => pm.is_active_gateway
-	);
-	const now = new Date().getTime();
-	const msInDay = 1000 * 60 * 60 * 24;
-	const arrivingWindowMs = 7 * msInDay;
+	const now = new Date();
+	const msIn7Days = 7 * 24 * 60 * 60 * 1000;
 
-	const activeItems = provider.provider_models.filter((item) => {
-		const from = item.effective_from
-			? new Date(item.effective_from).getTime()
-			: null;
-		const to = item.effective_to
-			? new Date(item.effective_to).getTime()
-			: null;
-		if (from !== null && from > now) return false;
-		if (to !== null && to < now) return false;
-		return true;
-	});
+        const planRules = provider.pricing_rules.filter(
+                (r) => (r.pricing_plan || "standard") === plan
+        );
+        const hasPlanPricing = planRules.length > 0;
+        const hasDatedPricing = planRules.some(
+                (r) => r.effective_from || r.effective_to
+        );
 
-	const leavingSoonItem = activeItems
-		.map((item) => ({
-			item,
-			to: item.effective_to
-				? new Date(item.effective_to).getTime()
-				: null,
-		}))
-		.filter(
-			(entry) => entry.to !== null && entry.to - now <= arrivingWindowMs
-		)
-		.sort((a, b) => (a.to ?? Infinity) - (b.to ?? Infinity))[0];
+        const planModelKeys = new Set(planRules.map((r) => r.model_key));
+        const matchingProviderModel = provider.provider_models.find((pm) =>
+                planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
+        );
+	const isActiveGateway = matchingProviderModel?.is_active_gateway ?? false;
 
-	const arrivingSoonItem = provider.provider_models
-		.map((item) => ({
-			item,
-			from: item.effective_from
-				? new Date(item.effective_from).getTime()
-				: null,
-		}))
-		.filter(
-			(entry) =>
-				entry.from !== null &&
-				entry.from > now &&
-				entry.from - now <= arrivingWindowMs
-		)
-		.sort((a, b) => (a.from ?? Infinity) - (b.from ?? Infinity))[0];
+	const comingSoonRule = planRules
+		.filter((r) => {
+			if (!r.effective_from) return false;
+			const from = new Date(r.effective_from).getTime();
+			return from > now.getTime() && from - now.getTime() <= msIn7Days;
+		})
+		.sort(
+			(a, b) =>
+				new Date(a.effective_from!).getTime() -
+				new Date(b.effective_from!).getTime()
+		)[0];
 
-	const hasFutureEffectiveFrom = provider.provider_models.some((item) => {
-		const from = item.effective_from
-			? new Date(item.effective_from).getTime()
-			: null;
-		return from !== null && from > now;
-	});
+	const leavingSoonRule = planRules
+		.filter((r) => {
+			if (!r.effective_to) return false;
+			const to = new Date(r.effective_to).getTime();
+			return to > now.getTime() && to - now.getTime() <= msIn7Days;
+		})
+		.sort(
+			(a, b) =>
+				new Date(a.effective_to!).getTime() -
+				new Date(b.effective_to!).getTime()
+		)[0];
 
-	const status = hasActiveGateway
-		? "Active"
-		: leavingSoonItem
-		? "Leaving Soon"
-		: activeItems.length
-		? "Coming Soon"
-		: arrivingSoonItem
-		? "Arriving This Week"
-		: hasFutureEffectiveFrom
-		? "Coming Soon"
-		: "Inactive";
+        let status: "Active" | "Leaving Soon" | "Coming Soon" | "Inactive";
+        let statusIcon: React.ElementType;
+        let statusClass: string;
 
-	const badgeIcon =
-		status === "Active"
-			? CheckCircle2
-			: status === "Leaving Soon" ||
-			  status === "Arriving This Week" ||
-			  status === "Coming Soon"
-			? Clock
-			: XCircle;
+        if (isActiveGateway && leavingSoonRule) {
+                status = "Leaving Soon";
+                statusIcon = AlertTriangle;
+                statusClass = "h-3.5 w-3.5 text-amber-500";
+        } else if (comingSoonRule) {
+                status = "Coming Soon";
+                statusIcon = Clock;
+                statusClass = "h-3.5 w-3.5 text-amber-500";
+        } else if (isActiveGateway && hasDatedPricing) {
+                status = "Active";
+                statusIcon = CheckCircle2;
+                statusClass = "h-3.5 w-3.5 text-emerald-500";
+        } else {
+                status = "Inactive";
+                statusIcon = XCircle;
+                statusClass = "h-3.5 w-3.5 text-red-500";
+        }
 
 	const formatCountdown = (ms: number) => {
 		const totalHours = Math.max(0, Math.floor(ms / (1000 * 60 * 60)));
@@ -132,60 +123,91 @@ export default function ProviderCard({
 		return `${hours}h`;
 	};
 
-	// Define all possible endpoints grouped by category
-	const endpointCategories = [
-		{
-			name: "Text",
-			endpoints: [
-				{ key: "responses", label: "Responses" },
-				{ key: "chat.completions", label: "Chat Completions" },
-			],
-		},
-		{
-			name: "Image",
-			endpoints: [
-				{ key: "image.generations", label: "Image Generations" },
-				{ key: "image.edits", label: "Image Edits" },
-			],
-		},
-		{
-			name: "Video",
-			endpoints: [
-				{ key: "video.generations", label: "Video Generations" },
-			],
-		},
-		{
-			name: "Audio",
-			endpoints: [
-				{ key: "audio.transcriptions", label: "Audio Transcriptions" },
-				{ key: "audio.speech", label: "Audio Speech" },
-				{ key: "audio.translations", label: "Audio Translations" },
-			],
-		},
-		{
-			name: "Specialized",
-			endpoints: [
-				{ key: "embeddings", label: "Embeddings" },
-				{ key: "moderations", label: "Moderations" },
-				{ key: "batch", label: "Batch" },
-			],
-		},
-	];
+        const countdownMs =
+                status === "Coming Soon" && comingSoonRule
+                        ? new Date(comingSoonRule.effective_from!).getTime() - now.getTime()
+                        : status === "Leaving Soon" && leavingSoonRule
+                        ? new Date(leavingSoonRule.effective_to!).getTime() - now.getTime()
+                        : null;
+        const inactiveReason = !isActiveGateway
+                ? "Model not active in gateway"
+                : "Pricing window not specified";
 
-	// Get gateway-supported endpoints from provider models
-	const gatewaySupportedEndpoints = new Set(
+	const supportedCapabilities = new Set(
 		provider.provider_models
 			.filter((pm) => pm.is_active_gateway)
 			.map((pm) => pm.endpoint)
 	);
 
+	const supportedEndpoints = new Set<string>();
+	for (const cap of supportedCapabilities) {
+		const eps = capabilityToEndpoints[cap] || [];
+		eps.forEach((ep) => supportedEndpoints.add(ep));
+	}
+
+	const supportedParams = new Set<string>();
+	for (const pm of provider.provider_models) {
+		if (pm.params && typeof pm.params === "object") {
+			Object.keys(pm.params).forEach((key) => supportedParams.add(key));
+		}
+	}
+
+	// Define all possible endpoints grouped by category
+	const allEndpointCategories = [
+		{
+			name: "Text",
+			endpoints: [
+				{ key: "/chat/completions", label: "Chat Completions" },
+				{ key: "/responses", label: "Responses" },
+				{ key: "/messages", label: "Messages" },
+			],
+		},
+		{
+			name: "Image",
+			endpoints: [
+				{ key: "/images/generations", label: "Image Generations" },
+				{ key: "/images/edits", label: "Image Edits" },
+				{ key: "/images/variations", label: "Image Variations" },
+			],
+		},
+		{
+			name: "Video",
+			endpoints: [
+				{ key: "/videos/generations", label: "Video Generations" },
+			],
+		},
+		{
+			name: "Audio",
+			endpoints: [
+				{ key: "/audio/transcriptions", label: "Audio Transcriptions" },
+				{ key: "/audio/speech", label: "Audio Speech" },
+				{ key: "/audio/translations", label: "Audio Translations" },
+			],
+		},
+		{
+			name: "Specialized",
+			endpoints: [
+				{ key: "/embeddings", label: "Embeddings" },
+				{ key: "/moderations", label: "Moderations" },
+				{ key: "/batches", label: "Batch" },
+			],
+		},
+	];
+
+	// Filter to only supported endpoints
+	const endpointCategories = allEndpointCategories
+		.map((category) => ({
+			...category,
+			endpoints: category.endpoints.filter((ep) =>
+				supportedEndpoints.has(ep.key)
+			),
+		}))
+		.filter((category) => category.endpoints.length > 0);
+
 	const isFreePlan = plan === "free";
-	const hasPlanPricing = provider.pricing_rules.some(
-		(r) => (r.pricing_plan || "standard") === plan
-	);
-	const allEmpty =
-		!sec.textTokens &&
-		!sec.imageTokens &&
+        const allEmpty =
+                !sec.textTokens &&
+                !sec.imageTokens &&
 		!sec.audioTokens &&
 		!sec.videoTokens &&
 		!sec.imageGen &&
@@ -194,8 +216,8 @@ export default function ProviderCard({
 		!sec.requests?.length &&
 		!sec.otherRules.length;
 
-	if (!hasPlanPricing) return null;
-	if (allEmpty && !isFreePlan) return null;
+        if (!hasPlanPricing) return null;
+        if (allEmpty && !isFreePlan) return null;
 
 	return (
 		<Card className="border-slate-200">
@@ -230,13 +252,8 @@ export default function ProviderCard({
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<span className="inline-flex items-center gap-1">
-											{React.createElement(badgeIcon, {
-												className:
-													status === "Active"
-														? "h-3.5 w-3.5 text-emerald-500"
-														: status === "Inactive"
-														? "h-3.5 w-3.5 text-red-500"
-														: "h-3.5 w-3.5 text-amber-500",
+											{React.createElement(statusIcon, {
+												className: statusClass,
 											})}
 											<span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
 												{status}
@@ -244,24 +261,22 @@ export default function ProviderCard({
 										</span>
 									</TooltipTrigger>
 									<TooltipContent>
-										{leavingSoonItem?.to ? (
+										{countdownMs !== null && (
 											<p>
-												This model leaves in{" "}
-												{formatCountdown(
-													leavingSoonItem.to - now
-												)}
-												.
+												{status === "Coming Soon"
+													? "Pricing available in "
+													: "Expires in "}
+												{formatCountdown(countdownMs)}
 											</p>
-										) : arrivingSoonItem?.from ? (
-											<p>
-												This model arrives in{" "}
-												{formatCountdown(
-													arrivingSoonItem.from - now
-												)}
-												.
-											</p>
-										) : (
-											<p>Gateway status</p>
+										)}
+                                        {status === "Inactive" && (
+                                        <p>{inactiveReason}</p>
+                                )}
+										{status === "Active" && !countdownMs && (
+											<p>Model is active in gateway</p>
+										)}
+										{status === "Leaving Soon" && !countdownMs && (
+											<p>Model leaving soon</p>
 										)}
 									</TooltipContent>
 								</Tooltip>
@@ -287,23 +302,45 @@ export default function ProviderCard({
 									<p>Coming Soon: Performance Stats</p>
 								</TooltipContent>
 							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<span>
-										<Button
-											variant="ghost"
-											size="sm"
-											disabled
-											className="h-8 w-8 p-0"
-										>
-											<Settings className="h-4 w-4" />
-										</Button>
-									</span>
-								</TooltipTrigger>
-								<TooltipContent>
-									<p>Coming Soon: Supported Parameters</p>
-								</TooltipContent>
-							</Tooltip>
+							<Popover>
+								<PopoverTrigger asChild>
+									<Button
+										variant="ghost"
+										size="sm"
+										className="h-8 w-8 p-0"
+										title="Supported Parameters"
+										disabled={status === "Inactive"}
+									>
+										<Settings className="h-4 w-4" />
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent className="w-72" side="right">
+									<div className="space-y-4">
+										<h4 className="font-semibold text-sm">
+											Supported Parameters
+										</h4>
+										{supportedParams.size > 0 ? (
+											<div className="flex flex-wrap gap-1">
+												{Array.from(
+													supportedParams
+												).map((param) => (
+													<span
+														key={param}
+														className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-xs font-medium"
+													>
+														{param}
+													</span>
+												))}
+											</div>
+										) : (
+											<p className="text-sm text-muted-foreground">
+												No parameter information
+												available.
+											</p>
+										)}
+									</div>
+								</PopoverContent>
+							</Popover>
 							<Popover>
 								<PopoverTrigger asChild>
 									<Button
@@ -311,6 +348,7 @@ export default function ProviderCard({
 										size="sm"
 										className="h-8 w-8 p-0"
 										title="Supported Endpoints"
+										disabled={status === "Inactive"}
 									>
 										<Network className="h-4 w-4" />
 									</Button>
@@ -332,31 +370,21 @@ export default function ProviderCard({
 														</h5>
 														<div className="space-y-1">
 															{category.endpoints.map(
-																(endpoint) => {
-																	const isSupported =
-																		gatewaySupportedEndpoints.has(
+																(endpoint) => (
+																	<div
+																		key={
 																			endpoint.key
-																		);
-																	return (
-																		<div
-																			key={
-																				endpoint.key
+																		}
+																		className="flex items-center justify-between"
+																	>
+																		<span className="text-sm">
+																			{
+																				endpoint.label
 																			}
-																			className="flex items-center justify-between"
-																		>
-																			<span className="text-sm">
-																				{
-																					endpoint.label
-																				}
-																			</span>
-																			{isSupported ? (
-																				<CheckCircle2 className="h-4 w-4 text-green-600" />
-																			) : (
-																				<XCircle className="h-4 w-4 text-red-500" />
-																			)}
-																		</div>
-																	);
-																}
+																		</span>
+																		<CheckCircle2 className="h-4 w-4 text-green-600" />
+																	</div>
+																)
 															)}
 														</div>
 													</div>

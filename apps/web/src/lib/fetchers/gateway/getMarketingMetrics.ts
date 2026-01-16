@@ -16,7 +16,7 @@ type RawGatewayRequest = {
 
 type ActiveProviderModelRow = {
 	api_model_id: string | null;
-	api_provider_id: string | null;
+	provider_id: string | null;
 	effective_from?: string | null;
 	effective_to?: string | null;
 };
@@ -273,7 +273,7 @@ async function fetchActiveGatewayModels(
 
 	const { data, error } = await client
 		.from("data_api_provider_models")
-		.select("api_model_id, api_provider_id, effective_from, effective_to")
+		.select("api_model_id, provider_id, effective_from, effective_to")
 		.eq("is_active_gateway", true)
 		.or(effectiveClause);
 
@@ -432,7 +432,7 @@ function buildMetricsFromRows(
 	const providerIds = new Set<string>();
 	for (const row of supportedModels) {
 		if (row.api_model_id) modelIds.add(row.api_model_id);
-		if (row.api_provider_id) providerIds.add(row.api_provider_id);
+		if (row.provider_id) providerIds.add(row.provider_id);
 	}
 
 	return {
@@ -494,7 +494,7 @@ function buildFallbackMetrics(
 	const providerIds = new Set<string>();
 	for (const row of supportedModels) {
 		if (row.api_model_id) modelIds.add(row.api_model_id);
-		if (row.api_provider_id) providerIds.add(row.api_provider_id);
+		if (row.provider_id) providerIds.add(row.provider_id);
 	}
 
 	return {

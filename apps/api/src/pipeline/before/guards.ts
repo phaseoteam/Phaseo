@@ -88,16 +88,19 @@ export async function guardContext(args: {
     teamId: string;
     apiKeyId: string;
     endpoint: Endpoint;
+    capability: string;
     model: string;
     requestId: string;
     internal?: boolean;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null }>> {
     try {
-        console.log(`[DEBUG] guardContext called with model: ${args.model}, endpoint: ${args.endpoint}`);
+        console.log(
+            `[DEBUG] guardContext called with model: ${args.model}, endpoint: ${args.endpoint}, capability: ${args.capability}`
+        );
         const context = await fetchGatewayContext({
             teamId: args.teamId,
             model: args.model,
-            endpoint: args.endpoint,
+            endpoint: args.capability,
             apiKeyId: args.apiKeyId,
         });
 
@@ -184,6 +187,20 @@ export function makeMeta(input: {
 }): RequestMeta {
     const { referer, appTitle } = readAttributionHeaders(input.req);
     const debugHeader = input.req.headers.get("x-gateway-debug");
+    const userAgent = input.req.headers.get("user-agent");
+    const cfRay = input.req.headers.get("cf-ray");
+    const forwardedFor = input.req.headers.get("x-forwarded-for");
+    const clientIp =
+        input.req.headers.get("cf-connecting-ip") ??
+        (forwardedFor ? forwardedFor.split(",")[0]?.trim() : null);
+    const requestUrl = input.req.url ?? null;
+    const requestPath = (() => {
+        try {
+            return new URL(input.req.url).pathname;
+        } catch {
+            return null;
+        }
+    })();
     try {
         (globalThis as any).__pricingDebug = debugHeader === "true";
     } catch {
@@ -202,6 +219,12 @@ export function makeMeta(input: {
         byokKeyId: null,
         referer,
         appTitle,
+        requestMethod: input.req.method ?? null,
+        requestUrl,
+        requestPath,
+        userAgent,
+        clientIp,
+        cfRay,
         returnUsage: input.returnUsage ?? false,
         returnMeta: input.returnMeta ?? false,
     };

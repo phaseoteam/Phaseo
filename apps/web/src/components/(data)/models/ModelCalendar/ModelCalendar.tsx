@@ -104,7 +104,7 @@ type OrganisationWithColour = ModelEvent["model"]["organisation"] & {
 
 export default function ModelCalendar({
 	events,
-	monthsWindow = 24,
+	monthsWindow = 13,
 }: ModelCalendarProps) {
 	const now = useMemo(() => new Date(), []);
 	const currentYear = new Date().getFullYear();
@@ -259,7 +259,8 @@ export default function ModelCalendar({
 												<Logo
 													id={org.organisation_id}
 													alt={
-														org.name ?? org.organisation_id
+														org.name ??
+														org.organisation_id
 													}
 													className="object-contain"
 													fill
@@ -271,9 +272,7 @@ export default function ModelCalendar({
 										<Tooltip delayDuration={500}>
 											<TooltipTrigger asChild>
 												<Link
-													href={`/models/${
-														event.model.model_id
-													}`}
+													href={`/models/${event.model.model_id}`}
 													className="block truncate text-xs font-semibold leading-tight text-zinc-900 dark:text-zinc-50"
 												>
 													{event.model.name}
@@ -303,72 +302,128 @@ export default function ModelCalendar({
 						<DialogContent className="max-w-2xl">
 							<DialogHeader>
 								<DialogTitle>
-									Releases on {cell.date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+									Releases on{" "}
+									{cell.date.toLocaleDateString("en-US", {
+										month: "long",
+										day: "numeric",
+										year: "numeric",
+									})}
 								</DialogTitle>
 							</DialogHeader>
 							<ScrollArea className="max-h-96">
 								<div className="space-y-4 pr-4">
 									{(() => {
-										const eventsByOrg = new Map<string, ModelEvent[]>();
+										const eventsByOrg = new Map<
+											string,
+											ModelEvent[]
+										>();
 										for (const event of cell.events) {
-											const orgId = event.model.organisation.organisation_id;
+											const orgId =
+												event.model.organisation
+													.organisation_id;
 											if (!eventsByOrg.has(orgId)) {
 												eventsByOrg.set(orgId, []);
 											}
 											eventsByOrg.get(orgId)!.push(event);
 										}
-										return Array.from(eventsByOrg.entries()).map(([orgId, orgEvents]) => {
-											const org = orgEvents[0].model.organisation;
+										return Array.from(
+											eventsByOrg.entries()
+										).map(([orgId, orgEvents]) => {
+											const org =
+												orgEvents[0].model.organisation;
 											return (
-												<div key={orgId} className="space-y-2">
+												<div
+													key={orgId}
+													className="space-y-2"
+												>
 													<Link
-														href={`/organisations/${encodeURIComponent(org.organisation_id)}`}
+														href={`/organisations/${encodeURIComponent(
+															org.organisation_id
+														)}`}
 														className="flex items-center gap-2 group"
 													>
 														<div className="h-6 w-6 relative flex items-center justify-center rounded-xl border">
 															<div className="h-5 w-5 relative">
 																<Logo
-																	id={org.organisation_id}
-																	alt={org.name ?? org.organisation_id}
+																	id={
+																		org.organisation_id
+																	}
+																	alt={
+																		org.name ??
+																		org.organisation_id
+																	}
 																	className="object-contain"
 																	fill
 																/>
 															</div>
 														</div>
 														<span className="font-semibold text-sm relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
-															{org.name ?? org.organisation_id}
+															{org.name ??
+																org.organisation_id}
 														</span>
 													</Link>
 													<div className="space-y-1 ml-8">
-														{orgEvents.map((event, idx) => {
-															const eventType = event.types[0] ?? "Announced";
-															const borderColor = EVENT_TYPE_BORDER_COLOR[eventType];
-															const key = `${event.model.model_id}-${event.date}-${idx}`;
-															return (
-																<div
-																	key={key}
-																	className="rounded-2xl border-2 bg-white/80 p-2 text-xs transition dark:bg-zinc-950/70"
-																	style={{ borderColor }}
-																>
-																	<div className="flex items-center gap-2">
-																		<Tooltip delayDuration={500}>
-																			<TooltipTrigger asChild>
-																				<Link
-																					href={`/models/${event.model.model_id}`}
-																					className="font-semibold relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+														{orgEvents.map(
+															(event, idx) => {
+																const eventType =
+																	event
+																		.types[0] ??
+																	"Announced";
+																const borderColor =
+																	EVENT_TYPE_BORDER_COLOR[
+																		eventType
+																	];
+																const key = `${event.model.model_id}-${event.date}-${idx}`;
+																return (
+																	<div
+																		key={
+																			key
+																		}
+																		className="rounded-2xl border-2 bg-white/80 p-2 text-xs transition dark:bg-zinc-950/70"
+																		style={{
+																			borderColor,
+																		}}
+																	>
+																		<div className="flex items-center gap-2">
+																			<Tooltip
+																				delayDuration={
+																					500
+																				}
+																			>
+																				<TooltipTrigger
+																					asChild
 																				>
-																					{event.model.name}
-																				</Link>
-																			</TooltipTrigger>
-																			<TooltipContent side="top">
-																				{event.model.name}
-																			</TooltipContent>
-																		</Tooltip>
-																		<span className="text-zinc-500 dark:text-zinc-400">({eventType})</span>
+																					<Link
+																						href={`/models/${event.model.model_id}`}
+																						className="font-semibold relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+																					>
+																						{
+																							event
+																								.model
+																								.name
+																						}
+																					</Link>
+																				</TooltipTrigger>
+																				<TooltipContent side="top">
+																					{
+																						event
+																							.model
+																							.name
+																					}
+																				</TooltipContent>
+																			</Tooltip>
+																			<span className="text-zinc-500 dark:text-zinc-400">
+																				(
+																				{
+																					eventType
+																				}
+																				)
+																			</span>
+																		</div>
 																	</div>
-																</div>
-															);
-														})}
+																);
+															}
+														)}
 													</div>
 												</div>
 											);

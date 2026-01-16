@@ -1,0 +1,135 @@
+[
+  {
+    "api_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
+    "provider_api_model_id": "cerebras:meta/llama-3-3-70b-instruct-2024-12-06",
+    "provider_model_slug": null,
+    "internal_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2024-12-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.1-8b-instruct",
+    "provider_api_model_id": "cerebras:meta-llama/llama-3.1-8b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.1-8b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "provider_api_model_id": "cerebras:meta-llama/llama-3.3-70b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-120b-2025-08-05",
+    "provider_api_model_id": "cerebras:openai/gpt-oss-120b-2025-08-05",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-oss-120b-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "cerebras:qwen/qwen3-235b-a22b-2507",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-32b-2025-04-29",
+    "provider_api_model_id": "cerebras:qwen/qwen3-32b-2025-04-29",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-32b-2025-04-29",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-04-29T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4-6-2025-09-30",
+    "provider_api_model_id": "cerebras:z-ai/glm-4-6-2025-09-30",
+    "provider_model_slug": null,
+    "internal_model_id": "z-ai/glm-4-6-2025-09-30",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-09-30T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

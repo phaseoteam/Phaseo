@@ -42,23 +42,34 @@ export interface ModelPage {
 }
 
 export interface PricingRule {
-    uuid: string;
-    rule_id?: string | null;
+    rule_id: string;
+    model_key: string;
     provider_id: string;
-    model_id: string;
-    endpoint: string;
+    api_model_id: string;
+    capability_id: string;
+    pricing_plan: string;
     meter: string;
+    unit: string;
     unit_size: number;
-    price_usd_per_unit: string | number;
-    bill_mode: string;
-    bill_from_exclusive?: number | null;
-    bill_to_inclusive?: number | null;
-    bill_source?: string | null;
+    price_per_unit: string | number;
+    currency: string;
+    tiering_mode: string;
     priority: number;
     effective_from: string;
     effective_to?: string | null;
-    conditions: any;
+    match: any[];
 }
+
+const parseModelKey = (modelKey: string) => {
+    const first = modelKey.indexOf(":");
+    const last = modelKey.lastIndexOf(":");
+    if (first <= 0 || last <= first) return null;
+    return {
+        provider_id: modelKey.slice(0, first),
+        api_model_id: modelKey.slice(first + 1, last),
+        capability_id: modelKey.slice(last + 1),
+    };
+};
 
 export default async function getModel(modelId: string): Promise<ModelPage> {
     const supabase = await createClient(); // must allow read via RLS for these tables
@@ -131,29 +142,55 @@ export default async function getModel(modelId: string): Promise<ModelPage> {
 
     // Fetch pricing rules for this model_id and attach to the response
     try {
-        const { data: pricing, error: pricingError } = await supabase
-            .from("data_api_pricing_rules")
-            .select(`
-                uuid,
-                rule_id,
-                provider_id,
-                model_id,
-                endpoint,
-                meter,
-                unit_size,
-                price_usd_per_unit,
-                bill_mode,
-                bill_from_exclusive,
-                bill_to_inclusive,
-                bill_source,
-                priority,
-                effective_from,
-                effective_to,
-                conditions
-            `)
-            .eq("model_id", modelId)
-            .order("priority", { ascending: true })
-            .order("effective_from", { ascending: false });
+        const { data: providerModels } = await supabase
+            .from("data_api_provider_models")
+            .select("provider_api_model_id, provider_id, api_model_id, internal_model_id")
+            .eq("internal_model_id", modelId);
+
+        const providerModelIds = (providerModels ?? [])
+            .map((row) => row.provider_api_model_id)
+            .filter((id): id is string => Boolean(id));
+
+        const { data: capabilities } = await supabase
+            .from("data_api_provider_model_capabilities")
+            .select("provider_api_model_id, capability_id, status")
+            .in("provider_api_model_id", providerModelIds);
+
+        const modelKeySet = new Set<string>();
+        for (const cap of capabilities ?? []) {
+            if (cap.status === "disabled") continue;
+            const pm = (providerModels ?? []).find(
+                (row) => row.provider_api_model_id === cap.provider_api_model_id
+            );
+            if (!pm || !cap.capability_id) continue;
+            modelKeySet.add(`${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`);
+        }
+
+        const modelKeys = [...modelKeySet];
+        const { data: pricing, error: pricingError } = modelKeys.length
+            ? await supabase
+                .from("data_api_pricing_rules")
+                .select(`
+                    rule_id,
+                    model_key,
+                    capability_id,
+                    pricing_plan,
+                    meter,
+                    unit,
+                    unit_size,
+                    price_per_unit,
+                    currency,
+                    tiering_mode,
+                    priority,
+                    effective_from,
+                    effective_to,
+                    note,
+                    match
+                `)
+                .in("model_key", modelKeys)
+                .order("priority", { ascending: true })
+                .order("effective_from", { ascending: false })
+            : { data: [], error: null };
 
         if (pricingError) {
             console.warn(
@@ -166,7 +203,24 @@ export default async function getModel(modelId: string): Promise<ModelPage> {
                 modelId,
                 count: pricing?.length ?? 0,
             });
-            model.pricing = pricing as unknown as PricingRule[];
+            model.pricing = (pricing ?? []).map((row: any) => ({
+                rule_id: row.rule_id,
+                model_key: row.model_key,
+                provider_id: parseModelKey(row.model_key)?.provider_id ?? "",
+                api_model_id: parseModelKey(row.model_key)?.api_model_id ?? "",
+                capability_id: row.capability_id ?? parseModelKey(row.model_key)?.capability_id ?? "",
+                pricing_plan: row.pricing_plan ?? "standard",
+                meter: row.meter,
+                unit: row.unit ?? "token",
+                unit_size: Number(row.unit_size ?? 1),
+                price_per_unit: row.price_per_unit,
+                currency: row.currency ?? "USD",
+                tiering_mode: row.tiering_mode ?? "flat",
+                priority: Number(row.priority ?? 100),
+                effective_from: row.effective_from,
+                effective_to: row.effective_to ?? null,
+                match: row.match ?? [],
+            })) as PricingRule[];
         }
     } catch (err) {
         console.warn(

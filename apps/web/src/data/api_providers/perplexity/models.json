@@ -1,0 +1,116 @@
+[
+  {
+    "api_model_id": "perplexity/sonar",
+    "provider_api_model_id": "perplexity:perplexity/sonar",
+    "provider_model_slug": null,
+    "internal_model_id": "perplexity/sonar",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "perplexity/sonar-deep-research",
+    "provider_api_model_id": "perplexity:perplexity/sonar-deep-research",
+    "provider_model_slug": null,
+    "internal_model_id": "perplexity/sonar-deep-research",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "perplexity/sonar-pro",
+    "provider_api_model_id": "perplexity:perplexity/sonar-pro",
+    "provider_model_slug": null,
+    "internal_model_id": "perplexity/sonar-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "perplexity/sonar-pro-search",
+    "provider_api_model_id": "perplexity:perplexity/sonar-pro-search",
+    "provider_model_slug": null,
+    "internal_model_id": "perplexity/sonar-pro-search",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "perplexity/sonar-reasoning",
+    "provider_api_model_id": "perplexity:perplexity/sonar-reasoning",
+    "provider_model_slug": null,
+    "internal_model_id": "perplexity/sonar-reasoning",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "perplexity/sonar-reasoning-pro",
+    "provider_api_model_id": "perplexity:perplexity/sonar-reasoning-pro",
+    "provider_model_slug": null,
+    "internal_model_id": "perplexity/sonar-reasoning-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

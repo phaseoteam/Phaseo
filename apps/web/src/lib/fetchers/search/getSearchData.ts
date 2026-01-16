@@ -172,8 +172,12 @@ async function transformSubscriptionPlans(): Promise<SearchableSubscriptionPlan[
     const { data, error } = await supabase
         .from("data_subscription_plans")
         .select(`
+            plan_uuid,
             plan_id,
             name,
+            frequency,
+            price,
+            currency,
             organisation_id,
             data_organisations!inner (
                 organisation_id,
@@ -187,18 +191,32 @@ async function transformSubscriptionPlans(): Promise<SearchableSubscriptionPlan[
         return [];
     }
 
-    return data.map((plan: any) => ({
-        id: plan.plan_id,
-        title: plan.name,
-        subtitle: plan.data_organisations?.name || null,
-        href: `/subscription-plans/${plan.plan_id}`,
-        logoId: plan.organisation_id,
-        searchKeywords: buildSearchKeywords(
-            plan.plan_id,
-            plan.name,
-            plan.data_organisations?.name
-        ),
-    }));
+    return data.map((plan: any) => {
+        // Format frequency for display (e.g., "monthly" -> "Monthly", "annual" -> "Annual")
+        const frequencyLabel = plan.frequency
+            ? plan.frequency.charAt(0).toUpperCase() + plan.frequency.slice(1)
+            : '';
+
+        // Create a more descriptive title or subtitle including frequency
+        const subtitle = frequencyLabel
+            ? `${plan.data_organisations?.name || ''} • ${frequencyLabel}`.trim()
+            : plan.data_organisations?.name || null;
+
+        return {
+            id: plan.plan_uuid, // Use plan_uuid to ensure uniqueness across frequencies
+            title: plan.name,
+            subtitle,
+            href: `/subscription-plans/${plan.plan_id}`,
+            logoId: plan.organisation_id,
+            searchKeywords: buildSearchKeywords(
+                plan.plan_uuid,
+                plan.plan_id,
+                plan.name,
+                plan.frequency,
+                plan.data_organisations?.name
+            ),
+        };
+    });
 }
 
 function transformCountries(countries: CountrySummary[]): SearchableCountry[] {

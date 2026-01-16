@@ -76,56 +76,96 @@ export async function getAPIProviderModels(apiProviderId: string, outputType: Mo
     }
 
     const supabase = await createClient();
-    const { data: modelsData, error: modelsError } = await supabase
+    const { data: providerModels, error: modelsError } = await supabase
         .from('data_api_provider_models')
         .select(`
+            provider_api_model_id,
+            provider_id,
             api_model_id,
             provider_model_slug,
             internal_model_id,
-            endpoint,
             is_active_gateway,
             input_modalities,
-            output_modalities,
-            data_models (name, release_date)
+            output_modalities
         `)
-        .eq('api_provider_id', apiProviderId)
-        .or(`output_modalities.ilike.%${modality}%`);
+        .eq('provider_id', apiProviderId);
 
     if (modelsError) {
         throw modelsError;
     }
 
-    if (!modelsData || !Array.isArray(modelsData)) return [];
+    if (!providerModels || !Array.isArray(providerModels)) return [];
 
-    // Client-side sort: release_date desc (newest first), then model name asc
-    modelsData.sort((a: any, b: any) => {
-        const aDate = a.data_models?.release_date ?? null;
-        const bDate = b.data_models?.release_date ?? null;
+    const providerModelIds = providerModels
+        .map((row) => row.provider_api_model_id)
+        .filter((id): id is string => Boolean(id));
 
-        const aTime = aDate ? new Date(aDate).getTime() : Number.NEGATIVE_INFINITY;
-        const bTime = bDate ? new Date(bDate).getTime() : Number.NEGATIVE_INFINITY;
+    const { data: caps, error: capsError } = await supabase
+        .from('data_api_provider_model_capabilities')
+        .select('provider_api_model_id, capability_id, status')
+        .in('provider_api_model_id', providerModelIds);
 
-        if (aTime === bTime) {
-            const aName = (a.data_models?.name ?? a.model_name ?? '').toString();
-            const bName = (b.data_models?.name ?? b.model_name ?? '').toString();
-            return aName.localeCompare(bName);
-        }
+    if (capsError) {
+        throw capsError;
+    }
 
-        // Descending by date
-        return bTime - aTime;
+    const internalIds = Array.from(
+        new Set(providerModels.map((row) => row.internal_model_id).filter(Boolean))
+    );
+    const { data: models } = await supabase
+        .from('data_models')
+        .select('model_id, name, release_date')
+        .in('model_id', internalIds);
+
+    const modelMapById = new Map<string, { name: string | null; release_date: string | null }>();
+    for (const model of models ?? []) {
+        if (!model.model_id) continue;
+        modelMapById.set(model.model_id, {
+            name: model.name ?? null,
+            release_date: model.release_date ?? null,
+        });
+    }
+
+    const capMap = new Map<string, string[]>();
+    for (const cap of caps ?? []) {
+        if (cap.status === "disabled") continue;
+        if (!cap.provider_api_model_id || !cap.capability_id) continue;
+        const list = capMap.get(cap.provider_api_model_id) ?? [];
+        if (!list.includes(cap.capability_id)) list.push(cap.capability_id);
+        capMap.set(cap.provider_api_model_id, list);
+    }
+
+    const modelsData = providerModels.map((row: any) => {
+        const modelInfo = row.internal_model_id
+            ? modelMapById.get(row.internal_model_id)
+            : null;
+        return {
+            ...row,
+            data_models: modelInfo,
+            endpoints: capMap.get(row.provider_api_model_id) ?? [],
+        };
+    });
+
+    const filteredModels = modelsData.filter((row: any) => {
+        const outputs = Array.isArray(row.output_modalities)
+            ? row.output_modalities
+            : typeof row.output_modalities === 'string'
+                ? row.output_modalities.split(',').map((part: string) => part.trim())
+                : [];
+        return outputs.some((item: string) => item.toLowerCase().includes(modality));
     });
 
     // Group by model_id to merge same models with different endpoints
     const modelMap: Map<string, APIProviderModels> = new Map();
-    for (const r of modelsData) {
+    for (const r of filteredModels) {
         const model_id = r.internal_model_id;
-        const endpoint = r.endpoint ?? null;
+        const endpoints = Array.isArray(r.endpoints) ? r.endpoints : [];
         if (!modelMap.has(model_id)) {
             modelMap.set(model_id, {
                 model_id,
                 model_name: r.data_models?.name ?? r.model_name ?? '',
                 provider_model_slug: r.provider_model_slug ?? null,
-                endpoints: endpoint ? [endpoint] : [],
+                endpoints: endpoints,
                 is_active_gateway: r.is_active_gateway ?? null,
                 input_modalities: r.input_modalities ?? null,
                 output_modalities: r.output_modalities ?? null,
@@ -133,8 +173,10 @@ export async function getAPIProviderModels(apiProviderId: string, outputType: Mo
             });
         } else {
             const existing = modelMap.get(model_id)!;
-            if (endpoint && !existing.endpoints!.includes(endpoint)) {
-                existing.endpoints!.push(endpoint);
+            for (const endpoint of endpoints) {
+                if (endpoint && !existing.endpoints!.includes(endpoint)) {
+                    existing.endpoints!.push(endpoint);
+                }
             }
             // Assume other fields are consistent
         }

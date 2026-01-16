@@ -56,74 +56,96 @@ export default async function getModelGatewayMetadata(
 ): Promise<ModelGatewayMetadata> {
     const supabase = await createClient();
 
-    const [providersResponse, aliasesResponse] = await Promise.all([
-        supabase
-            .from("data_api_provider_models")
-            .select(`
-                id,
-                api_provider_id,
-                provider_model_slug,
-                model_id,
-                endpoint,
-                is_active_gateway,
-                input_modalities,
-                output_modalities,
-                effective_from,
-                effective_to,
-                created_at,
-                updated_at,
-                provider:data_api_providers!data_api_provider_models_api_provider_id_fkey(
-                    api_provider_id, api_provider_name, link, country_code
-                )
-            `)
-            .eq("model_id", modelId),
-        supabase
-            .from("data_aliases")
-            .select("alias_slug")
-            .eq("resolved_model_id", modelId)
-            .eq("is_enabled", true)
-            .order("alias_slug", { ascending: true }),
-    ]);
+    const { data: providerModels, error: providerError } = await supabase
+        .from("data_api_provider_models")
+        .select(
+            "provider_api_model_id, provider_id, api_model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to, created_at, updated_at"
+        )
+        .eq("internal_model_id", modelId);
 
-    if (providersResponse.error) {
-        throw new Error(
-            providersResponse.error.message ?? "Failed to load gateway providers"
-        );
+    if (providerError) {
+        throw new Error(providerError.message ?? "Failed to load gateway providers");
     }
 
-    if (aliasesResponse.error) {
-        throw new Error(
-            aliasesResponse.error.message ?? "Failed to load model aliases"
-        );
+    const providerModelIds = (providerModels ?? [])
+        .map((row) => row.provider_api_model_id)
+        .filter((id): id is string => Boolean(id));
+
+    const { data: caps, error: capsError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id, capability_id, params, status")
+        .in("provider_api_model_id", providerModelIds);
+
+    if (capsError) {
+        throw new Error(capsError.message ?? "Failed to load gateway capabilities");
     }
 
-    // Supabase returns related rows as arrays. Map `provider` arrays to single objects
-    const rawProviders = (providersResponse.data ?? []) as any[];
-    const providers: GatewayProviderModel[] =
-        (providersResponse.data ?? []).map((p: any) => ({
-            id: p.id,
-            api_provider_id: p.api_provider_id,
-            provider_model_slug: p.provider_model_slug,
-            model_id: p.model_id,
-            endpoint: p.endpoint,
-            is_active_gateway: p.is_active_gateway,
-            input_modalities: p.input_modalities,
-            output_modalities: p.output_modalities,
-            effective_from: p.effective_from,
-            effective_to: p.effective_to,
-            created_at: p.created_at,
-            updated_at: p.updated_at,
-            provider: p.provider
-                ? {
-                    api_provider_id: p.provider.api_provider_id,
-                    api_provider_name: p.provider.api_provider_name,
-                    link: p.provider.link ?? null,
-                    country_code: p.provider.country_code ?? null,
-                }
-                : null,
-        }));
-    const aliasRows = (aliasesResponse.data ?? []) as { alias_slug: string }[];
+    const providerIds = Array.from(
+        new Set((providerModels ?? []).map((row) => row.provider_id).filter(Boolean))
+    );
+    const { data: providersData } = await supabase
+        .from("data_api_providers")
+        .select("api_provider_id, api_provider_name, link, country_code")
+        .in("api_provider_id", providerIds);
+
+    const providerMap = new Map<string, GatewayProviderDetails>();
+    for (const provider of providersData ?? []) {
+        if (!provider.api_provider_id) continue;
+        providerMap.set(provider.api_provider_id, {
+            api_provider_id: provider.api_provider_id,
+            api_provider_name: provider.api_provider_name ?? provider.api_provider_id,
+            link: provider.link ?? null,
+            country_code: provider.country_code ?? null,
+        });
+    }
+
+    const providers: GatewayProviderModel[] = [];
+    for (const cap of caps ?? []) {
+        if (cap.status === "disabled") continue;
+        const pm = (providerModels ?? []).find(
+            (row) => row.provider_api_model_id === cap.provider_api_model_id
+        );
+        if (!pm || !cap.capability_id) continue;
+        providers.push({
+            id: pm.provider_api_model_id,
+            api_provider_id: pm.provider_id,
+            provider_model_slug: pm.provider_model_slug,
+            model_id: pm.api_model_id,
+            endpoint: cap.capability_id,
+            is_active_gateway: pm.is_active_gateway,
+            input_modalities: Array.isArray(pm.input_modalities)
+                ? pm.input_modalities.join(",")
+                : pm.input_modalities ?? "",
+            output_modalities: Array.isArray(pm.output_modalities)
+                ? pm.output_modalities.join(",")
+                : pm.output_modalities ?? "",
+            effective_from: pm.effective_from,
+            effective_to: pm.effective_to,
+            created_at: pm.created_at,
+            updated_at: pm.updated_at,
+            provider: providerMap.get(pm.provider_id) ?? null,
+        });
+    }
+
+    // console.log("[fetch] Fetching aliases for model", modelId);
+
+    const { data: aliasesResponse, error: aliasesError } = await supabase
+        .from("data_api_model_aliases")
+        .select("alias_slug")
+        .eq("api_model_id", modelId)
+        .eq("is_enabled", true)
+        .order("alias_slug", { ascending: true });
+
+    // console.log("[fetch] aliasesResponse:", JSON.stringify(aliasesResponse, null, 2));
+
+    if (aliasesError) {
+        throw new Error(aliasesError.message ?? "Failed to load model aliases");
+    }
+
+    const aliasRows = (aliasesResponse ?? []) as { alias_slug: string }[];
     const aliases = aliasRows.map((alias) => alias.alias_slug);
+
+    // console.log("[fetch] Aliases for model", modelId, ":", aliases);
 
     const now = new Date();
 
@@ -169,7 +191,7 @@ export async function getModelGatewayMetadataCached(modelId: string): Promise<Mo
     cacheLife("days");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
-    cacheTag("data:api_provider_models");
+    cacheTag("data:data_api_provider_models");
     cacheTag("data:model_aliases");
 
     console.log("[fetch] HIT DB for model gateway metadata", modelId);

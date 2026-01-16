@@ -82,6 +82,7 @@ export default async function Page({
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 
+	const model = await getModelOverviewCached(modelId);
 	const availability = await getModelAvailabilityCached(modelId);
 	const subscriptionPlans = await getModelSubscriptionPlansCached(modelId);
 
@@ -90,6 +91,7 @@ export default async function Page({
 			<ModelAvailability
 				availability={availability}
 				subscriptionPlans={subscriptionPlans}
+				model={model}
 			/>
 		</ModelDetailShell>
 	);

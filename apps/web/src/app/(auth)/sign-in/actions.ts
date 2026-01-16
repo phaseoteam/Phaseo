@@ -42,3 +42,17 @@ export async function handlePasswordSignIn(formData: FormData) {
 
     redirect(`${process.env.NEXT_PUBLIC_WEBSITE_URL}/auth/callback?type=email`);
 }
+
+export async function forgotPasswordAction(email: string) {
+    const supabase = await createClient();
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/auth/reset-password`,
+    });
+
+    if (error) {
+        throw new Error('Failed to send password reset email');
+    }
+
+    return { success: true };
+}

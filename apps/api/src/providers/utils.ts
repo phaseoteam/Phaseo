@@ -16,6 +16,7 @@ export function buildAdapterPayload<
 >(schema: T, payload: unknown, omitKeys: K[] = [] as K[]) {
     const canonical = schema.parse(payload);
     const adapterPayload: any = { ...canonical };
+    delete adapterPayload.provider;
     for (const key of omitKeys) {
         delete adapterPayload[key as string];
     }

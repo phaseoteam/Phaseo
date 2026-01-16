@@ -1,13 +1,12 @@
 // lib/gateway/before/context.ts
 import { getSupabaseAdmin } from "@/runtime/env";
 import { contextSchema } from "./schemas";
-import type { Endpoint } from "@core/types";
 import type { GatewayContextData } from "./types";
 
 export async function fetchGatewayContext(args: {
     teamId: string;
     model: string;
-    endpoint: Endpoint;
+    endpoint: string;
     apiKeyId: string;
 }): Promise<GatewayContextData> {
     // console.log(`[DEBUG] fetchGatewayContext called with model: ${args.model}, endpoint: ${args.endpoint}`);

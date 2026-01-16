@@ -1,0 +1,57 @@
+// Config file mapping capabilities to supported endpoints
+export const capabilityToEndpoints: Record<string, string[]> = {
+    "text.generate": ["/chat/completions", "/responses", "/messages"],
+    "text.embed": ["/embeddings"],
+    "image.generate": ["/images/generations"],
+    "images.generate": ["/images/generations"],
+    "image.edit": ["/images/edits"],
+    "images.edits": ["/images/edits"],
+    "image.vary": ["/images/variations"],
+    "audio.transcribe": ["/audio/transcriptions"],
+    "audio.translate": ["/audio/translations"],
+    "audio.speech": ["/audio/speech"],
+    "audio.realtime": ["/audio/realtime"],
+    "moderation": ["/moderations"],
+    "moderations.create": ["/moderations"],
+    "batch": ["/batches"],
+    "batch.create": ["/batches"],
+    "music.generate": ["/music/generations"],
+    "video.generations": ["/video/generations"],
+    // Add more as needed
+};
+
+// Reverse map for lookup
+export const endpointToCapability: Record<string, string> = {};
+for (const [cap, endpoints] of Object.entries(capabilityToEndpoints)) {
+    for (const ep of endpoints) {
+        endpointToCapability[ep] = cap;
+    }
+}
+
+const ENDPOINT_TO_PATH: Record<string, string> = {
+    "chat.completions": "/chat/completions",
+    responses: "/responses",
+    messages: "/messages",
+    embeddings: "/embeddings",
+    moderations: "/moderations",
+    "images.generations": "/images/generations",
+    "images.edits": "/images/edits",
+    "audio.speech": "/audio/speech",
+    "audio.transcription": "/audio/transcriptions",
+    "audio.transcriptions": "/audio/transcriptions",
+    "audio.translations": "/audio/translations",
+    "audio.realtime": "/audio/realtime",
+    "video.generation": "/video/generations",
+    "video.generations": "/video/generations",
+    batch: "/batches",
+    "music.generate": "/music/generations",
+};
+
+export function resolveCapabilityFromEndpoint(endpoint: string): string {
+    const normalized = endpoint.trim().toLowerCase();
+    if (capabilityToEndpoints[normalized]) return normalized;
+    const path = normalized.startsWith("/")
+        ? normalized
+        : ENDPOINT_TO_PATH[normalized] ?? `/${normalized.replace(/\.+/g, "/")}`;
+    return endpointToCapability[path] ?? normalized;
+}

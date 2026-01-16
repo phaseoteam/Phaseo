@@ -1,0 +1,59 @@
+[
+  {
+    "api_model_id": "sourceful/riverflow-v2-fast-preview",
+    "provider_api_model_id": "sourceful:sourceful/riverflow-v2-fast-preview",
+    "provider_model_slug": null,
+    "internal_model_id": "sourceful/riverflow-v2-fast-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "sourceful/riverflow-v2-max-preview",
+    "provider_api_model_id": "sourceful:sourceful/riverflow-v2-max-preview",
+    "provider_model_slug": null,
+    "internal_model_id": "sourceful/riverflow-v2-max-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "sourceful/riverflow-v2-standard-preview",
+    "provider_api_model_id": "sourceful:sourceful/riverflow-v2-standard-preview",
+    "provider_model_slug": null,
+    "internal_model_id": "sourceful/riverflow-v2-standard-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 type ActiveGatewayModelRow = {
     api_model_id: string | null;
@@ -51,57 +51,90 @@ async function fetchActiveGatewayModels(
     client: SupabaseClient,
     _now = new Date()
 ): Promise<ActiveGatewayModelRow[]> {
-    const { data, error } = await client
+    const { data: providerModels, error } = await client
         .from("data_api_provider_models")
-        .select(`
-            api_model_id,
-            api_provider_id,
-            is_active_gateway,
-            effective_from,
-            effective_to,
-            provider:data_api_providers!data_api_provider_models_api_provider_id_fkey(
-                api_provider_id,
-                api_provider_name
-            ),
-            model:data_models!data_api_provider_models_internal_model_id_fkey(
-                model_id,
-                name,
-                status,
-                organisation_id,
-                release_date,
-                announcement_date,
-                organisation:data_organisations!data_models_organisation_id_fkey(
-                    name
-                )
-            )
-        `);
+        .select(
+            "provider_api_model_id, provider_id, api_model_id, internal_model_id, is_active_gateway, effective_from, effective_to"
+        );
 
     if (error) {
         throw new Error(error.message ?? "Failed to load supported models");
     }
 
-    const rows = (data ?? []) as ActiveGatewayModelRowRaw[];
-    return rows.map((row) => {
-        const provider = Array.isArray(row.provider)
-            ? row.provider[0] ?? null
-            : row.provider ?? null;
-        const model = Array.isArray(row.model)
-            ? row.model[0] ?? null
-            : row.model ?? null;
-        const organisation = Array.isArray(model?.organisation)
-            ? model.organisation[0] ?? null
-            : model?.organisation ?? null;
+    const providerModelIds = (providerModels ?? [])
+        .map((row) => row.provider_api_model_id)
+        .filter((id): id is string => Boolean(id));
 
-        return {
+    let capabilitySet: Set<string> | null = null;
+    if (providerModelIds.length > 0) {
+        const { data: capabilities, error: capabilitiesError } = await client
+            .from("data_api_provider_model_capabilities")
+            .select("provider_api_model_id, status")
+            .in("provider_api_model_id", providerModelIds);
+
+        if (!capabilitiesError && (capabilities ?? []).length > 0) {
+            capabilitySet = new Set(
+                (capabilities ?? [])
+                    .filter((row) => row.status !== "disabled")
+                    .map((row) => row.provider_api_model_id)
+                    .filter(Boolean)
+            );
+        }
+    }
+
+    const providerIds = Array.from(
+        new Set((providerModels ?? []).map((row) => row.provider_id).filter(Boolean))
+    );
+    const modelIds = Array.from(
+        new Set((providerModels ?? []).map((row) => row.internal_model_id).filter(Boolean))
+    );
+
+    const { data: providers } = await client
+        .from("data_api_providers")
+        .select("api_provider_id, api_provider_name")
+        .in("api_provider_id", providerIds);
+    const { data: models } = await client
+        .from("data_models")
+        .select(
+            "model_id, name, status, organisation_id, release_date, announcement_date, organisation:data_organisations!data_models_organisation_id_fkey(name)"
+        )
+        .in("model_id", modelIds);
+
+    const providerMap = new Map<string, ActiveGatewayModelRow["provider"]>();
+    for (const provider of providers ?? []) {
+        if (!provider.api_provider_id) continue;
+        providerMap.set(provider.api_provider_id, provider);
+    }
+
+    const modelMap = new Map<string, NonNullable<ActiveGatewayModelRow["model"]>>();
+    for (const model of models ?? []) {
+        if (!model.model_id) continue;
+        const organisation = Array.isArray(model.organisation)
+            ? model.organisation[0] ?? null
+            : model.organisation ?? null;
+        modelMap.set(model.model_id, { ...model, organisation });
+    }
+
+    const rows: ActiveGatewayModelRow[] = [];
+    for (const row of providerModels ?? []) {
+        if (
+            !row.provider_api_model_id ||
+            (capabilitySet && !capabilitySet.has(row.provider_api_model_id))
+        ) {
+            continue;
+        }
+        rows.push({
             api_model_id: row.api_model_id ?? null,
-            api_provider_id: row.api_provider_id ?? null,
+            api_provider_id: row.provider_id ?? null,
             is_active_gateway: row.is_active_gateway ?? null,
             effective_from: row.effective_from ?? null,
             effective_to: row.effective_to ?? null,
-            provider,
-            model: model ? { ...model, organisation } : null,
-        };
-    });
+            provider: row.provider_id ? providerMap.get(row.provider_id) ?? null : null,
+            model: row.internal_model_id ? modelMap.get(row.internal_model_id) ?? null : null,
+        });
+    }
+
+    return rows;
 }
 
 export async function getGatewaySupportedModels(): Promise<GatewaySupportedModel[]> {
@@ -110,7 +143,7 @@ export async function getGatewaySupportedModels(): Promise<GatewaySupportedModel
     cacheLife("days");
     cacheTag("gateway-supported-models");
 
-    const client = await createClient();
+    const client = createAdminClient();
     const rows = await fetchActiveGatewayModels(client, new Date());
     const seen = new Set<string>();
     const models: GatewaySupportedModel[] = [];

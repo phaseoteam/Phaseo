@@ -22,6 +22,12 @@ export type RequestMeta = {
     apiKeyKid: string;            // Raw kid from token
     referer?: string | null;
     appTitle?: string | null;
+    requestMethod?: string | null;
+    requestUrl?: string | null;
+    requestPath?: string | null;
+    userAgent?: string | null;
+    clientIp?: string | null;
+    cfRay?: string | null;
     requestId: string;
     stream?: boolean;
     debug?: boolean;

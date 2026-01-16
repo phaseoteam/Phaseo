@@ -1,6 +1,6 @@
 // lib/gateway/before/utils.ts
 import { z } from "zod";
-import { adapterById } from "@providers/index";
+import { adapterFor } from "@providers/index";
 import type { ProviderCandidate } from "./types";
 import type { GatewayContextData } from "./types";
 
@@ -28,7 +28,7 @@ export function buildProviderCandidates(ctx: GatewayContextData): ProviderCandid
     console.log(`[DEBUG] buildProviderCandidates: after supportsEndpoint filter:`, afterSupportsFilter);
     const mapped = afterSupportsFilter
         .map((p) => {
-            const adapter = adapterById(p.providerId);
+            const adapter = adapterFor(p.providerId, ctx.endpoint);
             if (!adapter) {
                 console.log(`[DEBUG] buildProviderCandidates: no adapter for providerId: ${p.providerId}`);
                 return null;

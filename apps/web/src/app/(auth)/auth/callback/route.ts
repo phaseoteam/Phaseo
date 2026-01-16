@@ -202,6 +202,18 @@ export async function GET(request: Request) {
     const { data: { user } } = await supabaseUser.auth.getUser();
     if (!user?.id) return NextResponse.redirect(new URL('/error', url));
 
+    // Check if user has MFA enabled
+    const { data: mfaData } = await supabaseUser.auth.mfa.listFactors();
+    const hasMFAFactor = mfaData?.totp?.some((f) => f.status === 'verified');
+
+    // Check current AAL (Authenticator Assurance Level)
+    const { data: aalData } = await supabaseUser.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    // If user has MFA but hasn't completed verification yet, redirect to verify-mfa
+    if (hasMFAFactor && aalData?.currentLevel === 'aal1' && aalData?.nextLevel === 'aal2') {
+        return NextResponse.redirect(new URL('/auth/verify-mfa', url));
+    }
+
     const displayName =
         user.user_metadata?.full_name ??
         user.user_metadata?.name ??

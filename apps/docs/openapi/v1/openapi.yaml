@@ -12,6 +12,7 @@ security:
 paths:
     /:
         get:
+            x-beta: true
             operationId: root
             summary: Root endpoint
             description: Returns a welcome message.
@@ -30,6 +31,7 @@ paths:
                                         format: date-time
     /healthz:
         get:
+            x-beta: true
             operationId: healthz
             summary: Health check
             description: Returns the health status of the API.
@@ -46,6 +48,7 @@ paths:
                                         example: ok
     /models:
         get:
+            x-beta: true
             operationId: listModels
             summary: List models
             description: Returns a list of available models.
@@ -135,6 +138,7 @@ paths:
                                         type: string
     /generation:
         get:
+            x-beta: true
             operationId: getGeneration
             summary: Get generation
             description: Retrieve a specific generation by ID.
@@ -235,6 +239,7 @@ paths:
                                 type: string
     /embeddings:
         post:
+            x-beta: true
             operationId: createEmbedding
             summary: Create embeddings
             description: Creates an embedding vector representing the input text.
@@ -253,6 +258,7 @@ paths:
                                 $ref: "#/components/schemas/EmbeddingsResponse"
     /moderations:
         post:
+            x-beta: true
             operationId: createModeration
             summary: Create moderation
             description: Classifies if text violates OpenAI's usage policies.
@@ -271,6 +277,7 @@ paths:
                                 $ref: "#/components/schemas/ModerationsResponse"
     /audio/speech:
         post:
+            x-beta: true
             operationId: createSpeech
             summary: Generate speech
             description: Generates audio from the input text.
@@ -290,6 +297,7 @@ paths:
                                 format: binary
     /audio/transcriptions:
         post:
+            x-beta: true
             operationId: createTranscription
             summary: Create transcription
             description: Transcribes audio into the input language.
@@ -308,6 +316,7 @@ paths:
                                 $ref: "#/components/schemas/AudioTranscriptionResponse"
     /audio/translations:
         post:
+            x-beta: true
             operationId: createTranslation
             summary: Create translation
             description: Translates audio into English.
@@ -326,6 +335,7 @@ paths:
                                 $ref: "#/components/schemas/AudioTranslationResponse"
     /images/generations:
         post:
+            x-beta: true
             operationId: createImage
             summary: Create image
             description: Creates an image given a prompt.
@@ -344,6 +354,7 @@ paths:
                                 $ref: "#/components/schemas/ImagesGenerationResponse"
     /images/edits:
         post:
+            x-beta: true
             operationId: createImageEdit
             summary: Create image edit
             description: >-
@@ -364,6 +375,7 @@ paths:
                                 $ref: "#/components/schemas/ImagesEditResponse"
     /videos:
         post:
+            x-beta: true
             operationId: createVideo
             summary: Create video
             description: Creates a video from a prompt.
@@ -380,8 +392,107 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/VideoGenerationResponse"
+    /videos/{video_id}:
+        get:
+            x-beta: true
+            operationId: getVideo
+            summary: Get video status
+            description: Retrieves the status for a video generation request.
+            parameters:
+                - name: video_id
+                  in: path
+                  required: true
+                  description: The ID of the video generation request.
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Video status response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/VideoGenerationResponse"
+        delete:
+            x-beta: true
+            operationId: deleteVideo
+            summary: Delete video
+            description: Deletes a video generation request.
+            parameters:
+                - name: video_id
+                  in: path
+                  required: true
+                  description: The ID of the video generation request.
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Video deletion response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/VideoDeleteResponse"
+    /videos/{video_id}/content:
+        get:
+            x-beta: true
+            operationId: getVideoContent
+            summary: Get video content
+            description: Downloads the rendered video content.
+            parameters:
+                - name: video_id
+                  in: path
+                  required: true
+                  description: The ID of the video generation request.
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Video content
+                    content:
+                        application/octet-stream:
+                            schema:
+                                type: string
+                                format: binary
+    /ocr:
+        post:
+            x-beta: true
+            operationId: createOcr
+            summary: Create OCR
+            description: Extracts text from an image using the requested model.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/OcrRequest"
+            responses:
+                "200":
+                    description: OCR response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/OcrResponse"
+    /music/generate:
+        post:
+            x-beta: true
+            operationId: generateMusic
+            summary: Generate music
+            description: Generates music using the requested model and provider settings.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/MusicGenerateRequest"
+            responses:
+                "200":
+                    description: Music generation response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/MusicGenerateResponse"
     /files:
         post:
+            x-beta: true
             operationId: uploadFile
             summary: Upload file
             description: Upload a file that can be used across various endpoints.
@@ -399,6 +510,7 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/FileResponse"
         get:
+            x-beta: true
             operationId: listFiles
             summary: List files
             description: Returns a list of files that belong to the user's organization.
@@ -411,6 +523,7 @@ paths:
                                 $ref: "#/components/schemas/ListFilesResponse"
     /files/{file_id}:
         get:
+            x-beta: true
             operationId: retrieveFile
             summary: Retrieve file
             description: Returns information about a specific file.
@@ -430,6 +543,7 @@ paths:
                                 $ref: "#/components/schemas/FileResponse"
     /batches:
         post:
+            x-beta: true
             operationId: createBatch
             summary: Create batch
             description: Creates a batch of API requests.
@@ -448,6 +562,7 @@ paths:
                                 $ref: "#/components/schemas/BatchResponse"
     /batches/{batch_id}:
         get:
+            x-beta: true
             operationId: retrieveBatch
             summary: Retrieve batch
             description: Retrieves a batch.
@@ -467,6 +582,7 @@ paths:
                                 $ref: "#/components/schemas/BatchResponse"
     /analytics:
         post:
+            x-beta: true
             operationId: getAnalytics
             summary: Get analytics
             description: Returns aggregated analytics data.
@@ -500,6 +616,22 @@ components:
             scheme: bearer
             description: Bearer token authentication
     schemas:
+        ProviderRoutingOptions:
+            type: object
+            description: Provider routing preferences for gateway selection.
+            properties:
+                order:
+                    type: array
+                    items:
+                        type: string
+                only:
+                    type: array
+                    items:
+                        type: string
+                ignore:
+                    type: array
+                    items:
+                        type: string
         Model:
             type: object
             properties:
@@ -631,6 +763,8 @@ components:
                                   type: object
                 usage:
                     type: boolean
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
                 user_id:
                     type: string
                 service_tier:
@@ -892,6 +1026,8 @@ components:
                     type: object
                     additionalProperties:
                         type: string
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         AnthropicMessagesResponse:
             type: object
             properties:
@@ -1089,6 +1225,8 @@ components:
                     type: boolean
                 meta:
                     type: boolean
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         ResponsesResponse:
             type: object
             properties:
@@ -1133,6 +1271,8 @@ components:
                     minimum: 1
                 user:
                     type: string
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         EmbeddingsResponse:
             type: object
             properties:
@@ -1176,6 +1316,8 @@ components:
                               oneOf:
                                   - $ref: "#/components/schemas/TextModerationInput"
                                   - $ref: "#/components/schemas/ImageModerationInput"
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         TextModerationInput:
             type: object
             required:
@@ -1293,6 +1435,8 @@ components:
                         - wav
                         - ogg
                         - aac
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         AudioTranscriptionRequest:
             type: object
             required:
@@ -1307,6 +1451,8 @@ components:
                     type: string
                 language:
                     type: string
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         AudioTranscriptionResponse:
             type: object
             properties:
@@ -1332,6 +1478,8 @@ components:
                     type: number
                     minimum: 0
                     maximum: 2
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         AudioTranslationResponse:
             type: object
             properties:
@@ -1361,6 +1509,8 @@ components:
                     type: string
                 user:
                     type: string
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         ImagesGenerationResponse:
             type: object
             properties:
@@ -1406,6 +1556,8 @@ components:
                     type: boolean
                 usage:
                     type: boolean
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         ImagesEditResponse:
             type: object
             properties:
@@ -1431,6 +1583,8 @@ components:
                     maximum: 120
                 ratio:
                     type: string
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         VideoGenerationResponse:
             type: object
             properties:
@@ -1455,6 +1609,119 @@ components:
                                 type: string
                             url:
                                 type: string
+        VideoDeleteResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                object:
+                    type: string
+                deleted:
+                    type: boolean
+        OcrRequest:
+            type: object
+            required:
+                - model
+                - image
+            properties:
+                model:
+                    type: string
+                image:
+                    type: string
+                language:
+                    type: string
+                echo_upstream_request:
+                    type: boolean
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
+        OcrResponse:
+            type: object
+            additionalProperties: true
+        MusicGenerateRequest:
+            type: object
+            required:
+                - model
+            properties:
+                model:
+                    type: string
+                prompt:
+                    type: string
+                duration:
+                    type: integer
+                format:
+                    type: string
+                    enum:
+                        - mp3
+                        - wav
+                        - ogg
+                        - aac
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
+                suno:
+                    type: object
+                    properties:
+                        prompt:
+                            type: string
+                        style:
+                            type: string
+                        title:
+                            type: string
+                        customMode:
+                            type: boolean
+                        instrumental:
+                            type: boolean
+                        personaId:
+                            type: string
+                        model:
+                            type: string
+                        negativeTags:
+                            type: string
+                        vocalGender:
+                            type: string
+                            enum:
+                                - m
+                                - f
+                        styleWeight:
+                            type: number
+                            minimum: 0
+                            maximum: 1
+                        weirdnessConstraint:
+                            type: number
+                            minimum: 0
+                            maximum: 1
+                        audioWeight:
+                            type: number
+                            minimum: 0
+                            maximum: 1
+                        callBackUrl:
+                            type: string
+                            format: uri
+                elevenlabs:
+                    type: object
+                    properties:
+                        prompt:
+                            type: string
+                        composition_plan:
+                            type: object
+                        music_length_ms:
+                            type: integer
+                        model_id:
+                            type: string
+                        force_instrumental:
+                            type: boolean
+                        store_for_inpainting:
+                            type: boolean
+                        with_timestamps:
+                            type: boolean
+                        sign_with_c2pa:
+                            type: boolean
+                        output_format:
+                            type: string
+                echo_upstream_request:
+                    type: boolean
+        MusicGenerateResponse:
+            type: object
+            additionalProperties: true
         BatchRequest:
             type: object
             required:
@@ -1469,6 +1736,8 @@ components:
                     type: string
                 metadata:
                     type: object
+                provider:
+                    $ref: "#/components/schemas/ProviderRoutingOptions"
         BatchResponse:
             type: object
             properties:

@@ -1,0 +1,192 @@
+[
+  {
+    "api_model_id": "anthropic/claude-3-5-haiku-2024-11-04",
+    "provider_api_model_id": "anthropic:anthropic/claude-3-5-haiku-2024-11-04",
+    "provider_model_slug": "claude-3-5-haiku-20241022",
+    "internal_model_id": "anthropic/claude-3-5-haiku-2024-11-04",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2024-11-04T00:00:00",
+    "effective_to": "2026-02-19T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
+    "provider_api_model_id": "anthropic:anthropic/claude-3-7-sonnet-2025-02-24",
+    "provider_model_slug": "claude-3-7-sonnet-20250219",
+    "internal_model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-02-24T00:00:00",
+    "effective_to": "2026-02-19T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-3-haiku-2024-03-13",
+    "provider_api_model_id": "anthropic:anthropic/claude-3-haiku-2024-03-13",
+    "provider_model_slug": "claude-3-haiku-20240307",
+    "internal_model_id": "anthropic/claude-3-haiku-2024-03-13",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2024-03-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-3-opus-2024-03-04",
+    "provider_api_model_id": "anthropic:anthropic/claude-3-opus-2024-03-04",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-3-opus-2024-03-04",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2024-03-04T00:00:00",
+    "effective_to": "2026-01-05T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-haiku-4-5-2025-10-15",
+    "provider_api_model_id": "anthropic:anthropic/claude-haiku-4-5-2025-10-15",
+    "provider_model_slug": "claude-haiku-4-5-20251001",
+    "internal_model_id": "anthropic/claude-haiku-4-5-2025-10-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-10-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4-1-2025-08-05",
+    "provider_api_model_id": "anthropic:anthropic/claude-opus-4-1-2025-08-05",
+    "provider_model_slug": "claude-opus-4-1-20250805",
+    "internal_model_id": "anthropic/claude-opus-4-1-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4-2025-05-21",
+    "provider_api_model_id": "anthropic:anthropic/claude-opus-4-2025-05-21",
+    "provider_model_slug": "claude-opus-4-20250514",
+    "internal_model_id": "anthropic/claude-opus-4-2025-05-21",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-05-21T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4-5-2025-11-24",
+    "provider_api_model_id": "anthropic:anthropic/claude-opus-4-5-2025-11-24",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-opus-4-5-2025-11-24",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "file,image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-11-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-sonnet-4-2025-05-21",
+    "provider_api_model_id": "anthropic:anthropic/claude-sonnet-4-2025-05-21",
+    "provider_model_slug": "claude-sonnet-4-20250514",
+    "internal_model_id": "anthropic/claude-sonnet-4-2025-05-21",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-05-21T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+    "provider_api_model_id": "anthropic:anthropic/claude-sonnet-4-5-2025-09-29",
+    "provider_model_slug": "claude-sonnet-4-5-20250929",
+    "internal_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-09-29T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

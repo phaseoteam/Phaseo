@@ -16,7 +16,7 @@ function rand62(n: number) {
 export function makeKeyV2() {
     const kid = rand62(12);
     const secret = rand62(40);
-    const plaintext = `aistats_v1_k_${kid}_${secret}`;
+    const plaintext = `aistats_v1_sk_${kid}_${secret}`;
     const prefix = kid.slice(0, 6);
     return { kid, secret, plaintext, prefix };
 }

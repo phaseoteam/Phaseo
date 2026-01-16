@@ -202,6 +202,23 @@ function listDirs(dir: string): string[] {
         .map((entry) => entry.name);
 }
 
+function listPricingFiles(pricingDir: string): string[] {
+    const files: string[] = [];
+    for (const provider of listDirs(pricingDir)) {
+        const providerRoot = path.join(pricingDir, provider);
+        for (const levelOne of listDirs(providerRoot)) {
+            const levelOneRoot = path.join(providerRoot, levelOne);
+            for (const levelTwo of listDirs(levelOneRoot)) {
+                const filePath = path.join(levelOneRoot, levelTwo, 'pricing.json');
+                if (fs.existsSync(filePath)) {
+                    files.push(filePath);
+                }
+            }
+        }
+    }
+    return files;
+}
+
 function safeReadJson(filePath: string, errors: string[], label: string): Record<string, unknown> | null {
     try {
         return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
@@ -444,32 +461,28 @@ function checkModelReferences(state: ValidationState): string[] {
 function checkPricing(state: ValidationState): string[] {
     const errors: string[] = [];
     const pricingDir = path.join(DATA_ROOT, 'pricing');
-    for (const provider of listDirs(pricingDir)) {
-        const providerRoot = path.join(pricingDir, provider);
-        for (const endpoint of listDirs(providerRoot)) {
-            const endpointRoot = path.join(providerRoot, endpoint);
-            for (const model of listDirs(endpointRoot)) {
-                const filePath = path.join(endpointRoot, model, 'pricing.json');
-                if (!fs.existsSync(filePath)) continue;
-                state.pricingEntryCount += 1;
-                const data = safeReadJson(filePath, errors, 'Pricing');
-                if (!data) continue;
-                const entryErrors = checkPricingEntrySafety(data);
-                const apiProviderId = typeof data['api_provider_id'] === 'string' ? data['api_provider_id'] : undefined;
-                if (apiProviderId && !state.apiProviderIds.has(apiProviderId)) {
-                    entryErrors.push(`Unknown api_provider_id ${apiProviderId}`);
-                }
-                const modelId = typeof data['model_id'] === 'string' ? data['model_id'] : undefined;
-                if (modelId && !state.modelIds.has(modelId)) {
-                    entryErrors.push(`Unknown model_id ${modelId}`);
-                }
-                if (entryErrors.length) {
-                    errors.push(`${path.relative(DATA_ROOT, filePath)} -> ${entryErrors.join('; ')}`);
-                }
-            }
+    for (const filePath of listPricingFiles(pricingDir)) {
+        state.pricingEntryCount += 1;
+        const data = safeReadJson(filePath, errors, 'Pricing');
+        if (!data) continue;
+        const entryErrors = checkPricingEntrySafety(data);
+        const apiProviderId = typeof data['api_provider_id'] === 'string'
+            ? data['api_provider_id']
+            : undefined;
+        if (apiProviderId && !state.apiProviderIds.has(apiProviderId)) {
+            entryErrors.push(`Unknown api_provider_id ${apiProviderId}`);
+        }
+        const modelId = typeof data['model_id'] === 'string' ? data['model_id'] : undefined;
+        if (modelId && !state.modelIds.has(modelId)) {
+            entryErrors.push(`Unknown model_id ${modelId}`);
+        }
+        if (entryErrors.length) {
+            errors.push(`${path.relative(DATA_ROOT, filePath)} -> ${entryErrors.join('; ')}`);
         }
     }
     return errors;
+}
+
 }
 
 function checkSubscriptionPlans(state: ValidationState): string[] {

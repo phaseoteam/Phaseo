@@ -9,6 +9,7 @@ import {
 	FileText,
 	ShieldCheck,
 	Database,
+	Activity,
 } from "lucide-react";
 import {
 	Tooltip,
@@ -213,6 +214,17 @@ export default function Footer() {
 						>
 							<Database className="h-5 w-5" />
 							<span className="text-xs">DB Monitor</span>
+						</Link>
+						{/* Status */}
+						<Link
+							href="https://ai-stats-status.stpg.dev/"
+							target="_blank"
+							rel="noopener noreferrer"
+							aria-label="Status"
+							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
+						>
+							<Activity className="h-5 w-5" />
+							<span className="text-xs">Status</span>
 						</Link>
 
 						<Separator className="col-span-2 md:col-span-3" />
@@ -432,7 +444,6 @@ export default function Footer() {
 								</Tooltip>
 							</TooltipProvider>
 
-
 							{/* Database Monitor */}
 							<TooltipProvider delayDuration={0}>
 								<Tooltip>
@@ -447,6 +458,26 @@ export default function Footer() {
 									</TooltipTrigger>
 									<TooltipContent side="top" align="center">
 										Database Monitor
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+
+							{/* Status */}
+							<TooltipProvider delayDuration={0}>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Link
+											href="https://ai-stats-status.stpg.dev/"
+											target="_blank"
+											rel="noopener noreferrer"
+											aria-label="Status"
+											className="h-9 w-9 text-primary rounded-full border border-border flex items-center justify-center transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:outline-hidden focus:ring-2 focus:ring-primary"
+										>
+											<Activity className="h-4 w-4" />
+										</Link>
+									</TooltipTrigger>
+									<TooltipContent side="top" align="center">
+										Status
 									</TooltipContent>
 								</Tooltip>
 							</TooltipProvider>
@@ -510,11 +541,9 @@ export default function Footer() {
 
 				<div className="flex flex-col items-center justify-center">
 					<div className="text-center w-full px-4 sm:px-0">
-                                                &copy; {startYear}
-                                                {currentYear > startYear
-                                                        ? ` - ${currentYear}`
-                                                        : ""}{" "}
-                                                AI Stats
+						&copy; {startYear}
+						{currentYear > startYear ? ` - ${currentYear}` : ""} AI
+						Stats
 						<span className="block mt-1">
 							If you run into any issues or notice any data
 							errors, please visit our GitHub and report an issue.

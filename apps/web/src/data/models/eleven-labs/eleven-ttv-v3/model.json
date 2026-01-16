@@ -1,0 +1,17 @@
+{
+  "model_id": "eleven-labs/eleven-ttv-v3",
+  "organisation_id": "eleven-labs",
+  "name": "Eleven TTV V3",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

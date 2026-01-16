@@ -31,16 +31,20 @@ export default function Unavailable({ modelId }: UnavailableProps) {
 					<AlertTriangle className="h-4 w-4" />
 					<AlertTitle>Currently unavailable</AlertTitle>
 					<AlertDescription>
-						We&apos;re working on onboarding providers for{" "}
-						<code>{friendlyModelId || modelId}</code>. Check back soon or request
-						access below.
+						<p>
+							We&apos;re working on onboarding providers for{" "}
+							<code className="font-mono break-all">
+								{friendlyModelId || modelId}
+							</code>
+							{"."} Check back soon or request access below.
+						</p>
 					</AlertDescription>
 				</Alert>
 				<Link
-					href="/contact"
+					href="https://github.com/AI-Stats/AI-Stats/issues/new/choose"
 					className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
 				>
-					Request provider support
+					Request provider support on Github
 					<ArrowRight className="h-4 w-4" />
 				</Link>
 			</CardContent>

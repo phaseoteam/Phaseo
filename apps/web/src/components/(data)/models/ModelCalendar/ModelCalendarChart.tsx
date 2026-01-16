@@ -6,7 +6,11 @@ import type {
 	EventType,
 	ModelEvent,
 } from "@/lib/fetchers/updates/getModelUpdates";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const STACKED_TYPES: EventType[] = [
 	"Announced",
@@ -41,7 +45,7 @@ type ModelCalendarChartProps = {
 
 export default function ModelCalendarChart({
 	events,
-	monthsWindow = 24,
+	monthsWindow = 12,
 }: ModelCalendarChartProps) {
 	const now = useMemo(() => new Date(), []);
 
@@ -112,22 +116,19 @@ export default function ModelCalendarChart({
 						},
 					];
 				})
-			) as Record<
-				EventType,
-				{ names: string[]; total: number }
-			>,
+			) as Record<EventType, { names: string[]; total: number }>,
 		}));
-	}, [events, now]);
+	}, [events, now, monthsWindow]);
 
 	return (
 		<section className="space-y-4 py-6">
 			<div className="rounded-2xl border border-zinc-200 bg-zinc-50/40 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
 				<div className="flex items-center justify-between">
 					<h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-						Model event cadence (last 24 months)
+						Model event cadence (last 12 months)
 					</h2>
 					<span className="text-xs text-zinc-500 dark:text-zinc-400">
-						Rolling 24 mo.
+						Rolling 12 mo.
 					</span>
 				</div>
 				<div className="flex flex-wrap gap-3 pb-3 pt-4">
@@ -137,7 +138,10 @@ export default function ModelCalendarChart({
 							className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400"
 						>
 							<span
-								className={cn("h-2 w-2 rounded-full", TYPE_COLORS[type])}
+								className={cn(
+									"h-2 w-2 rounded-full",
+									TYPE_COLORS[type]
+								)}
 								aria-hidden="true"
 							/>
 							{type}
@@ -162,12 +166,16 @@ export default function ModelCalendarChart({
 											entry.total === 0
 												? 0
 												: (count / entry.total) * 100;
-										const modelsInfo = entry.modelList[type];
+										const modelsInfo =
+											entry.modelList[type];
 										const remaining =
-											modelsInfo.total - modelsInfo.names.length;
+											modelsInfo.total -
+											modelsInfo.names.length;
 										const tooltipText =
 											modelsInfo.names.length > 0
-												? `${modelsInfo.names.join(", ")}${
+												? `${modelsInfo.names.join(
+														", "
+												  )}${
 														remaining > 0
 															? ` +${remaining} more`
 															: ""
@@ -175,7 +183,9 @@ export default function ModelCalendarChart({
 												: "No models recorded yet";
 
 										return (
-											<Tooltip key={`${entry.key}-${type}`}>
+											<Tooltip
+												key={`${entry.key}-${type}`}
+											>
 												<TooltipTrigger asChild>
 													<span
 														className={cn(

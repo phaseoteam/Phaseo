@@ -12,7 +12,18 @@ import { transformerColorizedBrackets } from "@shikijs/colorized-brackets";
 const LIGHT = "github-light" as const;
 const DARK = "github-dark" as const;
 
-export type ShikiLang = "bash" | "ts" | "python" | "json" | "go" | "csharp" | "php" | "ruby" | "rust" | "cpp";
+export type ShikiLang =
+    | "bash"
+    | "ts"
+    | "python"
+    | "json"
+    | "go"
+    | "csharp"
+    | "php"
+    | "ruby"
+    | "rust"
+    | "cpp"
+    | "diff";
 export type ShikiTheme = typeof LIGHT | typeof DARK;
 
 export const getShikiHighlighter = cache(async (): Promise<Highlighter> => {
@@ -29,6 +40,7 @@ export const getShikiHighlighter = cache(async (): Promise<Highlighter> => {
             bundledLanguages.ruby,
             bundledLanguages.rust,
             bundledLanguages.cpp,
+            bundledLanguages.diff,
         ],
     });
 });
@@ -46,7 +58,7 @@ export async function codeToHtml(
         transformers: [
             transformerColorizedBrackets(), // <- magic here
         ],
-        
+
     });
 }
 

@@ -15,33 +15,36 @@ export interface PricingModel {
     model: string;
     endpoint: string;
     display_name?: string;
+    pricing_plan?: string | null;
     meters: PricingMeter[];
 }
 
-interface PricingRuleWithModel {
+interface PricingRuleRow {
+    rule_id: string;
+    model_key: string;
+    capability_id: string;
+    pricing_plan: string | null;
     meter: string;
     unit: string;
     unit_size: number;
     price_per_unit: string;
     currency: string;
-    match: any;
     priority: number;
     effective_from: string;
     effective_to: string | null;
-    data_api_provider_models: {
-        id: string;
-        api_provider_id: string;
-        internal_model_id: string;
-        endpoint: string;
-        is_active_gateway: boolean;
-        effective_from: string;
-        effective_to: string | null;
-        data_models: {
-            model_id: string;
-            name: string;
-        } | null;
-    };
+    match: any[] | null;
 }
+
+const parseModelKey = (modelKey: string) => {
+    const first = modelKey.indexOf(":");
+    const last = modelKey.lastIndexOf(":");
+    if (first <= 0 || last <= first) return null;
+    return {
+        provider_id: modelKey.slice(0, first),
+        api_model_id: modelKey.slice(first + 1, last),
+        capability_id: modelKey.slice(last + 1),
+    };
+};
 
 /**
  * Fetch all models that have pricing rules configured, grouped by provider/model/endpoint
@@ -50,55 +53,97 @@ export default async function getPricingModels(): Promise<PricingModel[]> {
     const supabase = await createClient();
     const nowIso = new Date().toISOString();
 
+    const { data: providerModels, error: pmError } = await supabase
+        .from("data_api_provider_models")
+        .select(
+            "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, effective_from, effective_to"
+        )
+        .eq("is_active_gateway", true)
+        .lte("effective_from", nowIso)
+        .or(`effective_to.is.null,effective_to.gt.${nowIso}`);
+
+    if (pmError) {
+        throw new Error(pmError.message || "Failed to load provider models");
+    }
+
+    const providerModelIds = (providerModels ?? [])
+        .map((row) => row.provider_api_model_id)
+        .filter((id): id is string => Boolean(id));
+
+    const { data: capabilities, error: capError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id, capability_id, status")
+        .in("provider_api_model_id", providerModelIds)
+        .neq("status", "disabled");
+
+    if (capError) {
+        throw new Error(capError.message || "Failed to load provider capabilities");
+    }
+
     const { data: pricingRules, error: prError } = await supabase
         .from("data_api_pricing_rules")
-        .select(`
-            meter,
-            unit,
-            unit_size,
-            price_per_unit,
-            currency,
-            match,
-            priority,
-            effective_from,
-            effective_to,
-            data_api_provider_models!inner(
-                id,
-                api_provider_id,
-                internal_model_id,
-                endpoint,
-                is_active_gateway,
-                effective_from,
-                effective_to,
-                data_models(model_id, name)
-            )
-        `)
-        .eq("data_api_provider_models.is_active_gateway", true)
-        .lte("data_api_provider_models.effective_from", nowIso)
-        .is("data_api_provider_models.effective_to", null)
+        .select(
+            "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match"
+        )
         .lte("effective_from", nowIso)
-        .is("effective_to", null)
+        .or(`effective_to.is.null,effective_to.gt.${nowIso}`)
         .order("priority", { ascending: false });
 
     if (prError) {
         throw new Error(prError.message || "Failed to load pricing rules");
     }
 
-    const typedPricingRules = pricingRules as unknown as PricingRuleWithModel[];
+    const modelNameMap = new Map<string, string>();
+    const internalIds = Array.from(
+        new Set((providerModels ?? []).map((row) => row.internal_model_id).filter(Boolean))
+    );
+    if (internalIds.length) {
+        const { data: models } = await supabase
+            .from("data_models")
+            .select("model_id, name")
+            .in("model_id", internalIds);
+        for (const model of models ?? []) {
+            if (model.model_id && model.name) modelNameMap.set(model.model_id, model.name);
+        }
+    }
 
     const modelMap = new Map<string, PricingModel>();
+    const providerById = new Map<string, any>();
+    for (const row of providerModels ?? []) {
+        if (row.provider_api_model_id) {
+            providerById.set(row.provider_api_model_id, row);
+        }
+    }
 
-    for (const rule of typedPricingRules ?? []) {
-        const pm = rule.data_api_provider_models;
+    const comboMap = new Map<string, { internal_model_id: string | null }>();
+    for (const cap of capabilities ?? []) {
+        if (!cap.provider_api_model_id || !cap.capability_id) continue;
+        const pm = providerById.get(cap.provider_api_model_id);
         if (!pm) continue;
-        const key = `${pm.api_provider_id}:${pm.internal_model_id}:${pm.endpoint}`;
+        const comboKey = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
+        comboMap.set(comboKey, {
+            internal_model_id: pm.internal_model_id ?? null,
+        });
+    }
+
+    for (const rule of (pricingRules ?? []) as PricingRuleRow[]) {
+        const parsed = parseModelKey(rule.model_key);
+        if (!parsed) continue;
+        const comboKey = `${parsed.provider_id}:${parsed.api_model_id}:${rule.capability_id}`;
+        const combo = comboMap.get(comboKey);
+        if (!combo) continue;
+        const modelId = combo.internal_model_id ?? parsed.api_model_id;
+        const key = `${parsed.provider_id}:${modelId}:${rule.capability_id}:${rule.pricing_plan || "standard"}`;
 
         if (!modelMap.has(key)) {
             modelMap.set(key, {
-                provider: pm.api_provider_id,
-                model: pm.internal_model_id,
-                endpoint: pm.endpoint,
-                display_name: pm.data_models?.name,
+                provider: parsed.provider_id,
+                model: modelId,
+                endpoint: rule.capability_id,
+                display_name: combo.internal_model_id
+                    ? modelNameMap.get(combo.internal_model_id)
+                    : undefined,
+                pricing_plan: rule.pricing_plan || "standard",
                 meters: [],
             });
         }
@@ -111,7 +156,7 @@ export default async function getPricingModels(): Promise<PricingModel[]> {
             unit_size: Number(rule.unit_size ?? 1),
             price_per_unit: String(rule.price_per_unit ?? "0"),
             currency: rule.currency ?? "USD",
-            conditions: Array.isArray(rule.match) ? rule.match : [],
+            conditions: rule.match ?? [],
         });
     }
 
@@ -133,8 +178,8 @@ export async function getPricingModelsCached(): Promise<PricingModel[]> {
     "use cache";
 
     cacheLife("hours"); // Cache for shorter time since pricing can change
-    cacheTag("data:api_pricing_rules");
-    cacheTag("data:api_provider_models");
+    cacheTag("data:data_api_pricing_rules");
+    cacheTag("data:data_api_provider_models");
     cacheTag("data:models");
 
     return getPricingModels();

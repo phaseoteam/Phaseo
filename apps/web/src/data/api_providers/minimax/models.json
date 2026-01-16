@@ -1,0 +1,344 @@
+[
+  {
+    "api_model_id": "minimax/hailuo-02-2025-06-18",
+    "provider_api_model_id": "minimax:minimax/hailuo-02-2025-06-18",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/hailuo-02-2025-06-18",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-06-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/i2v-01-director-2025-02-11",
+    "provider_api_model_id": "minimax:minimax/i2v-01-director-2025-02-11",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/i2v-01-director-2025-02-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-02-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/i2v-01-live",
+    "provider_api_model_id": "minimax:minimax/i2v-01-live",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/i2v-01-live",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/image-01-2025-02-15",
+    "provider_api_model_id": "minimax:minimax/image-01-2025-02-15",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/image-01-2025-02-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-02-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-01",
+    "provider_api_model_id": "minimax:minimax/minimax-01",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/minimax-01",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m1-2025-06-16",
+    "provider_api_model_id": "minimax:minimax/minimax-m1-2025-06-16",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/minimax-m1-2025-06-16",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m2-1-2025-12-23",
+    "provider_api_model_id": "minimax:minimax/minimax-m2-1-2025-12-23",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/minimax-m2-1-2025-12-23",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-12-23T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m2-2025-10-27",
+    "provider_api_model_id": "minimax:minimax/minimax-m2-2025-10-27",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/minimax-m2-2025-10-27",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-10-27T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-text-01",
+    "provider_api_model_id": "minimax:minimax/minimax-text-01",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/minimax-text-01-2025-01-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-01-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/music-1-5",
+    "provider_api_model_id": "minimax:minimax/music-1-5",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/music-1-5-2025-06-20",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-06-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/s2v-01",
+    "provider_api_model_id": "minimax:minimax/s2v-01",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/s2v-01",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/speech-01-hd",
+    "provider_api_model_id": "minimax:minimax/speech-01-hd",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/speech-01-hd",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/speech-01-turbo",
+    "provider_api_model_id": "minimax:minimax/speech-01-turbo",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/speech-01-turbo",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/speech-02-hd",
+    "provider_api_model_id": "minimax:minimax/speech-02-hd",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/speech-02-hd-2025-04-02",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-04-02T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/speech-02-turbo",
+    "provider_api_model_id": "minimax:minimax/speech-02-turbo",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/speech-02-turbo-2025-04-02",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-04-02T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/speech-2-5-hd-preview",
+    "provider_api_model_id": "minimax:minimax/speech-2-5-hd-preview",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/speech-2-5-hd-preview-2025-08-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-08-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/speech-2-5-turbo-preview",
+    "provider_api_model_id": "minimax:minimax/speech-2-5-turbo-preview",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/speech-2-5-turbo-preview-2025-08-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-08-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/t2v-01-director",
+    "provider_api_model_id": "minimax:minimax/t2v-01-director",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/t2v-01-director-2025-02-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-02-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

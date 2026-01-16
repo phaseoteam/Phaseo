@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(for dir in hyperbolic featherless friendli inflection crusoe infermatic mancer siliconflow inception clarifai morph gmicloud weights-and-biases phala)",
+      "Bash(do echo -n \"$dir: \")",
+      "Bash(test:*)",
+      "Bash(done)",
+      "Bash(pnpm test:live:*)",
+      "WebSearch",
+      "Bash(ls:*)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm list:*)"
+    ]
+  },
+  "outputStyle": "Explanatory"
+}

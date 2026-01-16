@@ -19,6 +19,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
 	Command,
 	CommandEmpty,
@@ -54,6 +55,7 @@ import {
 	ChevronRight,
 	ChevronsUpDown,
 	Cpu,
+	Database,
 	MessageCircleDashed,
 	Paintbrush,
 	Settings,
@@ -104,6 +106,22 @@ const ACCENT_COLORS = [
 
 const MAX_PROVIDER_LOGOS = 8;
 const BASE_URL_OPTIONS = [BASE_URL];
+
+const getModelBadgeProps = (suffix: string) => {
+	switch (suffix) {
+		case "free":
+			return {
+				variant: "secondary" as const,
+				className:
+					"text-xs shrink-0 bg-green-200 text-green-900 border-green-400 dark:bg-green-800 dark:text-green-100 dark:border-green-600 font-normal px-1 py-0",
+			};
+		default:
+			return {
+				variant: "outline" as const,
+				className: "text-xs shrink-0 font-normal px-1.5 py-0.5",
+			};
+	}
+};
 
 type ChatHeaderProps = {
 	activeThread: ChatThread | null;
@@ -162,10 +180,14 @@ export function ChatHeader({
 }: ChatHeaderProps) {
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const [settingsTab, setSettingsTab] = useState<
-		"general" | "personalization" | "admin"
+		"general" | "personalization" | "data-controls" | "admin"
 	>("general");
 	const [baseUrlOpen, setBaseUrlOpen] = useState(false);
 	const [baseUrlQuery, setBaseUrlQuery] = useState(baseUrl);
+	const [importResult, setImportResult] = useState<{
+		message: string;
+		type: "success" | "error" | "info";
+	} | null>(null);
 	const groupedEntries = useMemo(
 		() => Array.from(modelOptions.grouped.entries()),
 		[modelOptions.grouped]
@@ -340,13 +362,37 @@ export function ChatHeader({
 												className="rounded-full shrink-0"
 											/>
 											<div className="flex min-w-0 flex-1 items-center gap-2">
-												<span className="truncate text-sm font-medium">
-													{option.label}
-												</span>
-												{activeThread?.modelId ===
-													option.modelId && (
-													<Check className="h-4 w-4 text-foreground" />
-												)}
+												<div className="flex items-center gap-2 min-w-0 flex-1">
+													<span className="truncate text-sm font-medium">
+														{
+															option.label.split(
+																":"
+															)[0]
+														}
+													</span>
+													{option.modelId.includes(
+														":"
+													) && (
+														<Badge
+															{...getModelBadgeProps(
+																option.modelId.split(
+																	":"
+																)[1]
+															)}
+														>
+															{
+																option.modelId.split(
+																	":"
+																)[1]
+															}
+														</Badge>
+													)}
+													{activeThread?.modelId ===
+														option.modelId && (
+														<Check className="h-4 w-4 text-foreground ml-1" />
+													)}
+												</div>
+												{renderProviderLogos(option)}
 											</div>
 											{renderProviderLogos(option)}
 										</ModelSelectorItem>
@@ -393,15 +439,40 @@ export function ChatHeader({
 													className="rounded-full shrink-0"
 												/>
 												<div className="flex min-w-0 flex-1 items-center gap-2">
-													<span className="truncate text-sm font-medium">
-														{option.label}
-													</span>
-													{activeThread?.modelId ===
-														option.modelId && (
-														<Check className="h-4 w-4 text-foreground" />
+													<div className="flex items-center gap-2 min-w-0 flex-1">
+														<span className="truncate text-sm font-medium">
+															{
+																option.label.split(
+																	":"
+																)[0]
+															}
+														</span>
+														{option.modelId.includes(
+															":"
+														) && (
+															<Badge
+																{...getModelBadgeProps(
+																	option.modelId.split(
+																		":"
+																	)[1]
+																)}
+															>
+																{
+																	option.modelId.split(
+																		":"
+																	)[1]
+																}
+															</Badge>
+														)}
+														{activeThread?.modelId ===
+															option.modelId && (
+															<Check className="h-4 w-4 text-foreground ml-1" />
+														)}
+													</div>
+													{renderProviderLogos(
+														option
 													)}
 												</div>
-												{renderProviderLogos(option)}
 											</ModelSelectorItem>
 										))}
 									</ModelSelectorGroup>
@@ -446,13 +517,36 @@ export function ChatHeader({
 														className="rounded-full shrink-0 grayscale"
 													/>
 													<div className="flex min-w-0 flex-1 items-center gap-2">
-														<span className="truncate text-sm font-medium">
-															{option.label}
-														</span>
+														<div className="flex items-center gap-2 min-w-0 flex-1">
+															<span className="truncate text-sm font-medium">
+																{
+																	option.label.split(
+																		":"
+																	)[0]
+																}
+															</span>
+															{option.modelId.includes(
+																":"
+															) && (
+																<Badge
+																	{...getModelBadgeProps(
+																		option.modelId.split(
+																			":"
+																		)[1]
+																	)}
+																>
+																	{
+																		option.modelId.split(
+																			":"
+																		)[1]
+																	}
+																</Badge>
+															)}
+														</div>
+														{renderProviderLogos(
+															option
+														)}
 													</div>
-													{renderProviderLogos(
-														option
-													)}
 												</ModelSelectorItem>
 											)
 										)}
@@ -534,6 +628,21 @@ export function ChatHeader({
 									<Paintbrush className="h-4 w-4" />
 									Personalization
 								</Button>
+								<Button
+									variant={
+										settingsTab === "data-controls"
+											? "secondary"
+											: "ghost"
+									}
+									className="w-full justify-start gap-2"
+									onClick={() => {
+										setSettingsTab("data-controls");
+										setImportResult(null);
+									}}
+								>
+									<Database className="h-4 w-4" />
+									Data Controls
+								</Button>
 								{isAdmin && (
 									<Button
 										variant={
@@ -576,6 +685,20 @@ export function ChatHeader({
 										}
 									>
 										Personalization
+									</Button>
+									<Button
+										size="sm"
+										variant={
+											settingsTab === "data-controls"
+												? "secondary"
+												: "ghost"
+										}
+										onClick={() => {
+											setSettingsTab("data-controls");
+											setImportResult(null);
+										}}
+									>
+										Data Controls
 									</Button>
 									{isAdmin && (
 										<Button
@@ -743,25 +866,7 @@ export function ChatHeader({
 													</PopoverContent>
 												</Popover>
 											</div>
-											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
-												<div>
-													<p className="text-sm font-medium text-foreground">
-														Export chats
-													</p>
-													<p className="text-xs text-muted-foreground">
-														Download all chats
-														stored in this browser.
-													</p>
-												</div>
-												<Button
-													type="button"
-													variant="outline"
-													size="sm"
-													onClick={onExportChats}
-												>
-													Export
-												</Button>
-											</div>
+
 										</div>
 									)}
 									{settingsTab === "personalization" && (
@@ -888,6 +993,172 @@ export function ChatHeader({
 													</SelectContent>
 												</Select>
 											</div>
+										</div>
+									)}
+									{settingsTab === "data-controls" && (
+										<div className="grid gap-3">
+											<div className="grid gap-1">
+												<p className="text-sm font-semibold text-foreground">
+													Data Controls
+												</p>
+												<p className="text-xs text-muted-foreground">
+													Import and export chat data
+													stored locally in your browser.
+												</p>
+											</div>
+											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
+												<div>
+													<p className="text-sm font-medium text-foreground">
+														Export chats
+													</p>
+													<p className="text-xs text-muted-foreground">
+														Download all chats stored in this browser.
+													</p>
+												</div>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													onClick={onExportChats}
+												>
+													Export
+												</Button>
+											</div>
+											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
+												<div>
+													<p className="text-sm font-medium text-foreground">
+														Import chats
+													</p>
+													<p className="text-xs text-muted-foreground">
+														Upload a previously exported chat file.
+													</p>
+												</div>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													onClick={() => {
+														const input = document.createElement('input');
+														input.type = 'file';
+														input.accept = '.json';
+														input.onchange = async (event) => {
+															const file = (event.target as HTMLInputElement).files?.[0];
+															if (!file) return;
+
+															setImportResult(null); // Clear previous result
+
+															try {
+																const text = await file.text();
+																const data = JSON.parse(text);
+
+																if (!data.chats || !Array.isArray(data.chats)) {
+																	throw new Error("Invalid file format. Expected { chats: [...] }");
+																}
+
+																const { upsertChat } = await import("@/lib/indexeddb/chats");
+																const chats: any[] = data.chats;
+																let importedCount = 0;
+																let skippedCount = 0;
+																const skippedReasons: string[] = [];
+
+																// Validate and import each chat individually
+																for (let i = 0; i < chats.length; i++) {
+																	const chat = chats[i];
+																	let isValid = true;
+																	const reasons: string[] = [];
+
+																	if (!chat.id || typeof chat.id !== 'string') {
+																		isValid = false;
+																		reasons.push('missing or invalid id');
+																	}
+																	if (!chat.title || typeof chat.title !== 'string') {
+																		isValid = false;
+																		reasons.push('missing or invalid title');
+																	}
+																	if (!chat.modelId || typeof chat.modelId !== 'string') {
+																		isValid = false;
+																		reasons.push('missing or invalid modelId');
+																	}
+																	if (!chat.createdAt || typeof chat.createdAt !== 'string') {
+																		isValid = false;
+																		reasons.push('missing or invalid createdAt');
+																	}
+																	if (!chat.updatedAt || typeof chat.updatedAt !== 'string') {
+																		isValid = false;
+																		reasons.push('missing or invalid updatedAt');
+																	}
+																	if (!Array.isArray(chat.messages)) {
+																		isValid = false;
+																		reasons.push('missing or invalid messages array');
+																	}
+																	if (!chat.settings || typeof chat.settings !== 'object') {
+																		isValid = false;
+																		reasons.push('missing or invalid settings');
+																	}
+
+																	if (isValid) {
+																		try {
+																			await upsertChat(chat);
+																			importedCount++;
+																		} catch (error) {
+																			skippedCount++;
+																			skippedReasons.push(`Chat ${i + 1}: Failed to save - ${error instanceof Error ? error.message : 'Unknown error'}`);
+																		}
+																	} else {
+																		skippedCount++;
+																		skippedReasons.push(`Chat ${i + 1}: ${reasons.join(', ')}`);
+																	}
+																}
+
+																if (importedCount > 0) {
+																	setImportResult({
+																		message: `Successfully imported ${importedCount} chats${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`,
+																		type: "success"
+																	});
+																	// Refresh the page to show imported chats
+																	setTimeout(() => window.location.reload(), 1500);
+																} else if (skippedCount > 0) {
+																	setImportResult({
+																		message: `All ${skippedCount} chats were invalid and skipped`,
+																		type: "error"
+																	});
+																} else {
+																	setImportResult({
+																		message: "No chats found in file",
+																		type: "info"
+																	});
+																}
+
+																if (skippedCount > 0) {
+																	console.warn("Skipped chats:", skippedReasons);
+																}
+															} catch (error) {
+																console.error("Import error:", error);
+																setImportResult({
+																	message: `Import failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+																	type: "error"
+																});
+															}
+														};
+														input.click();
+													}}
+												>
+													Import
+												</Button>
+											</div>
+											{importResult && (
+												<div className={`rounded-lg border px-3 py-3 ${
+													importResult.type === 'success' 
+														? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
+														: importResult.type === 'error'
+														? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200'
+														: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200'
+												}`}>
+													<p className="text-sm font-medium">
+														{importResult.message}
+													</p>
+												</div>
+											)}
 										</div>
 									)}
 									{settingsTab === "admin" && isAdmin && (

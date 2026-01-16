@@ -2,8 +2,6 @@
 import Image from "next/image";
 import { Pill, ThemedGitHubIcon, LiveDot } from "@/components/landingPage/Pill";
 import GatewayTeaser from "@/components/landingPage/GatewayTeaser";
-import FeaturedHighlight from "@/components/landingPage/FeaturedHighlight";
-import { getActiveFeaturedEntries } from "@/lib/content/featuredUpdate";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
 import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
 import LatestUpdates from "@/components/landingPage/LatestUpdates";
@@ -24,15 +22,10 @@ export const metadata: Metadata = {
 export default async function Page() {
 	await connection();
 
-	const featuredEntries = getActiveFeaturedEntries();
 	const gatewayMetrics = await getGatewayMarketingMetrics();
 
 	return (
 		<div className="container mx-auto mt-12 mb-12 space-y-12 px-4 sm:px-6 lg:px-8">
-			{/* {featuredEntries.length > 0 ? (
-        <FeaturedHighlight entries={featuredEntries} />
-      ) : null} */}
-
 			<section className="space-y-8 text-center">
 				<h1 className="text-4xl font-semibold text-gray-900 drop-shadow-xs animate-fade-in dark:text-gray-100 md:text-5xl">
 					The Most Comprehensive AI Model Database

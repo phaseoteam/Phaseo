@@ -236,6 +236,10 @@ export const logoManifest = {
 	together: {
 		color: "/logos/together.svg",
 	},
+	vercel: {
+		light: "/logos/vercel_light.svg",
+		dark: "/logos/vercel_dark.svg",
+	},
 	"weights-and-biases": {
 		color: "/logos/weights-and-biases.svg",
 	},

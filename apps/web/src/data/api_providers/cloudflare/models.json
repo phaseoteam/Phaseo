@@ -1,0 +1,325 @@
+[
+  {
+    "api_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
+    "provider_api_model_id": "cloudflare:deepseek/deepseek-r1-distill-qwen-32b",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-12b-2025-03-12",
+    "provider_api_model_id": "cloudflare:google/gemma-3-12b-2025-03-12",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3-12b-2025-03-12",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-03-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-12b-it",
+    "provider_api_model_id": "cloudflare:google/gemma-3-12b-it",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3-12b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "ibm/granite-4-0-micro-2025-10-02",
+    "provider_api_model_id": "cloudflare:ibm/granite-4-0-micro-2025-10-02",
+    "provider_model_slug": null,
+    "internal_model_id": "ibm/granite-4-0-micro-2025-10-02",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-10-02T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "ibm-granite/granite-4.0-h-micro",
+    "provider_api_model_id": "cloudflare:ibm-granite/granite-4.0-h-micro",
+    "provider_model_slug": null,
+    "internal_model_id": "ibm-granite/granite-4.0-h-micro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
+    "provider_api_model_id": "cloudflare:meta/llama-3-3-70b-instruct-2024-12-06",
+    "provider_model_slug": null,
+    "internal_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2024-12-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.1-8b-instruct",
+    "provider_api_model_id": "cloudflare:meta-llama/llama-3.1-8b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.1-8b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.2-11b-vision-instruct",
+    "provider_api_model_id": "cloudflare:meta-llama/llama-3.2-11b-vision-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.2-11b-vision-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.2-1b-instruct",
+    "provider_api_model_id": "cloudflare:meta-llama/llama-3.2-1b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.2-1b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.2-3b-instruct",
+    "provider_api_model_id": "cloudflare:meta-llama/llama-3.2-3b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.2-3b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "provider_api_model_id": "cloudflare:meta-llama/llama-3.3-70b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3-8b-instruct",
+    "provider_api_model_id": "cloudflare:meta-llama/llama-3-8b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3-8b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-guard-3-8b",
+    "provider_api_model_id": "cloudflare:meta-llama/llama-guard-3-8b",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-guard-3-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-7b-instruct-v0.1",
+    "provider_api_model_id": "cloudflare:mistral/mistral-7b-instruct-v0.1",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/mistral-7b-instruct-v0.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-small-3.1-24b-instruct",
+    "provider_api_model_id": "cloudflare:mistral/mistral-small-3.1-24b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/mistral-small-3.1-24b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen-2.5-coder-32b-instruct",
+    "provider_api_model_id": "cloudflare:qwen/qwen-2.5-coder-32b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen-2.5-coder-32b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-30b-a3b-thinking-2507",
+    "provider_api_model_id": "cloudflare:qwen/qwen3-30b-a3b-thinking-2507",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-30b-a3b-thinking-2507",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

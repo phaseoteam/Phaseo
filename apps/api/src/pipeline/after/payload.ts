@@ -29,7 +29,7 @@ export async function enrichSuccessPayload(ctx: PipelineContext, result: Request
     return payload;
 }
 
-function buildResponsesPayload(ctx: PipelineContext, result: RequestResult) {
+function buildResponsesPayload(ctx: PipelineContext, result: RequestResult) {   
     const raw = result.rawResponse ?? null;
     const ir = result.ir;
     const request = ctx.body ?? {};
@@ -54,7 +54,7 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult) {
         incomplete_details: raw?.incomplete_details ?? null,
         instructions: raw?.instructions ?? request.instructions ?? null,
         max_output_tokens: raw?.max_output_tokens ?? request.max_output_tokens ?? null,
-        model: raw?.model ?? ctx.model,
+        model: resolveClientModel(raw?.model, ctx.model),
         output,
         parallel_tool_calls: raw?.parallel_tool_calls ?? request.parallel_tool_calls ?? true,
         previous_response_id: raw?.previous_response_id ?? request.previous_response_id ?? null,
@@ -73,6 +73,22 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult) {
         metadata: raw?.metadata ?? request.metadata ?? {},
         nativeResponseId,
     };
+}
+
+function resolveClientModel(
+    rawModel: string | null | undefined,
+    ctxModel: string,
+): string {
+    if (!rawModel) return ctxModel;
+    if (!ctxModel) return rawModel;
+    if (
+        ctxModel.includes("/") &&
+        !rawModel.includes("/") &&
+        ctxModel.endsWith(`/${rawModel}`)
+    ) {
+        return ctxModel;
+    }
+    return rawModel;
 }
 
 function deriveResponsesStatus(ir?: IRChatResponse) {

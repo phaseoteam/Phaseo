@@ -7,6 +7,13 @@ export function captureTimingSnapshot(ctx: PipelineContext, timing: PipelineTimi
 }
 
 export function getBaseModel(model: string): string {
+    return stripPrioritySuffix(model);
+}
+
+export function stripPrioritySuffix(model: string): string {
+    if (!model) return model;
+    if (model.toLowerCase().endsWith(":fast")) return model.slice(0, -5);
+    if (model.toLowerCase().endsWith(":quick")) return model.slice(0, -6);
     return model;
 }
 

@@ -12,6 +12,9 @@
 - Data/doc checks: `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`; docs via `pnpm docs:links` then `pnpm docs:build`.
 - Tests: `pnpm --filter @ai-stats/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk-py/tests`); TS SDK smoke check `pnpm --filter @ai-stats/ts-sdk test:smoke` (full `pnpm test` runs SDK placeholders plus pytest).
 
+## Safety Notes
+- Avoid bulk repo-wide search/replace or scripted mass edits; use targeted, file-scoped changes only.
+
 ## Coding Style & Naming Conventions
 - TypeScript-first (ES modules, absolute imports `@/...` in the web app); Python for the SDK. Prefer named exports for shared utilities.
 - Components use PascalCase; hooks `useX`; helpers/files camelCase. Keep shared UI pieces in `apps/web/src/components` before adding new primitives.

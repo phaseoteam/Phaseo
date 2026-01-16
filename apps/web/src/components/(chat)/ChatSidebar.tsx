@@ -31,7 +31,6 @@ import {
 	Database,
 	Gauge,
 	LogOut,
-	MessageSquare,
 	MoreHorizontal,
 	PanelLeftClose,
 	PencilLine,
@@ -41,7 +40,6 @@ import {
 	SquarePen,
 	Trash2,
 	UserRound,
-	X,
 } from "lucide-react";
 
 export type GroupedThreads = {
@@ -98,73 +96,22 @@ export function ChatSidebar({
 		.slice(0, 2)
 		.toUpperCase();
 
-	const renderThreadItem = (thread: ChatThread) => (
-		<SidebarMenuItem key={thread.id} className="w-full overflow-hidden">
-			<SidebarMenuButton
-				isActive={activeId === thread.id}
-				onClick={() => onSelectThread(thread)}
-			>
-				<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
-					{thread.title}
-				</span>
-			</SidebarMenuButton>
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<SidebarMenuAction showOnHover>
-						<MoreHorizontal className="h-4 w-4" />
-					</SidebarMenuAction>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent side="right">
-					<DropdownMenuItem onClick={() => onRenameThread(thread)}>
-						<PencilLine className="mr-2 h-4 w-4" />
-						Rename
-					</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => onPinToggle(thread)}>
-						{thread.pinned ? (
-							<PinOff className="mr-2 h-4 w-4" />
-						) : (
-							<Pin className="mr-2 h-4 w-4" />
-						)}
-						{thread.pinned ? "Unpin" : "Pin"}
-					</DropdownMenuItem>
-					<DropdownMenuSeparator />
-					<DropdownMenuItem
-						onClick={() => onRequestDelete(thread)}
-						className="group text-foreground focus:text-destructive data-[highlighted]:text-destructive"
-					>
-						<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-[highlighted]:text-destructive" />
-						Delete
-					</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</SidebarMenuItem>
-	);
-
-	const renderGroup = (label: string, items: ChatThread[]) => {
-		if (!items.length) return null;
-		return (
-			<div>
-				<p className="px-2 pb-2 pt-3 text-xs font-semibold uppercase text-muted-foreground">
-					{label}
-				</p>
-				{items.map(renderThreadItem)}
-			</div>
-		);
-	};
 	return (
 		<>
-			<SidebarHeader className="gap-0 px-0 pt-4 pb-0">
-				<div className="flex w-full items-center gap-2 mb-3 ml-2 px-2">
-					<img
-						src="/wordmark_light.svg"
-						alt="AI Stats"
-						className="h-8 select-none dark:hidden"
-					/>
-					<img
-						src="/wordmark_dark.svg"
-						alt="AI Stats"
-						className="hidden h-8 select-none dark:block"
-					/>
+			<SidebarHeader className="gap-0 px-0 pt-3.5 pb-0">
+				<div className="flex w-full items-center gap-2 mb-3.5 ml-2 px-2">
+					<Link href="/">
+						<img
+							src="/wordmark_light.svg"
+							alt="AI Stats"
+							className="h-8 select-none dark:hidden"
+						/>
+						<img
+							src="/wordmark_dark.svg"
+							alt="AI Stats"
+							className="hidden h-8 select-none dark:block"
+						/>
+					</Link>
 					<Button
 						variant="ghost"
 						size="icon"
@@ -278,9 +225,9 @@ export function ChatSidebar({
 																	thread
 																)
 															}
-															className="group text-foreground focus:text-destructive data-[highlighted]:text-destructive"
+															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-[highlighted]:text-destructive" />
+															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
 															Delete
 														</DropdownMenuItem>
 													</DropdownMenuContent>
@@ -349,9 +296,9 @@ export function ChatSidebar({
 																	thread
 																)
 															}
-															className="group text-foreground focus:text-destructive data-[highlighted]:text-destructive"
+															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-[highlighted]:text-destructive" />
+															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
 															Delete
 														</DropdownMenuItem>
 													</DropdownMenuContent>
@@ -424,9 +371,9 @@ export function ChatSidebar({
 																		thread
 																	)
 																}
-																className="group text-foreground focus:text-destructive data-[highlighted]:text-destructive"
+																className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 															>
-																<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-[highlighted]:text-destructive" />
+																<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
 																Delete
 															</DropdownMenuItem>
 														</DropdownMenuContent>
@@ -496,9 +443,9 @@ export function ChatSidebar({
 																	thread
 																)
 															}
-															className="group text-foreground focus:text-destructive data-[highlighted]:text-destructive"
+															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-[highlighted]:text-destructive" />
+															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
 															Delete
 														</DropdownMenuItem>
 													</DropdownMenuContent>
@@ -567,9 +514,9 @@ export function ChatSidebar({
 																	thread
 																)
 															}
-															className="group text-foreground focus:text-destructive data-[highlighted]:text-destructive"
+															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-[highlighted]:text-destructive" />
+															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
 															Delete
 														</DropdownMenuItem>
 													</DropdownMenuContent>
@@ -638,9 +585,9 @@ export function ChatSidebar({
 																	thread
 																)
 															}
-															className="group text-foreground focus:text-destructive data-[highlighted]:text-destructive"
+															className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 														>
-															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-[highlighted]:text-destructive" />
+															<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
 															Delete
 														</DropdownMenuItem>
 													</DropdownMenuContent>

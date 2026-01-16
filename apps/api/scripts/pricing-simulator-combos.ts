@@ -7,39 +7,62 @@ export async function loadCombos(options: CLIOptions): Promise<Combo[]> {
 
     let query = supabase
         .from("data_api_provider_models")
-        .select("api_provider_id, model_id, endpoint, is_active_gateway, effective_from, effective_to");
+        .select("provider_api_model_id, provider_id, api_model_id, is_active_gateway, effective_from, effective_to");
 
-    if (options.provider?.length) query = query.in("api_provider_id", options.provider);
-    if (options.model?.length) query = query.in("model_id", options.model);
-    if (options.endpoint) query = query.eq("endpoint", options.endpoint);
+    if (options.provider?.length) query = query.in("provider_id", options.provider);
+    if (options.model?.length) query = query.in("api_model_id", options.model);
 
-    const { data, error } = await query;
+    const { data: providerModels, error } = await query;
     if (error) {
         throw new Error(`Failed to load provider models: ${error.message}`);
     }
 
-    const rows = (data ?? []).filter((row: any) => {
-        if (options.includeInactive) return true;
-        if (row.is_active_gateway !== true) return false;
+    const providerModelIds = (providerModels ?? [])
+        .map((row) => row.provider_api_model_id)
+        .filter((id): id is string => Boolean(id));
 
-        const from = row.effective_from ? new Date(row.effective_from).toISOString() : null;
-        const to = row.effective_to ? new Date(row.effective_to).toISOString() : null;
-        if (from && from > nowIso) return false;
-        if (to && to <= nowIso) return false;
-        return true;
-    });
+    let capQuery = supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id, capability_id, effective_from, effective_to")
+        .in("provider_api_model_id", providerModelIds);
+    if (options.endpoint) capQuery = capQuery.eq("capability_id", options.endpoint);
+
+    const { data: capabilities, error: capError } = await capQuery;
+    if (capError) {
+        throw new Error(`Failed to load provider capabilities: ${capError.message}`);
+    }
+
+    const providerById = new Map<string, any>();
+    for (const row of providerModels ?? []) {
+        if (row.provider_api_model_id) providerById.set(row.provider_api_model_id, row);
+    }
 
     const uniqueKeys = new Set<string>();
     const combos: Combo[] = [];
 
-    for (const row of rows as any[]) {
-        const key = `${row.api_provider_id}:${row.model_id}:${row.endpoint}`;
+    for (const cap of capabilities ?? []) {
+        const pm = providerById.get(cap.provider_api_model_id);
+        if (!pm || !cap.capability_id) continue;
+        if (!options.includeInactive) {
+            if (pm.is_active_gateway !== true) continue;
+            const from = pm.effective_from ? new Date(pm.effective_from).toISOString() : null;
+            const to = pm.effective_to ? new Date(pm.effective_to).toISOString() : null;
+            if (from && from > nowIso) continue;
+            if (to && to <= nowIso) continue;
+
+            const capFrom = cap.effective_from ? new Date(cap.effective_from).toISOString() : null;
+            const capTo = cap.effective_to ? new Date(cap.effective_to).toISOString() : null;
+            if (capFrom && capFrom > nowIso) continue;
+            if (capTo && capTo <= nowIso) continue;
+        }
+
+        const key = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;
         if (uniqueKeys.has(key)) continue;
         uniqueKeys.add(key);
         combos.push({
-            provider: row.api_provider_id,
-            model: row.model_id,
-            endpoint: row.endpoint,
+            provider: pm.provider_id,
+            model: pm.api_model_id,
+            endpoint: cap.capability_id,
         });
     }
 

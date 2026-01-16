@@ -27,21 +27,36 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         return bindings.SUNO_API_KEY;
     });
 
-    const adapterPayload = buildAdapterPayload(MusicGenerateSchema, args.body, []).adapterPayload as MusicGenerateRequest;
+    const { canonical, adapterPayload } = buildAdapterPayload(MusicGenerateSchema, args.body, []);
+    const typedPayload = adapterPayload as MusicGenerateRequest;
+    const sunoParams = (canonical as MusicGenerateRequest).suno ?? {};
 
-    // Get base URL from environment (defaults to a common third-party API)
+    // Get base URL from environment (defaults to a common third-party API)     
     const bindings = getBindings() as any;
-    const baseUrl = bindings.SUNO_BASE_URL || "https://api.sunoapi.com";
+    const baseUrl = bindings.SUNO_BASE_URL || "https://api.sunoapi.org";
 
     // Prepare request for common third-party API format
-    const requestBody = {
-        prompt: adapterPayload.prompt,
-        duration: adapterPayload.duration || 30,
-        model: args.providerModelSlug || adapterPayload.model || "chirp-v3-5",
-        custom_mode: false,
+    const requestBody: Record<string, unknown> = {
+        customMode: sunoParams.customMode ?? false,
+        instrumental: sunoParams.instrumental ?? false,
+        callBackUrl: sunoParams.callBackUrl ?? undefined,
+        model: sunoParams.model ?? args.providerModelSlug ?? typedPayload.model,
     };
+    const prompt =
+        sunoParams.prompt ??
+        typedPayload.prompt ??
+        undefined;
+    if (prompt) requestBody.prompt = prompt;
+    if (sunoParams.style) requestBody.style = sunoParams.style;
+    if (sunoParams.title) requestBody.title = sunoParams.title;
+    if (sunoParams.personaId) requestBody.personaId = sunoParams.personaId;
+    if (sunoParams.negativeTags) requestBody.negativeTags = sunoParams.negativeTags;
+    if (sunoParams.vocalGender) requestBody.vocalGender = sunoParams.vocalGender;
+    if (typeof sunoParams.styleWeight === "number") requestBody.styleWeight = sunoParams.styleWeight;
+    if (typeof sunoParams.weirdnessConstraint === "number") requestBody.weirdnessConstraint = sunoParams.weirdnessConstraint;
+    if (typeof sunoParams.audioWeight === "number") requestBody.audioWeight = sunoParams.audioWeight;
 
-    const res = await fetch(`${baseUrl}/v1/music/generate`, {
+    const res = await fetch(`${baseUrl}/api/v1/generate`, {
         method: "POST",
         headers: {
             "Authorization": `Bearer ${keyInfo.key}`,

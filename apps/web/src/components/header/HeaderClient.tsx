@@ -48,7 +48,7 @@ export default function HeaderClient({
 
 	const navLink = (href: string, label: string) => (
 		<DrawerClose asChild key={href}>
-			<Button asChild variant="ghost" className="text-md rounded-full">
+			<Button asChild variant="ghost" className="text-md rounded-lg">
 				<Link
 					href={href}
 					className={cn(
@@ -110,7 +110,7 @@ export default function HeaderClient({
 							) : (
 								<Link href="/sign-in" className="w-full block">
 									<Button
-										className="w-full rounded-full text-xs px-4 py-2 font-semibold"
+										className="w-full rounded-lg text-xs px-4 py-2 font-semibold"
 										variant="outline"
 									>
 										Sign In
@@ -139,7 +139,7 @@ export default function HeaderClient({
 				<Link href="/sign-in">
 					<Button
 						variant="outline"
-						className="rounded-full text-xs px-4 py-2 font-semibold"
+						className="rounded-lg text-xs px-4 py-2 font-semibold"
 					>
 						Sign In
 					</Button>

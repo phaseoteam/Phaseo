@@ -77,7 +77,7 @@ function ctEqualHex(a: string, b: string): boolean {
 
 /**
  * Parse an API key string in format:
- *   aistats_v1_k_<kid>_<secret>
+ *   aistats_v1_sk_<kid>_<secret>
  *
  * - aistats = project namespace
  * - v1      = version
@@ -91,7 +91,7 @@ function parseV2(token: string) {
     if (parts.length < 5) return null;
 
     const [_, v, kTag, kid, ...rest] = parts;
-    if (v !== "v1" || kTag !== "k") return null;
+    if (v !== "v1" || kTag !== "sk") return null;
 
     const secret = rest.join("_"); // allow underscores inside secret
     if (!kid || !secret) return null;

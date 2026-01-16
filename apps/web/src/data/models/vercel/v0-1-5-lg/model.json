@@ -1,0 +1,17 @@
+{
+  "model_id": "vercel/v0-1-5-lg",
+  "organisation_id": "vercel",
+  "name": "v0 1.5 lg",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

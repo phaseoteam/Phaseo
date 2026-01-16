@@ -34,28 +34,49 @@ type RecentModel = {
 };
 
 async function getRecentModels(apiProviderId: string): Promise<RecentModel[]> {
-	const supabase = createClient();
+        const supabase = createClient();
 
-	try {
-		const { data, error } = await supabase
-			.from("data_api_provider_models")
-			.select(
-				"model_id, created_at, is_active_gateway, data_models (name, organisation_id, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name))"
-			)
-			.eq("api_provider_id", apiProviderId)
-			.order("created_at", { ascending: false })
-			.limit(5);
+        try {
+                const { data: providerModels, error } = await supabase
+                        .from("data_api_provider_models")
+                        .select("internal_model_id, created_at, is_active_gateway")
+                        .eq("provider_id", apiProviderId)
+                        .order("created_at", { ascending: false })
+                        .limit(5);
 
-		if (error) {
-			console.error("Error fetching recent models:", error);
-			return [];
-		}
+                if (error) {
+                        console.error("Error fetching recent models:", error);
+                        return [];
+                }
 
-		return (data || []) as RecentModel[];
-	} catch (err) {
-		console.error("Unexpected error fetching recent models:", err);
-		return [];
-	}
+                const modelIds = Array.from(
+                        new Set((providerModels ?? []).map((row) => row.internal_model_id).filter(Boolean))
+                );
+                const { data: models } = await supabase
+                        .from("data_models")
+                        .select("model_id, name, organisation_id, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)")
+                        .in("model_id", modelIds);
+
+                const modelMap = new Map<string, DataModelRelation>();
+                for (const model of models ?? []) {
+                        if (!model.model_id) continue;
+                        modelMap.set(model.model_id, {
+                                name: model.name ?? null,
+                                organisation_id: model.organisation_id ?? null,
+                                organisation: model.organisation ?? null,
+                        });
+                }
+
+                return (providerModels ?? []).map((row: any) => ({
+                        model_id: row.internal_model_id,
+                        created_at: row.created_at,
+                        is_active_gateway: row.is_active_gateway,
+                        data_models: row.internal_model_id ? modelMap.get(row.internal_model_id) ?? null : null,
+                })) as RecentModel[];
+        } catch (err) {
+                console.error("Unexpected error fetching recent models:", err);
+                return [];
+        }
 }
 
 async function getRecentTokenCount(apiProviderId: string): Promise<number> {

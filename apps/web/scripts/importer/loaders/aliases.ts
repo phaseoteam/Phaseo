@@ -29,15 +29,15 @@ export async function loadAliases(tracker: ChangeTracker) {
         touched = true;
 
         if (isDryRun()) {
-            logWrite("public.data_api_aliases", "UPSERT", row, { onConflict: "alias_slug" });
+            logWrite("public.data_api_model_aliases", "UPSERT", row, { onConflict: "alias_slug" });
             continue;
         }
 
         const res = await supa
-            .from("data_api_aliases")
+            .from("data_api_model_aliases")
             .upsert(row, { onConflict: "alias_slug" });
 
-        assertOk(res, "upsert data_api_aliases");
+        assertOk(res, "upsert data_api_model_aliases");
     }
 
     const deletions = tracker.getDeleted(DIR_ALIASES);
@@ -45,5 +45,5 @@ export async function loadAliases(tracker: ChangeTracker) {
 
     if (!touched) return;
 
-    await pruneRowsByColumn(supa, "data_api_aliases", "alias_slug", aliasSlugs, "data_api_aliases");
+    await pruneRowsByColumn(supa, "data_api_model_aliases", "alias_slug", aliasSlugs, "data_api_model_aliases");
 }

@@ -2,6 +2,7 @@
 // Maps surface IDs to surface implementations
 
 import type { Surface, SurfaceId } from "./types";
+import type { Endpoint } from "@core/types";
 import { openaiCompatSurface } from "./openai-compat";
 import { anthropicSurface } from "./anthropic";
 
@@ -10,8 +11,16 @@ import { anthropicSurface } from "./anthropic";
  * All available surfaces for executing requests
  */
 export const SURFACES: Record<SurfaceId, Surface> = {
-	openai_compat: openaiCompatSurface,
-	anthropic: anthropicSurface,
+    openai_compat: openaiCompatSurface,
+    anthropic: anthropicSurface,
+};
+
+const SURFACE_BY_PROVIDER: Record<string, SurfaceId> = {
+    anthropic: "anthropic",
+};
+
+const SURFACE_BY_PROVIDER_ENDPOINT: Record<string, SurfaceId> = {
+    // "provider:endpoint": "surfaceId"
 };
 
 /**
@@ -38,11 +47,14 @@ export function getSurface(surfaceId: SurfaceId): Surface {
  * @returns Surface ID to use for this provider
  */
 export function getSurfaceIdForProvider(providerId: string): SurfaceId {
-	if (providerId === "anthropic") {
-		return "anthropic";
-	}
-
-	// Everyone else uses OpenAI-compatible surface
-	// This includes: openai, groq, deepseek, together, fireworks, mistral, etc.
-	return "openai_compat";
+        return SURFACE_BY_PROVIDER[providerId] ?? "openai_compat";
 }
+
+export function getSurfaceIdForProviderAndEndpoint(
+        providerId: string,
+        endpoint: Endpoint
+): SurfaceId {
+        const key = `${providerId}:${endpoint}`;
+        return SURFACE_BY_PROVIDER_ENDPOINT[key] ?? getSurfaceIdForProvider(providerId);
+}
+

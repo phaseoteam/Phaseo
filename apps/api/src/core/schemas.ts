@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { Endpoint } from "./types";
 
+const ProviderRoutingSchema = z.object({
+    order: z.array(z.string()).optional(),
+    only: z.array(z.string()).optional(),
+    ignore: z.array(z.string()).optional(),
+}).optional();
+
 // Batch schema
 export const BatchSchema = z.object({
     input_file_id: z.string().min(1),
@@ -8,6 +14,7 @@ export const BatchSchema = z.object({
     completion_window: z.string().optional(),
     metadata: z.record(z.any()).optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type BatchRequest = z.infer<typeof BatchSchema>;
 
@@ -53,6 +60,7 @@ export const ResponsesSchema = z.object({
     usage: z.boolean().optional(),
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 }).passthrough();
 export type ResponsesRequest = z.infer<typeof ResponsesSchema>;
 
@@ -67,6 +75,7 @@ export const EmbeddingsSchema = z.object({
     dimensions: z.number().int().positive().optional(),
     user: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type EmbeddingsRequest = z.infer<typeof EmbeddingsSchema>;
 
@@ -206,6 +215,7 @@ export const ChatCompletionsSchema = z.object({
 
     // Will be implemented in future, for now, standard tier only
     service_tier: z.enum(["flex", "standard", "priority"]).optional().default("standard"),
+    provider: ProviderRoutingSchema,
 });
 
 export type ChatCompletionsRequest = z.infer<typeof ChatCompletionsSchema>;
@@ -264,7 +274,7 @@ const AnthropicToolChoiceSchema = z.union([
 ]);
 
 export const AnthropicMessagesSchema = z.object({
-	model: z.string().min(1),
+        model: z.string().min(1),
 	messages: z.array(
 		z.object({
 			role: z.enum(["user", "assistant"]),
@@ -285,6 +295,7 @@ export const AnthropicMessagesSchema = z.object({
         usage: z.boolean().optional(),
         meta: z.boolean().optional(),
         echo_upstream_request: z.boolean().optional(),
+        provider: ProviderRoutingSchema,
 }).passthrough();
 
 export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesSchema>;
@@ -300,6 +311,7 @@ export const ImagesGenerationSchema = z.object({
     style: z.string().optional(),
     user: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
 
@@ -315,6 +327,7 @@ export const ImagesEditSchema = z.object({
     meta: z.boolean().optional(),
     usage: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type ImagesEditRequest = z.infer<typeof ImagesEditSchema>;
 
@@ -323,6 +336,7 @@ export const ModerationsSchema = z.object({
     model: z.string().min(1),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
     input: z.union([
         z.string(),
         z.array(
@@ -358,6 +372,7 @@ export const AudioSpeechSchema = z.object({
     voice: z.string().optional(),
     format: z.enum(["mp3", "wav", "ogg", "aac"]).optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type AudioSpeechRequest = z.infer<typeof AudioSpeechSchema>;
 
@@ -368,6 +383,7 @@ export const AudioTranscriptionSchema = z.object({
     audio_b64: z.string().optional(),
     language: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type AudioTranscriptionRequest = z.infer<typeof AudioTranscriptionSchema>;
 
@@ -380,6 +396,7 @@ export const AudioTranslationSchema = z.object({
     prompt: z.string().optional(),
     temperature: z.number().min(0).max(2).optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
 
@@ -390,6 +407,7 @@ export const VideoGenerationSchema = z.object({
     duration: z.number().int().min(1).max(120).optional(),
     ratio: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type VideoGenerationRequest = z.infer<typeof VideoGenerationSchema>;
 
@@ -399,15 +417,43 @@ export const OcrSchema = z.object({
     image: z.string().min(1), // URL or base64
     language: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 });
 export type OcrRequest = z.infer<typeof OcrSchema>;
 
 // Music Generate schema
 export const MusicGenerateSchema = z.object({
     model: z.string().min(1),
-    prompt: z.string().min(1),
+    prompt: z.string().optional(),
     duration: z.number().int().positive().optional(),
     format: z.enum(["mp3", "wav", "ogg", "aac"]).optional(),
+    provider: ProviderRoutingSchema,
+    suno: z.object({
+        prompt: z.string().optional(),
+        style: z.string().optional(),
+        title: z.string().optional(),
+        customMode: z.boolean().optional(),
+        instrumental: z.boolean().optional(),
+        personaId: z.string().optional(),
+        model: z.string().optional(),
+        negativeTags: z.string().optional(),
+        vocalGender: z.enum(["m", "f"]).optional(),
+        styleWeight: z.number().min(0).max(1).optional(),
+        weirdnessConstraint: z.number().min(0).max(1).optional(),
+        audioWeight: z.number().min(0).max(1).optional(),
+        callBackUrl: z.string().url().optional(),
+    }).optional(),
+    elevenlabs: z.object({
+        prompt: z.string().optional(),
+        composition_plan: z.any().optional(),
+        music_length_ms: z.number().int().positive().optional(),
+        model_id: z.string().optional(),
+        force_instrumental: z.boolean().optional(),
+        store_for_inpainting: z.boolean().optional(),
+        with_timestamps: z.boolean().optional(),
+        sign_with_c2pa: z.boolean().optional(),
+        output_format: z.string().optional(),
+    }).optional(),
     echo_upstream_request: z.boolean().optional(),
 });
 export type MusicGenerateRequest = z.infer<typeof MusicGenerateSchema>;

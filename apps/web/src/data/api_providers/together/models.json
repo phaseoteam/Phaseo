@@ -1,0 +1,933 @@
+[
+  {
+    "api_model_id": "arcee-ai/coder-large",
+    "provider_api_model_id": "together:arcee-ai/coder-large",
+    "provider_model_slug": null,
+    "internal_model_id": "arcee-ai/coder-large",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "arcee-ai/maestro-reasoning",
+    "provider_api_model_id": "together:arcee-ai/maestro-reasoning",
+    "provider_model_slug": null,
+    "internal_model_id": "arcee-ai/maestro-reasoning",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "arcee-ai/spotlight",
+    "provider_api_model_id": "together:arcee-ai/spotlight",
+    "provider_model_slug": null,
+    "internal_model_id": "arcee-ai/spotlight",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "arcee-ai/trinity-mini",
+    "provider_api_model_id": "together:arcee-ai/trinity-mini",
+    "provider_model_slug": null,
+    "internal_model_id": "arcee-ai/trinity-mini-2025-12-01",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-12-01T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "arcee-ai/virtuoso-large",
+    "provider_api_model_id": "together:arcee-ai/virtuoso-large",
+    "provider_model_slug": null,
+    "internal_model_id": "arcee-ai/virtuoso-large",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepcogito/cogito-v2-preview-llama-109b-moe",
+    "provider_api_model_id": "together:deepcogito/cogito-v2-preview-llama-109b-moe",
+    "provider_model_slug": null,
+    "internal_model_id": "deepcogito/cogito-v2-preview-llama-109b-moe",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepcogito/cogito-v2-preview-llama-70b",
+    "provider_api_model_id": "together:deepcogito/cogito-v2-preview-llama-70b",
+    "provider_model_slug": null,
+    "internal_model_id": "deepcogito/cogito-v2-preview-llama-70b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-chat-v3-0324",
+    "provider_api_model_id": "together:deepseek/deepseek-chat-v3-0324",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-chat-v3-0324",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-r1-0528",
+    "provider_api_model_id": "together:deepseek/deepseek-r1-0528",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-r1-0528",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-r1-2025-05-28",
+    "provider_api_model_id": "together:deepseek/deepseek-r1-2025-05-28",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-r1-2025-05-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-05-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-r1-distill-llama-70b",
+    "provider_api_model_id": "together:deepseek/deepseek-r1-distill-llama-70b",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-r1-distill-llama-70b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "essential-ai/rnj-1-2025-12-06",
+    "provider_api_model_id": "together:essential-ai/rnj-1-2025-12-06",
+    "provider_model_slug": null,
+    "internal_model_id": "essential-ai/rnj-1-2025-12-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-12-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3n-e4b-it",
+    "provider_api_model_id": "together:google/gemma-3n-e4b-it",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3n-e4b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
+    "provider_api_model_id": "together:meta/llama-3-3-70b-instruct-2024-12-06",
+    "provider_model_slug": null,
+    "internal_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2024-12-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-4-maverick-2025-04-05",
+    "provider_api_model_id": "together:meta/llama-4-maverick-2025-04-05",
+    "provider_model_slug": null,
+    "internal_model_id": "meta/llama-4-maverick-2025-04-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-04-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-4-scout-2025-04-05",
+    "provider_api_model_id": "together:meta/llama-4-scout-2025-04-05",
+    "provider_model_slug": null,
+    "internal_model_id": "meta/llama-4-scout-2025-04-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-04-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.1-405b-instruct",
+    "provider_api_model_id": "together:meta-llama/llama-3.1-405b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.1-405b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.1-70b-instruct",
+    "provider_api_model_id": "together:meta-llama/llama-3.1-70b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.1-70b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.2-11b-vision-instruct",
+    "provider_api_model_id": "together:meta-llama/llama-3.2-11b-vision-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.2-11b-vision-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.2-3b-instruct",
+    "provider_api_model_id": "together:meta-llama/llama-3.2-3b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.2-3b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "provider_api_model_id": "together:meta-llama/llama-3.3-70b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3-8b-instruct",
+    "provider_api_model_id": "together:meta-llama/llama-3-8b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3-8b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-4-maverick",
+    "provider_api_model_id": "together:meta-llama/llama-4-maverick",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-4-maverick",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-4-scout",
+    "provider_api_model_id": "together:meta-llama/llama-4-scout",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-4-scout",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-guard-2-8b",
+    "provider_api_model_id": "together:meta-llama/llama-guard-2-8b",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-guard-2-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/ministral-14b-2512",
+    "provider_api_model_id": "together:mistral/ministral-14b-2512",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/ministral-14b-2512",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/ministral-3-14b-2025-12-02",
+    "provider_api_model_id": "together:mistral/ministral-3-14b-2025-12-02",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/ministral-3-14b-2025-12-02",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-7b-instruct",
+    "provider_api_model_id": "together:mistral/mistral-7b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/mistral-7b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-7b-instruct-v0.2",
+    "provider_api_model_id": "together:mistral/mistral-7b-instruct-v0.2",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/mistral-7b-instruct-v0.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-7b-instruct-v0.3",
+    "provider_api_model_id": "together:mistral/mistral-7b-instruct-v0.3",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/mistral-7b-instruct-v0.3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-small-24b-instruct-2501",
+    "provider_api_model_id": "together:mistral/mistral-small-24b-instruct-2501",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/mistral-small-24b-instruct-2501",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mixtral-8x7b-instruct",
+    "provider_api_model_id": "together:mistral/mixtral-8x7b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/mixtral-8x7b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshot-ai/kimi-k2-0905",
+    "provider_api_model_id": "together:moonshot-ai/kimi-k2-0905",
+    "provider_model_slug": null,
+    "internal_model_id": "moonshot-ai/kimi-k2-0905",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshot-ai/kimi-k2-instruct-0905",
+    "provider_api_model_id": "together:moonshot-ai/kimi-k2-instruct-0905",
+    "provider_model_slug": null,
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-09-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "provider_api_model_id": "together:moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "provider_model_slug": null,
+    "internal_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-11-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "nvidia/nemotron-nano-9b-v2",
+    "provider_api_model_id": "together:nvidia/nemotron-nano-9b-v2",
+    "provider_model_slug": null,
+    "internal_model_id": "nvidia/nemotron-nano-9b-v2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-120b-2025-08-05",
+    "provider_api_model_id": "together:openai/gpt-oss-120b-2025-08-05",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-oss-120b-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-20b-2025-08-05",
+    "provider_api_model_id": "together:openai/gpt-oss-20b-2025-08-05",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-oss-20b-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen-2.5-72b-instruct",
+    "provider_api_model_id": "together:qwen/qwen-2.5-72b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen-2.5-72b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen-2.5-7b-instruct",
+    "provider_api_model_id": "together:qwen/qwen-2.5-7b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen-2.5-7b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen2-5-vl-72b-instruct-2025-01-26",
+    "provider_api_model_id": "together:qwen/qwen2-5-vl-72b-instruct-2025-01-26",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen2-5-vl-72b-instruct-2025-01-26",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-01-26T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-2025-04-29",
+    "provider_api_model_id": "together:qwen/qwen3-235b-a22b-2025-04-29",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-235b-a22b-2025-04-29",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-04-29T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "together:qwen/qwen3-235b-a22b-2507",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-thinking-2507-2025-07-25",
+    "provider_api_model_id": "together:qwen/qwen3-235b-a22b-thinking-2507-2025-07-25",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507-2025-07-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-07-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
+    "provider_api_model_id": "together:qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-07-22T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
+    "provider_api_model_id": "together:qwen/qwen3-next-80b-a3b-thinking",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-32b-instruct",
+    "provider_api_model_id": "together:qwen/qwen3-vl-32b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-vl-32b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-8b-instruct",
+    "provider_api_model_id": "together:qwen/qwen3-vl-8b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-vl-8b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4-6-2025-09-30",
+    "provider_api_model_id": "together:z-ai/glm-4-6-2025-09-30",
+    "provider_model_slug": null,
+    "internal_model_id": "z-ai/glm-4-6-2025-09-30",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-09-30T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

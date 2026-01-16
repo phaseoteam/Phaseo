@@ -88,36 +88,37 @@ export default async function Page({
 }) {
 	const { apiProvider } = await params;
 
-        const models = (await getAPIProviderModelsCached(
-                apiProvider,
-                "moderations"
-        )) as APIProviderModels[];
-        const helperText =
-                "Models can support multiple endpoints. We group them by model and list every supported API route.";
+	const models = (await getAPIProviderModelsCached(
+		apiProvider,
+		"moderations"
+	)) as APIProviderModels[];
+	const helperText =
+		"Models can support multiple endpoints. We group them by model and list every supported API route.";
 
-        return (
-                <APIProviderDetailShell apiProviderId={apiProvider}>
-                        <ModelTypeHeader
-                                title="Moderation models"
-                                description="Safety and content filtering models for policy enforcement."
-                                helper={helperText}
-                                count={models.length}
-                                icon={ShieldCheck}
-                                accentClass="bg-rose-50 text-rose-700 border-rose-100"
-                                badgeClass="bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200"
-                        />
+	return (
+		<APIProviderDetailShell apiProviderId={apiProvider}>
+			<ModelTypeHeader
+				title="Moderation models"
+				description="Safety and content filtering models for policy enforcement."
+				helper={helperText}
+				count={models.length}
+				icon={ShieldCheck}
+				accentClass="bg-rose-50 text-rose-700 border-rose-100"
+				badgeClass="bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200"
+			/>
 
-                        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                                {(!models || models.length === 0) && (
-                                        <Empty className="col-span-full">
+			<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+				{(!models || models.length === 0) && (
+					<Empty className="col-span-full">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<FilePlus />
 							</EmptyMedia>
 							<EmptyTitle>No models found</EmptyTitle>
-                                                        <EmptyDescription>
-                                                                There are no moderation models for this provider.
-                                                        </EmptyDescription>
+							<EmptyDescription>
+								There are no moderation models for this
+								provider.
+							</EmptyDescription>
 						</EmptyHeader>
 						<EmptyContent>
 							<div className="flex gap-2">

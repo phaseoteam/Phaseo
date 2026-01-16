@@ -22,7 +22,6 @@ export const metadata: Metadata = buildMetadata({
 	],
 });
 
-const PAST_LIMIT = 400;
 const UPCOMING_LIMIT = 64;
 
 export default async function Page() {
@@ -31,7 +30,7 @@ export default async function Page() {
 
 	const { past: pastEvents, future: upcomingEvents } =
 		await getRecentModelUpdatesSplit({
-			limit: PAST_LIMIT,
+			pastMonths: 12,
 			upcomingLimit: UPCOMING_LIMIT,
 		});
 

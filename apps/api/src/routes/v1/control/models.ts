@@ -6,16 +6,24 @@ import { guardAuth, type GuardErr } from "@pipeline/before/guards";
 import { json, withRuntime } from "@/routes/utils";
 
 type ProviderModelRow = {
-    model_id: string | null;
-    api_provider_id: string | null;
+    provider_api_model_id: string | null;
+    provider_id: string | null;
+    api_model_id: string | null;
+    internal_model_id: string | null;
     provider_model_slug?: string | null;
-    endpoint: string | null;
     is_active_gateway: boolean | null;
     input_modalities?: unknown;
     output_modalities?: unknown;
     effective_from?: string | null;
     effective_to?: string | null;
+};
+
+type CapabilityRow = {
+    provider_api_model_id: string | null;
+    capability_id: string | null;
     params?: unknown;
+    effective_from?: string | null;
+    effective_to?: string | null;
 };
 
 type ProviderDetails = {
@@ -109,13 +117,28 @@ function toStringArray(value: unknown): string[] {
     return [];
 }
 
-function withinEffectiveWindow(row: ProviderModelRow, now: Date): boolean {
-    if (!row.is_active_gateway) return false;
-    const from = row.effective_from ? new Date(row.effective_from) : null;
-    const to = row.effective_to ? new Date(row.effective_to) : null;
+function withinEffectiveWindow(
+    effectiveFrom: string | null | undefined,
+    effectiveTo: string | null | undefined,
+    now: Date
+): boolean {
+    const from = effectiveFrom ? new Date(effectiveFrom) : null;
+    const to = effectiveTo ? new Date(effectiveTo) : null;
     if (from && Number.isFinite(from.getTime()) && now < from) return false;
     if (to && Number.isFinite(to.getTime()) && now >= to) return false;
     return true;
+}
+
+function toParamsList(value: unknown): string[] {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => (typeof item === "string" ? item.trim() : String(item)))
+            .filter((item) => item.length > 0);
+    }
+    if (value && typeof value === "object") {
+        return Object.keys(value as Record<string, unknown>);
+    }
+    return toStringArray(value);
 }
 
 function parseDate(value: string | null): number | null {
@@ -202,51 +225,84 @@ async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[
         return [];
     }
 
-    const aliasMap = new Map<string, string[]>();
-    const { data: aliases, error: aliasError } = await supabase
-        .from("data_aliases")
-        .select("alias_slug, resolved_model_id")
-        .eq("is_enabled", true)
-        .in("resolved_model_id", modelIds);
-    if (aliasError) {
-        throw new Error(aliasError.message || "Failed to load model aliases");
-    }
-    for (const alias of aliases ?? []) {
-        const resolved = alias?.resolved_model_id;
-        if (!resolved || !alias?.alias_slug) continue;
-        const existing = aliasMap.get(resolved) ?? [];
-        existing.push(alias.alias_slug);
-        aliasMap.set(resolved, existing);
-    }
-    for (const [key, list] of aliasMap) {
-        aliasMap.set(
-            key,
-            list.slice().sort((a, b) => a.localeCompare(b))
-        );
-    }
-
-    let providerQuery = supabase
+    const { data: providerRows, error: providerError } = await supabase
         .from("data_api_provider_models")
         .select(
-            "model_id, api_provider_id, provider_model_slug, endpoint, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to, params"
+            "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
         )
-        .in("model_id", modelIds);
+        .in("internal_model_id", modelIds);
 
-    const { data: providerRows, error: providerError } = await providerQuery;
     if (providerError) {
         throw new Error(providerError.message || "Failed to load provider models");
+    }
+
+    const providerModelIds = (providerRows ?? [])
+        .map((row) => row.provider_api_model_id)
+        .filter((id): id is string => Boolean(id));
+    const { data: capabilityRows, error: capabilityError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id, capability_id, params, effective_from, effective_to")
+        .eq("status", "active")
+        .in("provider_api_model_id", providerModelIds);
+    if (capabilityError) {
+        throw new Error(capabilityError.message || "Failed to load provider capabilities");
+    }
+
+    const aliasMap = new Map<string, string[]>();
+    const apiModelIds = Array.from(
+        new Set((providerRows ?? []).map((row) => row.api_model_id).filter(Boolean))
+    );
+    if (apiModelIds.length) {
+        const { data: aliases, error: aliasError } = await supabase
+            .from("data_api_model_aliases")
+            .select("alias_slug, api_model_id")
+            .eq("is_enabled", true)
+            .in("api_model_id", apiModelIds);
+        if (aliasError) {
+            throw new Error(aliasError.message || "Failed to load model aliases");
+        }
+        const aliasByApiModel = new Map<string, string[]>();
+        for (const alias of aliases ?? []) {
+            if (!alias?.api_model_id || !alias?.alias_slug) continue;
+            const existing = aliasByApiModel.get(alias.api_model_id) ?? [];
+            existing.push(alias.alias_slug);
+            aliasByApiModel.set(alias.api_model_id, existing);
+        }
+        for (const row of providerRows ?? []) {
+            if (!row.internal_model_id || !row.api_model_id) continue;
+            const aliasesForApi = aliasByApiModel.get(row.api_model_id) ?? [];
+            if (!aliasesForApi.length) continue;
+            const existing = aliasMap.get(row.internal_model_id) ?? [];
+            for (const alias of aliasesForApi) {
+                if (!existing.includes(alias)) existing.push(alias);
+            }
+            aliasMap.set(row.internal_model_id, existing);
+        }
+        for (const [key, list] of aliasMap) {
+            aliasMap.set(key, list.slice().sort((a, b) => a.localeCompare(b)));
+        }
     }
 
     const now = new Date();
     const providersByModel = new Map<string, ProviderModelRow[]>();
     const providerIdSet = new Set<string>();
     for (const row of providerRows ?? []) {
-        if (!row?.model_id || !row?.api_provider_id || !row?.endpoint) continue;
-        providerIdSet.add(row.api_provider_id);
-        if (!withinEffectiveWindow(row as ProviderModelRow, now)) continue;
-        const existing = providersByModel.get(row.model_id) ?? [];
+        if (!row?.internal_model_id || !row?.provider_id) continue;
+        providerIdSet.add(row.provider_id);
+        if (!row.is_active_gateway) continue;
+        if (!withinEffectiveWindow(row.effective_from, row.effective_to, now)) continue;
+        const existing = providersByModel.get(row.internal_model_id) ?? [];
         existing.push(row as ProviderModelRow);
-        providersByModel.set(row.model_id, existing);
+        providersByModel.set(row.internal_model_id, existing);
+    }
+
+    const capabilitiesByProviderModel = new Map<string, CapabilityRow[]>();
+    for (const cap of capabilityRows ?? []) {
+        if (!cap?.provider_api_model_id || !cap?.capability_id) continue;
+        if (!withinEffectiveWindow(cap.effective_from, cap.effective_to, now)) continue;
+        const existing = capabilitiesByProviderModel.get(cap.provider_api_model_id) ?? [];
+        existing.push(cap as CapabilityRow);
+        capabilitiesByProviderModel.set(cap.provider_api_model_id, existing);
     }
 
     const providerMap = new Map<string, ProviderDetails>();
@@ -283,23 +339,29 @@ async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[
         }
 
         const providers = providersByModel.get(modelId) ?? [];
-        const providerEntries: CatalogueProvider[] = providers.map((row) => {
-            const providerDetails = providerMap.get(row.api_provider_id!);
-            return {
-                api_provider_id: row.api_provider_id!,
-                api_provider_name: providerDetails?.api_provider_name ?? null,
-                link: providerDetails?.link ?? null,
-                country_code: providerDetails?.country_code ?? null,
-                endpoint: String(row.endpoint) as Endpoint,
-                provider_model_slug: row.provider_model_slug ?? null,
-                is_active_gateway: true,
-                input_modalities: toStringArray(row.input_modalities),
-                output_modalities: toStringArray(row.output_modalities),
-                effective_from: row.effective_from ?? null,
-                effective_to: row.effective_to ?? null,
-                params: toStringArray(row.params),
-            };
-        });
+        const providerEntries: CatalogueProvider[] = [];
+        for (const row of providers) {
+            if (!row.provider_api_model_id) continue;
+            const caps = capabilitiesByProviderModel.get(row.provider_api_model_id) ?? [];
+            const providerDetails = row.provider_id ? providerMap.get(row.provider_id) : null;
+            for (const cap of caps) {
+                if (!cap.capability_id) continue;
+                providerEntries.push({
+                    api_provider_id: row.provider_id!,
+                    api_provider_name: providerDetails?.api_provider_name ?? null,
+                    link: providerDetails?.link ?? null,
+                    country_code: providerDetails?.country_code ?? null,
+                    endpoint: String(cap.capability_id) as Endpoint,
+                    provider_model_slug: row.provider_model_slug ?? null,
+                    is_active_gateway: true,
+                    input_modalities: toStringArray(row.input_modalities),
+                    output_modalities: toStringArray(row.output_modalities),
+                    effective_from: cap.effective_from ?? row.effective_from ?? null,
+                    effective_to: cap.effective_to ?? row.effective_to ?? null,
+                    params: toParamsList(cap.params),
+                });
+            }
+        }
 
         providerEntries.sort((a, b) => {
             const aName = (a.api_provider_name ?? a.api_provider_id).toLowerCase();

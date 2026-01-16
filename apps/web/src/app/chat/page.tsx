@@ -12,10 +12,19 @@ export const metadata: Metadata = buildMetadata({
     keywords: ["AI chat", "playground", "AI Stats", "gateway", "chat UI"],
 });
 
-export default async function ChatPlaygroundPage() {
+type ChatPageProps = {
+    searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function ChatPlaygroundPage({ searchParams }: ChatPageProps) {
+    const resolvedParams = (await searchParams) ?? {};
+    const modelParamRaw = resolvedParams.model;
+    const promptParamRaw = resolvedParams.prompt;
+    const modelParam = Array.isArray(modelParamRaw) ? modelParamRaw[0] : modelParamRaw;
+    const promptParam = Array.isArray(promptParamRaw) ? promptParamRaw[0] : promptParamRaw;
     return (
         <Suspense fallback={<ChatPlaygroundShell />}>
-            <ChatPlaygroundLoader />
+            <ChatPlaygroundLoader modelParam={modelParam ?? null} promptParam={promptParam ?? null} />
         </Suspense>
     );
 }

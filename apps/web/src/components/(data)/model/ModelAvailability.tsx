@@ -5,6 +5,7 @@ import { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlan
 import { Logo } from "@/components/Logo";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import RotatingPricing from "./RotatingPricing";
+import { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 
 function SectionEmpty({
 	title,
@@ -24,18 +25,24 @@ function SectionEmpty({
 interface ModelAvailabilityProps {
 	availability: ModelAvailabilityItem[];
 	subscriptionPlans: SubscriptionPlan[];
+	model: ModelOverviewPage | null;
 }
 
-export default async function ModelAvailability({
+export default function ModelAvailability({
 	availability,
 	subscriptionPlans,
+	model,
 }: ModelAvailabilityProps) {
+	const organisationName = model?.organisation?.name;
+
 	const providerGroups = new Map<
 		string,
 		{
 			providerId: string;
 			providerName: string;
 			items: ModelAvailabilityItem[];
+			slugSet: Set<string>;
+			providerCountry: string | null;
 		}
 	>();
 
@@ -49,18 +56,33 @@ export default async function ModelAvailability({
 		const existing = providerGroups.get(providerId);
 		if (existing) {
 			existing.items.push(item);
+			if (item.provider_model_slug) {
+				existing.slugSet.add(item.provider_model_slug);
+			}
 			continue;
+		}
+		const slugSet = new Set<string>();
+		if (item.provider_model_slug) {
+			slugSet.add(item.provider_model_slug);
 		}
 		providerGroups.set(providerId, {
 			providerId,
 			providerName,
 			items: [item],
+			slugSet,
+			providerCountry: item.provider?.country_code ?? null,
 		});
 	}
 
-	const providerCards = Array.from(providerGroups.values()).sort((a, b) =>
-		a.providerName.localeCompare(b.providerName)
-	);
+	const providerCards = Array.from(providerGroups.values()).sort((a, b) => {
+		const aMatches =
+			organisationName && a.providerName === organisationName;
+		const bMatches =
+			organisationName && b.providerName === organisationName;
+		if (aMatches && !bMatches) return -1;
+		if (!aMatches && bMatches) return 1;
+		return a.providerName.localeCompare(b.providerName);
+	});
 
 	return (
 		<div className="w-full mx-auto space-y-4">
@@ -69,24 +91,8 @@ export default async function ModelAvailability({
 				{providerCards.length > 0 ? (
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 						{providerCards.map((group) => {
-							const slugSet = new Set<string>();
-							let providerCountry: string | null = null;
-
-							for (const item of group.items) {
-								if (item.provider_model_slug) {
-									slugSet.add(item.provider_model_slug);
-								}
-								if (
-									!providerCountry &&
-									item.provider?.country_code
-								) {
-									providerCountry =
-										item.provider.country_code;
-								}
-							}
-
-							const slugs = Array.from(slugSet).sort((a, b) =>
-								a.localeCompare(b)
+							const slugs = Array.from(group.slugSet).sort(
+								(a, b) => a.localeCompare(b)
 							);
 
 							return (
@@ -130,20 +136,20 @@ export default async function ModelAvailability({
 													</p>
 												</div>
 											</div>
-                                                                                {providerCountry ? (
-                                                                                <Link
-                                                                                href={`/countries/${providerCountry.toLowerCase()}`}
-                                                                                aria-label={`View ${providerCountry} details`}
-                                                                                >
-                                                                                <Image
-                                                                                src={`/flags/${providerCountry.toLowerCase()}.svg`}
-                                                                                alt={`${providerCountry} flag`}
-                                                                                width={24}
-                                                                                height={16}
-                                                                                className="h-8 w-auto rounded-sm border"
-                                                                                />
-                                                                                </Link>
-                                                                                ) : null}
+											{group.providerCountry ? (
+												<Link
+													href={`/countries/${group.providerCountry.toLowerCase()}`}
+													aria-label={`View ${group.providerCountry} details`}
+												>
+													<Image
+														src={`/flags/${group.providerCountry.toLowerCase()}.svg`}
+														alt={`${group.providerCountry} flag`}
+														width={24}
+														height={16}
+														className="h-8 w-auto rounded-sm border"
+													/>
+												</Link>
+											) : null}
 										</div>
 									</CardHeader>
 								</Card>

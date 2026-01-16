@@ -1,0 +1,17 @@
+{
+  "model_id": "eleven-labs/scribe-v2-realtime-2025-11-11",
+  "organisation_id": "eleven-labs",
+  "name": "Scribe V2 Realtime",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-11-11T00:00:00",
+  "release_date": "2025-11-11T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

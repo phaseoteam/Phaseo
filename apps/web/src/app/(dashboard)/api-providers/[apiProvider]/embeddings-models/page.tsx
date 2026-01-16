@@ -88,28 +88,28 @@ export default async function Page({
 	params: Promise<{ apiProvider: string }>;
 }) {
 	const { apiProvider } = await params;
-        const models = (await getAPIProviderModelsCached(
-                apiProvider,
-                "embeddings"
-        )) as APIProviderModels[];
-        const helperText =
-                "Models can support multiple endpoints. We group them by model and list every supported API route.";
+	const models = (await getAPIProviderModelsCached(
+		apiProvider,
+		"embeddings"
+	)) as APIProviderModels[];
+	const helperText =
+		"Models can support multiple endpoints. We group them by model and list every supported API route.";
 
-        return (
-                <APIProviderDetailShell apiProviderId={apiProvider}>
-                        <ModelTypeHeader
-                                title="Embedding models"
-                                description="Vector and semantic similarity models for retrieval, clustering, and search."
-                                helper={helperText}
-                                count={models.length}
-                                icon={Braces}
-                                accentClass="bg-slate-50 text-slate-700 border-slate-100"
-                                badgeClass="bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200"
-                        />
+	return (
+		<APIProviderDetailShell apiProviderId={apiProvider}>
+			<ModelTypeHeader
+				title="Embedding models"
+				description="Vector and semantic similarity models for retrieval, clustering, and search."
+				helper={helperText}
+				count={models.length}
+				icon={Braces}
+				accentClass="bg-slate-50 text-slate-700 border-slate-100"
+				badgeClass="bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200"
+			/>
 
-                        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                                {(!models || models.length === 0) && (
-                                        <Empty className="col-span-full">
+			<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+				{(!models || models.length === 0) && (
+					<Empty className="col-span-full">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<FilePlus />

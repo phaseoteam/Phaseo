@@ -41,6 +41,19 @@ export default async function AccountSettingsPage() {
 		createdAt: userRow?.created_at,
 	};
 
+	// Check if user has MFA enabled
+	const { data: mfaData } = await supabase.auth.mfa.listFactors();
+	const mfaFactor = mfaData?.totp?.find((f) => f.status === "verified");
+	const mfaEnabled = !!mfaFactor;
+	const mfaFactorId = mfaFactor?.id ?? null;
+
+	// Check if user has password (OAuth users don't)
+	// OAuth providers: google, github, gitlab, etc.
+	// Email/password users have provider "email" or undefined
+	const provider = authUser.app_metadata?.provider;
+	const isOAuthUser = provider && provider !== "email";
+	const hasPassword = !isOAuthUser;
+
 	// Fetch teams that the user is a member of via team_members -> teams
 	const { data: teamMembersData } = await supabase
 		.from("team_members")
@@ -66,7 +79,13 @@ export default async function AccountSettingsPage() {
 			</header>
 
 			<div className="mt-6">
-				<AccountSettingsClient user={user} teams={teams} />
+				<AccountSettingsClient
+					user={user}
+					teams={teams}
+					mfaEnabled={mfaEnabled}
+					mfaFactorId={mfaFactorId}
+					hasPassword={hasPassword}
+				/>
 			</div>
 		</div>
 	);

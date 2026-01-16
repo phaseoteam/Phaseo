@@ -88,28 +88,28 @@ export default async function Page({
 }) {
 	const { apiProvider } = await params;
 
-        const models = (await getAPIProviderModelsCached(
-                apiProvider,
-                "text"
-        )) as APIProviderModels[];
-        const helperText =
-                "Models can support multiple endpoints. We group them by model and list every supported API route.";
+	const models = (await getAPIProviderModelsCached(
+		apiProvider,
+		"text"
+	)) as APIProviderModels[];
+	const helperText =
+		"Models can support multiple endpoints. We group them by model and list every supported API route.";
 
-        return (
-                <APIProviderDetailShell apiProviderId={apiProvider}>
-                        <ModelTypeHeader
-                                title="Text models"
-                                description="Chat, completion, and instruction-tuned models that output text."
-                                helper={helperText}
-                                count={models.length}
-                                icon={MessageSquareText}
-                                accentClass="bg-blue-50 text-blue-600 border-blue-100"
-                                badgeClass="bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200"
-                        />
+	return (
+		<APIProviderDetailShell apiProviderId={apiProvider}>
+			<ModelTypeHeader
+				title="Text models"
+				description="Chat, completion, and instruction-tuned models that output text."
+				helper={helperText}
+				count={models.length}
+				icon={MessageSquareText}
+				accentClass="bg-blue-50 text-blue-600 border-blue-100"
+				badgeClass="bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200"
+			/>
 
-                        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                                {(!models || models.length === 0) && (
-                                        <Empty className="col-span-full">
+			<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+				{(!models || models.length === 0) && (
+					<Empty className="col-span-full">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<FilePlus />

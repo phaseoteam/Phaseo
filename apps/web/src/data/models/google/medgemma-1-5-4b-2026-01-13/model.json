@@ -1,0 +1,17 @@
+{
+  "model_id": "google/medgemma-1-5-4b-2026-01-13",
+  "organisation_id": "google",
+  "name": "MedGemma 1.5 4B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-13T00:00:00",
+  "release_date": "2026-01-13T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Google Health AI",
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

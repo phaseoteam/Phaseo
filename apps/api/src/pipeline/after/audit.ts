@@ -20,6 +20,31 @@ export async function handleFailureAudit(
     const generationMs = ctx.meta.generation_ms ?? (genMs ? Math.round(genMs) : null);
     const latencyMs = ctx.meta.latency_ms ?? Math.round(beforeMs + execMs);
 
+    const extraJson = (() => {
+        try {
+            return JSON.stringify({
+                stage: "execute",
+                request: {
+                    method: ctx.meta.requestMethod ?? null,
+                    path: ctx.meta.requestPath ?? ctx.requestPath ?? null,
+                    url: ctx.meta.requestUrl ?? null,
+                    user_agent: ctx.meta.userAgent ?? null,
+                    client_ip: ctx.meta.clientIp ?? null,
+                    cf_ray: ctx.meta.cfRay ?? null,
+                },
+                timing: (ctx as any)?.timing ?? null,
+                providers: ctx.providers?.map((p) => ({
+                    provider_id: p.providerId,
+                    base_weight: p.baseWeight,
+                    byok_keys: p.byokMeta?.length ?? 0,
+                    has_pricing: Boolean(p.pricingCard),
+                })),
+            });
+        } catch {
+            return null;
+        }
+    })();
+
     try {
         await auditFailure({
             stage: "execute",
@@ -36,6 +61,15 @@ export async function handleFailureAudit(
             internalLatencyMs,
             byok: (result?.keySource ?? ctx.meta.keySource) === "byok",
             keyId: ctx.meta.apiKeyId,
+            appTitle: ctx.meta.appTitle ?? null,
+            referer: ctx.meta.referer ?? null,
+            requestMethod: ctx.meta.requestMethod ?? null,
+            requestPath: ctx.meta.requestPath ?? ctx.requestPath ?? null,
+            requestUrl: ctx.meta.requestUrl ?? null,
+            userAgent: ctx.meta.userAgent ?? null,
+            clientIp: ctx.meta.clientIp ?? null,
+            cfRay: ctx.meta.cfRay ?? null,
+            extraJson,
         });
     } catch (auditErr) {
         console.error("auditFailure failed", auditErr);
@@ -84,7 +118,34 @@ export async function handleSuccessAudit(
     //     nativeResponseId: nativeResponseId ?? null,
     // });
 
+    const extraJson = (() => {
+        try {
+            return JSON.stringify({
+                stage: "execute",
+                request: {
+                    method: ctx.meta.requestMethod ?? null,
+                    path: ctx.meta.requestPath ?? ctx.requestPath ?? null,
+                    url: ctx.meta.requestUrl ?? null,
+                    user_agent: ctx.meta.userAgent ?? null,
+                    client_ip: ctx.meta.clientIp ?? null,
+                    cf_ray: ctx.meta.cfRay ?? null,
+                },
+                timing: (ctx as any)?.timing ?? null,
+                providers: ctx.providers?.map((p) => ({
+                    provider_id: p.providerId,
+                    base_weight: p.baseWeight,
+                    byok_keys: p.byokMeta?.length ?? 0,
+                    has_pricing: Boolean(p.pricingCard),
+                })),
+                gating: ctx.gating ?? null,
+            });
+        } catch {
+            return null;
+        }
+    })();
+
     try {
+        console.log(`[audit] storing model_id="${ctx.model}" requestId=${ctx.requestId}`);
         await auditSuccess({
             requestId: ctx.requestId,
             teamId: ctx.teamId,
@@ -96,6 +157,12 @@ export async function handleSuccessAudit(
             nativeResponseId: nativeResponseId ?? null,
             appTitle: ctx.meta.appTitle ?? null,
             referer: ctx.meta.referer ?? null,
+            requestMethod: ctx.meta.requestMethod ?? null,
+            requestPath: ctx.meta.requestPath ?? ctx.requestPath ?? null,
+            requestUrl: ctx.meta.requestUrl ?? null,
+            userAgent: ctx.meta.userAgent ?? null,
+            clientIp: ctx.meta.clientIp ?? null,
+            cfRay: ctx.meta.cfRay ?? null,
             generationMs,
             latencyMs,
             internalLatencyMs,
@@ -107,6 +174,7 @@ export async function handleSuccessAudit(
             statusCode,
             throughput: ctx.meta.throughput_tps ?? null,
             keyId: ctx.meta.apiKeyId,
+            extraJson,
         });
     } catch (auditErr) {
         console.error("auditSuccess failed", auditErr);

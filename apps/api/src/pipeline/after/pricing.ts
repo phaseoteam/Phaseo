@@ -13,7 +13,7 @@ export async function loadProviderPricing(
 
         if (!card) {
             const baseModel = ctx.model.split(":")[0];
-            card = await loadPriceCard(result.provider, baseModel, ctx.endpoint);
+            card = await loadPriceCard(result.provider, baseModel, ctx.capability);
         }
 
         return card;

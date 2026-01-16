@@ -1,0 +1,63 @@
+{
+  "name": "@ai-stats/ai-sdk-provider",
+  "version": "0.1.0",
+  "description": "AI Stats Gateway provider for Vercel AI SDK",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rimraf dist",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "ai",
+    "ai-sdk",
+    "vercel",
+    "ai-stats",
+    "gateway",
+    "llm",
+    "openai",
+    "anthropic",
+    "language-model"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@ai-sdk/provider": "^1.0.0",
+    "@ai-sdk/provider-utils": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.6",
+    "@vitest/coverage-v8": "^2.1.8",
+    "ai": "^6.0.5",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8",
+    "zod": "^3.23.8"
+  },
+  "peerDependencies": {
+    "ai": "^4.0.0 || ^5.0.0 || ^6.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-stats/ai-stats",
+    "directory": "packages/ai-sdk-ai-stats"
+  }
+}

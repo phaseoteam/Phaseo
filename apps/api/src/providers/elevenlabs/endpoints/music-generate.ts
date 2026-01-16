@@ -16,30 +16,37 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         return bindings.ELEVENLABS_API_KEY;
     });
 
-    const adapterPayload = buildAdapterPayload(MusicGenerateSchema, args.body, []).adapterPayload as MusicGenerateRequest;
+    const { canonical, adapterPayload } = buildAdapterPayload(MusicGenerateSchema, args.body, []);
+    const typedPayload = adapterPayload as MusicGenerateRequest;
+    const elevenParams = (canonical as MusicGenerateRequest).elevenlabs ?? {};
 
-    // Map duration constraints:
-    // - Sound effects: 0.5 to 30 seconds
-    // - Music: 10 to 300 seconds (5 minutes)
-    // Default to music generation for longer durations
-    const duration = adapterPayload.duration || 30;
-    const isMusicGeneration = duration >= 10;
+    const prompt = elevenParams.prompt ?? typedPayload.prompt ?? null;
+    const compositionPlan = elevenParams.composition_plan ?? null;
+    const musicLengthMs =
+        elevenParams.music_length_ms ??
+        (typeof typedPayload.duration === "number" ? typedPayload.duration * 1000 : null);
 
-    // Prepare request body for ElevenLabs API
     const requestBody: any = {
-        text: adapterPayload.prompt,
-        duration_seconds: duration,
+        prompt,
+        composition_plan: compositionPlan,
+        music_length_ms: musicLengthMs,
+        model_id: elevenParams.model_id ?? "music_v1",
+        force_instrumental: elevenParams.force_instrumental ?? false,
+        store_for_inpainting: elevenParams.store_for_inpainting ?? false,
+        with_timestamps: elevenParams.with_timestamps ?? false,
+        sign_with_c2pa: elevenParams.sign_with_c2pa ?? false,
     };
 
-    // Map format if specified (ElevenLabs outputs MP3 by default)
-    if (adapterPayload.format) {
-        requestBody.output_format = adapterPayload.format === "mp3" ? "mp3_44100_128" : "mp3_44100_128";
+    if (requestBody.prompt == null && requestBody.composition_plan == null) {
+        requestBody.prompt = "";
     }
 
-    // Use appropriate endpoint based on duration/type
-    const endpoint = isMusicGeneration ? "/v1/music/generate" : "/v1/sound-generation";
+    const outputFormat =
+        elevenParams.output_format ??
+        (typedPayload.format ? "mp3_44100_128" : undefined);
+    const query = outputFormat ? `?output_format=${encodeURIComponent(outputFormat)}` : "";
 
-    const res = await fetch(`https://api.elevenlabs.io${endpoint}`, {
+    const res = await fetch(`https://api.elevenlabs.io/v1/music/detailed${query}`, {
         method: "POST",
         headers: {
             "xi-api-key": keyInfo.key,
@@ -59,47 +66,23 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     let normalized: any;
 
     if (res.ok) {
-        // ElevenLabs returns audio binary data or JSON with audio URL
         const contentType = res.headers.get("content-type") || "";
-
         if (contentType.includes("application/json")) {
-            // JSON response with audio URL or metadata
             const json = await res.clone().json().catch(() => null);
-            normalized = {
-                audio_url: json?.audio_url,
-                duration: json?.duration_seconds || duration,
-                format: adapterPayload.format || "mp3",
-            };
-
-            // Track usage if available
+            normalized = json;
             if (json?.usage) {
                 const pricedUsage = computeBill(json.usage, args.pricingCard);
                 bill.cost_cents = pricedUsage.pricing.total_cents;
                 bill.currency = pricedUsage.pricing.currency;
                 bill.usage = pricedUsage;
             }
-        } else if (contentType.includes("audio/")) {
-            // Binary audio response - convert to base64 for transport
+        } else {
             const audioBuffer = await res.clone().arrayBuffer();
             const base64Audio = Buffer.from(audioBuffer).toString("base64");
-
             normalized = {
                 audio_base64: base64Audio,
-                duration: duration,
-                format: adapterPayload.format || "mp3",
                 content_type: contentType,
             };
-
-            // Estimate usage based on duration (rough estimate: ~100 chars per second)
-            const estimatedUsage = {
-                characters: Math.ceil(adapterPayload.prompt.length + duration * 100),
-                duration_seconds: duration,
-            };
-
-            const pricedUsage = computeBill(estimatedUsage, args.pricingCard);
-            bill.cost_cents = pricedUsage.pricing.total_cents;
-            bill.currency = pricedUsage.pricing.currency;
-            bill.usage = pricedUsage;
         }
     }
 

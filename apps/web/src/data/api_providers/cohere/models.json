@@ -1,0 +1,420 @@
+[
+  {
+    "api_model_id": "cohere/c4ai-aya-expanse-32b",
+    "provider_api_model_id": "cohere:cohere/c4ai-aya-expanse-32b",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/c4ai-aya-expanse-32b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/c4ai-aya-expanse-8b",
+    "provider_api_model_id": "cohere:cohere/c4ai-aya-expanse-8b",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/c4ai-aya-expanse-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/c4ai-aya-vision-32b-2025-03-04",
+    "provider_api_model_id": "cohere:cohere/c4ai-aya-vision-32b-2025-03-04",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/c4ai-aya-vision-32b-2025-03-04",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-03-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/c4ai-aya-vision-8b-2025-03-04",
+    "provider_api_model_id": "cohere:cohere/c4ai-aya-vision-8b-2025-03-04",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/c4ai-aya-vision-8b-2025-03-04",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-03-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-a-2025-03-13",
+    "provider_api_model_id": "cohere:cohere/command-a-2025-03-13",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-a-2025-03-13",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-03-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-a-reasoning-2025-08-21",
+    "provider_api_model_id": "cohere:cohere/command-a-reasoning-2025-08-21",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-a-reasoning-2025-08-21",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-08-21T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-a-translate-2025-08-28",
+    "provider_api_model_id": "cohere:cohere/command-a-translate-2025-08-28",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-a-translate-2025-08-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-08-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-a-vision-2025-07-31",
+    "provider_api_model_id": "cohere:cohere/command-a-vision-2025-07-31",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-a-vision-2025-07-31",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-07-31T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-r+-2024-08-30",
+    "provider_api_model_id": "cohere:cohere/command-r+-2024-08-30",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-r+-2024-08-30",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2024-08-30T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-r-08-2024",
+    "provider_api_model_id": "cohere:cohere/command-r-08-2024",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-r-08-2024",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-r-2024-08-30",
+    "provider_api_model_id": "cohere:cohere/command-r-2024-08-30",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-r-2024-08-30",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2024-08-30T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-r7b-12-2024",
+    "provider_api_model_id": "cohere:cohere/command-r7b-12-2024",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-r7b-12-2024",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-r-7b-2024-12-13",
+    "provider_api_model_id": "cohere:cohere/command-r-7b-2024-12-13",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-r-7b-2024-12-13",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2024-12-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/command-r-plus-08-2024",
+    "provider_api_model_id": "cohere:cohere/command-r-plus-08-2024",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/command-r-plus-08-2024",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/embed-english-light-v2-0",
+    "provider_api_model_id": "cohere:cohere/embed-english-light-v2-0",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/embed-english-light-v2-0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/embed-english-light-v3",
+    "provider_api_model_id": "cohere:cohere/embed-english-light-v3",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/embed-english-light-v3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/embed-english-v2-0",
+    "provider_api_model_id": "cohere:cohere/embed-english-v2-0",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/embed-english-v2-0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/embed-english-v3",
+    "provider_api_model_id": "cohere:cohere/embed-english-v3",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/embed-english-v3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/embed-multilingual-light-v3",
+    "provider_api_model_id": "cohere:cohere/embed-multilingual-light-v3",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/embed-multilingual-light-v3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/embed-multilingual-v2-0",
+    "provider_api_model_id": "cohere:cohere/embed-multilingual-v2-0",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/embed-multilingual-v2-0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/embed-multilingual-v3",
+    "provider_api_model_id": "cohere:cohere/embed-multilingual-v3",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/embed-multilingual-v3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "cohere/embed-v4-2025-04-15",
+    "provider_api_model_id": "cohere:cohere/embed-v4-2025-04-15",
+    "provider_model_slug": null,
+    "internal_model_id": "cohere/embed-v4-2025-04-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-04-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

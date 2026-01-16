@@ -89,28 +89,28 @@ export default async function Page({
 }) {
 	const { apiProvider } = await params;
 
-        const models = (await getAPIProviderModelsCached(
-                apiProvider,
-                "image"
-        )) as APIProviderModels[];
-        const helperText =
-                "Models can support multiple endpoints. We group them by model and list every supported API route.";
+	const models = (await getAPIProviderModelsCached(
+		apiProvider,
+		"image"
+	)) as APIProviderModels[];
+	const helperText =
+		"Models can support multiple endpoints. We group them by model and list every supported API route.";
 
-        return (
-                <APIProviderDetailShell apiProviderId={apiProvider}>
-                        <ModelTypeHeader
-                                title="Image models"
-                                description="Image generation and editing models for creative and production workflows."
-                                helper={helperText}
-                                count={models.length}
-                                icon={ImageIcon}
-                                accentClass="bg-violet-50 text-violet-600 border-violet-100"
-                                badgeClass="bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200"
-                        />
+	return (
+		<APIProviderDetailShell apiProviderId={apiProvider}>
+			<ModelTypeHeader
+				title="Image models"
+				description="Image generation and editing models for creative and production workflows."
+				helper={helperText}
+				count={models.length}
+				icon={ImageIcon}
+				accentClass="bg-violet-50 text-violet-600 border-violet-100"
+				badgeClass="bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200"
+			/>
 
-                        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                                {(!models || models.length === 0) && (
-                                        <Empty className="col-span-full">
+			<div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+				{(!models || models.length === 0) && (
+					<Empty className="col-span-full">
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<FilePlus />

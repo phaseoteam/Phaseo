@@ -50,28 +50,28 @@
 									"v1/developers/authentication"
 								]
 							},
-                                                        {
-                                                                "group": "Advanced Usage",
-                                                                "pages": [
-                                                                        "v1/developers/best-practices",
-                                                                        "v1/developers/error-handling",
-                                                                        "v1/developers/rate-limits"
-                                                                ]
-                                                        },
-                                                        {
-                                                                "group": "Gateway Architecture",
-                                                                "pages": [
-                                                                        "v1/developers/gateway-architecture/overview",
-                                                                        "v1/developers/gateway-architecture/ir-and-protocols",
-                                                                        "v1/developers/gateway-architecture/routes",
-                                                                        "v1/developers/gateway-architecture/providers",
-                                                                        "v1/developers/gateway-architecture/observability"
-                                                                ]
-                                                        },
-                                                        {
-                                                                "group": "Research & Methodology",
-                                                                "pages": ["v1/research/citation"]
-                                                        }
+							{
+								"group": "Advanced Usage",
+								"pages": [
+									"v1/developers/best-practices",
+									"v1/developers/error-handling",
+									"v1/developers/rate-limits"
+								]
+							},
+							{
+								"group": "Gateway Architecture",
+								"pages": [
+									"v1/developers/gateway-architecture/overview",
+									"v1/developers/gateway-architecture/ir-and-protocols",
+									"v1/developers/gateway-architecture/routes",
+									"v1/developers/gateway-architecture/providers",
+									"v1/developers/gateway-architecture/observability"
+								]
+							},
+							{
+								"group": "Research & Methodology",
+								"pages": ["v1/research/citation"]
+							}
 						]
 					},
 					{
@@ -79,95 +79,105 @@
 						"icon": "server",
 						"groups": [
 							{
-								"group": "Overview",
+								"group": "API Reference",
 								"pages": [
 									"v1/api-reference/introduction",
 									"v1/api-reference/authentication",
-									"v1/api-reference/errors"
+									"v1/api-reference/errors",
+									{
+										"group": "Generation APIs",
+										"expanded": true,
+										"pages": [
+											{
+												"group": "Text Generation",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/responses",
+													"v1/api-reference/endpoint/chat-completions",
+													"v1/api-reference/endpoint/anthropic-messages"
+												]
+											},
+											{
+												"group": "Images",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/images-generations",
+													"v1/api-reference/endpoint/images-edits"
+												]
+											},
+											{
+												"group": "Audio",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/audio-speech",
+													"v1/api-reference/endpoint/audio-transcriptions",
+													"v1/api-reference/endpoint/audio-translations"
+												]
+											},
+											{
+												"group": "Video",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/video-generation",
+													"v1/api-reference/endpoint/video-status",
+													"v1/api-reference/endpoint/video-content",
+													"v1/api-reference/endpoint/video-delete"
+												]
+											},
+											{
+												"group": "Music",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/music-generate"
+												]
+											}
+										]
+									},
+									{
+										"group": "Utility APIs",
+										"expanded": true,
+										"pages": [
+											{
+												"group": "Batches and Files",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/batches",
+													"v1/api-reference/endpoint/files"
+												]
+											},
+											{
+												"group": "Models",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/models"
+												]
+											},
+											{
+												"group": "Analytics and Health",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/analytics",
+													"v1/api-reference/endpoint/health"
+												]
+											},
+											{
+												"group": "Generations",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/generation"
+												]
+											},
+											{
+												"group": "Access & Billing",
+												"expanded": false,
+												"pages": [
+													"v1/api-reference/endpoint/api-keys",
+													"v1/api-reference/endpoint/credits"
+												]
+											}
+										]
+									}
 								]
-							},
-                                                        {
-                                                                "group": "Responses",
-                                                                "pages": ["v1/api-reference/endpoint/responses"]
-                                                        },
-                                                        {
-                                                                "group": "Anthropic",
-                                                                "pages": ["v1/api-reference/endpoint/anthropic-messages"]
-                                                        },
-                                                        {
-                                                                "group": "Completions",
-                                                                "pages": [
-                                                                        "v1/api-reference/endpoint/chat-completions"
-                                                                ]
-							},
-							{
-								"group": "Images",
-								"pages": [
-									"v1/api-reference/endpoint/images-generations",
-									"v1/api-reference/endpoint/images-edits"
-								]
-							},
-							{
-								"group": "Audio",
-								"pages": [
-									"v1/api-reference/endpoint/audio-speech",
-									"v1/api-reference/endpoint/audio-transcriptions",
-									"v1/api-reference/endpoint/audio-translations"
-								]
-							},
-							{
-								"group": "Video",
-								"pages": [
-									"v1/api-reference/endpoint/video-generation"
-								]
-							},
-							{
-								"group": "Embeddings",
-								"pages": [
-									"v1/api-reference/endpoint/embeddings"
-								]
-							},
-							{
-								"group": "Moderations",
-								"pages": [
-									"v1/api-reference/endpoint/moderations"
-								]
-							},
-							{
-								"group": "Batches & Files",
-								"pages": [
-									"v1/api-reference/endpoint/batches",
-									"v1/api-reference/endpoint/files"
-								]
-							},
-							{
-								"group": "Models",
-								"pages": ["v1/api-reference/endpoint/models"]
-							},
-							{
-								"group": "Analytics",
-								"pages": [
-									"v1/api-reference/endpoint/analytics",
-									"v1/api-reference/endpoint/health"
-								]
-							},
-							{
-								"group": "Credits",
-								"pages": []
-							},
-							{
-								"group": "Generations",
-								"pages": [
-									"v1/api-reference/endpoint/generation"
-								]
-							},
-							{
-								"group": "Providers",
-								"pages": []
-							},
-							{
-								"group": "API Keys",
-								"pages": []
 							}
 						]
 					},
@@ -574,6 +584,12 @@
 			"label": "Dashboard",
 			"href": "https://ai-stats.phaseo.app"
 		}
+	},
+	"metadata": {
+		"timestamp": true
+	},
+	"interaction": {
+		"drilldown": false
 	},
 	"contextual": {
 		"options": [

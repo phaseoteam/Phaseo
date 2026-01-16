@@ -25,7 +25,7 @@ type PassthroughWithPricingOpts = {
      * Called once at the end with the final usage object from the final snapshot frame.
      * You can compute pricing & persist inside (prefer fire-and-forget in caller).
      */
-    onFinalUsage?: (usageRaw: any) => Promise<void> | void;
+    onFinalUsage?: (usageRaw: any, info: { aborted: boolean; sawFinalUsage: boolean }) => Promise<void> | void;
     /**
      * Optional Server-Timing value; if present we'll include it.
      */
@@ -76,7 +76,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             if (firstFrameAt !== null && typeof ctx.meta.generation_ms !== "number") {
                 ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
             }
-            await onFinalUsage(usage);
+            await onFinalUsage(usage, {
+                aborted: reason === "aborted",
+                sawFinalUsage: reason === "complete",
+            });
         } catch (err) {
             console.error("passthroughWithPricing onFinalUsage error:", err, {
                 requestId: ctx.requestId,

@@ -1,0 +1,515 @@
+[
+  {
+    "api_model_id": "allenai/olmo-3-7b-instruct-2025-11-20",
+    "provider_api_model_id": "parasail:allenai/olmo-3-7b-instruct-2025-11-20",
+    "provider_model_slug": null,
+    "internal_model_id": "allenai/olmo-3-7b-instruct-2025-11-20",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-11-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "allenai/olmo-3-7b-think-2025-11-20",
+    "provider_api_model_id": "parasail:allenai/olmo-3-7b-think-2025-11-20",
+    "provider_model_slug": null,
+    "internal_model_id": "allenai/olmo-3-7b-think-2025-11-20",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-11-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "bytedance/ui-tars-1.5-7b",
+    "provider_api_model_id": "parasail:bytedance/ui-tars-1.5-7b",
+    "provider_model_slug": null,
+    "internal_model_id": "bytedance/ui-tars-1.5-7b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3-2024-12-25",
+    "provider_api_model_id": "parasail:deepseek/deepseek-v3-2024-12-25",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3-2-speciale-2025-12-01",
+    "provider_api_model_id": "parasail:deepseek/deepseek-v3-2-speciale-2025-12-01",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-v3-2-speciale-2025-12-01",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-12-01T00:00:00",
+    "effective_to": "2025-12-15T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-27b-2025-03-12",
+    "provider_api_model_id": "parasail:google/gemma-3-27b-2025-03-12",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3-27b-2025-03-12",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-03-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-27b-it",
+    "provider_api_model_id": "parasail:google/gemma-3-27b-it",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3-27b-it",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
+    "provider_api_model_id": "parasail:meta/llama-3-3-70b-instruct-2024-12-06",
+    "provider_model_slug": null,
+    "internal_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2024-12-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-4-maverick-2025-04-05",
+    "provider_api_model_id": "parasail:meta/llama-4-maverick-2025-04-05",
+    "provider_model_slug": null,
+    "internal_model_id": "meta/llama-4-maverick-2025-04-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-04-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "provider_api_model_id": "parasail:meta-llama/llama-3.3-70b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-4-maverick",
+    "provider_api_model_id": "parasail:meta-llama/llama-4-maverick",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-4-maverick",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-small-3.2-24b-instruct",
+    "provider_api_model_id": "parasail:mistral/mistral-small-3.2-24b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "mistral/mistral-small-3.2-24b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshot-ai/kimi-k2-0905",
+    "provider_api_model_id": "parasail:moonshot-ai/kimi-k2-0905",
+    "provider_model_slug": null,
+    "internal_model_id": "moonshot-ai/kimi-k2-0905",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshot-ai/kimi-k2-instruct-0905",
+    "provider_api_model_id": "parasail:moonshot-ai/kimi-k2-instruct-0905",
+    "provider_model_slug": null,
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-09-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "provider_api_model_id": "parasail:moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "provider_model_slug": null,
+    "internal_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-11-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-120b-2025-08-05",
+    "provider_api_model_id": "parasail:openai/gpt-oss-120b-2025-08-05",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-oss-120b-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-20b-2025-08-05",
+    "provider_api_model_id": "parasail:openai/gpt-oss-20b-2025-08-05",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-oss-20b-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "prime-intellect/intellect-3-2025-11-26",
+    "provider_api_model_id": "parasail:prime-intellect/intellect-3-2025-11-26",
+    "provider_model_slug": null,
+    "internal_model_id": "prime-intellect/intellect-3-2025-11-26",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-11-26T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen2-5-vl-72b-instruct-2025-01-26",
+    "provider_api_model_id": "parasail:qwen/qwen2-5-vl-72b-instruct-2025-01-26",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen2-5-vl-72b-instruct-2025-01-26",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-01-26T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "parasail:qwen/qwen3-235b-a22b-2507",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "provider_api_model_id": "parasail:qwen/qwen3-next-80b-a3b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_api_model_id": "parasail:qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-8b-instruct",
+    "provider_api_model_id": "parasail:qwen/qwen3-vl-8b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-vl-8b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "thedrummer/cydonia-24b-v4.1",
+    "provider_api_model_id": "parasail:thedrummer/cydonia-24b-v4.1",
+    "provider_model_slug": null,
+    "internal_model_id": "thedrummer/cydonia-24b-v4.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4-6-2025-09-30",
+    "provider_api_model_id": "parasail:z-ai/glm-4-6-2025-09-30",
+    "provider_model_slug": null,
+    "internal_model_id": "z-ai/glm-4-6-2025-09-30",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-09-30T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4-6v-2025-12-08",
+    "provider_api_model_id": "parasail:z-ai/glm-4-6v-2025-12-08",
+    "provider_model_slug": null,
+    "internal_model_id": "z-ai/glm-4-6v-2025-12-08",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text,video",
+    "output_modalities": "text",
+    "effective_from": "2025-12-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4-7-2025-12-22",
+    "provider_api_model_id": "parasail:z-ai/glm-4-7-2025-12-22",
+    "provider_model_slug": null,
+    "internal_model_id": "z-ai/glm-4-7-2025-12-22",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-12-22T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

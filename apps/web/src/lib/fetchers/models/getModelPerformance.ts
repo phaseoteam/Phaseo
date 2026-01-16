@@ -88,23 +88,33 @@ export async function getModelPerformanceMetrics(
 	modelId: string,
 	hours: number = HOURS_DEFAULT
 ): Promise<ModelPerformanceMetrics> {
-	console.time(`[performance] rpc ${modelId}`);
+	const t0 = Date.now();
 	const client = createAdminClient();
-	const hoursToGenerate = Math.max(1, Math.floor(hours));
+
+	console.log(`[perf] querying model_id="${modelId}"`);
 
 	const { data, error } = await client.rpc("get_model_performance_overview", {
 		p_model_id: modelId,
 	});
-	console.timeEnd(`[performance] rpc ${modelId}`);
+
+	const dur = Date.now() - t0;
+	console.log(`[perf] rpc dur=${dur}ms error=${!!error}`);
 
 	if (error) {
 		throw new Error(error.message ?? "Failed to load model performance");
 	}
 
-	console.time(`[performance] map ${modelId}`);
 	const payload = (data?.[0] ?? {}) as RpcModelPerformanceResponse;
 
-	const summary = mapSummary(payload.last_24h);
+	const last24 = payload.last_24h;
+	const hourlyCnt = payload.hourly_24h?.length ?? 0;
+	const providerCnt = payload.provider_uptime_24h?.length ?? 0;
+	const reqs = Number(last24?.total_requests ?? 0);
+	const success = Number(last24?.successful_requests ?? 0);
+
+	console.log(`[perf] summary reqs=${reqs} success=${success} hourly=${hourlyCnt} providers=${providerCnt}`);
+
+	const summary = mapSummary(last24);
 	const prevSummary = mapSummary(payload.prev_24h);
 	const hourly = (payload.hourly_24h ?? []).map(mapHourlyPoint);
 	const successSeries = (payload.hourly_24h ?? []).map(mapSuccessPoint);
@@ -115,7 +125,9 @@ export async function getModelPerformanceMetrics(
 	const dataRange = mapDataRange(payload.hourly_24h);
 	const cumulativeTokens = toNumber(payload.cumulative_tokens?.total_tokens);
 	const releaseDate = payload.cumulative_tokens?.release_date ?? null;
-	console.timeEnd(`[performance] map ${modelId}`);
+
+	const mapDur = Date.now() - t0 - dur;
+	console.log(`[perf] mapped hourlyReqs=[${hourly.map(h => h.requests).join(",")}]`);
 
 	return {
 		summary,

@@ -1,0 +1,105 @@
+{
+  "key": "openai:openai/gpt-realtime:audio.realtime",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-realtime",
+  "capability_id": "audio.realtime",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 4e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 4e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1.6e-05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "input_audio_tokens",
+      "unit": "audio",
+      "unit_size": 1,
+      "price_per_unit": 3.2e-05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_audio_tokens",
+      "unit": "audio",
+      "unit_size": 1,
+      "price_per_unit": 4e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_audio_tokens",
+      "unit": "audio",
+      "unit_size": 1,
+      "price_per_unit": 6.4e-05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 5e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_image_tokens",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 5e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

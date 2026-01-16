@@ -45,7 +45,7 @@ export async function attemptProvider(
     // Ensure billing is configured (pricing not used in scoring)
     let pricingCard = candidate.pricingCard ?? null;
     if (!pricingCard) {
-        pricingCard = await loadPriceCard(adapter.name, baseModel, ctx.endpoint);
+        pricingCard = await loadPriceCard(adapter.name, baseModel, ctx.capability);
         if (pricingCard) {
             candidate.pricingCard = pricingCard;
         }

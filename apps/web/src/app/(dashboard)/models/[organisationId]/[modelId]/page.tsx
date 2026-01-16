@@ -5,6 +5,7 @@ import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { withUTM } from "@/lib/utm";
+import Script from "next/script";
 import {
 	getModelIdFromParams,
 	type ModelRouteParams,
@@ -107,6 +108,116 @@ export default async function Page({
 
 	const model = await getModelOverviewCached(modelId);
 
+	// Generate structured data and FAQs for SEO
+	const generateStructuredData = () => {
+		if (!model) return null;
+
+		const organisationName = model.organisation?.name || "AI provider";
+		const releaseYear = model.release_date ? new Date(model.release_date).getFullYear() : null;
+		const modalities = [model.input_types, model.output_types].filter(Boolean);
+
+		// Product Schema
+		const productSchema = {
+			"@context": "https://schema.org",
+			"@type": "SoftwareApplication",
+			"name": model.name,
+			"description": `${model.name} is an AI model developed by ${organisationName}. ${modalities.length ? `Supports ${modalities.join(", ")} modalities.` : ""} ${releaseYear ? `Released in ${releaseYear}.` : ""}`,
+			"applicationCategory": "AI Model",
+			"creator": {
+				"@type": "Organization",
+				"name": organisationName,
+			},
+			"offers": {
+				"@type": "Offer",
+				"availability": "https://schema.org/InStock",
+			},
+		};
+
+		// FAQ Schema
+		const faqSchema = {
+			"@context": "https://schema.org",
+			"@type": "FAQPage",
+			"mainEntity": [
+				{
+					"@type": "Question",
+					"name": `What is ${model.name}?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `${model.name} is an AI model developed by ${organisationName}${releaseYear ? ` and released in ${releaseYear}` : ""}. ${modalities.length ? `It supports ${modalities.join(" and ")} modalities.` : ""} You can view benchmarks, pricing, and API access information on AI Stats.`,
+					},
+				},
+				{
+					"@type": "Question",
+					"name": `Who makes ${model.name}?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `${model.name} is developed by ${organisationName}. You can find detailed information about the model, including performance benchmarks, pricing across different providers, and availability on AI Stats.`,
+					},
+				},
+				{
+					"@type": "Question",
+					"name": `How do I access ${model.name}?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `${model.name} can be accessed through various API providers. Check the Availability tab on AI Stats to see which providers offer ${model.name}, compare pricing across different platforms, and view API documentation links.`,
+					},
+				},
+				{
+					"@type": "Question",
+					"name": `What are the benchmarks for ${model.name}?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `${model.name} performance can be evaluated across multiple benchmarks. Visit the Benchmarks tab on AI Stats to see detailed scores, compare against other models, and understand the model's strengths across different tasks and datasets.`,
+					},
+				},
+				{
+					"@type": "Question",
+					"name": `How much does ${model.name} cost?`,
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": `${model.name} pricing varies by provider and endpoint. Check the Pricing tab on AI Stats to compare costs across OpenAI, Anthropic, Google, AWS Bedrock, Azure, and other providers. We show input/output token pricing, cached token rates, and batch API pricing.`,
+					},
+				},
+			],
+		};
+
+		// Breadcrumb Schema
+		const breadcrumbSchema = {
+			"@context": "https://schema.org",
+			"@type": "BreadcrumbList",
+			"itemListElement": [
+				{
+					"@type": "ListItem",
+					"position": 1,
+					"name": "Home",
+					"item": "https://aistats.org",
+				},
+				{
+					"@type": "ListItem",
+					"position": 2,
+					"name": "Models",
+					"item": "https://aistats.org/models",
+				},
+				{
+					"@type": "ListItem",
+					"position": 3,
+					"name": organisationName,
+					"item": `https://aistats.org/models/${model.organisation?.id || ""}`,
+				},
+				{
+					"@type": "ListItem",
+					"position": 4,
+					"name": model.name,
+					"item": `https://aistats.org/models/${modelId}`,
+				},
+			],
+		};
+
+		return { productSchema, faqSchema, breadcrumbSchema };
+	};
+
+	const structuredData = generateStructuredData();
+
 	if (!model) {
 		return (
 			<main className="flex min-h-screen flex-col">
@@ -159,8 +270,35 @@ export default async function Page({
 	// console.log("ModelPage model:", model);
 
 	return (
-		<ModelDetailShell modelId={modelId} tab="overview">
-			<ModelOverview model={model} />
-		</ModelDetailShell>
+		<>
+			{structuredData && (
+				<>
+					<Script
+						id="model-product-schema"
+						type="application/ld+json"
+						dangerouslySetInnerHTML={{
+							__html: JSON.stringify(structuredData.productSchema),
+						}}
+					/>
+					<Script
+						id="model-faq-schema"
+						type="application/ld+json"
+						dangerouslySetInnerHTML={{
+							__html: JSON.stringify(structuredData.faqSchema),
+						}}
+					/>
+					<Script
+						id="model-breadcrumb-schema"
+						type="application/ld+json"
+						dangerouslySetInnerHTML={{
+							__html: JSON.stringify(structuredData.breadcrumbSchema),
+						}}
+					/>
+				</>
+			)}
+			<ModelDetailShell modelId={modelId} tab="overview">
+				<ModelOverview model={model} />
+			</ModelDetailShell>
+		</>
 	);
 }

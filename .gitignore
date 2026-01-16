@@ -15,3 +15,5 @@ turbo-*.log
 .ai-stats-devtools/
 /.cache
 /internal
+# /supabase
+/supabase

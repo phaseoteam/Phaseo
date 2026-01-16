@@ -76,6 +76,8 @@ export default async function Page({
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 
+	console.log(`[perf] modelId=${modelId}`);
+
 	const performanceMetricsPromise = getModelPerformanceMetricsCached(
 		modelId,
 		24

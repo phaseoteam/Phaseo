@@ -1,0 +1,686 @@
+[
+  {
+    "api_model_id": "ai21/jamba-large-1-6-2025-03-06",
+    "provider_api_model_id": "google-vertex:ai21/jamba-large-1-6-2025-03-06",
+    "provider_model_slug": "jamba-large-1.6",
+    "internal_model_id": "ai21/jamba-large-1-6-2025-03-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-03-06T00:00:00",
+    "effective_to": "2025-08-03T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-3.5-haiku-20241022",
+    "provider_api_model_id": "google-vertex:anthropic/claude-3.5-haiku-20241022",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-3.5-haiku-20241022",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "file,image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-3-5-haiku-2024-11-04",
+    "provider_api_model_id": "google-vertex:anthropic/claude-3-5-haiku-2024-11-04",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-3-5-haiku-2024-11-04",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2024-11-04T00:00:00",
+    "effective_to": "2026-02-19T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
+    "provider_api_model_id": "google-vertex:anthropic/claude-3-7-sonnet-2025-02-24",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "file,image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-02-24T00:00:00",
+    "effective_to": "2026-02-19T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-3-haiku-2024-03-13",
+    "provider_api_model_id": "google-vertex:anthropic/claude-3-haiku-2024-03-13",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-3-haiku-2024-03-13",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2024-03-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-3-opus-2024-03-04",
+    "provider_api_model_id": "google-vertex:anthropic/claude-3-opus-2024-03-04",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-3-opus-2024-03-04",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2024-03-04T00:00:00",
+    "effective_to": "2026-01-05T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-haiku-4-5-2025-10-15",
+    "provider_api_model_id": "google-vertex:anthropic/claude-haiku-4-5-2025-10-15",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-haiku-4-5-2025-10-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-10-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4-1-2025-08-05",
+    "provider_api_model_id": "google-vertex:anthropic/claude-opus-4-1-2025-08-05",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-opus-4-1-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "file,image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4-2025-05-21",
+    "provider_api_model_id": "google-vertex:anthropic/claude-opus-4-2025-05-21",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-opus-4-2025-05-21",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "file,image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-05-21T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-opus-4-5-2025-11-24",
+    "provider_api_model_id": "google-vertex:anthropic/claude-opus-4-5-2025-11-24",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-opus-4-5-2025-11-24",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "file,image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-11-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-sonnet-4-2025-05-21",
+    "provider_api_model_id": "google-vertex:anthropic/claude-sonnet-4-2025-05-21",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-sonnet-4-2025-05-21",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "file,image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-05-21T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+    "provider_api_model_id": "google-vertex:anthropic/claude-sonnet-4-5-2025-09-29",
+    "provider_model_slug": null,
+    "internal_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "file,image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-09-29T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-chat-v3.1",
+    "provider_api_model_id": "google-vertex:deepseek/deepseek-chat-v3.1",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-chat-v3.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3-2024-12-25",
+    "provider_api_model_id": "google-vertex:deepseek/deepseek-v3-2024-12-25",
+    "provider_model_slug": null,
+    "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2.0-flash-001",
+    "provider_api_model_id": "google-vertex:google/gemini-2.0-flash-001",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2.0-flash-001",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2.0-flash-lite-001",
+    "provider_api_model_id": "google-vertex:google/gemini-2.0-flash-lite-001",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2.0-flash-lite-001",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2.5-flash-lite-preview-09-2025",
+    "provider_api_model_id": "google-vertex:google/gemini-2.5-flash-lite-preview-09-2025",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2.5-flash-lite-preview-09-2025",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2.5-pro-preview-05-06",
+    "provider_api_model_id": "google-vertex:google/gemini-2.5-pro-preview-05-06",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2.5-pro-preview-05-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-exp-native-audio-thinking-dialog",
+    "provider_api_model_id": "google-vertex:google/gemini-2-5-flash-exp-native-audio-thinking-dialog",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-exp-native-audio-thinking-dialog",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-image-preview",
+    "provider_api_model_id": "google-vertex:google/gemini-2-5-flash-image-preview",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-image-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image,text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-lite-preview-2025-06-17",
+    "provider_api_model_id": "google-vertex:google/gemini-2-5-flash-lite-preview-2025-06-17",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-lite-preview-2025-06-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": "2025-06-17T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-lite-preview-2025-09-25",
+    "provider_api_model_id": "google-vertex:google/gemini-2-5-flash-lite-preview-2025-09-25",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-lite-preview-2025-09-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": "2025-09-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-pro-preview-2025-05-06",
+    "provider_api_model_id": "google-vertex:google/gemini-2-5-pro-preview-2025-05-06",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-pro-preview-2025-05-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-05-06T00:00:00",
+    "effective_to": "2025-07-15T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-3-flash-preview-2025-12-17",
+    "provider_api_model_id": "google-vertex:google/gemini-3-flash-preview-2025-12-17",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-3-flash-preview-2025-12-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": "2025-12-17T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-3-pro-image-preview-2025-11-20",
+    "provider_api_model_id": "google-vertex:google/gemini-3-pro-image-preview-2025-11-20",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-3-pro-image-preview-2025-11-20",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image,text",
+    "effective_from": "2025-11-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-3-pro-preview-2025-11-18",
+    "provider_api_model_id": "google-vertex:google/gemini-3-pro-preview-2025-11-18",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-3-pro-preview-2025-11-18",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": "2025-11-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-4-scout-2025-04-05",
+    "provider_api_model_id": "google-vertex:meta/llama-4-scout-2025-04-05",
+    "provider_model_slug": null,
+    "internal_model_id": "meta/llama-4-scout-2025-04-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": "2025-04-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-3.1-405b-instruct",
+    "provider_api_model_id": "google-vertex:meta-llama/llama-3.1-405b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-3.1-405b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta-llama/llama-4-scout",
+    "provider_api_model_id": "google-vertex:meta-llama/llama-4-scout",
+    "provider_model_slug": null,
+    "internal_model_id": "meta-llama/llama-4-scout",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m2-2025-10-27",
+    "provider_api_model_id": "google-vertex:minimax/minimax-m2-2025-10-27",
+    "provider_model_slug": null,
+    "internal_model_id": "minimax/minimax-m2-2025-10-27",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-10-27T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "provider_api_model_id": "google-vertex:moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "provider_model_slug": null,
+    "internal_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-11-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-120b-2025-08-05",
+    "provider_api_model_id": "google-vertex:openai/gpt-oss-120b-2025-08-05",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-oss-120b-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-oss-20b-2025-08-05",
+    "provider_api_model_id": "google-vertex:openai/gpt-oss-20b-2025-08-05",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-oss-20b-2025-08-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-08-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
+    "provider_api_model_id": "google-vertex:qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-07-22T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "provider_api_model_id": "google-vertex:qwen/qwen3-next-80b-a3b-instruct",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
+    "provider_api_model_id": "google-vertex:qwen/qwen3-next-80b-a3b-thinking",
+    "provider_model_slug": null,
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

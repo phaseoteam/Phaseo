@@ -15,7 +15,7 @@ import { createOpenAICompatibleAdapter } from "./openai-compatible/index";
 import { createUnsupportedAdapter } from "./unsupported";
 import { getSupabaseAdmin } from "@/runtime/env";
 
-// Adapter registry
+// Adapter registry (default per-provider)
 const ADAPTERS: Record<string, ProviderAdapter> = {
     openai: OpenAIAdapter,
     "google-ai-studio": GoogleAIStudioAdapter,
@@ -24,7 +24,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     xiaomi: XiaomiAdapter,
     azure: AzureAdapter,
     ai21: AI21Adapter,
-    mistral: MistralAdapter,
+    mistral: createOpenAICompatibleAdapter("mistral"),
     elevenlabs: ElevenLabsAdapter,
     suno: SunoAdapter,
     alibaba: createOpenAICompatibleAdapter("alibaba"),
@@ -38,7 +38,6 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     deepseek: createOpenAICompatibleAdapter("deepseek"),
     groq: createOpenAICompatibleAdapter("groq"),
     minimax: createOpenAICompatibleAdapter("minimax"),
-    mistral: createOpenAICompatibleAdapter("mistral"),
     moonshotai: createOpenAICompatibleAdapter("moonshotai"),
     "moonshot-ai": createOpenAICompatibleAdapter("moonshotai"), // Alias for database naming
     novitaai: createOpenAICompatibleAdapter("novitaai"),
@@ -59,16 +58,22 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "google-vertex": createUnsupportedAdapter("google-vertex", "vertex_ai_required"),
 };
 
-type CapabilityRow = { api_provider_id: string };
+// Capability-specific adapter overrides (e.g. Mistral OCR)
+const ADAPTERS_BY_CAPABILITY: Partial<Record<Endpoint, Record<string, ProviderAdapter>>> = {
+    ocr: {
+        mistral: MistralAdapter,
+    },
+};
+
+type CapabilityRow = { provider_id: string };
 
 async function loadCapsFromDB(model: string, endpoint: Endpoint): Promise<CapabilityRow[]> {
     const supabase = getSupabaseAdmin();
     const nowISO = new Date().toISOString();
-    const query = supabase
+    const { data: providerModels, error: pmError } = await supabase
         .from("data_api_provider_models")
-        .select("api_provider_id")
+        .select("provider_api_model_id, provider_id, is_active_gateway, effective_from, effective_to")
         .eq("api_model_id", model)
-        .eq("endpoint", endpoint)
         .eq("is_active_gateway", true)
         .or([
             "and(effective_from.is.null,effective_to.is.null)",
@@ -76,26 +81,65 @@ async function loadCapsFromDB(model: string, endpoint: Endpoint): Promise<Capabi
             `and(effective_from.lte.${nowISO},effective_to.is.null)`,
             `and(effective_from.lte.${nowISO},effective_to.gt.${nowISO})`,
         ].join(","));
-    const { data, error } = await query;
+    if (pmError) {
+        console.error("Error loading provider models from DB:", pmError);
+        return [];
+    }
+    const providerModelIds = (providerModels ?? [])
+        .map((row) => row.provider_api_model_id)
+        .filter((id): id is string => Boolean(id));
+    if (!providerModelIds.length) return [];
+
+    const { data: caps, error } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id, capability_id, effective_from, effective_to")
+        .eq("capability_id", endpoint)
+        .eq("status", "active")
+        .in("provider_api_model_id", providerModelIds)
+        .or([
+            "and(effective_from.is.null,effective_to.is.null)",
+            `and(effective_from.is.null,effective_to.gt.${nowISO})`,
+            `and(effective_from.lte.${nowISO},effective_to.is.null)`,
+            `and(effective_from.lte.${nowISO},effective_to.gt.${nowISO})`,
+        ].join(","));
 
     if (error) {
         console.error("Error loading capabilities from DB:", error);
         return [];
     }
-    return (data ?? []) as CapabilityRow[];
+    const providerById = new Map<string, string>();
+    for (const row of providerModels ?? []) {
+        if (row.provider_api_model_id && row.provider_id) {
+            providerById.set(row.provider_api_model_id, row.provider_id);
+        }
+    }
+    const rows: CapabilityRow[] = [];
+    for (const cap of caps ?? []) {
+        const provider_id = providerById.get(cap.provider_api_model_id);
+        if (provider_id) rows.push({ provider_id });
+    }
+    return rows;
 }
 
 export async function providersFor(model: string, endpoint: Endpoint): Promise<ProviderAdapter[]> {
     const rows = await loadCapsFromDB(model, endpoint);
     return rows
-        .map(r => ADAPTERS[r.api_provider_id])
+        .map((r) => adapterFor(r.provider_id, endpoint))
         .filter((a): a is ProviderAdapter => Boolean(a));
 }
 
 export function allProviderNames(): string[] {
-    return Object.keys(ADAPTERS);
+    return Array.from(
+        new Set([
+            ...Object.keys(ADAPTERS),
+            ...Object.values(ADAPTERS_BY_CAPABILITY).flatMap((entry) =>
+                entry ? Object.keys(entry) : []
+            ),
+        ])
+    );
 }
 
-export function adapterById(providerId: string): ProviderAdapter | null {
-    return ADAPTERS[providerId] ?? null;
+export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdapter | null {
+    const override = ADAPTERS_BY_CAPABILITY[endpoint]?.[providerId];
+    return override ?? ADAPTERS[providerId] ?? null;
 }

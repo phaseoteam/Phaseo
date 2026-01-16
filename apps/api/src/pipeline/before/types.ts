@@ -79,6 +79,7 @@ export type ProviderCandidate = {
  */
 export type PipelineContext = {
     endpoint: Endpoint;
+    capability: string;
     requestId: string;
     protocol?: string;
     meta: RequestMeta;

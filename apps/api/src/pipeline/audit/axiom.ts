@@ -17,10 +17,17 @@ export type AxiomArgs = {
     endpoint: Endpoint;
     stream: boolean;
     isByok: boolean;
+    stage?: "before" | "execute" | "after";
 
     // App hints
     appTitle?: string | null;
     referer?: string | null;
+    requestMethod?: string | null;
+    requestPath?: string | null;
+    requestUrl?: string | null;
+    userAgent?: string | null;
+    clientIp?: string | null;
+    cfRay?: string | null;
 
     // Native / HTTP
     nativeResponseId?: string | null;
@@ -43,6 +50,10 @@ export type AxiomArgs = {
         total_tokens?: number | null;
         cached_read_text_tokens?: number | null;
         reasoning_tokens?: number | null;
+        input_audio_tokens?: number | null;
+        output_audio_tokens?: number | null;
+        input_video_tokens?: number | null;
+        output_video_tokens?: number | null;
         // Optional multimodal usage signals
         input_image_count?: number | null;
         output_image_count?: number | null;
@@ -59,6 +70,7 @@ export type AxiomArgs = {
         currency?: "USD" | string | null;
         // To avoid field explosion, we’ll stringify the line items.
         lines_json?: string | null;     // JSON.stringify(payload.usage.pricing.lines) or null
+        lines?: Array<{ dimension?: string; line_nanos?: number | null }> | null;
     } | null;
 
     // Completion
@@ -67,12 +79,47 @@ export type AxiomArgs = {
     // Misc
     env?: string | null;              // NODE_ENV, etc.
     apiVersion?: string | null;
+    extraJson?: string | null;
 };
 
 /** Build the final event shape Axiom will receive.
  *  Keep fields FLAT to avoid exceeding plan limits.
  */
 export function buildAxiomEvent(a: AxiomArgs) {
+    const parseLines = () => {
+        if (Array.isArray(a.pricing?.lines)) return a.pricing?.lines ?? [];
+        if (typeof a.pricing?.lines_json === "string") {
+            try {
+                const parsed = JSON.parse(a.pricing.lines_json);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+        return [];
+    };
+    const lines = parseLines();
+    const lineNanosByDim = new Map<string, number>();
+    for (const line of lines) {
+        const dim = typeof line?.dimension === "string" ? line.dimension : null;
+        if (!dim) continue;
+        const nanos = Number(line?.line_nanos ?? 0);
+        if (!Number.isFinite(nanos)) continue;
+        lineNanosByDim.set(dim, (lineNanosByDim.get(dim) ?? 0) + nanos);
+    }
+    const costInputText = lineNanosByDim.get("input_text_tokens") ?? 0;
+    const costOutputText = lineNanosByDim.get("output_text_tokens") ?? 0;
+    const costInputImage = lineNanosByDim.get("input_image_tokens") ?? 0;
+    const costOutputImage = (lineNanosByDim.get("output_image_tokens") ?? 0) + (lineNanosByDim.get("output_image") ?? 0);
+    const costInputAudio = lineNanosByDim.get("input_audio_tokens") ?? 0;
+    const costOutputAudio = lineNanosByDim.get("output_audio_tokens") ?? 0;
+    const costInputVideo = lineNanosByDim.get("input_video_tokens") ?? 0;
+    const costOutputVideo = (lineNanosByDim.get("output_video_tokens") ?? 0) + (lineNanosByDim.get("output_video_seconds") ?? 0);
+    const costCachedRead = lineNanosByDim.get("cached_read_text_tokens") ?? 0;
+    const costCachedWrite = lineNanosByDim.get("cached_write_text_tokens") ?? 0;
+    const costInputTotal = costInputText + costInputImage + costInputAudio + costInputVideo + costCachedRead;
+    const costOutputTotal = costOutputText + costOutputImage + costOutputAudio + costOutputVideo + costCachedWrite;
+
     // Derived metrics
     const tokensIn = a.usage?.input_text_tokens ?? 0;
     const tokensOut = a.usage?.output_text_tokens ?? 0;
@@ -108,6 +155,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
         endpoint: a.endpoint,
         stream: !!a.stream,
         byok: !!a.isByok,
+        stage: a.stage ?? null,
 
         // upstream/http
         native_response_id: a.nativeResponseId ?? null,
@@ -115,6 +163,12 @@ export function buildAxiomEvent(a: AxiomArgs) {
         success: !!a.success,
         error_code: a.errorCode ?? null,
         error_message: a.errorMessage ?? null,
+        request_method: a.requestMethod ?? null,
+        request_path: a.requestPath ?? null,
+        request_url: a.requestUrl ?? null,
+        user_agent: a.userAgent ?? null,
+        client_ip: a.clientIp ?? null,
+        cf_ray: a.cfRay ?? null,
 
         // timing: surfaced
         generation_ms: a.generationMs ?? null,
@@ -128,6 +182,10 @@ export function buildAxiomEvent(a: AxiomArgs) {
         usage_tokens_total: tokensTot,
         usage_cached_tokens: a.usage?.cached_read_text_tokens ?? null,
         usage_reasoning_tokens: a.usage?.reasoning_tokens ?? null,
+        usage_audio_tokens_in: a.usage?.input_audio_tokens ?? null,
+        usage_audio_tokens_out: a.usage?.output_audio_tokens ?? null,
+        usage_video_tokens_in: a.usage?.input_video_tokens ?? null,
+        usage_video_tokens_out: a.usage?.output_video_tokens ?? null,
         usage_image_input_count: a.usage?.input_image_count ?? null,
         usage_image_output_count: a.usage?.output_image_count ?? (a.usage as any)?.output_image ?? null,
         usage_audio_input_count: a.usage?.input_audio_count ?? null,
@@ -141,6 +199,18 @@ export function buildAxiomEvent(a: AxiomArgs) {
         cost_total_nanos: a.pricing?.total_nanos ?? null,
         cost_currency: a.pricing?.currency ?? "USD",
         pricing_lines_json: a.pricing?.lines_json ?? null,
+        cost_input_tokens_nanos: costInputTotal,
+        cost_output_tokens_nanos: costOutputTotal,
+        cost_input_text_nanos: costInputText,
+        cost_output_text_nanos: costOutputText,
+        cost_input_image_nanos: costInputImage,
+        cost_output_image_nanos: costOutputImage,
+        cost_input_audio_nanos: costInputAudio,
+        cost_output_audio_nanos: costOutputAudio,
+        cost_input_video_nanos: costInputVideo,
+        cost_output_video_nanos: costOutputVideo,
+        cost_cached_read_nanos: costCachedRead,
+        cost_cached_write_nanos: costCachedWrite,
 
         // completion
         finish_reason: a.finishReason ?? null,
@@ -152,6 +222,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
         // misc
         env: a.env ?? getBindings().NODE_ENV ?? null,
         api_version: a.apiVersion ?? null,
+        extra_json: a.extraJson ?? null,
 
         // ingestion time will be set by Axiom automatically
     };

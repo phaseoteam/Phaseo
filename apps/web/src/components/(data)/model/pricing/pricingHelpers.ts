@@ -194,10 +194,14 @@ export function qualityRank(q: string) {
 
 /* ---------- section builder (uses fixes) ---------- */
 export function buildProviderSections(p: ProviderPricing, plan: string): ProviderSections {
-    const rules = p.pricing_rules.filter(r => (r.pricing_plan || "standard") === plan);
+    const now = new Date();
+    const nowMs = now.getTime();
+    const rules = p.pricing_rules.filter(
+        (r) => (r.pricing_plan || "standard") === plan
+    );
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
-        if (pm.key && pm.endpoint) endpointByKey.set(pm.key, pm.endpoint);
+        if (pm.id && pm.endpoint) endpointByKey.set(pm.id, pm.endpoint);
     }
 
     const out: ProviderSections = {
@@ -214,6 +218,23 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         dedupeKey: string;
     };
     const grouped = new Map<string, any[]>();
+    const toMs = (value?: string | null) => {
+        if (!value) return null;
+        const ms = new Date(value).getTime();
+        return Number.isFinite(ms) ? ms : null;
+    };
+    const isCurrentRule = (r: any) => {
+        const from = toMs(r.effective_from);
+        if (from !== null && from > nowMs) return false;
+        const to = toMs(r.effective_to);
+        if (to !== null && to <= nowMs) return false;
+        return true;
+    };
+    const isUpcomingRule = (r: any) => {
+        const from = toMs(r.effective_from);
+        return from !== null && from > nowMs;
+    };
+
     for (const r of rules as any[]) {
         const endpoint = endpointByKey.get(r.model_key) ?? null;
         const matchKey = JSON.stringify(r.match ?? []);
@@ -224,18 +245,51 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
 
     const entries: RuleEntry[] = [];
     for (const [groupKey, group] of grouped) {
-        const sorted = [...group].sort((a, b) => {
+        const currentRules = group.filter(isCurrentRule);
+        const upcomingRules = group.filter(isUpcomingRule);
+        const selectionMode = currentRules.length
+            ? "current"
+            : upcomingRules.length
+            ? "upcoming"
+            : "fallback";
+        const candidates =
+            selectionMode === "current"
+                ? currentRules
+                : selectionMode === "upcoming"
+                ? upcomingRules
+                : group;
+        const sorted = [...candidates].sort((a, b) => {
             if (a.priority !== b.priority) return b.priority - a.priority;
-            const aFrom = a.effective_from ? new Date(a.effective_from).getTime() : 0;
-            const bFrom = b.effective_from ? new Date(b.effective_from).getTime() : 0;
-            return bFrom - aFrom;
+            const aFrom = toMs(a.effective_from);
+            const bFrom = toMs(b.effective_from);
+            if (selectionMode === "upcoming") {
+                return (aFrom ?? Infinity) - (bFrom ?? Infinity);
+            }
+            if (selectionMode === "fallback") {
+                const aTo = toMs(a.effective_to);
+                const bTo = toMs(b.effective_to);
+                if (aTo !== bTo) return (bTo ?? -Infinity) - (aTo ?? -Infinity);
+            }
+            return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
         });
         const current = sorted[0];
-        const base = sorted.find((r) => r.priority < current.priority);
+        const baseCandidates = group.filter((r) => r.priority < current.priority);
+        const base = [...baseCandidates].sort((a, b) => {
+            if (a.priority !== b.priority) return b.priority - a.priority;
+            const aFrom = toMs(a.effective_from);
+            const bFrom = toMs(b.effective_from);
+            return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
+        })[0];
         const endpoint = endpointByKey.get(current.model_key) ?? null;
         const matchKey = JSON.stringify(current.match ?? []);
         const dedupeKey = `${current.meter}|${current.unit}|${current.unit_size}|${matchKey}`;
-        entries.push({ rule: current, base, endpoint, groupKey, dedupeKey });
+        entries.push({
+            rule: current,
+            base,
+            endpoint,
+            groupKey,
+            dedupeKey,
+        });
     }
 
     const hasDiscounts = entries.some(
@@ -261,7 +315,6 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             ? r.match.map((m: any) => ({ op: String(m.op ?? ""), path: String(m.path ?? ""), value: m.value, or_group: m.or_group, and_index: m.and_index }))
             : [];
 
-        if (!current) continue; // core shows now-effective only
         const basePrice = base ? Number(base.price_per_unit ?? 0) : null;
         const basePer1M =
             basePrice != null && unit === "token"
@@ -287,7 +340,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 effFrom: r.effective_from ?? null,
                 effTo: r.effective_to ?? null,
                 ruleId: r.id ?? null,
-                isCurrent: true,
+                isCurrent: current,
             };
             const push = (triple: TokenTriple | undefined, which: "in" | "cached" | "out") => {
                 const t = triple ?? { in: [], cached: [], out: [] };
@@ -354,7 +407,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 effFrom: r.effective_from ?? null,
                 effTo: r.effective_to ?? null,
                 ruleId: r.id ?? null,
-                isCurrent: true,
+                isCurrent: current,
             };
             (out.requests ??= []).push(tier);
             continue;
@@ -397,4 +450,111 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     out.requests?.sort((a, b) => a.price - b.price);
 
     return out;
+}
+
+/* ---------- pricing calculator helpers ---------- */
+
+export interface PricingMeter {
+    meter: string;
+    unit: string;
+    unit_size: number;
+    price_per_unit: string;
+    currency: string;
+    conditions?: any[];
+}
+
+/**
+ * Calculate the cost for a given quantity of usage
+ */
+export function calculateCost(
+    quantity: number,
+    meter: Pick<PricingMeter, 'unit_size' | 'price_per_unit'>
+): number {
+    const unitSize = meter.unit_size || 1;
+    const billableUnits = Math.ceil(quantity / unitSize);
+    const pricePerUnit = parseFloat(meter.price_per_unit) || 0;
+    return billableUnits * pricePerUnit;
+}
+
+/**
+ * Inverse calculation: given a budget, how many units can you get?
+ */
+export function calculateUnits(
+    budget: number,
+    meter: Pick<PricingMeter, 'unit_size' | 'price_per_unit'>
+): number {
+    const pricePerUnit = parseFloat(meter.price_per_unit);
+    const unitSize = meter.unit_size || 1;
+    if (pricePerUnit === 0) return 0;
+    return (budget / pricePerUnit) * unitSize;
+}
+
+/**
+ * Format numbers with K/M/B/T/Q suffixes
+ */
+export function formatQuantity(n: number): string {
+    if (n >= 1_000_000_000_000_000) return `${(n / 1_000_000_000_000_000).toFixed(1)}Q`;
+    if (n >= 1_000_000_000_000) return `${(n / 1_000_000_000_000).toFixed(1)}T`;
+    if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return `${n}`;
+}
+
+/**
+ * Get example quantities for a meter based on its unit type
+ */
+export function getExamplesForMeter(meter: PricingMeter): number[] {
+    const unit = meter.unit.toLowerCase();
+    if (unit.includes("token")) {
+        return [1000, 1_000_000, 1_000_000_000]; // 1K, 1M, 1B
+    } else if (
+        unit.includes("second") ||
+        unit.includes("minute") ||
+        unit.includes("hour")
+    ) {
+        return [1, 10, 60]; // 1s, 10s, 1min
+    } else if (unit.includes("request") || unit.includes("call")) {
+        return [1, 10, 100]; // 1, 10, 100
+    } else {
+        return [1, 10, 100]; // default
+    }
+}
+
+/**
+ * Convert snake_case meter names to Title Case
+ */
+export function formatMeterName(meter: string): string {
+    return meter
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+/**
+ * Get input configuration (type, step, placeholder) based on unit type
+ */
+export function getMeterInputConfig(unit: string): {
+    type: string;
+    step: string;
+    placeholder: string;
+} {
+    const u = unit.toLowerCase();
+
+    if (u.includes("token")) {
+        return { type: "number", step: "1000", placeholder: "e.g., 10000" };
+    }
+    if (u.includes("second")) {
+        return { type: "number", step: "1", placeholder: "e.g., 60" };
+    }
+    if (u.includes("minute")) {
+        return { type: "number", step: "1", placeholder: "e.g., 10" };
+    }
+    if (u.includes("request") || u.includes("call")) {
+        return { type: "number", step: "1", placeholder: "e.g., 100" };
+    }
+    if (u.includes("image")) {
+        return { type: "number", step: "1", placeholder: "e.g., 10" };
+    }
+
+    return { type: "number", step: "1", placeholder: "Enter value..." };
 }

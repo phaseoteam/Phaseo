@@ -1,0 +1,648 @@
+[
+  {
+    "api_model_id": "google/gemini-2.0-flash-001",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2.0-flash-001",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2.0-flash-001",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2.0-flash-lite-001",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2.0-flash-lite-001",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2.0-flash-lite-001",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2.5-flash-lite-preview-09-2025",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2.5-flash-lite-preview-09-2025",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2.5-flash-lite-preview-09-2025",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2.5-flash-preview-09-2025",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2.5-flash-preview-09-2025",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2.5-flash-preview-09-2025",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-0-flash-lite-2025-02-05",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-0-flash-lite-2025-02-05",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-0-flash-lite-2025-02-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-02-05T00:00:00",
+    "effective_to": "2026-02-25T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-0-flash-live-001-2025-04-09",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-0-flash-live-001-2025-04-09",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-0-flash-live-001-2025-04-09",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-04-09T00:00:00",
+    "effective_to": "2025-12-09T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-0-flash-preview-image-generation-2025-05-07",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-0-flash-preview-image-generation-2025-05-07",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-0-flash-preview-image-generation-2025-05-07",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-05-07T00:00:00",
+    "effective_to": "2025-11-14T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-exp-native-audio-thinking-dialog",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-exp-native-audio-thinking-dialog",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-exp-native-audio-thinking-dialog",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-image-preview",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-image-preview",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-image-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-lite-preview-2025-06-17",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-lite-preview-2025-06-17",
+    "provider_model_slug": "gemini-2.5-flash-lite-preview-06-17",
+    "internal_model_id": "google/gemini-2-5-flash-lite-preview-2025-06-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "effective_from": "2025-06-17T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-lite-preview-2025-09-25",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-lite-preview-2025-09-25",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-lite-preview-2025-09-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-09-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-native-audio-preview",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-native-audio-preview",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-native-audio-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-preview-2025-05-20",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-preview-2025-05-20",
+    "provider_model_slug": "gemini-2-5-flash-preview-2025-05-20",
+    "internal_model_id": "google/gemini-2-5-flash-preview-2025-05-20",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "effective_from": "2025-05-20T00:00:00",
+    "effective_to": "2025-07-15T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-preview-2025-09-25",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-preview-2025-09-25",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-preview-2025-09-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-09-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-flash-preview-tts",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-preview-tts",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-flash-preview-tts",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-pro-experimental",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-pro-experimental",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-pro-experimental",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio,file,image,text,video",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-pro-preview-2025-06-05",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-pro-preview-2025-06-05",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-pro-preview-2025-06-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-06-05T00:00:00",
+    "effective_to": "2025-07-15T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-2-5-pro-preview-tts",
+    "provider_api_model_id": "google-ai-studio:google/gemini-2-5-pro-preview-tts",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-2-5-pro-preview-tts",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-3-flash-preview-2025-12-17",
+    "provider_api_model_id": "google-ai-studio:google/gemini-3-flash-preview-2025-12-17",
+    "provider_model_slug": "gemini-3-flash-preview",
+    "internal_model_id": "google/gemini-3-flash-preview-2025-12-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "effective_from": "2025-12-17T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-3-pro-image-preview-2025-11-20",
+    "provider_api_model_id": "google-ai-studio:google/gemini-3-pro-image-preview-2025-11-20",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-3-pro-image-preview-2025-11-20",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,text",
+    "output_modalities": "image,text",
+    "effective_from": "2025-11-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-3-pro-preview-2025-11-18",
+    "provider_api_model_id": "google-ai-studio:google/gemini-3-pro-preview-2025-11-18",
+    "provider_model_slug": "gemini-3-pro-preview",
+    "internal_model_id": "google/gemini-3-pro-preview-2025-11-18",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "effective_from": "2025-11-18T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemini-embedding-001-2025-05-20",
+    "provider_api_model_id": "google-ai-studio:google/gemini-embedding-001-2025-05-20",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemini-embedding-001-2025-05-20",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "effective_from": "2025-05-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-12b-2025-03-12",
+    "provider_api_model_id": "google-ai-studio:google/gemma-3-12b-2025-03-12",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3-12b-2025-03-12",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-03-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-1b-2025-03-12",
+    "provider_api_model_id": "google-ai-studio:google/gemma-3-1b-2025-03-12",
+    "provider_model_slug": "gemma-3-1b-it",
+    "internal_model_id": "google/gemma-3-1b-2025-03-12",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-03-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-27b-2025-03-12",
+    "provider_api_model_id": "google-ai-studio:google/gemma-3-27b-2025-03-12",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3-27b-2025-03-12",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-03-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-4b-2025-03-12",
+    "provider_api_model_id": "google-ai-studio:google/gemma-3-4b-2025-03-12",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3-4b-2025-03-12",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-03-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3n-e2b-2025-06-25",
+    "provider_api_model_id": "google-ai-studio:google/gemma-3n-e2b-2025-06-25",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3n-e2b-2025-06-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-06-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3n-e4b-2025-06-25",
+    "provider_api_model_id": "google-ai-studio:google/gemma-3n-e4b-2025-06-25",
+    "provider_model_slug": null,
+    "internal_model_id": "google/gemma-3n-e4b-2025-06-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-06-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/imagen-3-0-generate-002-2025-01-29",
+    "provider_api_model_id": "google-ai-studio:google/imagen-3-0-generate-002-2025-01-29",
+    "provider_model_slug": null,
+    "internal_model_id": "google/imagen-3-0-generate-002-2025-01-29",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-01-29T00:00:00",
+    "effective_to": "2025-11-10T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/imagen-4-0-fast-generate-001-2025-08-14",
+    "provider_api_model_id": "google-ai-studio:google/imagen-4-0-fast-generate-001-2025-08-14",
+    "provider_model_slug": null,
+    "internal_model_id": "google/imagen-4-0-fast-generate-001-2025-08-14",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-08-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/imagen-4-0-generate-001-2025-08-14",
+    "provider_api_model_id": "google-ai-studio:google/imagen-4-0-generate-001-2025-08-14",
+    "provider_model_slug": null,
+    "internal_model_id": "google/imagen-4-0-generate-001-2025-08-14",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-08-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/imagen-4-0-ultra-generate-001-2025-08-14",
+    "provider_api_model_id": "google-ai-studio:google/imagen-4-0-ultra-generate-001-2025-08-14",
+    "provider_model_slug": null,
+    "internal_model_id": "google/imagen-4-0-ultra-generate-001-2025-08-14",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-08-14T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/learnlm-2-0-flash-experimental-2025-04-17",
+    "provider_api_model_id": "google-ai-studio:google/learnlm-2-0-flash-experimental-2025-04-17",
+    "provider_model_slug": null,
+    "internal_model_id": "google/learnlm-2-0-flash-experimental-2025-04-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-04-17T00:00:00",
+    "effective_to": "2025-11-17T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/veo-2-2025-04-09",
+    "provider_api_model_id": "google-ai-studio:google/veo-2-2025-04-09",
+    "provider_model_slug": null,
+    "internal_model_id": "google/veo-2-2025-04-09",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-04-09T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

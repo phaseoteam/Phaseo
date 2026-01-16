@@ -105,6 +105,38 @@ export async function handleError({
     headers.set("X-Gateway-Error-Attribution", attribution);
 
     const attributionHeaders = req ? readAttributionHeaders(req) : { referer: null, appTitle: null };
+    const requestMeta = (() => {
+        if (!req) {
+            return {
+                requestMethod: null,
+                requestPath: null,
+                requestUrl: null,
+                userAgent: null,
+                clientIp: null,
+                cfRay: null,
+            };
+        }
+        const forwardedFor = req.headers.get("x-forwarded-for");
+        const clientIp =
+            req.headers.get("cf-connecting-ip") ??
+            (forwardedFor ? forwardedFor.split(",")[0]?.trim() : null);
+        const requestUrl = req.url ?? null;
+        const requestPath = (() => {
+            try {
+                return new URL(req.url).pathname;
+            } catch {
+                return null;
+            }
+        })();
+        return {
+            requestMethod: req.method ?? null,
+            requestPath,
+            requestUrl,
+            userAgent: req.headers.get("user-agent"),
+            clientIp,
+            cfRay: req.headers.get("cf-ray"),
+        };
+    })();
     const statusCode = res.status ?? (stage === "before" ? 500 : 502);
     const generationId =
         ctx?.requestId ??
@@ -150,6 +182,23 @@ export async function handleError({
     }
 
     // Audit failure
+    const auditExtraJson = (() => {
+        try {
+            return JSON.stringify({
+                stage,
+                request: requestMeta,
+                timing: ctx ? (ctx as any)?.timing ?? null : body?.timing ?? null,
+                providers: ctx?.providers?.map((p) => ({
+                    provider_id: p.providerId,
+                    base_weight: p.baseWeight,
+                    byok_keys: p.byokMeta?.length ?? 0,
+                    has_pricing: Boolean(p.pricingCard),
+                })),
+            });
+        } catch {
+            return null;
+        }
+    })();
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
@@ -167,6 +216,13 @@ export async function handleError({
         generationMs: ctx ? ((ctx as any)?.timing?.execute?.adapter_ms ? Math.round((ctx as any).timing.execute.adapter_ms) : null) : null,
         byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
         keyId: ctx?.meta?.apiKeyId ?? null,
+        requestMethod: requestMeta.requestMethod,
+        requestPath: requestMeta.requestPath,
+        requestUrl: requestMeta.requestUrl,
+        userAgent: requestMeta.userAgent,
+        clientIp: requestMeta.clientIp,
+        cfRay: requestMeta.cfRay,
+        extraJson: auditExtraJson,
     };
     if (stage === "execute") {
         auditArgs.stream = ctx?.stream;

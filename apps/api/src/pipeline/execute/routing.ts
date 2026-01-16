@@ -2,6 +2,7 @@
 import type { Endpoint } from "@core/types";
 import type { ProviderCandidate } from "../before/types";
 import { readHealthMany, ProviderHealth } from "./health";
+import { stripPrioritySuffix } from "./utils";
 
 type Priority = "default" | "fast" | "quick";
 const PRESETS: Record<Priority, { wSucc: number; wP50: number; wTail: number; wTPS: number; wLoad: number; noise: number; L0: number }> = {
@@ -13,12 +14,12 @@ const PRESETS: Record<Priority, { wSucc: number; wP50: number; wTail: number; wT
 function parsePriority(model: string): { base: string; priority: Priority; strict: boolean } {
     const lower = model.toLowerCase();
     if (lower.endsWith(":fast")) {
-        return { base: model, priority: "fast", strict: true };
+        return { base: stripPrioritySuffix(model), priority: "fast", strict: true };
     }
     if (lower.endsWith(":quick")) {
-        return { base: model, priority: "quick", strict: true };
+        return { base: stripPrioritySuffix(model), priority: "quick", strict: true };
     }
-    return { base: model, priority: "default", strict: false };
+    return { base: stripPrioritySuffix(model), priority: "default", strict: false };
 }
 
 function normalise(v: number, min: number, max: number) {
@@ -57,7 +58,7 @@ export async function routeProviders(
 ): Promise<RoutedCandidate[]> {
     const { base, priority, strict } = parsePriority(ctx.model);
     const preset = PRESETS[priority];
-    const hints = (ctx.body?.provider ?? {}) as { only?: string[]; ignore?: string[] };
+    const hints = (ctx.body?.provider ?? {}) as { order?: string[]; only?: string[]; ignore?: string[] };
 
     let poolCandidates = candidates;
     if (hints.only?.length) {
@@ -69,6 +70,15 @@ export async function routeProviders(
         poolCandidates = poolCandidates.filter(c => !deny.has(c.adapter.name));
     }
     if (!poolCandidates.length) poolCandidates = candidates;
+
+    if (hints.order?.length) {
+        const order = hints.order;
+        const byName = new Map(poolCandidates.map((c) => [c.adapter.name, c]));
+        const ordered = order.map((name) => byName.get(name)).filter(Boolean) as typeof poolCandidates;
+        const orderedSet = new Set(ordered.map((c) => c.adapter.name));
+        const remaining = poolCandidates.filter((c) => !orderedSet.has(c.adapter.name));
+        poolCandidates = [...ordered, ...remaining];
+    }
 
     const providerIds = poolCandidates.map(c => c.adapter.name);
     const healthMap = await readHealthMany(ctx.endpoint, base, providerIds);
@@ -125,9 +135,21 @@ export async function routeProviders(
         return { candidate: v.candidate, adapter: v.adapter, health: h, score };
     });
 
+    if (hints.order?.length) {
+        const order = hints.order ?? [];
+        const byName = new Map(scored.map((entry) => [entry.adapter.name, entry]));
+        const ordered = order.map((name) => byName.get(name)).filter(Boolean) as RoutedCandidate[];
+        const orderedSet = new Set(ordered.map((entry) => entry.adapter.name));
+        const remaining = scored.filter((entry) => !orderedSet.has(entry.adapter.name));
+        if (strict) {
+            return [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
+        }
+        return [...ordered, ...weightedOrder(remaining, (s) => s.score)];
+    }
+
     if (strict) {
         return [...scored].sort((a, b) => b.score - a.score);
     }
 
-    return weightedOrder(scored, s => s.score);
+    return weightedOrder(scored, (s) => s.score);
 }

@@ -9,6 +9,8 @@ import { recordUsageAndCharge } from "../pricing/persist";
 import { shapeUsageForClient } from "../usage";
 import { presentUsageForClient } from "./payload";
 import { emitGatewayRequestEvent } from "@observability/events";
+import { onCallEnd, reportProbeResult, maybeOpenOnRecentErrors } from "../execute/health";
+import { getBaseModel } from "../execute/utils";
 
 export async function handleStreamResponse(
     ctx: PipelineContext,
@@ -161,7 +163,7 @@ export async function handleStreamResponse(
             }
             return next;
         },
-        onFinalUsage: async (usageRaw: any) => {
+        onFinalUsage: async (usageRaw: any, info) => {
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final usage raw", {
                     requestId: ctx.requestId,
@@ -172,6 +174,37 @@ export async function handleStreamResponse(
             }
             // console.log("[DEBUG After Stream] Final usage from stream:", usageRaw);
             const shapedUsage = shapeUsageForClient(usageRaw, { endpoint: ctx.endpoint, body: ctx.body });
+            const baseModel = getBaseModel(ctx.model);
+            const healthContext = (result as any).healthContext ?? null;
+            const isProbe = Boolean(healthContext?.isProbe);
+            const ok =
+                result.upstream.status >= 200 &&
+                result.upstream.status < 400 &&
+                !info?.aborted;
+            await onCallEnd(ctx.endpoint, {
+                provider: result.provider,
+                model: baseModel,
+                ok,
+                latency_ms: ctx.meta.latency_ms ?? 0,
+                generation_ms: ctx.meta.generation_ms ?? null,
+                tokens_in: Number(
+                    shapedUsage?.input_tokens ??
+                        shapedUsage?.prompt_tokens ??
+                        shapedUsage?.input_text_tokens ??
+                        0
+                ),
+                tokens_out: Number(
+                    shapedUsage?.output_tokens ??
+                        shapedUsage?.completion_tokens ??
+                        shapedUsage?.output_text_tokens ??
+                        0
+                ),
+            });
+            if (isProbe) {
+                await reportProbeResult(ctx.endpoint, result.provider, baseModel, ok);
+            } else {
+                await maybeOpenOnRecentErrors(ctx.endpoint, result.provider, baseModel);
+            }
 
             const finalizeFromBill = async (bill: Bill | null | undefined) => {
                 if (!bill) return false;

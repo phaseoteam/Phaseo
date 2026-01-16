@@ -11,8 +11,11 @@ interface SearchRowItemProps {
     href: string;
     logoId?: string;
     flagIso?: string;
+    leftLogoId?: string;
+    rightLogoId?: string;
     keywords: string[];
     onSelect: (href: string) => void;
+    type?: 'benchmark' | 'comparison' | 'default';
 }
 
 export function SearchRowItem({
@@ -22,8 +25,11 @@ export function SearchRowItem({
     href,
     logoId,
     flagIso,
+    leftLogoId,
+    rightLogoId,
     keywords,
     onSelect,
+    type = 'default',
 }: SearchRowItemProps) {
     return (
         <CommandItem
@@ -33,7 +39,14 @@ export function SearchRowItem({
             onSelect={() => onSelect(href)}
             className="flex items-center gap-3 px-3 py-2.5 cursor-pointer aria-selected:bg-zinc-100 dark:aria-selected:bg-zinc-800"
         >
-            <SearchRowIcon logoId={logoId} flagIso={flagIso} title={title} />
+            <SearchRowIcon
+                logoId={logoId}
+                flagIso={flagIso}
+                leftLogoId={leftLogoId}
+                rightLogoId={rightLogoId}
+                title={title}
+                type={type}
+            />
             <div className="flex flex-1 flex-col gap-0.5 min-w-0">
                 <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">
                     {title}
@@ -52,43 +65,80 @@ export function SearchRowItem({
 function SearchRowIcon({
     logoId,
     flagIso,
+    leftLogoId,
+    rightLogoId,
     title,
+    type = 'default',
 }: {
     logoId?: string;
     flagIso?: string;
+    leftLogoId?: string;
+    rightLogoId?: string;
     title: string;
+    type?: 'benchmark' | 'comparison' | 'default';
 }) {
-    // Country flag
+    // Benchmarks: no icon
+    if (type === 'benchmark') {
+        return null;
+    }
+
+    // Comparisons: two logos side by side
+    if (type === 'comparison' && leftLogoId && rightLogoId) {
+        return (
+            <div className="flex items-center gap-1.5 shrink-0">
+                <div className="w-6 h-6 relative flex items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
+                    <div className="w-4 h-4 relative">
+                        <Logo
+                            id={leftLogoId}
+                            alt={`${leftLogoId} logo`}
+                            className="object-contain"
+                            fill
+                        />
+                    </div>
+                </div>
+                <div className="w-6 h-6 relative flex items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
+                    <div className="w-4 h-4 relative">
+                        <Logo
+                            id={rightLogoId}
+                            alt={`${rightLogoId} logo`}
+                            className="object-contain"
+                            fill
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Country flag (gentle rounding with 4:3 aspect ratio)
     if (flagIso) {
         return (
-            <div className="size-[18px] shrink-0 rounded-full overflow-hidden">
+            <div className="h-6 aspect-4/3 relative flex items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800 overflow-hidden">
                 <img
                     src={`/flags/${flagIso}.svg`}
                     alt={title}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover rounded-sm"
                 />
             </div>
         );
     }
 
-    // Organization/Provider logo
+    // Organization/Provider/Model logo (rounded square like ModelCard)
     if (logoId) {
         return (
-            <div className="size-[18px] shrink-0 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                <Logo
-                    id={logoId}
-                    alt={title}
-                    width={18}
-                    height={18}
-                    className="h-[18px] w-[18px] object-contain"
-                    fallback={
-                        <div className="size-[18px] rounded-full bg-zinc-200 dark:bg-zinc-700" />
-                    }
-                />
+            <div className="w-6 h-6 relative flex items-center justify-center rounded-md border border-zinc-200 dark:border-zinc-800">
+                <div className="w-4 h-4 relative">
+                    <Logo
+                        id={logoId}
+                        alt={title}
+                        className="object-contain"
+                        fill
+                    />
+                </div>
             </div>
         );
     }
 
-    // Fallback placeholder
-    return <div className="size-[18px] shrink-0 rounded-full bg-zinc-200 dark:bg-zinc-700" />;
+    // Fallback placeholder (used for items without logos)
+    return <div className="size-6 shrink-0 rounded-md bg-zinc-200 dark:bg-zinc-700" />;
 }

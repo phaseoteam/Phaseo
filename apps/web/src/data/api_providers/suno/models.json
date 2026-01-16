@@ -1,0 +1,97 @@
+[
+  {
+    "api_model_id": "suno/suno-v4-2024-11-19",
+    "provider_api_model_id": "suno:suno/suno-v4-2024-11-19",
+    "provider_model_slug": "V4",
+    "internal_model_id": "suno/suno-v4-2024-11-19",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "effective_from": "2024-11-19T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/suno-v4-5+-2025-07-17",
+    "provider_api_model_id": "suno:suno/suno-v4-5+-2025-07-17",
+    "provider_model_slug": "V4_5PLUS",
+    "internal_model_id": "suno/suno-v4-5+-2025-07-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "effective_from": "2025-07-17T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/suno-v4-5-2025-05-01",
+    "provider_api_model_id": "suno:suno/suno-v4-5-2025-05-01",
+    "provider_model_slug": "V4_5",
+    "internal_model_id": "suno/suno-v4-5-2025-05-01",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "effective_from": "2025-05-01T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/suno-v4-5-all-2025-10-27",
+    "provider_api_model_id": "suno:suno/suno-v4-5-all-2025-10-27",
+    "provider_model_slug": "V4_5ALL",
+    "internal_model_id": "suno/suno-v4-5-all-2025-10-27",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "effective_from": "2025-10-27T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "suno/suno-v5-2025-09-23",
+    "provider_api_model_id": "suno:suno/suno-v5-2025-09-23",
+    "provider_model_slug": "V5",
+    "internal_model_id": "suno/suno-v5-2025-09-23",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "effective_from": "2025-09-23T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "music.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

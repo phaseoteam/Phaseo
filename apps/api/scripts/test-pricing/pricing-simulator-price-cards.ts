@@ -3,8 +3,10 @@ import type { PriceCard, PriceRule } from "../../src/lib/gateway/pricing/types";
 import type { Combo } from "./pricing-simulator-types";
 
 type RawPricingRow = {
-    id: string;
-    model_key: string;
+    rule_id: number;
+    provider_id: string;
+    api_model_id: string;
+    capability_id: string;
     pricing_plan?: string | null;
     meter: string;
     unit?: string | null;
@@ -12,7 +14,6 @@ type RawPricingRow = {
     price_per_unit?: string | number | null;
     currency?: string | null;
     tiering_mode?: string | null;
-    match?: unknown;
     priority?: number | null;
     effective_from: string;
     effective_to?: string | null;
@@ -30,11 +31,15 @@ function parseComboKey(key: string): { provider: string; model: string; endpoint
     return { provider, model, endpoint };
 }
 
-function rowsToPriceCard(key: string, rows: RawPricingRow[]): PriceCard | null {
+function rowsToPriceCard(
+    key: string,
+    rows: RawPricingRow[],
+    conditionMap: Map<number, any[]>
+): PriceCard | null {
     if (!rows.length) return null;
 
     const rules: PriceRule[] = rows.map((row) => ({
-        id: row.id,
+        id: String(row.rule_id),
         pricing_plan: row.pricing_plan ?? "standard",
         meter: row.meter,
         unit: row.unit ?? "unit",
@@ -42,7 +47,7 @@ function rowsToPriceCard(key: string, rows: RawPricingRow[]): PriceCard | null {
         price_per_unit: row.price_per_unit === null || row.price_per_unit === undefined ? "0" : String(row.price_per_unit),
         currency: row.currency ?? "USD",
         tiering_mode: row.tiering_mode ?? null,
-        match: Array.isArray(row.match) ? row.match : [],
+        match: conditionMap.get(row.rule_id) ?? [],
         priority: Number(row.priority ?? 100),
     }));
 
@@ -74,12 +79,18 @@ export async function loadPriceCardsForCombos(combos: Combo[]): Promise<Map<stri
     const supabase = getSupabaseAdmin();
     const nowIso = new Date().toISOString();
 
+    const providers = Array.from(new Set(combos.map((combo) => combo.provider)));
+    const models = Array.from(new Set(combos.map((combo) => combo.model)));
+    const endpoints = Array.from(new Set(combos.map((combo) => combo.endpoint)));
+
     const { data, error } = await supabase
         .from("data_api_pricing_rules")
         .select(
-            "id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, tiering_mode, note, match, priority, effective_from, effective_to, updated_at",
+            "rule_id, provider_id, api_model_id, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, tiering_mode, note, priority, effective_from, effective_to, updated_at",
         )
-        .in("model_key", keys)
+        .in("provider_id", providers)
+        .in("api_model_id", models)
+        .in("capability_id", endpoints)
         .lte("effective_from", nowIso)
         .or(`effective_to.is.null,effective_to.gt.${nowIso}`)
         .order("priority", { ascending: false })
@@ -89,17 +100,42 @@ export async function loadPriceCardsForCombos(combos: Combo[]): Promise<Map<stri
         throw new Error(`Failed to load price cards: ${error.message}`);
     }
 
+    const ruleIds = (data ?? [])
+        .map((row: any) => row.rule_id)
+        .filter((id: any): id is number => Number.isFinite(id));
+    const conditionMap = new Map<number, any[]>();
+    if (ruleIds.length) {
+        const { data: conditions } = await supabase
+            .from("data_api_pricing_conditions")
+            .select("rule_id, path, op, or_group, and_index, value_text, value_number, value_list")
+            .in("rule_id", ruleIds);
+        for (const row of conditions ?? []) {
+            const rid = row.rule_id as number;
+            const arr = conditionMap.get(rid) ?? [];
+            const value = row.value_list ?? row.value_number ?? row.value_text ?? null;
+            arr.push({
+                path: row.path,
+                op: row.op,
+                or_group: row.or_group ?? 0,
+                and_index: row.and_index ?? 0,
+                value,
+            });
+            conditionMap.set(rid, arr);
+        }
+    }
+
     const grouped = new Map<string, RawPricingRow[]>();
     for (const row of (data ?? []) as RawPricingRow[]) {
-        if (!row?.model_key) continue;
-        if (!grouped.has(row.model_key)) grouped.set(row.model_key, []);
-        grouped.get(row.model_key)!.push(row);
+        if (!row?.provider_id || !row?.api_model_id || !row?.capability_id) continue;
+        const groupKey = `${row.provider_id}:${row.api_model_id}:${row.capability_id}`;
+        if (!grouped.has(groupKey)) grouped.set(groupKey, []);
+        grouped.get(groupKey)!.push(row);
     }
 
     for (const key of keys) {
         const rows = grouped.get(key);
         if (!rows?.length) continue;
-        const card = rowsToPriceCard(key, rows);
+        const card = rowsToPriceCard(key, rows, conditionMap);
         if (card) cards.set(key, card);
     }
 

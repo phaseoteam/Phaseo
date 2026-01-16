@@ -1,4 +1,3 @@
-import React from "react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import getDbStats, { type DbStats } from "@/lib/fetchers/landing/dbStats";
@@ -28,7 +27,7 @@ export default async function DatabaseStats() {
 	const data = await getDbStats();
 
 	const statDefinitions: StatDef[] = [
-		{ key: "models", label: "Models", bucket: 100, route: "/models" },
+		{ key: "models", label: "Models", bucket: 25, route: "/models" },
 		{
 			key: "organisations",
 			label: "Organisations",

@@ -30,6 +30,8 @@ export default function ModelPerformanceDashboard({
 		metrics.summary.totalRequests > 0 ||
 		metrics.hourly.some((point) => point.requests > 0);
 
+	console.log(`[dash] hasTelemetry=${hasTelemetry} reqs=${metrics.summary.totalRequests} hourlyWithReqs=${metrics.hourly.filter(p => p.requests > 0).length} providers=${metrics.providerPerformance.length}`);
+
 	return (
 		<section className="space-y-10">
 			{hasTelemetry ? (

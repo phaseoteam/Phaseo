@@ -2,10 +2,6 @@
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
 
-const OAUTH = ["google", "github", "gitlab"] as const;
-type OAuthProvider = (typeof OAUTH)[number];
-type Provider = OAuthProvider | "email";
-
 export async function SignUp() {
 	return (
 		<div className="flex flex-col gap-6">

@@ -35,7 +35,13 @@ export default function ModelPricingClient({
 		return PLAN_ORDER.filter((x) => s.has(x));
 	}, [providers]);
 
-    const [plan, setPlan] = useState<string>(availablePlans[0] || "standard");
+    const [plan, setPlan] = useState<string>(
+        availablePlans.includes("standard")
+            ? "standard"
+            : availablePlans.includes("free")
+            ? "free"
+            : availablePlans[0] || "standard"
+    );
     const [sort, setSort] = useState<SortOption>("default");
     const sortLabel =
         sort === "default"

@@ -5,6 +5,7 @@ import type { Endpoint, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
 import { Timer } from "../telemetry/timer";
+import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 
 /**
  * BEFORE STAGE
@@ -41,7 +42,18 @@ export async function beforeRequest(
     const { model, stream } = m.value;
 
     // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
-    const c = await timer.span("guardContext", () => guardContext({ teamId, apiKeyId, endpoint, model, requestId, internal }));
+    const capability = resolveCapabilityFromEndpoint(endpoint);
+    const c = await timer.span("guardContext", () =>
+        guardContext({
+            teamId,
+            apiKeyId,
+            endpoint,
+            capability,
+            model,
+            requestId,
+            internal,
+        })
+    );
     if (!c.ok) return c as { ok: false; response: Response };
     const { context, providers, resolvedModel } = c.value;
     // console.log(`[DEBUG] beforeRequest: resolvedModel: ${resolvedModel}, original model: ${model}`);
@@ -80,6 +92,7 @@ export async function beforeRequest(
 
     const ctx: PipelineContext = {
         endpoint,
+        capability,
         requestId,
         meta,
         rawBody,
