@@ -2,7 +2,7 @@
 title: "Get Models (SDK)"
 api: "GET /models"
 description: "Fetch catalogue models using the SDKs."
-playground: 'none'
+playground: "none"
 ---
 
 Use the SDKs to call the `/models` endpoint. TypeScript and Python are production-ready; other SDKs are in preview.
@@ -14,7 +14,8 @@ import { AIStats } from "@ai-stats/ts-sdk";
 const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
 const res = await client.getModels({ limit: 5 });
 console.log(res.models);
-```
+
+````
 
 ```python Python
 from ai_stats import AIStats
@@ -22,7 +23,7 @@ from ai_stats import AIStats
 client = AIStats(api_key="YOUR_KEY")
 resp = client.get_models({"limit": 5})
 print(resp.models)
-```
+````
 
 ```csharp C# (preview)
 var client = new AiStatsSdk.Client("YOUR_KEY");
@@ -31,7 +32,7 @@ Console.WriteLine(res.Models.Count);
 ```
 
 ```go Go (preview)
-client := aistats.New("YOUR_KEY", "https://api.ai-stats.phaseo.app/v1")
+client := aistats.New("YOUR_KEY", "https://api.phaseo.app/v1")
 resp, _, _ := client.GetModels(context.Background(), nil)
 fmt.Println(resp.Models)
 ```

@@ -1,0 +1,17 @@
+{
+  "model_id": "z-ai/glm-4-7-flash-2026-01-19",
+  "organisation_id": "z-ai",
+  "name": "GLM 4.7 Flash",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-19T00:00:00",
+  "release_date": "2026-01-19T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

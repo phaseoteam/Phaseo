@@ -20,7 +20,7 @@ export function createOpenAICompatibleAdapter(providerId: string): ProviderAdapt
                 case "chat.completions":
                     return compatChat.exec(args);
                 case "responses":
-                    if (!supportsOpenAICompatResponses(providerId)) {
+                    if (!supportsOpenAICompatResponses(providerId, args.providerModelSlug ?? args.model)) {
                         throw new Error(`${providerId}_responses_not_supported`);
                     }
                     return responses.exec(args);

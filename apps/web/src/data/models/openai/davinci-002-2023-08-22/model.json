@@ -1,0 +1,17 @@
+{
+  "model_id": "openai/davinci-002-2023-08-22",
+  "organisation_id": "openai",
+  "name": "Davinci 002",
+  "status": "Deprecated",
+  "previous_model_id": null,
+  "announced_date": "2023-08-22T00:00:00",
+  "release_date": "2023-08-22T00:00:00",
+  "deprecation_date": "2025-09-26T00:00:00",
+  "retirement_date": "2026-09-28T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

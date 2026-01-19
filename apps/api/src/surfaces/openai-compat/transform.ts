@@ -1,6 +1,7 @@
 // Transformation functions between IR and OpenAI Responses API format
 
 import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRChoice, IRUsage } from "@core/ir";
+import { extractAionThinkBlocks, isAionProvider } from "@/providers/aion/think";
 
 /**
  * Transform IR request to OpenAI Responses API format
@@ -220,8 +221,23 @@ export function irToOpenAIResponses(ir: IRChatRequest, providerModelSlug?: strin
 	if (ir.stop) request.stop = ir.stop;
 	if (ir.logprobs) request.logprobs = ir.logprobs;
 	if (ir.topLogprobs) request.top_logprobs = ir.topLogprobs;
+	if (ir.maxToolCalls !== undefined) request.max_tool_calls = ir.maxToolCalls;
+	if (ir.background !== undefined) request.background = ir.background;
+	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
+	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
+	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
 	if (ir.userId) request.user = ir.userId;
 	if (ir.metadata) request.metadata = ir.metadata;
+
+	// Z.AI (GLM) Thinking Mode
+	// Enable thinking if reasoning is requested with any effort level except "none"
+	const isZAI = providerId === "z-ai" || providerId === "zai";
+	if (isZAI && ir.reasoning && ir.reasoning.effort && ir.reasoning.effort !== "none") {
+		request.thinking = {
+			type: "enabled",
+			clear_thinking: false, // Preserve reasoning from previous turns (recommended)
+		};
+	}
 
 	return request;
 }
@@ -301,6 +317,9 @@ export function openAIResponsesToIR(
 	provider: string,
 ): IRChatResponse {
 	const choices: IRChoice[] = [];
+	const isAion = isAionProvider(provider);
+	const isMiniMax = provider === "minimax";
+	const isZAI = provider === "z-ai" || provider === "zai";
 
 	// Process output items
 	// Group by index to handle multiple choices
@@ -331,7 +350,35 @@ export function openAIResponsesToIR(
 		if (item.type === "message") {
 			// Regular assistant message
 			const content = extractTextFromContent(item.content || []);
-			choice.message.content += content;
+
+			// Extract Aion <think> blocks
+			if (isAion) {
+				const parsed = extractAionThinkBlocks(content);
+				if (parsed.reasoning.length > 0) {
+					for (const reasoningText of parsed.reasoning) {
+						choices.push({
+							index,
+							message: { role: "assistant", content: reasoningText },
+							finishReason: null,
+							reasoning: true,
+						});
+					}
+				}
+				choice.message.content += parsed.main ?? "";
+			}
+			// Extract MiniMax/Z.AI reasoning_content from message
+			else if ((isMiniMax || isZAI) && typeof item.reasoning_content === "string" && item.reasoning_content.length > 0) {
+				choices.push({
+					index,
+					message: { role: "assistant", content: item.reasoning_content },
+					finishReason: null,
+					reasoning: true,
+				});
+				choice.message.content += content;
+			}
+			else {
+				choice.message.content += content;
+			}
 		} else if (item.type === "reasoning" || item.type === "reasoning_details") {
 			const reasoningText = extractReasoningText(item);
 			if (reasoningText) {

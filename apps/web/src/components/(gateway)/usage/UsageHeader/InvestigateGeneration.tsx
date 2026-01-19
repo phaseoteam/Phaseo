@@ -50,7 +50,7 @@ export default function InvestigateGeneration() {
 		if (!id.trim()) return;
 		try {
 			if (!apiKey.trim()) {
-				toast.error("Gateway API key required");
+				toast.error("Conduit API key required");
 				return;
 			}
 			setLoading(true);
@@ -120,7 +120,7 @@ export default function InvestigateGeneration() {
 					</div>
 					<Input
 						type="password"
-						placeholder="Gateway API key"
+						placeholder="Conduit API key"
 						value={apiKey}
 						onChange={(e) => setApiKey(e.target.value)}
 					/>

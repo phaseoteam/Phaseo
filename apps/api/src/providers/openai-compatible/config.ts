@@ -13,6 +13,20 @@ export type OpenAICompatConfig = {
     supportsResponses?: boolean;
 };
 
+const OPENAI_CHAT_ONLY_MODELS = new Set<string>([
+    "gpt-audio",
+    "gpt-audio-mini",
+    "openai/gpt-audio",
+    "openai/gpt-audio-mini",
+]);
+
+const OPENAI_LEGACY_COMPLETIONS_MODELS = new Set<string>([
+    "babbage-002",
+    "davinci-002",
+    "openai/babbage-002",
+    "openai/davinci-002",
+]);
+
 const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     openai: {
         providerId: "openai",
@@ -143,6 +157,13 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "XIAOMI_MIMO_BASE_URL",
         supportsResponses: false,
     },
+    "x-ai": {
+        providerId: "x-ai",
+        baseUrl: "https://api.x.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "XAI_API_KEY",
+        baseUrlEnv: "XAI_BASE_URL",
+    },
     // New providers - added during IR optimization and provider onboarding
     fireworks: {
         providerId: "fireworks",
@@ -200,6 +221,27 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         apiKeyEnv: "AION_LABS_API_KEY",
         baseUrlEnv: "AION_LABS_BASE_URL",
     },
+    "aion-labs": {
+        providerId: "aion-labs",
+        baseUrl: "https://api.aionlabs.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "AION_LABS_API_KEY",
+        baseUrlEnv: "AION_LABS_BASE_URL",
+    },
+    "z-ai": {
+        providerId: "z-ai",
+        baseUrl: "https://api.z.ai",
+        pathPrefix: "/api/paas/v4",
+        apiKeyEnv: "ZAI_API_KEY",
+        baseUrlEnv: "ZAI_BASE_URL",
+    },
+    zai: {
+        providerId: "zai",
+        baseUrl: "https://api.z.ai",
+        pathPrefix: "/api/paas/v4",
+        apiKeyEnv: "ZAI_API_KEY",
+        baseUrlEnv: "ZAI_BASE_URL",
+    },
 };
 
 function normalizePathSegment(value: string | undefined) {
@@ -252,9 +294,38 @@ export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
     });
 }
 
-export function supportsOpenAICompatResponses(providerId: string): boolean {
+export type OpenAICompatRoute = "responses" | "chat" | "legacy_completions";
+
+function normalizeOpenAIModelName(model?: string | null): string {
+    if (!model) return "";
+    const value = model.trim();
+    if (!value) return "";
+    const parts = value.split("/");
+    return parts[parts.length - 1] || value;
+}
+
+export function resolveOpenAICompatRoute(providerId: string, model?: string | null): OpenAICompatRoute {
+    const config = resolveOpenAICompatConfig(providerId);
+    const normalized = normalizeOpenAIModelName(model);
+
+    if (providerId === "openai") {
+        if (OPENAI_LEGACY_COMPLETIONS_MODELS.has(model ?? "") || OPENAI_LEGACY_COMPLETIONS_MODELS.has(normalized)) {
+            return "legacy_completions";
+        }
+        if (OPENAI_CHAT_ONLY_MODELS.has(model ?? "") || OPENAI_CHAT_ONLY_MODELS.has(normalized)) {
+            return "chat";
+        }
+        return "responses";
+    }
+
+    if (typeof config.supportsResponses === "boolean") {
+        return config.supportsResponses ? "responses" : "chat";
+    }
+    return "chat";
+}
+
+export function supportsOpenAICompatResponses(providerId: string, model?: string | null): boolean {
     const config = resolveOpenAICompatConfig(providerId);
     if (typeof config.supportsResponses === "boolean") return config.supportsResponses;
-    // Default to false - only OpenAI has Responses API
-    return false;
+    return resolveOpenAICompatRoute(providerId, model) === "responses";
 }

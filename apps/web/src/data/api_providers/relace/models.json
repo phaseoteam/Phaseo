@@ -1,24 +1,5 @@
 [
   {
-    "api_model_id": "relace/relace-apply-3",
-    "provider_api_model_id": "relace:relace/relace-apply-3",
-    "provider_model_slug": null,
-    "internal_model_id": "relace/relace-apply-3",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "relace/relace-search",
     "provider_api_model_id": "relace:relace/relace-search",
     "provider_model_slug": null,

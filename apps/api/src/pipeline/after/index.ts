@@ -12,6 +12,7 @@ import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndCharge } from "../pricing/persist";
 import { shapeUsageForClient } from "../usage";
 import { emitGatewayRequestEvent } from "@observability/events";
+import { logDebugEvent, previewValue } from "../debug";
 
 export async function finalizeRequest(args: {
     pre: { ok: true; ctx: PipelineContext };
@@ -193,6 +194,19 @@ async function handleNonStreamResponse(
         includeUsage,
         includeMeta,
     });
+
+    if (ctx.meta?.debug) {
+        void logDebugEvent("response.pipeline", {
+            requestId: ctx.requestId,
+            endpoint: ctx.endpoint,
+            provider: result.provider,
+            upstreamStatus: result.upstream.status,
+            rawResponse: previewValue(result.rawResponse),
+            ir: previewValue(result.ir),
+            normalizedPayload: previewValue(payload),
+            clientResponse: previewValue(responseBody),
+        });
+    }
 
     const headers = makeHeaders(timingHeader);
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, result.upstream.status, headers));

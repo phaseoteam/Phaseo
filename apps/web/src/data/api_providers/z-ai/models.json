@@ -131,5 +131,43 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4-7-flash:free",
+    "provider_api_model_id": "z-ai:z-ai/glm-4-7-flash:free",
+    "provider_model_slug": "glm-4.7-flash",
+    "internal_model_id": "z-ai/glm-4-7-flash-2026-01-19",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2026-01-19T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4-7-flash",
+    "provider_api_model_id": "z-ai:z-ai/glm-4-7-flash",
+    "provider_model_slug": "glm-4.7-flashx",
+    "internal_model_id": "z-ai/glm-4-7-flash-2026-01-19",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2026-01-19T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

@@ -2,6 +2,7 @@
 // Transforms IR → Anthropic Messages Response
 
 import type { IRChatResponse, IRChoice } from "@core/ir";
+import { isAionProvider } from "@/providers/aion/think";
 
 /**
  * Anthropic Messages response type
@@ -27,6 +28,7 @@ export type AnthropicMessagesResponse = {
 
 export type AnthropicResponseContent =
 	| { type: "text"; text: string }
+	| { type: "thinking"; thinking: string }
 	| { type: "tool_use"; id: string; name: string; input: Record<string, any> };
 
 /**
@@ -39,6 +41,8 @@ export type AnthropicResponseContent =
  */
 export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMessagesResponse {
 	const content: AnthropicResponseContent[] = [];
+	const isAion = isAionProvider(ir.provider);
+	const reasoningChoices = isAion ? ir.choices.filter((c) => c.reasoning) : [];
 
 	// Anthropic Messages API doesn't support multiple choices
 	// Take the first non-reasoning choice
@@ -88,6 +92,15 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 				name: toolCall.name,
 				input: safeParseToolArguments(toolCall.arguments),
 			});
+		}
+	}
+
+	if (reasoningChoices.length > 0) {
+		for (const choice of reasoningChoices) {
+			const reasoningText = typeof choice.message.content === "string" ? choice.message.content : "";
+			if (reasoningText.length > 0) {
+				content.push({ type: "thinking", thinking: reasoningText });
+			}
 		}
 	}
 

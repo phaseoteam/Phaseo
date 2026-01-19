@@ -7,7 +7,7 @@ def main() -> None:
     if not api_key:
         raise RuntimeError("Set AI_STATS_API_KEY")
 
-    client = AIStats(api_key=api_key, base_url=os.environ.get("AI_STATS_BASE_URL", "https://api.ai-stats.phaseo.app/v1"))
+    client = AIStats(api_key=api_key, base_url=os.environ.get("AI_STATS_BASE_URL", "https://api.phaseo.app/v1"))
     request = {
         "model": "gpt-5-nano-2025-08-07",
         "messages": [{"role": "user", "content": "Echo 'Hi'."}],

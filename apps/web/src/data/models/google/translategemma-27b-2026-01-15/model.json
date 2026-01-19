@@ -1,0 +1,17 @@
+{
+  "model_id": "google/translategemma-27b-2026-01-15",
+  "organisation_id": "google",
+  "name": "TranslateGemma 27B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-15T00:00:00",
+  "release_date": "2026-01-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text,image",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -11,7 +11,7 @@
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
-  "family_id": "openai/gpt-5",
+  "family_id": "openai/gpt-5-1",
   "links": [],
   "details": [],
   "benchmarks": []

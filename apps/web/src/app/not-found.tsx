@@ -31,10 +31,10 @@ const suggestions = [
 		icon: BookOpen,
 	},
 	{
-		href: "/gateway", // adjust if your gateway route is different
-		label: "Explore the Gateway",
+		href: "/conduit",
+		label: "Explore the Conduit",
 		description:
-			"Access the largest unified AI Gateway and use over 300+ models easily.",
+			"Use the AI Stats Conduit to reach every model with one API.",
 		icon: Network,
 	},
 ];

@@ -6,6 +6,7 @@ description: "Call /generation to retrieve a past generation."
 **Method**: GenerationsApi#generationGet
 
 ### Example
+
 ```php
 <?php
 
@@ -16,7 +17,7 @@ use AIStats\Sdk\Configuration;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $generationsApi = new GenerationsApi(null, $config);
@@ -25,39 +26,39 @@ $record = $generationsApi->generationGet('G-01ABC...');
 ```
 
 ### Parameters
-- `id` (string, required): Request id returned by a previous call.
+
+-   `id` (string, required): Request id returned by a previous call.
 
 ### Returns
+
 GatewayGenerationRecord
 
 ```json
 {
-  "request_id": "G-01ABC123",
-  "team_id": "team-123",
-  "app_id": "app-123",
-  "endpoint": "chat/completions",
-  "model_id": "openai/gpt-4o-mini",
-  "provider": "openai",
-  "native_response_id": "chatcmpl-123",
-  "stream": false,
-  "byok": false,
-  "status_code": 200,
-  "success": true,
-  "error_code": null,
-  "error_message": null,
-  "latency_ms": 1500,
-  "generation_ms": 1400,
-  "usage": {
-    "prompt_tokens": 9,
-    "completion_tokens": 9,
-    "total_tokens": 18
-  },
-  "cost_nanos": 1000000,
-  "currency": "USD",
-  "pricing_lines": [],
-  "key_id": "key-123",
-  "throughput": null
+	"request_id": "G-01ABC123",
+	"team_id": "team-123",
+	"app_id": "app-123",
+	"endpoint": "chat/completions",
+	"model_id": "openai/gpt-4o-mini",
+	"provider": "openai",
+	"native_response_id": "chatcmpl-123",
+	"stream": false,
+	"byok": false,
+	"status_code": 200,
+	"success": true,
+	"error_code": null,
+	"error_message": null,
+	"latency_ms": 1500,
+	"generation_ms": 1400,
+	"usage": {
+		"prompt_tokens": 9,
+		"completion_tokens": 9,
+		"total_tokens": 18
+	},
+	"cost_nanos": 1000000,
+	"currency": "USD",
+	"pricing_lines": [],
+	"key_id": "key-123",
+	"throughput": null
 }
 ```
-
-

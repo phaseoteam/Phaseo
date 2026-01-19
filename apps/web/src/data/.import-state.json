@@ -1358,7 +1358,7 @@
       }
     },
     "src/data/models/ai21/jamba-2-3b-2026-01-08/model.json": {
-      "hash": "bf32d774ac33944c6682150bc561b067",
+      "hash": "1bc3c04be61e94c5796e8503ed403961",
       "meta": {
         "model_id": "ai21/jamba-2-3b-2026-01-08",
         "organisation_id": "ai21",
@@ -1366,7 +1366,7 @@
       }
     },
     "src/data/models/ai21/jamba-2-mini-2026-01-08/model.json": {
-      "hash": "9b66b6eaa182437168f57482aca2148e",
+      "hash": "056fcfc687534a6bd75eb7c3a57daa39",
       "meta": {
         "model_id": "ai21/jamba-2-mini-2026-01-08",
         "organisation_id": "ai21",
@@ -1881,14 +1881,6 @@
       "hash": "bb5ba932d04f9092c885a8ae11643b0e",
       "meta": {
         "model_id": "black-forest-labs/flux-2-flex-2025-11-25",
-        "organisation_id": "black-forest-labs",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/black-forest-labs/flux-2-klein/model.json": {
-      "hash": "87c43657655125970a737953edbbe923",
-      "meta": {
-        "model_id": "black-forest-labs/flux-2-klein",
         "organisation_id": "black-forest-labs",
         "previous_model_id": null
       }
@@ -2462,7 +2454,7 @@
       }
     },
     "src/data/models/eleven-labs/scribe-v2-2026-01-09/model.json": {
-      "hash": "f4ff6a2a181e05ff21914b73029a443a",
+      "hash": "641e875934830f265905e24a547420ec",
       "meta": {
         "model_id": "eleven-labs/scribe-v2-2026-01-09",
         "organisation_id": "eleven-labs",
@@ -2758,7 +2750,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-flash-preview-2025-09-25/model.json": {
-      "hash": "ea5066f514b510d450e68b7ac617779a",
+      "hash": "8c1b1335ae8242150c94a5582a38a7ad",
       "meta": {
         "model_id": "google/gemini-2-5-flash-preview-2025-09-25",
         "organisation_id": "google",
@@ -4965,26 +4957,10 @@
         "previous_model_id": null
       }
     },
-    "src/data/models/openai/babbage-002/model.json": {
-      "hash": "58a5b336258ae29d310f66698058610a",
-      "meta": {
-        "model_id": "openai/babbage-002",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
     "src/data/models/openai/babbage-2020-06-11/model.json": {
       "hash": "4242532369155e63e786b3572bbe8ed3",
       "meta": {
         "model_id": "openai/babbage-2020-06-11",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/chatgpt-4o/model.json": {
-      "hash": "327a635c41987397c651b912496df2f2",
-      "meta": {
-        "model_id": "openai/chatgpt-4o",
         "organisation_id": "openai",
         "previous_model_id": null
       }
@@ -5077,14 +5053,6 @@
         "previous_model_id": null
       }
     },
-    "src/data/models/openai/computer-use-preview/model.json": {
-      "hash": "748f8806beae387b7a0b7759715a9a15",
-      "meta": {
-        "model_id": "openai/computer-use-preview",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
     "src/data/models/openai/curie-2020-06-11/model.json": {
       "hash": "22ba82738233e1825422232869d6bb3e",
       "meta": {
@@ -5102,7 +5070,7 @@
       }
     },
     "src/data/models/openai/dall-e-2021-01-05/model.json": {
-      "hash": "78b6e06f2000db84300bdd40e583690b",
+      "hash": "f4102f541792729d5ab09d9b8f1401a6",
       "meta": {
         "model_id": "openai/dall-e-2021-01-05",
         "organisation_id": "openai",
@@ -5113,14 +5081,6 @@
       "hash": "0152d22a6c199ff8518dff5552235e87",
       "meta": {
         "model_id": "openai/dall-e-3-2023-10-19",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/davinci-002/model.json": {
-      "hash": "17aaf797bf651b413f9065cbe48e1902",
-      "meta": {
-        "model_id": "openai/davinci-002",
         "organisation_id": "openai",
         "previous_model_id": null
       }
@@ -5238,7 +5198,7 @@
       }
     },
     "src/data/models/openai/gpt-4-32k/model.json": {
-      "hash": "afc78c103be789700cca4e6b26501a97",
+      "hash": "933e058704174aab4ec250f023a18112",
       "meta": {
         "model_id": "openai/gpt-4-32k",
         "organisation_id": "openai",
@@ -5246,7 +5206,7 @@
       }
     },
     "src/data/models/openai/gpt-4-32k-0314/model.json": {
-      "hash": "5b7b6b31cda94dac33f5115c9129ead3",
+      "hash": "7823bc0e20e35823c5a365f9ae7a58f5",
       "meta": {
         "model_id": "openai/gpt-4-32k-0314",
         "organisation_id": "openai",
@@ -5254,7 +5214,7 @@
       }
     },
     "src/data/models/openai/gpt-4-32k-0613/model.json": {
-      "hash": "bb34059f501bfd05b30b8af2308463bd",
+      "hash": "a09085abedd55b07a71c236022efa8bc",
       "meta": {
         "model_id": "openai/gpt-4-32k-0613",
         "organisation_id": "openai",
@@ -5349,56 +5309,16 @@
         "previous_model_id": "openai/gpt-4-2023-06-13"
       }
     },
-    "src/data/models/openai/gpt-4o-mini-audio-preview/model.json": {
-      "hash": "75bbd75ef8c801a5fbd547ca9f3cc5a6",
-      "meta": {
-        "model_id": "openai/gpt-4o-mini-audio-preview",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/gpt-4o-mini-realtime-preview/model.json": {
-      "hash": "e545f8f2c0b2ad947e1fdcf546b1c978",
-      "meta": {
-        "model_id": "openai/gpt-4o-mini-realtime-preview",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/gpt-4o-mini-search-preview/model.json": {
-      "hash": "c6e74ce5853cae294722725ecd046004",
-      "meta": {
-        "model_id": "openai/gpt-4o-mini-search-preview",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/gpt-4o-mini-transcribe/model.json": {
-      "hash": "5cdcd56265690840bd041b304cd0ee4c",
-      "meta": {
-        "model_id": "openai/gpt-4o-mini-transcribe",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
     "src/data/models/openai/gpt-4o-mini-transcribe-2025-12-15/model.json": {
-      "hash": "505620d264b9092b02248bb029884f30",
+      "hash": "306d8ebbc275cc7486c5435c7b6b5628",
       "meta": {
         "model_id": "openai/gpt-4o-mini-transcribe-2025-12-15",
         "organisation_id": "openai",
         "previous_model_id": null
       }
     },
-    "src/data/models/openai/gpt-4o-mini-tts/model.json": {
-      "hash": "ee5c6cd87bf2a27f4a09e2016bdfa154",
-      "meta": {
-        "model_id": "openai/gpt-4o-mini-tts",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
     "src/data/models/openai/gpt-4o-mini-tts-2025-12-15/model.json": {
-      "hash": "44a5189e3c28409c0e807fc5a18978d9",
+      "hash": "21438255c1a9e9fa92fc7e265983fa3b",
       "meta": {
         "model_id": "openai/gpt-4o-mini-tts-2025-12-15",
         "organisation_id": "openai",
@@ -5429,24 +5349,8 @@
         "previous_model_id": null
       }
     },
-    "src/data/models/openai/gpt-4o-search-preview/model.json": {
-      "hash": "15b71b84c1455dd8a605e16828efe377",
-      "meta": {
-        "model_id": "openai/gpt-4o-search-preview",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/gpt-4o-transcribe/model.json": {
-      "hash": "43f65da0042cc35d3ffc256832c702da",
-      "meta": {
-        "model_id": "openai/gpt-4o-transcribe",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
     "src/data/models/openai/gpt-4o-transcribe-diarize-2025-10-15/model.json": {
-      "hash": "364a1c7ad2eca435cdbc6a14961aa4e0",
+      "hash": "b4974a83b997b315532cce971d736dc6",
       "meta": {
         "model_id": "openai/gpt-4o-transcribe-diarize-2025-10-15",
         "organisation_id": "openai",
@@ -5454,7 +5358,7 @@
       }
     },
     "src/data/models/openai/gpt-5-1-2025-11-12/model.json": {
-      "hash": "83b6645d587c0168b424f2cdf46735b2",
+      "hash": "f774720797838b71c0feb886fe76b4a6",
       "meta": {
         "model_id": "openai/gpt-5-1-2025-11-12",
         "organisation_id": "openai",
@@ -5462,7 +5366,7 @@
       }
     },
     "src/data/models/openai/gpt-5-1-chat-2025-11-13/model.json": {
-      "hash": "ab453460200014be0182ee1773cad272",
+      "hash": "768a66ef2c5f4558a389353b76ba8a09",
       "meta": {
         "model_id": "openai/gpt-5-1-chat-2025-11-13",
         "organisation_id": "openai",
@@ -5470,7 +5374,7 @@
       }
     },
     "src/data/models/openai/gpt-5-1-codex-2025-11-13/model.json": {
-      "hash": "d653704bd0e7153b8e02391da6138513",
+      "hash": "a94ef53642152fa96034b9ee17dd0256",
       "meta": {
         "model_id": "openai/gpt-5-1-codex-2025-11-13",
         "organisation_id": "openai",
@@ -5478,7 +5382,7 @@
       }
     },
     "src/data/models/openai/gpt-5-1-codex-max-2025-11-19/model.json": {
-      "hash": "0618f6d96591b57d0f98c1e80e26ab13",
+      "hash": "2a3c5e45477d4d8101afef598c98e900",
       "meta": {
         "model_id": "openai/gpt-5-1-codex-max-2025-11-19",
         "organisation_id": "openai",
@@ -5486,7 +5390,7 @@
       }
     },
     "src/data/models/openai/gpt-5-1-codex-mini-2025-11-13/model.json": {
-      "hash": "db42c12c8ace8ea7766d57740fdcf433",
+      "hash": "8a81ac1ca553226f6537ee010294d209",
       "meta": {
         "model_id": "openai/gpt-5-1-codex-mini-2025-11-13",
         "organisation_id": "openai",
@@ -5494,7 +5398,7 @@
       }
     },
     "src/data/models/openai/gpt-5-1-pro/model.json": {
-      "hash": "ccb00a4f5635dfd6a8a8b9a8daee8e9f",
+      "hash": "f47567a0b0a494c191597c129d67b1f5",
       "meta": {
         "model_id": "openai/gpt-5-1-pro",
         "organisation_id": "openai",
@@ -5502,19 +5406,19 @@
       }
     },
     "src/data/models/openai/gpt-5-2-2025-12-11/model.json": {
-      "hash": "44747b5d10b69ff44b16abab3bc6859c",
+      "hash": "1cbe302be1175191aa3d9f795b2c0bf6",
       "meta": {
         "model_id": "openai/gpt-5-2-2025-12-11",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-5-1-2025-11-12"
       }
     },
     "src/data/models/openai/gpt-5-2-chat-2025-12-11/model.json": {
-      "hash": "47470eb428f405d090dabd0f43f5f91e",
+      "hash": "aba1e6b2f22083fabbf0a1ee2c91928c",
       "meta": {
         "model_id": "openai/gpt-5-2-chat-2025-12-11",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-5-1-chat-2025-11-13"
       }
     },
     "src/data/models/openai/gpt-5-2-codex-2025-12-18/model.json": {
@@ -5526,23 +5430,23 @@
       }
     },
     "src/data/models/openai/gpt-5-2-mini/model.json": {
-      "hash": "1f9e7c10f0b209854fe099e3f4c75dc3",
+      "hash": "0f75c38a089c66a50d08857448b8bc77",
       "meta": {
         "model_id": "openai/gpt-5-2-mini",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-5-mini-2025-08-07"
       }
     },
     "src/data/models/openai/gpt-5-2-pro-2025-12-11/model.json": {
-      "hash": "a53f97ea2d091f6b0c662cba18f31a24",
+      "hash": "b51d86bc5313713869f0b806b80f3907",
       "meta": {
         "model_id": "openai/gpt-5-2-pro-2025-12-11",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-5-1-pro"
       }
     },
     "src/data/models/openai/gpt-5-2025-08-07/model.json": {
-      "hash": "fca63cf80be3250058d5bd67fadaaf15",
+      "hash": "ae55f30461019cdf1d64da5b33552212",
       "meta": {
         "model_id": "openai/gpt-5-2025-08-07",
         "organisation_id": "openai",
@@ -5550,27 +5454,27 @@
       }
     },
     "src/data/models/openai/gpt-5-3/model.json": {
-      "hash": "667c171d553d1d0710c0ab74772c418a",
+      "hash": "84656a06483619ae6be4866289e75de8",
       "meta": {
         "model_id": "openai/gpt-5-3",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-5-2-2025-12-11"
       }
     },
     "src/data/models/openai/gpt-5-chat-2025-08-07/model.json": {
-      "hash": "e4cf2d5c3553893d8da19e2f8a84b61d",
+      "hash": "eb72fb6df045e2d4eae6b6a15ef8a0d3",
       "meta": {
         "model_id": "openai/gpt-5-chat-2025-08-07",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/chatgpt-4o-2024-05-13"
       }
     },
     "src/data/models/openai/gpt-5-codex-2025-09-15/model.json": {
-      "hash": "45e5b503d3f3ddf7223a5014ee74d910",
+      "hash": "2bd3fedfbfe293b8ae2c6e7ef7cde5bd",
       "meta": {
         "model_id": "openai/gpt-5-codex-2025-09-15",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/codex-mini-2025-05-16"
       }
     },
     "src/data/models/openai/gpt-5-codex-mini-2025-11-07/model.json": {
@@ -5582,19 +5486,19 @@
       }
     },
     "src/data/models/openai/gpt-5-mini-2025-08-07/model.json": {
-      "hash": "ab72ac4c8d2a6323846fab8212681979",
+      "hash": "9bdc789cb3f329beb7cb80da57ddeb49",
       "meta": {
         "model_id": "openai/gpt-5-mini-2025-08-07",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-4-1-mini-2025-04-14"
       }
     },
     "src/data/models/openai/gpt-5-nano-2025-08-07/model.json": {
-      "hash": "2962b72ffa25938c62b07872a57955e7",
+      "hash": "fc53d8ce60ffa2ffc9fe97248db348c6",
       "meta": {
         "model_id": "openai/gpt-5-nano-2025-08-07",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-4-1-nano-2025-04-14"
       }
     },
     "src/data/models/openai/gpt-5-pro-2025-08-07/model.json": {
@@ -5606,7 +5510,7 @@
       }
     },
     "src/data/models/openai/gpt-5-search-api-2025-10-14/model.json": {
-      "hash": "d04435e0ffc9415629ce6e6ec5f77651",
+      "hash": "3f995958555c114f3bd045915c8427e1",
       "meta": {
         "model_id": "openai/gpt-5-search-api-2025-10-14",
         "organisation_id": "openai",
@@ -5614,7 +5518,7 @@
       }
     },
     "src/data/models/openai/gpt-6/model.json": {
-      "hash": "3ffe3568b270d0d6d1784c38e84919ee",
+      "hash": "03c26ea483ccef91133ff8db56bc7d70",
       "meta": {
         "model_id": "openai/gpt-6",
         "organisation_id": "openai",
@@ -5622,7 +5526,7 @@
       }
     },
     "src/data/models/openai/gpt-6-mini/model.json": {
-      "hash": "d4a6e5bec3f2efc8cfa7ed8faa280a1a",
+      "hash": "c74635cab56a7616691534381c929fd6",
       "meta": {
         "model_id": "openai/gpt-6-mini",
         "organisation_id": "openai",
@@ -5630,7 +5534,7 @@
       }
     },
     "src/data/models/openai/gpt-6-nano/model.json": {
-      "hash": "8a057b0b649f4ff383b50633d7af12d5",
+      "hash": "d8730ec578ea8878baedf1a9ff85a849",
       "meta": {
         "model_id": "openai/gpt-6-nano",
         "organisation_id": "openai",
@@ -5638,19 +5542,11 @@
       }
     },
     "src/data/models/openai/gpt-6-pro/model.json": {
-      "hash": "830f150c7d7104883439f6bbf9e305a3",
+      "hash": "861993b78938d88d62ee807b0c103990",
       "meta": {
         "model_id": "openai/gpt-6-pro",
         "organisation_id": "openai",
         "previous_model_id": "openai/gpt-5-pro-2025-08-07"
-      }
-    },
-    "src/data/models/openai/gpt-audio/model.json": {
-      "hash": "e12c6a0060e3c8230865eea07deb0730",
-      "meta": {
-        "model_id": "openai/gpt-audio",
-        "organisation_id": "openai",
-        "previous_model_id": null
       }
     },
     "src/data/models/openai/gpt-audio-mini-2025-10-06/model.json": {
@@ -5665,14 +5561,6 @@
       "hash": "e71e1c5e89e865ea7b936c0e17f32fd2",
       "meta": {
         "model_id": "openai/gpt-audio-mini-2025-12-15",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/gpt-image-1/model.json": {
-      "hash": "d980c15c3159de1120d55f95f7b10a71",
-      "meta": {
-        "model_id": "openai/gpt-image-1",
         "organisation_id": "openai",
         "previous_model_id": null
       }
@@ -5721,14 +5609,6 @@
       "hash": "ac8f586e0a82bcbb244e737c744f40bf",
       "meta": {
         "model_id": "openai/gpt-oss-safeguard-20b-2025-10-29",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/gpt-realtime/model.json": {
-      "hash": "8b64f2ee93e06bcf89dfff48596d58d2",
-      "meta": {
-        "model_id": "openai/gpt-realtime",
         "organisation_id": "openai",
         "previous_model_id": null
       }
@@ -5854,7 +5734,7 @@
       }
     },
     "src/data/models/openai/sora-2-2025-09-30/model.json": {
-      "hash": "fe325d2b7fed7a78c587fc8e1e0c27b3",
+      "hash": "392a91869aa1d346e74dfef3a9c923f7",
       "meta": {
         "model_id": "openai/sora-2-2025-09-30",
         "organisation_id": "openai",
@@ -5862,7 +5742,7 @@
       }
     },
     "src/data/models/openai/sora-2-pro-2025-10-03/model.json": {
-      "hash": "4d1aaf3d4b90c4fd1544c50c1c9b99f3",
+      "hash": "e689e3924e016af5fd768421c2b747e6",
       "meta": {
         "model_id": "openai/sora-2-pro-2025-10-03",
         "organisation_id": "openai",
@@ -5921,30 +5801,6 @@
       "hash": "6f1e6967bbc938d715c410467feb33c2",
       "meta": {
         "model_id": "openai/text-davinci-edit-001",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/text-embedding-3-large/model.json": {
-      "hash": "2191878ec6e6c0defdffc7625ee7c037",
-      "meta": {
-        "model_id": "openai/text-embedding-3-large",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/text-embedding-3-small/model.json": {
-      "hash": "97625f054148d1646cf58b1791f8bc91",
-      "meta": {
-        "model_id": "openai/text-embedding-3-small",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/text-embedding-ada-002/model.json": {
-      "hash": "514510ff9e47327f008c46e42218d81c",
-      "meta": {
-        "model_id": "openai/text-embedding-ada-002",
         "organisation_id": "openai",
         "previous_model_id": null
       }
@@ -6049,30 +5905,6 @@
       "hash": "6422d208722d6f0255b3d163b052b63b",
       "meta": {
         "model_id": "openai/text-similarity-davinci-001",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/tts-1/model.json": {
-      "hash": "dbb89672984a93f15efb7c7af41179e4",
-      "meta": {
-        "model_id": "openai/tts-1",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/tts-1-hd/model.json": {
-      "hash": "c5de941db0a24eb891e583111276001b",
-      "meta": {
-        "model_id": "openai/tts-1-hd",
-        "organisation_id": "openai",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/openai/whisper-1/model.json": {
-      "hash": "a71bad7ed33dfac6ac787428022e6ed2",
-      "meta": {
-        "model_id": "openai/whisper-1",
         "organisation_id": "openai",
         "previous_model_id": null
       }
@@ -6678,7 +6510,7 @@
       }
     },
     "src/data/models/z-ai/glm-image-2026-01-14/model.json": {
-      "hash": "5111b771226a524027942a4d984df47f",
+      "hash": "a752b5b357fb282d5cd4826cc730ede1",
       "meta": {
         "model_id": "z-ai/glm-image-2026-01-14",
         "organisation_id": "z-ai",
@@ -6794,19 +6626,6 @@
         "kind": "provider_models"
       }
     },
-    "src/data/api_providers/aionlabs/api_provider.json": {
-      "hash": "b2fa05bcee67a2b90c305f0b924d35fd",
-      "meta": {
-        "api_provider_id": "aionlabs"
-      }
-    },
-    "src/data/api_providers/aionlabs/models.json": {
-      "hash": "daa5a3f040391f03e69efd9892777fed",
-      "meta": {
-        "api_provider_id": "aionlabs",
-        "kind": "provider_models"
-      }
-    },
     "src/data/api_providers/alibaba/api_provider.json": {
       "hash": "d27fb68b239a323af61a37da1b4dea42",
       "meta": {
@@ -6820,7 +6639,7 @@
       }
     },
     "src/data/api_providers/amazon-bedrock/models.json": {
-      "hash": "5ad91ac96fdf575b2db49a526a2cd171",
+      "hash": "86e8148da955d0f6e0bbfcc4e13596ca",
       "meta": {
         "api_provider_id": "amazon-bedrock",
         "kind": "provider_models"
@@ -6846,7 +6665,7 @@
       }
     },
     "src/data/api_providers/atlascloud/models.json": {
-      "hash": "0d838808cfbb9ddba176313fdbd9d843",
+      "hash": "507923ea731652576be3c4b7f7a2866f",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
@@ -6859,7 +6678,7 @@
       }
     },
     "src/data/api_providers/azure/models.json": {
-      "hash": "ada2727fdbcaedc6c8eb357e34d32973",
+      "hash": "066e17f819d5d072282fbb027e6937b5",
       "meta": {
         "api_provider_id": "azure",
         "kind": "provider_models"
@@ -6872,7 +6691,7 @@
       }
     },
     "src/data/api_providers/baseten/models.json": {
-      "hash": "50c524a72de5de6bea859e8d9f6b7833",
+      "hash": "b70b6f58befc929f7332049813d88fc1",
       "meta": {
         "api_provider_id": "baseten",
         "kind": "provider_models"
@@ -6885,7 +6704,7 @@
       }
     },
     "src/data/api_providers/black-forest-labs/models.json": {
-      "hash": "d30c9c88dbbc9ef0389ae6160a99467f",
+      "hash": "74c9b5af58befd4f20a58ae6a56ee05b",
       "meta": {
         "api_provider_id": "black-forest-labs",
         "kind": "provider_models"
@@ -6898,7 +6717,7 @@
       }
     },
     "src/data/api_providers/bytedance-seed/models.json": {
-      "hash": "48ac80163596c8b670f2ef6614ea9735",
+      "hash": "7590411f3c9dd2ad6a661973474487fd",
       "meta": {
         "api_provider_id": "bytedance-seed",
         "kind": "provider_models"
@@ -6911,7 +6730,7 @@
       }
     },
     "src/data/api_providers/cerebras/models.json": {
-      "hash": "ded9a490855a61533445b4c6ed003dd3",
+      "hash": "48b266f15e44b393d81b0cac34079691",
       "meta": {
         "api_provider_id": "cerebras",
         "kind": "provider_models"
@@ -6924,7 +6743,7 @@
       }
     },
     "src/data/api_providers/chutes/models.json": {
-      "hash": "e808925149add7e819f97e604c9f6b3d",
+      "hash": "a0127f8f317ad86f33688d42f55fc7d4",
       "meta": {
         "api_provider_id": "chutes",
         "kind": "provider_models"
@@ -6943,7 +6762,7 @@
       }
     },
     "src/data/api_providers/cloudflare/models.json": {
-      "hash": "9b8cdfa17f9497fbf3d186532ab9c299",
+      "hash": "9a9c5c5c6e7acbd11316baad83a3cee4",
       "meta": {
         "api_provider_id": "cloudflare",
         "kind": "provider_models"
@@ -6956,7 +6775,7 @@
       }
     },
     "src/data/api_providers/cohere/models.json": {
-      "hash": "1fbcbf5ac35e7df17030c0f9a309efe9",
+      "hash": "6933ad68e788b36fdb4067b2b3b34589",
       "meta": {
         "api_provider_id": "cohere",
         "kind": "provider_models"
@@ -6975,7 +6794,7 @@
       }
     },
     "src/data/api_providers/deepinfra/models.json": {
-      "hash": "ebeb6195f4e1243d75a911cad60d16b3",
+      "hash": "34810d5792554ddb5c6f9c501e2c9a68",
       "meta": {
         "api_provider_id": "deepinfra",
         "kind": "provider_models"
@@ -6988,7 +6807,7 @@
       }
     },
     "src/data/api_providers/deepseek/models.json": {
-      "hash": "e588e3496393565408046ce860217405",
+      "hash": "276ead3046ddb173b50114227fdb3bd2",
       "meta": {
         "api_provider_id": "deepseek",
         "kind": "provider_models"
@@ -7007,7 +6826,7 @@
       }
     },
     "src/data/api_providers/fireworks/models.json": {
-      "hash": "9857074ee26ca541709ba68eef4ae5cc",
+      "hash": "cd2e47133caebadfefa743527cb06e48",
       "meta": {
         "api_provider_id": "fireworks",
         "kind": "provider_models"
@@ -7032,7 +6851,7 @@
       }
     },
     "src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "1791fc139c78f135e2999a4cbfb60387",
+      "hash": "43a9dceeec449182213bd5ade3f5e3b4",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -7045,7 +6864,7 @@
       }
     },
     "src/data/api_providers/google-vertex/models.json": {
-      "hash": "c3ae7e4a78781cb5f08541d606735ce0",
+      "hash": "9b6f2a515b5a4cea9e5c47dd34fff7a8",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
@@ -7058,7 +6877,7 @@
       }
     },
     "src/data/api_providers/groq/models.json": {
-      "hash": "a99fb2be898ec284574f69975e63a56d",
+      "hash": "380747ba9a47ac15acc248802fb2a374",
       "meta": {
         "api_provider_id": "groq",
         "kind": "provider_models"
@@ -7095,7 +6914,7 @@
       }
     },
     "src/data/api_providers/liquid-ai/models.json": {
-      "hash": "97c7551bb6365b854128c0511201482e",
+      "hash": "ba16d82199ec621e0b92cd8c0064223d",
       "meta": {
         "api_provider_id": "liquid-ai",
         "kind": "provider_models"
@@ -7114,7 +6933,7 @@
       }
     },
     "src/data/api_providers/minimax/models.json": {
-      "hash": "f48f53595036ed264b2259b29daabb77",
+      "hash": "8fbc031089633c5e7d52d718514b8227",
       "meta": {
         "api_provider_id": "minimax",
         "kind": "provider_models"
@@ -7140,7 +6959,7 @@
       }
     },
     "src/data/api_providers/mistral/models.json": {
-      "hash": "2900b8697c566d0aad7cfd7462b12845",
+      "hash": "edd27f954d8324df121eb5631c1c2102",
       "meta": {
         "api_provider_id": "mistral",
         "kind": "provider_models"
@@ -7153,7 +6972,7 @@
       }
     },
     "src/data/api_providers/moonshot-ai/models.json": {
-      "hash": "0c782437109ac32310ac267e0c19b1b8",
+      "hash": "91649c26ac0767b82fbbc4bb2cd732f6",
       "meta": {
         "api_provider_id": "moonshot-ai",
         "kind": "provider_models"
@@ -7166,7 +6985,7 @@
       }
     },
     "src/data/api_providers/moonshot-ai-turbo/models.json": {
-      "hash": "c28152a7f62713bdb4ccb598aef04434",
+      "hash": "33221dcdbf996612246114fd7c3d43cc",
       "meta": {
         "api_provider_id": "moonshot-ai-turbo",
         "kind": "provider_models"
@@ -7185,7 +7004,7 @@
       }
     },
     "src/data/api_providers/nebius-token-factory/models.json": {
-      "hash": "81b230232185d0163e6143fb2bba7b74",
+      "hash": "0f46eed47d0fb590014e3d43339c7243",
       "meta": {
         "api_provider_id": "nebius-token-factory",
         "kind": "provider_models"
@@ -7198,7 +7017,7 @@
       }
     },
     "src/data/api_providers/novitaai/models.json": {
-      "hash": "9a135cf27fb91b52f3a73d214d1b9a0e",
+      "hash": "f4ca944862a7d6e566d37bd462a44e4a",
       "meta": {
         "api_provider_id": "novitaai",
         "kind": "provider_models"
@@ -7211,7 +7030,7 @@
       }
     },
     "src/data/api_providers/openai/models.json": {
-      "hash": "26fb31188d943f8dc5c8cce8627a716f",
+      "hash": "0ae550cbd3b3846e33142689c0f25a90",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -7224,7 +7043,7 @@
       }
     },
     "src/data/api_providers/parasail/models.json": {
-      "hash": "14ba6215cc1d0fd26c3ff9678422572d",
+      "hash": "68973b0b711caee3bdf79cce05d33fed",
       "meta": {
         "api_provider_id": "parasail",
         "kind": "provider_models"
@@ -7234,13 +7053,6 @@
       "hash": "86b6d8237bea1c6fabec02d7a96865cd",
       "meta": {
         "api_provider_id": "perplexity"
-      }
-    },
-    "src/data/api_providers/perplexity/models.json": {
-      "hash": "d9a7c98d6f1f573e60eaa6a8cb4d8e49",
-      "meta": {
-        "api_provider_id": "perplexity",
-        "kind": "provider_models"
       }
     },
     "src/data/api_providers/phala/api_provider.json": {
@@ -7262,7 +7074,7 @@
       }
     },
     "src/data/api_providers/relace/models.json": {
-      "hash": "2cef6742c983c3a678d21b097ad05585",
+      "hash": "a2a196eb918d4fa32a04706777438804",
       "meta": {
         "api_provider_id": "relace",
         "kind": "provider_models"
@@ -7313,7 +7125,7 @@
       }
     },
     "src/data/api_providers/together/models.json": {
-      "hash": "143fe692863eb639b60bd1e633b4c640",
+      "hash": "92a5f3402de55b6f503a4e141228521e",
       "meta": {
         "api_provider_id": "together",
         "kind": "provider_models"
@@ -7332,7 +7144,7 @@
       }
     },
     "src/data/api_providers/x-ai/models.json": {
-      "hash": "91ad6aa47f7dce8f90904e5f92da6e77",
+      "hash": "bb5b0d2c5fbf31e21c7d79f685f2f8d4",
       "meta": {
         "api_provider_id": "x-ai",
         "kind": "provider_models"
@@ -7358,7 +7170,7 @@
       }
     },
     "src/data/api_providers/z-ai/models.json": {
-      "hash": "a21ac558b21d154ee32bd4bddb2b59c0",
+      "hash": "31ac9974e3337f51750a57ad10979327",
       "meta": {
         "api_provider_id": "z-ai",
         "kind": "provider_models"
@@ -7621,7 +7433,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5-mini-2025-08-07/text.generate/pricing.json": {
-      "hash": "9e231ae46ec1c018c786a395291a3380",
+      "hash": "34ee779f5341648bf77f39657ba9f3b1",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -7805,7 +7617,7 @@
       }
     },
     "src/data/pricing/xiaomi/xiaomi-mimo-v2-flash-2025-12-16/text.generate/pricing.json": {
-      "hash": "6c78b4db1b4803b5cf55195b636a46eb",
+      "hash": "a27bda9a42babc9af2c1afcc771e4a7d",
       "meta": {
         "api_provider_id": "xiaomi",
         "capability_id": "text.generate",
@@ -8130,6 +7942,301 @@
         "api_provider_id": "openai",
         "capability_id": "moderations.create",
         "model_key": "openai:openai/omni-moderation-2024-09-26:moderations.create"
+      }
+    },
+    "src/data/organisations/aion-labs/organisation.json": {
+      "hash": "062118eb82c2646382da945f832de3c6",
+      "meta": {
+        "organisation_id": "aion-labs"
+      }
+    },
+    "src/data/models/aion-labs/aion-1-0/model.json": {
+      "hash": "b6b01c0ea12d7ebe7a75c159f30688a9",
+      "meta": {
+        "model_id": "aion-labs/aion-1-0",
+        "organisation_id": "aion-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/aion-labs/aion-1-0-mini/model.json": {
+      "hash": "89348f0b295bfec57f91af619875563b",
+      "meta": {
+        "model_id": "aion-labs/aion-1-0-mini",
+        "organisation_id": "aion-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/aion-labs/aion-2-0/model.json": {
+      "hash": "692c9b2fe45f9a05a491bbfcb7e26a1f",
+      "meta": {
+        "model_id": "aion-labs/aion-2-0",
+        "organisation_id": "aion-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/aion-labs/aion-rp-llama-3-1-8b/model.json": {
+      "hash": "1184c61aa1b1b4f27ce7e3a4fb4bd767",
+      "meta": {
+        "model_id": "aion-labs/aion-rp-llama-3-1-8b",
+        "organisation_id": "aion-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/black-forest-labs/flux-2-klein-4b-2026-01-15/model.json": {
+      "hash": "dbe3a539b325086d3925fea8a53e18b8",
+      "meta": {
+        "model_id": "black-forest-labs/flux-2-klein-4b-2026-01-15",
+        "organisation_id": "black-forest-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/google/translategemma-12b-2026-01-15/model.json": {
+      "hash": "9cf9b9d1b9b5ae30128d1169489a895f",
+      "meta": {
+        "model_id": "google/translategemma-12b-2026-01-15",
+        "organisation_id": "google",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/google/translategemma-27b-2026-01-15/model.json": {
+      "hash": "6b30b28595b04dd850d229522f085414",
+      "meta": {
+        "model_id": "google/translategemma-27b-2026-01-15",
+        "organisation_id": "google",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/google/translategemma-4b-2026-01-15/model.json": {
+      "hash": "261d330488f7604f4333c9e6096c4007",
+      "meta": {
+        "model_id": "google/translategemma-4b-2026-01-15",
+        "organisation_id": "google",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-4o-mini-transcribe-2025-03-20/model.json": {
+      "hash": "dafcc380d40922a3925ffa462c2b4b22",
+      "meta": {
+        "model_id": "openai/gpt-4o-mini-transcribe-2025-03-20",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-4o-mini-tts-2025-03-20/model.json": {
+      "hash": "3ba30e61c3fee83db6ac644395bec89f",
+      "meta": {
+        "model_id": "openai/gpt-4o-mini-tts-2025-03-20",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/sora-2-2025-12-08/model.json": {
+      "hash": "27105162eed15133b2f00282c2504962",
+      "meta": {
+        "model_id": "openai/sora-2-2025-12-08",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/api_providers/aion-labs/api_provider.json": {
+      "hash": "bcd35887ebafbeed6cc38274f1c0731d",
+      "meta": {
+        "api_provider_id": "aion-labs"
+      }
+    },
+    "src/data/api_providers/aion-labs/models.json": {
+      "hash": "73539f4dd236427b078933b7997949c9",
+      "meta": {
+        "api_provider_id": "aion-labs",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/models/black-forest-labs/flux-2-klein-9b-2026-01-15/model.json": {
+      "hash": "1e1d82b212c2c9d03ba78f54d1f9efa9",
+      "meta": {
+        "model_id": "black-forest-labs/flux-2-klein-9b-2026-01-15",
+        "organisation_id": "black-forest-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/families/openai-gpt-5-3/family.json": {
+      "hash": "010f1b64d4776225c654b731e55e757c",
+      "meta": {
+        "family_id": "openai/gpt-5-3"
+      }
+    },
+    "src/data/families/openai-sora-2/family.json": {
+      "hash": "c91b30ac2ae69bb876dcc0e95fd89bef",
+      "meta": {
+        "family_id": "openai/sora-2"
+      }
+    },
+    "src/data/models/google/veo-3-2/model.json": {
+      "hash": "76f86bbb7a432ddb7791dd62a49b4ff4",
+      "meta": {
+        "model_id": "google/veo-3-2",
+        "organisation_id": "google",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/babbage-002-2023-08-22/model.json": {
+      "hash": "0ccfc70d2f09101144865c65b32d4669",
+      "meta": {
+        "model_id": "openai/babbage-002-2023-08-22",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/chatgpt-4o-2024-05-13/model.json": {
+      "hash": "c26cb18ce4ef33f8cc4aae11368bc472",
+      "meta": {
+        "model_id": "openai/chatgpt-4o-2024-05-13",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/computer-use-preview-2025-03-11/model.json": {
+      "hash": "3b7900171ba16ab28cdf644ee8ac6688",
+      "meta": {
+        "model_id": "openai/computer-use-preview-2025-03-11",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/davinci-002-2023-08-22/model.json": {
+      "hash": "1c47d375005c5e94091644c22ea950e9",
+      "meta": {
+        "model_id": "openai/davinci-002-2023-08-22",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-4o-mini-audio-preview-2024-12-17/model.json": {
+      "hash": "21fc1f8e2b2d680ae6d52dd6d24e6d12",
+      "meta": {
+        "model_id": "openai/gpt-4o-mini-audio-preview-2024-12-17",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-4o-mini-realtime-preview-2024-12-17/model.json": {
+      "hash": "118cf24485c8d69fdfe9c96a5ccafbaa",
+      "meta": {
+        "model_id": "openai/gpt-4o-mini-realtime-preview-2024-12-17",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-4o-mini-search-preview-2025-03-11/model.json": {
+      "hash": "483b846f28e711664b1171446a5e8799",
+      "meta": {
+        "model_id": "openai/gpt-4o-mini-search-preview-2025-03-11",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-4o-search-preview-2025-03-11/model.json": {
+      "hash": "46fc55db9d59aa401c900b88e22c21b0",
+      "meta": {
+        "model_id": "openai/gpt-4o-search-preview-2025-03-11",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-4o-transcribe-2025-03-20/model.json": {
+      "hash": "78f7a3b5f1f21fd5601cbf5bc621a1b8",
+      "meta": {
+        "model_id": "openai/gpt-4o-transcribe-2025-03-20",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-audio-2025-08-28/model.json": {
+      "hash": "94f6f973bf79f1b9ca9adfc306ddcc08",
+      "meta": {
+        "model_id": "openai/gpt-audio-2025-08-28",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-image-1-2025-04-23/model.json": {
+      "hash": "c474812179507531c6fb103182f527ed",
+      "meta": {
+        "model_id": "openai/gpt-image-1-2025-04-23",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-realtime-2025-08-28/model.json": {
+      "hash": "891a201c7dbc37b6ff978637ae05490f",
+      "meta": {
+        "model_id": "openai/gpt-realtime-2025-08-28",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/text-embedding-3-large-2024-01-25/model.json": {
+      "hash": "be88f2948c229fbecf17c08c6944baf8",
+      "meta": {
+        "model_id": "openai/text-embedding-3-large-2024-01-25",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/text-embedding-3-small-2024-01-25/model.json": {
+      "hash": "e68e30751520c9b33834db68fdcc7b8e",
+      "meta": {
+        "model_id": "openai/text-embedding-3-small-2024-01-25",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/text-embedding-ada-002-2022-12-15/model.json": {
+      "hash": "a8de28ae19c953462ed93d6f42b99499",
+      "meta": {
+        "model_id": "openai/text-embedding-ada-002-2022-12-15",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/tts-1-2023-11-06/model.json": {
+      "hash": "5315c9ab50e3ef65fa82617f3e013f22",
+      "meta": {
+        "model_id": "openai/tts-1-2023-11-06",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/tts-1-hd-2023-11-06/model.json": {
+      "hash": "6b3f10b6761510a2ce9b2af727651026",
+      "meta": {
+        "model_id": "openai/tts-1-hd-2023-11-06",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/whisper-1-2023-03-01/model.json": {
+      "hash": "91a0078cc233d51a1ecb7d6c9eaad93b",
+      "meta": {
+        "model_id": "openai/whisper-1-2023-03-01",
+        "organisation_id": "openai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/z-ai/glm-4-7-flash-2026-01-19/model.json": {
+      "hash": "2928c9afc2db50b71ff732ed09401ea4",
+      "meta": {
+        "model_id": "z-ai/glm-4-7-flash-2026-01-19",
+        "organisation_id": "z-ai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/pricing/z-ai/z-ai-glm-4-7-flash-free/text.generate/pricing.json": {
+      "hash": "3e55ad87c75b9e64aa0fc45e16b7c338",
+      "meta": {
+        "api_provider_id": "z-ai",
+        "capability_id": "text.generate",
+        "model_key": "z-ai:z-ai/glm-4-7-flash:free:text.generate"
       }
     }
   }

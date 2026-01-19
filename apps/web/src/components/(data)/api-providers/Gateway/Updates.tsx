@@ -28,65 +28,93 @@ type DataModelRelation = {
 
 type RecentModel = {
 	model_id: string;
+	api_model_id: string;
 	created_at: string;
 	is_active_gateway: boolean;
 	data_models?: DataModelRelation | DataModelRelation[] | null;
 };
 
-async function getRecentModels(apiProviderId: string): Promise<RecentModel[]> {
-        const supabase = createClient();
-
-        try {
-                const { data: providerModels, error } = await supabase
-                        .from("data_api_provider_models")
-                        .select("internal_model_id, created_at, is_active_gateway")
-                        .eq("provider_id", apiProviderId)
-                        .order("created_at", { ascending: false })
-                        .limit(5);
-
-                if (error) {
-                        console.error("Error fetching recent models:", error);
-                        return [];
-                }
-
-                const modelIds = Array.from(
-                        new Set((providerModels ?? []).map((row) => row.internal_model_id).filter(Boolean))
-                );
-                const { data: models } = await supabase
-                        .from("data_models")
-                        .select("model_id, name, organisation_id, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)")
-                        .in("model_id", modelIds);
-
-                const modelMap = new Map<string, DataModelRelation>();
-                for (const model of models ?? []) {
-                        if (!model.model_id) continue;
-                        modelMap.set(model.model_id, {
-                                name: model.name ?? null,
-                                organisation_id: model.organisation_id ?? null,
-                                organisation: model.organisation ?? null,
-                        });
-                }
-
-                return (providerModels ?? []).map((row: any) => ({
-                        model_id: row.internal_model_id,
-                        created_at: row.created_at,
-                        is_active_gateway: row.is_active_gateway,
-                        data_models: row.internal_model_id ? modelMap.get(row.internal_model_id) ?? null : null,
-                })) as RecentModel[];
-        } catch (err) {
-                console.error("Unexpected error fetching recent models:", err);
-                return [];
-        }
+function isoSevenDaysAgo(from = new Date()): string {
+	const d = new Date(from);
+	d.setUTCDate(d.getUTCDate() - 7);
+	return d.toISOString();
 }
 
-async function getRecentTokenCount(apiProviderId: string): Promise<number> {
+async function getRecentModels(
+	apiProviderId: string,
+	opts?: { sinceTs?: string; limit?: number }
+): Promise<RecentModel[]> {
+	const supabase = createClient();
+	const limit = opts?.limit ?? 5;
+
+	try {
+		let q = supabase
+			.from("data_api_provider_models")
+			.select(
+				"internal_model_id, api_model_id, created_at, is_active_gateway"
+			)
+			.eq("provider_id", apiProviderId)
+			.order("created_at", { ascending: false })
+			.limit(limit);
+
+		if (opts?.sinceTs) q = q.gte("created_at", opts.sinceTs);
+
+		const { data: providerModels, error } = await q;
+
+		if (error) {
+			console.error("Error fetching recent models:", error);
+			return [];
+		}
+
+		const modelIds = Array.from(
+			new Set(
+				(providerModels ?? [])
+					.map((row) => row.internal_model_id)
+					.filter(Boolean)
+			)
+		);
+		const { data: models } = await supabase
+			.from("data_models")
+			.select(
+				"model_id, name, organisation_id, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)"
+			)
+			.in("model_id", modelIds);
+
+		const modelMap = new Map<string, DataModelRelation>();
+		for (const model of models ?? []) {
+			if (!model.model_id) continue;
+			modelMap.set(model.model_id, {
+				name: model.name ?? null,
+				organisation_id: model.organisation_id ?? null,
+				organisation: model.organisation ?? null,
+			});
+		}
+
+		return (providerModels ?? []).map((row: any) => ({
+			model_id: row.internal_model_id,
+			api_model_id: row.api_model_id,
+			created_at: row.created_at,
+			is_active_gateway: row.is_active_gateway,
+			data_models: row.internal_model_id
+				? modelMap.get(row.internal_model_id) ?? null
+				: null,
+		})) as RecentModel[];
+	} catch (err) {
+		console.error("Unexpected error fetching recent models:", err);
+		return [];
+	}
+}
+
+async function getRecentTokenCount(
+	apiProviderId: string,
+	sinceTs: string
+): Promise<number> {
 	const supabase = createAdminClient();
-	const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // Last 7 days
 
 	try {
 		const { data, error } = await supabase.rpc("get_provider_token_usage", {
 			provider_id: apiProviderId,
-			since_ts: since,
+			since_ts: sinceTs,
 		});
 
 		if (error) {
@@ -107,16 +135,15 @@ export default async function Updates({
 }: {
 	apiProviderId: string;
 }) {
-	const [recentModels, recentTokens] = await Promise.all([
-		getRecentModels(apiProviderId),
-		getRecentTokenCount(apiProviderId),
+	const now = new Date(); // one stable timestamp for this render
+	const sinceTs = isoSevenDaysAgo(now);
+
+	const [recentModels, newModels, recentTokens] = await Promise.all([
+		getRecentModels(apiProviderId, { limit: 5 }),
+		getRecentModels(apiProviderId, { sinceTs, limit: 5 }),
+		getRecentTokenCount(apiProviderId, sinceTs),
 	]);
 
-	const newModels = recentModels.filter((model) => {
-		const createdAt = new Date(model.created_at);
-		const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-		return createdAt > weekAgo;
-	});
 	const latestModelDisplay =
 		recentModels.length > 0
 			? resolveModelDisplayInfo(recentModels[0])
@@ -145,7 +172,7 @@ export default async function Updates({
 
 							return (
 								<div
-									key={model.model_id}
+									key={model.api_model_id}
 									className="border border-gray-200 dark:border-gray-700 bg-background rounded-lg p-4 transition hover:border-blue-500 dark:hover:border-blue-400"
 								>
 									<div className="flex items-start justify-between gap-6">
@@ -160,7 +187,7 @@ export default async function Updates({
 															<Check className="h-4 w-4 text-green-600" />
 														</TooltipTrigger>
 														<TooltipContent>
-															Available on Gateway
+															Available on Conduit
 														</TooltipContent>
 													</Tooltip>
 												)}
@@ -249,7 +276,7 @@ export default async function Updates({
 												href={`/models/${recentModels[0].model_id}`}
 												className="hover:text-primary transition-colors"
 											>
-												<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+												<span className="relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
 													{latestModelDisplay?.name ??
 														recentModels[0]
 															.model_id}
@@ -263,14 +290,14 @@ export default async function Updates({
 														href={`/organisations/${latestModelDisplay.organisationId}`}
 														className="text-xs hover:text-primary transition-colors"
 													>
-														<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+														<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
 															{
 																latestModelDisplay.organisationName
 															}
 														</span>
 													</Link>
 												) : (
-													<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+													<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
 														{
 															latestModelDisplay.organisationName
 														}
@@ -316,13 +343,18 @@ function resolveModelDisplayInfo(model: RecentModel): ModelDisplayInfo {
 		relatedModel?.organisation_id ??
 		undefined;
 
+	let name = relatedModel?.name ?? model.model_id;
+	if (model.api_model_id?.endsWith(":free")) {
+		name += " (free)";
+	}
+
 	return {
-		name: relatedModel?.name ?? model.model_id,
+		name,
 		organisationName: nestedOrg?.name ?? undefined,
 		organisationId,
 	};
 }
 
 function formatModelDate(timestamp: string): string {
-	return new Date(timestamp).toLocaleDateString();
+	return new Date(timestamp).toLocaleDateString("en-GB", { timeZone: "UTC" });
 }

@@ -20,7 +20,7 @@ class Client
 {
     private DefaultApi $api;
 
-    public function __construct(string $apiKey, string $basePath = 'https://api.ai-stats.phaseo.app/v1')
+    public function __construct(string $apiKey, string $basePath = 'https://api.phaseo.app/v1')
     {
         $host = rtrim($basePath, '/');
         $config = Configuration::getDefaultConfiguration()

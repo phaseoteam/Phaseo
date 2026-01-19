@@ -6,6 +6,7 @@ description: "Call /healthz with the PHP SDK."
 **Method**: AnalyticsApi#healthzGet
 
 ### Example
+
 ```php
 <?php
 
@@ -16,7 +17,7 @@ use AIStats\Sdk\Configuration;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $analyticsApi = new AnalyticsApi(null, $config);
@@ -26,5 +27,5 @@ echo $health->getStatus(); // "ok"
 ```
 
 ### Returns
-HealthzGet200Response
 
+HealthzGet200Response

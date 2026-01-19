@@ -6,6 +6,7 @@ import getOrganisationOverviewHeader from "@/lib/fetchers/organisations/getOrgan
 import TabBar from "@/components/(data)/organisation/OrganisationTabs";
 import { Logo } from "@/components/Logo";
 import { withUTM } from "@/lib/utm";
+import OrganisationEditButton from "./edit/OrganisationEditButton";
 
 interface OrganisationDetailShellProps {
 	organisationId: string;
@@ -90,6 +91,9 @@ export default async function OrganisationDetailShell({
 							<h1 className="mb-1 text-center text-3xl font-bold md:text-left md:text-5xl">
 								{header.name}
 							</h1>
+						</div>
+						<div className="ml-2">
+							<OrganisationEditButton organisationId={organisationId} />
 						</div>
 					</div>
 

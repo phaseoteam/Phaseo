@@ -11,6 +11,7 @@
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "audio,video",
+  "family_id": "openai/sora-2",
   "links": [],
   "details": [],
   "benchmarks": []

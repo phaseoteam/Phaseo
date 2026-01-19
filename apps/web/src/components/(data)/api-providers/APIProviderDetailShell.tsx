@@ -6,6 +6,7 @@ import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHea
 import TabBar from "@/components/(data)/api-providers/APIProviderTabs";
 import { Logo } from "@/components/Logo";
 import { withUTM } from "@/lib/utm";
+import APIProviderEditButton from "./edit/APIProviderEditButton";
 
 interface APIProviderDetailShellProps {
 	apiProviderId: string;
@@ -90,6 +91,9 @@ export default async function APIProviderDetailShell({
 							<h1 className="mb-1 text-center text-3xl font-bold md:text-left md:text-5xl">
 								{header.api_provider_name}
 							</h1>
+						</div>
+						<div className="ml-2">
+							<APIProviderEditButton apiProviderId={apiProviderId} />
 						</div>
 					</div>
 

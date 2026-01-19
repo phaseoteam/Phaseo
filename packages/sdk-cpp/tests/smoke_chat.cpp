@@ -64,7 +64,7 @@ int main() {
   const char *base_url_env = std::getenv("AI_STATS_BASE_URL");
   std::string base_url = base_url_env && std::string(base_url_env).size()
                              ? base_url_env
-                             : "https://api.ai-stats.phaseo.app/v1";
+                             : "https://api.phaseo.app/v1";
 
   CurlTransport transport;
   Client client(base_url, &transport);

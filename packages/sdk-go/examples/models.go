@@ -14,7 +14,7 @@ func main() {
 		panic("Set AI_STATS_API_KEY")
 	}
 
-	client := sdk.New(apiKey, "https://api.ai-stats.phaseo.app/v1")
+	client := sdk.New(apiKey, "https://api.phaseo.app/v1")
 	resp, _, err := client.GetModels(context.Background(), nil)
 	if err != nil {
 		panic(err)

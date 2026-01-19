@@ -1,0 +1,103 @@
+---
+title: "Migrating from Vercel AI Gateway"
+description: "Step-by-step guide to migrate your Vercel AI Gateway integration to AI Stats Gateway."
+---
+
+# Migrating from Vercel AI Gateway
+
+This guide will help you migrate from Vercel's AI Gateway to AI Stats Gateway.
+
+## Overview
+
+Both Vercel AI Gateway and AI Stats provide unified access to multiple AI providers. Migration involves:
+
+-   Updating API endpoints
+-   Changing authentication
+-   Adjusting configuration
+
+## Prerequisites
+
+-   AI Stats account and API key
+-   Existing Vercel AI Gateway setup
+
+## Migration Steps
+
+### 1. Update Base URL
+
+Replace Vercel's gateway URL with AI Stats'.
+
+<CodeGroup>
+```bash
+# Before (Vercel AI Gateway)
+curl https://your-gateway.vercel.ai/v1/chat/completions \
+  -H "Authorization: Bearer your-vercel-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+
+# After (AI Stats)
+
+curl https://api.phaseo.app/v1/chat/completions \
+ -H "Authorization: Bearer your-ai-stats-key" \
+ -H "Content-Type: application/json" \
+ -d '{
+"model": "gpt-4",
+"messages": [{"role": "user", "content": "Hello!"}]
+}'
+
+````
+
+```python
+import openai
+
+client = openai.OpenAI(
+    api_key="your-ai-stats-key",
+    base_url="https://api.phaseo.app/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+````
+
+```javascript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: "your-ai-stats-key",
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+	model: "gpt-4",
+	messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+</CodeGroup>
+
+### 2. Update Authentication
+
+Use Bearer token instead of Vercel's auth method.
+
+### 3. Model Configuration
+
+Vercel AI Gateway routes based on model names. AI Stats uses similar routing.
+
+Check available models via `/models` endpoint.
+
+### 4. Test Integration
+
+Verify your applications work with the new gateway.
+
+## Common Issues
+
+-   **Routing differences**: Model availability may vary.
+-   **Caching**: Vercel's caching behavior may differ.
+
+## Next Steps
+
+-   Explore AI Stats' analytics and monitoring features.

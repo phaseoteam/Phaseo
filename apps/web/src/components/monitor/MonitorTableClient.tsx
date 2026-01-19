@@ -4,7 +4,7 @@ import {
 	MonitorDataTable,
 	type ModelData,
 } from "@/components/monitor/MonitorDataTable";
-import { type MonitorModelData } from "@/lib/fetchers/models/getMonitorModels";
+import { type MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
 
 interface MonitorTableClientProps {
 	initialModelData: MonitorModelData[];
@@ -32,7 +32,5 @@ export function MonitorTableClient({
 		retired: item.retired,
 	}));
 
-	return (
-		<MonitorDataTable data={modelData} loading={false} />
-	);
+	return <MonitorDataTable data={modelData} loading={false} />;
 }

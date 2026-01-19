@@ -4,6 +4,50 @@ description: "Product updates, releases, and fixes across AI Stats."
 rss: true
 ---
 
+<Update label="19th January 2026">
+# Major Overhaul Completion and Enhanced Compatibility
+
+We have been tirelessly working on the next phase of AI Stats, and we're thrilled to announce that this comprehensive overhaul has now been completed. This update represents a significant leap forward in our mission to provide a unified, scalable platform for AI model access and insights.
+
+## AI Stats Gateway is now the Conduit
+
+The AI Stats Gateway has been renamed and repositioned as the **AI Stats Conduit** — a single API for every model. Conduit emphasizes unified routing, provider portability, and instant access to new modalities without rewriting integrations. This is the same trusted infrastructure, now focused as the definitive backbone for model access, reliability, and observability at scale.
+
+## Database Overhaul for Long-Term Expansion
+
+At the core of this update is a complete redesign of our database architecture. We've implemented a more flexible and robust schema that ensures our gateway can scale seamlessly to support an ever-growing number of models across all modalities - text, image, video, audio, moderations, embeddings, and beyond. This foundation should allow us to rapidly expand our coverage while maintaining high performance and reliability.
+
+## OpenAI & Anthropic Compatibility with New /messages Endpoint
+
+Building on our existing OpenAI compatibility through the `/chat/completions` and `/responses` endpoints, we're now introducing Anthropic compatibility with our new `/messages` endpoint. This endpoint provides a standardized interface for chat-based interactions, making it easier than ever for developers to integrate with our gateway regardless of their familiarity with specific provider APIs. The `/messages` endpoint supports advanced features like streaming responses, tool calling, and multi-modal inputs, ensuring a smooth transition for existing OpenAI or Anthropic users.
+
+## Website Improvements for Better User Experience
+
+To make AI Stats the "one stop shop" platform for staying up to date with AI developments, we've overhauled key sections of the website. These improvements include:
+
+-   Optimized load times and mobile responsiveness for on-the-go access
+-   Improved search and filtering capabilities across all data sets
+-   Introduced a Playground for easily testing models through the gateway in a simple but powerful interface
+-   Enhanced model pages with clearer pricing, availability, and performance metrics
+
+These changes create a more intuitive and efficient experience, helping users quickly find the information they need and make informed decisions about AI models.
+
+We would appreciate any feedback on these changes or any parts of the website, so please get in touch if you have any suggestions!
+
+## SDK Developments and Unified Interface
+
+We're overhauling our SDKs to move away from AI SDK-style integrations and instead develop our own native implementations. This shift enables us to create a unified interface across all our SDKs, allowing developers to interact with any supported model through a single, consistent method. We're excited about the possibilities unlocked by our gateway-powered SDKs and believe that making a wide range of models accessible across multiple programming languages will empower the community to build truly innovative applications.
+
+## Exploring New Endpoints for Expanded Model Access
+
+To maximize access to cutting-edge AI models, we're actively exploring and prototyping new endpoints. These will include specialized interfaces for emerging modalities like video generation, advanced embeddings, and real-time audio processing as well as lesser accessible modalities like music and high quality speech generation. Our goal is to provide developers with the broadest possible range of AI capabilities through a single, unified gateway.
+
+Our ultimate aspiration is to support every model in our database through the gateway, making one of the most powerful technologies available as accessible as possible. We aim to enable seamless model switching, democratizing AI for developers and researchers across the globe.
+
+This update marks a pivotal moment in AI Stats' evolution. We're committed to continuing our rapid pace of innovation, driven by community feedback and the ever-advancing AI landscape. Stay tuned for more updates as we roll out these new features and expand our model coverage.
+
+</Update>
+
 <Update label="15th December 2025">
 # SDKs Alpha Release
 

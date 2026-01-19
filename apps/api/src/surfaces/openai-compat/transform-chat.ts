@@ -2,12 +2,13 @@
 // Transforms IR ↔ OpenAI Chat Completions upstream format
 
 import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart } from "@core/ir";
+import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks";
 
 /**
  * Transform IR request to OpenAI Chat Completions format
  * Used when provider only supports /chat/completions (not /responses)
  */
-export function irToOpenAIChat(ir: IRChatRequest, model?: string | null): any {
+export function irToOpenAIChat(ir: IRChatRequest, model?: string | null, providerId?: string): any {
 	const messages: any[] = [];
 
 	for (const msg of ir.messages) {
@@ -61,6 +62,8 @@ export function irToOpenAIChat(ir: IRChatRequest, model?: string | null): any {
 	if (ir.maxTokens !== undefined) request.max_tokens = ir.maxTokens;
 	if (ir.temperature !== undefined) request.temperature = ir.temperature;
 	if (ir.topP !== undefined) request.top_p = ir.topP;
+
+	applyChatRequestQuirks({ ir, providerId, model, request });
 
 	// Tools
 	if (ir.tools && ir.tools.length > 0) {
@@ -165,24 +168,58 @@ export function openAIChatToIR(
 	model: string,
 	provider: string,
 ): IRChatResponse {
-	const choices = (json.choices || []).map((choice: any) => {
+	const choices: IRChatResponse["choices"] = [];
+
+	const extractChoiceContent = (content: any): string => {
+		if (typeof content === "string") return content;
+		if (Array.isArray(content)) {
+			return content
+				.map((part) => {
+					if (typeof part === "string") return part;
+					if (part && typeof part.text === "string") return part.text;
+					return "";
+				})
+				.join("");
+		}
+		return "";
+	};
+
+	for (const choice of json.choices || []) {
 		const toolCalls = choice.message?.tool_calls?.map((tc: any) => ({
 			id: tc.id,
 			name: tc.function?.name || tc.name,
 			arguments: tc.function?.arguments || "{}",
 		}));
 
-		return {
+		const rawContent = extractChoiceContent(choice.message?.content);
+		const { main, reasoning } = applyChatResponseQuirks({ providerId: provider, choice, rawContent });
+		const content = main ?? "";
+
+		if (reasoning.length > 0) {
+			for (const reasoningText of reasoning) {
+				choices.push({
+					index: choice.index || 0,
+					message: {
+						role: "assistant",
+						content: reasoningText,
+					},
+					finishReason: null,
+					reasoning: true,
+				});
+			}
+		}
+
+		choices.push({
 			index: choice.index || 0,
 			message: {
 				role: "assistant" as const,
-				content: choice.message?.content || "",
+				content,
 				toolCalls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
 			},
 			finishReason: mapFinishReason(choice.finish_reason),
 			logprobs: choice.logprobs,
-		};
-	});
+		});
+	}
 
 	// Validate ID presence
 	if (!json.id) {
@@ -201,7 +238,8 @@ export function openAIChatToIR(
 					inputTokens: json.usage.prompt_tokens || 0,
 					outputTokens: json.usage.completion_tokens || 0,
 					totalTokens: json.usage.total_tokens || 0,
-					reasoningTokens: json.usage.reasoning_tokens,
+					// Support both direct reasoning_tokens and nested completion_tokens_details.reasoning_tokens (MiniMax format)
+					reasoningTokens: json.usage.reasoning_tokens ?? json.usage.completion_tokens_details?.reasoning_tokens,
 			  }
 			: undefined,
 	};

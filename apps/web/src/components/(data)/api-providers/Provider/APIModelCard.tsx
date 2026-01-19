@@ -242,7 +242,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						</div>
 					</TooltipTrigger>
 					<TooltipContent>
-						{model.is_active_gateway ? "Gateway: Active" : "Gateway: Inactive"}
+						{model.is_active_gateway ? "Conduit: Active" : "Conduit: Inactive"}
 					</TooltipContent>
 				</Tooltip>
 			</div>

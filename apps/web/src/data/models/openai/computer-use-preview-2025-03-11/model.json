@@ -1,0 +1,17 @@
+{
+  "model_id": "openai/computer-use-preview-2025-03-11",
+  "organisation_id": "openai",
+  "name": "Computer Use Preview",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-03-11T00:00:00",
+  "release_date": "2025-03-11T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

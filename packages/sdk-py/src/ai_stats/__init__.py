@@ -9,7 +9,7 @@ from gen.client import Client
 from gen import models
 from gen import operations as ops
 
-DEFAULT_BASE_URL = "https://api.ai-stats.phaseo.app/v1"
+DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
 
 
 class ChatCompletionsParams(TypedDict, total=False):

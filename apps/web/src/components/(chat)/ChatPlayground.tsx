@@ -66,7 +66,7 @@ const formatSettingValue = (value: unknown, fallback = "Default") => {
 
 const getChangedSettings = (
 	settings: ChatSettings,
-	modelId: string
+	modelId: string,
 ): SettingChange[] => {
 	const defaults: ChatSettings = {
 		...DEFAULT_SETTINGS,
@@ -82,7 +82,7 @@ const getChangedSettings = (
 	if (settings.maxOutputTokens !== defaults.maxOutputTokens) {
 		addChange(
 			"Max output tokens",
-			formatSettingValue(settings.maxOutputTokens)
+			formatSettingValue(settings.maxOutputTokens),
 		);
 	}
 	if (settings.topP !== defaults.topP) {
@@ -100,19 +100,19 @@ const getChangedSettings = (
 	if (settings.frequencyPenalty !== defaults.frequencyPenalty) {
 		addChange(
 			"Frequency penalty",
-			formatSettingValue(settings.frequencyPenalty)
+			formatSettingValue(settings.frequencyPenalty),
 		);
 	}
 	if (settings.presencePenalty !== defaults.presencePenalty) {
 		addChange(
 			"Presence penalty",
-			formatSettingValue(settings.presencePenalty)
+			formatSettingValue(settings.presencePenalty),
 		);
 	}
 	if (settings.repetitionPenalty !== defaults.repetitionPenalty) {
 		addChange(
 			"Repetition penalty",
-			formatSettingValue(settings.repetitionPenalty)
+			formatSettingValue(settings.repetitionPenalty),
 		);
 	}
 	if (settings.seed !== defaults.seed) {
@@ -127,13 +127,13 @@ const getChangedSettings = (
 	if (settings.reasoningEnabled !== defaults.reasoningEnabled) {
 		addChange(
 			"Reasoning",
-			formatSettingValue(settings.reasoningEnabled, "Off")
+			formatSettingValue(settings.reasoningEnabled, "Off"),
 		);
 	}
 	if (settings.reasoningEffort !== defaults.reasoningEffort) {
 		addChange(
 			"Reasoning effort",
-			formatSettingValue(settings.reasoningEffort)
+			formatSettingValue(settings.reasoningEffort),
 		);
 	}
 	if (
@@ -267,9 +267,9 @@ function ensureVariants(message: ChatMessage) {
 }
 
 type ChatPlaygroundProps = {
-    models: GatewaySupportedModel[];
-    modelParam?: string | null;
-    promptParam?: string | null;
+	models: GatewaySupportedModel[];
+	modelParam?: string | null;
+	promptParam?: string | null;
 };
 
 type ModelOption = {
@@ -291,8 +291,12 @@ type ChatUser = {
 	avatarUrl: string | null;
 };
 
-function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygroundProps) {
-        const [threads, setThreads] = useState<ChatThread[]>([]);
+function ChatPlaygroundContent({
+	models,
+	modelParam,
+	promptParam,
+}: ChatPlaygroundProps) {
+	const [threads, setThreads] = useState<ChatThread[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [isSending, setIsSending] = useState(false);
 	const [, setError] = useState<string | null>(null);
@@ -319,23 +323,23 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 	} | null>(null);
 	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [temporaryThread, setTemporaryThread] = useState<ChatThread | null>(
-		null
+		null,
 	);
 	const [previousStoredId, setPreviousStoredId] = useState<string | null>(
-		null
+		null,
 	);
 
-        const defaultModelId = models[0]?.modelId ?? "";
-        const [lastModelId, setLastModelId] = useState(defaultModelId);
-        const queryModelId = (modelParam ?? "").trim();
-        const queryPrompt = promptParam ?? "";
-        const queryModelIsValid = useMemo(() => {
-                if (!queryModelId) return false;
-                return models.some((model) => model.modelId === queryModelId);
-        }, [models, queryModelId]);
-        const [personalization, setPersonalization] =
-                useState<PersonalizationSettings>({
-                        name: "",
+	const defaultModelId = models[0]?.modelId ?? "";
+	const [lastModelId, setLastModelId] = useState(defaultModelId);
+	const queryModelId = (modelParam ?? "").trim();
+	const queryPrompt = promptParam ?? "";
+	const queryModelIsValid = useMemo(() => {
+		if (!queryModelId) return false;
+		return models.some((model) => model.modelId === queryModelId);
+	}, [models, queryModelId]);
+	const [personalization, setPersonalization] =
+		useState<PersonalizationSettings>({
+			name: "",
 			role: "",
 			notes: "",
 			accentColor: "#111111",
@@ -406,7 +410,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 		const options = Array.from(map.values()).map((option) => ({
 			...option,
 			gatewayStatus: Object.values(option.providerAvailability).some(
-				Boolean
+				Boolean,
 			)
 				? ("active" as const)
 				: ("inactive" as const),
@@ -449,7 +453,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			if (!map.has(model.providerId)) {
 				map.set(
 					model.providerId,
-					model.providerName ?? formatOrgLabel(model.providerId)
+					model.providerName ?? formatOrgLabel(model.providerId),
 				);
 			}
 		}
@@ -468,7 +472,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 		if (typeof window !== "undefined") {
 			window.localStorage.setItem(
 				STORAGE_KEYS.debugMode,
-				value ? "true" : "false"
+				value ? "true" : "false",
 			);
 		}
 	}, []);
@@ -521,7 +525,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 
 	const sortedThreads = useMemo(() => {
 		return [...threads].sort((a, b) =>
-			b.updatedAt.localeCompare(a.updatedAt)
+			b.updatedAt.localeCompare(a.updatedAt),
 		);
 	}, [threads]);
 
@@ -580,11 +584,11 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			if (typeof window !== "undefined") {
 				window.localStorage.setItem(
 					STORAGE_KEYS.activeChatId,
-					thread.id
+					thread.id,
 				);
 			}
 		},
-		[setActiveId]
+		[setActiveId],
 	);
 
 	const ensureInitialThread = useCallback(
@@ -608,7 +612,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			await upsertChat(newThread);
 			return [newThread];
 		},
-		[]
+		[],
 	);
 
 	useEffect(() => {
@@ -619,10 +623,10 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			const storedBase =
 				window.localStorage.getItem(STORAGE_KEYS.baseUrl) ?? BASE_URL;
 			const storedActive = window.localStorage.getItem(
-				STORAGE_KEYS.activeChatId
+				STORAGE_KEYS.activeChatId,
 			);
 			const storedModel = window.localStorage.getItem(
-				STORAGE_KEYS.lastModelId
+				STORAGE_KEYS.lastModelId,
 			);
 			const storedPersonalName =
 				window.localStorage.getItem(STORAGE_KEYS.personalizationName) ??
@@ -632,18 +636,18 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				"";
 			const storedPersonalNotes =
 				window.localStorage.getItem(
-					STORAGE_KEYS.personalizationNotes
+					STORAGE_KEYS.personalizationNotes,
 				) ?? "";
 			const storedAccent =
 				window.localStorage.getItem(
-					STORAGE_KEYS.personalizationAccent
+					STORAGE_KEYS.personalizationAccent,
 				) ?? "#111111";
-                        const resolvedModel =
-                                (queryModelIsValid && queryModelId) ||
-                                (storedModel &&
-                                        models.some((model) => model.modelId === storedModel) &&
-                                        storedModel) ||
-                                defaultModelId;
+			const resolvedModel =
+				(queryModelIsValid && queryModelId) ||
+				(storedModel &&
+					models.some((model) => model.modelId === storedModel) &&
+					storedModel) ||
+				defaultModelId;
 			if (!mounted) return;
 			setApiKey(storedKey);
 			setBaseUrl(storedBase);
@@ -663,13 +667,19 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			const initialId =
 				storedActive && normalized.some((t) => t.id === storedActive)
 					? storedActive
-					: normalized[0]?.id ?? null;
+					: (normalized[0]?.id ?? null);
 			setActiveId(initialId);
 		})();
 		return () => {
 			mounted = false;
 		};
-        }, [defaultModelId, ensureInitialThread, models, queryModelId, queryModelIsValid]);
+	}, [
+		defaultModelId,
+		ensureInitialThread,
+		models,
+		queryModelId,
+		queryModelIsValid,
+	]);
 
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
@@ -677,7 +687,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 		if (typeof window !== "undefined") {
 			window.localStorage.setItem(
 				STORAGE_KEYS.lastModelId,
-				activeThread.modelId
+				activeThread.modelId,
 			);
 		}
 	}, [activeThread?.modelId]);
@@ -686,19 +696,19 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 		if (typeof window === "undefined") return;
 		window.localStorage.setItem(
 			STORAGE_KEYS.personalizationName,
-			personalization.name
+			personalization.name,
 		);
 		window.localStorage.setItem(
 			STORAGE_KEYS.personalizationRole,
-			personalization.role
+			personalization.role,
 		);
 		window.localStorage.setItem(
 			STORAGE_KEYS.personalizationNotes,
-			personalization.notes
+			personalization.notes,
 		);
 		window.localStorage.setItem(
 			STORAGE_KEYS.personalizationAccent,
-			personalization.accentColor
+			personalization.accentColor,
 		);
 	}, [personalization]);
 
@@ -778,7 +788,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			setThreads((prev) => [newThread, ...prev]);
 			setActiveThread(newThread);
 		},
-		[setActiveThread]
+		[setActiveThread],
 	);
 
 	const createThread = useCallback(async () => {
@@ -788,7 +798,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 		if (activeThread) {
 			const changes = getChangedSettings(
 				activeThread.settings,
-				selectedModel
+				selectedModel,
 			);
 			if (changes.length > 0) {
 				setPendingNewChat({
@@ -819,26 +829,26 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				: {
 						...DEFAULT_SETTINGS,
 						systemPrompt: buildDefaultSystemPrompt(modelId),
-				  };
+					};
 			setNewChatDialogOpen(false);
 			setPendingNewChat(null);
 			void createThreadWithSettings(modelId, settings);
 		},
-		[pendingNewChat, createThreadWithSettings]
+		[pendingNewChat, createThreadWithSettings],
 	);
 
 	const updateStoredThread = useCallback(
 		async (nextThread: ChatThread, persist = true) => {
 			setThreads((prev) =>
 				prev.map((thread) =>
-					thread.id === nextThread.id ? nextThread : thread
-				)
+					thread.id === nextThread.id ? nextThread : thread,
+				),
 			);
 			if (persist) {
 				await persistThread(nextThread);
 			}
 		},
-		[persistThread]
+		[persistThread],
 	);
 
 	const updateThreadState = useCallback(
@@ -849,21 +859,21 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			}
 			await updateStoredThread(nextThread, persist);
 		},
-		[temporaryMode, updateStoredThread]
+		[temporaryMode, updateStoredThread],
 	);
 
 	const applyMessageUpdate = useCallback(
 		(
 			thread: ChatThread,
 			messageId: string,
-			updater: (message: ChatMessage) => ChatMessage
+			updater: (message: ChatMessage) => ChatMessage,
 		) => {
 			const messages = thread.messages.map((message) =>
-				message.id === messageId ? updater(message) : message
+				message.id === messageId ? updater(message) : message,
 			);
 			return { ...thread, messages, updatedAt: nowIso() };
 		},
-		[]
+		[],
 	);
 
 	const appendAssistantVariant = useCallback(
@@ -876,7 +886,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				createdAt: string;
 				usage?: Record<string, unknown> | null;
 				meta?: Record<string, unknown> | null;
-			}
+			},
 		) => {
 			let variantIndex = 0;
 			const nextThread = applyMessageUpdate(
@@ -901,11 +911,11 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 						usage: variant.usage ?? null,
 						meta: variant.meta ?? null,
 					};
-				}
+				},
 			);
 			return { nextThread, variantIndex };
 		},
-		[applyMessageUpdate, orgNameById]
+		[applyMessageUpdate, orgNameById],
 	);
 
 	const updateAssistantVariant = useCallback(
@@ -915,18 +925,19 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			variantIndex: number,
 			content: string,
 			usage?: Record<string, unknown> | null,
-			meta?: Record<string, unknown> | null
+			meta?: Record<string, unknown> | null,
 		) => {
 			return applyMessageUpdate(thread, messageId, (message) => {
-				const variants = ensureVariants(message).map((variant, index) =>
-					index === variantIndex
-						? {
-								...variant,
-								content,
-								usage: usage ?? variant.usage ?? null,
-								meta: meta ?? variant.meta ?? null,
-						  }
-						: variant
+				const variants = ensureVariants(message).map(
+					(variant, index) =>
+						index === variantIndex
+							? {
+									...variant,
+									content,
+									usage: usage ?? variant.usage ?? null,
+									meta: meta ?? variant.meta ?? null,
+								}
+							: variant,
 				);
 				const activeIndex = variantIndex;
 				const activeVariant = variants[activeIndex];
@@ -948,14 +959,14 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				};
 			});
 		},
-		[applyMessageUpdate, orgNameById]
+		[applyMessageUpdate, orgNameById],
 	);
 
 	const handleSaveSettings = useCallback(() => {
 		window.localStorage.setItem(STORAGE_KEYS.apiKey, apiKey.trim());
 		window.localStorage.setItem(
 			STORAGE_KEYS.baseUrl,
-			baseUrl.trim() || BASE_URL
+			baseUrl.trim() || BASE_URL,
 		);
 		setSettingsOpen(false);
 	}, [apiKey, baseUrl]);
@@ -964,7 +975,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 		async (
 			thread: ChatThread,
 			contextMessages: ChatMessage[],
-			targetAssistantId?: string
+			targetAssistantId?: string,
 		) => {
 			const payloadMessages = [] as Array<{
 				role: string;
@@ -986,7 +997,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				...contextMessages.map((msg) => ({
 					role: msg.role,
 					content: msg.content,
-				}))
+				})),
 			);
 
 			const base = normalizeBaseUrl(baseUrl);
@@ -1045,7 +1056,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 					const result = appendAssistantVariant(
 						latestThread,
 						targetAssistantId,
-						initialVariant
+						initialVariant,
 					);
 					latestThread = result.nextThread;
 					variantIndex = result.variantIndex;
@@ -1103,7 +1114,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			};
 
 			const mergeMeta = (
-				clientMeta: Record<string, unknown>
+				clientMeta: Record<string, unknown>,
 			): Record<string, unknown> => ({
 				...(finalMeta ?? {}),
 				client: clientMeta,
@@ -1127,7 +1138,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				console.log(
 					"[chat] response",
 					response.status,
-					response.statusText
+					response.statusText,
 				);
 
 				if (!response.ok) {
@@ -1174,7 +1185,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 							variantIndex,
 							assistantContent,
 							finalUsage,
-							mergedMeta
+							mergedMeta,
 						);
 						await updateThreadState(latestThread, !temporaryMode);
 						return;
@@ -1193,7 +1204,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 					const result = appendAssistantVariant(
 						latestThread,
 						targetAssistantId,
-						initialVariant
+						initialVariant,
 					);
 					latestThread = result.nextThread;
 					variantIndex = result.variantIndex;
@@ -1234,7 +1245,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				let lastFlushAt = 0;
 				let flushPromise = Promise.resolve();
 				const scheduleUpdate = (
-					metaPartial?: Record<string, unknown>
+					metaPartial?: Record<string, unknown>,
 				) => {
 					if (metaPartial) {
 						pendingMetaPartial = metaPartial;
@@ -1258,7 +1269,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 								variantIndex,
 								assistantContent,
 								undefined,
-								meta
+								meta,
 							);
 							await updateThreadState(latestThread, false);
 						});
@@ -1294,7 +1305,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 										// eslint-disable-next-line no-console
 										console.log(
 											"[chat] stream usage",
-											finalUsage
+											finalUsage,
 										);
 									}
 								}
@@ -1313,11 +1324,11 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 									typeof parsed?.summary_index === "number"
 										? parsed.summary_index
 										: typeof parsed?.summaryIndex ===
-										  "number"
-										? parsed.summaryIndex
-										: null;
+											  "number"
+											? parsed.summaryIndex
+											: null;
 								const appendSummaryDelta = (
-									deltaText: string
+									deltaText: string,
 								) => {
 									if (summaryIndex == null) return false;
 									const previous =
@@ -1339,16 +1350,17 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 								};
 								const rebuildSummaryText = () => {
 									const indices = Object.keys(
-										reasoningSummaries
+										reasoningSummaries,
 									)
 										.map((value) => Number(value))
 										.filter((value) =>
-											Number.isFinite(value)
+											Number.isFinite(value),
 										)
 										.sort((a, b) => a - b);
 									return indices
 										.map(
-											(index) => reasoningSummaries[index]
+											(index) =>
+												reasoningSummaries[index],
 										)
 										.filter(Boolean)
 										.join("\n\n");
@@ -1422,11 +1434,11 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 									}
 								} else if (frameType === "response.completed") {
 									responseText = extractResponseText(
-										parsed?.response ?? parsed
+										parsed?.response ?? parsed,
 									);
 									if (!reasoningContent) {
 										reasoningContent = extractReasoningText(
-											parsed?.response ?? parsed
+											parsed?.response ?? parsed,
 										);
 									}
 								} else {
@@ -1434,11 +1446,11 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 										typeof parsed?.delta === "string"
 											? parsed.delta
 											: typeof parsed?.text === "string"
-											? parsed.text
-											: "";
+												? parsed.text
+												: "";
 									responseText =
 										coerceResponseText(
-											parsed?.response?.output_text
+											parsed?.response?.output_text,
 										) ||
 										coerceResponseText(parsed?.output_text);
 									delta =
@@ -1462,7 +1474,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 									if (reasoningDelta && !hasSummary) {
 										if (
 											!reasoningContent.endsWith(
-												reasoningDelta
+												reasoningDelta,
 											)
 										) {
 											reasoningContent += reasoningDelta;
@@ -1473,7 +1485,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 												...(finalMeta ?? {}),
 												reasoning_text:
 													reasoningContent,
-										  }
+											}
 										: undefined;
 									scheduleUpdate(metaPartial);
 								} else if (reasoningDelta && !hasSummary) {
@@ -1482,7 +1494,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 									}
 									if (
 										!reasoningContent.endsWith(
-											reasoningDelta
+											reasoningDelta,
 										)
 									) {
 										reasoningContent += reasoningDelta;
@@ -1509,7 +1521,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 												...(finalMeta ?? {}),
 												reasoning_text:
 													reasoningContent,
-										  }
+											}
 										: undefined;
 									scheduleUpdate(metaPartial);
 								}
@@ -1542,7 +1554,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 					variantIndex,
 					assistantContent,
 					finalUsage,
-					mergedMeta
+					mergedMeta,
 				);
 
 				await updateThreadState(latestThread, !temporaryMode);
@@ -1559,7 +1571,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 							latestThread,
 							assistantId,
 							variantIndex,
-							errorContent
+							errorContent,
 						);
 					} else {
 						const orgId = getOrgId(latestThread.modelId);
@@ -1603,7 +1615,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			temporaryMode,
 			updateAssistantVariant,
 			updateThreadState,
-		]
+		],
 	);
 
 	const handleSend = useCallback(
@@ -1656,7 +1668,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			isAuthenticated,
 			temporaryMode,
 			updateThreadState,
-		]
+		],
 	);
 
 	const handleEditMessage = useCallback(
@@ -1668,18 +1680,18 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				(message) => ({
 					...message,
 					content,
-				})
+				}),
 			);
 			updateThreadState(nextThread, !temporaryMode);
 		},
-		[activeThread, applyMessageUpdate, temporaryMode, updateThreadState]
+		[activeThread, applyMessageUpdate, temporaryMode, updateThreadState],
 	);
 
 	const handleSelectVariant = useCallback(
 		(messageId: string, variantIndex: number) => {
 			if (!activeThread) return;
 			const message = activeThread.messages.find(
-				(entry) => entry.id === messageId
+				(entry) => entry.id === messageId,
 			);
 			if (!message) return;
 			const variants = ensureVariants(message);
@@ -1691,11 +1703,16 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				variantIndex,
 				selected.content,
 				selected.usage ?? null,
-				selected.meta ?? null
+				selected.meta ?? null,
 			);
 			updateThreadState(nextThread, !temporaryMode);
 		},
-		[activeThread, temporaryMode, updateAssistantVariant, updateThreadState]
+		[
+			activeThread,
+			temporaryMode,
+			updateAssistantVariant,
+			updateThreadState,
+		],
 	);
 
 	const handleRetryAssistant = useCallback(
@@ -1711,22 +1728,22 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 				return;
 			}
 			const messageIndex = activeThread.messages.findIndex(
-				(message) => message.id === messageId
+				(message) => message.id === messageId,
 			);
 			if (messageIndex < 0) return;
 			const contextMessages = activeThread.messages.slice(
 				0,
-				messageIndex
+				messageIndex,
 			);
 			await executeCompletion(activeThread, contextMessages, messageId);
 		},
-		[activeThread, apiKey, executeCompletion, isAuthenticated, isSending]
+		[activeThread, apiKey, executeCompletion, isAuthenticated, isSending],
 	);
 	const handleBranchAssistant = useCallback(
 		async (messageId: string) => {
 			if (!activeThread) return;
 			const messageIndex = activeThread.messages.findIndex(
-				(message) => message.id === messageId
+				(message) => message.id === messageId,
 			);
 			if (messageIndex < 0) return;
 			setError(null);
@@ -1743,7 +1760,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 								...variant,
 								usage: variant.usage ?? null,
 								meta: variant.meta ?? null,
-						  }))
+							}))
 						: undefined,
 				}));
 			const newThread: ChatThread = {
@@ -1761,7 +1778,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			setThreads((prev) => [newThread, ...prev]);
 			setActiveThread(newThread);
 		},
-		[activeThread, setActiveThread]
+		[activeThread, setActiveThread],
 	);
 	const updateActiveSettings = useCallback(
 		(partial: Partial<ChatSettings>) => {
@@ -1773,45 +1790,50 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 			};
 			updateThreadState(nextThread, !temporaryMode);
 		},
-		[activeThread, temporaryMode, updateThreadState]
+		[activeThread, temporaryMode, updateThreadState],
 	);
 
 	const updateSettingNumber = useCallback(
 		(key: keyof ChatSettings, value: number | null) => {
 			updateActiveSettings({ [key]: value } as Partial<ChatSettings>);
 		},
-		[updateActiveSettings]
+		[updateActiveSettings],
 	);
 
-        const updateActiveModel = useCallback((modelId: string) => {
-                if (!activeThread) return;
-                const previousDefault = buildDefaultSystemPrompt(activeThread.modelId);
-                const nextSystemPrompt =
-                        !activeThread.settings.systemPrompt ||
-                        activeThread.settings.systemPrompt === previousDefault
-                                ? buildDefaultSystemPrompt(modelId)
-                                : activeThread.settings.systemPrompt;
-                const nextThread = {
-                        ...activeThread,
-                        modelId,
-                        settings: {
-                                ...activeThread.settings,
-                                systemPrompt: nextSystemPrompt,
-                        },
-                        updatedAt: nowIso(),
-                };
-                setLastModelId(modelId);
-                if (typeof window !== "undefined") {
-                        window.localStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
-                }
-                updateThreadState(nextThread, !temporaryMode);
-        }, [activeThread, temporaryMode, updateThreadState]);
+	const updateActiveModel = useCallback(
+		(modelId: string) => {
+			if (!activeThread) return;
+			const previousDefault = buildDefaultSystemPrompt(
+				activeThread.modelId,
+			);
+			const nextSystemPrompt =
+				!activeThread.settings.systemPrompt ||
+				activeThread.settings.systemPrompt === previousDefault
+					? buildDefaultSystemPrompt(modelId)
+					: activeThread.settings.systemPrompt;
+			const nextThread = {
+				...activeThread,
+				modelId,
+				settings: {
+					...activeThread.settings,
+					systemPrompt: nextSystemPrompt,
+				},
+				updatedAt: nowIso(),
+			};
+			setLastModelId(modelId);
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[activeThread, temporaryMode, updateThreadState],
+	);
 
-        useEffect(() => {
-                if (!queryModelIsValid || !queryModelId || !activeThread) return;
-                if (activeThread.modelId === queryModelId) return;
-                updateActiveModel(queryModelId);
-        }, [activeThread, queryModelId, queryModelIsValid, updateActiveModel]);
+	useEffect(() => {
+		if (!queryModelIsValid || !queryModelId || !activeThread) return;
+		if (activeThread.modelId === queryModelId) return;
+		updateActiveModel(queryModelId);
+	}, [activeThread, queryModelId, queryModelIsValid, updateActiveModel]);
 
 	const handleDeleteThread = async () => {
 		if (!deleteTarget) return;
@@ -1820,7 +1842,7 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 		setThreads((prev) => prev.filter((thread) => thread.id !== threadId));
 		if (activeId === threadId) {
 			const remaining = threads.filter(
-				(thread) => thread.id !== threadId
+				(thread) => thread.id !== threadId,
 			);
 			setActiveId(remaining[0]?.id ?? null);
 		}
@@ -1954,11 +1976,11 @@ function ChatPlaygroundContent({ models, modelParam, promptParam }: ChatPlaygrou
 					debugEnabled={debugEnabled}
 					onDebugChange={handleDebugChange}
 				/>
-                                <ChatConversation
-                                        activeThread={activeThread}
-                                        isSending={isSending}
-                                        presetPrompt={queryPrompt}
-                                        onSend={handleSend}
+				<ChatConversation
+					activeThread={activeThread}
+					isSending={isSending}
+					presetPrompt={queryPrompt}
+					onSend={handleSend}
 					onEditMessage={handleEditMessage}
 					onRetryAssistant={handleRetryAssistant}
 					onBranchAssistant={handleBranchAssistant}

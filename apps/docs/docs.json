@@ -544,8 +544,20 @@
 						"icon": "arrow-right",
 						"groups": [
 							{
-								"group": "Guides",
+								"group": "AI Stats Breaking Changes",
 								"pages": ["v1/migration-guides/index"]
+							},
+							{
+								"group": "From Other Platforms",
+								"pages": [
+									"v1/migration-guides/from-openai",
+									"v1/migration-guides/from-anthropic",
+									"v1/migration-guides/from-openrouter",
+									"v1/migration-guides/from-vercel",
+									"v1/migration-guides/from-litellm",
+									"v1/migration-guides/from-cloudflare",
+									"v1/migration-guides/from-helicone"
+								]
 							}
 						]
 					}

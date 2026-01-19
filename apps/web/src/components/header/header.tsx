@@ -8,9 +8,9 @@ import { ChatIcon } from "./Chat/ChatIcon";
 import { HeaderAnnouncements } from "./HeaderAnnouncements";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const releaseMessage = "Introducing Our Model Gateway";
+const releaseMessage = "AI Stats Gateway is now the Conduit";
 const changelogLink =
-	"https://docs.ai-stats.phaseo.app/v1/changelog#introducing-the-new-ai-stats";
+	"https://docs.ai-stats.phaseo.app/v1/changelog#ai-stats-gateway-is-now-the-conduit";
 
 export default function Header() {
 	return (
@@ -79,7 +79,7 @@ export default function Header() {
 
 			<HeaderAnnouncements
 				message={releaseMessage}
-				href="/gateway"
+				href="/conduit"
 				secondaryLabel="Read more in the changelog"
 				secondaryHref={changelogLink}
 				label="New Release"

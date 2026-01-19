@@ -6,6 +6,7 @@ description: "Call /video/generation with the PHP SDK."
 **Method**: VideoApi#videoGenerationPost
 
 ### Example
+
 ```php
 <?php
 
@@ -17,7 +18,7 @@ use AIStats\Sdk\Model\VideoGenerationRequest;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $videoApi = new VideoApi(null, $config);
@@ -32,11 +33,12 @@ echo $video->getData()[0]->getUrl();
 ```
 
 ### Key parameters
-- `model` (required): Video-capable model id.
-- `prompt` (required): Text description of the video.
-- `duration` (optional): Video duration in seconds.
-- `ratio` (optional): Aspect ratio (e.g., "16:9").
+
+-   `model` (required): Video-capable model id.
+-   `prompt` (required): Text description of the video.
+-   `duration` (optional): Video duration in seconds.
+-   `ratio` (optional): Aspect ratio (e.g., "16:9").
 
 ### Returns
-VideoGenerationResponse
 
+VideoGenerationResponse

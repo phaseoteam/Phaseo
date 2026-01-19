@@ -9,7 +9,7 @@ if (!$apiKey) {
     throw new RuntimeException("AI_STATS_API_KEY is required");
 }
 
-$baseUrl = getenv("AI_STATS_BASE_URL") ?: "https://api.ai-stats.phaseo.app/v1";
+$baseUrl = getenv("AI_STATS_BASE_URL") ?: "https://api.phaseo.app/v1";
 $client = new \AIStats\Gen\Client($baseUrl, ["Authorization" => "Bearer " . $apiKey]);
 
 $response = \AIStats\Gen\createChatCompletion($client, null, null, null, [

@@ -1,43 +1,5 @@
 [
   {
-    "api_model_id": "deepseek/deepseek-chat-v3-0324",
-    "provider_api_model_id": "nebius-token-factory:deepseek/deepseek-chat-v3-0324",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3-0324",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-r1-0528",
-    "provider_api_model_id": "nebius-token-factory:deepseek/deepseek-r1-0528",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-r1-0528",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-r1-2025-05-28",
     "provider_api_model_id": "nebius-token-factory:deepseek/deepseek-r1-2025-05-28",
     "provider_model_slug": null,
@@ -76,25 +38,6 @@
     ]
   },
   {
-    "api_model_id": "google/gemma-3-27b-it",
-    "provider_api_model_id": "nebius-token-factory:google/gemma-3-27b-it",
-    "provider_model_slug": null,
-    "internal_model_id": "google/gemma-3-27b-it",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
     "provider_api_model_id": "nebius-token-factory:meta/llama-3-3-70b-instruct-2024-12-06",
     "provider_model_slug": null,
@@ -104,82 +47,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2024-12-06T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3.1-8b-instruct",
-    "provider_api_model_id": "nebius-token-factory:meta-llama/llama-3.1-8b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.1-8b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3.3-70b-instruct",
-    "provider_api_model_id": "nebius-token-factory:meta-llama/llama-3.3-70b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.3-70b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-guard-3-8b",
-    "provider_api_model_id": "nebius-token-factory:meta-llama/llama-guard-3-8b",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-guard-3-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "moonshot-ai/kimi-k2-base-2025-07-11",
-    "provider_api_model_id": "nebius-token-factory:moonshot-ai/kimi-k2-base-2025-07-11",
-    "provider_model_slug": null,
-    "internal_model_id": "moonshot-ai/kimi-k2-base-2025-07-11",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
@@ -237,44 +104,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-07-26T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nousresearch/hermes-4-405b",
-    "provider_api_model_id": "nebius-token-factory:nousresearch/hermes-4-405b",
-    "provider_model_slug": null,
-    "internal_model_id": "nousresearch/hermes-4-405b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nousresearch/hermes-4-70b",
-    "provider_api_model_id": "nebius-token-factory:nousresearch/hermes-4-70b",
-    "provider_model_slug": null,
-    "internal_model_id": "nousresearch/hermes-4-70b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
@@ -380,63 +209,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3-235b-a22b-2507",
-    "provider_api_model_id": "nebius-token-factory:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-30b-a3b-instruct-2507",
-    "provider_api_model_id": "nebius-token-factory:qwen/qwen3-30b-a3b-instruct-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-30b-a3b-instruct-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-30b-a3b-thinking-2507",
-    "provider_api_model_id": "nebius-token-factory:qwen/qwen3-30b-a3b-thinking-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-30b-a3b-thinking-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3-32b-2025-04-29",
     "provider_api_model_id": "nebius-token-factory:qwen/qwen3-32b-2025-04-29",
     "provider_model_slug": null,
@@ -456,25 +228,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3-coder-30b-a3b-instruct",
-    "provider_api_model_id": "nebius-token-factory:qwen/qwen3-coder-30b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-coder-30b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
     "provider_api_model_id": "nebius-token-factory:qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
     "provider_model_slug": null,
@@ -484,44 +237,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-07-22T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-embedding-8b",
-    "provider_api_model_id": "nebius-token-factory:qwen/qwen3-embedding-8b",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-embedding-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "provider_api_model_id": "nebius-token-factory:qwen/qwen3-next-80b-a3b-thinking",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

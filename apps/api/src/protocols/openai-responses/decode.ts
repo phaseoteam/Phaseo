@@ -150,12 +150,21 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		// Tool calling
 		tools,
 		toolChoice,
+		parallelToolCalls: req.parallel_tool_calls,
+		maxToolCalls: (req as any).max_tool_calls ?? (req as any).max_tools_calls,
 
 		// Reasoning
 		reasoning,
 
 		// Advanced parameters
+		frequencyPenalty: (req as any).frequency_penalty,
+		presencePenalty: (req as any).presence_penalty,
+		topLogprobs: (req as any).top_logprobs,
 		metadata: req.metadata,
+		background: (req as any).background,
+		serviceTier: (req as any).service_tier,
+		promptCacheKey: (req as any).prompt_cache_key,
+		safetyIdentifier: (req as any).safety_identifier,
 	};
 }
 

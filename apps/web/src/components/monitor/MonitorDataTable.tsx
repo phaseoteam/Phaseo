@@ -41,12 +41,14 @@ import {
 	Brain,
 	Braces,
 	Database,
+	BadgeCheck,
 	CheckCircle2,
 	XCircle,
 } from "lucide-react";
 
 import Link from "next/link";
 import { useQueryState } from "nuqs";
+import { featureLabels } from "@/lib/config/featureLabels";
 
 // Icon and color mappings
 const modalityIcons = {
@@ -75,11 +77,11 @@ const modalityIcons = {
 const featureIcons = {
 	tools: { icon: Wrench, color: "text-yellow-600" },
 	reasoning: { icon: Brain, color: "text-indigo-600" },
-	response_format: { icon: Braces, color: "text-cyan-600" },
 	structured_outputs: { icon: Braces, color: "text-cyan-600" },
 	caching: { icon: Database, color: "text-emerald-600" },
 	web_search: { icon: Globe, color: "text-blue-500" },
 	moderated: { icon: ShieldAlert, color: "text-red-500" },
+	free: { icon: BadgeCheck, color: "text-emerald-600" },
 };
 
 const statusIcons = {
@@ -217,7 +219,7 @@ export function MonitorDataTable({
 				const matchesSearch = Object.values(item).some((value) => {
 					if (Array.isArray(value)) {
 						return value.some((v) =>
-							String(v).toLowerCase().includes(searchLower)
+							String(v).toLowerCase().includes(searchLower),
 						);
 					}
 					if (typeof value === "object" && value !== null) {
@@ -226,7 +228,7 @@ export function MonitorDataTable({
 								return nestedValue.some((v) =>
 									String(v)
 										.toLowerCase()
-										.includes(searchLower)
+										.includes(searchLower),
 								);
 							}
 							return String(nestedValue)
@@ -248,21 +250,21 @@ export function MonitorDataTable({
 
 			if (selectedInputModalities.length > 0) {
 				const hasAllInputModalities = selectedInputModalities.every(
-					(mod) => item.inputModalities.includes(mod)
+					(mod) => item.inputModalities.includes(mod),
 				);
 				if (!hasAllInputModalities) return false;
 			}
 
 			if (selectedOutputModalities.length > 0) {
 				const hasAllOutputModalities = selectedOutputModalities.every(
-					(mod) => item.outputModalities.includes(mod)
+					(mod) => item.outputModalities.includes(mod),
 				);
 				if (!hasAllOutputModalities) return false;
 			}
 
 			if (selectedFeatures.length > 0) {
 				const hasAllFeatures = selectedFeatures.every((feat) =>
-					item.provider.features.includes(feat)
+					item.provider.features.includes(feat),
 				);
 				if (!hasAllFeatures) return false;
 			}
@@ -413,16 +415,13 @@ export function MonitorDataTable({
 	}, [filterKey, page, setPage]);
 
 	const pageStart = (safePage - 1) * PAGE_SIZE;
-	const pageData = filteredSortedData.slice(
-		pageStart,
-		pageStart + PAGE_SIZE
-	);
+	const pageData = filteredSortedData.slice(pageStart, pageStart + PAGE_SIZE);
 
 	// Render model cell with links for org and model
 	const renderModel = (
 		model: string,
 		organisationId?: string,
-		modelId?: string
+		modelId?: string,
 	) => {
 		return (
 			<div className="flex items-center gap-2">
@@ -504,7 +503,7 @@ export function MonitorDataTable({
 
 	const renderModalities = (
 		modalities: string[],
-		type: "input" | "output"
+		type: "input" | "output",
 	) => {
 		return (
 			<div className="flex flex-wrap gap-1 justify-center">
@@ -558,25 +557,54 @@ export function MonitorDataTable({
 
 	const renderFeatures = (features: string[]) => {
 		return (
-			<div className="flex flex-wrap gap-1">
+			<div className="flex flex-wrap gap-1 justify-center">
 				{features.map((feature) => {
+					const rawKey = feature
+						.trim()
+						.toLowerCase()
+						.replace(/\s+/g, "_");
+					const key =
+						rawKey === "native_web_search"
+							? "web_search"
+							: rawKey === "structured_output"
+								? "structured_outputs"
+								: rawKey;
 					const iconConfig =
-						featureIcons[feature as keyof typeof featureIcons];
+						featureIcons[key as keyof typeof featureIcons];
 					if (!iconConfig) return null;
 
 					const IconComponent = iconConfig.icon;
 					if (!IconComponent) return null;
 
+					// Convert text color to border/background color
+					const colorMap: Record<string, string> = {
+						"text-yellow-600": "border-yellow-600 bg-yellow-50",
+						"text-indigo-600": "border-indigo-600 bg-indigo-50",
+						"text-cyan-600": "border-cyan-600 bg-cyan-50",
+						"text-emerald-600": "border-emerald-600 bg-emerald-50",
+						"text-blue-500": "border-blue-500 bg-blue-50",
+						"text-red-500": "border-red-500 bg-red-50",
+					};
+
+					const borderClass =
+						colorMap[iconConfig.color] ||
+						"border-gray-600 bg-gray-50";
+
 					return (
-						<div
-							key={feature}
-							className="flex items-center gap-1"
-							title={feature}
-						>
-							<IconComponent
-								className={`h-4 w-4 ${iconConfig.color}`}
-							/>
-						</div>
+						<Tooltip key={feature}>
+							<TooltipTrigger asChild>
+								<div
+									className={`inline-flex items-center justify-center w-6 h-6 rounded border ${borderClass}`}
+								>
+									<IconComponent
+										className={`h-4 w-4 ${iconConfig.color}`}
+									/>
+								</div>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>{featureLabels[key] ?? feature}</p>
+							</TooltipContent>
+						</Tooltip>
 					);
 				})}
 			</div>
@@ -617,11 +645,7 @@ export function MonitorDataTable({
 		return trimmed ? trimmed : "-";
 	};
 
-	const getPaginationRange = (
-		current: number,
-		total: number,
-		delta = 1
-	) => {
+	const getPaginationRange = (current: number, total: number, delta = 1) => {
 		if (total <= 1) return [1];
 
 		const range: Array<number | "ellipsis"> = [];
@@ -682,7 +706,7 @@ export function MonitorDataTable({
 										onClick={() => handleSort("status")}
 										className="h-auto p-0 font-semibold"
 									>
-										Gateway Status {getSortIcon("status")}
+										Conduit Status {getSortIcon("status")}
 									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-20 text-center border border-gray-200 shadow-sm">
@@ -793,7 +817,7 @@ export function MonitorDataTable({
 											{renderModel(
 												item.model,
 												item.organisationId,
-												item.modelId
+												item.modelId,
 											)}
 										</TableCell>
 										<TableCell className="border border-gray-200">
@@ -807,12 +831,12 @@ export function MonitorDataTable({
 										</TableCell>
 										<TableCell className="font-mono text-center border border-gray-200">
 											{renderPrice(
-												item.provider.inputPrice
+												item.provider.inputPrice,
 											)}
 										</TableCell>
 										<TableCell className="font-mono text-center border border-gray-200">
 											{renderPrice(
-												item.provider.outputPrice
+												item.provider.outputPrice,
 											)}
 										</TableCell>
 										<TableCell className="text-center border border-gray-200 capitalize">
@@ -821,18 +845,18 @@ export function MonitorDataTable({
 										<TableCell className="text-center border border-gray-200">
 											{renderModalities(
 												item.inputModalities,
-												"input"
+												"input",
 											)}
 										</TableCell>
 										<TableCell className="text-center border border-gray-200">
 											{renderModalities(
 												item.outputModalities,
-												"output"
+												"output",
 											)}
 										</TableCell>
 										<TableCell className="text-center border border-gray-200">
 											{renderFeatures(
-												item.provider.features
+												item.provider.features,
 											)}
 										</TableCell>
 										<TableCell className="font-mono text-center border border-gray-200">

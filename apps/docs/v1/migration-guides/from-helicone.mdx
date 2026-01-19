@@ -1,0 +1,104 @@
+---
+title: "Migrating from Helicone AI Gateway"
+description: "Step-by-step guide to migrate your Helicone AI Gateway integration to AI Stats Gateway."
+---
+
+# Migrating from Helicone AI Gateway
+
+This guide helps migrate from Helicone's gateway to AI Stats.
+
+## Overview
+
+Both provide AI API proxying with observability. Migration involves:
+
+-   Changing base URL
+-   Updating authentication
+-   Adjusting configuration
+
+## Prerequisites
+
+-   AI Stats account
+-   Helicone setup
+
+## Migration Steps
+
+### 1. Update Base URL
+
+Replace Helicone's proxy URL.
+
+<CodeGroup>
+```bash
+# Before (Helicone proxy)
+curl https://oai.helicone.ai/v1/chat/completions \
+  -H "Authorization: Bearer sk-your-openai-key" \
+  -H "Helicone-Auth: Bearer your-helicone-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+
+# After (AI Stats)
+
+curl https://api.phaseo.app/v1/chat/completions \
+ -H "Authorization: Bearer your-ai-stats-key" \
+ -H "Content-Type: application/json" \
+ -d '{
+"model": "gpt-4",
+"messages": [{"role": "user", "content": "Hello!"}]
+}'
+
+````
+
+```python
+import openai
+
+client = openai.OpenAI(
+    api_key="your-ai-stats-key",
+    base_url="https://api.phaseo.app/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+````
+
+```javascript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: "your-ai-stats-key",
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+	model: "gpt-4",
+	messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+</CodeGroup>
+
+### 2. Authentication
+
+Use Bearer token.
+
+Remove Helicone-specific headers.
+
+### 3. Observability
+
+AI Stats provides analytics. Migrate monitoring accordingly.
+
+### 4. Test
+
+Ensure requests work.
+
+## Common Issues
+
+-   **Headers**: Remove Helicone-specific headers.
+-   **Logging**: Different observability features.
+
+## Next Steps
+
+-   Set up AI Stats analytics.

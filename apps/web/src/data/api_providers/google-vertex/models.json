@@ -22,7 +22,7 @@
     "api_model_id": "anthropic/claude-3.5-haiku-20241022",
     "provider_api_model_id": "google-vertex:anthropic/claude-3.5-haiku-20241022",
     "provider_model_slug": null,
-    "internal_model_id": "anthropic/claude-3.5-haiku-20241022",
+    "internal_model_id": "anthropic/claude-3-5-haiku-2024-11-04",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "file,image,text",
@@ -231,7 +231,7 @@
     "api_model_id": "deepseek/deepseek-chat-v3.1",
     "provider_api_model_id": "google-vertex:deepseek/deepseek-chat-v3.1",
     "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3.1",
+    "internal_model_id": "deepseek/deepseek-v3-1-2025-08-21",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -250,7 +250,7 @@
     "api_model_id": "deepseek/deepseek-v3-2024-12-25",
     "provider_api_model_id": "google-vertex:deepseek/deepseek-v3-2024-12-25",
     "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
+    "internal_model_id": "deepseek/deepseek-v3-2024-12-26",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -266,48 +266,10 @@
     ]
   },
   {
-    "api_model_id": "google/gemini-2.0-flash-001",
-    "provider_api_model_id": "google-vertex:google/gemini-2.0-flash-001",
-    "provider_model_slug": null,
-    "internal_model_id": "google/gemini-2.0-flash-001",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "audio,file,image,text,video",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "google/gemini-2.0-flash-lite-001",
-    "provider_api_model_id": "google-vertex:google/gemini-2.0-flash-lite-001",
-    "provider_model_slug": null,
-    "internal_model_id": "google/gemini-2.0-flash-lite-001",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "audio,file,image,text,video",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "google/gemini-2.5-flash-lite-preview-09-2025",
     "provider_api_model_id": "google-vertex:google/gemini-2.5-flash-lite-preview-09-2025",
     "provider_model_slug": null,
-    "internal_model_id": "google/gemini-2.5-flash-lite-preview-09-2025",
+    "internal_model_id": "google/gemini-2-5-flash-lite-preview-2025-09-25",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "audio,file,image,text,video",
@@ -326,7 +288,7 @@
     "api_model_id": "google/gemini-2.5-pro-preview-05-06",
     "provider_api_model_id": "google-vertex:google/gemini-2.5-pro-preview-05-06",
     "provider_model_slug": null,
-    "internal_model_id": "google/gemini-2.5-pro-preview-05-06",
+    "internal_model_id": "google/gemini-2-5-pro-preview-2025-05-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "audio,file,image,text,video",
@@ -516,7 +478,7 @@
     "api_model_id": "meta-llama/llama-3.1-405b-instruct",
     "provider_api_model_id": "google-vertex:meta-llama/llama-3.1-405b-instruct",
     "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.1-405b-instruct",
+    "internal_model_id": "meta/llama-3-1-405b-instruct-2024-07-23",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -535,7 +497,7 @@
     "api_model_id": "meta-llama/llama-4-scout",
     "provider_api_model_id": "google-vertex:meta-llama/llama-4-scout",
     "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-4-scout",
+    "internal_model_id": "meta/llama-4-scout-2025-04-05",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -636,44 +598,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-07-22T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "provider_api_model_id": "google-vertex:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "provider_api_model_id": "google-vertex:qwen/qwen3-next-80b-a3b-thinking",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

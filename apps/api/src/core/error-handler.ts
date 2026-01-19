@@ -1,6 +1,7 @@
 // src/lib/gateway/error-handler.ts
 import type { Endpoint } from "./types";
 import type { PipelineContext } from "@pipeline/before/types";
+import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { emitGatewayRequestEvent } from "@observability/events";
 
@@ -95,10 +96,17 @@ export async function handleError({
     console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
 
     const body = await safeJson(res);
+    const debugHeader = req?.headers.get("x-gateway-debug");
+    const debugRequested = (() => {
+        if (!debugHeader) return false;
+        const value = debugHeader.toLowerCase();
+        return value === "true" || value === "1" || value === "yes";
+    })();
     const debugEnabled =
-        (typeof process !== "undefined" &&
+        isDebugAllowed() &&
+        ((typeof process !== "undefined" &&
             process.env?.GATEWAY_DEBUG_ERRORS === "1") ||
-        req?.headers.get("x-gateway-debug") === "true";
+            debugRequested);
     const errCode = extractErrorCode(body, stage === "before" ? "before_error" : "upstream_error");
     const description = extractErrorDescription(body);
     const attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
@@ -154,7 +162,7 @@ export async function handleError({
         status: statusCode,
     });
     if (debugEnabled) {
-        console.log("Gateway upstream debug", {
+        void logDebugEvent("error.upstream", {
             requestId: generationId,
             endpoint,
             model: ctx?.model ?? body?.model ?? null,

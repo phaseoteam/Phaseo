@@ -11,6 +11,9 @@ import { presentUsageForClient } from "./payload";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { onCallEnd, reportProbeResult, maybeOpenOnRecentErrors } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
+import { logDebugEvent, previewValue } from "../debug";
+import { ensureRuntimeForBackground } from "@/runtime/env";
+import { createAionThinkStreamState, extractAionThinkBlocks, isAionProvider, processAionThinkStreamDelta } from "@/providers/aion/think";
 
 export async function handleStreamResponse(
     ctx: PipelineContext,
@@ -28,6 +31,18 @@ export async function handleStreamResponse(
     const upstreamStatus = result.upstream.status;
     // Cache native ID from first chunk to avoid checking every frame
     let cachedNativeId: string | undefined;
+    const isAion = isAionProvider(result.provider);
+    const aionStates = new Map<number, ReturnType<typeof createAionThinkStreamState>>();
+
+    if (ctx.meta?.debug) {
+        void logDebugEvent("stream.start", {
+            requestId: ctx.requestId,
+            endpoint: ctx.endpoint,
+            provider: result.provider,
+            upstreamStatus,
+            mappedRequest: previewValue(result.mappedRequest),
+        });
+    }
 
     const resp = await passthroughWithPricing({
         upstream,
@@ -39,6 +54,12 @@ export async function handleStreamResponse(
             const includeMeta = ctx.meta.returnMeta ?? false;
             const includeUsage = ctx.meta.returnUsage ?? false;
             const next: any = { ...frame };
+            const reasoningDetails: Array<{
+                id: string;
+                index: number;
+                type: "reasoning.summary" | "reasoning.encrypted" | "reasoning.text";
+                reasoning_content: string;
+            }> = [];
 
             delete next.provider;
             delete next.gateway;
@@ -55,6 +76,39 @@ export async function handleStreamResponse(
                     next.nativeResponseId = cachedNativeId;
                 }
                 next.id = ctx.requestId;
+            }
+
+            if (isAion && Array.isArray(next.choices)) {
+                for (const choice of next.choices) {
+                    const idx = Number(choice.index ?? 0);
+                    const state = aionStates.get(idx) ?? createAionThinkStreamState();
+                    if (!aionStates.has(idx)) aionStates.set(idx, state);
+
+                    if (typeof choice.delta?.content === "string") {
+                        const { mainDelta, reasoningDelta } = processAionThinkStreamDelta(state, choice.delta.content);
+                        choice.delta.content = mainDelta;
+                        if (reasoningDelta.length > 0) {
+                            choice.delta.reasoning_details = [
+                                {
+                                    id: `${ctx.requestId}-reasoning-${idx + 1}-${state.reasoningChunks.length}`,
+                                    index: state.reasoningChunks.length - 1,
+                                    type: "reasoning.text",
+                                    reasoning_content: reasoningDelta,
+                                },
+                            ];
+                        }
+                    }
+
+                    if (typeof choice.message?.content === "string") {
+                        const parsed = extractAionThinkBlocks(choice.message.content);
+                        if (parsed.reasoning.length > 0 && state.reasoningChunks.length === 0) {
+                            for (const block of parsed.reasoning) {
+                                state.reasoningChunks.push(block);
+                            }
+                        }
+                        choice.message.content = parsed.main;
+                    }
+                }
             }
 
             if (!includeMeta && "meta" in next) {
@@ -140,6 +194,27 @@ export async function handleStreamResponse(
                 }
             }
 
+            if (isAion) {
+                const isFinalFrame =
+                    Boolean(next.usage) ||
+                    (Array.isArray(next.choices) && next.choices.some((c: any) => c.finish_reason));
+                if (isFinalFrame) {
+                    for (const [index, state] of aionStates.entries()) {
+                        state.reasoningChunks.forEach((chunk, chunkIdx) => {
+                            reasoningDetails.push({
+                                id: `${ctx.requestId}-reasoning-${index + 1}-${chunkIdx + 1}`,
+                                index: chunkIdx,
+                                type: "reasoning.text",
+                                reasoning_content: chunk,
+                            });
+                        });
+                    }
+                    if (reasoningDetails.length > 0) {
+                        next.reasoning_details = reasoningDetails;
+                    }
+                }
+            }
+
             // Add meta to final frame when available and requested
             if (includeMeta && next?.object === "chat.completion" && next?.usage && ctx.meta.generation_ms !== undefined) {
                 const generationMs = ctx.meta.generation_ms;
@@ -164,6 +239,8 @@ export async function handleStreamResponse(
             return next;
         },
         onFinalUsage: async (usageRaw: any, info) => {
+            const releaseRuntime = ensureRuntimeForBackground();
+            try {
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final usage raw", {
                     requestId: ctx.requestId,
@@ -357,6 +434,9 @@ export async function handleStreamResponse(
                     endpoint: ctx.endpoint,
                     cost_nanos: totalNanos,
                 });
+            }
+            } finally {
+                releaseRuntime();
             }
         },
         timingHeader,

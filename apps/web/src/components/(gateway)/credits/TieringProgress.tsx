@@ -126,7 +126,7 @@ export default async function TieringProgress({
 
 					<div className="space-y-1 text-left md:text-right">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Gateway fee
+							Conduit fee
 						</div>
 						<div className="flex items-center justify-start gap-2 text-lg font-semibold md:justify-end md:text-xl">
 							<span>{currentFee.toFixed(2)}%</span>
@@ -294,7 +294,7 @@ export default async function TieringProgress({
 
 									<div className="text-left sm:text-right">
 										<div className="text-sm">
-											Gateway fee:{" "}
+											Conduit fee:{" "}
 											<span className="font-medium">
 												{tier.feePct.toFixed(2)}%
 											</span>

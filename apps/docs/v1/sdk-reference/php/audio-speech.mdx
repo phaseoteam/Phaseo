@@ -6,6 +6,7 @@ description: "Call /audio/speech with the PHP SDK."
 **Method**: AudioApi#audioSpeechPost
 
 ### Example
+
 ```php
 <?php
 
@@ -17,7 +18,7 @@ use AIStats\Sdk\Model\AudioSpeechRequest;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $audioApi = new AudioApi(null, $config);
@@ -35,12 +36,13 @@ file_put_contents('output.mp3', $audioFile->fread($audioFile->getSize()));
 ```
 
 ### Key parameters
-- `model` (required): TTS-capable model id.
-- `input` (required): Text to synthesize.
-- `voice`: Voice preset (model-dependent, e.g., `alloy`).
-- `format`: `mp3`, `wav`, `flac`, etc.
-- `speed`: Playback speed multiplier (typically 0.25–4).
+
+-   `model` (required): TTS-capable model id.
+-   `input` (required): Text to synthesize.
+-   `voice`: Voice preset (model-dependent, e.g., `alloy`).
+-   `format`: `mp3`, `wav`, `flac`, etc.
+-   `speed`: Playback speed multiplier (typically 0.25–4).
 
 ### Returns
-Audio binary (\SplFileObject)
 
+Audio binary (\SplFileObject)

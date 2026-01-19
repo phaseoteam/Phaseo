@@ -14,10 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { qParser, yearParser } from "@/app/(dashboard)/models/search-params";
-import {
-	UPCOMING_TAB_VALUE,
-	UNKNOWN_TAB_VALUE,
-} from "@/lib/models/modelTabs";
+import { UPCOMING_TAB_VALUE, UNKNOWN_TAB_VALUE } from "@/lib/models/modelTabs";
 
 interface ModelsDisplayProps {
 	models: ModelCard[];
@@ -71,18 +68,13 @@ export default function ModelsDisplay({
 								<TooltipTrigger asChild>
 									<Button
 										size="sm"
-										asChild
 										variant={
 											isTable ? "default" : "outline"
 										}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+										disabled
 									>
-										<Link
-											href="/models/table"
-											aria-label="Table view"
-										>
-											<TableIcon className="h-4 w-4" />
-										</Link>
+										<TableIcon className="h-4 w-4" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="top">
@@ -187,18 +179,13 @@ export default function ModelsDisplay({
 								<TooltipTrigger asChild>
 									<Button
 										size="sm"
-										asChild
 										variant={
 											isTable ? "default" : "outline"
 										}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+										disabled
 									>
-										<Link
-											href="/models/table"
-											aria-label="Table view"
-										>
-											<TableIcon className="h-4 w-4" />
-										</Link>
+										<TableIcon className="h-4 w-4" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="top">

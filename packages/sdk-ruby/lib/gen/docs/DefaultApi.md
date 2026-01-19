@@ -1,30 +1,29 @@
 # AIStatsSdk::DefaultApi
 
-All URIs are relative to *https://api.ai-stats.phaseo.app/v1*
+All URIs are relative to *https://api.phaseo.app/v1*
 
-| Method | HTTP request | Description |
-| ------ | ------------ | ----------- |
-| [**create_batch**](DefaultApi.md#create_batch) | **POST** /batches | Create batch |
-| [**create_chat_completion**](DefaultApi.md#create_chat_completion) | **POST** /chat/completions | Create chat completion |
-| [**create_embedding**](DefaultApi.md#create_embedding) | **POST** /embeddings | Create embeddings |
-| [**create_image**](DefaultApi.md#create_image) | **POST** /images/generations | Create image |
-| [**create_image_edit**](DefaultApi.md#create_image_edit) | **POST** /images/edits | Create image edit |
-| [**create_moderation**](DefaultApi.md#create_moderation) | **POST** /moderations | Create moderation |
-| [**create_response**](DefaultApi.md#create_response) | **POST** /responses | Create response |
-| [**create_speech**](DefaultApi.md#create_speech) | **POST** /audio/speech | Generate speech |
-| [**create_transcription**](DefaultApi.md#create_transcription) | **POST** /audio/transcriptions | Create transcription |
-| [**create_translation**](DefaultApi.md#create_translation) | **POST** /audio/translations | Create translation |
-| [**create_video**](DefaultApi.md#create_video) | **POST** /videos | Create video |
-| [**get_analytics**](DefaultApi.md#get_analytics) | **POST** /analytics | Get analytics |
-| [**get_generation**](DefaultApi.md#get_generation) | **GET** /generation | Get generation |
-| [**healthz**](DefaultApi.md#healthz) | **GET** /healthz | Health check |
-| [**list_files**](DefaultApi.md#list_files) | **GET** /files | List files |
-| [**list_models**](DefaultApi.md#list_models) | **GET** /models | List models |
-| [**retrieve_batch**](DefaultApi.md#retrieve_batch) | **GET** /batches/{batch_id} | Retrieve batch |
-| [**retrieve_file**](DefaultApi.md#retrieve_file) | **GET** /files/{file_id} | Retrieve file |
-| [**root**](DefaultApi.md#root) | **GET** / | Root endpoint |
-| [**upload_file**](DefaultApi.md#upload_file) | **POST** /files | Upload file |
-
+| Method                                                             | HTTP request                   | Description            |
+| ------------------------------------------------------------------ | ------------------------------ | ---------------------- |
+| [**create_batch**](DefaultApi.md#create_batch)                     | **POST** /batches              | Create batch           |
+| [**create_chat_completion**](DefaultApi.md#create_chat_completion) | **POST** /chat/completions     | Create chat completion |
+| [**create_embedding**](DefaultApi.md#create_embedding)             | **POST** /embeddings           | Create embeddings      |
+| [**create_image**](DefaultApi.md#create_image)                     | **POST** /images/generations   | Create image           |
+| [**create_image_edit**](DefaultApi.md#create_image_edit)           | **POST** /images/edits         | Create image edit      |
+| [**create_moderation**](DefaultApi.md#create_moderation)           | **POST** /moderations          | Create moderation      |
+| [**create_response**](DefaultApi.md#create_response)               | **POST** /responses            | Create response        |
+| [**create_speech**](DefaultApi.md#create_speech)                   | **POST** /audio/speech         | Generate speech        |
+| [**create_transcription**](DefaultApi.md#create_transcription)     | **POST** /audio/transcriptions | Create transcription   |
+| [**create_translation**](DefaultApi.md#create_translation)         | **POST** /audio/translations   | Create translation     |
+| [**create_video**](DefaultApi.md#create_video)                     | **POST** /videos               | Create video           |
+| [**get_analytics**](DefaultApi.md#get_analytics)                   | **POST** /analytics            | Get analytics          |
+| [**get_generation**](DefaultApi.md#get_generation)                 | **GET** /generation            | Get generation         |
+| [**healthz**](DefaultApi.md#healthz)                               | **GET** /healthz               | Health check           |
+| [**list_files**](DefaultApi.md#list_files)                         | **GET** /files                 | List files             |
+| [**list_models**](DefaultApi.md#list_models)                       | **GET** /models                | List models            |
+| [**retrieve_batch**](DefaultApi.md#retrieve_batch)                 | **GET** /batches/{batch_id}    | Retrieve batch         |
+| [**retrieve_file**](DefaultApi.md#retrieve_file)                   | **GET** /files/{file_id}       | Retrieve file          |
+| [**root**](DefaultApi.md#root)                                     | **GET** /                      | Root endpoint          |
+| [**upload_file**](DefaultApi.md#upload_file)                       | **POST** /files                | Upload file            |
 
 ## create_batch
 
@@ -46,7 +45,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-batch_request = AIStatsSdk::BatchRequest.new({input_file_id: 'input_file_id_example', endpoint: 'endpoint_example'}) # BatchRequest | 
+batch_request = AIStatsSdk::BatchRequest.new({input_file_id: 'input_file_id_example', endpoint: 'endpoint_example'}) # BatchRequest |
 
 begin
   # Create batch
@@ -77,9 +76,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **batch_request** | [**BatchRequest**](BatchRequest.md) |  |  |
+| Name              | Type                                | Description | Notes |
+| ----------------- | ----------------------------------- | ----------- | ----- |
+| **batch_request** | [**BatchRequest**](BatchRequest.md) |             |       |
 
 ### Return type
 
@@ -91,9 +90,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
-
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 ## create_chat_completion
 
@@ -115,7 +113,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-chat_completions_request = AIStatsSdk::ChatCompletionsRequest.new({model: 'model_example', messages: [AIStatsSdk::ChatMessage.new({role: 'system'})]}) # ChatCompletionsRequest | 
+chat_completions_request = AIStatsSdk::ChatCompletionsRequest.new({model: 'model_example', messages: [AIStatsSdk::ChatMessage.new({role: 'system'})]}) # ChatCompletionsRequest |
 
 begin
   # Create chat completion
@@ -146,9 +144,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **chat_completions_request** | [**ChatCompletionsRequest**](ChatCompletionsRequest.md) |  |  |
+| Name                         | Type                                                    | Description | Notes |
+| ---------------------------- | ------------------------------------------------------- | ----------- | ----- |
+| **chat_completions_request** | [**ChatCompletionsRequest**](ChatCompletionsRequest.md) |             |       |
 
 ### Return type
 
@@ -160,9 +158,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
-
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 ## create_embedding
 
@@ -184,7 +181,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-embeddings_request = AIStatsSdk::EmbeddingsRequest.new({model: 'model_example', input: nil}) # EmbeddingsRequest | 
+embeddings_request = AIStatsSdk::EmbeddingsRequest.new({model: 'model_example', input: nil}) # EmbeddingsRequest |
 
 begin
   # Create embeddings
@@ -215,9 +212,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **embeddings_request** | [**EmbeddingsRequest**](EmbeddingsRequest.md) |  |  |
+| Name                   | Type                                          | Description | Notes |
+| ---------------------- | --------------------------------------------- | ----------- | ----- |
+| **embeddings_request** | [**EmbeddingsRequest**](EmbeddingsRequest.md) |             |       |
 
 ### Return type
 
@@ -229,9 +226,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
-
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 ## create_image
 
@@ -253,7 +249,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-images_generation_request = AIStatsSdk::ImagesGenerationRequest.new({model: 'model_example', prompt: 'prompt_example'}) # ImagesGenerationRequest | 
+images_generation_request = AIStatsSdk::ImagesGenerationRequest.new({model: 'model_example', prompt: 'prompt_example'}) # ImagesGenerationRequest |
 
 begin
   # Create image
@@ -284,9 +280,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **images_generation_request** | [**ImagesGenerationRequest**](ImagesGenerationRequest.md) |  |  |
+| Name                          | Type                                                      | Description | Notes |
+| ----------------------------- | --------------------------------------------------------- | ----------- | ----- |
+| **images_generation_request** | [**ImagesGenerationRequest**](ImagesGenerationRequest.md) |             |       |
 
 ### Return type
 
@@ -298,9 +294,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
-
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 ## create_image_edit
 
@@ -322,16 +317,16 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-model = 'model_example' # String | 
-image = 'image_example' # String | 
-prompt = 'prompt_example' # String | 
+model = 'model_example' # String |
+image = 'image_example' # String |
+prompt = 'prompt_example' # String |
 opts = {
-  mask: 'mask_example', # String | 
-  size: 'size_example', # String | 
-  n: 56, # Integer | 
-  user: 'user_example', # String | 
-  meta: true, # Boolean | 
-  usage: true # Boolean | 
+  mask: 'mask_example', # String |
+  size: 'size_example', # String |
+  n: 56, # Integer |
+  user: 'user_example', # String |
+  meta: true, # Boolean |
+  usage: true # Boolean |
 }
 
 begin
@@ -363,17 +358,17 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **model** | **String** |  |  |
-| **image** | **String** |  |  |
-| **prompt** | **String** |  |  |
-| **mask** | **String** |  | [optional] |
-| **size** | **String** |  | [optional] |
-| **n** | **Integer** |  | [optional] |
-| **user** | **String** |  | [optional] |
-| **meta** | **Boolean** |  | [optional] |
-| **usage** | **Boolean** |  | [optional] |
+| Name       | Type        | Description | Notes      |
+| ---------- | ----------- | ----------- | ---------- |
+| **model**  | **String**  |             |            |
+| **image**  | **String**  |             |            |
+| **prompt** | **String**  |             |            |
+| **mask**   | **String**  |             | [optional] |
+| **size**   | **String**  |             | [optional] |
+| **n**      | **Integer** |             | [optional] |
+| **user**   | **String**  |             | [optional] |
+| **meta**   | **Boolean** |             | [optional] |
+| **usage**  | **Boolean** |             | [optional] |
 
 ### Return type
 
@@ -385,9 +380,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: multipart/form-data
-- **Accept**: application/json
-
+-   **Content-Type**: multipart/form-data
+-   **Accept**: application/json
 
 ## create_moderation
 
@@ -409,7 +403,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-moderations_request = AIStatsSdk::ModerationsRequest.new({model: 'model_example', input: nil}) # ModerationsRequest | 
+moderations_request = AIStatsSdk::ModerationsRequest.new({model: 'model_example', input: nil}) # ModerationsRequest |
 
 begin
   # Create moderation
@@ -440,9 +434,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **moderations_request** | [**ModerationsRequest**](ModerationsRequest.md) |  |  |
+| Name                    | Type                                            | Description | Notes |
+| ----------------------- | ----------------------------------------------- | ----------- | ----- |
+| **moderations_request** | [**ModerationsRequest**](ModerationsRequest.md) |             |       |
 
 ### Return type
 
@@ -454,9 +448,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
-
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 ## create_response
 
@@ -478,7 +471,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-responses_request = AIStatsSdk::ResponsesRequest.new({model: 'model_example'}) # ResponsesRequest | 
+responses_request = AIStatsSdk::ResponsesRequest.new({model: 'model_example'}) # ResponsesRequest |
 
 begin
   # Create response
@@ -509,9 +502,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **responses_request** | [**ResponsesRequest**](ResponsesRequest.md) |  |  |
+| Name                  | Type                                        | Description | Notes |
+| --------------------- | ------------------------------------------- | ----------- | ----- |
+| **responses_request** | [**ResponsesRequest**](ResponsesRequest.md) |             |       |
 
 ### Return type
 
@@ -523,9 +516,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
-
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 ## create_speech
 
@@ -547,7 +539,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-audio_speech_request = AIStatsSdk::AudioSpeechRequest.new({model: 'model_example', input: 'input_example'}) # AudioSpeechRequest | 
+audio_speech_request = AIStatsSdk::AudioSpeechRequest.new({model: 'model_example', input: 'input_example'}) # AudioSpeechRequest |
 
 begin
   # Generate speech
@@ -578,9 +570,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **audio_speech_request** | [**AudioSpeechRequest**](AudioSpeechRequest.md) |  |  |
+| Name                     | Type                                            | Description | Notes |
+| ------------------------ | ----------------------------------------------- | ----------- | ----- |
+| **audio_speech_request** | [**AudioSpeechRequest**](AudioSpeechRequest.md) |             |       |
 
 ### Return type
 
@@ -592,9 +584,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: audio/mpeg
-
+-   **Content-Type**: application/json
+-   **Accept**: audio/mpeg
 
 ## create_transcription
 
@@ -616,11 +607,11 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-model = 'model_example' # String | 
+model = 'model_example' # String |
 opts = {
-  audio_url: 'audio_url_example', # String | 
-  audio_b64: 'audio_b64_example', # String | 
-  language: 'language_example' # String | 
+  audio_url: 'audio_url_example', # String |
+  audio_b64: 'audio_b64_example', # String |
+  language: 'language_example' # String |
 }
 
 begin
@@ -652,12 +643,12 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **model** | **String** |  |  |
-| **audio_url** | **String** |  | [optional] |
-| **audio_b64** | **String** |  | [optional] |
-| **language** | **String** |  | [optional] |
+| Name          | Type       | Description | Notes      |
+| ------------- | ---------- | ----------- | ---------- |
+| **model**     | **String** |             |            |
+| **audio_url** | **String** |             | [optional] |
+| **audio_b64** | **String** |             | [optional] |
+| **language**  | **String** |             | [optional] |
 
 ### Return type
 
@@ -669,9 +660,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: multipart/form-data
-- **Accept**: application/json
-
+-   **Content-Type**: multipart/form-data
+-   **Accept**: application/json
 
 ## create_translation
 
@@ -693,13 +683,13 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-model = 'model_example' # String | 
+model = 'model_example' # String |
 opts = {
-  audio_url: 'audio_url_example', # String | 
-  audio_b64: 'audio_b64_example', # String | 
-  language: 'language_example', # String | 
-  prompt: 'prompt_example', # String | 
-  temperature: 8.14 # Float | 
+  audio_url: 'audio_url_example', # String |
+  audio_b64: 'audio_b64_example', # String |
+  language: 'language_example', # String |
+  prompt: 'prompt_example', # String |
+  temperature: 8.14 # Float |
 }
 
 begin
@@ -731,14 +721,14 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **model** | **String** |  |  |
-| **audio_url** | **String** |  | [optional] |
-| **audio_b64** | **String** |  | [optional] |
-| **language** | **String** |  | [optional] |
-| **prompt** | **String** |  | [optional] |
-| **temperature** | **Float** |  | [optional] |
+| Name            | Type       | Description | Notes      |
+| --------------- | ---------- | ----------- | ---------- |
+| **model**       | **String** |             |            |
+| **audio_url**   | **String** |             | [optional] |
+| **audio_b64**   | **String** |             | [optional] |
+| **language**    | **String** |             | [optional] |
+| **prompt**      | **String** |             | [optional] |
+| **temperature** | **Float**  |             | [optional] |
 
 ### Return type
 
@@ -750,9 +740,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: multipart/form-data
-- **Accept**: application/json
-
+-   **Content-Type**: multipart/form-data
+-   **Accept**: application/json
 
 ## create_video
 
@@ -774,7 +763,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-video_generation_request = AIStatsSdk::VideoGenerationRequest.new({model: 'model_example', prompt: 'prompt_example'}) # VideoGenerationRequest | 
+video_generation_request = AIStatsSdk::VideoGenerationRequest.new({model: 'model_example', prompt: 'prompt_example'}) # VideoGenerationRequest |
 
 begin
   # Create video
@@ -805,9 +794,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **video_generation_request** | [**VideoGenerationRequest**](VideoGenerationRequest.md) |  |  |
+| Name                         | Type                                                    | Description | Notes |
+| ---------------------------- | ------------------------------------------------------- | ----------- | ----- |
+| **video_generation_request** | [**VideoGenerationRequest**](VideoGenerationRequest.md) |             |       |
 
 ### Return type
 
@@ -819,9 +808,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
-
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 ## get_analytics
 
@@ -843,7 +831,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-get_analytics_request = AIStatsSdk::GetAnalyticsRequest.new # GetAnalyticsRequest | 
+get_analytics_request = AIStatsSdk::GetAnalyticsRequest.new # GetAnalyticsRequest |
 
 begin
   # Get analytics
@@ -874,9 +862,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **get_analytics_request** | [**GetAnalyticsRequest**](GetAnalyticsRequest.md) |  |  |
+| Name                      | Type                                              | Description | Notes |
+| ------------------------- | ------------------------------------------------- | ----------- | ----- |
+| **get_analytics_request** | [**GetAnalyticsRequest**](GetAnalyticsRequest.md) |             |       |
 
 ### Return type
 
@@ -888,9 +876,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
-
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 ## get_generation
 
@@ -943,9 +930,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **id** | **String** | The ID of the generation |  |
+| Name   | Type       | Description              | Notes |
+| ------ | ---------- | ------------------------ | ----- |
+| **id** | **String** | The ID of the generation |       |
 
 ### Return type
 
@@ -957,9 +944,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 ## healthz
 
@@ -1023,9 +1009,8 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 ## list_files
 
@@ -1089,9 +1074,8 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 ## list_models
 
@@ -1152,15 +1136,15 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **endpoints** | [**Array&lt;String&gt;**](String.md) | Filter by endpoints | [optional] |
-| **organisation** | [**ListModelsOrganisationParameter**](.md) | Filter by organisation | [optional] |
-| **input_types** | [**Array&lt;String&gt;**](String.md) | Filter by input types | [optional] |
-| **output_types** | [**Array&lt;String&gt;**](String.md) | Filter by output types | [optional] |
-| **params** | [**Array&lt;String&gt;**](String.md) | Filter by params | [optional] |
-| **limit** | **Integer** | Limit the number of results | [optional][default to 50] |
-| **offset** | **Integer** | Offset for pagination | [optional][default to 0] |
+| Name             | Type                                       | Description                 | Notes                     |
+| ---------------- | ------------------------------------------ | --------------------------- | ------------------------- |
+| **endpoints**    | [**Array&lt;String&gt;**](String.md)       | Filter by endpoints         | [optional]                |
+| **organisation** | [**ListModelsOrganisationParameter**](.md) | Filter by organisation      | [optional]                |
+| **input_types**  | [**Array&lt;String&gt;**](String.md)       | Filter by input types       | [optional]                |
+| **output_types** | [**Array&lt;String&gt;**](String.md)       | Filter by output types      | [optional]                |
+| **params**       | [**Array&lt;String&gt;**](String.md)       | Filter by params            | [optional]                |
+| **limit**        | **Integer**                                | Limit the number of results | [optional][default to 50] |
+| **offset**       | **Integer**                                | Offset for pagination       | [optional][default to 0]  |
 
 ### Return type
 
@@ -1172,9 +1156,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 ## retrieve_batch
 
@@ -1227,9 +1210,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **batch_id** | **String** | The ID of the batch to retrieve. |  |
+| Name         | Type       | Description                      | Notes |
+| ------------ | ---------- | -------------------------------- | ----- |
+| **batch_id** | **String** | The ID of the batch to retrieve. |       |
 
 ### Return type
 
@@ -1241,9 +1224,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 ## retrieve_file
 
@@ -1296,9 +1278,9 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **file_id** | **String** | The ID of the file to retrieve. |  |
+| Name        | Type       | Description                     | Notes |
+| ----------- | ---------- | ------------------------------- | ----- |
+| **file_id** | **String** | The ID of the file to retrieve. |       |
 
 ### Return type
 
@@ -1310,9 +1292,8 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 ## root
 
@@ -1376,9 +1357,8 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 ## upload_file
 
@@ -1400,8 +1380,8 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-file = File.new('/path/to/some/file') # File | 
-purpose = 'purpose_example' # String | 
+file = File.new('/path/to/some/file') # File |
+purpose = 'purpose_example' # String |
 
 begin
   # Upload file
@@ -1432,10 +1412,10 @@ end
 
 ### Parameters
 
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **file** | **File** |  |  |
-| **purpose** | **String** |  |  |
+| Name        | Type       | Description | Notes |
+| ----------- | ---------- | ----------- | ----- |
+| **file**    | **File**   |             |       |
+| **purpose** | **String** |             |       |
 
 ### Return type
 
@@ -1447,6 +1427,5 @@ end
 
 ### HTTP request headers
 
-- **Content-Type**: multipart/form-data
-- **Accept**: application/json
-
+-   **Content-Type**: multipart/form-data
+-   **Accept**: application/json

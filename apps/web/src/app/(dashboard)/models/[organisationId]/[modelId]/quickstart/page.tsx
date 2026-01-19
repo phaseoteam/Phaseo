@@ -41,12 +41,12 @@ export async function generateMetadata(props: {
 
 	if (!result) {
 		return buildMetadata({
-			title: "Gateway Integration for Model",
+			title: "Conduit Integration for Model",
 			description:
-				"Explore gateway support, providers, and routing details for AI models on AI Stats.",
+				"Explore Conduit support, providers, and routing details for AI models on AI Stats.",
 			path,
 			keywords: [
-				"AI gateway",
+				"AI conduit",
 				"model routing",
 				"AI providers",
 				"AI Stats",
@@ -61,18 +61,18 @@ export async function generateMetadata(props: {
 		header?.organisation?.name ??
 		(metadata as any)?.providerName ??
 		"AI provider";
-	const description = `${displayName} gateway support on AI Stats. View providers, streaming support, and routing options for this model.`;
+	const description = `${displayName} Conduit support on AI Stats. View providers, streaming support, and routing options for this model.`;
 
 	return buildMetadata({
-		title: `${displayName} Gateway - Providers & Routing Options`,
+		title: `${displayName} Conduit - Providers & Routing Options`,
 		description,
 		path,
 		imagePath,
 		keywords: [
 			displayName,
-			`${displayName} gateway`,
+			`${displayName} conduit`,
 			`${organisationName} provider`,
-			"AI gateway",
+			"AI conduit",
 			"AI Stats",
 		],
 	});

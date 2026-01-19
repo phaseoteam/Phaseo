@@ -10,7 +10,7 @@ export interface AIStatsSettings {
 
   /**
    * Base URL for the AI Stats Gateway API.
-   * @default "https://api.ai-stats.phaseo.app/v1"
+   * @default "https://api.phaseo.app/v1"
    */
   baseURL?: string;
 

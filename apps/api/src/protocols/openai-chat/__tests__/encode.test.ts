@@ -340,4 +340,35 @@ describe("encodeOpenAIChatResponse", () => {
 		// Should encode both choices
 		expect(response.choices).toHaveLength(2);
 	});
+
+	it("should split Aion reasoning into reasoning_details", () => {
+		const ir: IRChatResponse = {
+			id: "req-123",
+			nativeId: "chatcmpl-abc123",
+			model: "gpt-4",
+			provider: "aionlabs",
+			choices: [
+				{
+					index: 0,
+					message: { role: "assistant", content: "Thinking..." },
+					finishReason: "stop",
+					reasoning: true,
+				},
+				{
+					index: 1,
+					message: { role: "assistant", content: "Final answer" },
+					finishReason: "stop",
+					reasoning: false,
+				},
+			],
+		};
+
+		const response = encodeOpenAIChatResponse(ir, "req-123");
+
+		expect(response.choices).toHaveLength(1);
+		expect(response.choices[0].message.content).toBe("Final answer");
+		expect(response.reasoning_details).toHaveLength(1);
+		expect(response.reasoning_details?.[0].type).toBe("reasoning.text");
+		expect(response.reasoning_details?.[0].reasoning_content).toBe("Thinking...");
+	});
 });

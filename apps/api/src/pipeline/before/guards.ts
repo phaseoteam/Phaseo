@@ -5,6 +5,7 @@ import { err } from "./http";
 import { extractModel, formatZodErrors, buildProviderCandidates } from "./utils";
 import { fetchGatewayContext } from "./context";
 import { generatePublicId } from "./genId";
+import { isDebugAllowed } from "../debug";
 import { authenticate, type AuthFailure } from "./auth";
 import { readAttributionHeaders } from "../after/attribution";
 
@@ -187,6 +188,7 @@ export function makeMeta(input: {
 }): RequestMeta {
     const { referer, appTitle } = readAttributionHeaders(input.req);
     const debugHeader = input.req.headers.get("x-gateway-debug");
+    const debugEnabled = normalizeReturnFlag(debugHeader) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
     const cfRay = input.req.headers.get("cf-ray");
     const forwardedFor = input.req.headers.get("x-forwarded-for");
@@ -202,7 +204,7 @@ export function makeMeta(input: {
         }
     })();
     try {
-        (globalThis as any).__pricingDebug = debugHeader === "true";
+        (globalThis as any).__pricingDebug = debugEnabled;
     } catch {
         // ignore global debug flag errors
     }
@@ -212,7 +214,7 @@ export function makeMeta(input: {
         apiKeyKid: input.apiKeyKid,
         requestId: input.requestId,
         stream: input.stream,
-        debug: debugHeader === "true",
+        debug: debugEnabled,
         echoUpstreamRequest: input.echoUpstreamRequest ?? false,
         startedAtMs: Date.now(),
         keySource: "gateway",

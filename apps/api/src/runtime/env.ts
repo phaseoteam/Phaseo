@@ -52,6 +52,9 @@ export type GatewayBindings = {
     QWEN_BASE_URL?: string;
     TOGETHER_API_KEY?: string;
     TOGETHER_BASE_URL?: string;
+    AION_LABS_API_KEY?: string;
+    AION_LABS_BASE_URL?: string;
+    ZAI_API_KEY?: string;
     AZURE_OPENAI_API_KEY?: string;
     AZURE_OPENAI_BASE_URL?: string;
     AZURE_OPENAI_API_VERSION?: string;
@@ -123,6 +126,9 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "QWEN_BASE_URL",
     "TOGETHER_API_KEY",
     "TOGETHER_BASE_URL",
+    "AION_LABS_API_KEY",
+    "AION_LABS_BASE_URL",
+    "ZAI_API_KEY",
     "AZURE_OPENAI_API_KEY",
     "AZURE_OPENAI_BASE_URL",
     "AZURE_OPENAI_API_VERSION",
@@ -197,7 +203,7 @@ export function clearRuntime() {
 
 export function ensureRuntimeForBackground(): () => void {
     if (runtimeState) {
-        return () => {};
+        return () => { };
     }
     if (!lastBindingsSnapshot) {
         throw new Error("Gateway runtime not configured");
@@ -208,7 +214,7 @@ export function ensureRuntimeForBackground(): () => void {
 
 export function setWaitUntil(handler?: (promise: Promise<unknown>) => void): () => void {
     if (!handler) {
-        return () => {};
+        return () => { };
     }
 
     const entry: WaitUntilEntry = {

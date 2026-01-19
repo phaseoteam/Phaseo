@@ -1,0 +1,18 @@
+{
+  "model_id": "openai/gpt-4o-transcribe-2025-03-20",
+  "organisation_id": "openai",
+  "name": "GPT 4o Transcribe",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-03-20T00:00:00",
+  "release_date": "2025-03-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "text",
+  "family_id": "openai/gpt-4o",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

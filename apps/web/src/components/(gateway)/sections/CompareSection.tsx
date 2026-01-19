@@ -50,7 +50,7 @@ export function CompareSection() {
 									Capability
 								</th>
 								<th className="px-4 py-3 font-medium">
-									AI Stats Gateway
+									AI Stats Conduit
 								</th>
 								<th className="px-4 py-3 font-medium">
 									OpenRouter

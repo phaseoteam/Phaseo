@@ -55,5 +55,31 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-klein-4b-2026-01-15",
+    "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-klein-4b-2026-01-15",
+    "provider_model_slug": "flux-2-klein-4b",
+    "internal_model_id": "black-forest-labs/flux-2-klein-4b-2026-01-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2026-01-15T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "black-forest-labs/flux-2-klein-9b-2026-01-15",
+    "provider_api_model_id": "black-forest-labs:black-forest-labs/flux-2-klein-9b-2026-01-15",
+    "provider_model_slug": "flux-2-klein-9b",
+    "internal_model_id": "black-forest-labs/flux-2-klein-9b-2026-01-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2026-01-15T00:00:00",
+    "effective_to": null,
+    "capabilities": []
   }
 ]

@@ -17,6 +17,7 @@ export const capabilityToEndpoints: Record<string, string[]> = {
     "batch.create": ["/batches"],
     "music.generate": ["/music/generations"],
     "video.generations": ["/video/generations"],
+    "ocr": ["/ocr"],
     // Add more as needed
 };
 

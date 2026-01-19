@@ -145,7 +145,7 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		body: (model) => ({
 			model,
 			voice: "alloy",
-			input: "Welcome to the AI Stats Gateway where latency, uptime, and pricing are always in your control.",
+			input: "Welcome to the AI Stats Conduit where latency, uptime, and pricing are always in your control.",
 			format: "mp3",
 		}),
 	},
@@ -573,7 +573,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 					<p className="text-sm text-slate-600 dark:text-slate-400">
 						Swap endpoints and models without touching your
 						integration. Use the TypeScript SDK (`@ai-stats/ts-sdk`)
-						or Python SDK (`ai-stats-py-sdk`), or call the Gateway
+						or Python SDK (`ai-stats-py-sdk`), or call the Conduit
 						directly from cURL/fetch.
 					</p>
 				</div>

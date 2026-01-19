@@ -108,9 +108,9 @@ export const curatedGroups: ResultGroup[] = [
                 badge: "New",
             },
             {
-                id: "model-gpt5.1",
-                title: "GPT-5.1",
-                href: "/models/gpt-5.1",
+                id: "model-gpt5.2",
+                title: "GPT-5.2",
+                href: "/models/gpt-5.2",
                 icon: "model",
                 logoId: "openai",
                 badge: "New",
@@ -141,7 +141,7 @@ export const curatedGroups: ResultGroup[] = [
             {
                 id: "model-minimax",
                 title: "Minimax M2",
-                href: "/models/minimax-m2",
+                href: "/models/minimax-m2.1",
                 icon: "model",
                 logoId: "minimax",
             },

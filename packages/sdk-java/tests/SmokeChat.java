@@ -13,7 +13,7 @@ public class SmokeChat {
         }
         String baseUrl = System.getenv("AI_STATS_BASE_URL");
         if (baseUrl == null || baseUrl.isEmpty()) {
-            baseUrl = "https://api.ai-stats.phaseo.app/v1";
+            baseUrl = "https://api.phaseo.app/v1";
         }
 
         Map<String, String> headers = new HashMap<>();

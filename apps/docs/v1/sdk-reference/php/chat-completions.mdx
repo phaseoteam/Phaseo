@@ -6,6 +6,7 @@ description: "Call /chat/completions with the PHP SDK."
 **Method**: CompletionsApi#createChatCompletion
 
 ### Example
+
 ```php
 <?php
 
@@ -19,7 +20,7 @@ use AIStats\Sdk\Model\MessageContentText;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $completionsApi = new CompletionsApi(null, $config);
@@ -40,39 +41,40 @@ echo $response->getChoices()[0]->getMessage()->getContent()->getText();
 ```
 
 ### Key parameters
-- `model` (required): Target model id.
-- `messages` (required): Ordered messages with roles `system|user|assistant|tool`; content as MessageContent objects.
-- Sampling: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
-- Length/penalties: `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
-- Tools: `tools` (definitions), `tool_choice` (auto/none/specific tool), `max_tool_calls` (int), `parallel_tool_calls` (bool).
-- Logprobs: `logprobs` (bool), `top_logprobs` (0–20).
-- Output: `response_format` (json/text), `meta` (bool to include meta block), `stream` (bool), `service_tier`.
-- Gateway extras: `usage` (bool to request usage).
+
+-   `model` (required): Target model id.
+-   `messages` (required): Ordered messages with roles `system|user|assistant|tool`; content as MessageContent objects.
+-   Sampling: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
+-   Length/penalties: `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
+-   Tools: `tools` (definitions), `tool_choice` (auto/none/specific tool), `max_tool_calls` (int), `parallel_tool_calls` (bool).
+-   Logprobs: `logprobs` (bool), `top_logprobs` (0–20).
+-   Output: `response_format` (json/text), `meta` (bool to include meta block), `stream` (bool), `service_tier`.
+-   Gateway extras: `usage` (bool to request usage).
 
 ### Returns
+
 ChatCompletionsResponse JSON object.
 
 ```json
 {
-  "id": "chatcmpl-123",
-  "object": "chat.completion",
-  "created": 1677652288,
-  "model": "gpt-3.5-turbo-0125",
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "Hello there, how may I assist you today?"
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 9,
-    "completion_tokens": 12,
-    "total_tokens": 21
-  }
+	"id": "chatcmpl-123",
+	"object": "chat.completion",
+	"created": 1677652288,
+	"model": "gpt-3.5-turbo-0125",
+	"choices": [
+		{
+			"index": 0,
+			"message": {
+				"role": "assistant",
+				"content": "Hello there, how may I assist you today?"
+			},
+			"finish_reason": "stop"
+		}
+	],
+	"usage": {
+		"prompt_tokens": 9,
+		"completion_tokens": 12,
+		"total_tokens": 21
+	}
 }
 ```
-

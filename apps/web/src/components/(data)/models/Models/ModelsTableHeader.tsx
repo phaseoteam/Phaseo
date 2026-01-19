@@ -23,6 +23,7 @@ import {
 	TooltipTrigger,
 	TooltipContent,
 } from "@/components/ui/tooltip";
+import { featureLabels } from "@/lib/config/featureLabels";
 
 interface ModelsTableHeaderProps {
 	allEndpoints: string[];
@@ -456,7 +457,7 @@ export default function ModelsTableHeader({
 												htmlFor={`feature-${feature}`}
 												className="text-sm"
 											>
-												{feature}
+												{featureLabels[feature] ?? feature}
 											</label>
 										</div>
 									))}

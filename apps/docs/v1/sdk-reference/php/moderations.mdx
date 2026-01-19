@@ -6,6 +6,7 @@ description: "Call /moderations with the PHP SDK."
 **Method**: ModerationsApi#moderationsPost
 
 ### Example
+
 ```php
 <?php
 
@@ -18,7 +19,7 @@ use AIStats\Sdk\Model\ModerationRequestInput;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $moderationsApi = new ModerationsApi(null, $config);
@@ -34,10 +35,11 @@ echo $response->getResults()[0]->getFlagged() ? 'Flagged' : 'Not flagged';
 ```
 
 ### Key parameters
-- `model` (required): Moderation model id (e.g., `openai/omni-moderation-latest`).
-- `input` (required): Content items (text or image_url).
-- Optional: `categories`/`severity` filters (when supported), `user` tag.
+
+-   `model` (required): Moderation model id (e.g., `openai/omni-moderation-latest`).
+-   `input` (required): Content items (text or image_url).
+-   Optional: `categories`/`severity` filters (when supported), `user` tag.
 
 ### Returns
-ModerationResponse
 
+ModerationResponse

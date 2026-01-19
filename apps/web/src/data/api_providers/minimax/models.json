@@ -79,7 +79,7 @@
     "api_model_id": "minimax/minimax-01",
     "provider_api_model_id": "minimax:minimax/minimax-01",
     "provider_model_slug": null,
-    "internal_model_id": "minimax/minimax-01",
+    "internal_model_id": "minimax/minimax-text-01-2025-01-15",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -95,23 +95,17 @@
     ]
   },
   {
-    "api_model_id": "minimax/minimax-m1-2025-06-16",
-    "provider_api_model_id": "minimax:minimax/minimax-m1-2025-06-16",
+    "api_model_id": "minimax/minimax-m1-80k-2025-06-16",
+    "provider_api_model_id": "minimax:minimax/minimax-m1-80k-2025-06-16",
     "provider_model_slug": null,
-    "internal_model_id": "minimax/minimax-m1-2025-06-16",
+    "internal_model_id": "minimax/minimax-m1-80k-2025-06-16",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
+    "capabilities": []
   },
   {
     "api_model_id": "minimax/minimax-m2-1-2025-12-23",

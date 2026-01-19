@@ -1,7 +1,7 @@
 {
   "model_id": "openai/sora-2-2025-09-30",
   "organisation_id": "openai",
-  "name": "Sora 2",
+  "name": "Sora 2 (2025-09-30)",
   "status": "Available",
   "previous_model_id": "openai/sora-1-2024-12-09",
   "announced_date": "2025-09-30T00:00:00",
@@ -11,6 +11,7 @@
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "audio,video",
+  "family_id": "openai/sora-2",
   "links": [],
   "details": [],
   "benchmarks": []

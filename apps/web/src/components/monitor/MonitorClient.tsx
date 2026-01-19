@@ -10,7 +10,7 @@ import {
 	MonitorHistoryClient,
 	type ChangeHistory,
 } from "@/components/monitor/MonitorHistoryClient";
-import { type MonitorModelData } from "@/lib/fetchers/models/getMonitorModels";
+import { type MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
 
 interface MonitorClientProps {
 	initialModelData: MonitorModelData[];

@@ -1,0 +1,17 @@
+{
+  "model_id": "openai/gpt-realtime-2025-08-28",
+  "organisation_id": "openai",
+  "name": "GPT Realtime",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-08-28T00:00:00",
+  "release_date": "2025-08-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,audio",
+  "output_types": "text,audio",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

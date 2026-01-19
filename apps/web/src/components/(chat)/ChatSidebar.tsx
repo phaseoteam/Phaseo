@@ -641,7 +641,7 @@ export function ChatSidebar({
 									</Link>
 								</DropdownMenuItem>
 								<DropdownMenuItem asChild>
-									<Link href="/gateway/usage">
+									<Link href="/conduit/usage">
 										<Gauge className="mr-2 h-4 w-4" />
 										Usage
 									</Link>

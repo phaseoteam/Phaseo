@@ -28,26 +28,23 @@ Authorization: Bearer aistats_v1_k_ab_cdefghijklmnop
 Most HTTP clients expose a dedicated configuration property. For example, with `fetch`:
 
 ```ts
-const response = await fetch(
-	"https://api.ai-stats.phaseo.app/v1/chat/completions",
-	{
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${process.env.AI_STATS_API_KEY}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model: "gpt-5-nano-2025-08-07",
-			messages: [
-				{ role: "system", content: "You are a helpful assistant." },
-				{
-					role: "user",
-					content: "Summarise the drawbacks to AI.",
-				},
-			],
-		}),
-	}
-);
+const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+	method: "POST",
+	headers: {
+		Authorization: `Bearer ${process.env.AI_STATS_API_KEY}`,
+		"Content-Type": "application/json",
+	},
+	body: JSON.stringify({
+		model: "gpt-5-nano-2025-08-07",
+		messages: [
+			{ role: "system", content: "You are a helpful assistant." },
+			{
+				role: "user",
+				content: "Summarise the drawbacks to AI.",
+			},
+		],
+	}),
+});
 ```
 
 ---

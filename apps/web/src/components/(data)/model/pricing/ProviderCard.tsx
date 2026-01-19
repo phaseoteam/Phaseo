@@ -356,7 +356,7 @@ export default function ProviderCard({
 								<PopoverContent className="w-72" side="right">
 									<div className="space-y-4">
 										<h4 className="font-semibold text-sm">
-											Gateway Endpoint Support
+											Conduit Endpoint Support
 										</h4>
 										<div className="space-y-4">
 											{endpointCategories.map(

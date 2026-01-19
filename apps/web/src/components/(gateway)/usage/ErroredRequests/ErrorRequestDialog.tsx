@@ -90,7 +90,7 @@ function getFriendlyErrorCode(code: string | null | undefined): string {
 		server_error: "Server error",
 		bad_gateway: "Bad gateway",
 		service_unavailable: "Service unavailable",
-		gateway_timeout: "Gateway timeout",
+		gateway_timeout: "Conduit timeout",
 		payment_error: "Payment error",
 		permission_error: "Permission error",
 		bad_request: "Bad request",

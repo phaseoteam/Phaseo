@@ -10,7 +10,7 @@ import { Login } from "@/components/(gateway)/auth/Login";
 export const metadata: Metadata = {
 	title: "Sign In",
 	description:
-		"Sign in or sign up to unlock the AI Stats Gateway and start exploring insights.",
+		"Sign in or sign up to unlock the AI Stats Conduit and start exploring insights.",
 };
 
 export default function Page() {

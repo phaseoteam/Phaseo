@@ -60,7 +60,7 @@ export function TierBadge({
 							Current tier: {tierName}
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Gateway fee: {feePct.toFixed(2)}%{" "}
+							Conduit fee: {feePct.toFixed(2)}%{" "}
 							{hasSavings
 								? `(saved ${savingsPoints.toFixed(2)} pts vs Level 0)`
 								: ""}

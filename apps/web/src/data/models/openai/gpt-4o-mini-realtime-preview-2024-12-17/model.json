@@ -1,0 +1,18 @@
+{
+  "model_id": "openai/gpt-4o-mini-realtime-preview-2024-12-17",
+  "organisation_id": "openai",
+  "name": "GPT 4o Mini Realtime Preview",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2024-12-17T00:00:00",
+  "release_date": "2024-12-17T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "text,audio",
+  "family_id": "openai/gpt-4o",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

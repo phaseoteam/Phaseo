@@ -11,7 +11,9 @@
       "Bash(ls:*)",
       "WebFetch(domain:supabase.com)",
       "Bash(pnpm build:*)",
-      "Bash(pnpm list:*)"
+      "Bash(pnpm list:*)",
+      "WebFetch(domain:platform.minimax.io)",
+      "WebFetch(domain:docs.z.ai)"
     ]
   },
   "outputStyle": "Explanatory"

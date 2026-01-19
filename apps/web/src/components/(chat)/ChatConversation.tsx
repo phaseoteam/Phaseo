@@ -45,14 +45,14 @@ import {
 } from "lucide-react";
 
 type ChatConversationProps = {
-    activeThread: ChatThread | null;
-    isSending: boolean;
-    isAuthenticated: boolean;
-    hasApiKey: boolean;
-    presetPrompt?: string;
-    onSend: (content: string) => void;
-    onEditMessage: (messageId: string, content: string) => void;
-    onRetryAssistant: (messageId: string) => void;
+	activeThread: ChatThread | null;
+	isSending: boolean;
+	isAuthenticated: boolean;
+	hasApiKey: boolean;
+	presetPrompt?: string;
+	onSend: (content: string) => void;
+	onEditMessage: (messageId: string, content: string) => void;
+	onRetryAssistant: (messageId: string) => void;
 	onBranchAssistant: (messageId: string) => void;
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
 	orgNameById: Record<string, string>;
@@ -95,14 +95,14 @@ function ensureVariants(message: ChatMessage) {
 }
 
 export function ChatConversation({
-    activeThread,
-    isSending,
-    isAuthenticated,
-    hasApiKey,
-    presetPrompt,
-    onSend,
-    onEditMessage,
-    onRetryAssistant,
+	activeThread,
+	isSending,
+	isAuthenticated,
+	hasApiKey,
+	presetPrompt,
+	onSend,
+	onEditMessage,
+	onRetryAssistant,
 	onBranchAssistant,
 	onSelectVariant,
 	orgNameById,
@@ -115,13 +115,13 @@ export function ChatConversation({
 	const [composer, setComposer] = useState("");
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editingValue, setEditingValue] = useState("");
-    const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
-    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-    const scrollAreaRef = useRef<HTMLDivElement | null>(null);
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const [attachments, setAttachments] = useState<File[]>([]);
-    const [searchEnabled, setSearchEnabled] = useState(false);
-    const appliedPresetRef = useRef<string | null>(null);
+	const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
+	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+	const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
+	const [attachments, setAttachments] = useState<File[]>([]);
+	const [searchEnabled, setSearchEnabled] = useState(false);
+	const appliedPresetRef = useRef<string | null>(null);
 
 	const latestMessageContent =
 		activeThread?.messages[activeThread.messages.length - 1]?.content ?? "";
@@ -132,7 +132,7 @@ export function ChatConversation({
 		const root = scrollAreaRef.current;
 		if (!root) return;
 		const viewport = root.querySelector(
-			"[data-radix-scroll-area-viewport]"
+			"[data-radix-scroll-area-viewport]",
 		) as HTMLDivElement | null;
 		if (!viewport) return;
 		requestAnimationFrame(() => {
@@ -148,19 +148,19 @@ export function ChatConversation({
 		});
 	}, [activeThread?.id]);
 
-    useEffect(() => {
-        const raf = requestAnimationFrame(() => {
-            setComposer("");
-        });
-        return () => cancelAnimationFrame(raf);
-    }, [activeThread?.id]);
+	useEffect(() => {
+		const raf = requestAnimationFrame(() => {
+			setComposer("");
+		});
+		return () => cancelAnimationFrame(raf);
+	}, [activeThread?.id]);
 
-    useEffect(() => {
-        if (!presetPrompt) return;
-        if (appliedPresetRef.current === presetPrompt) return;
-        setComposer(presetPrompt);
-        appliedPresetRef.current = presetPrompt;
-    }, [presetPrompt, activeThread?.id]);
+	useEffect(() => {
+		if (!presetPrompt) return;
+		if (appliedPresetRef.current === presetPrompt) return;
+		setComposer(presetPrompt);
+		appliedPresetRef.current = presetPrompt;
+	}, [presetPrompt, activeThread?.id]);
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -169,15 +169,15 @@ export function ChatConversation({
 					'[data-state="open"][role="dialog"],' +
 						' [data-state="open"][role="menu"],' +
 						' [data-state="open"][role="listbox"],' +
-						' [data-state="open"][data-radix-popper-content-wrapper]'
-				)
+						' [data-state="open"][data-radix-popper-content-wrapper]',
+				),
 			);
 			if (overlayOpen) return;
 			if (event.metaKey || event.ctrlKey || event.altKey) return;
 			if (
 				event.target &&
 				(event.target as HTMLElement).closest(
-					"input, textarea, [contenteditable='true']"
+					"input, textarea, [contenteditable='true']",
 				)
 			) {
 				return;
@@ -195,14 +195,14 @@ export function ChatConversation({
 					'[data-state="open"][role="dialog"],' +
 						' [data-state="open"][role="menu"],' +
 						' [data-state="open"][role="listbox"],' +
-						' [data-state="open"][data-radix-popper-content-wrapper]'
-				)
+						' [data-state="open"][data-radix-popper-content-wrapper]',
+				),
 			);
 			if (overlayOpen) return;
 			if (
 				event.target &&
 				(event.target as HTMLElement).closest(
-					"input, textarea, [contenteditable='true']"
+					"input, textarea, [contenteditable='true']",
 				)
 			) {
 				return;
@@ -233,7 +233,7 @@ export function ChatConversation({
 
 	const formatMetric = (
 		value: number | string | null | undefined,
-		suffix?: string
+		suffix?: string,
 	) => {
 		if (value === null || value === undefined || value === "") return "-";
 		return suffix ? `${value}${suffix}` : `${value}`;
@@ -243,7 +243,7 @@ export function ChatConversation({
 		if (!metadataOpenId || !activeThread) return null;
 		return (
 			activeThread.messages.find(
-				(message) => message.id === metadataOpenId
+				(message) => message.id === metadataOpenId,
 			) ?? null
 		);
 	}, [activeThread, metadataOpenId]);
@@ -353,7 +353,7 @@ export function ChatConversation({
 					key={message.id}
 					className={cn(
 						"flex flex-col",
-						isUser ? "items-end" : "items-start"
+						isUser ? "items-end" : "items-start",
 					)}
 				>
 					{!isUser && modelId && (
@@ -366,7 +366,7 @@ export function ChatConversation({
 								alt={orgName}
 								width={18}
 								height={18}
-								className="rounded-full shrink-0"
+								className="rounded-xl shrink-0"
 							/>
 							<span className="truncate">{modelLabel}</span>
 						</Link>
@@ -378,7 +378,7 @@ export function ChatConversation({
 								? hasAccent
 									? "text-background"
 									: "bg-foreground text-background"
-								: "border border-border bg-muted text-foreground"
+								: "border border-border bg-muted text-foreground",
 						)}
 						style={userBubbleStyle}
 					>
@@ -410,7 +410,7 @@ export function ChatConversation({
 											onClick={() => {
 												onEditMessage(
 													message.id,
-													editingValue.trim()
+													editingValue.trim(),
 												);
 												setEditingId(null);
 												setEditingValue("");
@@ -437,7 +437,7 @@ export function ChatConversation({
 									<Reasoning
 										isStreaming={isPendingAssistant}
 										defaultOpen={Boolean(
-											isPendingAssistant
+											isPendingAssistant,
 										)}
 									>
 										<ReasoningTrigger />
@@ -530,7 +530,7 @@ export function ChatConversation({
 												className="h-7 w-7"
 												onClick={() =>
 													onBranchAssistant(
-														message.id
+														message.id,
 													)
 												}
 											>
@@ -545,7 +545,7 @@ export function ChatConversation({
 										open={metadataOpenId === message.id}
 										onOpenChange={(open) =>
 											setMetadataOpenId(
-												open ? message.id : null
+												open ? message.id : null,
 											)
 										}
 									>
@@ -577,7 +577,7 @@ export function ChatConversation({
 														</span>
 														<span>
 															{formatMetric(
-																totalTokens
+																totalTokens,
 															)}
 														</span>
 													</div>
@@ -588,7 +588,7 @@ export function ChatConversation({
 														<span>
 															{formatMetric(
 																latencyDisplay,
-																" ms"
+																" ms",
 															)}
 														</span>
 													</div>
@@ -599,7 +599,7 @@ export function ChatConversation({
 														<span>
 															{formatMetric(
 																generationSeconds,
-																" s"
+																" s",
 															)}
 														</span>
 													</div>
@@ -610,7 +610,7 @@ export function ChatConversation({
 														<span>
 															{formatMetric(
 																throughputDisplay,
-																" tps"
+																" tps",
 															)}
 														</span>
 													</div>
@@ -638,8 +638,8 @@ export function ChatConversation({
 												message.id,
 												Math.max(
 													0,
-													activeVariantIndex - 1
-												)
+													activeVariantIndex - 1,
+												),
 											)
 										}
 										disabled={activeVariantIndex <= 0}
@@ -658,8 +658,8 @@ export function ChatConversation({
 												message.id,
 												Math.min(
 													variants.length - 1,
-													activeVariantIndex + 1
-												)
+													activeVariantIndex + 1,
+												),
 											)
 										}
 										disabled={
@@ -764,7 +764,7 @@ export function ChatConversation({
 													alt={selectedOrgId}
 													width={16}
 													height={16}
-													className="rounded-full shrink-0"
+													className="rounded-xl shrink-0"
 												/>
 											)}
 										</Button>

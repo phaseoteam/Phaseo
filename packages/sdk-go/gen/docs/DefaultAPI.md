@@ -1,39 +1,35 @@
 # \DefaultAPI
 
-All URIs are relative to *https://api.ai-stats.phaseo.app/v1*
+All URIs are relative to *https://api.phaseo.app/v1*
 
-Method | HTTP request | Description
-------------- | ------------- | -------------
-[**CreateBatch**](DefaultAPI.md#CreateBatch) | **Post** /batches | Create batch
-[**CreateChatCompletion**](DefaultAPI.md#CreateChatCompletion) | **Post** /chat/completions | Create chat completion
-[**CreateEmbedding**](DefaultAPI.md#CreateEmbedding) | **Post** /embeddings | Create embeddings
-[**CreateImage**](DefaultAPI.md#CreateImage) | **Post** /images/generations | Create image
-[**CreateImageEdit**](DefaultAPI.md#CreateImageEdit) | **Post** /images/edits | Create image edit
-[**CreateModeration**](DefaultAPI.md#CreateModeration) | **Post** /moderations | Create moderation
-[**CreateResponse**](DefaultAPI.md#CreateResponse) | **Post** /responses | Create response
-[**CreateSpeech**](DefaultAPI.md#CreateSpeech) | **Post** /audio/speech | Generate speech
-[**CreateTranscription**](DefaultAPI.md#CreateTranscription) | **Post** /audio/transcriptions | Create transcription
-[**CreateTranslation**](DefaultAPI.md#CreateTranslation) | **Post** /audio/translations | Create translation
-[**CreateVideo**](DefaultAPI.md#CreateVideo) | **Post** /videos | Create video
-[**GetAnalytics**](DefaultAPI.md#GetAnalytics) | **Post** /analytics | Get analytics
-[**GetGeneration**](DefaultAPI.md#GetGeneration) | **Get** /generation | Get generation
-[**Healthz**](DefaultAPI.md#Healthz) | **Get** /healthz | Health check
-[**ListFiles**](DefaultAPI.md#ListFiles) | **Get** /files | List files
-[**ListModels**](DefaultAPI.md#ListModels) | **Get** /models | List models
-[**RetrieveBatch**](DefaultAPI.md#RetrieveBatch) | **Get** /batches/{batch_id} | Retrieve batch
-[**RetrieveFile**](DefaultAPI.md#RetrieveFile) | **Get** /files/{file_id} | Retrieve file
-[**Root**](DefaultAPI.md#Root) | **Get** / | Root endpoint
-[**UploadFile**](DefaultAPI.md#UploadFile) | **Post** /files | Upload file
-
-
+| Method                                                         | HTTP request                   | Description            |
+| -------------------------------------------------------------- | ------------------------------ | ---------------------- |
+| [**CreateBatch**](DefaultAPI.md#CreateBatch)                   | **Post** /batches              | Create batch           |
+| [**CreateChatCompletion**](DefaultAPI.md#CreateChatCompletion) | **Post** /chat/completions     | Create chat completion |
+| [**CreateEmbedding**](DefaultAPI.md#CreateEmbedding)           | **Post** /embeddings           | Create embeddings      |
+| [**CreateImage**](DefaultAPI.md#CreateImage)                   | **Post** /images/generations   | Create image           |
+| [**CreateImageEdit**](DefaultAPI.md#CreateImageEdit)           | **Post** /images/edits         | Create image edit      |
+| [**CreateModeration**](DefaultAPI.md#CreateModeration)         | **Post** /moderations          | Create moderation      |
+| [**CreateResponse**](DefaultAPI.md#CreateResponse)             | **Post** /responses            | Create response        |
+| [**CreateSpeech**](DefaultAPI.md#CreateSpeech)                 | **Post** /audio/speech         | Generate speech        |
+| [**CreateTranscription**](DefaultAPI.md#CreateTranscription)   | **Post** /audio/transcriptions | Create transcription   |
+| [**CreateTranslation**](DefaultAPI.md#CreateTranslation)       | **Post** /audio/translations   | Create translation     |
+| [**CreateVideo**](DefaultAPI.md#CreateVideo)                   | **Post** /videos               | Create video           |
+| [**GetAnalytics**](DefaultAPI.md#GetAnalytics)                 | **Post** /analytics            | Get analytics          |
+| [**GetGeneration**](DefaultAPI.md#GetGeneration)               | **Get** /generation            | Get generation         |
+| [**Healthz**](DefaultAPI.md#Healthz)                           | **Get** /healthz               | Health check           |
+| [**ListFiles**](DefaultAPI.md#ListFiles)                       | **Get** /files                 | List files             |
+| [**ListModels**](DefaultAPI.md#ListModels)                     | **Get** /models                | List models            |
+| [**RetrieveBatch**](DefaultAPI.md#RetrieveBatch)               | **Get** /batches/{batch_id}    | Retrieve batch         |
+| [**RetrieveFile**](DefaultAPI.md#RetrieveFile)                 | **Get** /files/{file_id}       | Retrieve file          |
+| [**Root**](DefaultAPI.md#Root)                                 | **Get** /                      | Root endpoint          |
+| [**UploadFile**](DefaultAPI.md#UploadFile)                     | **Post** /files                | Upload file            |
 
 ## CreateBatch
 
 > BatchResponse CreateBatch(ctx).BatchRequest(batchRequest).Execute()
 
 Create batch
-
-
 
 ### Example
 
@@ -48,7 +44,7 @@ import (
 )
 
 func main() {
-	batchRequest := *openapiclient.NewBatchRequest("InputFileId_example", "Endpoint_example") // BatchRequest | 
+	batchRequest := *openapiclient.NewBatchRequest("InputFileId_example", "Endpoint_example") // BatchRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -64,16 +60,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateBatchRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **batchRequest** | [**BatchRequest**](BatchRequest.md) |  | 
+| Name             | Type                                | Description | Notes |
+| ---------------- | ----------------------------------- | ----------- | ----- |
+| **batchRequest** | [**BatchRequest**](BatchRequest.md) |             |
 
 ### Return type
 
@@ -85,21 +78,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateChatCompletion
 
 > ChatCompletionsResponse CreateChatCompletion(ctx).ChatCompletionsRequest(chatCompletionsRequest).Execute()
 
 Create chat completion
-
-
 
 ### Example
 
@@ -114,7 +104,7 @@ import (
 )
 
 func main() {
-	chatCompletionsRequest := *openapiclient.NewChatCompletionsRequest("Model_example", []openapiclient.ChatMessage{*openapiclient.NewChatMessage("Role_example")}) // ChatCompletionsRequest | 
+	chatCompletionsRequest := *openapiclient.NewChatCompletionsRequest("Model_example", []openapiclient.ChatMessage{*openapiclient.NewChatMessage("Role_example")}) // ChatCompletionsRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -130,16 +120,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateChatCompletionRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **chatCompletionsRequest** | [**ChatCompletionsRequest**](ChatCompletionsRequest.md) |  | 
+| Name                       | Type                                                    | Description | Notes |
+| -------------------------- | ------------------------------------------------------- | ----------- | ----- |
+| **chatCompletionsRequest** | [**ChatCompletionsRequest**](ChatCompletionsRequest.md) |             |
 
 ### Return type
 
@@ -151,21 +138,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateEmbedding
 
 > EmbeddingsResponse CreateEmbedding(ctx).EmbeddingsRequest(embeddingsRequest).Execute()
 
 Create embeddings
-
-
 
 ### Example
 
@@ -180,7 +164,7 @@ import (
 )
 
 func main() {
-	embeddingsRequest := *openapiclient.NewEmbeddingsRequest("Model_example", openapiclient.EmbeddingsRequest_input{ArrayOfString: new([]string)}) // EmbeddingsRequest | 
+	embeddingsRequest := *openapiclient.NewEmbeddingsRequest("Model_example", openapiclient.EmbeddingsRequest_input{ArrayOfString: new([]string)}) // EmbeddingsRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -196,16 +180,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateEmbeddingRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **embeddingsRequest** | [**EmbeddingsRequest**](EmbeddingsRequest.md) |  | 
+| Name                  | Type                                          | Description | Notes |
+| --------------------- | --------------------------------------------- | ----------- | ----- |
+| **embeddingsRequest** | [**EmbeddingsRequest**](EmbeddingsRequest.md) |             |
 
 ### Return type
 
@@ -217,21 +198,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateImage
 
 > ImagesGenerationResponse CreateImage(ctx).ImagesGenerationRequest(imagesGenerationRequest).Execute()
 
 Create image
-
-
 
 ### Example
 
@@ -246,7 +224,7 @@ import (
 )
 
 func main() {
-	imagesGenerationRequest := *openapiclient.NewImagesGenerationRequest("Model_example", "Prompt_example") // ImagesGenerationRequest | 
+	imagesGenerationRequest := *openapiclient.NewImagesGenerationRequest("Model_example", "Prompt_example") // ImagesGenerationRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -262,16 +240,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateImageRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **imagesGenerationRequest** | [**ImagesGenerationRequest**](ImagesGenerationRequest.md) |  | 
+| Name                        | Type                                                      | Description | Notes |
+| --------------------------- | --------------------------------------------------------- | ----------- | ----- |
+| **imagesGenerationRequest** | [**ImagesGenerationRequest**](ImagesGenerationRequest.md) |             |
 
 ### Return type
 
@@ -283,21 +258,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateImageEdit
 
 > ImagesEditResponse CreateImageEdit(ctx).Model(model).Image(image).Prompt(prompt).Mask(mask).Size(size).N(n).User(user).Meta(meta).Usage(usage).Execute()
 
 Create image edit
-
-
 
 ### Example
 
@@ -312,9 +284,9 @@ import (
 )
 
 func main() {
-	model := "model_example" // string | 
-	image := "image_example" // string | 
-	prompt := "prompt_example" // string | 
+	model := "model_example" // string |
+	image := "image_example" // string |
+	prompt := "prompt_example" // string |
 	mask := "mask_example" // string |  (optional)
 	size := "size_example" // string |  (optional)
 	n := int32(56) // int32 |  (optional)
@@ -336,24 +308,21 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateImageEditRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **model** | **string** |  | 
- **image** | **string** |  | 
- **prompt** | **string** |  | 
- **mask** | **string** |  | 
- **size** | **string** |  | 
- **n** | **int32** |  | 
- **user** | **string** |  | 
- **meta** | **bool** |  | 
- **usage** | **bool** |  | 
+| Name       | Type       | Description | Notes |
+| ---------- | ---------- | ----------- | ----- |
+| **model**  | **string** |             |
+| **image**  | **string** |             |
+| **prompt** | **string** |             |
+| **mask**   | **string** |             |
+| **size**   | **string** |             |
+| **n**      | **int32**  |             |
+| **user**   | **string** |             |
+| **meta**   | **bool**   |             |
+| **usage**  | **bool**   |             |
 
 ### Return type
 
@@ -365,21 +334,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: multipart/form-data
-- **Accept**: application/json
+-   **Content-Type**: multipart/form-data
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateModeration
 
 > ModerationsResponse CreateModeration(ctx).ModerationsRequest(moderationsRequest).Execute()
 
 Create moderation
-
-
 
 ### Example
 
@@ -394,7 +360,7 @@ import (
 )
 
 func main() {
-	moderationsRequest := *openapiclient.NewModerationsRequest("Model_example", openapiclient.ModerationsRequest_input{ArrayOfModerationsRequestInputOneOfInner: new([]ModerationsRequestInputOneOfInner)}) // ModerationsRequest | 
+	moderationsRequest := *openapiclient.NewModerationsRequest("Model_example", openapiclient.ModerationsRequest_input{ArrayOfModerationsRequestInputOneOfInner: new([]ModerationsRequestInputOneOfInner)}) // ModerationsRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -410,16 +376,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateModerationRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **moderationsRequest** | [**ModerationsRequest**](ModerationsRequest.md) |  | 
+| Name                   | Type                                            | Description | Notes |
+| ---------------------- | ----------------------------------------------- | ----------- | ----- |
+| **moderationsRequest** | [**ModerationsRequest**](ModerationsRequest.md) |             |
 
 ### Return type
 
@@ -431,21 +394,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateResponse
 
 > ResponsesResponse CreateResponse(ctx).ResponsesRequest(responsesRequest).Execute()
 
 Create response
-
-
 
 ### Example
 
@@ -460,7 +420,7 @@ import (
 )
 
 func main() {
-	responsesRequest := *openapiclient.NewResponsesRequest("Model_example") // ResponsesRequest | 
+	responsesRequest := *openapiclient.NewResponsesRequest("Model_example") // ResponsesRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -476,16 +436,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateResponseRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **responsesRequest** | [**ResponsesRequest**](ResponsesRequest.md) |  | 
+| Name                 | Type                                        | Description | Notes |
+| -------------------- | ------------------------------------------- | ----------- | ----- |
+| **responsesRequest** | [**ResponsesRequest**](ResponsesRequest.md) |             |
 
 ### Return type
 
@@ -497,21 +454,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
 
-
 ## CreateSpeech
 
-> *os.File CreateSpeech(ctx).AudioSpeechRequest(audioSpeechRequest).Execute()
+> \*os.File CreateSpeech(ctx).AudioSpeechRequest(audioSpeechRequest).Execute()
 
 Generate speech
-
-
 
 ### Example
 
@@ -526,7 +480,7 @@ import (
 )
 
 func main() {
-	audioSpeechRequest := *openapiclient.NewAudioSpeechRequest("Model_example", "Input_example") // AudioSpeechRequest | 
+	audioSpeechRequest := *openapiclient.NewAudioSpeechRequest("Model_example", "Input_example") // AudioSpeechRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -542,20 +496,17 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateSpeechRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **audioSpeechRequest** | [**AudioSpeechRequest**](AudioSpeechRequest.md) |  | 
+| Name                   | Type                                            | Description | Notes |
+| ---------------------- | ----------------------------------------------- | ----------- | ----- |
+| **audioSpeechRequest** | [**AudioSpeechRequest**](AudioSpeechRequest.md) |             |
 
 ### Return type
 
-[***os.File**](*os.File.md)
+[**\*os.File**](*os.File.md)
 
 ### Authorization
 
@@ -563,21 +514,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: audio/mpeg
+-   **Content-Type**: application/json
+-   **Accept**: audio/mpeg
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateTranscription
 
 > AudioTranscriptionResponse CreateTranscription(ctx).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Execute()
 
 Create transcription
-
-
 
 ### Example
 
@@ -592,7 +540,7 @@ import (
 )
 
 func main() {
-	model := "model_example" // string | 
+	model := "model_example" // string |
 	audioUrl := "audioUrl_example" // string |  (optional)
 	audioB64 := "audioB64_example" // string |  (optional)
 	language := "language_example" // string |  (optional)
@@ -611,19 +559,16 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateTranscriptionRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **model** | **string** |  | 
- **audioUrl** | **string** |  | 
- **audioB64** | **string** |  | 
- **language** | **string** |  | 
+| Name         | Type       | Description | Notes |
+| ------------ | ---------- | ----------- | ----- |
+| **model**    | **string** |             |
+| **audioUrl** | **string** |             |
+| **audioB64** | **string** |             |
+| **language** | **string** |             |
 
 ### Return type
 
@@ -635,21 +580,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: multipart/form-data
-- **Accept**: application/json
+-   **Content-Type**: multipart/form-data
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateTranslation
 
 > AudioTranslationResponse CreateTranslation(ctx).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Prompt(prompt).Temperature(temperature).Execute()
 
 Create translation
-
-
 
 ### Example
 
@@ -664,7 +606,7 @@ import (
 )
 
 func main() {
-	model := "model_example" // string | 
+	model := "model_example" // string |
 	audioUrl := "audioUrl_example" // string |  (optional)
 	audioB64 := "audioB64_example" // string |  (optional)
 	language := "language_example" // string |  (optional)
@@ -685,21 +627,18 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateTranslationRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **model** | **string** |  | 
- **audioUrl** | **string** |  | 
- **audioB64** | **string** |  | 
- **language** | **string** |  | 
- **prompt** | **string** |  | 
- **temperature** | **float32** |  | 
+| Name            | Type        | Description | Notes |
+| --------------- | ----------- | ----------- | ----- |
+| **model**       | **string**  |             |
+| **audioUrl**    | **string**  |             |
+| **audioB64**    | **string**  |             |
+| **language**    | **string**  |             |
+| **prompt**      | **string**  |             |
+| **temperature** | **float32** |             |
 
 ### Return type
 
@@ -711,21 +650,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: multipart/form-data
-- **Accept**: application/json
+-   **Content-Type**: multipart/form-data
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## CreateVideo
 
 > VideoGenerationResponse CreateVideo(ctx).VideoGenerationRequest(videoGenerationRequest).Execute()
 
 Create video
-
-
 
 ### Example
 
@@ -740,7 +676,7 @@ import (
 )
 
 func main() {
-	videoGenerationRequest := *openapiclient.NewVideoGenerationRequest("Model_example", "Prompt_example") // VideoGenerationRequest | 
+	videoGenerationRequest := *openapiclient.NewVideoGenerationRequest("Model_example", "Prompt_example") // VideoGenerationRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -756,16 +692,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateVideoRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **videoGenerationRequest** | [**VideoGenerationRequest**](VideoGenerationRequest.md) |  | 
+| Name                       | Type                                                    | Description | Notes |
+| -------------------------- | ------------------------------------------------------- | ----------- | ----- |
+| **videoGenerationRequest** | [**VideoGenerationRequest**](VideoGenerationRequest.md) |             |
 
 ### Return type
 
@@ -777,21 +710,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## GetAnalytics
 
 > GetAnalytics200Response GetAnalytics(ctx).GetAnalyticsRequest(getAnalyticsRequest).Execute()
 
 Get analytics
-
-
 
 ### Example
 
@@ -806,7 +736,7 @@ import (
 )
 
 func main() {
-	getAnalyticsRequest := *openapiclient.NewGetAnalyticsRequest() // GetAnalyticsRequest | 
+	getAnalyticsRequest := *openapiclient.NewGetAnalyticsRequest() // GetAnalyticsRequest |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -822,16 +752,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiGetAnalyticsRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **getAnalyticsRequest** | [**GetAnalyticsRequest**](GetAnalyticsRequest.md) |  | 
+| Name                    | Type                                              | Description | Notes |
+| ----------------------- | ------------------------------------------------- | ----------- | ----- |
+| **getAnalyticsRequest** | [**GetAnalyticsRequest**](GetAnalyticsRequest.md) |             |
 
 ### Return type
 
@@ -843,21 +770,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: application/json
-- **Accept**: application/json
+-   **Content-Type**: application/json
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## GetGeneration
 
 > GenerationResponse GetGeneration(ctx).Id(id).Execute()
 
 Get generation
-
-
 
 ### Example
 
@@ -888,16 +812,13 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiGetGenerationRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **string** | The ID of the generation | 
+| Name   | Type       | Description              | Notes |
+| ------ | ---------- | ------------------------ | ----- |
+| **id** | **string** | The ID of the generation |
 
 ### Return type
 
@@ -909,21 +830,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## Healthz
 
 > Healthz200Response Healthz(ctx).Execute()
 
 Health check
-
-
 
 ### Example
 
@@ -959,7 +877,6 @@ This endpoint does not need any parameter.
 
 Other parameters are passed through a pointer to a apiHealthzRequest struct via the builder pattern
 
-
 ### Return type
 
 [**Healthz200Response**](Healthz200Response.md)
@@ -970,21 +887,18 @@ Other parameters are passed through a pointer to a apiHealthzRequest struct via 
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## ListFiles
 
 > ListFilesResponse ListFiles(ctx).Execute()
 
 List files
-
-
 
 ### Example
 
@@ -1020,7 +934,6 @@ This endpoint does not need any parameter.
 
 Other parameters are passed through a pointer to a apiListFilesRequest struct via the builder pattern
 
-
 ### Return type
 
 [**ListFilesResponse**](ListFilesResponse.md)
@@ -1031,21 +944,18 @@ Other parameters are passed through a pointer to a apiListFilesRequest struct vi
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## ListModels
 
 > ListModels200Response ListModels(ctx).Endpoints(endpoints).Organisation(organisation).InputTypes(inputTypes).OutputTypes(outputTypes).Params(params).Limit(limit).Offset(offset).Execute()
 
 List models
-
-
 
 ### Example
 
@@ -1082,22 +992,19 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiListModelsRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **endpoints** | **[]string** | Filter by endpoints | 
- **organisation** | [**ListModelsOrganisationParameter**](ListModelsOrganisationParameter.md) | Filter by organisation | 
- **inputTypes** | **[]string** | Filter by input types | 
- **outputTypes** | **[]string** | Filter by output types | 
- **params** | **[]string** | Filter by params | 
- **limit** | **int32** | Limit the number of results | [default to 50]
- **offset** | **int32** | Offset for pagination | [default to 0]
+| Name             | Type                                                                      | Description                 | Notes           |
+| ---------------- | ------------------------------------------------------------------------- | --------------------------- | --------------- |
+| **endpoints**    | **[]string**                                                              | Filter by endpoints         |
+| **organisation** | [**ListModelsOrganisationParameter**](ListModelsOrganisationParameter.md) | Filter by organisation      |
+| **inputTypes**   | **[]string**                                                              | Filter by input types       |
+| **outputTypes**  | **[]string**                                                              | Filter by output types      |
+| **params**       | **[]string**                                                              | Filter by params            |
+| **limit**        | **int32**                                                                 | Limit the number of results | [default to 50] |
+| **offset**       | **int32**                                                                 | Offset for pagination       | [default to 0]  |
 
 ### Return type
 
@@ -1109,21 +1016,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## RetrieveBatch
 
 > BatchResponse RetrieveBatch(ctx, batchId).Execute()
 
 Retrieve batch
-
-
 
 ### Example
 
@@ -1154,20 +1058,17 @@ func main() {
 
 ### Path Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**batchId** | **string** | The ID of the batch to retrieve. | 
+| Name        | Type                | Description                                                                 | Notes |
+| ----------- | ------------------- | --------------------------------------------------------------------------- | ----- |
+| **ctx**     | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc. |
+| **batchId** | **string**          | The ID of the batch to retrieve.                                            |
 
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiRetrieveBatchRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
 
 ### Return type
 
@@ -1179,21 +1080,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## RetrieveFile
 
 > FileResponse RetrieveFile(ctx, fileId).Execute()
 
 Retrieve file
-
-
 
 ### Example
 
@@ -1224,20 +1122,17 @@ func main() {
 
 ### Path Parameters
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**fileId** | **string** | The ID of the file to retrieve. | 
+| Name       | Type                | Description                                                                 | Notes |
+| ---------- | ------------------- | --------------------------------------------------------------------------- | ----- |
+| **ctx**    | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc. |
+| **fileId** | **string**          | The ID of the file to retrieve.                                             |
 
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiRetrieveFileRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
 
 ### Return type
 
@@ -1249,21 +1144,18 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## Root
 
 > Root200Response Root(ctx).Execute()
 
 Root endpoint
-
-
 
 ### Example
 
@@ -1299,7 +1191,6 @@ This endpoint does not need any parameter.
 
 Other parameters are passed through a pointer to a apiRootRequest struct via the builder pattern
 
-
 ### Return type
 
 [**Root200Response**](Root200Response.md)
@@ -1310,21 +1201,18 @@ Other parameters are passed through a pointer to a apiRootRequest struct via the
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: application/json
+-   **Content-Type**: Not defined
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-
 
 ## UploadFile
 
 > FileResponse UploadFile(ctx).File(file).Purpose(purpose).Execute()
 
 Upload file
-
-
 
 ### Example
 
@@ -1339,8 +1227,8 @@ import (
 )
 
 func main() {
-	file := os.NewFile(1234, "some_file") // *os.File | 
-	purpose := "purpose_example" // string | 
+	file := os.NewFile(1234, "some_file") // *os.File |
+	purpose := "purpose_example" // string |
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -1356,17 +1244,14 @@ func main() {
 
 ### Path Parameters
 
-
-
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiUploadFileRequest struct via the builder pattern
 
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **file** | ***os.File** |  | 
- **purpose** | **string** |  | 
+| Name        | Type          | Description | Notes |
+| ----------- | ------------- | ----------- | ----- |
+| **file**    | **\*os.File** |             |
+| **purpose** | **string**    |             |
 
 ### Return type
 
@@ -1378,10 +1263,9 @@ Name | Type | Description  | Notes
 
 ### HTTP request headers
 
-- **Content-Type**: multipart/form-data
-- **Accept**: application/json
+-   **Content-Type**: multipart/form-data
+-   **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
 [[Back to README]](../README.md)
-

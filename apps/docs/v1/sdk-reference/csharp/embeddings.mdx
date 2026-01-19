@@ -6,21 +6,23 @@ description: "Call /embeddings with the C# SDK."
 **Method**: Direct HTTP POST /embeddings
 
 ### Example
+
 ```csharp
 var client = new HttpClient();
 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
 var request = new { model = "openai/text-embedding-3-large", input = "Sample text" };
-var response = await client.PostAsJsonAsync("https://api.ai-stats.phaseo.app/v1/embeddings", request);
+var response = await client.PostAsJsonAsync("https://api.phaseo.app/v1/embeddings", request);
 ```
 
 ### Key parameters
-- `model` (required): Embedding model id (e.g., `openai/text-embedding-3-large`).
-- `input` (required): String or array of strings.
-- `encoding_format`: `float` (default) or `base64`.
-- `dimensions`: Optional integer to truncate embedding length (model-dependent).
-- `user`: Optional end-user tag.
+
+-   `model` (required): Embedding model id (e.g., `openai/text-embedding-3-large`).
+-   `input` (required): String or array of strings.
+-   `encoding_format`: `float` (default) or `base64`.
+-   `dimensions`: Optional integer to truncate embedding length (model-dependent).
+-   `user`: Optional end-user tag.
 
 ### Returns
-Embedding payload (JSON)
 
+Embedding payload (JSON)

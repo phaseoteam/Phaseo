@@ -93,7 +93,7 @@ func NewConfiguration() *Configuration {
 		Debug:            false,
 		Servers:          ServerConfigurations{
 			{
-				URL: "https://api.ai-stats.phaseo.app/v1",
+				URL: "https://api.phaseo.app/v1",
 				Description: "No description provided",
 			},
 		},

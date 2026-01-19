@@ -38,44 +38,6 @@
     ]
   },
   {
-    "api_model_id": "bytedance/ui-tars-1.5-7b",
-    "provider_api_model_id": "parasail:bytedance/ui-tars-1.5-7b",
-    "provider_model_slug": null,
-    "internal_model_id": "bytedance/ui-tars-1.5-7b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-v3-2024-12-25",
-    "provider_api_model_id": "parasail:deepseek/deepseek-v3-2024-12-25",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-v3-2-speciale-2025-12-01",
     "provider_api_model_id": "parasail:deepseek/deepseek-v3-2-speciale-2025-12-01",
     "provider_model_slug": null,
@@ -114,25 +76,6 @@
     ]
   },
   {
-    "api_model_id": "google/gemma-3-27b-it",
-    "provider_api_model_id": "parasail:google/gemma-3-27b-it",
-    "provider_model_slug": null,
-    "internal_model_id": "google/gemma-3-27b-it",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
     "provider_api_model_id": "parasail:meta/llama-3-3-70b-instruct-2024-12-06",
     "provider_model_slug": null,
@@ -161,82 +104,6 @@
     "input_modalities": "image,text",
     "output_modalities": "text",
     "effective_from": "2025-04-05T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3.3-70b-instruct",
-    "provider_api_model_id": "parasail:meta-llama/llama-3.3-70b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.3-70b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-4-maverick",
-    "provider_api_model_id": "parasail:meta-llama/llama-4-maverick",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-4-maverick",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "mistral/mistral-small-3.2-24b-instruct",
-    "provider_api_model_id": "parasail:mistral/mistral-small-3.2-24b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-small-3.2-24b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "moonshot-ai/kimi-k2-0905",
-    "provider_api_model_id": "parasail:moonshot-ai/kimi-k2-0905",
-    "provider_model_slug": null,
-    "internal_model_id": "moonshot-ai/kimi-k2-0905",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
@@ -351,101 +218,6 @@
     "input_modalities": "image,text",
     "output_modalities": "text",
     "effective_from": "2025-01-26T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-235b-a22b-2507",
-    "provider_api_model_id": "parasail:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "provider_api_model_id": "parasail:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_api_model_id": "parasail:qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-8b-instruct",
-    "provider_api_model_id": "parasail:qwen/qwen3-vl-8b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-8b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "thedrummer/cydonia-24b-v4.1",
-    "provider_api_model_id": "parasail:thedrummer/cydonia-24b-v4.1",
-    "provider_model_slug": null,
-    "internal_model_id": "thedrummer/cydonia-24b-v4.1",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

@@ -3,6 +3,7 @@ import Image from "next/image";
 import TabBar from "@/components/(data)/benchmark/BenchmarkTabs";
 import { withUTM } from "@/lib/utm";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
+import BenchmarkEditButton from "./edit/BenchmarkEditButton";
 
 interface BenchmarkDetailShellProps {
 	benchmark: BenchmarkPage;
@@ -70,6 +71,9 @@ export default async function BenchmarkDetailShell({
 							<h1 className="mb-1 text-center text-3xl font-bold md:text-left md:text-5xl">
 								{benchmark.name ?? benchmark.id}
 							</h1>
+						</div>
+						<div className="ml-2">
+							<BenchmarkEditButton benchmarkId={benchmark.id} />
 						</div>
 					</div>
 				</div>

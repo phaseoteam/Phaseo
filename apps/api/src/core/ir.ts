@@ -152,6 +152,7 @@ export type IRChatRequest = {
 	tools?: IRTool[];
 	toolChoice?: IRToolChoice;
 	parallelToolCalls?: boolean;
+	maxToolCalls?: number;
 
 	// Reasoning (o1, MiniMax, etc.)
 	reasoning?: IRReasoning;
@@ -167,6 +168,10 @@ export type IRChatRequest = {
 	stop?: string | string[];
 	logprobs?: boolean;
 	topLogprobs?: number;
+	background?: boolean;
+	serviceTier?: string;
+	promptCacheKey?: string;
+	safetyIdentifier?: string;
 
 	// Metadata
 	userId?: string;

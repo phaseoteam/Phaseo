@@ -21,7 +21,7 @@ namespace AiStatsSdk
         private readonly VideoApi _videoApi;
         private readonly ModerationsApi _moderationsApi;
 
-        public Client(string apiKey, string basePath = "https://api.ai-stats.phaseo.app/v1")
+        public Client(string apiKey, string basePath = "https://api.phaseo.app/v1")
         {
             var config = new Configuration { BasePath = basePath };
             config.DefaultHeaders["Authorization"] = $"Bearer {apiKey}";

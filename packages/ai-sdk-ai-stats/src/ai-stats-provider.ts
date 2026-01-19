@@ -16,7 +16,7 @@ import type { AIStatsSettings, AIStatsModelSettings } from './ai-stats-settings.
 /**
  * Default base URL for the AI Stats Gateway API
  */
-const DEFAULT_BASE_URL = 'https://api.ai-stats.phaseo.app/v1';
+const DEFAULT_BASE_URL = 'https://api.phaseo.app/v1';
 
 /**
  * Creates an AI Stats provider instance for use with Vercel AI SDK.

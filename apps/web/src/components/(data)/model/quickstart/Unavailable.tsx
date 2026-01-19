@@ -20,7 +20,7 @@ export default function Unavailable({ modelId }: UnavailableProps) {
 	return (
 		<Card className="border-dashed border-primary/40">
 			<CardHeader>
-				<CardTitle>Gateway availability</CardTitle>
+				<CardTitle>Conduit availability</CardTitle>
 				<CardDescription>
 					This model does not yet have an active provider in the
 					gateway.

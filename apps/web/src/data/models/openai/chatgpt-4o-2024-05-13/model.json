@@ -1,0 +1,18 @@
+{
+  "model_id": "openai/chatgpt-4o-2024-05-13",
+  "organisation_id": "openai",
+  "name": "ChatGPT 4o",
+  "status": "Deprecated",
+  "previous_model_id": null,
+  "announced_date": "2024-05-13T00:00:00",
+  "release_date": "2024-05-13T00:00:00",
+  "deprecation_date": "2025-11-18T00:00:00",
+  "retirement_date": "2026-02-17T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "family_id": "openai/gpt-4o",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

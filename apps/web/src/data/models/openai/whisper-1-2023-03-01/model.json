@@ -1,0 +1,17 @@
+{
+  "model_id": "openai/whisper-1-2023-03-01",
+  "organisation_id": "openai",
+  "name": "Whisper 1",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2023-03-01T00:00:00",
+  "release_date": "2023-03-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "audio",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -6,6 +6,7 @@ description: "Call /audio/transcriptions with the PHP SDK."
 **Method**: AudioApi#audioTranscriptionsPost
 
 ### Example
+
 ```php
 <?php
 
@@ -17,7 +18,7 @@ use AIStats\Sdk\Model\AudioTranscriptionRequest;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $audioApi = new AudioApi(null, $config);
@@ -33,13 +34,14 @@ echo $response->getText();
 ```
 
 ### Key parameters
-- `model` (required): Transcription-capable model id.
-- `audio_url` or `audio_b64` (required): Audio data (URL or base64).
-- `language`: Hint language code (e.g., `en`).
-- `prompt`: Optional context to improve accuracy.
-- `temperature` (0–2): Sampling randomness.
-- `response_format`: `json`, `text`, `srt`, `verbose_json`, etc.
+
+-   `model` (required): Transcription-capable model id.
+-   `audio_url` or `audio_b64` (required): Audio data (URL or base64).
+-   `language`: Hint language code (e.g., `en`).
+-   `prompt`: Optional context to improve accuracy.
+-   `temperature` (0–2): Sampling randomness.
+-   `response_format`: `json`, `text`, `srt`, `verbose_json`, etc.
 
 ### Returns
-AudioTranscriptionResponse
 
+AudioTranscriptionResponse

@@ -6,11 +6,12 @@ description: "Call /embeddings with the Ruby SDK."
 **Method**: Direct HTTP POST /embeddings (generated API class not yet available).
 
 ### Example
+
 ```ruby
 require 'net/http'
 require 'json'
 
-uri = URI('https://api.ai-stats.phaseo.app/v1/embeddings')
+uri = URI('https://api.phaseo.app/v1/embeddings')
 http = Net::HTTP.new(uri.host, uri.port)
 http.use_ssl = true
 request = Net::HTTP::Post.new(uri)
@@ -26,12 +27,13 @@ embedding = JSON.parse(response.body)
 ```
 
 ### Key parameters
-- `model` (required): Embedding model id (e.g., `openai/text-embedding-3-large`).
-- `input` (required): String or array of strings.
-- `encoding_format`: `float` (default) or `base64`.
-- `dimensions`: Optional integer to truncate embedding length (model-dependent).
-- `user`: Optional end-user tag.
+
+-   `model` (required): Embedding model id (e.g., `openai/text-embedding-3-large`).
+-   `input` (required): String or array of strings.
+-   `encoding_format`: `float` (default) or `base64`.
+-   `dimensions`: Optional integer to truncate embedding length (model-dependent).
+-   `user`: Optional end-user tag.
 
 ### Returns
-Embedding payload (JSON)
 
+Embedding payload (JSON)

@@ -23,7 +23,7 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
         ],
     },
     {
-        heading: "AI Gateway",
+        heading: "AI Conduit",
         items: [
             { href: "/settings/keys", label: "API Keys" },
             { href: "/settings/byok", label: "BYOK" },

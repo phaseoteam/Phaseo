@@ -1,85 +1,9 @@
 [
   {
-    "api_model_id": "deepseek/deepseek-chat",
-    "provider_api_model_id": "deepinfra:deepseek/deepseek-chat",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-chat-v3.1",
-    "provider_api_model_id": "deepinfra:deepseek/deepseek-chat-v3.1",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3.1",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-chat-v3-0324",
-    "provider_api_model_id": "deepinfra:deepseek/deepseek-chat-v3-0324",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3-0324",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-prover-v2",
-    "provider_api_model_id": "deepinfra:deepseek/deepseek-prover-v2",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-prover-v2",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-r1-0528",
     "provider_api_model_id": "deepinfra:deepseek/deepseek-r1-0528",
     "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-r1-0528",
+    "internal_model_id": "deepseek/deepseek-r1-2025-05-28",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -133,44 +57,6 @@
     ]
   },
   {
-    "api_model_id": "deepseek/deepseek-r1-distill-llama-70b",
-    "provider_api_model_id": "deepinfra:deepseek/deepseek-r1-distill-llama-70b",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-r1-distill-llama-70b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
-    "provider_api_model_id": "deepinfra:deepseek/deepseek-r1-distill-qwen-32b",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-r1-distill-qwen-32b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-v3-1-terminus-2025-09-22",
     "provider_api_model_id": "deepinfra:deepseek/deepseek-v3-1-terminus-2025-09-22",
     "provider_model_slug": null,
@@ -180,25 +66,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-09-22T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-v3-2024-12-25",
-    "provider_api_model_id": "deepinfra:deepseek/deepseek-v3-2024-12-25",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
@@ -250,7 +117,7 @@
     "api_model_id": "google/gemma-3-12b-it",
     "provider_api_model_id": "deepinfra:google/gemma-3-12b-it",
     "provider_model_slug": null,
-    "internal_model_id": "google/gemma-3-12b-it",
+    "internal_model_id": "google/gemma-3-12b-2025-03-12",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -288,7 +155,7 @@
     "api_model_id": "google/gemma-3-27b-it",
     "provider_api_model_id": "deepinfra:google/gemma-3-27b-it",
     "provider_model_slug": null,
-    "internal_model_id": "google/gemma-3-27b-it",
+    "internal_model_id": "google/gemma-3-27b-2025-03-12",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -326,7 +193,7 @@
     "api_model_id": "google/gemma-3-4b-it",
     "provider_api_model_id": "deepinfra:google/gemma-3-4b-it",
     "provider_model_slug": null,
-    "internal_model_id": "google/gemma-3-4b-it",
+    "internal_model_id": "google/gemma-3-4b-2025-03-12",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -402,7 +269,7 @@
     "api_model_id": "meta-llama/llama-3.1-70b-instruct",
     "provider_api_model_id": "deepinfra:meta-llama/llama-3.1-70b-instruct",
     "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.1-70b-instruct",
+    "internal_model_id": "meta/llama-3-1-70b-instruct-2024-07-23",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -421,200 +288,10 @@
     "api_model_id": "meta-llama/llama-3.1-8b-instruct",
     "provider_api_model_id": "deepinfra:meta-llama/llama-3.1-8b-instruct",
     "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.1-8b-instruct",
+    "internal_model_id": "meta/llama-3-1-8b-instruct-2024-07-23",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3.2-11b-vision-instruct",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-3.2-11b-vision-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.2-11b-vision-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3.2-3b-instruct",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-3.2-3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.2-3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3.2-90b-vision-instruct",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-3.2-90b-vision-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.2-90b-vision-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3.3-70b-instruct",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-3.3-70b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.3-70b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3-70b-instruct",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-3-70b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3-70b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-3-8b-instruct",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-3-8b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3-8b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-4-maverick",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-4-maverick",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-4-maverick",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-4-scout",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-4-scout",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-4-scout",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-guard-3-8b",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-guard-3-8b",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-guard-3-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta-llama/llama-guard-4-12b",
-    "provider_api_model_id": "deepinfra:meta-llama/llama-guard-4-12b",
-    "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-guard-4-12b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
     "output_modalities": "text",
     "effective_from": null,
     "effective_to": null,
@@ -684,25 +361,6 @@
     ]
   },
   {
-    "api_model_id": "microsoft/wizardlm-2-8x22b",
-    "provider_api_model_id": "deepinfra:microsoft/wizardlm-2-8x22b",
-    "provider_model_slug": null,
-    "internal_model_id": "microsoft/wizardlm-2-8x22b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "minimax/minimax-m2-2025-10-27",
     "provider_api_model_id": "deepinfra:minimax/minimax-m2-2025-10-27",
     "provider_model_slug": null,
@@ -722,143 +380,10 @@
     ]
   },
   {
-    "api_model_id": "mistral/devstral-small",
-    "provider_api_model_id": "deepinfra:mistral/devstral-small",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/devstral-small",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "mistral/devstral-small-2505",
-    "provider_api_model_id": "deepinfra:mistral/devstral-small-2505",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/devstral-small-2505",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "mistral/mistral-7b-instruct",
-    "provider_api_model_id": "deepinfra:mistral/mistral-7b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-7b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "mistral/mistral-nemo",
-    "provider_api_model_id": "deepinfra:mistral/mistral-nemo",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-nemo",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "mistral/mistral-small-24b-instruct-2501",
-    "provider_api_model_id": "deepinfra:mistral/mistral-small-24b-instruct-2501",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-small-24b-instruct-2501",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "mistral/mistral-small-3.2-24b-instruct",
-    "provider_api_model_id": "deepinfra:mistral/mistral-small-3.2-24b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-small-3.2-24b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "mistral/mixtral-8x7b-instruct",
-    "provider_api_model_id": "deepinfra:mistral/mixtral-8x7b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/mixtral-8x7b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "moonshot-ai/kimi-k2-0905",
     "provider_api_model_id": "deepinfra:moonshot-ai/kimi-k2-0905",
     "provider_model_slug": null,
-    "internal_model_id": "moonshot-ai/kimi-k2-0905",
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -877,7 +402,7 @@
     "api_model_id": "moonshot-ai/kimi-k2-base-2025-07-11",
     "provider_api_model_id": "deepinfra:moonshot-ai/kimi-k2-base-2025-07-11",
     "provider_model_slug": null,
-    "internal_model_id": "moonshot-ai/kimi-k2-base-2025-07-11",
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-07-11",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -934,7 +459,7 @@
     "api_model_id": "nousresearch/hermes-3-llama-3.1-405b",
     "provider_api_model_id": "deepinfra:nousresearch/hermes-3-llama-3.1-405b",
     "provider_model_slug": null,
-    "internal_model_id": "nousresearch/hermes-3-llama-3.1-405b",
+    "internal_model_id": "nous/hermes-3-llama-3-1-405b-2024-08-15",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -953,7 +478,7 @@
     "api_model_id": "nousresearch/hermes-3-llama-3.1-70b",
     "provider_api_model_id": "deepinfra:nousresearch/hermes-3-llama-3.1-70b",
     "provider_model_slug": null,
-    "internal_model_id": "nousresearch/hermes-3-llama-3.1-70b",
+    "internal_model_id": "nous/hermes-3-llama-3-1-70b-2024-08-15",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -1007,44 +532,6 @@
     ]
   },
   {
-    "api_model_id": "nvidia/nemotron-3-nano-30b-a3b",
-    "provider_api_model_id": "deepinfra:nvidia/nemotron-3-nano-30b-a3b",
-    "provider_model_slug": null,
-    "internal_model_id": "nvidia/nemotron-3-nano-30b-a3b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/nemotron-nano-12b-v2-vl",
-    "provider_api_model_id": "deepinfra:nvidia/nemotron-nano-12b-v2-vl",
-    "provider_model_slug": null,
-    "internal_model_id": "nvidia/nemotron-nano-12b-v2-vl",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text,video",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "nvidia/nemotron-nano-3-30b-a3b-2025-12-15",
     "provider_api_model_id": "deepinfra:nvidia/nemotron-nano-3-30b-a3b-2025-12-15",
     "provider_model_slug": null,
@@ -1054,25 +541,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-12-15T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "nvidia/nemotron-nano-9b-v2",
-    "provider_api_model_id": "deepinfra:nvidia/nemotron-nano-9b-v2",
-    "provider_model_slug": null,
-    "internal_model_id": "nvidia/nemotron-nano-9b-v2",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
@@ -1121,44 +589,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen-2.5-72b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen-2.5-72b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen-2.5-72b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen-2.5-coder-32b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen-2.5-coder-32b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen-2.5-coder-32b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen2-5-vl-32b-instruct-2025-02-28",
     "provider_api_model_id": "deepinfra:qwen/qwen2-5-vl-32b-instruct-2025-02-28",
     "provider_model_slug": null,
@@ -1178,25 +608,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3-14b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-14b",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-14b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3-235b-a22b-2025-04-29",
     "provider_api_model_id": "deepinfra:qwen/qwen3-235b-a22b-2025-04-29",
     "provider_model_slug": null,
@@ -1206,25 +617,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-04-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-235b-a22b-2507",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
@@ -1301,120 +693,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-07-22T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-embedding-4b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-embedding-4b",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-embedding-4b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-embedding-8b",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-embedding-8b",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-embedding-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-vl-30b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-8b-instruct",
-    "provider_api_model_id": "deepinfra:qwen/qwen3-vl-8b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-8b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

@@ -109,7 +109,7 @@ video = video_api.video_generation_post(request)
 require 'net/http'
 require 'json'
 
-uri = URI('https://api.ai-stats.phaseo.app/v1/embeddings')
+uri = URI('https://api.phaseo.app/v1/embeddings')
 http = Net::HTTP.new(uri.host, uri.port)
 http.use_ssl = true
 request = Net::HTTP::Post.new(uri)

@@ -28,7 +28,7 @@ export default async function PrivacyPage() {
 					under the name <span className="font-medium">AI Stats</span>{" "}
 					( &quot;AI Stats&quot;, &quot;we&quot;, &quot;us&quot; or
 					&quot;our&quot;) collects, uses and protects personal data
-					when you use our websites, dashboards and API gateway
+					when you use our websites, dashboards and API conduit
 					(together, the &quot;Service&quot;).
 				</p>
 
@@ -70,7 +70,7 @@ export default async function PrivacyPage() {
 					<li>browse the AI Stats website or documentation;</li>
 					<li>create and use an AI Stats account;</li>
 					<li>
-						use the AI Stats Gateway to route requests to
+						use the AI Stats Conduit to route requests to
 						third-party model providers; or
 					</li>
 					<li>
@@ -136,10 +136,10 @@ export default async function PrivacyPage() {
 				</ul>
 
 				<h3 className="mt-4 text-lg font-semibold text-foreground/80">
-					2.2 Inputs and Outputs sent through the Gateway
+					2.2 Inputs and Outputs sent through the Conduit
 				</h3>
 				<p className="mt-1 text-foreground/80">
-					When you call models via the AI Stats Gateway, you send
+					When you call models via the AI Stats Conduit, you send
 					requests (&quot;Inputs&quot;) and receive responses
 					(&quot;Outputs&quot;). These may include text or other data
 					that could contain personal information, depending on what
@@ -192,7 +192,7 @@ export default async function PrivacyPage() {
 						referrer URLs.
 					</li>
 					<li>
-						<strong>Gateway metrics</strong> – model and provider
+						<strong>Conduit metrics</strong> – model and provider
 						identifiers, request and response timestamps, token
 						usage (input, output and other meters), latency, error
 						codes, and similar metadata needed to run billing and
@@ -261,7 +261,7 @@ export default async function PrivacyPage() {
 					actions taken, device and browser information, and rough
 					location data (such as country). We configure these tools so
 					that they are not used to store raw prompts, Outputs, or
-					other highly sensitive content flowing through the Gateway.
+					other highly sensitive content flowing through the Conduit.
 				</p>
 			</section>
 
@@ -279,7 +279,7 @@ export default async function PrivacyPage() {
 				<ul className="mt-2 list-disc space-y-2 pl-5 text-foreground/80">
 					<li>
 						<strong>To provide and operate the Service</strong> –
-						including account creation, gateway routing, usage
+						including account creation, conduit routing, usage
 						dashboards, billing, and customer support.
 						<br />
 						<span className="text-xs text-foreground/70">
@@ -373,7 +373,7 @@ export default async function PrivacyPage() {
 					</li>
 					<li>
 						<strong>Third-party model providers</strong> – When you
-						send requests through the Gateway, we share your Inputs
+						send requests through the Conduit, we share your Inputs
 						and necessary metadata with the model provider(s) you
 						choose or that we route to. Those providers process the
 						data under their own terms and privacy policies.

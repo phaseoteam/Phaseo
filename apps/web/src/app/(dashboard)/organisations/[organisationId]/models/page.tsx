@@ -60,7 +60,7 @@ export async function generateMetadata(props: {
 	];
 
 	return buildMetadata({
-		title: `${organisation.name} Models - Catalogue & Gateway Coverage`,
+		title: `${organisation.name} Models - Catalogue & Conduit Coverage`,
 		description,
 		path,
 		keywords,

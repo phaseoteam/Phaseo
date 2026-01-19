@@ -6,6 +6,7 @@ description: "Call /batches with the PHP SDK."
 **Methods**: BatchApi#batchesPost, BatchApi#batchesBatchIdGet
 
 ### Example
+
 ```php
 <?php
 
@@ -17,7 +18,7 @@ use AIStats\Sdk\Model\BatchRequest;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $batchApi = new BatchApi(null, $config);
@@ -33,11 +34,12 @@ $status = $batchApi->batchesBatchIdGet($batch->getId());
 ```
 
 ### Key parameters
-- `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
-- `input_file_id` (required): File id uploaded via `/files`.
-- `completion_window`: e.g., `24h`.
-- `metadata`: Optional object stored with the batch.
+
+-   `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
+-   `input_file_id` (required): File id uploaded via `/files`.
+-   `completion_window`: e.g., `24h`.
+-   `metadata`: Optional object stored with the batch.
 
 ### Returns
-BatchResponse
 
+BatchResponse

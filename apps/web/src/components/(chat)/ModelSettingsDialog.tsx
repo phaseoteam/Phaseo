@@ -93,11 +93,11 @@ export function ModelSettingsDialog({
                                 }
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Auto (Gateway)" />
+                                    <SelectValue placeholder="Auto (Conduit)" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="auto">
-                                        Auto (Gateway)
+                                        Auto (Conduit)
                                     </SelectItem>
                                     {providerOptions.map((provider) => (
                                         <SelectItem

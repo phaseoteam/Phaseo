@@ -28,21 +28,24 @@ export const ResponsesSchema = z.object({
     instructions: z.string().optional(),
     max_output_tokens: z.number().int().positive().optional(),
     max_tool_calls: z.number().int().nonnegative().optional(),
+    max_tools_calls: z.number().int().nonnegative().optional(),
     metadata: z.record(z.string()).optional(),
     parallel_tool_calls: z.boolean().optional(),
     previous_response_id: z.string().optional(),
+    frequency_penalty: z.number().min(-2).max(2).optional(),
+    presence_penalty: z.number().min(-2).max(2).optional(),
     prompt: z.object({
         id: z.string(),
         variables: z.record(z.any()).optional(),
         version: z.string().optional(),
     }).optional(),
-    prompt_cache_key: z.string().optional(),
+    prompt_cache_key: z.string().nullable().optional(),
     prompt_cache_retention: z.string().optional(),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh"]).nullable().optional(),
         summary: z.string().nullable().optional(),
     }).optional(),
-    safety_identifier: z.string().optional(),
+    safety_identifier: z.string().nullable().optional(),
     service_tier: z.string().optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
@@ -57,11 +60,24 @@ export const ResponsesSchema = z.object({
     background: z.boolean().optional(),
     user: z.string().optional(),
     // Gateway-only flags (not forwarded upstream)
-    usage: z.boolean().optional(),
+    usage: z.boolean().optional().default(true),
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
     provider: ProviderRoutingSchema,
-}).passthrough();
+}).passthrough().transform((obj) => {
+    const next: any = { ...obj };
+    if (next.max_tool_calls == null && next.max_tools_calls != null) {
+        next.max_tool_calls = next.max_tools_calls;
+    }
+    delete next.max_tools_calls;
+    if (!("prompt_cache_key" in next)) {
+        next.prompt_cache_key = null;
+    }
+    if (!("safety_identifier" in next)) {
+        next.safety_identifier = null;
+    }
+    return next;
+});
 export type ResponsesRequest = z.infer<typeof ResponsesSchema>;
 
 // Embeddings schema

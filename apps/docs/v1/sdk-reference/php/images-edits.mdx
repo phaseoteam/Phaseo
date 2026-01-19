@@ -6,6 +6,7 @@ description: "Call /images/edits with the PHP SDK."
 **Method**: ImagesApi#imagesEditsPost
 
 ### Example
+
 ```php
 <?php
 
@@ -17,7 +18,7 @@ use AIStats\Sdk\Model\ImagesEditRequest;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $imagesApi = new ImagesApi(null, $config);
@@ -34,15 +35,16 @@ echo $response->getData()[0]->getUrl();
 ```
 
 ### Key parameters
-- `model` (required): Image-edit capable model id.
-- `image` (required): Base64 data URL or URL to source image.
-- `prompt`: Optional new instruction for the edit.
-- `mask`: Optional mask (transparent regions edited).
-- `n` (1–10): Number of edited variants.
-- `size`: e.g., `1024x1024`, `1024x1792`, `1792x1024`.
-- `response_format`: `url` or `b64_json`.
-- `user`: Optional end-user tag.
+
+-   `model` (required): Image-edit capable model id.
+-   `image` (required): Base64 data URL or URL to source image.
+-   `prompt`: Optional new instruction for the edit.
+-   `mask`: Optional mask (transparent regions edited).
+-   `n` (1–10): Number of edited variants.
+-   `size`: e.g., `1024x1024`, `1024x1792`, `1792x1024`.
+-   `response_format`: `url` or `b64_json`.
+-   `user`: Optional end-user tag.
 
 ### Returns
-ImageGenerationResponse
 
+ImageGenerationResponse

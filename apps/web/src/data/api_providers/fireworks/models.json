@@ -1,43 +1,5 @@
 [
   {
-    "api_model_id": "deepseek/deepseek-chat-v3.1",
-    "provider_api_model_id": "fireworks:deepseek/deepseek-chat-v3.1",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3.1",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-chat-v3-0324",
-    "provider_api_model_id": "fireworks:deepseek/deepseek-chat-v3-0324",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3-0324",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
     "provider_api_model_id": "fireworks:meta/llama-3-3-70b-instruct-2024-12-06",
     "provider_model_slug": null,
@@ -60,7 +22,7 @@
     "api_model_id": "meta-llama/llama-3.3-70b-instruct",
     "provider_api_model_id": "fireworks:meta-llama/llama-3.3-70b-instruct",
     "provider_model_slug": null,
-    "internal_model_id": "meta-llama/llama-3.3-70b-instruct",
+    "internal_model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -79,7 +41,7 @@
     "api_model_id": "moonshot-ai/kimi-k2-0905",
     "provider_api_model_id": "fireworks:moonshot-ai/kimi-k2-0905",
     "provider_model_slug": null,
-    "internal_model_id": "moonshot-ai/kimi-k2-0905",
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -190,44 +152,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3-235b-a22b-2507",
-    "provider_api_model_id": "fireworks:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-8b",
-    "provider_api_model_id": "fireworks:qwen/qwen3-8b",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
     "provider_api_model_id": "fireworks:qwen/qwen3-coder-480b-a35b-instruct-2025-07-22",
     "provider_model_slug": null,
@@ -237,44 +161,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-07-22T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_api_model_id": "fireworks:qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
-    "provider_api_model_id": "fireworks:qwen/qwen3-vl-30b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-30b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

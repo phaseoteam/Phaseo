@@ -8,7 +8,6 @@ const notImplemented = (name: string) => (c: any) =>
 export const placeholdersRoutes = new Hono<Env>();
 
 placeholdersRoutes.get("/credits", notImplemented("credits.get"));
-placeholdersRoutes.get("/providers", notImplemented("providers.list"));
 placeholdersRoutes.get("/endpoints", notImplemented("endpoints.list"));
 placeholdersRoutes.get("/keys", notImplemented("keys.list"));
 placeholdersRoutes.post("/keys", notImplemented("keys.create"));

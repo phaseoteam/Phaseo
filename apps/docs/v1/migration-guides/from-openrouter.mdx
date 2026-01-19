@@ -1,0 +1,120 @@
+---
+title: "Migrating from OpenRouter"
+description: "Step-by-step guide to migrate your OpenRouter integration to AI Stats Gateway."
+---
+
+# Migrating from OpenRouter
+
+This guide will help you migrate your existing OpenRouter integration to use the AI Stats Gateway instead.
+
+## Overview
+
+AI Stats Gateway provides OpenAI-compatible endpoints, similar to OpenRouter. Migration involves:
+
+-   Changing the API base URL
+-   Updating your API key
+-   Adjusting model names if necessary
+
+## Prerequisites
+
+-   An AI Stats account and API key (get one at [AI Stats Dashboard](https://ai-stats.phaseo.app))
+-   Existing OpenRouter code
+
+## Migration Steps
+
+### 1. Update API Key and Base URL
+
+Replace OpenRouter's base URL with AI Stats'.
+
+<CodeGroup>
+```bash
+# Before (OpenRouter)
+curl https://openrouter.ai/api/v1/chat/completions \
+  -H "Authorization: Bearer sk-or-v1-your-openrouter-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+
+# After (AI Stats)
+
+curl https://api.phaseo.app/v1/chat/completions \
+ -H "Authorization: Bearer your-ai-stats-key" \
+ -H "Content-Type: application/json" \
+ -d '{
+"model": "gpt-4",
+"messages": [{"role": "user", "content": "Hello!"}]
+}'
+
+````
+
+```python
+import openai
+
+# Before (OpenRouter)
+client = openai.OpenAI(
+    api_key="sk-or-v1-your-openrouter-key",
+    base_url="https://openrouter.ai/api/v1"
+)
+
+# After (AI Stats)
+client = openai.OpenAI(
+    api_key="your-ai-stats-key",
+    base_url="https://api.phaseo.app/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",  # Changed from "openai/gpt-4"
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+````
+
+```javascript
+import OpenAI from "openai";
+
+// Before
+const client = new OpenAI({
+	apiKey: "sk-or-v1-your-openrouter-key",
+	baseURL: "https://openrouter.ai/api/v1",
+});
+
+// After
+const client = new OpenAI({
+	apiKey: "your-ai-stats-key",
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+	model: "gpt-4", // Changed from "openai/gpt-4"
+	messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+</CodeGroup>
+
+### 2. Update Model Names
+
+OpenRouter uses specific model identifiers. AI Stats may use different names for the same models.
+
+Check the [models endpoint](/v1/api-reference/endpoint/models) for available models.
+
+Example mappings:
+
+-   `openai/gpt-4` → `gpt-4`
+-   `anthropic/claude-3-sonnet` → `claude-3-sonnet-20240229`
+
+### 3. Test Your Integration
+
+Run your code with the new configuration.
+
+## Common Issues
+
+-   **Model availability**: Not all OpenRouter models may be available in AI Stats.
+-   **Pricing**: Different pricing structure.
+-   **Features**: Some OpenRouter-specific features may not be available.
+
+## Next Steps
+
+-   Explore AI Stats' analytics features.
+-   Check the [API Reference](/v1/api-reference/introduction).

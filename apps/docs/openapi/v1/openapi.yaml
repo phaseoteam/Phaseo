@@ -6,7 +6,7 @@ info:
         endpoints.
     version: 1.0.0
 servers:
-    - url: https://api.ai-stats.phaseo.app/v1
+    - url: https://api.phaseo.app/v1
 security:
     - BearerAuth: []
 paths:

@@ -59,20 +59,20 @@ export function FAQSection() {
 
 					{/* 2. Modalities */}
 					<FAQItem
-						question="What model modalities does the Gateway support?"
+						question="What model modalities does the Conduit support?"
 						answer="We currently support chat completions, embeddings, and moderations, each with consistent schemas across all providers. Support for audio, image, and video models is in active development."
 					/>
 
 					{/* 3. Model updates */}
 					<FAQItem
 						question="How quickly are new models added?"
-						answer="New provider models and community submissions are reviewed and added on a rolling basis. Once approved, they're available instantly in the Gateway and the SDKs."
+						answer="New provider models and community submissions are reviewed and added on a rolling basis. Once approved, they're available instantly in the Conduit and the SDKs."
 					/>
 
 					{/* 4. Telemetry */}
 					<FAQItem
 						question="Where do latency, token, and reliability metrics come from?"
-						answer="All telemetry comes from live Gateway traffic. The dashboards display a range of real world token usage, latency, and provider health."
+						answer="All telemetry comes from live Conduit traffic. The dashboards display a range of real world token usage, latency, and provider health."
 					/>
 
 					{/* 5. Multi-provider usage */}
@@ -83,7 +83,7 @@ export function FAQSection() {
 
 					{/* 6. Routing behaviour */}
 					<FAQItem
-						question="How does Gateway route requests?"
+						question="How does Conduit route requests?"
 						answer="Routing is done on a request by request basis, depending on the latest provider health and performance. You are in control, and can disable or enable providers. You stay fully in control of provider behaviour."
 					/>
 

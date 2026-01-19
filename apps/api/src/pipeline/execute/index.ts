@@ -16,6 +16,7 @@ import { getBaseModel, calculateMaxTries } from "./utils";
 import { rankProviders } from "./providers";
 import { attemptProvider, type AttemptResult } from "./attempt";
 import { admitThroughBreaker, onCallEnd, onCallStart, maybeOpenOnRecentErrors, reportProbeResult } from "./health";
+import { logDebugEvent, previewValue } from "../debug";
 
 export type Bill = {
 	cost_cents: number;
@@ -245,6 +246,19 @@ async function attemptProviderWithIR(
                         mappedRequest: surfaceResult.mappedRequest,
                         rawResponse: surfaceResult.rawResponse,
                 };
+
+                if (ctx.meta.debug) {
+                        void logDebugEvent("surface.result", {
+                                requestId: ctx.requestId,
+                                endpoint: ctx.endpoint,
+                                provider: candidate.providerId,
+                                surfaceId,
+                                upstreamStatus: surfaceResult.upstream.status,
+                                mappedRequest: previewValue(surfaceResult.mappedRequest),
+                                rawResponse: previewValue(surfaceResult.rawResponse),
+                                ir: previewValue(surfaceResult.kind === "completed" ? surfaceResult.ir : null),
+                        });
+                }
 
                 if (surfaceResult.kind === "stream") {
                         (result as any).healthContext = {

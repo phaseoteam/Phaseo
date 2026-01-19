@@ -67,7 +67,7 @@ export async function generateMetadata(props: {
 	];
 
 	return buildMetadata({
-		title: `${organisation.name} - AI Organisation, Models & Gateway Coverage`,
+		title: `${organisation.name} - AI Organisation, Models & Conduit Coverage`,
 		description,
 		path,
 		keywords,

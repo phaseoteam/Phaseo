@@ -19,7 +19,7 @@
  *
  * const aiStats = createAIStats({
  *   apiKey: process.env.AI_STATS_API_KEY,
- *   baseURL: 'https://api.ai-stats.phaseo.app/v1',
+ *   baseURL: 'https://api.phaseo.app/v1',
  * });
  *
  * const { textStream } = await streamText({

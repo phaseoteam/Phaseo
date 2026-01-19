@@ -1,0 +1,105 @@
+---
+title: "Migrating from Cloudflare AI Gateway"
+description: "Step-by-step guide to migrate your Cloudflare AI Gateway integration to AI Stats Gateway."
+---
+
+# Migrating from Cloudflare AI Gateway
+
+This guide helps migrate from Cloudflare's AI Gateway to AI Stats.
+
+## Overview
+
+Both are AI API gateways. Migration involves:
+
+-   Updating endpoints
+-   Changing authentication
+-   Adjusting model routing
+
+## Prerequisites
+
+-   AI Stats account
+-   Cloudflare AI Gateway setup
+
+## Migration Steps
+
+### 1. Update Base URL
+
+Replace Cloudflare's gateway URL.
+
+For OpenAI-compatible requests:
+
+<CodeGroup>
+```bash
+# Before (Cloudflare AI Gateway)
+curl https://gateway.ai.cloudflare.com/v1/your-account/your-gateway/openai/chat/completions \
+  -H "Authorization: Bearer your-cloudflare-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+
+# After (AI Stats)
+
+curl https://api.phaseo.app/v1/chat/completions \
+ -H "Authorization: Bearer your-ai-stats-key" \
+ -H "Content-Type: application/json" \
+ -d '{
+"model": "gpt-4",
+"messages": [{"role": "user", "content": "Hello!"}]
+}'
+
+````
+
+```python
+import openai
+
+client = openai.OpenAI(
+    api_key="your-ai-stats-key",
+    base_url="https://api.phaseo.app/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+````
+
+```javascript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: "your-ai-stats-key",
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+	model: "gpt-4",
+	messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+</CodeGroup>
+
+### 2. Authentication
+
+Use Bearer token instead of Cloudflare's auth.
+
+### 3. Model Routing
+
+Cloudflare routes based on headers. AI Stats uses model names.
+
+Check available models.
+
+### 4. Test
+
+Verify functionality.
+
+## Common Issues
+
+-   **Caching**: Different caching behaviors.
+-   **Analytics**: Cloudflare's analytics vs AI Stats'.
+
+## Next Steps
+
+-   Explore AI Stats' advanced features.

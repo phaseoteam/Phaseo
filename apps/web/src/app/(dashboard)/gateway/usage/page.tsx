@@ -12,7 +12,7 @@ import DeprecationWarnings from "@/components/(gateway)/usage/DeprecationWarning
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
-	title: "Usage - AI Stats Gateway",
+	title: "Usage - AI Stats Conduit",
 };
 
 type RangeKey = "1h" | "1d" | "1w" | "1m" | "1y";
@@ -454,7 +454,7 @@ export default async function Page({
                             </>
                         ) : null}
                         . {" "}
-                        <a className="underline" href="/gateway/usage">Clear filter</a>
+                        <a className="underline" href="/conduit/usage">Clear filter</a>
                     </div>
                 ) : (
                     <DeprecationWarnings />

@@ -22,7 +22,7 @@
     "api_model_id": "microsoft/phi-3.5-mini-128k-instruct",
     "provider_api_model_id": "azure:microsoft/phi-3.5-mini-128k-instruct",
     "provider_model_slug": null,
-    "internal_model_id": "microsoft/phi-3.5-mini-128k-instruct",
+    "internal_model_id": "microsoft/phi-3-mini-128k-instruct",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -76,29 +76,10 @@
     ]
   },
   {
-    "api_model_id": "mistral/mistral-large",
-    "provider_api_model_id": "azure:mistral/mistral-large",
-    "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-large",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "mistral/mistral-nemo",
     "provider_api_model_id": "azure:mistral/mistral-nemo",
     "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-nemo",
+    "internal_model_id": "mistral/mistral-nemo-12b-2024-07-18",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",

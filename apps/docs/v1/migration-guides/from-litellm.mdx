@@ -1,0 +1,113 @@
+---
+title: "Migrating from LiteLLM"
+description: "Step-by-step guide to migrate your LiteLLM integration to AI Stats Gateway."
+---
+
+# Migrating from LiteLLM
+
+This guide helps migrate from LiteLLM proxy to AI Stats Gateway.
+
+## Overview
+
+Both provide unified API access. Migration involves:
+
+-   Changing base URL
+-   Updating API key
+-   Adjusting model names
+
+## Prerequisites
+
+-   AI Stats account
+-   LiteLLM setup
+
+## Migration Steps
+
+### 1. Update Configuration
+
+Replace LiteLLM URL with AI Stats.
+
+<CodeGroup>
+```bash
+# Before (LiteLLM proxy)
+curl http://localhost:8000/v1/chat/completions \
+  -H "Authorization: Bearer your-litellm-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+
+# After (AI Stats)
+
+curl https://api.phaseo.app/v1/chat/completions \
+ -H "Authorization: Bearer your-ai-stats-key" \
+ -H "Content-Type: application/json" \
+ -d '{
+"model": "gpt-4",
+"messages": [{"role": "user", "content": "Hello!"}]
+}'
+
+````
+
+```python
+import openai
+
+# Before
+client = openai.OpenAI(
+    api_key="your-litellm-key",
+    base_url="http://localhost:8000/v1"  # LiteLLM proxy
+)
+
+# After
+client = openai.OpenAI(
+    api_key="your-ai-stats-key",
+    base_url="https://api.phaseo.app/v1"
+)
+
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+````
+
+```javascript
+import OpenAI from "openai";
+
+// Before
+const client = new OpenAI({
+	apiKey: "your-litellm-key",
+	baseURL: "http://localhost:8000/v1",
+});
+
+// After
+const client = new OpenAI({
+	apiKey: "your-ai-stats-key",
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+	model: "gpt-4",
+	messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+</CodeGroup>
+
+### 2. Model Names
+
+LiteLLM uses provider/model format. AI Stats may use different names.
+
+Check `/models` for available models.
+
+### 3. Test
+
+Run your code to ensure compatibility.
+
+## Common Issues
+
+-   **Model support**: Not all LiteLLM models may be in AI Stats.
+-   **Features**: Some LiteLLM features may differ.
+
+## Next Steps
+
+-   Use AI Stats' built-in analytics.

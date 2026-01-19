@@ -25,7 +25,7 @@ export default function BuyCreditsClient({
 		<Card>
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
 				<CardTitle>Buy Credits</CardTitle>
-				<Link href="/gateway/usage">
+				<Link href="/conduit/usage">
 					<Badge variant={"outline"}>View Usage</Badge>
 				</Link>
 			</CardHeader>

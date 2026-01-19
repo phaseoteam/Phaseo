@@ -1,100 +1,5 @@
 [
   {
-    "api_model_id": "deepseek/deepseek-chat",
-    "provider_api_model_id": "chutes:deepseek/deepseek-chat",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-chat-v3.1",
-    "provider_api_model_id": "chutes:deepseek/deepseek-chat-v3.1",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3.1",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-chat-v3-0324",
-    "provider_api_model_id": "chutes:deepseek/deepseek-chat-v3-0324",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3-0324",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-r1-0528",
-    "provider_api_model_id": "chutes:deepseek/deepseek-r1-0528",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-r1-0528",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-r1-0528-qwen3-8b",
-    "provider_api_model_id": "chutes:deepseek/deepseek-r1-0528-qwen3-8b",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-r1-0528-qwen3-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-r1-2025-01-20",
     "provider_api_model_id": "chutes:deepseek/deepseek-r1-2025-01-20",
     "provider_model_slug": null,
@@ -133,25 +38,6 @@
     ]
   },
   {
-    "api_model_id": "deepseek/deepseek-r1-distill-llama-70b",
-    "provider_api_model_id": "chutes:deepseek/deepseek-r1-distill-llama-70b",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-r1-distill-llama-70b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-v3-1-terminus-2025-09-22",
     "provider_api_model_id": "chutes:deepseek/deepseek-v3-1-terminus-2025-09-22",
     "provider_model_slug": null,
@@ -161,25 +47,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-09-22T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepseek/deepseek-v3-2024-12-25",
-    "provider_api_model_id": "chutes:deepseek/deepseek-v3-2024-12-25",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
@@ -231,7 +98,7 @@
     "api_model_id": "google/gemma-3-12b-it",
     "provider_api_model_id": "chutes:google/gemma-3-12b-it",
     "provider_model_slug": null,
-    "internal_model_id": "google/gemma-3-12b-it",
+    "internal_model_id": "google/gemma-3-12b-2025-03-12",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -269,7 +136,7 @@
     "api_model_id": "google/gemma-3-27b-it",
     "provider_api_model_id": "chutes:google/gemma-3-27b-it",
     "provider_model_slug": null,
-    "internal_model_id": "google/gemma-3-27b-it",
+    "internal_model_id": "google/gemma-3-27b-2025-03-12",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -307,7 +174,7 @@
     "api_model_id": "google/gemma-3-4b-it",
     "provider_api_model_id": "chutes:google/gemma-3-4b-it",
     "provider_model_slug": null,
-    "internal_model_id": "google/gemma-3-4b-it",
+    "internal_model_id": "google/gemma-3-4b-2025-03-12",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -364,7 +231,7 @@
     "api_model_id": "mistral/mistral-nemo",
     "provider_api_model_id": "chutes:mistral/mistral-nemo",
     "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-nemo",
+    "internal_model_id": "mistral/mistral-nemo-12b-2024-07-18",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -383,7 +250,7 @@
     "api_model_id": "mistral/mistral-small-24b-instruct-2501",
     "provider_api_model_id": "chutes:mistral/mistral-small-24b-instruct-2501",
     "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-small-24b-instruct-2501",
+    "internal_model_id": "mistral/mistral-small-3-0-2025-01-30",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -402,7 +269,7 @@
     "api_model_id": "mistral/mistral-small-3.1-24b-instruct",
     "provider_api_model_id": "chutes:mistral/mistral-small-3.1-24b-instruct",
     "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-small-3.1-24b-instruct",
+    "internal_model_id": "mistral/mistral-small-3-1-2025-03-17",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -421,7 +288,7 @@
     "api_model_id": "mistral/mistral-small-3.2-24b-instruct",
     "provider_api_model_id": "chutes:mistral/mistral-small-3.2-24b-instruct",
     "provider_model_slug": null,
-    "internal_model_id": "mistral/mistral-small-3.2-24b-instruct",
+    "internal_model_id": "mistral/mistral-small-3-2-2025-06-20",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -440,7 +307,7 @@
     "api_model_id": "moonshot-ai/kimi-k2-0905",
     "provider_api_model_id": "chutes:moonshot-ai/kimi-k2-0905",
     "provider_model_slug": null,
-    "internal_model_id": "moonshot-ai/kimi-k2-0905",
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -532,29 +399,10 @@
     ]
   },
   {
-    "api_model_id": "nousresearch/deephermes-3-mistral-24b-preview",
-    "provider_api_model_id": "chutes:nousresearch/deephermes-3-mistral-24b-preview",
-    "provider_model_slug": null,
-    "internal_model_id": "nousresearch/deephermes-3-mistral-24b-preview",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "nousresearch/hermes-4-405b",
     "provider_api_model_id": "chutes:nousresearch/hermes-4-405b",
     "provider_model_slug": null,
-    "internal_model_id": "nousresearch/hermes-4-405b",
+    "internal_model_id": "nous/hermes-4-405b-2025-07-26",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -573,7 +421,7 @@
     "api_model_id": "nousresearch/hermes-4-70b",
     "provider_api_model_id": "chutes:nousresearch/hermes-4-70b",
     "provider_model_slug": null,
-    "internal_model_id": "nousresearch/hermes-4-70b",
+    "internal_model_id": "nous/hermes-4-70b-2025-07-26",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -592,7 +440,7 @@
     "api_model_id": "nvidia/nemotron-3-nano-30b-a3b",
     "provider_api_model_id": "chutes:nvidia/nemotron-3-nano-30b-a3b",
     "provider_model_slug": null,
-    "internal_model_id": "nvidia/nemotron-3-nano-30b-a3b",
+    "internal_model_id": "nvidia/nemotron-nano-3-30b-a3b-2025-12-15",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -646,63 +494,6 @@
     ]
   },
   {
-    "api_model_id": "opengvlab/internvl3-78b",
-    "provider_api_model_id": "chutes:opengvlab/internvl3-78b",
-    "provider_model_slug": null,
-    "internal_model_id": "opengvlab/internvl3-78b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen-2.5-72b-instruct",
-    "provider_api_model_id": "chutes:qwen/qwen-2.5-72b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen-2.5-72b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen-2.5-coder-32b-instruct",
-    "provider_api_model_id": "chutes:qwen/qwen-2.5-coder-32b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen-2.5-coder-32b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen2-5-vl-32b-instruct-2025-02-28",
     "provider_api_model_id": "chutes:qwen/qwen2-5-vl-32b-instruct-2025-02-28",
     "provider_model_slug": null,
@@ -741,25 +532,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3-14b",
-    "provider_api_model_id": "chutes:qwen/qwen3-14b",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-14b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3-235b-a22b-2025-04-29",
     "provider_api_model_id": "chutes:qwen/qwen3-235b-a22b-2025-04-29",
     "provider_model_slug": null,
@@ -769,25 +541,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-04-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-235b-a22b-2507",
-    "provider_api_model_id": "chutes:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
@@ -836,25 +589,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3-30b-a3b-instruct-2507",
-    "provider_api_model_id": "chutes:qwen/qwen3-30b-a3b-instruct-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-30b-a3b-instruct-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3-32b-2025-04-29",
     "provider_api_model_id": "chutes:qwen/qwen3-32b-2025-04-29",
     "provider_model_slug": null,
@@ -883,82 +617,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-07-22T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "provider_api_model_id": "chutes:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_api_model_id": "chutes:qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-235b-a22b-thinking",
-    "provider_api_model_id": "chutes:qwen/qwen3-vl-235b-a22b-thinking",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-235b-a22b-thinking",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "tngtech/tng-r1t-chimera",
-    "provider_api_model_id": "chutes:tngtech/tng-r1t-chimera",
-    "provider_model_slug": null,
-    "internal_model_id": "tngtech/tng-r1t-chimera",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

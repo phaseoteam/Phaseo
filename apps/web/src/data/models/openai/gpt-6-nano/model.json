@@ -11,6 +11,7 @@
   "license": null,
   "input_types": null,
   "output_types": null,
+  "family_id": "openai/gpt-6",
   "links": [],
   "details": [],
   "benchmarks": []

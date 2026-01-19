@@ -41,7 +41,7 @@ impl Transport for HttpTransport {
 fn smoke_chat() {
     let api_key = std::env::var("AI_STATS_API_KEY").expect("AI_STATS_API_KEY is required");
     let base_url = std::env::var("AI_STATS_BASE_URL")
-        .unwrap_or_else(|_| "https://api.ai-stats.phaseo.app/v1".to_string());
+        .unwrap_or_else(|_| "https://api.phaseo.app/v1".to_string());
 
     let transport = HttpTransport;
     let mut client = Client::new(base_url, transport);

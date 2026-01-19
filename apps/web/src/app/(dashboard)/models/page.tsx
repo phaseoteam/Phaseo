@@ -7,10 +7,7 @@ import {
 import { loadModelsSearchParams } from "./search-params";
 import type { Metadata } from "next";
 import type { SearchParams } from "nuqs/server";
-import {
-	UPCOMING_TAB_VALUE,
-	UNKNOWN_TAB_VALUE,
-} from "@/lib/models/modelTabs";
+import { UPCOMING_TAB_VALUE, UNKNOWN_TAB_VALUE } from "@/lib/models/modelTabs";
 
 export const metadata: Metadata = {
 	title: "AI models - Compare Benchmarks, Pricing & Providers",
@@ -70,9 +67,13 @@ function filterAndSortModels(models: ModelCard[], query: string): ModelCard[] {
 	});
 }
 
+function isRumoured(status?: string | null): boolean {
+	return status?.toLowerCase() === "rumoured";
+}
+
 function getYearPagination(
 	models: ModelCard[],
-	yearParam: number
+	yearParam: number,
 ): {
 	years: number[];
 	activeYear: number | null;
@@ -86,11 +87,9 @@ function getYearPagination(
 		}
 	}
 
-	const upcomingModels = models.filter(
-		(model) => model.status === "Rumoured"
-	);
+	const upcomingModels = models.filter((model) => isRumoured(model.status));
 	const unknownModels = models.filter(
-		(model) => getModelYear(model) === null
+		(model) => !model.release_date && !isRumoured(model.status),
 	);
 
 	const years = Array.from(yearSet).sort((a, b) => b - a);
@@ -113,7 +112,7 @@ function getYearPagination(
 				: activeYear === null
 					? models
 					: models.filter(
-							(model) => getModelYear(model) === activeYear
+							(model) => getModelYear(model) === activeYear,
 						);
 
 	return { years, activeYear, paginatedModels };
@@ -125,7 +124,7 @@ async function ModelsPageContent({ searchParams }: ModelsPageProps) {
 	const filteredModels = filterAndSortModels(filteredModelsFromDb, q);
 	const { years, activeYear, paginatedModels } = getYearPagination(
 		filteredModels,
-		year ?? 0
+		year ?? 0,
 	);
 
 	return (
@@ -160,7 +159,6 @@ export default function ModelsPage({ searchParams }: ModelsPageProps) {
 	return (
 		<main className="flex min-h-screen flex-col">
 			<div className="container mx-auto px-4 py-8">
-				{/* Removed old top-right "Table view" button — view tabs now live in `ModelsDisplay` */}
 				<Suspense fallback={<ModelsGridSkeleton />}>
 					<ModelsPageContent searchParams={searchParams} />
 				</Suspense>

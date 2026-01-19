@@ -158,7 +158,7 @@ export default function PerformancePage() {
 					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						<StatCard
 							icon={Zap}
-							label="Gateway median throughput"
+							label="Conduit median throughput"
 							value="75 tokens/sec"
 							footer="Across balanced FP16 routes"
 						/>

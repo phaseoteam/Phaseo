@@ -99,6 +99,7 @@ export type GatewayCompletionsResponse = {
     provider: string;
     choices: GatewayCompletionsChoice[];
     usage?: GatewayUsage;
+    // NOTE: reasoning_details removed from top level - it belongs on the message object (see GatewayCompletionsChoice)
 }
 
 export type GatewayResponsePayload = GatewayCompletionsResponse | Record<string, any>;
@@ -116,6 +117,9 @@ export type GatewayCompletionsChoice = {
                 arguments: string;
             };
         }>;
+        // Per-message reasoning fields (MiniMax/Aion format)
+        reasoning_content?: string; // Simple format: single string with all reasoning
+        reasoning_details?: GatewayReasoningDetail[]; // Structured format: array of reasoning blocks
     };
     finish_reason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;
     reasoning?: boolean;
@@ -156,6 +160,13 @@ export type GatewayUsage = {
     cached_write_text_tokens?: number;
 
 }
+
+export type GatewayReasoningDetail = {
+    id: string;
+    index: number;
+    type: "reasoning.summary" | "reasoning.encrypted" | "reasoning.text";
+    reasoning_content: string;
+};
 
 // // Definitions of subtypes are below
 // type Request = {

@@ -3,7 +3,7 @@ title: "Quickstart"
 description: "Get up and running with the AI Stats Gateway & Database in just a few minutes."
 ---
 
-Welcome to the **AI Stats Quickstart** — this guide will help you make your first successful API request and explore everything AI Stats has to offer.
+Welcome to the **AI Stats Quickstart** - this guide will help you make your first successful API request and explore everything AI Stats has to offer.
 
 The Gateway provides a simple and unified way to access AI models from multiple providers, without needing to juggle different APIs, keys, or formats.
 
@@ -12,19 +12,24 @@ The Gateway provides a simple and unified way to access AI models from multiple 
 ## 1. Create an account
 
 Sign up for a free account on the [AI Stats Dashboard](https://ai-stats.phaseo.app).  
-Once logged in, navigate to **Gateway → API Keys** and click **Generate Key**.
+Once logged in, click your profile photo in the top right corner, navigate to **Keys** and click **Create Key**.
 
 This key will be used to authenticate all API requests.
+
+<Danger>
+	Keep this key secure and do not share it publicly as it gives full access to
+	your credits.
+</Danger>
 
 ---
 
 ## 2. Make your first request
 
-With your API key ready, send your first request to the `/chat/completions` endpoint.
+With your API key ready, send your first request to the `/responses` endpoint.
 
 <CodeGroup dropdown>
 ```bash
-curl https://api.ai-stats.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -36,22 +41,17 @@ curl https://api.ai-stats.phaseo.app/v1/chat/completions \
 ```
 
 ```javascript
-const response = await fetch(
-	"https://api.ai-stats.phaseo.app/v1/chat/completions",
-	{
-		method: "POST",
-		headers: {
-			Authorization: "Bearer YOUR_API_KEY",
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			model: "gemini-3-pro-preview",
-			messages: [
-				{ role: "user", content: "Give me a short fact about AI." },
-			],
-		}),
-	}
-);
+const response = await fetch("https://api.phaseo.app/v1/responses", {
+	method: "POST",
+	headers: {
+		Authorization: "Bearer YOUR_API_KEY",
+		"Content-Type": "application/json",
+	},
+	body: JSON.stringify({
+		model: "gemini-3-pro-preview",
+		messages: [{ role: "user", content: "Give me a short fact about AI." }],
+	}),
+});
 
 const data = await response.json();
 console.log(data.choices[0].message.content);
@@ -60,7 +60,7 @@ console.log(data.choices[0].message.content);
 ```python
 import requests
 
-url = "https://api.ai-stats.phaseo.app/v1/chat/completions"
+url = "https://api.phaseo.app/v1/responses"
 headers = {
 	"Authorization": "Bearer YOUR_API_KEY",
 	"Content-Type": "application/json"
@@ -78,7 +78,7 @@ print(response.json()["choices"][0]["message"]["content"])
 import axios from "axios";
 
 const res = await axios.post(
-	"https://api.ai-stats.phaseo.app/v1/chat/completions",
+	"https://api.phaseo.app/v1/responses",
 	{
 		model: "gemini-3-pro-preview",
 		messages: [{ role: "user", content: "Give me a short fact about AI." }],
@@ -88,7 +88,7 @@ const res = await axios.post(
 			Authorization: "Bearer YOUR_API_KEY",
 			"Content-Type": "application/json",
 		},
-	}
+	},
 );
 
 console.log(res.data.choices[0].message.content);
@@ -132,6 +132,8 @@ Once you’re comfortable, explore the other endpoints available in the Gateway:
 | Endpoint            | Purpose                                |
 | ------------------- | -------------------------------------- |
 | `/chat/completions` | Conversational AI (text generation).   |
+| `/responses`        | Conversational AI (text generation).   |
+| `/messages`         | Conversational AI (text generation).   |
 | `/moderations`      | Content moderation and safety scoring. |
 | `/embeddings`       | Generate vector embeddings for text.   |
 

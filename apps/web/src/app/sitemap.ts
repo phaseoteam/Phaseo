@@ -45,7 +45,7 @@ const staticRoutes: Array<{
         { path: "/families", changeFrequency: "weekly", priority: 0.75 },
         { path: "/subscription-plans", changeFrequency: "weekly", priority: 0.75 },
         { path: "/compare", changeFrequency: "weekly", priority: 0.7 },
-        { path: "/gateway", changeFrequency: "weekly", priority: 0.7 },
+        { path: "/conduit", changeFrequency: "weekly", priority: 0.7 },
         { path: "/contribute", changeFrequency: "monthly", priority: 0.6 },
         { path: "/roadmap", changeFrequency: "monthly", priority: 0.6 },
         { path: "/tools", changeFrequency: "monthly", priority: 0.65 },

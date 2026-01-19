@@ -1,0 +1,17 @@
+{
+  "model_id": "black-forest-labs/flux-2-klein-4b-2026-01-15",
+  "organisation_id": "black-forest-labs",
+  "name": "Flux 2 Klein 4B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-11-25T00:00:00",
+  "release_date": "2026-01-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

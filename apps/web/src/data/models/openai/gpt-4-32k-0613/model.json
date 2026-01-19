@@ -10,7 +10,7 @@
   "retirement_date": null,
   "license": "Proprietary",
   "input_types": "text",
-  "output_types": null,
+  "output_types": "text",
   "family_id": "openai/gpt-4",
   "links": [],
   "details": [],

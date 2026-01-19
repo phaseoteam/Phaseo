@@ -6,6 +6,7 @@ description: "Call /files with the PHP SDK."
 **Methods**: FilesApi#filesPost, FilesApi#filesGet, FilesApi#filesFileIdGet
 
 ### Example
+
 ```php
 <?php
 
@@ -16,7 +17,7 @@ use AIStats\Sdk\Configuration;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $filesApi = new FilesApi(null, $config);
@@ -32,9 +33,10 @@ $file = $filesApi->filesFileIdGet($uploaded->getId());
 ```
 
 ### Key parameters
-- `purpose` (required for upload): e.g., `batch`.
-- `file` (required for upload): File object.
+
+-   `purpose` (required for upload): e.g., `batch`.
+-   `file` (required for upload): File object.
 
 ### Returns
-FileObject (upload/get) or FileListResponse (list)
 
+FileObject (upload/get) or FileListResponse (list)

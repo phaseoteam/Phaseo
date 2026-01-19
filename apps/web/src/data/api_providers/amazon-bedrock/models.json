@@ -41,7 +41,7 @@
     "api_model_id": "amazon/nova-lite-v1",
     "provider_api_model_id": "amazon-bedrock:amazon/nova-lite-v1",
     "provider_model_slug": null,
-    "internal_model_id": "amazon/nova-lite-v1",
+    "internal_model_id": "amazon/nova-lite-1-0-2024-12-04",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -79,7 +79,7 @@
     "api_model_id": "amazon/nova-micro-v1",
     "provider_api_model_id": "amazon-bedrock:amazon/nova-micro-v1",
     "provider_model_slug": null,
-    "internal_model_id": "amazon/nova-micro-v1",
+    "internal_model_id": "amazon/nova-micro-1-0-2024-12-04",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -155,7 +155,7 @@
     "api_model_id": "amazon/nova-pro-v1",
     "provider_api_model_id": "amazon-bedrock:amazon/nova-pro-v1",
     "provider_model_slug": null,
-    "internal_model_id": "amazon/nova-pro-v1",
+    "internal_model_id": "amazon/nova-pro-1-0-2024-12-04",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "image,text",
@@ -351,25 +351,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-08-05T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-coder-30b-a3b-instruct",
-    "provider_api_model_id": "amazon-bedrock:qwen/qwen3-coder-30b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-coder-30b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

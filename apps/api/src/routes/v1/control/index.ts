@@ -8,12 +8,16 @@ import { placeholdersRoutes } from "./placeholders";
 import { healthRoutes } from "./health";
 import { analyticsRoutes } from "./analytics";
 import { pricingRoutes } from "./pricing";
+import { organisationsRoutes } from "./organisations";
+import { providersRoutes } from "./providers";
 
 export const controlRouter = new Hono<Env>();
 
 controlRouter.route("/models", modelsRoutes);
 controlRouter.route("/generations", generationsRoutes);
-controlRouter.route("/", placeholdersRoutes); // for credits, providers, etc.
+controlRouter.route("/organisations", organisationsRoutes);
+controlRouter.route("/providers", providersRoutes);
+controlRouter.route("/", placeholdersRoutes); // for credits, etc.
 controlRouter.route("/health", healthRoutes);
 controlRouter.route("/analytics", analyticsRoutes);
 controlRouter.route("/pricing", pricingRoutes);

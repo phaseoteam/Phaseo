@@ -25,7 +25,7 @@ export async function Login() {
 			<div className="flex flex-col items-center gap-2 text-center">
 				<h1 className="text-2xl font-bold">Welcome back</h1>
 				<p className="text-sm text-muted-foreground">
-					Sign in or sign up to access the AI Stats Gateway and
+					Sign in or sign up to access the AI Stats Conduit and
 					start exploring the insights you need.
 				</p>
 			</div>

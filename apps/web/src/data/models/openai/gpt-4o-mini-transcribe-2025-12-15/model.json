@@ -11,6 +11,7 @@
   "license": "Proprietary",
   "input_types": "text,audio",
   "output_types": "text",
+  "family_id": "openai/gpt-4o",
   "links": [],
   "details": [],
   "benchmarks": []

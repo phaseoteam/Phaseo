@@ -6,6 +6,7 @@ description: "Call the Responses API with the PHP SDK."
 **Method**: ResponsesApi#createResponse
 
 ### Example
+
 ```php
 <?php
 
@@ -17,7 +18,7 @@ use AIStats\Sdk\Model\ResponsesRequest;
 
 $apiKey = getenv('AI_STATS_API_KEY');
 $config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.ai-stats.phaseo.app/v1')
+    ->setHost('https://api.phaseo.app/v1')
     ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
 
 $responsesApi = new ResponsesApi(null, $config);
@@ -44,17 +45,18 @@ echo $response->getOutput()[0]['content'][0]['text'];
 ```
 
 ### Key parameters
-- `model` (required): Target model id.
-- `input` (required): Ordered array of input items (messages, tool calls, etc.).
-- `temperature` (0–2): Higher = more random.
-- `top_p` (0–1): Nucleus sampling control.
-- `max_output_tokens` (int): Hard cap on tokens generated per response.
-- Tools: `tools` (definitions), `tool_choice` (auto/none/specific), `max_tool_calls` (int), `parallel_tool_calls` (bool).
-- Logprobs: `top_logprobs` (0–20) to return per-token logprobs.
-- Output: `service_tier`, `store` (bool), `stream` (bool).
-- Metadata: `metadata` (object) for passthrough, `reasoning` (object) for effort hints.
-- Gateway extras: `usage` (bool to request usage), `meta` (bool to include meta block).
+
+-   `model` (required): Target model id.
+-   `input` (required): Ordered array of input items (messages, tool calls, etc.).
+-   `temperature` (0–2): Higher = more random.
+-   `top_p` (0–1): Nucleus sampling control.
+-   `max_output_tokens` (int): Hard cap on tokens generated per response.
+-   Tools: `tools` (definitions), `tool_choice` (auto/none/specific), `max_tool_calls` (int), `parallel_tool_calls` (bool).
+-   Logprobs: `top_logprobs` (0–20) to return per-token logprobs.
+-   Output: `service_tier`, `store` (bool), `stream` (bool).
+-   Metadata: `metadata` (object) for passthrough, `reasoning` (object) for effort hints.
+-   Gateway extras: `usage` (bool to request usage), `meta` (bool to include meta block).
 
 ### Returns
-ResponsesResponse JSON object.
 
+ResponsesResponse JSON object.

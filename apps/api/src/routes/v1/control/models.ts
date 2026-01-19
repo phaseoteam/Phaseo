@@ -37,6 +37,7 @@ type OrganisationDetails = {
     organisation_id: string | null;
     name: string | null;
     country_code: string | null;
+    colour: string | null;
 };
 
 type CatalogueProvider = {
@@ -65,6 +66,8 @@ type CatalogueModel = {
     release_date: string | null;
     status: string | null;
     organisation_id: string | null;
+    organisation_name: string | null;
+    organisation_colour: string | null;
     aliases: string[];
     endpoints: Endpoint[];
     input_types: string[];
@@ -181,7 +184,7 @@ async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[
     const { data: modelRows, error: modelError } = await supabase
         .from("data_models")
         .select(
-            "model_id, name, release_date, status, input_types, output_types, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code)"
+            "model_id, name, release_date, status, input_types, output_types, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code, colour)"
         );
     if (modelError) {
         throw new Error(modelError.message || "Failed to load model metadata");
@@ -213,6 +216,7 @@ async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[
                     organisation_id: organisation.organisation_id ?? null,
                     name: organisation.name ?? null,
                     country_code: organisation.country_code ?? null,
+                    colour: organisation.colour ?? null,
                 }
                 : null,
             input_types: toStringArray(model.input_types),
@@ -418,6 +422,8 @@ async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[
             release_date: info.release_date,
             status: info.status ?? null,
             organisation_id: info.organisation?.organisation_id ?? null,
+            organisation_name: info.organisation?.name ?? null,
+            organisation_colour: info.organisation?.colour ?? null,
             aliases,
             endpoints,
             input_types: [...info.input_types],

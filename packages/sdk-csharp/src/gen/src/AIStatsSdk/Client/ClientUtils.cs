@@ -323,7 +323,7 @@ namespace AIStatsSdk.Client
         /// <summary>
         /// The base path of the API
         /// </summary>
-        public const string BASE_ADDRESS = "https://api.ai-stats.phaseo.app/v1";
+        public const string BASE_ADDRESS = "https://api.phaseo.app/v1";
 
         /// <summary>
         /// The scheme of the API
@@ -338,7 +338,7 @@ namespace AIStatsSdk.Client
         /// <summary>
         /// The host of the API
         /// </summary>
-        public const string HOST = "api.ai-stats.phaseo.app";
+        public const string HOST = "api.phaseo.app";
 
         /// <summary>
         /// The format to use for DateTime serialization

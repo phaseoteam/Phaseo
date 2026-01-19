@@ -13,7 +13,7 @@ SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 mode = "smart"
 
 [[routes]]
-pattern = "api.ai-stats.phaseo.app"
+pattern = "api.phaseo.app"
 custom_domain = true
 
 [observability]

@@ -4,7 +4,6 @@ import type { ProviderAdapter } from "./types";
 import { OpenAIAdapter } from "./openai/index";
 import { GoogleAIStudioAdapter } from "./google-ai-studio/index";
 import { AnthropicAdapter } from "./anthropic/index";
-import { XAIAdapter } from "./x-ai/index";
 import { XiaomiAdapter } from "./xiaomi/index";
 import { AzureAdapter } from "./azure/index";
 import { AI21Adapter } from "./ai21/index";
@@ -15,12 +14,16 @@ import { createOpenAICompatibleAdapter } from "./openai-compatible/index";
 import { createUnsupportedAdapter } from "./unsupported";
 import { getSupabaseAdmin } from "@/runtime/env";
 
+// NOTE: All adapters are legacy and unused - the IR pipeline uses surfaces instead
+// These are kept for backward compatibility but are never called in production
+// See apps/api/src/pipeline/index.ts:49 "IR PIPELINE (MANDATORY - ONLY EXECUTION PATH)"
+
 // Adapter registry (default per-provider)
 const ADAPTERS: Record<string, ProviderAdapter> = {
     openai: OpenAIAdapter,
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
-    "x-ai": XAIAdapter,
+    "x-ai": createOpenAICompatibleAdapter("x-ai"), // xAI is OpenAI-compatible, uses openai_compat surface
     xiaomi: XiaomiAdapter,
     azure: AzureAdapter,
     ai21: AI21Adapter,
@@ -39,6 +42,8 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     groq: createOpenAICompatibleAdapter("groq"),
     minimax: createOpenAICompatibleAdapter("minimax"),
     moonshotai: createOpenAICompatibleAdapter("moonshotai"),
+    "z-ai": createOpenAICompatibleAdapter("z-ai"),
+    zai: createOpenAICompatibleAdapter("zai"),
     "moonshot-ai": createOpenAICompatibleAdapter("moonshotai"), // Alias for database naming
     novitaai: createOpenAICompatibleAdapter("novitaai"),
     parasail: createOpenAICompatibleAdapter("parasail"),
@@ -52,7 +57,8 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "nebius-token-factory": createOpenAICompatibleAdapter("nebius-token-factory"),
     sourceful: createOpenAICompatibleAdapter("sourceful"),
     relace: createOpenAICompatibleAdapter("relace"),
-    aionlabs: createOpenAICompatibleAdapter("aionlabs"),
+    "aion-labs": createOpenAICompatibleAdapter("aion-labs"),
+    aionlabs: createOpenAICompatibleAdapter("aion-labs"),
     // Unsupported providers
     "amazon-bedrock": createUnsupportedAdapter("amazon-bedrock", "aws_sigv4_required"),
     "google-vertex": createUnsupportedAdapter("google-vertex", "vertex_ai_required"),

@@ -7,7 +7,7 @@ if (string.IsNullOrWhiteSpace(apiKey))
     throw new InvalidOperationException("AI_STATS_API_KEY is required");
 }
 
-var baseUrl = Environment.GetEnvironmentVariable("AI_STATS_BASE_URL") ?? "https://api.ai-stats.phaseo.app/v1";
+var baseUrl = Environment.GetEnvironmentVariable("AI_STATS_BASE_URL") ?? "https://api.phaseo.app/v1";
 var headers = new Dictionary<string, string> { { "Authorization", $"Bearer {apiKey}" } };
 var client = new Client(baseUrl, headers: headers);
 

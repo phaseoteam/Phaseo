@@ -1,28 +1,9 @@
 [
   {
-    "api_model_id": "alibaba/tongyi-deepresearch-30b-a3b",
-    "provider_api_model_id": "atlascloud:alibaba/tongyi-deepresearch-30b-a3b",
-    "provider_model_slug": null,
-    "internal_model_id": "alibaba/tongyi-deepresearch-30b-a3b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-chat-v3.1",
     "provider_api_model_id": "atlascloud:deepseek/deepseek-chat-v3.1",
     "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3.1",
+    "internal_model_id": "deepseek/deepseek-v3-1-2025-08-21",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -41,7 +22,7 @@
     "api_model_id": "deepseek/deepseek-chat-v3-0324",
     "provider_api_model_id": "atlascloud:deepseek/deepseek-chat-v3-0324",
     "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-chat-v3-0324",
+    "internal_model_id": "deepseek/deepseek-v3-2025-03-25",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -79,7 +60,7 @@
     "api_model_id": "deepseek/deepseek-v3-2024-12-25",
     "provider_api_model_id": "atlascloud:deepseek/deepseek-v3-2024-12-25",
     "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-v3-2024-12-25",
+    "internal_model_id": "deepseek/deepseek-v3-2024-12-26",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -155,7 +136,7 @@
     "api_model_id": "moonshot-ai/kimi-k2-0905",
     "provider_api_model_id": "atlascloud:moonshot-ai/kimi-k2-0905",
     "provider_model_slug": null,
-    "internal_model_id": "moonshot-ai/kimi-k2-0905",
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -174,7 +155,7 @@
     "api_model_id": "moonshot-ai/kimi-k2-base-2025-07-11",
     "provider_api_model_id": "atlascloud:moonshot-ai/kimi-k2-base-2025-07-11",
     "provider_model_slug": null,
-    "internal_model_id": "moonshot-ai/kimi-k2-base-2025-07-11",
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-07-11",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
@@ -247,44 +228,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3-235b-a22b-2507",
-    "provider_api_model_id": "atlascloud:qwen/qwen3-235b-a22b-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-30b-a3b-instruct-2507",
-    "provider_api_model_id": "atlascloud:qwen/qwen3-30b-a3b-instruct-2507",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-30b-a3b-instruct-2507",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3-32b-2025-04-29",
     "provider_api_model_id": "atlascloud:qwen/qwen3-32b-2025-04-29",
     "provider_model_slug": null,
@@ -313,63 +256,6 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-07-22T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "provider_api_model_id": "atlascloud:qwen/qwen3-next-80b-a3b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "provider_api_model_id": "atlascloud:qwen/qwen3-next-80b-a3b-thinking",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_api_model_id": "atlascloud:qwen/qwen3-vl-235b-a22b-instruct",
-    "provider_model_slug": null,
-    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

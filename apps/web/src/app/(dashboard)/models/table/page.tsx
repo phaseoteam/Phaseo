@@ -1,7 +1,7 @@
 ﻿import { Suspense } from "react";
 import ModelsTableHeader from "@/components/(data)/models/Models/ModelsTableHeader";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
-import { getMonitorModels } from "@/lib/fetchers/models/getMonitorModels";
+import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
 
 export const metadata = {
 	title: "Models table view",

@@ -1,32 +1,29 @@
 # AIStats\Sdk\DefaultApi
 
+All URIs are relative to https://api.phaseo.app/v1, except if the operation defines another base path.
 
-
-All URIs are relative to https://api.ai-stats.phaseo.app/v1, except if the operation defines another base path.
-
-| Method | HTTP request | Description |
-| ------------- | ------------- | ------------- |
-| [**createBatch()**](DefaultApi.md#createBatch) | **POST** /batches | Create batch |
-| [**createChatCompletion()**](DefaultApi.md#createChatCompletion) | **POST** /chat/completions | Create chat completion |
-| [**createEmbedding()**](DefaultApi.md#createEmbedding) | **POST** /embeddings | Create embeddings |
-| [**createImage()**](DefaultApi.md#createImage) | **POST** /images/generations | Create image |
-| [**createImageEdit()**](DefaultApi.md#createImageEdit) | **POST** /images/edits | Create image edit |
-| [**createModeration()**](DefaultApi.md#createModeration) | **POST** /moderations | Create moderation |
-| [**createResponse()**](DefaultApi.md#createResponse) | **POST** /responses | Create response |
-| [**createSpeech()**](DefaultApi.md#createSpeech) | **POST** /audio/speech | Generate speech |
-| [**createTranscription()**](DefaultApi.md#createTranscription) | **POST** /audio/transcriptions | Create transcription |
-| [**createTranslation()**](DefaultApi.md#createTranslation) | **POST** /audio/translations | Create translation |
-| [**createVideo()**](DefaultApi.md#createVideo) | **POST** /videos | Create video |
-| [**getAnalytics()**](DefaultApi.md#getAnalytics) | **POST** /analytics | Get analytics |
-| [**getGeneration()**](DefaultApi.md#getGeneration) | **GET** /generation | Get generation |
-| [**healthz()**](DefaultApi.md#healthz) | **GET** /healthz | Health check |
-| [**listFiles()**](DefaultApi.md#listFiles) | **GET** /files | List files |
-| [**listModels()**](DefaultApi.md#listModels) | **GET** /models | List models |
-| [**retrieveBatch()**](DefaultApi.md#retrieveBatch) | **GET** /batches/{batch_id} | Retrieve batch |
-| [**retrieveFile()**](DefaultApi.md#retrieveFile) | **GET** /files/{file_id} | Retrieve file |
-| [**root()**](DefaultApi.md#root) | **GET** / | Root endpoint |
-| [**uploadFile()**](DefaultApi.md#uploadFile) | **POST** /files | Upload file |
-
+| Method                                                           | HTTP request                   | Description            |
+| ---------------------------------------------------------------- | ------------------------------ | ---------------------- |
+| [**createBatch()**](DefaultApi.md#createBatch)                   | **POST** /batches              | Create batch           |
+| [**createChatCompletion()**](DefaultApi.md#createChatCompletion) | **POST** /chat/completions     | Create chat completion |
+| [**createEmbedding()**](DefaultApi.md#createEmbedding)           | **POST** /embeddings           | Create embeddings      |
+| [**createImage()**](DefaultApi.md#createImage)                   | **POST** /images/generations   | Create image           |
+| [**createImageEdit()**](DefaultApi.md#createImageEdit)           | **POST** /images/edits         | Create image edit      |
+| [**createModeration()**](DefaultApi.md#createModeration)         | **POST** /moderations          | Create moderation      |
+| [**createResponse()**](DefaultApi.md#createResponse)             | **POST** /responses            | Create response        |
+| [**createSpeech()**](DefaultApi.md#createSpeech)                 | **POST** /audio/speech         | Generate speech        |
+| [**createTranscription()**](DefaultApi.md#createTranscription)   | **POST** /audio/transcriptions | Create transcription   |
+| [**createTranslation()**](DefaultApi.md#createTranslation)       | **POST** /audio/translations   | Create translation     |
+| [**createVideo()**](DefaultApi.md#createVideo)                   | **POST** /videos               | Create video           |
+| [**getAnalytics()**](DefaultApi.md#getAnalytics)                 | **POST** /analytics            | Get analytics          |
+| [**getGeneration()**](DefaultApi.md#getGeneration)               | **GET** /generation            | Get generation         |
+| [**healthz()**](DefaultApi.md#healthz)                           | **GET** /healthz               | Health check           |
+| [**listFiles()**](DefaultApi.md#listFiles)                       | **GET** /files                 | List files             |
+| [**listModels()**](DefaultApi.md#listModels)                     | **GET** /models                | List models            |
+| [**retrieveBatch()**](DefaultApi.md#retrieveBatch)               | **GET** /batches/{batch_id}    | Retrieve batch         |
+| [**retrieveFile()**](DefaultApi.md#retrieveFile)                 | **GET** /files/{file_id}       | Retrieve file          |
+| [**root()**](DefaultApi.md#root)                                 | **GET** /                      | Root endpoint          |
+| [**uploadFile()**](DefaultApi.md#uploadFile)                     | **POST** /files                | Upload file            |
 
 ## `createBatch()`
 
@@ -67,9 +64,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **batch_request** | [**\AIStats\Sdk\Model\BatchRequest**](../Model/BatchRequest.md)|  | |
+| Name              | Type                                                            | Description | Notes |
+| ----------------- | --------------------------------------------------------------- | ----------- | ----- |
+| **batch_request** | [**\AIStats\Sdk\Model\BatchRequest**](../Model/BatchRequest.md) |             |       |
 
 ### Return type
 
@@ -81,8 +78,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
+-   **Content-Type**: `application/json`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -127,9 +124,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **chat_completions_request** | [**\AIStats\Sdk\Model\ChatCompletionsRequest**](../Model/ChatCompletionsRequest.md)|  | |
+| Name                         | Type                                                                                | Description | Notes |
+| ---------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
+| **chat_completions_request** | [**\AIStats\Sdk\Model\ChatCompletionsRequest**](../Model/ChatCompletionsRequest.md) |             |       |
 
 ### Return type
 
@@ -141,8 +138,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
+-   **Content-Type**: `application/json`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -187,9 +184,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **embeddings_request** | [**\AIStats\Sdk\Model\EmbeddingsRequest**](../Model/EmbeddingsRequest.md)|  | |
+| Name                   | Type                                                                      | Description | Notes |
+| ---------------------- | ------------------------------------------------------------------------- | ----------- | ----- |
+| **embeddings_request** | [**\AIStats\Sdk\Model\EmbeddingsRequest**](../Model/EmbeddingsRequest.md) |             |       |
 
 ### Return type
 
@@ -201,8 +198,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
+-   **Content-Type**: `application/json`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -247,9 +244,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **images_generation_request** | [**\AIStats\Sdk\Model\ImagesGenerationRequest**](../Model/ImagesGenerationRequest.md)|  | |
+| Name                          | Type                                                                                  | Description | Notes |
+| ----------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
+| **images_generation_request** | [**\AIStats\Sdk\Model\ImagesGenerationRequest**](../Model/ImagesGenerationRequest.md) |             |       |
 
 ### Return type
 
@@ -261,8 +258,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
+-   **Content-Type**: `application/json`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -315,17 +312,17 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **model** | **string**|  | |
-| **image** | **string**|  | |
-| **prompt** | **string**|  | |
-| **mask** | **string**|  | [optional] |
-| **size** | **string**|  | [optional] |
-| **n** | **int**|  | [optional] |
-| **user** | **string**|  | [optional] |
-| **meta** | **bool**|  | [optional] |
-| **usage** | **bool**|  | [optional] |
+| Name       | Type       | Description | Notes      |
+| ---------- | ---------- | ----------- | ---------- |
+| **model**  | **string** |             |            |
+| **image**  | **string** |             |            |
+| **prompt** | **string** |             |            |
+| **mask**   | **string** |             | [optional] |
+| **size**   | **string** |             | [optional] |
+| **n**      | **int**    |             | [optional] |
+| **user**   | **string** |             | [optional] |
+| **meta**   | **bool**   |             | [optional] |
+| **usage**  | **bool**   |             | [optional] |
 
 ### Return type
 
@@ -337,8 +334,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `multipart/form-data`
-- **Accept**: `application/json`
+-   **Content-Type**: `multipart/form-data`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -383,9 +380,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **moderations_request** | [**\AIStats\Sdk\Model\ModerationsRequest**](../Model/ModerationsRequest.md)|  | |
+| Name                    | Type                                                                        | Description | Notes |
+| ----------------------- | --------------------------------------------------------------------------- | ----------- | ----- |
+| **moderations_request** | [**\AIStats\Sdk\Model\ModerationsRequest**](../Model/ModerationsRequest.md) |             |       |
 
 ### Return type
 
@@ -397,8 +394,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
+-   **Content-Type**: `application/json`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -443,9 +440,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **responses_request** | [**\AIStats\Sdk\Model\ResponsesRequest**](../Model/ResponsesRequest.md)|  | |
+| Name                  | Type                                                                    | Description | Notes |
+| --------------------- | ----------------------------------------------------------------------- | ----------- | ----- |
+| **responses_request** | [**\AIStats\Sdk\Model\ResponsesRequest**](../Model/ResponsesRequest.md) |             |       |
 
 ### Return type
 
@@ -457,8 +454,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
+-   **Content-Type**: `application/json`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -503,9 +500,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **audio_speech_request** | [**\AIStats\Sdk\Model\AudioSpeechRequest**](../Model/AudioSpeechRequest.md)|  | |
+| Name                     | Type                                                                        | Description | Notes |
+| ------------------------ | --------------------------------------------------------------------------- | ----------- | ----- |
+| **audio_speech_request** | [**\AIStats\Sdk\Model\AudioSpeechRequest**](../Model/AudioSpeechRequest.md) |             |       |
 
 ### Return type
 
@@ -517,8 +514,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `audio/mpeg`
+-   **Content-Type**: `application/json`
+-   **Accept**: `audio/mpeg`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -566,12 +563,12 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **model** | **string**|  | |
-| **audio_url** | **string**|  | [optional] |
-| **audio_b64** | **string**|  | [optional] |
-| **language** | **string**|  | [optional] |
+| Name          | Type       | Description | Notes      |
+| ------------- | ---------- | ----------- | ---------- |
+| **model**     | **string** |             |            |
+| **audio_url** | **string** |             | [optional] |
+| **audio_b64** | **string** |             | [optional] |
+| **language**  | **string** |             | [optional] |
 
 ### Return type
 
@@ -583,8 +580,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `multipart/form-data`
-- **Accept**: `application/json`
+-   **Content-Type**: `multipart/form-data`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -634,14 +631,14 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **model** | **string**|  | |
-| **audio_url** | **string**|  | [optional] |
-| **audio_b64** | **string**|  | [optional] |
-| **language** | **string**|  | [optional] |
-| **prompt** | **string**|  | [optional] |
-| **temperature** | **float**|  | [optional] |
+| Name            | Type       | Description | Notes      |
+| --------------- | ---------- | ----------- | ---------- |
+| **model**       | **string** |             |            |
+| **audio_url**   | **string** |             | [optional] |
+| **audio_b64**   | **string** |             | [optional] |
+| **language**    | **string** |             | [optional] |
+| **prompt**      | **string** |             | [optional] |
+| **temperature** | **float**  |             | [optional] |
 
 ### Return type
 
@@ -653,8 +650,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `multipart/form-data`
-- **Accept**: `application/json`
+-   **Content-Type**: `multipart/form-data`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -699,9 +696,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **video_generation_request** | [**\AIStats\Sdk\Model\VideoGenerationRequest**](../Model/VideoGenerationRequest.md)|  | |
+| Name                         | Type                                                                                | Description | Notes |
+| ---------------------------- | ----------------------------------------------------------------------------------- | ----------- | ----- |
+| **video_generation_request** | [**\AIStats\Sdk\Model\VideoGenerationRequest**](../Model/VideoGenerationRequest.md) |             |       |
 
 ### Return type
 
@@ -713,8 +710,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
+-   **Content-Type**: `application/json`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -759,9 +756,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **get_analytics_request** | [**\AIStats\Sdk\Model\GetAnalyticsRequest**](../Model/GetAnalyticsRequest.md)|  | |
+| Name                      | Type                                                                          | Description | Notes |
+| ------------------------- | ----------------------------------------------------------------------------- | ----------- | ----- |
+| **get_analytics_request** | [**\AIStats\Sdk\Model\GetAnalyticsRequest**](../Model/GetAnalyticsRequest.md) |             |       |
 
 ### Return type
 
@@ -773,8 +770,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
+-   **Content-Type**: `application/json`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -819,9 +816,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **id** | **string**| The ID of the generation | |
+| Name   | Type       | Description              | Notes |
+| ------ | ---------- | ------------------------ | ----- |
+| **id** | **string** | The ID of the generation |       |
 
 ### Return type
 
@@ -833,8 +830,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
+-   **Content-Type**: Not defined
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -890,8 +887,8 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
+-   **Content-Type**: Not defined
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -947,8 +944,8 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
+-   **Content-Type**: Not defined
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -999,15 +996,15 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **endpoints** | [**string[]**](../Model/string.md)| Filter by endpoints | [optional] |
-| **organisation** | [**\AIStats\Sdk\Model\ListModelsOrganisationParameter**](../Model/.md)| Filter by organisation | [optional] |
-| **input_types** | [**string[]**](../Model/string.md)| Filter by input types | [optional] |
-| **output_types** | [**string[]**](../Model/string.md)| Filter by output types | [optional] |
-| **params** | [**string[]**](../Model/string.md)| Filter by params | [optional] |
-| **limit** | **int**| Limit the number of results | [optional] [default to 50] |
-| **offset** | **int**| Offset for pagination | [optional] [default to 0] |
+| Name             | Type                                                                   | Description                 | Notes                      |
+| ---------------- | ---------------------------------------------------------------------- | --------------------------- | -------------------------- |
+| **endpoints**    | [**string[]**](../Model/string.md)                                     | Filter by endpoints         | [optional]                 |
+| **organisation** | [**\AIStats\Sdk\Model\ListModelsOrganisationParameter**](../Model/.md) | Filter by organisation      | [optional]                 |
+| **input_types**  | [**string[]**](../Model/string.md)                                     | Filter by input types       | [optional]                 |
+| **output_types** | [**string[]**](../Model/string.md)                                     | Filter by output types      | [optional]                 |
+| **params**       | [**string[]**](../Model/string.md)                                     | Filter by params            | [optional]                 |
+| **limit**        | **int**                                                                | Limit the number of results | [optional] [default to 50] |
+| **offset**       | **int**                                                                | Offset for pagination       | [optional] [default to 0]  |
 
 ### Return type
 
@@ -1019,8 +1016,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
+-   **Content-Type**: Not defined
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -1065,9 +1062,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **batch_id** | **string**| The ID of the batch to retrieve. | |
+| Name         | Type       | Description                      | Notes |
+| ------------ | ---------- | -------------------------------- | ----- |
+| **batch_id** | **string** | The ID of the batch to retrieve. |       |
 
 ### Return type
 
@@ -1079,8 +1076,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
+-   **Content-Type**: Not defined
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -1125,9 +1122,9 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **file_id** | **string**| The ID of the file to retrieve. | |
+| Name        | Type       | Description                     | Notes |
+| ----------- | ---------- | ------------------------------- | ----- |
+| **file_id** | **string** | The ID of the file to retrieve. |       |
 
 ### Return type
 
@@ -1139,8 +1136,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
+-   **Content-Type**: Not defined
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -1196,8 +1193,8 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: `application/json`
+-   **Content-Type**: Not defined
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -1243,10 +1240,10 @@ try {
 
 ### Parameters
 
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **file** | **\SplFileObject****\SplFileObject**|  | |
-| **purpose** | **string**|  | |
+| Name        | Type                                     | Description | Notes |
+| ----------- | ---------------------------------------- | ----------- | ----- |
+| **file**    | **\SplFileObject\*\***\SplFileObject\*\* |             |       |
+| **purpose** | **string**                               |             |       |
 
 ### Return type
 
@@ -1258,8 +1255,8 @@ try {
 
 ### HTTP request headers
 
-- **Content-Type**: `multipart/form-data`
-- **Accept**: `application/json`
+-   **Content-Type**: `multipart/form-data`
+-   **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)

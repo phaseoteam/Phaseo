@@ -1,0 +1,17 @@
+{
+  "model_id": "aion-labs/aion-rp-llama-3-1-8b",
+  "organisation_id": "aion-labs",
+  "name": "Aion RP Llama 3.1 8B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

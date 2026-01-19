@@ -38,7 +38,7 @@ export function WhyWeWinSection() {
 			<div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 				<div className="space-y-6">
 					<h2 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">
-						Why teams choose the AI Stats Gateway
+						Why teams choose the AI Stats Conduit
 					</h2>
 					<p className="text-base text-slate-600 dark:text-slate-400">
 						We deliver an open-source routing, telemetry, and

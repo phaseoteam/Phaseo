@@ -6,7 +6,7 @@ module AIStatsSdk
   # Thin wrapper around the generated Ruby SDK.
   # Regenerate with: `pnpm openapi:gen:ruby`
   class Client
-    def initialize(api_key:, base_path: 'https://api.ai-stats.phaseo.app/v1')
+    def initialize(api_key:, base_path: 'https://api.phaseo.app/v1')
       config = AIStatsSdk::Configuration.default
       config.base_path = base_path
       config.access_token = api_key

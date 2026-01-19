@@ -4,15 +4,16 @@ description: "Generated client for the AI Stats Gateway. Models endpoint only fo
 ---
 
 <Note type="warning">
-  **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
+	**SDKs are in very early alpha**: We're working as hard as we can to get
+	them into a stable state. Please bear with us as we iterate rapidly.
 </Note>
 
-- Status: Preview (not yet published to pkg.go.dev).
-- Generate with `pnpm openapi:gen:go`.
-- Wrapper in `packages/sdk-go/index.go` exposes `GetModels`.
+-   Status: Preview (not yet published to pkg.go.dev).
+-   Generate with `pnpm openapi:gen:go`.
+-   Wrapper in `packages/sdk-go/index.go` exposes `GetModels`.
 
 ```go
-client := aistats.New("YOUR_KEY", "https://api.ai-stats.phaseo.app/v1")
+client := aistats.New("YOUR_KEY", "https://api.phaseo.app/v1")
 resp, _, err := client.GetModels(context.Background(), nil)
 if err != nil { panic(err) }
 fmt.Println(resp.Models)
