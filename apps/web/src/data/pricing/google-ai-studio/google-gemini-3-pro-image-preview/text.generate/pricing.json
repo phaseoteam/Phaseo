@@ -1,0 +1,93 @@
+{
+  "key": "google-ai-studio:google/gemini-3-pro-image-preview:text.generate",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/gemini-3-pro-image-preview",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-11-20T00:00:00"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-11-20T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1.2e-05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-11-20T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.134,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-11-20T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.24,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "4K"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-11-20T00:00:00"
+    }
+  ]
+}

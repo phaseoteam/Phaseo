@@ -6,10 +6,11 @@ import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { withUTM } from "@/lib/utm";
 import Script from "next/script";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
-async function fetchOrganisation(organisationId: string) {
+async function fetchOrganisation(organisationId: string, includeHidden: boolean) {
 	try {
-		return await getOrganisationDataCached(organisationId, 12);
+		return await getOrganisationDataCached(organisationId, 12, includeHidden);
 	} catch (error) {
 		console.warn("[seo] failed to load organisation metadata", {
 			organisationId,
@@ -23,7 +24,8 @@ export async function generateMetadata(props: {
 	params: Promise<{ organisationId: string }>;
 }): Promise<Metadata> {
 	const { organisationId } = await props.params;
-	const organisation = await fetchOrganisation(organisationId);
+	const includeHidden = await resolveIncludeHidden();
+	const organisation = await fetchOrganisation(organisationId, includeHidden);
 	const path = `/organisations/${organisationId}`;
 	const imagePath = `/og/organisations/${organisationId}`;
 
@@ -67,7 +69,7 @@ export async function generateMetadata(props: {
 	];
 
 	return buildMetadata({
-		title: `${organisation.name} - AI Organisation, Models & Conduit Coverage`,
+		title: `${organisation.name} - AI Organisation, Models & Gateway Coverage`,
 		description,
 		path,
 		keywords,
@@ -82,7 +84,8 @@ export default async function Page({
 }) {
 	const { organisationId } = await params;
 
-	const organisation = await getOrganisationDataCached(organisationId, 12);
+	const includeHidden = await resolveIncludeHidden();
+	const organisation = await getOrganisationDataCached(organisationId, 12, includeHidden);
 
 	// Generate structured data and FAQs for SEO
 	const generateStructuredData = () => {
@@ -98,7 +101,7 @@ export default async function Page({
 			"@type": "Organization",
 			"name": orgName,
 			"description": description,
-			"url": organisation.website || `https://aistats.org/organisations/${organisationId}`,
+			"url": `https://aistats.org/organisations/${organisationId}`,
 		};
 
 		// FAQ Schema

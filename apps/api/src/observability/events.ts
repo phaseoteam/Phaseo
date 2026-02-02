@@ -1,3 +1,7 @@
+// Purpose: Observability utilities for logging and analytics.
+// Why: Keeps telemetry non-blocking and centralized.
+// How: Sends structured events to Axiom with safe timeouts.
+
 import type { PipelineContext } from "@pipeline/before/types";
 import type { RequestResult } from "@pipeline/execute";
 import { ensureRuntimeForBackground, getBindings } from "@/runtime/env";
@@ -61,6 +65,11 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             model: args.model ?? ctx?.model ?? null,
             stream: ctx?.stream ?? false,
             strictness: ctx?.strictness ?? null,
+            location: ctx?.meta?.edgeColo ?? null,
+            edge_city: ctx?.meta?.edgeCity ?? null,
+            edge_country: ctx?.meta?.edgeCountry ?? null,
+            edge_continent: ctx?.meta?.edgeContinent ?? null,
+            edge_asn: ctx?.meta?.edgeAsn ?? null,
             status_code: args.statusCode ?? null,
             success: args.success,
             error_code: args.errorCode ?? null,
@@ -69,6 +78,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             error_internal_reason: args.internalReason ?? null,
             provider: args.result?.provider ?? null,
             chosen_surface: ctx?.endpoint ?? null,
+            chosen_executor: ctx?.capability ?? null,
             provider_candidates_count: ctx?.providers?.length ?? null,
             routing_candidates_json: ctx && (ctx as any).routingSnapshot
                 ? JSON.stringify((ctx as any).routingSnapshot)
@@ -93,3 +103,4 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         releaseRuntime();
     }
 }
+

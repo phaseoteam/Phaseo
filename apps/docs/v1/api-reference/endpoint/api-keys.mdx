@@ -1,9 +1,0 @@
----
-title: "API Keys (Beta)"
-badge: "Beta"
-openapi: "GET /api-keys"
-description: "How to authenticate every Gateway request."
----
-Every request to the Gateway must include an `Authorization: Bearer <key>` header with a Gateway API key. Create or rotate keys inside the AI Stats Dashboard under **Gateway → API Keys**, then copy the key into your CLI, SDK, or automation secrets.
-
-Keys start with `aistats_v1_k_` and map directly back to the teams and environments you manage inside AI Stats. Use the [Authentication guide](./authentication) for sample curl, Python, and JavaScript snippets.

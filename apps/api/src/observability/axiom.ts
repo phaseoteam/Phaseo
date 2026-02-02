@@ -1,3 +1,7 @@
+// Purpose: Observability utilities for logging and analytics.
+// Why: Keeps telemetry non-blocking and centralized.
+// How: Sends structured events to Axiom with safe timeouts.
+
 import { getBindings } from "@/runtime/env";
 
 export type WideEvent = Record<string, unknown>;
@@ -44,3 +48,4 @@ export async function sendAxiomWideEvent(event: WideEvent) {
         clearTimeout(timeoutId);
     }
 }
+

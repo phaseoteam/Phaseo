@@ -2,6 +2,7 @@
 
 A gateway API for accessing various AI models with OpenAI-compatible endpoints.
 
+
 ## Installation & Usage
 
 ### Requirements
@@ -14,15 +15,15 @@ To install the bindings via [Composer](https://getcomposer.org/), add the follow
 
 ```json
 {
-	"repositories": [
-		{
-			"type": "vcs",
-			"url": "https://github.com/GIT_USER_ID/GIT_REPO_ID.git"
-		}
-	],
-	"require": {
-		"GIT_USER_ID/GIT_REPO_ID": "*@dev"
-	}
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/GIT_USER_ID/GIT_REPO_ID.git"
+    }
+  ],
+  "require": {
+    "GIT_USER_ID/GIT_REPO_ID": "*@dev"
+  }
 }
 ```
 
@@ -57,126 +58,169 @@ $apiInstance = new AIStats\Sdk\Api\DefaultApi(
     new GuzzleHttp\Client(),
     $config
 );
-$batch_request = new \AIStats\Sdk\Model\BatchRequest(); // \AIStats\Sdk\Model\BatchRequest
+$anthropic_messages_request = new \AIStats\Sdk\Model\AnthropicMessagesRequest(); // \AIStats\Sdk\Model\AnthropicMessagesRequest
 
 try {
-    $result = $apiInstance->createBatch($batch_request);
+    $result = $apiInstance->createAnthropicMessage($anthropic_messages_request);
     print_r($result);
 } catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->createBatch: ', $e->getMessage(), PHP_EOL;
+    echo 'Exception when calling DefaultApi->createAnthropicMessage: ', $e->getMessage(), PHP_EOL;
 }
 
 ```
 
 ## API Endpoints
 
-All URIs are relative to *https://api.phaseo.app/v1*
+All URIs are relative to *https://gateway.ai-stats.com/v1*
 
-| Class        | Method                                                                  | HTTP request                   | Description            |
-| ------------ | ----------------------------------------------------------------------- | ------------------------------ | ---------------------- |
-| _DefaultApi_ | [**createBatch**](docs/Api/DefaultApi.md#createbatch)                   | **POST** /batches              | Create batch           |
-| _DefaultApi_ | [**createChatCompletion**](docs/Api/DefaultApi.md#createchatcompletion) | **POST** /chat/completions     | Create chat completion |
-| _DefaultApi_ | [**createEmbedding**](docs/Api/DefaultApi.md#createembedding)           | **POST** /embeddings           | Create embeddings      |
-| _DefaultApi_ | [**createImage**](docs/Api/DefaultApi.md#createimage)                   | **POST** /images/generations   | Create image           |
-| _DefaultApi_ | [**createImageEdit**](docs/Api/DefaultApi.md#createimageedit)           | **POST** /images/edits         | Create image edit      |
-| _DefaultApi_ | [**createModeration**](docs/Api/DefaultApi.md#createmoderation)         | **POST** /moderations          | Create moderation      |
-| _DefaultApi_ | [**createResponse**](docs/Api/DefaultApi.md#createresponse)             | **POST** /responses            | Create response        |
-| _DefaultApi_ | [**createSpeech**](docs/Api/DefaultApi.md#createspeech)                 | **POST** /audio/speech         | Generate speech        |
-| _DefaultApi_ | [**createTranscription**](docs/Api/DefaultApi.md#createtranscription)   | **POST** /audio/transcriptions | Create transcription   |
-| _DefaultApi_ | [**createTranslation**](docs/Api/DefaultApi.md#createtranslation)       | **POST** /audio/translations   | Create translation     |
-| _DefaultApi_ | [**createVideo**](docs/Api/DefaultApi.md#createvideo)                   | **POST** /videos               | Create video           |
-| _DefaultApi_ | [**getAnalytics**](docs/Api/DefaultApi.md#getanalytics)                 | **POST** /analytics            | Get analytics          |
-| _DefaultApi_ | [**getGeneration**](docs/Api/DefaultApi.md#getgeneration)               | **GET** /generation            | Get generation         |
-| _DefaultApi_ | [**healthz**](docs/Api/DefaultApi.md#healthz)                           | **GET** /healthz               | Health check           |
-| _DefaultApi_ | [**listFiles**](docs/Api/DefaultApi.md#listfiles)                       | **GET** /files                 | List files             |
-| _DefaultApi_ | [**listModels**](docs/Api/DefaultApi.md#listmodels)                     | **GET** /models                | List models            |
-| _DefaultApi_ | [**retrieveBatch**](docs/Api/DefaultApi.md#retrievebatch)               | **GET** /batches/{batch_id}    | Retrieve batch         |
-| _DefaultApi_ | [**retrieveFile**](docs/Api/DefaultApi.md#retrievefile)                 | **GET** /files/{file_id}       | Retrieve file          |
-| _DefaultApi_ | [**root**](docs/Api/DefaultApi.md#root)                                 | **GET** /                      | Root endpoint          |
-| _DefaultApi_ | [**uploadFile**](docs/Api/DefaultApi.md#uploadfile)                     | **POST** /files                | Upload file            |
+Class | Method | HTTP request | Description
+------------ | ------------- | ------------- | -------------
+*DefaultApi* | [**createAnthropicMessage**](docs/Api/DefaultApi.md#createanthropicmessage) | **POST** /messages | Create message
+*DefaultApi* | [**createBatch**](docs/Api/DefaultApi.md#createbatch) | **POST** /batches | Create batch
+*DefaultApi* | [**createChatCompletion**](docs/Api/DefaultApi.md#createchatcompletion) | **POST** /chat/completions | Create chat completion
+*DefaultApi* | [**createEmbedding**](docs/Api/DefaultApi.md#createembedding) | **POST** /embeddings | Create embeddings
+*DefaultApi* | [**createImage**](docs/Api/DefaultApi.md#createimage) | **POST** /images/generations | Create image
+*DefaultApi* | [**createImageEdit**](docs/Api/DefaultApi.md#createimageedit) | **POST** /images/edits | Create image edit
+*DefaultApi* | [**createModeration**](docs/Api/DefaultApi.md#createmoderation) | **POST** /moderations | Create moderation
+*DefaultApi* | [**createOcr**](docs/Api/DefaultApi.md#createocr) | **POST** /ocr | Create OCR
+*DefaultApi* | [**createProvisioningKey**](docs/Api/DefaultApi.md#createprovisioningkey) | **POST** /provisioning/keys | Create provisioning key
+*DefaultApi* | [**createResponse**](docs/Api/DefaultApi.md#createresponse) | **POST** /responses | Create response
+*DefaultApi* | [**createSpeech**](docs/Api/DefaultApi.md#createspeech) | **POST** /audio/speech | Generate speech
+*DefaultApi* | [**createTranscription**](docs/Api/DefaultApi.md#createtranscription) | **POST** /audio/transcriptions | Create transcription
+*DefaultApi* | [**createTranslation**](docs/Api/DefaultApi.md#createtranslation) | **POST** /audio/translations | Create translation
+*DefaultApi* | [**createVideo**](docs/Api/DefaultApi.md#createvideo) | **POST** /videos | Create video
+*DefaultApi* | [**deleteProvisioningKey**](docs/Api/DefaultApi.md#deleteprovisioningkey) | **DELETE** /provisioning/keys/{id} | Delete provisioning key
+*DefaultApi* | [**deleteVideo**](docs/Api/DefaultApi.md#deletevideo) | **DELETE** /videos/{video_id} | Delete video
+*DefaultApi* | [**generateMusic**](docs/Api/DefaultApi.md#generatemusic) | **POST** /music/generate | Generate music
+*DefaultApi* | [**getActivity**](docs/Api/DefaultApi.md#getactivity) | **GET** /activity | Get activity
+*DefaultApi* | [**getAnalytics**](docs/Api/DefaultApi.md#getanalytics) | **POST** /analytics | Get analytics
+*DefaultApi* | [**getCredits**](docs/Api/DefaultApi.md#getcredits) | **GET** /credits | Get remaining credits
+*DefaultApi* | [**getGeneration**](docs/Api/DefaultApi.md#getgeneration) | **GET** /generation | Get generation
+*DefaultApi* | [**getProvisioningKey**](docs/Api/DefaultApi.md#getprovisioningkey) | **GET** /provisioning/keys/{id} | Get provisioning key
+*DefaultApi* | [**getVideo**](docs/Api/DefaultApi.md#getvideo) | **GET** /videos/{video_id} | Get video status
+*DefaultApi* | [**getVideoContent**](docs/Api/DefaultApi.md#getvideocontent) | **GET** /videos/{video_id}/content | Get video content
+*DefaultApi* | [**healthz**](docs/Api/DefaultApi.md#healthz) | **GET** /healthz | Health check
+*DefaultApi* | [**listFiles**](docs/Api/DefaultApi.md#listfiles) | **GET** /files | List files
+*DefaultApi* | [**listModels**](docs/Api/DefaultApi.md#listmodels) | **GET** /models | List models
+*DefaultApi* | [**listProviders**](docs/Api/DefaultApi.md#listproviders) | **GET** /providers | List providers
+*DefaultApi* | [**listProvisioningKeys**](docs/Api/DefaultApi.md#listprovisioningkeys) | **GET** /provisioning/keys | List provisioning keys
+*DefaultApi* | [**retrieveBatch**](docs/Api/DefaultApi.md#retrievebatch) | **GET** /batches/{batch_id} | Retrieve batch
+*DefaultApi* | [**retrieveFile**](docs/Api/DefaultApi.md#retrievefile) | **GET** /files/{file_id} | Retrieve file
+*DefaultApi* | [**root**](docs/Api/DefaultApi.md#root) | **GET** / | Root endpoint
+*DefaultApi* | [**updateProvisioningKey**](docs/Api/DefaultApi.md#updateprovisioningkey) | **PATCH** /provisioning/keys/{id} | Update provisioning key
+*DefaultApi* | [**uploadFile**](docs/Api/DefaultApi.md#uploadfile) | **POST** /files | Upload file
 
 ## Models
 
--   [AudioContentPart](docs/Model/AudioContentPart.md)
--   [AudioContentPartInputAudio](docs/Model/AudioContentPartInputAudio.md)
--   [AudioSpeechRequest](docs/Model/AudioSpeechRequest.md)
--   [AudioTranscriptionResponse](docs/Model/AudioTranscriptionResponse.md)
--   [AudioTranslationResponse](docs/Model/AudioTranslationResponse.md)
--   [BatchRequest](docs/Model/BatchRequest.md)
--   [BatchRequestCounts](docs/Model/BatchRequestCounts.md)
--   [BatchResponse](docs/Model/BatchResponse.md)
--   [BenchmarkId](docs/Model/BenchmarkId.md)
--   [ChatChoice](docs/Model/ChatChoice.md)
--   [ChatCompletionsRequest](docs/Model/ChatCompletionsRequest.md)
--   [ChatCompletionsRequestResponseFormat](docs/Model/ChatCompletionsRequestResponseFormat.md)
--   [ChatCompletionsRequestResponseFormatOneOf](docs/Model/ChatCompletionsRequestResponseFormatOneOf.md)
--   [ChatCompletionsRequestToolChoice](docs/Model/ChatCompletionsRequestToolChoice.md)
--   [ChatCompletionsRequestToolsInner](docs/Model/ChatCompletionsRequestToolsInner.md)
--   [ChatCompletionsResponse](docs/Model/ChatCompletionsResponse.md)
--   [ChatMessage](docs/Model/ChatMessage.md)
--   [ChatMessageContent](docs/Model/ChatMessageContent.md)
--   [Embedding](docs/Model/Embedding.md)
--   [EmbeddingsRequest](docs/Model/EmbeddingsRequest.md)
--   [EmbeddingsRequestInput](docs/Model/EmbeddingsRequestInput.md)
--   [EmbeddingsResponse](docs/Model/EmbeddingsResponse.md)
--   [FileResponse](docs/Model/FileResponse.md)
--   [GenerationResponse](docs/Model/GenerationResponse.md)
--   [GenerationResponseUsage](docs/Model/GenerationResponseUsage.md)
--   [GetAnalytics200Response](docs/Model/GetAnalytics200Response.md)
--   [GetAnalyticsRequest](docs/Model/GetAnalyticsRequest.md)
--   [GetGeneration401Response](docs/Model/GetGeneration401Response.md)
--   [GetGeneration404Response](docs/Model/GetGeneration404Response.md)
--   [Healthz200Response](docs/Model/Healthz200Response.md)
--   [Image](docs/Model/Image.md)
--   [ImageContentPart](docs/Model/ImageContentPart.md)
--   [ImageContentPartImageUrl](docs/Model/ImageContentPartImageUrl.md)
--   [ImageModerationInput](docs/Model/ImageModerationInput.md)
--   [ImagesEditResponse](docs/Model/ImagesEditResponse.md)
--   [ImagesGenerationRequest](docs/Model/ImagesGenerationRequest.md)
--   [ImagesGenerationResponse](docs/Model/ImagesGenerationResponse.md)
--   [ListFilesResponse](docs/Model/ListFilesResponse.md)
--   [ListModels200Response](docs/Model/ListModels200Response.md)
--   [ListModels500Response](docs/Model/ListModels500Response.md)
--   [ListModelsOrganisationParameter](docs/Model/ListModelsOrganisationParameter.md)
--   [MessageContentPart](docs/Model/MessageContentPart.md)
--   [Model](docs/Model/Model.md)
--   [ModelId](docs/Model/ModelId.md)
--   [ModelProvidersInner](docs/Model/ModelProvidersInner.md)
--   [ModerationCategories](docs/Model/ModerationCategories.md)
--   [ModerationCategoryScores](docs/Model/ModerationCategoryScores.md)
--   [ModerationResult](docs/Model/ModerationResult.md)
--   [ModerationsRequest](docs/Model/ModerationsRequest.md)
--   [ModerationsRequestInput](docs/Model/ModerationsRequestInput.md)
--   [ModerationsRequestInputOneOfInner](docs/Model/ModerationsRequestInputOneOfInner.md)
--   [ModerationsResponse](docs/Model/ModerationsResponse.md)
--   [OrganisationId](docs/Model/OrganisationId.md)
--   [ReasoningConfig](docs/Model/ReasoningConfig.md)
--   [ReasoningConfigOneOf](docs/Model/ReasoningConfigOneOf.md)
--   [ReasoningConfigOneOf1](docs/Model/ReasoningConfigOneOf1.md)
--   [ResponsesRequest](docs/Model/ResponsesRequest.md)
--   [ResponsesRequestPrompt](docs/Model/ResponsesRequestPrompt.md)
--   [ResponsesRequestReasoning](docs/Model/ResponsesRequestReasoning.md)
--   [ResponsesResponse](docs/Model/ResponsesResponse.md)
--   [Root200Response](docs/Model/Root200Response.md)
--   [TextContentPart](docs/Model/TextContentPart.md)
--   [TextModerationInput](docs/Model/TextModerationInput.md)
--   [ToolCall](docs/Model/ToolCall.md)
--   [ToolCallContentPart](docs/Model/ToolCallContentPart.md)
--   [ToolCallContentPartFunction](docs/Model/ToolCallContentPartFunction.md)
--   [ToolCallFunction](docs/Model/ToolCallFunction.md)
--   [Usage](docs/Model/Usage.md)
--   [VideoContentPart](docs/Model/VideoContentPart.md)
--   [VideoGenerationRequest](docs/Model/VideoGenerationRequest.md)
--   [VideoGenerationResponse](docs/Model/VideoGenerationResponse.md)
--   [VideoGenerationResponseOutputInner](docs/Model/VideoGenerationResponseOutputInner.md)
+- [ActivityEntry](docs/Model/ActivityEntry.md)
+- [ActivityEntryUsage](docs/Model/ActivityEntryUsage.md)
+- [AnthropicContentBlock](docs/Model/AnthropicContentBlock.md)
+- [AnthropicContentBlockSource](docs/Model/AnthropicContentBlockSource.md)
+- [AnthropicMessage](docs/Model/AnthropicMessage.md)
+- [AnthropicMessageContent](docs/Model/AnthropicMessageContent.md)
+- [AnthropicMessagesRequest](docs/Model/AnthropicMessagesRequest.md)
+- [AnthropicMessagesRequestSystem](docs/Model/AnthropicMessagesRequestSystem.md)
+- [AnthropicMessagesResponse](docs/Model/AnthropicMessagesResponse.md)
+- [AnthropicTool](docs/Model/AnthropicTool.md)
+- [AnthropicUsage](docs/Model/AnthropicUsage.md)
+- [AudioContentPart](docs/Model/AudioContentPart.md)
+- [AudioContentPartInputAudio](docs/Model/AudioContentPartInputAudio.md)
+- [AudioSpeechRequest](docs/Model/AudioSpeechRequest.md)
+- [AudioTranscriptionResponse](docs/Model/AudioTranscriptionResponse.md)
+- [AudioTranslationResponse](docs/Model/AudioTranslationResponse.md)
+- [BatchRequest](docs/Model/BatchRequest.md)
+- [BatchRequestCounts](docs/Model/BatchRequestCounts.md)
+- [BatchResponse](docs/Model/BatchResponse.md)
+- [BenchmarkId](docs/Model/BenchmarkId.md)
+- [ChatChoice](docs/Model/ChatChoice.md)
+- [ChatCompletionsRequest](docs/Model/ChatCompletionsRequest.md)
+- [ChatCompletionsRequestResponseFormat](docs/Model/ChatCompletionsRequestResponseFormat.md)
+- [ChatCompletionsRequestResponseFormatOneOf](docs/Model/ChatCompletionsRequestResponseFormatOneOf.md)
+- [ChatCompletionsRequestToolChoice](docs/Model/ChatCompletionsRequestToolChoice.md)
+- [ChatCompletionsRequestToolsInner](docs/Model/ChatCompletionsRequestToolsInner.md)
+- [ChatCompletionsResponse](docs/Model/ChatCompletionsResponse.md)
+- [ChatMessage](docs/Model/ChatMessage.md)
+- [ChatMessageContent](docs/Model/ChatMessageContent.md)
+- [CreateProvisioningKey201Response](docs/Model/CreateProvisioningKey201Response.md)
+- [CreateProvisioningKeyRequest](docs/Model/CreateProvisioningKeyRequest.md)
+- [DeleteProvisioningKey200Response](docs/Model/DeleteProvisioningKey200Response.md)
+- [Embedding](docs/Model/Embedding.md)
+- [EmbeddingsRequest](docs/Model/EmbeddingsRequest.md)
+- [EmbeddingsResponse](docs/Model/EmbeddingsResponse.md)
+- [ErrorResponse](docs/Model/ErrorResponse.md)
+- [FileResponse](docs/Model/FileResponse.md)
+- [GenerationResponse](docs/Model/GenerationResponse.md)
+- [GenerationResponseUsage](docs/Model/GenerationResponseUsage.md)
+- [GetActivity200Response](docs/Model/GetActivity200Response.md)
+- [GetAnalytics200Response](docs/Model/GetAnalytics200Response.md)
+- [GetAnalyticsRequest](docs/Model/GetAnalyticsRequest.md)
+- [GetCredits200Response](docs/Model/GetCredits200Response.md)
+- [GetCredits200ResponseCredits](docs/Model/GetCredits200ResponseCredits.md)
+- [GetGeneration401Response](docs/Model/GetGeneration401Response.md)
+- [GetGeneration404Response](docs/Model/GetGeneration404Response.md)
+- [GetProvisioningKey200Response](docs/Model/GetProvisioningKey200Response.md)
+- [Healthz200Response](docs/Model/Healthz200Response.md)
+- [Image](docs/Model/Image.md)
+- [ImageContentPart](docs/Model/ImageContentPart.md)
+- [ImageContentPartImageUrl](docs/Model/ImageContentPartImageUrl.md)
+- [ImageModerationInput](docs/Model/ImageModerationInput.md)
+- [ImagesEditResponse](docs/Model/ImagesEditResponse.md)
+- [ImagesGenerationRequest](docs/Model/ImagesGenerationRequest.md)
+- [ImagesGenerationResponse](docs/Model/ImagesGenerationResponse.md)
+- [ListFilesResponse](docs/Model/ListFilesResponse.md)
+- [ListModels200Response](docs/Model/ListModels200Response.md)
+- [ListModels500Response](docs/Model/ListModels500Response.md)
+- [ListModelsOrganisationParameter](docs/Model/ListModelsOrganisationParameter.md)
+- [ListProviders200Response](docs/Model/ListProviders200Response.md)
+- [ListProvisioningKeys200Response](docs/Model/ListProvisioningKeys200Response.md)
+- [MessageContentPart](docs/Model/MessageContentPart.md)
+- [Model](docs/Model/Model.md)
+- [ModelId](docs/Model/ModelId.md)
+- [ModelProvidersInner](docs/Model/ModelProvidersInner.md)
+- [ModerationCategories](docs/Model/ModerationCategories.md)
+- [ModerationCategoryScores](docs/Model/ModerationCategoryScores.md)
+- [ModerationResult](docs/Model/ModerationResult.md)
+- [ModerationsRequest](docs/Model/ModerationsRequest.md)
+- [ModerationsRequestInput](docs/Model/ModerationsRequestInput.md)
+- [ModerationsRequestInputOneOfInner](docs/Model/ModerationsRequestInputOneOfInner.md)
+- [ModerationsResponse](docs/Model/ModerationsResponse.md)
+- [MusicGenerateRequest](docs/Model/MusicGenerateRequest.md)
+- [MusicGenerateRequestElevenlabs](docs/Model/MusicGenerateRequestElevenlabs.md)
+- [MusicGenerateRequestSuno](docs/Model/MusicGenerateRequestSuno.md)
+- [OcrRequest](docs/Model/OcrRequest.md)
+- [OrganisationId](docs/Model/OrganisationId.md)
+- [Provider](docs/Model/Provider.md)
+- [ProviderRoutingOptions](docs/Model/ProviderRoutingOptions.md)
+- [ProvisioningKey](docs/Model/ProvisioningKey.md)
+- [ProvisioningKeyDetail](docs/Model/ProvisioningKeyDetail.md)
+- [ProvisioningKeyWithValue](docs/Model/ProvisioningKeyWithValue.md)
+- [ReasoningConfig](docs/Model/ReasoningConfig.md)
+- [ResponsesRequest](docs/Model/ResponsesRequest.md)
+- [ResponsesRequestPrompt](docs/Model/ResponsesRequestPrompt.md)
+- [ResponsesRequestReasoning](docs/Model/ResponsesRequestReasoning.md)
+- [ResponsesResponse](docs/Model/ResponsesResponse.md)
+- [Root200Response](docs/Model/Root200Response.md)
+- [TextContentPart](docs/Model/TextContentPart.md)
+- [TextModerationInput](docs/Model/TextModerationInput.md)
+- [ToolCall](docs/Model/ToolCall.md)
+- [ToolCallContentPart](docs/Model/ToolCallContentPart.md)
+- [ToolCallContentPartFunction](docs/Model/ToolCallContentPartFunction.md)
+- [ToolCallFunction](docs/Model/ToolCallFunction.md)
+- [UpdateProvisioningKey200Response](docs/Model/UpdateProvisioningKey200Response.md)
+- [UpdateProvisioningKeyRequest](docs/Model/UpdateProvisioningKeyRequest.md)
+- [Usage](docs/Model/Usage.md)
+- [VideoContentPart](docs/Model/VideoContentPart.md)
+- [VideoDeleteResponse](docs/Model/VideoDeleteResponse.md)
+- [VideoGenerationRequest](docs/Model/VideoGenerationRequest.md)
+- [VideoGenerationResponse](docs/Model/VideoGenerationResponse.md)
+- [VideoGenerationResponseOutputInner](docs/Model/VideoGenerationResponseOutputInner.md)
 
 ## Authorization
 
 Authentication schemes defined for the API:
-
 ### BearerAuth
 
--   **Type**: Bearer authentication
+- **Type**: Bearer authentication
 
 ## Tests
 
@@ -189,10 +233,12 @@ vendor/bin/phpunit
 
 ## Author
 
+
+
 ## About this package
 
 This PHP package is automatically generated by the [OpenAPI Generator](https://openapi-generator.tech) project:
 
--   API version: `1.0.0`
-    -   Generator version: `7.17.0`
--   Build package: `org.openapitools.codegen.languages.PhpClientCodegen`
+- API version: `1.0.0`
+    - Generator version: `7.17.0`
+- Build package: `org.openapitools.codegen.languages.PhpClientCodegen`

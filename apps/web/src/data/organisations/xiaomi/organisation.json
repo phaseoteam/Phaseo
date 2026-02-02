@@ -4,5 +4,18 @@
   "country_code": "CN",
   "description": "Xiaomi is a consumer-electronics and smart-manufacturing company with smartphones and AIoT products at its core. Their mission is to build amazing products with honest prices so everyone can enjoy a better life through innovative technology.",
   "colour": "#FF6900",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://www.mi.com/global/"
+    },
+    {
+      "platform": "instagram",
+      "url": "https://www.instagram.com/xiaomi.global/"
+    },
+    {
+      "platform": "youtube",
+      "url": "https://www.youtube.com/channel/UCCspJ6mFfCwOV4qFjZWi2wg"
+    }
+  ]
 }

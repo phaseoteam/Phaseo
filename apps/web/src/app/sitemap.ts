@@ -38,6 +38,7 @@ const staticRoutes: Array<{
     priority: number;
 }> = [
         { path: "/", changeFrequency: "daily", priority: 1 },
+        { path: "/rankings", changeFrequency: "daily", priority: 0.95 },
         { path: "/models", changeFrequency: "weekly", priority: 0.9 },
         { path: "/api-providers", changeFrequency: "weekly", priority: 0.8 },
         { path: "/benchmarks", changeFrequency: "weekly", priority: 0.8 },
@@ -45,7 +46,8 @@ const staticRoutes: Array<{
         { path: "/families", changeFrequency: "weekly", priority: 0.75 },
         { path: "/subscription-plans", changeFrequency: "weekly", priority: 0.75 },
         { path: "/compare", changeFrequency: "weekly", priority: 0.7 },
-        { path: "/conduit", changeFrequency: "weekly", priority: 0.7 },
+		{ path: "/gateway", changeFrequency: "weekly", priority: 0.7 },
+		{ path: "/gateway/marketplace", changeFrequency: "weekly", priority: 0.6 },
         { path: "/contribute", changeFrequency: "monthly", priority: 0.6 },
         { path: "/roadmap", changeFrequency: "monthly", priority: 0.6 },
         { path: "/tools", changeFrequency: "monthly", priority: 0.65 },

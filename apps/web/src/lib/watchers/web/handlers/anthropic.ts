@@ -6,18 +6,20 @@ export async function handleAnthropic(supabase: any): Promise<Array<{ type: "web
     const items = await walkSitemap(sitemapUrl);
     const urls = items.map(item => item.url);
 
-    const blacklist = new Set([
-        "https://www.anthropic.com/events",
-        "https://www.anthropic.com/research",
-        "https://www.anthropic.com/learn/claude-for-you",
-        "https://www.anthropic.com/learn/claude-for-work",
-        "https://www.anthropic.com/learn/build-with-claude",
-        "https://www.anthropic.com/learn",
-        "https://www.anthropic.com/unsubscribe",
-        "https://www.anthropic.com/supported-countries",
-        "https://www.anthropic.com/company",
-        "https://www.anthropic.com/careers"
-    ]);
+    // const blacklist = new Set([
+    //     "https://www.anthropic.com/events",
+    //     "https://www.anthropic.com/research",
+    //     "https://www.anthropic.com/learn/claude-for-you",
+    //     "https://www.anthropic.com/learn/claude-for-work",
+    //     "https://www.anthropic.com/learn/build-with-claude",
+    //     "https://www.anthropic.com/learn",
+    //     "https://www.anthropic.com/unsubscribe",
+    //     "https://www.anthropic.com/supported-countries",
+    //     "https://www.anthropic.com/company",
+    //     "https://www.anthropic.com/careers",
+    //     "https://www.anthropic.com/system-cards",
+    //     "https://www.anthropic.com/constitution"
+    // ]);
 
     // Query existing links
     const { data: existing } = await supabase
@@ -28,7 +30,11 @@ export async function handleAnthropic(supabase: any): Promise<Array<{ type: "web
 
     const existingLinks = new Set(existing?.map((r: any) => r.link) || []);
     const newUrls = urls.filter(u => !existingLinks.has(u));
-    const filteredUrls = newUrls.filter(u => !blacklist.has(u));
+    const filteredUrls = newUrls.filter(u => {
+        const url = new URL(u);
+        const segments = url.pathname.split('/').filter(Boolean);
+        return segments.length > 1;
+    });
 
     const rows: Array<{ type: "web", who: string, title: string, link: string, created_at: string }> = [];
     const isFresh = createFreshnessChecker();

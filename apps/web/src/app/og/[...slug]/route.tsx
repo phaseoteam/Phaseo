@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatCountryName } from "@/lib/fetchers/countries/utils";
 import { resolveLogo } from "@/lib/logos";
 import { createClient } from "@/utils/supabase/server";
+import { applyHiddenFilter, resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 type OgEntity =
 	| "organisations"
@@ -64,11 +65,14 @@ async function loadModel(
 	supabase: SupabaseClient,
 	modelId: string
 ): Promise<OgPayload | null> {
-	const { data, error } = await supabase
-		.from("data_models")
-		.select("model_id, name, organisation_id, status")
-		.eq("model_id", modelId)
-		.single();
+	const includeHidden = await resolveIncludeHidden();
+	const { data, error } = await applyHiddenFilter(
+		supabase
+			.from("data_models")
+			.select("model_id, name, organisation_id, status, hidden")
+			.eq("model_id", modelId),
+		includeHidden
+	).single();
 
 	if (error || !data) return null;
 

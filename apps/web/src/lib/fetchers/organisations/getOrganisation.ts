@@ -5,6 +5,7 @@ import {
     mapRawToModelCard,
 } from "@/lib/fetchers/models/getAllModels";
 import { createClient } from "@/utils/supabase/client";
+import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
 const DEFAULT_LATEST_MODELS_LIMIT = 8;
 
@@ -31,7 +32,8 @@ export interface OrganisationModelsGrouped {
 
 export async function getOrganisationData(
     organisationId: string,
-    latestModelsLimit: number = DEFAULT_LATEST_MODELS_LIMIT
+    latestModelsLimit: number = DEFAULT_LATEST_MODELS_LIMIT,
+    includeHidden: boolean
 ): Promise<OrganisationData> {
     if (!organisationId || typeof organisationId !== "string") {
         throw new Error("getOrganisationData: organisationId must be a non-empty string");
@@ -59,9 +61,10 @@ export async function getOrganisationData(
     const organisationRaw: any = orgs ?? {};
 
     // Fetch all models for the org ordered by release_date desc
-    const { data: modelsData, error: modelsError } = await supabase
-        .from("data_models")
-        .select(`model_id, name, status, release_date, announcement_date`)
+    const { data: modelsData, error: modelsError } = await applyHiddenFilter(
+        supabase.from("data_models").select(`model_id, name, status, release_date, announcement_date, hidden`),
+        includeHidden
+    )
         .eq("organisation_id", organisationId)
         .not("release_date", "is", null)
         .not("announcement_date", "is", null)
@@ -121,7 +124,8 @@ export async function getOrganisationData(
 
 export async function getOrganisationDataCached(
     organisationId: string,
-    latestModelsLimit: number = DEFAULT_LATEST_MODELS_LIMIT
+    latestModelsLimit: number = DEFAULT_LATEST_MODELS_LIMIT,
+    includeHidden: boolean
 ): Promise<OrganisationData> {
     "use cache";
 
@@ -129,11 +133,14 @@ export async function getOrganisationDataCached(
     cacheTag("data:organisations");
 
     console.log(`[fetch] HIT JSON for organisation data ${organisationId}`);
-    return getOrganisationData(organisationId, latestModelsLimit);
+    return getOrganisationData(organisationId, latestModelsLimit, includeHidden);
 }
 
 // Fetch all models for an organisation (raw, mapped to OrganisationModelCards)
-export async function getOrganisationModels(organisationId: string): Promise<OrganisationModelCards[]> {
+export async function getOrganisationModels(
+    organisationId: string,
+    includeHidden: boolean
+): Promise<OrganisationModelCards[]> {
     if (!organisationId || typeof organisationId !== 'string') {
         throw new Error('getOrganisationModels: organisationId must be a non-empty string');
     }
@@ -156,11 +163,12 @@ export async function getOrganisationModels(organisationId: string): Promise<Org
     const orgName: string | null = orgData?.name ?? null;
     const orgColour: string | null = orgData?.colour ?? null;
 
-    const { data: modelsData, error: modelsError } = await supabase
-        .from("data_models")
-        .select(
-            `model_id, name, status, release_date, announcement_date, organisation_id`
-        )
+    const { data: modelsData, error: modelsError } = await applyHiddenFilter(
+        supabase.from("data_models").select(
+            `model_id, name, status, release_date, announcement_date, organisation_id, hidden`
+        ),
+        includeHidden
+    )
         .eq("organisation_id", organisationId)
         .order("release_date", { ascending: false });
 
@@ -184,7 +192,8 @@ export async function getOrganisationModels(organisationId: string): Promise<Org
 }
 
 export async function getOrganisationModelsCached(
-    organisationId: string
+    organisationId: string,
+    includeHidden: boolean
 ): Promise<OrganisationModelCards[]> {
     "use cache";
 
@@ -192,5 +201,5 @@ export async function getOrganisationModelsCached(
     cacheTag("data:organisations");
 
     console.log(`[fetch] HIT JSON for organisation models ${organisationId}`);
-    return getOrganisationModels(organisationId);
+    return getOrganisationModels(organisationId, includeHidden);
 }

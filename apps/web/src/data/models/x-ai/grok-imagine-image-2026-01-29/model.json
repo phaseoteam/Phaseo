@@ -1,0 +1,17 @@
+{
+  "model_id": "x-ai/grok-imagine-image-2026-01-29",
+  "organisation_id": "x-ai",
+  "name": "Grok Imagine Image",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-29T00:00:00",
+  "release_date": "2026-01-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

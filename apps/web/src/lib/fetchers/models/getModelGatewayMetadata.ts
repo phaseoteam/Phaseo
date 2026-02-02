@@ -52,9 +52,23 @@ function isWithinEffectiveWindow(
 }
 
 export default async function getModelGatewayMetadata(
-    modelId: string
+    modelId: string,
+    includeHidden: boolean
 ): Promise<ModelGatewayMetadata> {
     const supabase = await createClient();
+
+    const { data: modelRow, error: modelError } = await supabase
+        .from("data_models")
+        .select("hidden")
+        .eq("model_id", modelId)
+        .maybeSingle();
+
+    if (modelError) {
+        throw new Error(modelError.message ?? "Failed to load model metadata");
+    }
+    if (!modelRow || (!includeHidden && modelRow.hidden)) {
+        throw new Error("Model not found");
+    }
 
     const { data: providerModels, error: providerError } = await supabase
         .from("data_api_provider_models")
@@ -185,7 +199,10 @@ export default async function getModelGatewayMetadata(
  *
  * This wraps the fetcher with `unstable_cache` for at least 1 week of caching.
  */
-export async function getModelGatewayMetadataCached(modelId: string): Promise<ModelGatewayMetadata> {
+export async function getModelGatewayMetadataCached(
+    modelId: string,
+    includeHidden: boolean
+): Promise<ModelGatewayMetadata> {
     "use cache";
 
     cacheLife("days");
@@ -195,5 +212,5 @@ export async function getModelGatewayMetadataCached(modelId: string): Promise<Mo
     cacheTag("data:model_aliases");
 
     console.log("[fetch] HIT DB for model gateway metadata", modelId);
-    return getModelGatewayMetadata(modelId);
+    return getModelGatewayMetadata(modelId, includeHidden);
 }

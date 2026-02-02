@@ -7,10 +7,11 @@ import {
 	getModelIdFromParams,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
-async function fetchModel(modelId: string) {
+async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
-		return await getModelOverview(modelId);
+		return await getModelOverview(modelId, includeHidden);
 	} catch (error) {
 		console.warn("[seo] failed to load model overview for metadata", {
 			modelId,
@@ -25,7 +26,8 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
-	const model = await fetchModel(modelId);
+	const includeHidden = await resolveIncludeHidden();
+	const model = await fetchModel(modelId, includeHidden);
 	const path = `/models/${modelId}/pricing`;
 	const imagePath = `/og/models/${modelId}`;
 
@@ -77,10 +79,11 @@ export default async function Page({
 }) {
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
+	const includeHidden = await resolveIncludeHidden();
 
 	return (
-		<ModelDetailShell modelId={modelId} tab="pricing">
-			<ModelPricing modelId={modelId} />
+		<ModelDetailShell modelId={modelId} tab="pricing" includeHidden={includeHidden}>
+			<ModelPricing modelId={modelId} includeHidden={includeHidden} />
 		</ModelDetailShell>
 	);
 }

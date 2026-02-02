@@ -26,6 +26,8 @@ import { ChatDeleteDialog } from "@/components/(chat)/ChatDeleteDialog";
 import { ChatNewChatDialog } from "@/components/(chat)/ChatNewChatDialog";
 import {
 	coerceResponseText,
+	appendImagesToText,
+	extractResponseImages,
 	extractReasoningText,
 	extractResponseText,
 } from "@/components/(chat)/chatPayload";
@@ -251,6 +253,12 @@ function buildDefaultSystemPrompt(modelId: string) {
 	].join("\n");
 }
 
+function shouldRequestImageModalities(modelId: string) {
+	if (!modelId) return false;
+	const normalized = modelId.toLowerCase();
+	return normalized.includes("gemini") && normalized.includes("image");
+}
+
 function ensureVariants(message: ChatMessage) {
 	if (message.variants && message.variants.length > 0) {
 		return message.variants;
@@ -415,10 +423,9 @@ function ChatPlaygroundContent({
 				? ("active" as const)
 				: ("inactive" as const),
 		}));
-		options.sort((a, b) => a.label.localeCompare(b.label));
 		const featured: ModelOption[] = [];
 		const grouped = new Map<string, ModelOption[]>();
-		const comingSoon: ModelOption[] = [];
+		const comingSoon = new Map<string, ModelOption[]>();
 		for (const option of options) {
 			const isFeatured = FEATURED_MODEL_IDS.includes(option.modelId);
 			if (isFeatured && option.gatewayStatus === "active") {
@@ -426,7 +433,9 @@ function ChatPlaygroundContent({
 				continue;
 			}
 			if (option.gatewayStatus === "inactive") {
-				comingSoon.push(option);
+				const list = comingSoon.get(option.orgId) ?? [];
+				list.push(option);
+				comingSoon.set(option.orgId, list);
 			} else {
 				const list = grouped.get(option.orgId) ?? [];
 				list.push(option);
@@ -438,13 +447,33 @@ function ChatPlaygroundContent({
 			list.sort((a, b) => a.label.localeCompare(b.label));
 		}
 
-		comingSoon.sort((a, b) => {
-			const orgCompare = a.orgId.localeCompare(b.orgId);
+		for (const list of comingSoon.values()) {
+			list.sort((a, b) => a.label.localeCompare(b.label));
+		}
+
+		featured.sort((a, b) => {
+			const orgCompare = a.orgName.localeCompare(b.orgName);
 			if (orgCompare !== 0) return orgCompare;
 			return a.label.localeCompare(b.label);
 		});
 
-		return { featured, grouped, comingSoon };
+		const sortGroupsByOrgName = (source: Map<string, ModelOption[]>) => {
+			const entries = Array.from(source.entries());
+			entries.sort(([, aList], [, bList]) => {
+				const aName =
+					aList[0]?.orgName ?? formatOrgLabel(aList[0]?.orgId ?? "");
+				const bName =
+					bList[0]?.orgName ?? formatOrgLabel(bList[0]?.orgId ?? "");
+				return aName.localeCompare(bName);
+			});
+			return new Map(entries);
+		};
+
+		return {
+			featured,
+			grouped: sortGroupsByOrgName(grouped),
+			comingSoon: sortGroupsByOrgName(comingSoon),
+		};
 	}, [models]);
 
 	const providerOptions = useMemo(() => {
@@ -1014,9 +1043,10 @@ function ChatPlaygroundContent({
 					? { instructions: mergedSystemPrompt }
 					: {}),
 				stream: thread.settings.stream,
-				usage: true,
-				meta: true,
 			};
+			if (shouldRequestImageModalities(thread.modelId)) {
+				requestBody.modalities = ["text", "image"];
+			}
 
 			if (
 				thread.settings.providerId &&
@@ -1042,6 +1072,7 @@ function ChatPlaygroundContent({
 			let finalMeta: Record<string, unknown> | null = null;
 			let latestThread = thread;
 			const assistantId = targetAssistantId ?? generateId();
+			let streamingMessageId = assistantId;
 			let variantIndex = 0;
 			let assistantContent = "";
 			let placeholderReady = false;
@@ -1149,6 +1180,7 @@ function ChatPlaygroundContent({
 				if (!thread.settings.stream || !response.body) {
 					const data = await response.json();
 					const reply = extractResponseText(data);
+					const images = extractResponseImages(data);
 					finalUsage =
 						data?.usage ??
 						data?.response?.usage ??
@@ -1170,7 +1202,7 @@ function ChatPlaygroundContent({
 						mergedMeta.total_cost_usd = totalCostUsd;
 					}
 
-					assistantContent = reply;
+					assistantContent = appendImagesToText(reply, images);
 					if (shouldDebug) {
 						// eslint-disable-next-line no-console
 						console.log("[chat] non-stream final usage/meta", {
@@ -1208,6 +1240,7 @@ function ChatPlaygroundContent({
 					);
 					latestThread = result.nextThread;
 					variantIndex = result.variantIndex;
+					streamingMessageId = targetAssistantId;
 					await updateThreadState(latestThread, false);
 				} else {
 					const orgId = getOrgId(thread.modelId);
@@ -1436,6 +1469,16 @@ function ChatPlaygroundContent({
 									responseText = extractResponseText(
 										parsed?.response ?? parsed,
 									);
+									const images = extractResponseImages(
+										parsed?.response ?? parsed,
+									);
+									if (images.length > 0) {
+										assistantContent = appendImagesToText(
+											responseText || assistantContent,
+											images,
+										);
+										responseText = assistantContent;
+									}
 									if (!reasoningContent) {
 										reasoningContent = extractReasoningText(
 											parsed?.response ?? parsed,
@@ -1564,12 +1607,21 @@ function ChatPlaygroundContent({
 						? err.message
 						: "Failed to send message.";
 				setError(message);
+				const isGatewayError =
+					message.includes('"description":"all_candidates_failed"') ||
+					message.includes('"errorCode":"upstream_error"') ||
+					message.includes("all_candidates_failed");
+				const errorContent = isGatewayError
+					? "All Providers Failed"
+					: "Internal Server Error";
 				if (latestThread) {
-					const errorContent = `Error: ${message}`;
-					if (placeholderReady) {
+					const existingMessage = latestThread.messages.find(
+						(m) => m.id === streamingMessageId
+					);
+					if (existingMessage) {
 						latestThread = updateAssistantVariant(
 							latestThread,
-							assistantId,
+							streamingMessageId,
 							variantIndex,
 							errorContent,
 						);
@@ -1917,9 +1969,11 @@ function ChatPlaygroundContent({
 	const selectedOrgId = activeThread?.modelId
 		? getOrgId(activeThread.modelId)
 		: "ai-stats";
-	const selectedModelLabel = activeThread?.modelId
-		? formatModelLabel(activeThread.modelId)
-		: "Select model";
+	const selectedModelLabel = useMemo(() => {
+		if (!activeThread?.modelId) return "Select model";
+		const model = models.find((m) => m.modelId === activeThread.modelId);
+		return model?.modelName ?? formatModelLabel(activeThread.modelId);
+	}, [activeThread?.modelId, models]);
 	const temperatureValue = activeThread?.settings.temperature ?? 0.7;
 	const maxTokensValue = activeThread?.settings.maxOutputTokens ?? 800;
 	const topPValue = activeThread?.settings.topP ?? 1;
@@ -1990,6 +2044,7 @@ function ChatPlaygroundContent({
 					hasApiKey={hasApiKey}
 					accentColor={personalization.accentColor}
 					selectedOrgId={selectedOrgId}
+					selectedModelId={activeThread?.modelId ?? ""}
 					selectedModelLabel={selectedModelLabel}
 					onOpenModelPicker={() => setModelPickerOpen(true)}
 					onOpenSettings={() => setSettingsOpen(true)}
@@ -1999,7 +2054,15 @@ function ChatPlaygroundContent({
 				open={modelSettingsOpen}
 				onOpenChange={setModelSettingsOpen}
 				settings={activeThread?.settings ?? DEFAULT_SETTINGS}
+				selectedModelId={activeThread?.modelId ?? null}
 				providerOptions={providerOptions}
+				supportedProvidersForModel={
+					activeThread?.modelId
+						? models
+								.filter((m) => m.modelId === activeThread.modelId)
+								.map((m) => m.providerId)
+						: undefined
+				}
 				temperatureValue={temperatureValue}
 				maxTokensValue={maxTokensValue}
 				topPValue={topPValue}

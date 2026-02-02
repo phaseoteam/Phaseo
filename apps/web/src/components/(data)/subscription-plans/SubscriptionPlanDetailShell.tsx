@@ -14,7 +14,7 @@ export default async function SubscriptionPlanDetailShell({
 	planId,
 	children,
 }: SubscriptionPlanDetailShellProps) {
-	const plan = await getSubscriptionPlanCached(planId);
+	const plan = await getSubscriptionPlanCached(planId, false);
 
 	if (!plan) {
 		return (

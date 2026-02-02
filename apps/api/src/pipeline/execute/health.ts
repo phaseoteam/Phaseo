@@ -1,4 +1,8 @@
-import { redis } from "@core/kv";
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
+import { getCache } from "@/runtime/env";
 import { HEALTH_CONSTANTS, HEALTH_KEYS } from "./health.config";
 import type { Endpoint } from "@core/types";
 
@@ -71,16 +75,47 @@ const CONFIG_DEFAULTS: Record<ProviderConfigField, number> = {
 const breakerField = (provider: string) => `${provider}::breaker`;
 const field = (provider: string, metric: string) => `${provider}::${metric}`;
 
+const HEALTH_STATE_TTL_SECONDS = 24 * 60 * 60;
+const HALF_STATE_TTL_SECONDS = HEALTH_CONSTANTS.HALF_OPEN_TEST_SECS;
+
 function asNum(value: unknown, fallback = 0): number {
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
 }
 
-async function ensureHealthHash(key: string) {
-    const t = await redis.type(key);
-    if (t === "hash") return;
-    if (t !== "none") await redis.del(key);
-    await redis.hset(key, { __meta: "1" });
+function normalizeMap(input: unknown): Record<string, string> {
+    if (!input || typeof input !== "object") return {};
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+        if (value === undefined || value === null) continue;
+        out[key] = String(value);
+    }
+    return out;
+}
+
+async function loadMapByKey(key: string): Promise<Record<string, string>> {
+    const raw = await getCache().get(key, "text");
+    if (!raw) return {};
+    try {
+        return normalizeMap(JSON.parse(raw));
+    } catch {
+        return {};
+    }
+}
+
+async function saveMap(key: string, map: Record<string, string>, ttlSeconds = HEALTH_STATE_TTL_SECONDS) {
+    await getCache().put(key, JSON.stringify(map), { expirationTtl: ttlSeconds });
+}
+
+async function updateMap(
+    key: string,
+    updater: (map: Record<string, string>) => Record<string, string> | void,
+    ttlSeconds = HEALTH_STATE_TTL_SECONDS
+): Promise<Record<string, string>> {
+    const map = await loadMapByKey(key);
+    const updated = updater(map) ?? map;
+    await saveMap(key, updated, ttlSeconds);
+    return updated;
 }
 
 function readNumber<T extends keyof typeof NUMERIC_DEFAULTS>(
@@ -140,9 +175,44 @@ function snapshotFromMap(
 
 async function loadStateMap(endpoint: Endpoint, model: string): Promise<Record<string, string>> {
     const key = HEALTH_KEYS.health(endpoint, model);
-    await ensureHealthHash(key);
-    const raw = await redis.hgetall(key);
-    return (raw as Record<string, string> | null) ?? {};
+    return loadMapByKey(key);
+}
+
+async function setHealthFields(endpoint: Endpoint, model: string, updates: Record<string, string | number>) {
+    const key = HEALTH_KEYS.health(endpoint, model);
+    await updateMap(key, (map) => {
+        for (const [k, v] of Object.entries(updates)) {
+            map[k] = String(v);
+        }
+        return map;
+    });
+}
+
+async function incrHealthField(endpoint: Endpoint, model: string, fieldKey: string, delta: number): Promise<number> {
+    const key = HEALTH_KEYS.health(endpoint, model);
+    let nextValue = 0;
+    await updateMap(key, (map) => {
+        const current = asNum(map[fieldKey], 0);
+        nextValue = current + delta;
+        map[fieldKey] = String(nextValue);
+        return map;
+    });
+    return nextValue;
+}
+
+async function loadHalfMap(endpoint: Endpoint, provider: string, model: string): Promise<Record<string, string>> {
+    const key = HEALTH_KEYS.half(endpoint, model, provider);
+    return loadMapByKey(key);
+}
+
+async function saveHalfMap(endpoint: Endpoint, provider: string, model: string, map: Record<string, string>) {
+    const key = HEALTH_KEYS.half(endpoint, model, provider);
+    await saveMap(key, map, HALF_STATE_TTL_SECONDS);
+}
+
+async function deleteHalf(endpoint: Endpoint, provider: string, model: string) {
+    const key = HEALTH_KEYS.half(endpoint, model, provider);
+    await getCache().delete(key);
 }
 
 export async function readHealth(
@@ -170,42 +240,39 @@ export async function readHealthMany(
 
 async function openBreaker(endpoint: Endpoint, provider: string, model: string) {
     const map = await loadStateMap(endpoint, model);
-    const key = HEALTH_KEYS.health(endpoint, model);
     const now = Date.now();
     const attempts = readNumber(map, provider, "breaker_attempts") + 1;
     const base = readConfig(map, provider, "base_open_secs");
     const maxs = readConfig(map, provider, "max_open_secs");
     const duration = Math.min(base * Math.pow(2, Math.max(0, attempts - 1)), maxs);
-    await redis.hset(key, {
+    await setHealthFields(endpoint, model, {
         [breakerField(provider)]: "open",
         [field(provider, "breaker_attempts")]: attempts,
         [field(provider, "breaker_until_ms")]: now + duration * 1000,
-    } as Record<string, string | number>);
+    });
 }
 
 async function closeBreaker(endpoint: Endpoint, provider: string, model: string) {
-    const key = HEALTH_KEYS.health(endpoint, model);
-    await ensureHealthHash(key);
-    await redis.hset(key, {
+    await setHealthFields(endpoint, model, {
         [breakerField(provider)]: "closed",
         [field(provider, "breaker_attempts")]: 0,
         [field(provider, "breaker_until_ms")]: 0,
     });
-    await redis.del(HEALTH_KEYS.half(endpoint, model, provider));
+    await deleteHalf(endpoint, provider, model);
 }
 
 async function ensureHalfOpen(endpoint: Endpoint, provider: string, model: string) {
-    const hk = HEALTH_KEYS.half(endpoint, model, provider);
-    // @ts-ignore Upstash supports hsetnx even if typings lag
-    await redis.hsetnx(hk, "p", String(HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO));
-    await redis.expire(hk, HEALTH_CONSTANTS.HALF_OPEN_TEST_SECS);
+    const map = await loadHalfMap(endpoint, provider, model);
+    const next = { ...map };
+    if (!("p" in next)) next.p = String(HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO);
+    if (!("ok" in next)) next.ok = "0";
+    if (!("cnt" in next)) next.cnt = "0";
+    await saveHalfMap(endpoint, provider, model, next);
 }
 
 async function readHalf(endpoint: Endpoint, provider: string, model: string) {
-    const hk = HEALTH_KEYS.half(endpoint, model, provider);
-    const raw = await redis.hgetall(hk);
-    const map = raw as Record<string, string> | null;
-    if (!map) return null;
+    const map = await loadHalfMap(endpoint, provider, model);
+    if (!Object.keys(map).length) return null;
     return {
         p: asNum(map.p, HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO),
         ok: asNum(map.ok, 0),
@@ -214,10 +281,14 @@ async function readHalf(endpoint: Endpoint, provider: string, model: string) {
 }
 
 async function incrHalf(endpoint: Endpoint, provider: string, model: string, ok: boolean) {
-    const hk = HEALTH_KEYS.half(endpoint, model, provider);
-    const ops: Array<Promise<any>> = [redis.hincrby(hk, "cnt", 1)];
-    if (ok) ops.push(redis.hincrby(hk, "ok", 1));
-    await Promise.all(ops);
+    const map = await loadHalfMap(endpoint, provider, model);
+    const next = { ...map };
+    const cnt = asNum(next.cnt, 0) + 1;
+    const okCount = asNum(next.ok, 0) + (ok ? 1 : 0);
+    next.cnt = String(cnt);
+    next.ok = String(okCount);
+    if (!("p" in next)) next.p = String(HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO);
+    await saveHalfMap(endpoint, provider, model, next);
 }
 
 function allowSample(teamId: string, requestId: string, p: number) {
@@ -239,16 +310,13 @@ export async function admitThroughBreaker(
     requestId: string,
     snapshot?: ProviderHealth
 ): Promise<"blocked" | "probe" | "closed"> {
-    const key = HEALTH_KEYS.health(endpoint, model);
-    await ensureHealthHash(key);
-
     if (snapshot) {
         let state = snapshot.breaker;
         const now = Date.now();
 
         if (state === "open") {
             if (now >= snapshot.breaker_until_ms) {
-                await redis.hset(key, { [breakerField(provider)]: "half_open" });
+                await setHealthFields(endpoint, model, { [breakerField(provider)]: "half_open" });
                 state = "half_open";
             } else {
                 return "blocked";
@@ -272,7 +340,7 @@ export async function admitThroughBreaker(
     if (state === "open") {
         if (now >= until) {
             state = "half_open";
-            await redis.hset(key, { [breakerField(provider)]: "half_open" });
+            await setHealthFields(endpoint, model, { [breakerField(provider)]: "half_open" });
         } else {
             return "blocked";
         }
@@ -328,12 +396,10 @@ export async function maybeOpenOnRecentErrors(
 }
 
 export async function onCallStart(endpoint: Endpoint, provider: string, model: string) {
-    const key = HEALTH_KEYS.health(endpoint, model);
-    await ensureHealthHash(key);
     const inflightField = field(provider, "inflight");
-    const inflight = await redis.hincrby(key, inflightField, 1);
+    const inflight = await incrHealthField(endpoint, model, inflightField, 1);
     const softCap = Math.max(CONFIG_DEFAULTS.load_soft_cap, 1);
-    await redis.hset(key, {
+    await setHealthFields(endpoint, model, {
         [field(provider, "current_load")]: Math.min(1, inflight / softCap),
     });
 }
@@ -352,8 +418,6 @@ export async function onCallEnd(
 ) {
     const { provider, model, ok, latency_ms } = params;
     const tokens = (params.tokens_in ?? 0) + (params.tokens_out ?? 0);
-    const key = HEALTH_KEYS.health(endpoint, model);
-    await ensureHealthHash(key);
     const map = await loadStateMap(endpoint, model);
     const now = Date.now();
 
@@ -393,10 +457,10 @@ export async function onCallEnd(
     const recTot = decay(readNumber(map, provider, "rec_tot_ew_60s"), 1, decay60);
 
     const softCap = readConfig(map, provider, "load_soft_cap");
-    const inflight = Math.max(await redis.hincrby(key, field(provider, "inflight"), -1), 0);
+    const inflight = Math.max(await incrHealthField(endpoint, model, field(provider, "inflight"), -1), 0);
     const load = Math.min(1, inflight / Math.max(softCap, 1));
 
-    await redis.hset(key, {
+    await setHealthFields(endpoint, model, {
         [field(provider, "lat_ewma_10s")]: lat10,
         [field(provider, "lat_ewma_60s")]: lat60,
         [field(provider, "lat_ewma_300s")]: lat300,
@@ -417,5 +481,5 @@ export async function onCallEnd(
         [field(provider, "err_open_th")]: readConfig(map, provider, "err_open_th"),
         [field(provider, "base_open_secs")]: readConfig(map, provider, "base_open_secs"),
         [field(provider, "max_open_secs")]: readConfig(map, provider, "max_open_secs"),
-    } as Record<string, string | number>);
+    });
 }

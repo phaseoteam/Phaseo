@@ -31,6 +31,8 @@ module AIStatsSdk
 
     attr_accessor :user
 
+    attr_accessor :provider
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -41,7 +43,8 @@ module AIStatsSdk
         :'quality' => :'quality',
         :'response_format' => :'response_format',
         :'style' => :'style',
-        :'user' => :'user'
+        :'user' => :'user',
+        :'provider' => :'provider'
       }
     end
 
@@ -65,7 +68,8 @@ module AIStatsSdk
         :'quality' => :'String',
         :'response_format' => :'String',
         :'style' => :'String',
-        :'user' => :'String'
+        :'user' => :'String',
+        :'provider' => :'ProviderRoutingOptions'
       }
     end
 
@@ -125,6 +129,10 @@ module AIStatsSdk
 
       if attributes.key?(:'user')
         self.user = attributes[:'user']
+      end
+
+      if attributes.key?(:'provider')
+        self.provider = attributes[:'provider']
       end
     end
 
@@ -213,7 +221,8 @@ module AIStatsSdk
           quality == o.quality &&
           response_format == o.response_format &&
           style == o.style &&
-          user == o.user
+          user == o.user &&
+          provider == o.provider
     end
 
     # @see the `==` method
@@ -225,7 +234,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, prompt, size, n, quality, response_format, style, user].hash
+      [model, prompt, size, n, quality, response_format, style, user, provider].hash
     end
 
     # Builds the object from hash

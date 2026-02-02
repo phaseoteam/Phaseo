@@ -1,0 +1,46 @@
+---
+title: "Examples"
+description: "Ready-to-run request examples for common Gateway workflows."
+---
+
+Use these examples as a starting point for your own integrations.
+
+## Text generation with /responses
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5-nano-2025-08-07",
+    "messages": [{"role": "user", "content": "Summarize this article."}]
+  }'
+```
+
+## Chat completion
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5-nano-2025-08-07",
+    "messages": [{"role": "user", "content": "Write a short email."}]
+  }'
+```
+
+## Image generation
+
+```bash
+curl https://api.phaseo.app/v1/images/generations \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-image-1",
+    "prompt": "A minimal line drawing of a lighthouse."
+  }'
+```
+
+## More examples
+
+Explore the [SDK Reference](/v1/sdk-reference/typescript/overview) for language-specific examples.

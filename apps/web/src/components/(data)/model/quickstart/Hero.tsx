@@ -40,7 +40,7 @@ export default function Hero({ metadata }: HeroProps) {
 				<div className="flex items-center justify-between w-full">
 					<div className="flex-1">
 						<CardTitle className="text-3xl">
-							Get Started With Conduit
+							Get Started With Gateway
 						</CardTitle>
 						<CardDescription className="mt-2 text-muted-foreground">
 							Access and manage any model through our unified API.

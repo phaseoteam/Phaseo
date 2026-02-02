@@ -2,7 +2,28 @@
   "organisation_id": "aion-labs",
   "name": "Aion Labs",
   "country_code": "PL",
-  "description": null,
+  "description": "Aion Labs is an AI model lab behind the Aion model family. They publish models via Hugging Face and provide access/community via their website, Discord, and subreddit.",
   "colour": "#0f172a",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://www.aionlabs.ai"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/aionlabsai"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/aion-labs"
+    },
+    {
+      "platform": "discord",
+      "url": "https://discord.gg/aionlabs"
+    },
+    {
+      "platform": "reddit",
+      "url": "https://www.reddit.com/r/AionLabs"
+    }
+  ]
 }

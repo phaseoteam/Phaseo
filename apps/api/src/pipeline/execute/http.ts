@@ -1,4 +1,8 @@
 // lib/gateway/execute/http.ts
+// Purpose: Execute-stage logic for routing, attempts, and provider health.
+// Why: Centralizes execution/failover behavior.
+// How: Standardized execute-stage error response helpers.
+
 export type ExecuteErrorCode =
     | "unsupported_model_or_endpoint"
     | "pricing_not_configured"
@@ -28,3 +32,13 @@ export function err(code: ExecuteErrorCode, payload: Record<string, unknown>) {
     if (description) body.description = description;
     return json(body, STATUS[code]);
 }
+
+
+
+
+
+
+
+
+
+

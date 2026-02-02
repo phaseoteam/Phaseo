@@ -1,0 +1,18 @@
+---
+title: "Structured Outputs"
+description: "Produce JSON or schema-validated responses from models."
+---
+
+Structured outputs help you get predictable JSON from models. The Gateway passes structured-output settings through to providers that support them.
+
+## Where to use it
+
+Structured outputs are commonly used with `/v1/responses` and `/v1/chat/completions`. Some providers also expose schema enforcement on `/v1/messages`.
+
+Check the [API Reference](/v1/api-reference/introduction) for the supported request fields and response formats.
+
+## Best practices
+
+- Keep schemas small and explicit.
+- Validate responses on the server before trusting them.
+- Combine structured outputs with tool calling for reliable workflows.

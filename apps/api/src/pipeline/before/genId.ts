@@ -1,3 +1,7 @@
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
 // apps/web/src/lib/id/ulid.ts
 // Edge-safe ULID generator
 //
@@ -119,3 +123,4 @@ export function generatePublicId(shard?: string): string {
     const core = ulid();
     return shard ? `G-${shard}-${core}` : `G-${core}`;
 }
+

@@ -1,0 +1,17 @@
+{
+  "model_id": "z-ai/glm-4-9b-chat-1m-2024-10-24",
+  "organisation_id": "z-ai",
+  "name": "GLM 4 9B Chat 1M",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2024-10-24T00:00:00",
+  "release_date": "2024-10-24T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

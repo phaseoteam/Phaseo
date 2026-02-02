@@ -63,7 +63,7 @@ export function PricingSection() {
 									Scenario
 								</th>
 								<th className="px-4 py-3 font-medium">
-									Conduit fee
+									Gateway fee
 								</th>
 							</tr>
 						</thead>

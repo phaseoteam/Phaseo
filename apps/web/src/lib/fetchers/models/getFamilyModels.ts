@@ -29,7 +29,10 @@ export interface FamilyInfo {
     models: FamilyModelItem[];
 }
 
-export default async function getFamilyModels(familyId: string): Promise<FamilyInfo | null> {
+export default async function getFamilyModels(
+    familyId: string,
+    includeHidden: boolean
+): Promise<FamilyInfo | null> {
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -39,6 +42,7 @@ export default async function getFamilyModels(familyId: string): Promise<FamilyI
             name,
             organisation_id,
             status,
+            hidden,
             release_date,
             announcement_date,
             organisation:data_organisations!data_models_organisation_id_fkey(name, colour, country_code)
@@ -56,21 +60,23 @@ export default async function getFamilyModels(familyId: string): Promise<FamilyI
     if (!data) return null;
 
     const models = Array.isArray(data.models)
-        ? data.models.map((m: any) => ({
-            model_id: m.model_id,
-            name: m.name,
-            organisation_id: m.organisation_id,
-            status: m.status ?? null,
-            release_date: m.release_date ?? null,
-            announcement_date: m.announcement_date ?? null,
-            organisation: m.organisation
-                ? {
-                    name: m.organisation.name ?? null,
-                    colour: m.organisation.colour ?? null,
-                    country_code: m.organisation.country_code ?? null,
-                }
-                : null,
-        }))
+        ? data.models
+            .filter((m: any) => includeHidden || !m.hidden)
+            .map((m: any) => ({
+                model_id: m.model_id,
+                name: m.name,
+                organisation_id: m.organisation_id,
+                status: m.status ?? null,
+                release_date: m.release_date ?? null,
+                announcement_date: m.announcement_date ?? null,
+                organisation: m.organisation
+                    ? {
+                        name: m.organisation.name ?? null,
+                        colour: m.organisation.colour ?? null,
+                        country_code: m.organisation.country_code ?? null,
+                    }
+                    : null,
+            }))
         : [];
 
     return {
@@ -87,7 +93,10 @@ export default async function getFamilyModels(familyId: string): Promise<FamilyI
  *
  * This wraps the fetcher with `unstable_cache` for at least 1 week of caching.
  */
-export async function getFamilyModelsCached(familyId: string): Promise<FamilyInfo | null> {
+export async function getFamilyModelsCached(
+    familyId: string,
+    includeHidden: boolean
+): Promise<FamilyInfo | null> {
     "use cache";
 
     cacheLife("days");
@@ -95,5 +104,5 @@ export async function getFamilyModelsCached(familyId: string): Promise<FamilyInf
     cacheTag(`data:families:${familyId}`);
 
     console.log("[fetch] HIT DB for family models", familyId);
-    return getFamilyModels(familyId);
+    return getFamilyModels(familyId, includeHidden);
 }

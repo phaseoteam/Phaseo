@@ -1,4 +1,8 @@
 // src/lib/gateway/providers/ai21/endpoints/chat.ts
+// Purpose: Provider endpoint adapter for ai21 (chat).
+// Why: Encapsulates provider-specific request/response mapping.
+// How: Defines provider-specific endpoint adapters and configuration helpers.
+
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { ChatCompletionsSchema, type ChatCompletionsRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
@@ -208,3 +212,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     return { kind: "completed", upstream: res, bill, normalized, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
 }
+
+
+
+
+
+
+
+
+

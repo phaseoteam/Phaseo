@@ -1,4 +1,7 @@
 // lib/gateway/providers/index.ts
+// Purpose: Provider adapter module for index.ts.
+// Why: Isolates provider-specific configuration and utilities.
+// How: Exports provider registry and resolves adapters for routing.
 import type { Endpoint } from "@core/types";
 import type { ProviderAdapter } from "./types";
 import { OpenAIAdapter } from "./openai/index";
@@ -14,7 +17,7 @@ import { createOpenAICompatibleAdapter } from "./openai-compatible/index";
 import { createUnsupportedAdapter } from "./unsupported";
 import { getSupabaseAdmin } from "@/runtime/env";
 
-// NOTE: All adapters are legacy and unused - the IR pipeline uses surfaces instead
+// NOTE: All adapters are legacy and unused - the IR pipeline uses executors instead
 // These are kept for backward compatibility but are never called in production
 // See apps/api/src/pipeline/index.ts:49 "IR PIPELINE (MANDATORY - ONLY EXECUTION PATH)"
 
@@ -23,7 +26,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     openai: OpenAIAdapter,
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
-    "x-ai": createOpenAICompatibleAdapter("x-ai"), // xAI is OpenAI-compatible, uses openai_compat surface
+    "x-ai": createOpenAICompatibleAdapter("x-ai"), // xAI is OpenAI-compatible, uses openai_compat executor
     xiaomi: XiaomiAdapter,
     azure: AzureAdapter,
     ai21: AI21Adapter,
@@ -149,3 +152,13 @@ export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdap
     const override = ADAPTERS_BY_CAPABILITY[endpoint]?.[providerId];
     return override ?? ADAPTERS[providerId] ?? null;
 }
+
+
+
+
+
+
+
+
+
+

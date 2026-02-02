@@ -1,0 +1,17 @@
+{
+  "model_id": "liquid-ai/lfm-2-5-1-2b-thinking-2026-01-20",
+  "organisation_id": "liquid-ai",
+  "name": "LFM 2.5 1.2B Thinking",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-20T00:00:00",
+  "release_date": "2026-01-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "LFM 1.0",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

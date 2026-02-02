@@ -1,26 +1,7 @@
 [
   {
-    "api_model_id": "xiaomi/mimo-v2-flash-2025-12-16",
-    "provider_api_model_id": "xiaomi:xiaomi/mimo-v2-flash-2025-12-16",
-    "provider_model_slug": "mimo-v2-flash",
-    "internal_model_id": "xiaomi/mimo-v2-flash-2025-12-16",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2025-12-16T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "xiaomi/mimo-v2-flash-2025-12-16:free",
-    "provider_api_model_id": "xiaomi:xiaomi/mimo-v2-flash-2025-12-16:free",
+    "api_model_id": "xiaomi/mimo-v2-flash",
+    "provider_api_model_id": "xiaomi:xiaomi/mimo-v2-flash",
     "provider_model_slug": "mimo-v2-flash",
     "internal_model_id": "xiaomi/mimo-v2-flash-2025-12-16",
     "is_active_gateway": true,
@@ -28,13 +9,20 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "effective_from": "2025-12-16T00:00:00",
-    "effective_to": "2026-01-20T06:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2-flash:free",
+    "provider_api_model_id": "xiaomi:xiaomi/mimo-v2-flash:free",
+    "provider_model_slug": "mimo-v2-flash",
+    "internal_model_id": "xiaomi/mimo-v2-flash-2025-12-16",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-12-16T00:00:00",
+    "effective_to": "2026-01-24T16:00:00",
+    "capabilities": []
   }
 ]

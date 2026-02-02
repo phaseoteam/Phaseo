@@ -1,0 +1,22 @@
+{
+  "key": "openai:openai/omni-moderation:moderations.create",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/omni-moderation",
+  "capability_id": "moderations.create",
+  "rules": [
+    {
+      "meter": "requests",
+      "unit": "request",
+      "unit_size": 1,
+      "price_per_unit": 0.0,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": "Free",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2024-09-26T00:00:00"
+    }
+  ]
+}

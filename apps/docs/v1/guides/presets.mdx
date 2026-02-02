@@ -1,0 +1,25 @@
+---
+title: "Presets"
+description: "Save reusable Gateway configurations for your team."
+---
+
+Presets are reusable configurations that help teams standardize prompts, model preferences, and routing defaults. They are managed in the AI Stats dashboard and can be shared across a team.
+
+## What a preset can include
+
+- A system prompt to prepend to every request.
+- Allowed models or model families.
+- Provider allow/ignore lists for routing preferences.
+- Default parameters (temperature, top_p, max_tokens, and similar settings).
+
+Preset names are prefixed with `@` to keep them easy to recognize.
+
+## Where to manage presets
+
+Create and manage presets in **Dashboard -> Settings -> Presets**. Use them consistently across experiments and production workloads so the team is aligned on prompt and routing behavior.
+
+## When to use presets
+
+- Standardize system prompts across multiple services.
+- Constrain routing to approved providers for compliance.
+- Keep default parameters consistent across environments.

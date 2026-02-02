@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { computeTierInfo, GATEWAY_TIERS } from "../../../../components/(gateway)/credits/tiers";
 
 function getStripe(): Stripe {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
@@ -24,35 +23,6 @@ function getSupabase() {
     return createClient(supabaseUrl, supabaseServiceRoleKey, {
         auth: { autoRefreshToken: false, persistSession: false },
     });
-}
-
-async function getTeamSpending(teamId: string, supabase: any) {
-    try {
-        const [{ data: prev, error: prevErr }, { data: mtd, error: mtdErr }] =
-            await Promise.all([
-                supabase
-                    .rpc("monthly_spend_prev_cents", {
-                        p_team: teamId,
-                    })
-                    .single(),
-                supabase
-                    .rpc("mtd_spend_cents", {
-                        p_team: teamId,
-                    })
-                    .single(),
-            ]);
-
-        if (prevErr) console.log("[WARN] monthly spend RPC:", String(prevErr));
-        if (mtdErr) console.log("[WARN] month-to-date spend RPC:", String(mtdErr));
-
-        const lastMonth = Number(prev ?? 0) / 1_000_000_000;
-        const mtdValue = Number(mtd ?? 0) / 1_000_000_000;
-
-        return { lastMonth, mtd: mtdValue };
-    } catch (err) {
-        console.log("[ERROR] team spending RPC:", String(err));
-        return { lastMonth: 0, mtd: 0 };
-    }
 }
 
 /* Fees: Reverse-engineer the original amount from the total received, then apply tier-based fee */
@@ -157,17 +127,25 @@ export async function POST(req: Request) {
                 if (!wallet?.team_id) break;
 
                 const grossCents = Number(pi.amount_received ?? pi.amount ?? 0);
-                const grossNanos = grossCents * 100_000;
+                // Stripe amounts are in cents; convert to nanos (1 USD = 1e9 nanos).
+                const grossNanos = grossCents * 10_000_000;
 
-                // console.log(`[DEBUG] Payment succeeded for team ${wallet.team_id}:`);
-                // console.log(`[DEBUG] Gross cents: ${grossCents}, Gross nanos: ${grossNanos}`);
+                // Fetch the team's CURRENT tier from database (includes instant upgrades)
+                const { data: teamData, error: teamErr } = await supabase
+                    .from('teams')
+                    .select('tier')
+                    .eq('id', wallet.team_id)
+                    .single();
 
-                const { lastMonth, mtd } = await getTeamSpending(wallet.team_id, supabase);
-                // console.log(`[DEBUG] Team spending - Last month: $${lastMonth}, MTD: $${mtd}`);
+                if (teamErr) {
+                    console.error(`[stripe-webhook] Failed to fetch team tier:`, teamErr);
+                }
 
-                const tierInfo = computeTierInfo({ lastMonth, mtd });
-                const feePct = tierInfo.current.feePct;
-                // console.log(`[DEBUG] Tier: ${tierInfo.current.name}, Fee percentage: ${feePct}%`);
+                // Determine fee percentage based on tier (with fallback)
+                const tier = teamData?.tier ?? 'basic';
+                const feePct = tier === 'enterprise' ? 5.0 : 7.0;
+
+                console.log(`[stripe-webhook] Team ${wallet.team_id} tier: ${tier}, fee: ${feePct}%`);
 
                 const { netNanos, feeNanos } = computeNetAndFeeFromGross(grossNanos, feePct);
                 // console.log(`[DEBUG] Net nanos: ${netNanos}, Fee nanos: ${feeNanos}`);
@@ -240,9 +218,9 @@ export async function POST(req: Request) {
 
                 const pi = await stripe.paymentIntents.retrieve(piId);
                 const originalGrossCents = Number(pi.amount_received ?? pi.amount ?? 0) || 0;
-                const originalGrossNanos = originalGrossCents * 100_000;
+                const originalGrossNanos = originalGrossCents * 10_000_000;
                 const refundGrossCents = Number(refund.amount ?? 0) || 0;
-                const refundGrossNanos = refundGrossCents * 100_000;
+                const refundGrossNanos = refundGrossCents * 10_000_000;
 
                 const ratio = originalGrossNanos > 0 ? Math.min(1, refundGrossNanos / originalGrossNanos) : 1;
                 const refundNetNanos = Math.max(0, Math.round(originalNetNanos * ratio));

@@ -1,0 +1,61 @@
+{
+  "name": "@ai-stats/devtools-viewer",
+  "description": "Web-based viewer for AI Stats DevTools telemetry",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "bin": {
+    "ai-stats-devtools": "./dist/cli/index.js"
+  },
+  "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
+  "files": [
+    "dist",
+    "public",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "clean": "rimraf dist public",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build:ui": "vite build",
+    "build": "pnpm run build:ui && pnpm run build:server",
+    "dev:server": "tsx watch src/server/index.ts",
+    "dev:ui": "vite",
+    "dev": "concurrently \"pnpm run dev:server\" \"pnpm run dev:ui\"",
+    "start": "node dist/server/index.js",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@ai-stats/devtools-core": "workspace:*",
+    "hono": "^4.6.14",
+    "@tanstack/react-query": "^5.62.11",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^2.15.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "@types/react": "^19.0.6",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "postcss": "^8.4.49",
+    "rimraf": "^6.0.0",
+    "tailwindcss": "^3.4.18",
+    "tsx": "^4.7.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AI-Stats/AI-Stats.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import { getBindings } from "@/runtime/env";
 import type { ProviderExecuteArgs } from "../types";
 import { resolveProviderKey, type ResolvedKey } from "../keys";
@@ -39,3 +43,4 @@ export function azureUrl(path: string, apiVersion: string, baseUrl?: string): st
     const trimmedPath = path.replace(/^\/+/, "");
     return `${base}/${trimmedPath}?api-version=${encodeURIComponent(apiVersion)}`;
 }
+

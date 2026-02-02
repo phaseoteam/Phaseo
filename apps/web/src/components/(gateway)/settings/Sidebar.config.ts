@@ -3,6 +3,7 @@
 export type NavItem = {
     href: string;
     label: string;
+    badge?: string;
     disabled?: boolean;
     external?: boolean; // when true, opens in new tab and shows a link icon
 };
@@ -18,18 +19,19 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
         items: [
             { href: "/settings/account", label: "Account" },
             { href: "/settings/teams", label: "Teams" },
-            { href: "/settings/provisioning-keys", label: "Provisioning Keys", disabled: true },
+            { href: "/settings/provisioning-keys", label: "Provisioning Keys", badge: "Beta" },
+            { href: "/settings/authorized-apps", label: "Authorized Apps", badge: "Alpha" },
             { href: "/settings/privacy", label: "Training, Logging, & Privacy", disabled: true },
         ],
     },
     {
-        heading: "AI Conduit",
-        items: [
-            { href: "/settings/keys", label: "API Keys" },
-            { href: "/settings/byok", label: "BYOK" },
-            { href: "/settings/presets", label: "Presets", disabled: true },
-        ],
-    },
+		heading: "AI Gateway",
+		items: [
+			{ href: "/settings/keys", label: "API Keys" },
+			{ href: "/settings/byok", label: "BYOK" },
+			{ href: "/settings/presets", label: "Presets", badge: "Beta" },
+		],
+	},
     {
         heading: "Billing",
         items: [
@@ -40,7 +42,10 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
     },
 	{
 		heading: "Developer",
-		items: [{ href: "/settings/sdk", label: "SDKs" }],
+		items: [
+			{ href: "/settings/oauth-apps", label: "OAuth Apps", badge: "Alpha" },
+			{ href: "/settings/sdk", label: "SDKs" },
+		],
 	},
 
     // Example external group (remove or edit as needed):

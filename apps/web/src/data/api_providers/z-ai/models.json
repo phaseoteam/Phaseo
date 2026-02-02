@@ -1,14 +1,14 @@
 [
   {
-    "api_model_id": "z-ai/glm-4-32b-0414",
-    "provider_api_model_id": "z-ai:z-ai/glm-4-32b-0414",
-    "provider_model_slug": null,
-    "internal_model_id": "z-ai/glm-4-32b-0414",
-    "is_active_gateway": false,
+    "api_model_id": "z-ai/glm-4.5",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.5",
+    "provider_model_slug": "glm-4.5",
+    "internal_model_id": "z-ai/glm-4-5-2025-07-28",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "effective_from": null,
+    "effective_from": "2025-07-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -19,15 +19,15 @@
     ]
   },
   {
-    "api_model_id": "z-ai/glm-4-5",
-    "provider_api_model_id": "z-ai:z-ai/glm-4-5",
-    "provider_model_slug": null,
-    "internal_model_id": "z-ai/glm-4-5",
-    "is_active_gateway": false,
+    "api_model_id": "z-ai/glm-4.5-air",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.5-air",
+    "provider_model_slug": "glm-4.5-air",
+    "internal_model_id": "z-ai/glm-4-5-air-2025-07-28",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "effective_from": null,
+    "effective_from": "2025-07-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -38,34 +38,15 @@
     ]
   },
   {
-    "api_model_id": "z-ai/glm-4-5-air",
-    "provider_api_model_id": "z-ai:z-ai/glm-4-5-air",
-    "provider_model_slug": null,
-    "internal_model_id": "z-ai/glm-4-5-air",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "z-ai/glm-4-5v",
-    "provider_api_model_id": "z-ai:z-ai/glm-4-5v",
-    "provider_model_slug": null,
-    "internal_model_id": "z-ai/glm-4-5v",
-    "is_active_gateway": false,
+    "api_model_id": "z-ai/glm-4.5v",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.5v",
+    "provider_model_slug": "glm-4.5v",
+    "internal_model_id": "z-ai/glm-4-5v-2025-08-11",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "image,text",
     "output_modalities": "text",
-    "effective_from": null,
+    "effective_from": "2025-08-11T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -76,11 +57,11 @@
     ]
   },
   {
-    "api_model_id": "z-ai/glm-4-6-2025-09-30",
-    "provider_api_model_id": "z-ai:z-ai/glm-4-6-2025-09-30",
-    "provider_model_slug": null,
+    "api_model_id": "z-ai/glm-4.6",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.6",
+    "provider_model_slug": "glm-4.6",
     "internal_model_id": "z-ai/glm-4-6-2025-09-30",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -95,11 +76,11 @@
     ]
   },
   {
-    "api_model_id": "z-ai/glm-4-6v-2025-12-08",
-    "provider_api_model_id": "z-ai:z-ai/glm-4-6v-2025-12-08",
-    "provider_model_slug": null,
+    "api_model_id": "z-ai/glm-4.6v",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.6v",
+    "provider_model_slug": "glm-4.6v",
     "internal_model_id": "z-ai/glm-4-6v-2025-12-08",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "image,text,video",
     "output_modalities": "text",
@@ -114,11 +95,11 @@
     ]
   },
   {
-    "api_model_id": "z-ai/glm-4-7-2025-12-22",
-    "provider_api_model_id": "z-ai:z-ai/glm-4-7-2025-12-22",
-    "provider_model_slug": null,
+    "api_model_id": "z-ai/glm-4.7",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.7",
+    "provider_model_slug": "glm-4.7",
     "internal_model_id": "z-ai/glm-4-7-2025-12-22",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -131,6 +112,38 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7-flash",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.7-flash",
+    "provider_model_slug": "glm-4.7-flashx",
+    "internal_model_id": "z-ai/glm-4-7-flash-2026-01-19",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2026-01-19T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-4-32b",
+    "provider_api_model_id": "z-ai:z-ai/glm-4-32b",
+    "provider_model_slug": "glm-4-32b-0414-128k",
+    "internal_model_id": "z-ai/glm-4-32b-2025-04-15",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2025-04-14T00:00:00",
+    "effective_to": null,
+    "capabilities": []
   },
   {
     "api_model_id": "z-ai/glm-4-7-flash:free",
@@ -152,22 +165,42 @@
     ]
   },
   {
-    "api_model_id": "z-ai/glm-4-7-flash",
-    "provider_api_model_id": "z-ai:z-ai/glm-4-7-flash",
-    "provider_model_slug": "glm-4.7-flashx",
-    "internal_model_id": "z-ai/glm-4-7-flash-2026-01-19",
-    "is_active_gateway": false,
+    "api_model_id": "z-ai/glm-4.6v-flash",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.6v-flash",
+    "provider_model_slug": "glm-4.6v-flashx",
+    "internal_model_id": "z-ai/glm-4-6v-flash-2025-12-08",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-12-08T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.5-x",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.5-x",
+    "provider_model_slug": "glm-4.5-x",
+    "internal_model_id": "z-ai/glm-4-5-x",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "effective_from": "2026-01-19T00:00:00",
+    "effective_from": null,
     "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
+    "capabilities": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.5-air-x",
+    "provider_api_model_id": "z-ai:z-ai/glm-4.5-air-x",
+    "provider_model_slug": "glm-4.5-airx",
+    "internal_model_id": "z-ai/glm-4-5-air-x",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

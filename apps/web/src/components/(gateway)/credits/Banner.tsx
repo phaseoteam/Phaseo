@@ -14,9 +14,13 @@ type Banner = {
 interface Props {
 	// raw serialized query string from the page (e.g. "checkout=success")
 	queryString?: string | null;
+	latestPaymentSuccessAt?: string | null;
 }
 
-export default function Banner({ queryString }: Props) {
+export default function Banner({
+	queryString,
+	latestPaymentSuccessAt,
+}: Props) {
 	const [banner, setBanner] = useState<Banner>(null);
 	const router = useRouter();
 
@@ -32,11 +36,26 @@ export default function Banner({ queryString }: Props) {
 			// banner. This takes precedence over checkout success/cancelled
 			// because it indicates an in-progress payment attempt.
 			if (payment_attempt) {
-				setBanner({
-					type: "info",
-					message:
-						"Processing payment — we are attempting to charge your card. Click Refresh to check the latest status.",
-				});
+				const attemptTs = Number(payment_attempt);
+				const successTs = latestPaymentSuccessAt
+					? new Date(latestPaymentSuccessAt).getTime()
+					: NaN;
+				if (
+					Number.isFinite(attemptTs) &&
+					Number.isFinite(successTs) &&
+					successTs >= attemptTs
+				) {
+					setBanner({
+						type: "success",
+						message: "Successful payment, happy building.",
+					});
+				} else {
+					setBanner({
+						type: "info",
+						message:
+							"Processing payment - we are attempting to charge your card. Click Refresh to check the latest status.",
+					});
+				}
 				return;
 			}
 			if (checkout === "success") {
@@ -54,7 +73,7 @@ export default function Banner({ queryString }: Props) {
 		} catch {
 			// ignore parse errors
 		}
-	}, [queryString]);
+	}, [queryString, latestPaymentSuccessAt]);
 
 	return (
 		<>
@@ -102,3 +121,4 @@ export default function Banner({ queryString }: Props) {
 		</>
 	);
 }
+

@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -31,7 +32,8 @@ class VideoGenerationRequest(BaseModel):
     prompt: StrictStr
     duration: Optional[Annotated[int, Field(le=120, strict=True, ge=1)]] = None
     ratio: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["model", "prompt", "duration", "ratio"]
+    provider: Optional[ProviderRoutingOptions] = None
+    __properties: ClassVar[List[str]] = ["model", "prompt", "duration", "ratio", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -72,6 +74,9 @@ class VideoGenerationRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of provider
+        if self.provider:
+            _dict['provider'] = self.provider.to_dict()
         return _dict
 
     @classmethod
@@ -87,7 +92,8 @@ class VideoGenerationRequest(BaseModel):
             "model": obj.get("model"),
             "prompt": obj.get("prompt"),
             "duration": obj.get("duration"),
-            "ratio": obj.get("ratio")
+            "ratio": obj.get("ratio"),
+            "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj
 

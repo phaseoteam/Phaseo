@@ -1,4 +1,8 @@
 // lib/gateway/execute/attempt.ts
+// Purpose: Execute-stage logic for routing, attempts, and provider health.
+// Why: Centralizes execution/failover behavior.
+// How: Executes a single provider attempt and records attempt errors.
+
 import { onCallEnd, onCallStart, admitThroughBreaker, reportProbeResult, maybeOpenOnRecentErrors } from "./health";
 import { loadPriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
@@ -267,3 +271,13 @@ export async function attemptProvider(
         return { ok: false, error: e };
     }
 }
+
+
+
+
+
+
+
+
+
+

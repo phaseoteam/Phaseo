@@ -114,4 +114,13 @@ class BatchRequestTest extends TestCase
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
+
+    /**
+     * Test attribute "provider"
+     */
+    public function testPropertyProvider()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
 }

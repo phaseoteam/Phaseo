@@ -12,12 +12,13 @@ import {
 } from "@/components/(data)/model/model-route-helpers";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
-async function fetchModel(modelId: string) {
+async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
 		const [metadata, header] = await Promise.all([
-			getModelGatewayMetadata(modelId),
-			getModelOverviewHeader(modelId),
+			getModelGatewayMetadata(modelId, includeHidden),
+			getModelOverviewHeader(modelId, includeHidden),
 		]);
 		if (!metadata) return null;
 		return { metadata, header };
@@ -35,18 +36,19 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
-	const result = await fetchModel(modelId);
+	const includeHidden = await resolveIncludeHidden();
+	const result = await fetchModel(modelId, includeHidden);
 	const path = `/models/${modelId}/gateway`;
 	const imagePath = `/og/models/${modelId}`;
 
 	if (!result) {
 		return buildMetadata({
-			title: "Conduit Integration for Model",
+			title: "Gateway Integration for Model",
 			description:
-				"Explore Conduit support, providers, and routing details for AI models on AI Stats.",
+				"Explore Gateway support, providers, and routing details for AI models on AI Stats.",
 			path,
 			keywords: [
-				"AI conduit",
+				"AI gateway",
 				"model routing",
 				"AI providers",
 				"AI Stats",
@@ -61,18 +63,18 @@ export async function generateMetadata(props: {
 		header?.organisation?.name ??
 		(metadata as any)?.providerName ??
 		"AI provider";
-	const description = `${displayName} Conduit support on AI Stats. View providers, streaming support, and routing options for this model.`;
+	const description = `${displayName} Gateway support on AI Stats. View providers, streaming support, and routing options for this model.`;
 
 	return buildMetadata({
-		title: `${displayName} Conduit - Providers & Routing Options`,
+		title: `${displayName} Gateway - Providers & Routing Options`,
 		description,
 		path,
 		imagePath,
 		keywords: [
 			displayName,
-			`${displayName} conduit`,
+			`${displayName} gateway`,
 			`${organisationName} provider`,
-			"AI conduit",
+			"AI gateway",
 			"AI Stats",
 		],
 	});
@@ -85,12 +87,14 @@ export default async function Page({
 }) {
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
+	const includeHidden = await resolveIncludeHidden();
 	const metadata = (await getModelGatewayMetadataCached(
-		modelId
+		modelId,
+		includeHidden
 	)) as ModelGatewayMetadata;
 
 	return (
-		<ModelDetailShell modelId={modelId} tab="quickstart">
+		<ModelDetailShell modelId={modelId} tab="quickstart" includeHidden={includeHidden}>
 			<ModelGateway metadata={metadata} />
 		</ModelDetailShell>
 	);

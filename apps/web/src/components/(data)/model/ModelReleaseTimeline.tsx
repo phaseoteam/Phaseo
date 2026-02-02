@@ -200,12 +200,14 @@ const formatDate = (iso: string) =>
 export default async function ModelReleaseTimeline({
 	// params,
 	modelId,
+	includeHidden = false,
 }: {
 	// params: Promise<{ modelId: string }>;
 	modelId: string;
+	includeHidden?: boolean;
 }) {
 	// const modelId = (await params).modelId;
-	const modelTimeline = await getModelTimelineCached(modelId);
+	const modelTimeline = await getModelTimelineCached(modelId, includeHidden);
 
 	const events = modelTimeline?.events ?? [];
 	if (!events.length) return null;

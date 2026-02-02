@@ -1,4 +1,8 @@
 // lib/gateway/before/utils.ts
+// Purpose: Before-stage helpers for auth, validation, and context building.
+// Why: Small helpers for model extraction and candidate construction.
+// How: Provides focused utilities used during request preflight.
+
 import { z } from "zod";
 import { adapterFor } from "@providers/index";
 import type { ProviderCandidate } from "./types";
@@ -23,16 +27,11 @@ export function extractModel(body: any): string | null {
 }
 
 export function buildProviderCandidates(ctx: GatewayContextData): ProviderCandidate[] {
-    console.log(`[DEBUG] buildProviderCandidates: input providers:`, ctx.providers);
-    const afterSupportsFilter = ctx.providers.filter((p) => p.supportsEndpoint);
-    console.log(`[DEBUG] buildProviderCandidates: after supportsEndpoint filter:`, afterSupportsFilter);
-    const mapped = afterSupportsFilter
+    return ctx.providers
+        .filter((p) => p.supportsEndpoint)
         .map((p) => {
             const adapter = adapterFor(p.providerId, ctx.endpoint);
-            if (!adapter) {
-                console.log(`[DEBUG] buildProviderCandidates: no adapter for providerId: ${p.providerId}`);
-                return null;
-            }
+            if (!adapter) return null;
             return {
                 providerId: p.providerId,
                 adapter,
@@ -40,9 +39,10 @@ export function buildProviderCandidates(ctx: GatewayContextData): ProviderCandid
                 byokMeta: p.byokMeta,
                 pricingCard: ctx.pricing[p.providerId] ?? null,
                 providerModelSlug: p.providerModelSlug,
+                capabilityParams: p.capabilityParams ?? {},
+                maxInputTokens: p.maxInputTokens ?? null,
+                maxOutputTokens: p.maxOutputTokens ?? null,
             } as ProviderCandidate;
         })
         .filter(Boolean) as ProviderCandidate[];
-    console.log(`[DEBUG] buildProviderCandidates: final candidates:`, mapped);
-    return mapped;
 }

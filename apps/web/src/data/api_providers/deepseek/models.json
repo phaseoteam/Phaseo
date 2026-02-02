@@ -1,14 +1,33 @@
 [
   {
-    "api_model_id": "deepseek/deepseek-v3-1-terminus-2025-09-22",
-    "provider_api_model_id": "deepseek:deepseek/deepseek-v3-1-terminus-2025-09-22",
-    "provider_model_slug": null,
-    "internal_model_id": "deepseek/deepseek-v3-1-terminus-2025-09-22",
-    "is_active_gateway": false,
+    "api_model_id": "deepseek/deepseek-v3.2",
+    "provider_api_model_id": "deepseek:deepseek/deepseek-v3.2",
+    "provider_model_slug": "deepseek-chat",
+    "internal_model_id": "deepseek/deepseek-v3-2-2025-12-01",
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "effective_from": "2025-09-22T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.2-thinking",
+    "provider_api_model_id": "deepseek:deepseek/deepseek-v3.2-thinking",
+    "provider_model_slug": "deepseek-reasoner",
+    "internal_model_id": "deepseek/deepseek-v3-2-2025-12-01",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

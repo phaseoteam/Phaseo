@@ -1,0 +1,22 @@
+{
+  "key": "google-ai-studio:google/veo-2:video.generate",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/veo-2",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_seconds",
+      "unit": null,
+      "unit_size": 1,
+      "price_per_unit": 0.35,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-09T00:00:00"
+    }
+  ]
+}

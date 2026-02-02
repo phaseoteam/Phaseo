@@ -1,7 +1,11 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // OpenAI Responses Protocol - Encoder
 // Transforms IR → OpenAI Responses Response
 
-import type { IRChatResponse, IRChoice, IRUsage } from "@core/ir";
+import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
 
 /**
  * OpenAI Responses response type
@@ -34,7 +38,7 @@ export type OpenAIResponsesResponse = {
 export type OpenAIResponseOutputItem =
 	| { type: "message"; role: "assistant"; content: any[]; refusal?: string }
 	| { type: "function_call"; call_id: string; name: string; arguments: string }
-	| { type: "reasoning_details"; reasoning: Array<{ type: "text"; text: string }> };
+	| { type: "reasoning"; content: Array<{ type: "output_text"; text: string; annotations?: any[] }> };
 
 /**
  * Encode IR response to OpenAI Responses format
@@ -53,37 +57,47 @@ export function encodeOpenAIResponsesResponse(
 ): OpenAIResponsesResponse {
 	const outputItems: OpenAIResponseOutputItem[] = [];
 
-	const reasoningChoices = ir.choices.filter((c) => c.reasoning);
-	if (reasoningChoices.length > 0) {
-		outputItems.push({
-			type: "reasoning_details",
-			reasoning: reasoningChoices.map((choice) => ({
-				type: "text",
-				text: choice.message.content ?? "",
-			})),
-		});
-	}
-
-	const mainChoices = ir.choices.filter((c) => !c.reasoning);
-	const choicesToRender = mainChoices.length > 0 ? mainChoices : [];
-
-	for (const choice of choicesToRender) {
+	for (const choice of ir.choices) {
 		const hasToolCalls = (choice.message.toolCalls?.length ?? 0) > 0;
-		const contentValue = choice.message.content as any;
-		const hasText =
-			typeof contentValue === "string"
-				? contentValue.length > 0 || contentValue === ""
-				: false;
+		const { textParts, reasoningParts, imageParts } = splitContentParts(choice.message.content as IRContentPart[]);
 
+		for (const reasoningText of reasoningParts) {
+			outputItems.push({
+				type: "reasoning",
+				content: [{ type: "output_text", text: reasoningText, annotations: [] }],
+			});
+		}
+
+		const hasText = textParts.length > 0;
+		const hasImages = imageParts.length > 0;
 		const shouldEmitMessage =
 			Boolean(choice.message.refusal) ||
-			(!hasToolCalls && (contentValue === "" || hasText)) ||
-			(hasToolCalls && typeof contentValue === "string" && contentValue.length > 0);
+			(!hasToolCalls && (hasText || hasImages)) ||
+			(hasToolCalls && (hasText || hasImages));
 
 		if (shouldEmitMessage) {
 			const content: any[] = [];
-			if (typeof contentValue === "string") {
-				content.push({ type: "text", text: contentValue });
+			if (textParts.length > 0) {
+				for (const text of textParts) {
+					content.push({ type: "text", text });
+				}
+			}
+			if (imageParts.length > 0) {
+				for (const part of imageParts) {
+					if (part.source === "data") {
+						content.push({
+							type: "output_image",
+							b64_json: part.data,
+							mime_type: part.mimeType,
+						});
+					} else {
+						content.push({
+							type: "output_image",
+							image_url: { url: part.data },
+							mime_type: part.mimeType,
+						});
+					}
+				}
 			}
 
 			outputItems.push({
@@ -106,11 +120,7 @@ export function encodeOpenAIResponsesResponse(
 		}
 	}
 
-	if (reasoningChoices.length > 0 && choicesToRender.length === 0) {
-		// Only reasoning output, already added above.
-	}
-
-	const mainChoice = ir.choices.find((c) => !c.reasoning) || ir.choices[0];
+	const mainChoice = ir.choices[0];
 	let status: "completed" | "failed" | "incomplete" = "completed";
 	if (mainChoice?.finishReason === "error") {
 		status = "failed";
@@ -128,6 +138,18 @@ export function encodeOpenAIResponsesResponse(
 		usage: encodeUsage(ir.usage),
 		status,
 	};
+}
+
+function splitContentParts(parts: IRContentPart[]): { textParts: string[]; reasoningParts: string[]; imageParts: Array<Extract<IRContentPart, { type: "image" }>> } {
+	if (!Array.isArray(parts)) return { textParts: [], reasoningParts: [], imageParts: [] };
+	const textParts = parts
+		.filter((part) => part.type === "text")
+		.map((part) => part.text);
+	const reasoningParts = parts
+		.filter((part) => part.type === "reasoning_text")
+		.map((part) => part.text);
+	const imageParts = parts.filter((part) => part.type === "image") as Array<Extract<IRContentPart, { type: "image" }>>;
+	return { textParts, reasoningParts, imageParts };
 }
 
 function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefined {
@@ -148,3 +170,4 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 		reasoning_tokens: usage.reasoningTokens,
 	};
 }
+

@@ -28,6 +28,17 @@ __all__ = [
     "ApiKeyError",
     "ApiAttributeError",
     "ApiException",
+    "ActivityEntry",
+    "ActivityEntryUsage",
+    "AnthropicContentBlock",
+    "AnthropicContentBlockSource",
+    "AnthropicMessage",
+    "AnthropicMessageContent",
+    "AnthropicMessagesRequest",
+    "AnthropicMessagesRequestSystem",
+    "AnthropicMessagesResponse",
+    "AnthropicTool",
+    "AnthropicUsage",
     "AudioContentPart",
     "AudioContentPartInputAudio",
     "AudioSpeechRequest",
@@ -46,17 +57,24 @@ __all__ = [
     "ChatCompletionsResponse",
     "ChatMessage",
     "ChatMessageContent",
+    "CreateProvisioningKey201Response",
+    "CreateProvisioningKeyRequest",
+    "DeleteProvisioningKey200Response",
     "Embedding",
     "EmbeddingsRequest",
-    "EmbeddingsRequestInput",
     "EmbeddingsResponse",
+    "ErrorResponse",
     "FileResponse",
     "GenerationResponse",
     "GenerationResponseUsage",
+    "GetActivity200Response",
     "GetAnalytics200Response",
     "GetAnalyticsRequest",
+    "GetCredits200Response",
+    "GetCredits200ResponseCredits",
     "GetGeneration401Response",
     "GetGeneration404Response",
+    "GetProvisioningKey200Response",
     "Healthz200Response",
     "Image",
     "ImageContentPart",
@@ -69,6 +87,8 @@ __all__ = [
     "ListModels200Response",
     "ListModels500Response",
     "ListModelsOrganisationParameter",
+    "ListProviders200Response",
+    "ListProvisioningKeys200Response",
     "MessageContentPart",
     "Model",
     "ModelId",
@@ -80,10 +100,17 @@ __all__ = [
     "ModerationsRequestInput",
     "ModerationsRequestInputOneOfInner",
     "ModerationsResponse",
+    "MusicGenerateRequest",
+    "MusicGenerateRequestElevenlabs",
+    "MusicGenerateRequestSuno",
+    "OcrRequest",
     "OrganisationId",
+    "Provider",
+    "ProviderRoutingOptions",
+    "ProvisioningKey",
+    "ProvisioningKeyDetail",
+    "ProvisioningKeyWithValue",
     "ReasoningConfig",
-    "ReasoningConfigOneOf",
-    "ReasoningConfigOneOf1",
     "ResponsesRequest",
     "ResponsesRequestPrompt",
     "ResponsesRequestReasoning",
@@ -95,8 +122,11 @@ __all__ = [
     "ToolCallContentPart",
     "ToolCallContentPartFunction",
     "ToolCallFunction",
+    "UpdateProvisioningKey200Response",
+    "UpdateProvisioningKeyRequest",
     "Usage",
     "VideoContentPart",
+    "VideoDeleteResponse",
     "VideoGenerationRequest",
     "VideoGenerationResponse",
     "VideoGenerationResponseOutputInner",
@@ -117,6 +147,17 @@ from ai_stats_generated.exceptions import ApiAttributeError as ApiAttributeError
 from ai_stats_generated.exceptions import ApiException as ApiException
 
 # import models into sdk package
+from ai_stats_generated.models.activity_entry import ActivityEntry as ActivityEntry
+from ai_stats_generated.models.activity_entry_usage import ActivityEntryUsage as ActivityEntryUsage
+from ai_stats_generated.models.anthropic_content_block import AnthropicContentBlock as AnthropicContentBlock
+from ai_stats_generated.models.anthropic_content_block_source import AnthropicContentBlockSource as AnthropicContentBlockSource
+from ai_stats_generated.models.anthropic_message import AnthropicMessage as AnthropicMessage
+from ai_stats_generated.models.anthropic_message_content import AnthropicMessageContent as AnthropicMessageContent
+from ai_stats_generated.models.anthropic_messages_request import AnthropicMessagesRequest as AnthropicMessagesRequest
+from ai_stats_generated.models.anthropic_messages_request_system import AnthropicMessagesRequestSystem as AnthropicMessagesRequestSystem
+from ai_stats_generated.models.anthropic_messages_response import AnthropicMessagesResponse as AnthropicMessagesResponse
+from ai_stats_generated.models.anthropic_tool import AnthropicTool as AnthropicTool
+from ai_stats_generated.models.anthropic_usage import AnthropicUsage as AnthropicUsage
 from ai_stats_generated.models.audio_content_part import AudioContentPart as AudioContentPart
 from ai_stats_generated.models.audio_content_part_input_audio import AudioContentPartInputAudio as AudioContentPartInputAudio
 from ai_stats_generated.models.audio_speech_request import AudioSpeechRequest as AudioSpeechRequest
@@ -135,17 +176,24 @@ from ai_stats_generated.models.chat_completions_request_tools_inner import ChatC
 from ai_stats_generated.models.chat_completions_response import ChatCompletionsResponse as ChatCompletionsResponse
 from ai_stats_generated.models.chat_message import ChatMessage as ChatMessage
 from ai_stats_generated.models.chat_message_content import ChatMessageContent as ChatMessageContent
+from ai_stats_generated.models.create_provisioning_key201_response import CreateProvisioningKey201Response as CreateProvisioningKey201Response
+from ai_stats_generated.models.create_provisioning_key_request import CreateProvisioningKeyRequest as CreateProvisioningKeyRequest
+from ai_stats_generated.models.delete_provisioning_key200_response import DeleteProvisioningKey200Response as DeleteProvisioningKey200Response
 from ai_stats_generated.models.embedding import Embedding as Embedding
 from ai_stats_generated.models.embeddings_request import EmbeddingsRequest as EmbeddingsRequest
-from ai_stats_generated.models.embeddings_request_input import EmbeddingsRequestInput as EmbeddingsRequestInput
 from ai_stats_generated.models.embeddings_response import EmbeddingsResponse as EmbeddingsResponse
+from ai_stats_generated.models.error_response import ErrorResponse as ErrorResponse
 from ai_stats_generated.models.file_response import FileResponse as FileResponse
 from ai_stats_generated.models.generation_response import GenerationResponse as GenerationResponse
 from ai_stats_generated.models.generation_response_usage import GenerationResponseUsage as GenerationResponseUsage
+from ai_stats_generated.models.get_activity200_response import GetActivity200Response as GetActivity200Response
 from ai_stats_generated.models.get_analytics200_response import GetAnalytics200Response as GetAnalytics200Response
 from ai_stats_generated.models.get_analytics_request import GetAnalyticsRequest as GetAnalyticsRequest
+from ai_stats_generated.models.get_credits200_response import GetCredits200Response as GetCredits200Response
+from ai_stats_generated.models.get_credits200_response_credits import GetCredits200ResponseCredits as GetCredits200ResponseCredits
 from ai_stats_generated.models.get_generation401_response import GetGeneration401Response as GetGeneration401Response
 from ai_stats_generated.models.get_generation404_response import GetGeneration404Response as GetGeneration404Response
+from ai_stats_generated.models.get_provisioning_key200_response import GetProvisioningKey200Response as GetProvisioningKey200Response
 from ai_stats_generated.models.healthz200_response import Healthz200Response as Healthz200Response
 from ai_stats_generated.models.image import Image as Image
 from ai_stats_generated.models.image_content_part import ImageContentPart as ImageContentPart
@@ -158,6 +206,8 @@ from ai_stats_generated.models.list_files_response import ListFilesResponse as L
 from ai_stats_generated.models.list_models200_response import ListModels200Response as ListModels200Response
 from ai_stats_generated.models.list_models500_response import ListModels500Response as ListModels500Response
 from ai_stats_generated.models.list_models_organisation_parameter import ListModelsOrganisationParameter as ListModelsOrganisationParameter
+from ai_stats_generated.models.list_providers200_response import ListProviders200Response as ListProviders200Response
+from ai_stats_generated.models.list_provisioning_keys200_response import ListProvisioningKeys200Response as ListProvisioningKeys200Response
 from ai_stats_generated.models.message_content_part import MessageContentPart as MessageContentPart
 from ai_stats_generated.models.model import Model as Model
 from ai_stats_generated.models.model_id import ModelId as ModelId
@@ -169,10 +219,17 @@ from ai_stats_generated.models.moderations_request import ModerationsRequest as 
 from ai_stats_generated.models.moderations_request_input import ModerationsRequestInput as ModerationsRequestInput
 from ai_stats_generated.models.moderations_request_input_one_of_inner import ModerationsRequestInputOneOfInner as ModerationsRequestInputOneOfInner
 from ai_stats_generated.models.moderations_response import ModerationsResponse as ModerationsResponse
+from ai_stats_generated.models.music_generate_request import MusicGenerateRequest as MusicGenerateRequest
+from ai_stats_generated.models.music_generate_request_elevenlabs import MusicGenerateRequestElevenlabs as MusicGenerateRequestElevenlabs
+from ai_stats_generated.models.music_generate_request_suno import MusicGenerateRequestSuno as MusicGenerateRequestSuno
+from ai_stats_generated.models.ocr_request import OcrRequest as OcrRequest
 from ai_stats_generated.models.organisation_id import OrganisationId as OrganisationId
+from ai_stats_generated.models.provider import Provider as Provider
+from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions as ProviderRoutingOptions
+from ai_stats_generated.models.provisioning_key import ProvisioningKey as ProvisioningKey
+from ai_stats_generated.models.provisioning_key_detail import ProvisioningKeyDetail as ProvisioningKeyDetail
+from ai_stats_generated.models.provisioning_key_with_value import ProvisioningKeyWithValue as ProvisioningKeyWithValue
 from ai_stats_generated.models.reasoning_config import ReasoningConfig as ReasoningConfig
-from ai_stats_generated.models.reasoning_config_one_of import ReasoningConfigOneOf as ReasoningConfigOneOf
-from ai_stats_generated.models.reasoning_config_one_of1 import ReasoningConfigOneOf1 as ReasoningConfigOneOf1
 from ai_stats_generated.models.responses_request import ResponsesRequest as ResponsesRequest
 from ai_stats_generated.models.responses_request_prompt import ResponsesRequestPrompt as ResponsesRequestPrompt
 from ai_stats_generated.models.responses_request_reasoning import ResponsesRequestReasoning as ResponsesRequestReasoning
@@ -184,8 +241,11 @@ from ai_stats_generated.models.tool_call import ToolCall as ToolCall
 from ai_stats_generated.models.tool_call_content_part import ToolCallContentPart as ToolCallContentPart
 from ai_stats_generated.models.tool_call_content_part_function import ToolCallContentPartFunction as ToolCallContentPartFunction
 from ai_stats_generated.models.tool_call_function import ToolCallFunction as ToolCallFunction
+from ai_stats_generated.models.update_provisioning_key200_response import UpdateProvisioningKey200Response as UpdateProvisioningKey200Response
+from ai_stats_generated.models.update_provisioning_key_request import UpdateProvisioningKeyRequest as UpdateProvisioningKeyRequest
 from ai_stats_generated.models.usage import Usage as Usage
 from ai_stats_generated.models.video_content_part import VideoContentPart as VideoContentPart
+from ai_stats_generated.models.video_delete_response import VideoDeleteResponse as VideoDeleteResponse
 from ai_stats_generated.models.video_generation_request import VideoGenerationRequest as VideoGenerationRequest
 from ai_stats_generated.models.video_generation_response import VideoGenerationResponse as VideoGenerationResponse
 from ai_stats_generated.models.video_generation_response_output_inner import VideoGenerationResponseOutputInner as VideoGenerationResponseOutputInner

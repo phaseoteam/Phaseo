@@ -94,9 +94,12 @@ type PricingRuleRow = {
     effective_to: string | null;
 };
 
-export async function loadPricing(tracker: ChangeTracker) {
+export async function loadPricing(
+    tracker: ChangeTracker,
+    { modelId }: { modelId: string | null }
+) {
     const supa = client();
-    tracker.touchPrefix(DIR_PRICING);
+    if (!modelId) tracker.touchPrefix(DIR_PRICING);
     const pricingRuleKeys = new Set<string>();
     let hasChanges = false;
 
@@ -114,6 +117,7 @@ export async function loadPricing(tracker: ChangeTracker) {
             for (const mPath of modelDirs) {
                 const fp = join(mPath, "pricing.json");
                 const { data: j, hash } = await readJsonWithHash<PricingJSON>(fp);
+                if (modelId && j.model_id !== modelId) continue;
                 const capability_id = j.capability_id ?? j.endpoint ?? capabilityFallback;
                 const computedKey = j.key && j.key.trim() ? j.key : `${j.api_provider_id}:${j.model_id}:${capability_id}`;
                 const change = tracker.track(fp, hash, {

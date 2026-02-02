@@ -139,7 +139,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 17
+      "rank": 16
     },
     {
       "benchmark_id": "confabulations",
@@ -147,7 +147,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 17
+      "rank": 16
     },
     {
       "benchmark_id": "elimination-game",
@@ -171,7 +171,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 9
+      "rank": 8
     },
     {
       "benchmark_id": "gpqa-diamond",

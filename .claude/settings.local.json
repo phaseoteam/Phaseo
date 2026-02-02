@@ -13,7 +13,18 @@
       "Bash(pnpm build:*)",
       "Bash(pnpm list:*)",
       "WebFetch(domain:platform.minimax.io)",
-      "WebFetch(domain:docs.z.ai)"
+      "WebFetch(domain:docs.z.ai)",
+      "Bash(npm test:*)",
+      "Bash(pnpm vitest run:*)",
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:cookbook.openai.com)",
+      "WebFetch(domain:openrouter.ai)",
+      "WebFetch(domain:ai-sdk.dev)",
+      "Bash(pnpm install:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(pnpm run build:*)"
     ]
   },
   "outputStyle": "Explanatory"

@@ -187,7 +187,7 @@ export default async function Updates({
 															<Check className="h-4 w-4 text-green-600" />
 														</TooltipTrigger>
 														<TooltipContent>
-															Available on Conduit
+															Available on Gateway
 														</TooltipContent>
 													</Tooltip>
 												)}

@@ -11,20 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createClient } from "@/utils/supabase/client"
-
-interface ModelData {
-  model_id: string
-  name: string | null
-  status: string | null
-  announcement_date: string | null
-  release_date: string | null
-  deprecation_date: string | null
-  retirement_date: string | null
-  input_types: string | null
-  output_types: string | null
-  previous_model_id: string | null
-  family_id: string | null
-}
+import type { ModelData } from "../ModelEditDialog"
 
 interface BasicTabProps {
   model: ModelData

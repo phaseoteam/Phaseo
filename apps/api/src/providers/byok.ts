@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import { dispatchBackground, getSupabaseAdmin, getBindings, configureRuntime, clearRuntime } from "@/runtime/env";
 import { decryptBYOK, bytesToString } from "@pipeline/byok/decrypt";
 import type { ByokKeyMeta } from "@pipeline/before/types";
@@ -89,3 +93,4 @@ export async function loadByokKey(options: {
     // console.log(`[DEBUG BYOK] No BYOK keys found for team ${teamId}, provider ${providerId}`);
     return null;
 }
+

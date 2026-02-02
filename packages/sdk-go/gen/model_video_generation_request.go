@@ -25,6 +25,7 @@ type VideoGenerationRequest struct {
 	Prompt string `json:"prompt"`
 	Duration *int32 `json:"duration,omitempty"`
 	Ratio *string `json:"ratio,omitempty"`
+	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
 
 type _VideoGenerationRequest VideoGenerationRequest
@@ -160,6 +161,38 @@ func (o *VideoGenerationRequest) SetRatio(v string) {
 	o.Ratio = &v
 }
 
+// GetProvider returns the Provider field value if set, zero value otherwise.
+func (o *VideoGenerationRequest) GetProvider() ProviderRoutingOptions {
+	if o == nil || IsNil(o.Provider) {
+		var ret ProviderRoutingOptions
+		return ret
+	}
+	return *o.Provider
+}
+
+// GetProviderOk returns a tuple with the Provider field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *VideoGenerationRequest) GetProviderOk() (*ProviderRoutingOptions, bool) {
+	if o == nil || IsNil(o.Provider) {
+		return nil, false
+	}
+	return o.Provider, true
+}
+
+// HasProvider returns a boolean if a field has been set.
+func (o *VideoGenerationRequest) HasProvider() bool {
+	if o != nil && !IsNil(o.Provider) {
+		return true
+	}
+
+	return false
+}
+
+// SetProvider gets a reference to the given ProviderRoutingOptions and assigns it to the Provider field.
+func (o *VideoGenerationRequest) SetProvider(v ProviderRoutingOptions) {
+	o.Provider = &v
+}
+
 func (o VideoGenerationRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -177,6 +210,9 @@ func (o VideoGenerationRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Ratio) {
 		toSerialize["ratio"] = o.Ratio
+	}
+	if !IsNil(o.Provider) {
+		toSerialize["provider"] = o.Provider
 	}
 	return toSerialize, nil
 }

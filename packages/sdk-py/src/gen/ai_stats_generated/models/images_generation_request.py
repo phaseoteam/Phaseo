@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -35,7 +36,8 @@ class ImagesGenerationRequest(BaseModel):
     response_format: Optional[StrictStr] = None
     style: Optional[StrictStr] = None
     user: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["model", "prompt", "size", "n", "quality", "response_format", "style", "user"]
+    provider: Optional[ProviderRoutingOptions] = None
+    __properties: ClassVar[List[str]] = ["model", "prompt", "size", "n", "quality", "response_format", "style", "user", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -76,6 +78,9 @@ class ImagesGenerationRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of provider
+        if self.provider:
+            _dict['provider'] = self.provider.to_dict()
         return _dict
 
     @classmethod
@@ -95,7 +100,8 @@ class ImagesGenerationRequest(BaseModel):
             "quality": obj.get("quality"),
             "response_format": obj.get("response_format"),
             "style": obj.get("style"),
-            "user": obj.get("user")
+            "user": obj.get("user"),
+            "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj
 

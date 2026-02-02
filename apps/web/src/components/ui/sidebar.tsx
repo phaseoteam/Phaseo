@@ -165,6 +165,7 @@ function Sidebar({
 	side = "left",
 	variant = "sidebar",
 	collapsible = "offcanvas",
+	layout = "fixed",
 	className,
 	children,
 	...props
@@ -172,6 +173,7 @@ function Sidebar({
 	side?: "left" | "right";
 	variant?: "sidebar" | "floating" | "inset";
 	collapsible?: "offcanvas" | "icon" | "none";
+	layout?: "fixed" | "inline";
 }) {
 	const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
@@ -228,6 +230,27 @@ function Sidebar({
 			data-side={side}
 			data-slot="sidebar"
 		>
+			{layout === "inline" ? (
+				<div
+					data-slot="sidebar-container"
+					className={cn(
+						"relative z-10 flex h-full w-(--sidebar-width) flex-col",
+						side === "left" ? "border-r" : "border-l",
+						variant === "floating" || variant === "inset" ? "p-2" : undefined,
+						className
+					)}
+					{...props}
+				>
+					<div
+						data-sidebar="sidebar"
+						data-slot="sidebar-inner"
+						className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
+					>
+						{children}
+					</div>
+				</div>
+			) : (
+				<>
 			{/* This is what handles the sidebar gap on desktop */}
 			<div
 				data-slot="sidebar-gap"
@@ -251,18 +274,20 @@ function Sidebar({
 					variant === "floating" || variant === "inset"
 						? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
 						: "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
-					className
-				)}
-				{...props}
+				className
+			)}
+			{...props}
+		>
+			<div
+				data-sidebar="sidebar"
+				data-slot="sidebar-inner"
+				className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
 			>
-				<div
-					data-sidebar="sidebar"
-					data-slot="sidebar-inner"
-					className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
-				>
-					{children}
-				</div>
+				{children}
 			</div>
+		</div>
+				</>
+			)}
 		</div>
 	);
 }

@@ -37,13 +37,15 @@ namespace AIStatsSdk.Model
         /// <param name="endpoint">endpoint</param>
         /// <param name="completionWindow">completionWindow</param>
         /// <param name="metadata">metadata</param>
+        /// <param name="provider">provider</param>
         [JsonConstructor]
-        public BatchRequest(string inputFileId, string endpoint, Option<string?> completionWindow = default, Option<Object?> metadata = default)
+        public BatchRequest(string inputFileId, string endpoint, Option<string?> completionWindow = default, Option<Object?> metadata = default, Option<ProviderRoutingOptions?> provider = default)
         {
             InputFileId = inputFileId;
             Endpoint = endpoint;
             CompletionWindowOption = completionWindow;
             MetadataOption = metadata;
+            ProviderOption = provider;
             OnCreated();
         }
 
@@ -88,6 +90,19 @@ namespace AIStatsSdk.Model
         public Object? Metadata { get { return this.MetadataOption; } set { this.MetadataOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Provider
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<ProviderRoutingOptions?> ProviderOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Provider
+        /// </summary>
+        [JsonPropertyName("provider")]
+        public ProviderRoutingOptions? Provider { get { return this.ProviderOption; } set { this.ProviderOption = new(value); } }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -99,6 +114,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Endpoint: ").Append(Endpoint).Append("\n");
             sb.Append("  CompletionWindow: ").Append(CompletionWindow).Append("\n");
             sb.Append("  Metadata: ").Append(Metadata).Append("\n");
+            sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -140,6 +156,7 @@ namespace AIStatsSdk.Model
             Option<string?> endpoint = default;
             Option<string?> completionWindow = default;
             Option<Object?> metadata = default;
+            Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
             {
@@ -168,6 +185,9 @@ namespace AIStatsSdk.Model
                         case "metadata":
                             metadata = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
+                        case "provider":
+                            provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         default:
                             break;
                     }
@@ -192,7 +212,10 @@ namespace AIStatsSdk.Model
             if (metadata.IsSet && metadata.Value == null)
                 throw new ArgumentNullException(nameof(metadata), "Property is not nullable for class BatchRequest.");
 
-            return new BatchRequest(inputFileId.Value!, endpoint.Value!, completionWindow, metadata);
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider), "Property is not nullable for class BatchRequest.");
+
+            return new BatchRequest(inputFileId.Value!, endpoint.Value!, completionWindow, metadata, provider);
         }
 
         /// <summary>
@@ -231,6 +254,9 @@ namespace AIStatsSdk.Model
             if (batchRequest.MetadataOption.IsSet && batchRequest.Metadata == null)
                 throw new ArgumentNullException(nameof(batchRequest.Metadata), "Property is required for class BatchRequest.");
 
+            if (batchRequest.ProviderOption.IsSet && batchRequest.Provider == null)
+                throw new ArgumentNullException(nameof(batchRequest.Provider), "Property is required for class BatchRequest.");
+
             writer.WriteString("input_file_id", batchRequest.InputFileId);
 
             writer.WriteString("endpoint", batchRequest.Endpoint);
@@ -242,6 +268,11 @@ namespace AIStatsSdk.Model
             {
                 writer.WritePropertyName("metadata");
                 JsonSerializer.Serialize(writer, batchRequest.Metadata, jsonSerializerOptions);
+            }
+            if (batchRequest.ProviderOption.IsSet)
+            {
+                writer.WritePropertyName("provider");
+                JsonSerializer.Serialize(writer, batchRequest.Provider, jsonSerializerOptions);
             }
         }
     }

@@ -1,0 +1,22 @@
+{
+  "key": "openai:openai/davinci:text.generate",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/davinci",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "total_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 6e-05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2020-06-11T00:00:00"
+    }
+  ]
+}

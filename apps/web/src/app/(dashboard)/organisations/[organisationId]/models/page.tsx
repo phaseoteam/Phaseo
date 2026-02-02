@@ -4,10 +4,11 @@ import OrganisationDetailShell from "@/components/(data)/organisation/Organisati
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { getOrganisationDataCached } from "@/lib/fetchers/organisations/getOrganisation";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
-async function fetchOrganisation(organisationId: string) {
+async function fetchOrganisation(organisationId: string, includeHidden: boolean) {
 	try {
-		return await getOrganisationDataCached(organisationId);
+		return await getOrganisationDataCached(organisationId, 8, includeHidden);
 	} catch (error) {
 		console.warn("[seo] failed to load organisation metadata", {
 			organisationId,
@@ -21,7 +22,8 @@ export async function generateMetadata(props: {
 	params: Promise<{ organisationId: string }>;
 }): Promise<Metadata> {
 	const { organisationId } = await props.params;
-	const organisation = await fetchOrganisation(organisationId);
+	const includeHidden = await resolveIncludeHidden();
+	const organisation = await fetchOrganisation(organisationId, includeHidden);
 	const path = `/organisations/${organisationId}/models`;
 	const imagePath = `/og/organisations/${organisationId}`;
 
@@ -60,7 +62,7 @@ export async function generateMetadata(props: {
 	];
 
 	return buildMetadata({
-		title: `${organisation.name} Models - Catalogue & Conduit Coverage`,
+		title: `${organisation.name} Models - Catalogue & Gateway Coverage`,
 		description,
 		path,
 		keywords,
@@ -75,7 +77,8 @@ export default async function Page({
 }) {
 	const { organisationId } = await params;
 
-	const models = await getOrganisationModelsCached(organisationId);
+	const includeHidden = await resolveIncludeHidden();
+	const models = await getOrganisationModelsCached(organisationId, includeHidden);
 
 	return (
 		<OrganisationDetailShell organisationId={organisationId}>

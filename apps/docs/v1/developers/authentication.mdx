@@ -9,8 +9,8 @@ The Gateway uses bearer tokens for authentication. Every request must include a 
 
 ## API keys
 
--   **API Keys** are scoped to all models and providers available to your organisation.
--   **Provisioning keys** (coming soon) allow you to manage your API keys programatically.
+-   **API Keys** are scoped to all models and providers available to your organization.
+-   **Provisioning keys** allow you to manage your API keys programmatically. See the [Provisioning Keys](./provisioning-keys) guide for details.
 -   **Rotation** is manual today, but you can create a new key at any time without downtime.
 
 Keys follow the format `aistats_v1_k_xx_xxx`. Treat them like passwords and avoid storing them in client-side code or public repositories.
@@ -40,7 +40,7 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 			{ role: "system", content: "You are a helpful assistant." },
 			{
 				role: "user",
-				content: "Summarise the drawbacks to AI.",
+				content: "Summarize the drawbacks to AI.",
 			},
 		],
 	}),
@@ -62,7 +62,7 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 
 ## Troubleshooting
 
--   **401 Unauthorized** — The key is missing, invalid, or belongs to a disabled workspace.
--   **403 Forbidden** — The key exists but cannot access the requested provider or model. Check your plan or contact support.
--   **429 Too Many Requests** - You exceeded a rate limit. See the [Rate limits](./rate-limits) guide.
--   **5xx errors** — Retry with exponential backoff and report persistent issues via the support channel.
+-   **401 Unauthorized** -- The key is missing, invalid, or belongs to a disabled workspace.
+-   **403 Forbidden** -- The key exists but cannot access the requested provider or model. Check your plan or contact support.
+-   **429 Too Many Requests** -- You exceeded a rate limit. See the [Rate limits](./rate-limits) guide.
+-   **5xx errors** -- Retry with exponential backoff and report persistent issues via the support channel.

@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // Protocol codec registry
 // Provides encode/decode functions for all supported protocols
 
@@ -65,3 +69,4 @@ export function encodeProtocol(
 			throw new Error(`Unknown protocol: ${protocol}`);
 	}
 }
+

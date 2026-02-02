@@ -10,10 +10,11 @@ import {
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import { Suspense } from "react";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
-async function fetchModelOverview(modelId: string) {
+async function fetchModelOverview(modelId: string, includeHidden: boolean) {
 	try {
-		return await getModelOverviewCached(modelId);
+		return await getModelOverviewCached(modelId, includeHidden);
 	} catch (error) {
 		console.warn("[seo] failed to load model overview for metadata", {
 			modelId,
@@ -28,7 +29,8 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
-	const model = await fetchModelOverview(modelId);
+	const includeHidden = await resolveIncludeHidden();
+	const model = await fetchModelOverview(modelId, includeHidden);
 	const path = `/models/${modelId}/performance`;
 	const imagePath = `/og/models/${modelId}`;
 
@@ -75,17 +77,19 @@ export default async function Page({
 }) {
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
+	const includeHidden = await resolveIncludeHidden();
 
 	console.log(`[perf] modelId=${modelId}`);
 
 	const performanceMetricsPromise = getModelPerformanceMetricsCached(
 		modelId,
+		includeHidden,
 		24
 	);
-	const tokenTrajectoryPromise = getModelTokenTrajectoryCached(modelId);
+	const tokenTrajectoryPromise = getModelTokenTrajectoryCached(modelId, includeHidden);
 
 	return (
-		<ModelDetailShell modelId={modelId} tab="performance">
+		<ModelDetailShell modelId={modelId} tab="performance" includeHidden={includeHidden}>
 			<Suspense fallback={<PerformanceSkeleton />}>
 				<PerformancePanel
 					metricsPromise={performanceMetricsPromise}

@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 // Mistral AI Provider Adapter
 import type { ProviderAdapter, ProviderExecuteArgs, AdapterResult } from "../types";
 import * as ocr from "./endpoints/ocr";
@@ -20,3 +24,4 @@ export const MistralAdapter: ProviderAdapter = {
         }
     },
 };
+

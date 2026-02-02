@@ -1,4 +1,8 @@
 // src/lib/gateway/providers/openai/index.ts
+// Purpose: Provider adapter module for openai.
+// Why: Isolates provider-specific configuration and utilities.
+// How: Defines provider-specific endpoint adapters and configuration helpers.
+
 import type { ProviderAdapter, ProviderExecuteArgs, AdapterResult } from "../types";
 import * as chat from "./endpoints/chat";
 import * as moderations from "./endpoints/moderations";
@@ -34,3 +38,12 @@ export const OpenAIAdapter: ProviderAdapter = {
         }
     },
 };
+
+
+
+
+
+
+
+
+

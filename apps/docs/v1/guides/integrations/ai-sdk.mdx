@@ -1,0 +1,29 @@
+---
+title: "AI SDK"
+description: "Use the official AI Stats provider for the Vercel AI SDK."
+---
+
+AI Stats ships an official Vercel AI SDK provider in the `@ai-stats/ai-sdk-provider` package.
+
+## Install
+
+```bash
+npm install @ai-stats/ai-sdk-provider ai
+```
+
+## Basic usage
+
+```ts
+import { aiStats } from "@ai-stats/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: aiStats("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+## Notes
+
+- Use model ids from the [Models endpoint](/v1/api-reference/endpoint/models).
+- The provider supports the AI SDK primitives for text, images, audio, and embeddings.

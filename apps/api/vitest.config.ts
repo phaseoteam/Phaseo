@@ -11,7 +11,7 @@ export default defineConfig({
             "@core": path.resolve(rootDir, "src/core"),
             "@pipeline": path.resolve(rootDir, "src/pipeline"),
             "@protocols": path.resolve(rootDir, "src/protocols"),
-            "@surfaces": path.resolve(rootDir, "src/surfaces"),
+            "@executors": path.resolve(rootDir, "src/executors"),
             "@providers": path.resolve(rootDir, "src/providers"),
             "@observability": path.resolve(rootDir, "src/observability"),
         },

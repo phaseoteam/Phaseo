@@ -1,4 +1,8 @@
 // src/lib/providers/google-ai-studio/index.ts
+// Purpose: Provider adapter module for google-ai-studio.
+// Why: Isolates provider-specific configuration and utilities.
+// How: Defines provider-specific endpoint adapters and configuration helpers.
+
 import type { ProviderAdapter, ProviderExecuteArgs, AdapterResult } from "../types";
 import * as chat from "./endpoints/chat";
 import * as embeddings from "./endpoints/embeddings";
@@ -25,3 +29,12 @@ export const GoogleAIStudioAdapter: ProviderAdapter = {
         }
     },
 };
+
+
+
+
+
+
+
+
+

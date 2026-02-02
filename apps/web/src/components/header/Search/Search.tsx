@@ -205,6 +205,8 @@ export default function Search({ className, initialData }: Props) {
 							countries: { heading: 'Countries', type: undefined },
 						}[category.name];
 
+						if (!categoryConfig) return null;
+
 						const isLast = index === categoryScores.filter(c => c.items.length > 0).length - 1;
 
 						return (

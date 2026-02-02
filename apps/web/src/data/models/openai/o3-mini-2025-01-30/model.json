@@ -131,7 +131,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 25
+      "rank": 24
     },
     {
       "benchmark_id": "confabulations",
@@ -139,7 +139,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 25
+      "rank": 24
     },
     {
       "benchmark_id": "elimination-game",

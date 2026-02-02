@@ -1,4 +1,4 @@
-﻿import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/supabase/client";
 import { cacheLife, cacheTag } from "next/cache";
 import { featureOrder } from "@/lib/config/featureLabels";
 import type { MonitorModelData, MonitorModelFilters, GatewayProvider, GatewayModel } from "./types";
@@ -9,8 +9,11 @@ import {
 	normalizeEndpoint,
 } from "./helpers";
 
+export type { MonitorModelData } from "./types";
+
 export async function getMonitorModels(
-	filters: MonitorModelFilters = {}
+	filters: MonitorModelFilters = {},
+	includeHidden: boolean
 ): Promise<{
 	models: MonitorModelData[];
 	allTiers: string[];
@@ -61,6 +64,7 @@ export async function getMonitorModels(
 				status,
 				input_types,
 				output_types,
+				hidden,
 				organisation: data_organisations!data_models_organisation_id_fkey(
 					organisation_id,
 					name
@@ -88,6 +92,7 @@ export async function getMonitorModels(
 
 	for (const pm of providerModels ?? []) {
 		const modelRow = Array.isArray(pm.model) ? pm.model[0] : pm.model;
+		if (!includeHidden && modelRow?.hidden) continue;
 		const modelId =
 			modelRow?.model_id ?? pm.internal_model_id ?? pm.api_model_id ?? "";
 
@@ -522,3 +527,4 @@ export async function getMonitorModels(
 		allStatuses,
 	};
 }
+

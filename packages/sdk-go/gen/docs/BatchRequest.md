@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **Endpoint** | **string** |  | 
 **CompletionWindow** | Pointer to **string** |  | [optional] 
 **Metadata** | Pointer to **map[string]interface{}** |  | [optional] 
+**Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 ## Methods
 
@@ -117,6 +118,31 @@ SetMetadata sets Metadata field to given value.
 `func (o *BatchRequest) HasMetadata() bool`
 
 HasMetadata returns a boolean if a field has been set.
+
+### GetProvider
+
+`func (o *BatchRequest) GetProvider() ProviderRoutingOptions`
+
+GetProvider returns the Provider field if non-nil, zero value otherwise.
+
+### GetProviderOk
+
+`func (o *BatchRequest) GetProviderOk() (*ProviderRoutingOptions, bool)`
+
+GetProviderOk returns a tuple with the Provider field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetProvider
+
+`func (o *BatchRequest) SetProvider(v ProviderRoutingOptions)`
+
+SetProvider sets Provider field to given value.
+
+### HasProvider
+
+`func (o *BatchRequest) HasProvider() bool`
+
+HasProvider returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

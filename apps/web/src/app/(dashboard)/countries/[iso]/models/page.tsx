@@ -9,6 +9,7 @@ import {
 } from "@/lib/fetchers/countries/getCountrySummary";
 import { formatCountryDate } from "@/components/(data)/countries/utils";
 import { buildMetadata } from "@/lib/seo";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export async function generateMetadata({
 	params,
@@ -17,7 +18,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 	const { iso } = await params;
 	const isoNormalized = normaliseIso(iso);
-	const country = await getCountrySummaryByIso(isoNormalized);
+	const includeHidden = await resolveIncludeHidden();
+	const country = await getCountrySummaryByIso(isoNormalized, includeHidden);
 	const path = `/countries/${isoNormalized.toLowerCase()}/models`;
 	const imagePath = `/og/countries/${isoNormalized.toLowerCase()}`;
 
@@ -48,7 +50,8 @@ export default async function CountryModelsPage({
 }) {
 	const { iso } = await params;
 	const isoNormalized = normaliseIso(iso);
-	const country = await getCountrySummaryByIso(isoNormalized);
+	const includeHidden = await resolveIncludeHidden();
+	const country = await getCountrySummaryByIso(isoNormalized, includeHidden);
 
 	if (!country) {
 		return (

@@ -1,3 +1,7 @@
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
 import type { Endpoint } from "@core/types";
 
 const pickNumber = (obj: any, path: string): number | undefined => {
@@ -140,3 +144,4 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
 
     return base;
 }
+

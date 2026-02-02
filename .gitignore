@@ -16,4 +16,3 @@ turbo-*.log
 /.cache
 /internal
 # /supabase
-/supabase

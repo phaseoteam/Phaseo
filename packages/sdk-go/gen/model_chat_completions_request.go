@@ -43,6 +43,7 @@ type ChatCompletionsRequest struct {
 	TopP *float32 `json:"top_p,omitempty"`
 	ResponseFormat *ChatCompletionsRequestResponseFormat `json:"response_format,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
+	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 	UserId *string `json:"user_id,omitempty"`
 	ServiceTier *string `json:"service_tier,omitempty"`
 }
@@ -780,6 +781,38 @@ func (o *ChatCompletionsRequest) SetUsage(v bool) {
 	o.Usage = &v
 }
 
+// GetProvider returns the Provider field value if set, zero value otherwise.
+func (o *ChatCompletionsRequest) GetProvider() ProviderRoutingOptions {
+	if o == nil || IsNil(o.Provider) {
+		var ret ProviderRoutingOptions
+		return ret
+	}
+	return *o.Provider
+}
+
+// GetProviderOk returns a tuple with the Provider field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ChatCompletionsRequest) GetProviderOk() (*ProviderRoutingOptions, bool) {
+	if o == nil || IsNil(o.Provider) {
+		return nil, false
+	}
+	return o.Provider, true
+}
+
+// HasProvider returns a boolean if a field has been set.
+func (o *ChatCompletionsRequest) HasProvider() bool {
+	if o != nil && !IsNil(o.Provider) {
+		return true
+	}
+
+	return false
+}
+
+// SetProvider gets a reference to the given ProviderRoutingOptions and assigns it to the Provider field.
+func (o *ChatCompletionsRequest) SetProvider(v ProviderRoutingOptions) {
+	o.Provider = &v
+}
+
 // GetUserId returns the UserId field value if set, zero value otherwise.
 func (o *ChatCompletionsRequest) GetUserId() string {
 	if o == nil || IsNil(o.UserId) {
@@ -915,6 +948,9 @@ func (o ChatCompletionsRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Usage) {
 		toSerialize["usage"] = o.Usage
+	}
+	if !IsNil(o.Provider) {
+		toSerialize["provider"] = o.Provider
 	}
 	if !IsNil(o.UserId) {
 		toSerialize["user_id"] = o.UserId

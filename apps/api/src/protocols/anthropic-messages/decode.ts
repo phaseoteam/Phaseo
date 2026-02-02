@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // Anthropic Messages Protocol - Decoder
 // Transforms Anthropic Messages Request → IR
 
@@ -184,6 +188,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
+		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 	};
 }
 
@@ -270,3 +275,4 @@ function normalizeAnthropicToolChoice(choice: any): IRChatRequest["toolChoice"] 
 
 	return undefined;
 }
+

@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from ai_stats_generated.models.chat_completions_request_tool_choice import ChatCompletionsRequestToolChoice
+from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from ai_stats_generated.models.responses_request_prompt import ResponsesRequestPrompt
 from ai_stats_generated.models.responses_request_reasoning import ResponsesRequestReasoning
 from typing import Optional, Set
@@ -61,7 +62,8 @@ class ResponsesRequest(BaseModel):
     user: Optional[StrictStr] = None
     usage: Optional[StrictBool] = None
     meta: Optional[StrictBool] = None
-    __properties: ClassVar[List[str]] = ["model", "input", "input_items", "conversation", "include", "instructions", "max_output_tokens", "max_tool_calls", "metadata", "parallel_tool_calls", "previous_response_id", "prompt", "prompt_cache_key", "prompt_cache_retention", "reasoning", "safety_identifier", "service_tier", "store", "stream", "stream_options", "temperature", "text", "tool_choice", "tools", "top_logprobs", "top_p", "truncation", "background", "user", "usage", "meta"]
+    provider: Optional[ProviderRoutingOptions] = None
+    __properties: ClassVar[List[str]] = ["model", "input", "input_items", "conversation", "include", "instructions", "max_output_tokens", "max_tool_calls", "metadata", "parallel_tool_calls", "previous_response_id", "prompt", "prompt_cache_key", "prompt_cache_retention", "reasoning", "safety_identifier", "service_tier", "store", "stream", "stream_options", "temperature", "text", "tool_choice", "tools", "top_logprobs", "top_p", "truncation", "background", "user", "usage", "meta", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -114,6 +116,9 @@ class ResponsesRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of tool_choice
         if self.tool_choice:
             _dict['tool_choice'] = self.tool_choice.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of provider
+        if self.provider:
+            _dict['provider'] = self.provider.to_dict()
         return _dict
 
     @classmethod
@@ -156,7 +161,8 @@ class ResponsesRequest(BaseModel):
             "background": obj.get("background"),
             "user": obj.get("user"),
             "usage": obj.get("usage"),
-            "meta": obj.get("meta")
+            "meta": obj.get("meta"),
+            "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj
 

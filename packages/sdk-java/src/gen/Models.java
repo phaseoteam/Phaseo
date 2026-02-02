@@ -3,6 +3,70 @@ package ai.stats.gen;
 public final class Models {
 	private Models() {}
 
+	public static class ActivityEntry {
+		public Double cost_cents;
+		public String endpoint;
+		public Integer latency_ms;
+		public String model;
+		public String provider;
+		public String request_id;
+		public String timestamp;
+		public Object usage;
+	}
+
+	public static class AnthropicContentBlock {
+		public String content;
+		public String id;
+		public Object input;
+		public String name;
+		public Object source;
+		public String text;
+		public String tool_use_id;
+		public Object type;
+	}
+
+	public static class AnthropicMessage {
+		public Object content;
+		public Object role;
+	}
+
+	public static class AnthropicMessagesRequest {
+		public Integer max_tokens;
+		public java.util.List<Object> messages;
+		public Object metadata;
+		public String model;
+		public Object provider;
+		public Boolean stream;
+		public Object system;
+		public Double temperature;
+		public Object tool_choice;
+		public java.util.List<Object> tools;
+		public Integer top_k;
+		public Double top_p;
+	}
+
+	public static class AnthropicMessagesResponse {
+		public java.util.List<Object> content;
+		public String id;
+		public String model;
+		public Object role;
+		public String stop_reason;
+		public String stop_sequence;
+		public String type;
+		public Object usage;
+	}
+
+	public static class AnthropicTool {
+		public String description;
+		public Object input_schema;
+		public String name;
+	}
+
+	public static class AnthropicUsage {
+		public Integer input_tokens;
+		public Integer output_tokens;
+	}
+
 	public static class AudioContentPart {
 		public Object input_audio;
 		public Object type;
@@ -12,6 +76,7 @@ public final class Models {
 		public Object format;
 		public String input;
 		public String model;
+		public Object provider;
 		public String voice;
 	}
 
@@ -20,6 +85,7 @@ public final class Models {
 		public String audio_url;
 		public String language;
 		public String model;
+		public Object provider;
 	}
 
 	public static class AudioTranscriptionResponse {
@@ -32,6 +98,7 @@ public final class Models {
 		public String language;
 		public String model;
 		public String prompt;
+		public Object provider;
 		public Double temperature;
 	}
 
@@ -44,6 +111,7 @@ public final class Models {
 		public String endpoint;
 		public String input_file_id;
 		public Object metadata;
+		public Object provider;
 	}
 
 	public static class BatchRequestCounts {
@@ -95,6 +163,7 @@ public final class Models {
 		public String model;
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
+		public Object provider;
 		public Object reasoning;
 		public Object response_format;
 		public Integer seed;
@@ -139,6 +208,7 @@ public final class Models {
 		public String encoding_format;
 		public Object input;
 		public String model;
+		public Object provider;
 		public String user;
 	}
 
@@ -147,6 +217,12 @@ public final class Models {
 		public String model;
 		public String object;
 		public Object usage;
+	}
+
+	public static class ErrorResponse {
+		public String error;
+		public String message;
+		public Boolean ok;
 	}
 
 	public static class FileResponse {
@@ -212,6 +288,7 @@ public final class Models {
 		public String model;
 		public Integer n;
 		public String prompt;
+		public Object provider;
 		public String size;
 		public Boolean usage;
 		public String user;
@@ -226,6 +303,7 @@ public final class Models {
 		public String model;
 		public Integer n;
 		public String prompt;
+		public Object provider;
 		public String quality;
 		public String response_format;
 		public String size;
@@ -300,6 +378,7 @@ public final class Models {
 		public Object input;
 		public Boolean meta;
 		public String model;
+		public Object provider;
 	}
 
 	public static class ModerationsResponse {
@@ -308,10 +387,82 @@ public final class Models {
 		public java.util.List<Object> results;
 	}
 
+	public static class MusicGenerateRequest {
+		public Integer duration;
+		public Boolean echo_upstream_request;
+		public Object elevenlabs;
+		public Object format;
+		public String model;
+		public String prompt;
+		public Object provider;
+		public Object suno;
+	}
+
+	public static class MusicGenerateResponse {
+	}
+
+	public static class OcrRequest {
+		public Boolean echo_upstream_request;
+		public String image;
+		public String language;
+		public String model;
+		public Object provider;
+	}
+
+	public static class OcrResponse {
+	}
+
 	public static class OrganisationId {
 	}
 
 	public static class OrganisationIdList {
+	}
+
+	public static class Provider {
+		public String api_provider_id;
+		public String api_provider_name;
+		public String country_code;
+		public String description;
+		public String link;
+	}
+
+	public static class ProviderRoutingOptions {
+		public java.util.List<String> ignore;
+		public java.util.List<String> only;
+		public java.util.List<String> order;
+	}
+
+	public static class ProvisioningKey {
+		public String created_at;
+		public String id;
+		public String last_used_at;
+		public String name;
+		public String prefix;
+		public String scopes;
+		public Object status;
+	}
+
+	public static class ProvisioningKeyDetail {
+		public String created_at;
+		public String created_by;
+		public String id;
+		public String last_used_at;
+		public String name;
+		public String prefix;
+		public String scopes;
+		public Boolean soft_blocked;
+		public Object status;
+		public String team_id;
+	}
+
+	public static class ProvisioningKeyWithValue {
+		public String created_at;
+		public String id;
+		public String key;
+		public String name;
+		public String prefix;
+		public String scopes;
+		public Object status;
 	}
 
 	public static class ReasoningConfig {
@@ -336,6 +487,7 @@ public final class Models {
 		public Object prompt;
 		public String prompt_cache_key;
 		public String prompt_cache_retention;
+		public Object provider;
 		public Object reasoning;
 		public String safety_identifier;
 		public String service_tier;
@@ -398,10 +550,17 @@ public final class Models {
 		public String video_url;
 	}
 
+	public static class VideoDeleteResponse {
+		public Boolean deleted;
+		public String id;
+		public String object;
+	}
+
 	public static class VideoGenerationRequest {
 		public Integer duration;
 		public String model;
 		public String prompt;
+		public Object provider;
 		public String ratio;
 	}
 

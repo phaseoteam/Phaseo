@@ -51,6 +51,18 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test CreateAnthropicMessage
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task CreateAnthropicMessageAsyncTest()
+        {
+            AnthropicMessagesRequest anthropicMessagesRequest = default!;
+            var response = await _instance.CreateAnthropicMessageAsync(anthropicMessagesRequest);
+            var model = response.Ok();
+            Assert.IsType<AnthropicMessagesResponse>(model);
+        }
+
+        /// <summary>
         /// Test CreateBatch
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -80,7 +92,7 @@ namespace AIStatsSdk.Test.Api
         [Fact (Skip = "not implemented")]
         public async Task CreateEmbeddingAsyncTest()
         {
-            EmbeddingsRequest embeddingsRequest = default!;
+            EmbeddingsRequest? embeddingsRequest = default!;
             var response = await _instance.CreateEmbeddingAsync(embeddingsRequest);
             var model = response.Ok();
             Assert.IsType<EmbeddingsResponse>(model);
@@ -113,7 +125,8 @@ namespace AIStatsSdk.Test.Api
             Client.Option<string> user = default!;
             Client.Option<bool> meta = default!;
             Client.Option<bool> usage = default!;
-            var response = await _instance.CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage);
+            Client.Option<ProviderRoutingOptions> provider = default!;
+            var response = await _instance.CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, provider);
             var model = response.Ok();
             Assert.IsType<ImagesEditResponse>(model);
         }
@@ -128,6 +141,30 @@ namespace AIStatsSdk.Test.Api
             var response = await _instance.CreateModerationAsync(moderationsRequest);
             var model = response.Ok();
             Assert.IsType<ModerationsResponse>(model);
+        }
+
+        /// <summary>
+        /// Test CreateOcr
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task CreateOcrAsyncTest()
+        {
+            OcrRequest ocrRequest = default!;
+            var response = await _instance.CreateOcrAsync(ocrRequest);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
+        /// Test CreateProvisioningKey
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task CreateProvisioningKeyAsyncTest()
+        {
+            CreateProvisioningKeyRequest createProvisioningKeyRequest = default!;
+            var response = await _instance.CreateProvisioningKeyAsync(createProvisioningKeyRequest);
+            var model = response.Created();
+            Assert.IsType<CreateProvisioningKey201Response>(model);
         }
 
         /// <summary>
@@ -164,7 +201,8 @@ namespace AIStatsSdk.Test.Api
             Client.Option<string> audioUrl = default!;
             Client.Option<string> audioB64 = default!;
             Client.Option<string> language = default!;
-            var response = await _instance.CreateTranscriptionAsync(model, audioUrl, audioB64, language);
+            Client.Option<ProviderRoutingOptions> provider = default!;
+            var response = await _instance.CreateTranscriptionAsync(model, audioUrl, audioB64, language, provider);
             var model = response.Ok();
             Assert.IsType<AudioTranscriptionResponse>(model);
         }
@@ -181,7 +219,8 @@ namespace AIStatsSdk.Test.Api
             Client.Option<string> language = default!;
             Client.Option<string> prompt = default!;
             Client.Option<decimal> temperature = default!;
-            var response = await _instance.CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature);
+            Client.Option<ProviderRoutingOptions> provider = default!;
+            var response = await _instance.CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, provider);
             var model = response.Ok();
             Assert.IsType<AudioTranslationResponse>(model);
         }
@@ -199,6 +238,57 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test DeleteProvisioningKey
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task DeleteProvisioningKeyAsyncTest()
+        {
+            string id = default!;
+            var response = await _instance.DeleteProvisioningKeyAsync(id);
+            var model = response.Ok();
+            Assert.IsType<DeleteProvisioningKey200Response>(model);
+        }
+
+        /// <summary>
+        /// Test DeleteVideo
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task DeleteVideoAsyncTest()
+        {
+            string videoId = default!;
+            var response = await _instance.DeleteVideoAsync(videoId);
+            var model = response.Ok();
+            Assert.IsType<VideoDeleteResponse>(model);
+        }
+
+        /// <summary>
+        /// Test GenerateMusic
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GenerateMusicAsyncTest()
+        {
+            MusicGenerateRequest musicGenerateRequest = default!;
+            var response = await _instance.GenerateMusicAsync(musicGenerateRequest);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
+        /// Test GetActivity
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetActivityAsyncTest()
+        {
+            string teamId = default!;
+            Client.Option<int> days = default!;
+            Client.Option<int> limit = default!;
+            Client.Option<int> offset = default!;
+            var response = await _instance.GetActivityAsync(teamId, days, limit, offset);
+            var model = response.Ok();
+            Assert.IsType<GetActivity200Response>(model);
+        }
+
+        /// <summary>
         /// Test GetAnalytics
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -211,6 +301,18 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test GetCredits
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetCreditsAsyncTest()
+        {
+            string teamId = default!;
+            var response = await _instance.GetCreditsAsync(teamId);
+            var model = response.Ok();
+            Assert.IsType<GetCredits200Response>(model);
+        }
+
+        /// <summary>
         /// Test GetGeneration
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -220,6 +322,42 @@ namespace AIStatsSdk.Test.Api
             var response = await _instance.GetGenerationAsync(id);
             var model = response.Ok();
             Assert.IsType<GenerationResponse>(model);
+        }
+
+        /// <summary>
+        /// Test GetProvisioningKey
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetProvisioningKeyAsyncTest()
+        {
+            string id = default!;
+            var response = await _instance.GetProvisioningKeyAsync(id);
+            var model = response.Ok();
+            Assert.IsType<GetProvisioningKey200Response>(model);
+        }
+
+        /// <summary>
+        /// Test GetVideo
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetVideoAsyncTest()
+        {
+            string videoId = default!;
+            var response = await _instance.GetVideoAsync(videoId);
+            var model = response.Ok();
+            Assert.IsType<VideoGenerationResponse>(model);
+        }
+
+        /// <summary>
+        /// Test GetVideoContent
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetVideoContentAsyncTest()
+        {
+            string videoId = default!;
+            var response = await _instance.GetVideoContentAsync(videoId);
+            var model = response.Ok();
+            Assert.IsType<System.IO.Stream>(model);
         }
 
         /// <summary>
@@ -263,6 +401,33 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test ListProviders
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task ListProvidersAsyncTest()
+        {
+            Client.Option<int> limit = default!;
+            Client.Option<int> offset = default!;
+            var response = await _instance.ListProvidersAsync(limit, offset);
+            var model = response.Ok();
+            Assert.IsType<ListProviders200Response>(model);
+        }
+
+        /// <summary>
+        /// Test ListProvisioningKeys
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task ListProvisioningKeysAsyncTest()
+        {
+            string teamId = default!;
+            Client.Option<int> limit = default!;
+            Client.Option<int> offset = default!;
+            var response = await _instance.ListProvisioningKeysAsync(teamId, limit, offset);
+            var model = response.Ok();
+            Assert.IsType<ListProvisioningKeys200Response>(model);
+        }
+
+        /// <summary>
         /// Test RetrieveBatch
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -295,6 +460,19 @@ namespace AIStatsSdk.Test.Api
             var response = await _instance.RootAsync();
             var model = response.Ok();
             Assert.IsType<Root200Response>(model);
+        }
+
+        /// <summary>
+        /// Test UpdateProvisioningKey
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task UpdateProvisioningKeyAsyncTest()
+        {
+            string id = default!;
+            UpdateProvisioningKeyRequest updateProvisioningKeyRequest = default!;
+            var response = await _instance.UpdateProvisioningKeyAsync(id, updateProvisioningKeyRequest);
+            var model = response.Ok();
+            Assert.IsType<UpdateProvisioningKey200Response>(model);
         }
 
         /// <summary>

@@ -1,9 +1,21 @@
+// Purpose: Route handler module.
+// Why: Keeps HTTP wiring separate from pipeline logic.
+// How: Maps requests to pipeline entrypoints and responses.
+
 import type { Context } from "hono";
 import type { GatewayBindings } from "@/runtime/env";
-import { configureRuntime, setWaitUntil, clearRuntime } from "@/runtime/env";
+import { configureRuntime, setWaitUntil, clearRuntime, dispatchBackground } from "@/runtime/env";
 import { sanitizeRequestHeaders } from "@pipeline/http/sanitize-headers";
 
 type Handler = (req: Request) => Promise<Response>;
+type CacheOptions = {
+    scope: string;
+    ttlSeconds: number;
+    staleSeconds?: number;
+    varyHeaders?: string[];
+};
+
+const encoder = new TextEncoder();
 
 export function withRuntime(handler: Handler) {
     return async (c: Context<{ Bindings: GatewayBindings }>) => {
@@ -28,6 +40,49 @@ export function json(body: any, status = 200, headers: Record<string, string> = 
             ...headers,
         },
     });
+}
+
+function toBase64Url(bytes: Uint8Array): string {
+    let binary = "";
+    for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+    }
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function hashCacheScope(scope: string): Promise<string> {
+    const digest = await crypto.subtle.digest("SHA-256", encoder.encode(scope));
+    return toBase64Url(new Uint8Array(digest));
+}
+
+async function buildCacheKey(req: Request, scope: string): Promise<Request> {
+    const url = new URL(req.url);
+    const scopeHash = await hashCacheScope(scope);
+    url.searchParams.set("__cache_scope", scopeHash);
+    return new Request(url.toString(), { method: "GET" });
+}
+
+export function cacheHeaders(options: CacheOptions): Record<string, string> {
+    const stale = options.staleSeconds ?? 0;
+    const cacheControl = [
+        "private",
+        `max-age=${options.ttlSeconds}`,
+        stale > 0 ? `stale-while-revalidate=${stale}` : null,
+    ].filter(Boolean).join(", ");
+    const vary = options.varyHeaders?.length ? options.varyHeaders.join(", ") : "Authorization";
+    return {
+        "Cache-Control": cacheControl,
+        "Vary": vary,
+    };
+}
+
+export async function cacheResponse(req: Request, response: Response, options: CacheOptions): Promise<Response> {
+    if (req.method !== "GET") return response;
+    if (!response.ok) return response;
+    const cache = caches.default;
+    const cacheKey = await buildCacheKey(req, options.scope);
+    dispatchBackground(cache.put(cacheKey, response.clone()));
+    return response;
 }
 
 export function withCors(
@@ -57,3 +112,4 @@ export function withCors(
         });
     };
 }
+

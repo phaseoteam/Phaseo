@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { applyHiddenFilter, resolveIncludeHidden } from '@/lib/fetchers/models/visibility';
 
 export type DeprecationWarning = {
     modelId: string;
@@ -26,6 +27,7 @@ export async function getDeprecationWarningsForTeam(
     teamId: string
 ): Promise<DeprecationWarning[]> {
     const supabase = await createClient();
+    const includeHidden = await resolveIncludeHidden();
 
     // 1) Fetch distinct models used in last 14 days for this team
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
@@ -80,10 +82,13 @@ export async function getDeprecationWarningsForTeam(
     }
 
     // 2) Query data_models for these model_ids
-    const { data: modelsData, error: modelsErr } = await supabase
-        .from('data_models')
-        .select('model_id,deprecation_date,retirement_date,previous_model_id')
-        .in('model_id', modelIds);
+    const { data: modelsData, error: modelsErr } = await applyHiddenFilter(
+        supabase
+            .from('data_models')
+            .select('model_id,deprecation_date,retirement_date,previous_model_id')
+            .in('model_id', modelIds),
+        includeHidden
+    );
 
     if (modelsErr) {
         console.error('deprecation fetch error:', modelsErr);
@@ -103,8 +108,8 @@ export async function getDeprecationWarningsForTeam(
                 daysUntil,
             } as DeprecationWarning;
         })
-        .filter((w) => Number.isFinite(w.daysUntil) && w.daysUntil >= 0 && w.daysUntil <= 90)
-        .sort((a, b) => a.daysUntil - b.daysUntil);
+        .filter((w: DeprecationWarning) => Number.isFinite(w.daysUntil) && w.daysUntil >= 0 && w.daysUntil <= 90)
+        .sort((a: DeprecationWarning, b: DeprecationWarning) => a.daysUntil - b.daysUntil);
 
     return warnings;
 }

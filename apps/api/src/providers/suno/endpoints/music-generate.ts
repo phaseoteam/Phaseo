@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 // Suno Music Generation endpoint
 // NOTE: Suno does not have an official API. This adapter is a placeholder
 // for when/if they release an official API, or for third-party API wrappers.
@@ -85,3 +89,4 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         byokKeyId: keyInfo.byokId,
     };
 }
+

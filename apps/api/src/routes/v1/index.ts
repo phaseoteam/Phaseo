@@ -1,4 +1,8 @@
 // src/routes/v1/index.ts
+// Purpose: Aggregate v1 route groups (data + control).
+// Why: Centralizes API version routing.
+// How: Wires HTTP routes to pipeline entrypoints and response helpers.
+
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { cors } from "hono/cors";
@@ -20,6 +24,7 @@ v1Router.use(
             "x-title",
             "http-referer",
             "x-gateway-debug",
+            "X-AIStats-Strictness",
         ],
         maxAge: 86400,
     })
@@ -27,3 +32,12 @@ v1Router.use(
 
 v1Router.route("/", dataRouter);
 v1Router.route("/", controlRouter);
+
+
+
+
+
+
+
+
+

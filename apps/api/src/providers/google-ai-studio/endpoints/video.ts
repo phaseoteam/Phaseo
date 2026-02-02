@@ -1,4 +1,8 @@
 // lib/gateway/providers/google-ai-studio/endpoints/video.ts
+// Purpose: Provider endpoint adapter for google-ai-studio (video).
+// Why: Encapsulates provider-specific request/response mapping.
+// How: Defines provider-specific endpoint adapters and configuration helpers.
+
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { VideoGenerationSchema, type VideoGenerationRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
@@ -19,24 +23,34 @@ function baseHeaders(key: string) {
 }
 
 function mapGatewayToGoogleVideo(body: VideoGenerationRequest) {
+    const durationSeconds = typeof body.duration_seconds === "number"
+        ? body.duration_seconds
+        : typeof body.duration === "number"
+            ? body.duration
+            : typeof body.seconds === "string"
+                ? Number(body.seconds)
+                : typeof body.seconds === "number"
+                    ? body.seconds
+                    : undefined;
+    const aspectRatio = body.aspect_ratio ?? body.ratio;
+    const parameters: Record<string, any> = {
+        ...(typeof durationSeconds === "number" && !Number.isNaN(durationSeconds) ? { durationSeconds } : {}),
+        ...(aspectRatio ? { aspectRatio } : {}),
+        ...(body.resolution ? { resolution: body.resolution } : {}),
+        ...(body.negative_prompt ? { negativePrompt: body.negative_prompt } : {}),
+        ...(body.sample_count ? { sampleCount: body.sample_count } : {}),
+        ...(typeof body.seed === "number" ? { seed: body.seed } : {}),
+        ...(body.person_generation ? { personGeneration: body.person_generation } : {}),
+        ...(body.output_storage_uri ? { storageUri: body.output_storage_uri } : {}),
+    };
+
     return {
-        contents: [
+        instances: [
             {
-                role: "user",
-                parts: [{ text: body.prompt }],
+                prompt: body.prompt,
             },
         ],
-        generationConfig: {
-            responseModalities: ["VIDEO"],
-            ...(body.duration || body.ratio
-                ? {
-                    videoConfig: {
-                        ...(typeof body.duration === "number" ? { durationSeconds: body.duration } : {}),
-                        ...(body.ratio ? { aspectRatio: body.ratio } : {}),
-                    },
-                }
-                : {}),
-        },
+        ...(Object.keys(parameters).length ? { parameters } : {}),
     };
 }
 
@@ -51,10 +65,16 @@ function buildGatewayMeta(args: ProviderExecuteArgs) {
     };
 }
 
+function encodeOperationId(operationName: string) {
+    const b64 = btoa(operationName).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    return `gaiop_${b64}`;
+}
+
 function mapGoogleToGatewayVideo(json: any, args: ProviderExecuteArgs, request: VideoGenerationRequest): any {
     const usageSeconds =
         json?.videoMetadata?.durationSeconds ??
         json?.response?.videoMetadata?.durationSeconds ??
+        request.duration_seconds ??
         request.duration ??
         null;
 
@@ -62,10 +82,22 @@ function mapGoogleToGatewayVideo(json: any, args: ProviderExecuteArgs, request: 
         ? { output_video_seconds: usageSeconds }
         : undefined;
 
+    const operationName = json?.name ?? json?.operationName ?? null;
+    const createdAt = Math.floor(Date.now() / 1000);
+
     return {
-        nativeResponseId: json?.responseId ?? json?.id ?? null,
+        id: operationName ? encodeOperationId(operationName) : null,
+        object: "video",
+        status: "queued",
+        created_at: createdAt,
+        model: request.model,
+        ...(typeof usageSeconds === "number" ? { seconds: usageSeconds } : {}),
+        nativeResponseId: operationName ?? json?.responseId ?? json?.id ?? null,
         provider: "google-ai-studio",
-        meta: buildGatewayMeta(args),
+        meta: {
+            ...buildGatewayMeta(args),
+            operation_name: operationName ?? undefined,
+        },
         result: json,
         ...(usage ? { usage } : {}),
     };
@@ -81,7 +113,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     };
     const modelForUrl = args.providerModelSlug || args.model;
     const req = mapGatewayToGoogleVideo(modifiedBody);
-    const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:generateContent?key=${key}`, {
+    const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}:predictLongRunning?key=${key}`, {
         method: "POST",
         headers: baseHeaders(key),
         body: JSON.stringify(req),
@@ -106,3 +138,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     
     return { kind: "completed", upstream: res, bill, normalized, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
 }
+
+
+
+
+
+
+
+
+

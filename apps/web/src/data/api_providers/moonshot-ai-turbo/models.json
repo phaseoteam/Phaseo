@@ -1,10 +1,10 @@
 [
   {
-    "api_model_id": "moonshot-ai/kimi-k2-instruct-0905",
-    "provider_api_model_id": "moonshot-ai-turbo:moonshot-ai/kimi-k2-instruct-0905",
-    "provider_model_slug": null,
+    "api_model_id": "moonshot-ai/kimi-k2-2025-09-05",
+    "provider_api_model_id": "moonshot-ai-turbo:moonshot-ai/kimi-k2-2025-09-05",
+    "provider_model_slug": "kimi-k2-turbo-preview",
     "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -19,11 +19,11 @@
     ]
   },
   {
-    "api_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
-    "provider_api_model_id": "moonshot-ai-turbo:moonshot-ai/kimi-k2-thinking-2025-11-06",
-    "provider_model_slug": null,
+    "api_model_id": "moonshot-ai/kimi-k2-thinking",
+    "provider_api_model_id": "moonshot-ai-turbo:moonshot-ai/kimi-k2-thinking",
+    "provider_model_slug": "kimi-k2-thinking-turbo",
     "internal_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",

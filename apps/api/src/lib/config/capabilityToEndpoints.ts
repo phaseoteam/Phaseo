@@ -1,3 +1,7 @@
+// Purpose: Capability-to-endpoint mapping for the gateway.
+// Why: Keeps capability routing explicit and centralized.
+// How: Exposes lookup helpers used during request normalization.
+
 // Config file mapping capabilities to supported endpoints
 export const capabilityToEndpoints: Record<string, string[]> = {
     "text.generate": ["/chat/completions", "/responses", "/messages"],
@@ -55,3 +59,4 @@ export function resolveCapabilityFromEndpoint(endpoint: string): string {
         : ENDPOINT_TO_PATH[normalized] ?? `/${normalized.replace(/\.+/g, "/")}`;
     return endpointToCapability[path] ?? normalized;
 }
+

@@ -1,6 +1,11 @@
+// Purpose: Core gateway primitives.
+// Why: Shared types/schemas/utilities used across modules.
+// How: Exposes reusable building blocks for the gateway.
+
 export type Endpoint =
     | "chat.completions"
     | "responses"
+    | "messages"
     | "images.generations"
     | "images.edits"
     | "audio.speech"
@@ -28,6 +33,11 @@ export type RequestMeta = {
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
+    edgeColo?: string | null;
+    edgeCity?: string | null;
+    edgeCountry?: string | null;
+    edgeContinent?: string | null;
+    edgeAsn?: number | null;
     requestId: string;
     stream?: boolean;
     debug?: boolean;
@@ -40,8 +50,8 @@ export type RequestMeta = {
     throughput_tps?: number;      // Tokens per second
     generation_ms?: number;       // Provider processing time
     latency_ms?: number;          // End-to-end request time
-    returnUsage?: boolean;        // Should usage block be returned to caller
     returnMeta?: boolean;         // Should meta block be returned to caller
+    providerCapabilitiesBeta?: boolean;
 };
 
 export type ModelId = string;
@@ -89,6 +99,7 @@ export type GatewayCompletionsRequest = {
     stream?: boolean;
     tools?: any[];
     response_format?: { type: 'json_object' };
+    modalities?: Array<"text" | "image">;
 };
 
 export type GatewayCompletionsResponse = {
@@ -164,8 +175,9 @@ export type GatewayUsage = {
 export type GatewayReasoningDetail = {
     id: string;
     index: number;
-    type: "reasoning.summary" | "reasoning.encrypted" | "reasoning.text";
-    reasoning_content: string;
+    type: "summary" | "encrypted" | "text";
+    text?: string; // For type "text" or "summary"
+    data?: string; // For type "encrypted" (base64 encoded)
 };
 
 // // Definitions of subtypes are below
@@ -276,5 +288,6 @@ export type GatewayReasoningDetail = {
 //             name: string;
 //         };
 //     };
+
 
 

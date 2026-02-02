@@ -1,0 +1,339 @@
+{
+  "key": "openai:openai/chatgpt-image-latest:images.generations",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/chatgpt-image-latest",
+  "capability_id": "images.generations",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 5e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1.25e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 8e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "cached_read_image_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 3.2e-05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.009,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "low"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1024"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.013,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "low"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1536"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.013,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "low"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1536x1024"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.034,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "medium"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1024"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "medium"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1536"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "medium"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1536x1024"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.133,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "high"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1024"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "high"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1024x1536"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    },
+    {
+      "meter": "output_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.2,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.quality",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "high"
+        },
+        {
+          "path": "image_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": "1536x1024"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-12-16T00:00:00"
+    }
+  ]
+}

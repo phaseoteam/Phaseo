@@ -3,6 +3,7 @@ import { buildMetadata } from "@/lib/seo";
 import PricingCalculator from "@/components/(tools)/PricingCalculator";
 import { getPricingModelsCached } from "@/lib/fetchers/pricing/getPricingModels";
 import { loadPricingCalculatorSearchParams } from "./search-params";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = buildMetadata({
 	title: "AI Pricing Calculator 2026 - Compare 500+ Models | OpenAI, Anthropic, Google, Meta",
@@ -69,7 +70,8 @@ export default async function PricingCalculatorPage({
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const models = await getPricingModelsCached();
+	const includeHidden = await resolveIncludeHidden();
+	const models = await getPricingModelsCached(includeHidden);
 	const resolvedSearchParams = await searchParams;
 	const parsedParams =
 		loadPricingCalculatorSearchParams(resolvedSearchParams);

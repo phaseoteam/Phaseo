@@ -1,0 +1,33 @@
+---
+title: "Integrations Overview"
+description: "Connect the AI Stats Gateway to popular tools and runtimes."
+---
+
+Most tools can connect to the Gateway by pointing their base URL to the AI Stats API and using an AI Stats API key. The guides below cover common integration patterns and caveats.
+
+## General setup checklist
+
+- Use your AI Stats API key as a Bearer token.
+- Set the base URL to `https://api.phaseo.app/v1`.
+- Pass model ids exactly as listed in the [Models endpoint](/v1/api-reference/endpoint/models).
+- Use `/v1/messages` for Anthropic-compatible clients and `/v1/chat/completions` or `/v1/responses` for OpenAI-compatible clients.
+
+## Integration guides
+
+<Columns cols={2}>
+	<Card title="AI SDK" icon="bolt" href="/v1/guides/integrations/ai-sdk">
+		Use the AI SDK provider wrapper for AI Stats.
+	</Card>
+	<Card title="Claude Code" icon="terminal" href="/v1/guides/integrations/claude-code">
+		Route Claude-compatible workflows through the Gateway.
+	</Card>
+	<Card title="Codex" icon="code" href="/v1/guides/integrations/codex">
+		Connect coding agents to the Gateway.
+	</Card>
+	<Card title="OpenCode" icon="git-branch" href="/v1/guides/integrations/opencode">
+		Use OpenCode with AI Stats routing and analytics.
+	</Card>
+	<Card title="Examples" icon="play" href="/v1/guides/examples">
+		Ready-to-run request examples and payloads.
+	</Card>
+</Columns>

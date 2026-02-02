@@ -1,14 +1,45 @@
 // lib/gateway/after/payload.ts
+// Purpose: After-stage logic for payload shaping, pricing, auditing, and streaming.
+// Why: Keeps post-execution side-effects consistent.
+// How: Encodes IR into protocol-specific client responses.
+
 import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
 import type { GatewayCompletionsChoice } from "@core/types";
 import type { IRChatResponse, IRUsage } from "@core/ir";
+import { encodeAnthropicMessagesResponse } from "@/protocols/anthropic-messages/encode";
 import { shapeUsageForClient } from "../usage";
 
+/**
+ * Enrich the protocol-encoded response with gateway metadata
+ *
+ * IMPORTANT: Uses result.normalized which is already protocol-encoded by encodeProtocol().
+ * This ensures responses always match the requested endpoint format:
+ * - /v1/chat/completions → Chat Completions format
+ * - /v1/responses → Responses API format (built via buildResponsesPayload for completeness)
+ * - /v1/messages → Anthropic Messages format
+ */
 export async function enrichSuccessPayload(ctx: PipelineContext, result: RequestResult) {
-    const basePayload = ctx.endpoint === "responses"
-        ? buildResponsesPayload(ctx, result)
-        : result.normalized;
+    // For Anthropic Messages, return the protocol-encoded payload without gateway-only fields.
+    if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
+        return result.normalized ?? {};
+    }
+    // For Responses API endpoint, use the complete buildResponsesPayload function
+    // which includes ALL required fields (instructions, max_output_tokens, tools, etc.)
+    if (ctx.endpoint === "responses") {
+        const fullPayload = buildResponsesPayload(ctx, result);
+        fullPayload.provider = result.provider;
+        fullPayload.meta = {
+            ...fullPayload.meta,
+        };
+        if (ctx.meta?.echoUpstreamRequest && result.mappedRequest) {
+            fullPayload.upstream_request = result.mappedRequest;
+        }
+        return fullPayload;
+    }
+
+    // For other endpoints, use the protocol-encoded response (from encodeProtocol in pipeline/index.ts)
+    const basePayload = result.normalized;
     const payload: any = basePayload ? structuredClone(basePayload) : {};
 
     // Separate native response ID (from response body) and upstream request ID (from headers)
@@ -39,7 +70,7 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult) {
     const now = Math.floor(Date.now() / 1000);
     const status = raw?.status ?? deriveResponsesStatus(ir);
     const usage = raw?.usage ?? (ir?.usage ? encodeResponsesUsage(ir.usage) : undefined);
-    const output = raw?.output ?? raw?.output_items ?? (ir ? buildResponsesOutput(ir, ctx.requestId) : []);
+    const output = ir ? buildResponsesOutput(ir, ctx.requestId) : (raw?.output ?? raw?.output_items ?? []);
     const resolvedId = ctx.requestId ?? raw?.id ?? (ctx.requestId ? `resp_${ctx.requestId.replace(/^req_/, "")}` : ctx.requestId);
     // Separate native response ID (from response body) and upstream request ID (from headers)
     const nativeResponseId = raw?.id ?? raw?.nativeResponseId ?? null;
@@ -100,7 +131,7 @@ function resolveClientModel(
 }
 
 function deriveResponsesStatus(ir?: IRChatResponse) {
-    const mainChoice = ir?.choices?.find((c) => !c.reasoning) ?? ir?.choices?.[0];
+    const mainChoice = ir?.choices?.[0];
     if (!mainChoice) return "completed";
     if (mainChoice.finishReason === "error") return "failed";
     if (mainChoice.finishReason === "length") return "incomplete";
@@ -151,21 +182,61 @@ function encodeResponsesUsage(usage: IRUsage) {
 function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
     const output: any[] = [];
     ir.choices.forEach((choice, idx) => {
-        const content: any[] = [];
-        if (choice.message.content) {
-            content.push({
-                type: "output_text",
-                text: choice.message.content,
-                annotations: [],
+        // Process content parts - separate reasoning from regular text
+        const reasoningParts = choice.message.content.filter((p) => p.type === "reasoning_text");
+        const textParts = choice.message.content.filter((p) => p.type === "text");
+        const imageParts = choice.message.content.filter((p) => p.type === "image");
+
+        // Add reasoning output items
+        for (const reasoningPart of reasoningParts) {
+            output.push({
+                type: "reasoning",
+                id: `reasoning_${requestId}_${idx}_${output.length}`,
+                status: "completed",
+                content: [
+                    {
+                        type: "output_text",
+                        text: reasoningPart.text,
+                        annotations: [],
+                    },
+                ],
             });
         }
-        output.push({
-            type: "message",
-            id: `msg_${requestId}_${idx}`,
-            status: "completed",
-            role: "assistant",
-            content,
-        });
+
+        // Add message output item with regular text and images
+        if (textParts.length > 0 || imageParts.length > 0) {
+            output.push({
+                type: "message",
+                id: `msg_${requestId}_${idx}`,
+                status: "completed",
+                role: "assistant",
+                content: [
+                    ...textParts.map((p) => ({
+                        type: "output_text",
+                        text: p.text,
+                        annotations: [],
+                    })),
+                    ...imageParts.map((p: any) => {
+                        if (p.source === "data") {
+                            return {
+                                type: "output_image",
+                                b64_json: p.data,
+                                mime_type: p.mimeType,
+                            };
+                        }
+                        return {
+                            type: "output_image",
+                            image_url: {
+                                url: p.data,
+                            },
+                            mime_type: p.mimeType,
+                        };
+                    }),
+                ],
+            });
+        }
+
+        // Add function calls
         if (choice.message.toolCalls && choice.message.toolCalls.length > 0) {
             for (const toolCall of choice.message.toolCalls) {
                 output.push({
@@ -181,14 +252,43 @@ function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
 }
 
 export function extractFinishReason(payload: any): string | null {
-    return Array.isArray(payload?.choices)
-        ? (payload.choices.find((c: any) => typeof c?.finish_reason === "string")?.finish_reason ?? null)
-        : null;
+    // Chat Completions format: choices[].finish_reason
+    if (Array.isArray(payload?.choices)) {
+        return payload.choices.find((c: any) => typeof c?.finish_reason === "string")?.finish_reason ?? null;
+    }
+
+    // Anthropic Messages format: stop_reason at top level
+    if (typeof payload?.stop_reason === "string") {
+        return payload.stop_reason;
+    }
+
+    // Responses API format: status field + output items
+    if (payload?.status) {
+        if (payload.status === "failed") return "error";
+        if (payload.status === "incomplete") {
+            const reason = payload?.incomplete_details?.reason ?? payload?.error?.code ?? null;
+            if (reason && String(reason).toLowerCase().includes("content")) return "content_filter";
+            return "length";
+        }
+        if (payload.status === "completed") {
+            const output = payload?.output ?? payload?.output_items ?? [];
+            if (Array.isArray(output)) {
+                const hasToolCall = output.some((item: any) => {
+                    const type = String(item?.type ?? "").toLowerCase();
+                    return type === "tool_call" || type === "function_call";
+                });
+                if (hasToolCall) return "tool_calls";
+            }
+            return "stop";
+        }
+    }
+
+    return null;
 }
 
-export function presentUsageForClient(usage: any) {
+export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineContext["endpoint"] }) {
     if (!usage || typeof usage !== "object") return usage;
-    const shaped = shapeUsageForClient(usage);
+    const shaped = shapeUsageForClient(usage, { endpoint: ctx?.endpoint });
     const inputTokens = shaped.input_tokens ?? shaped.input_text_tokens ?? shaped.prompt_tokens ?? 0;
     const outputTokens = shaped.output_tokens ?? shaped.output_text_tokens ?? shaped.completion_tokens ?? 0;
     const totalTokens = shaped.total_tokens ?? inputTokens + outputTokens;
@@ -207,6 +307,18 @@ export function presentUsageForClient(usage: any) {
             lines: p.lines ?? [],
         };
     })();
+
+    if (ctx?.endpoint === "chat.completions") {
+        const out: any = {
+            prompt_tokens: inputTokens,
+            completion_tokens: outputTokens,
+            total_tokens: totalTokens,
+        };
+        if (Object.keys(inputDetails).length) out.prompt_tokens_details = inputDetails;
+        if (Object.keys(outputDetails).length) out.completion_tokens_details = outputDetails;
+        if (pricing) out.pricing = pricing;
+        return out;
+    }
 
     const out: any = {
         input_tokens: inputTokens,
@@ -258,28 +370,42 @@ function buildChatCompletionsPayload(
             return toOaiChatChoices(payload.choices);
         }
         if (ir?.choices) {
-            return ir.choices.map((choice) => ({
-                index: choice.index ?? 0,
-                message: {
-                    role: "assistant",
-                    content: choice.message.content,
-                    tool_calls: choice.message.toolCalls?.map((tc) => ({
-                        id: tc.id,
-                        type: "function" as const,
-                        function: {
-                            name: tc.name,
-                            arguments: tc.arguments,
-                        },
-                    })),
-                    refusal: (choice.message as any)?.refusal ?? null,
-                },
-                logprobs: choice.logprobs ?? null,
-                finish_reason: choice.finishReason ?? null,
-            }));
+            return ir.choices.map((choice) => {
+                // Extract text and reasoning content
+                const textParts = choice.message.content.filter((p) => p.type === "text");
+                const reasoningParts = choice.message.content.filter((p) => p.type === "reasoning_text");
+
+                // Combine all text parts for content field
+                const content = textParts.map((p) => p.text).join("");
+
+                // Add reasoning_content if present (for Z.AI compatibility)
+                const reasoningContent = reasoningParts.map((p) => p.text).join("");
+
+                return {
+                    index: choice.index ?? 0,
+                    message: {
+                        role: "assistant",
+                        content,
+                        ...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
+                        tool_calls: choice.message.toolCalls?.map((tc) => ({
+                            id: tc.id,
+                            type: "function" as const,
+                            function: {
+                                name: tc.name,
+                                arguments: tc.arguments,
+                            },
+                        })),
+                        refusal: (choice.message as any)?.refusal ?? null,
+                    },
+                    logprobs: choice.logprobs ?? null,
+                    finish_reason: choice.finishReason ?? null,
+                };
+            });
         }
         return [];
     })();
-    const usage = payload?.usage ?? (ir?.usage ? encodeChatUsage(ir.usage) : undefined);
+    const usageRaw = payload?.usage ?? (ir?.usage ? encodeChatUsage(ir.usage) : undefined);
+    const usage = usageRaw ? presentUsageForClient(usageRaw, { endpoint: "chat.completions" }) : undefined;
 
     const body: any = {
         id: resolvedId,
@@ -306,78 +432,85 @@ function buildAnthropicMessagesPayload(
     ctx: PipelineContext,
     result: RequestResult,
     payload: any,
-    opts: { includeUsage: boolean; includeMeta: boolean; meta?: any }
+    opts: { includeMeta: boolean; meta?: any }
 ) {
+    const ir = result.ir;
+    const encoded = ir
+        ? encodeAnthropicMessagesResponse(ir)
+        : null;
+
     const candidate =
         (payload && payload.type === "message" && payload.role === "assistant") ? payload :
             ((result.rawResponse && (result.rawResponse as any).type === "message" && (result.rawResponse as any).role === "assistant")
                 ? result.rawResponse
                 : null);
 
-    const ir = result.ir;
-    const hasCandidate = candidate && typeof candidate === "object";
-    const candidateClone = hasCandidate ? structuredClone(candidate) : null;
-    if (candidateClone && !opts.includeUsage) {
-        delete (candidateClone as any).usage;
-    }
-
-    const mainChoice = ir?.choices?.find((c) => !c.reasoning) ?? ir?.choices?.[0];
-    const content: any[] = [];
-    if (mainChoice?.message?.content) {
-        content.push({
-            type: "text",
-            text: mainChoice.message.content,
-        });
-    }
-    if (mainChoice?.message?.toolCalls?.length) {
-        for (const tc of mainChoice.message.toolCalls) {
-            content.push({
-                type: "tool_use",
-                id: tc.id,
-                name: tc.name,
-                input: JSON.parse(tc.arguments),
-            });
-        }
-    }
-
-    const usage = opts.includeUsage && ir?.usage
-        ? {
-            input_tokens: ir.usage.inputTokens,
-            output_tokens: ir.usage.outputTokens,
-        }
-        : undefined;
-
-    const resolvedNativeResponseId =
-        payload?.nativeResponseId ??
-        candidateClone?.nativeResponseId ??
-        ir?.nativeId ??
-        ((candidateClone?.id && candidateClone?.id !== ctx.requestId) ? candidateClone.id : null);
-    const resolvedUsage = opts.includeUsage
-        ? (candidateClone?.usage ?? usage)
-        : undefined;
-
-    const response: any = {
+    const base = encoded ?? (candidate ? structuredClone(candidate) : null) ?? {
         id: ctx.requestId,
-        nativeResponseId: resolvedNativeResponseId ?? null,
-        type: candidateClone?.type ?? "message",
-        role: candidateClone?.role ?? "assistant",
-        content: candidateClone?.content ?? content,
-        model: candidateClone?.model ?? ir?.model ?? ctx.model,
-        stop_reason: candidateClone?.stop_reason ?? null,
-        stop_sequence: candidateClone?.stop_sequence ?? null,
-        ...(resolvedUsage ? { usage: resolvedUsage } : {}),
+        type: "message",
+        role: "assistant",
+        content: [],
+        model: ctx.model,
+        stop_reason: null,
+        stop_sequence: null,
     };
-    if (resolvedNativeResponseId == null) {
-        delete response.nativeResponseId;
+
+    if (base && Array.isArray(base.content)) {
+        for (const block of base.content) {
+            if (block?.type === "text" && !("citations" in block)) {
+                block.citations = null;
+            }
+            if (block?.type === "thinking" && !("signature" in block)) {
+                block.signature = "";
+            }
+        }
     }
-    if (opts.includeMeta && opts.meta) {
-        response.meta = opts.meta;
+
+    base.id = base.id ?? ctx.requestId;
+    base.model = base.model ?? ir?.model ?? ctx.model;
+    base.stop_sequence = base.stop_sequence ?? null;
+
+    const usage = base.usage ?? (ir?.usage ? encodeAnthropicMessagesResponse(ir).usage : undefined);
+    base.usage = normalizeAnthropicUsage(usage, ir?.usage);
+
+    delete base.nativeResponseId;
+    delete base.provider;
+    delete base.requestId;
+    delete base.upstreamRequestId;
+    delete base.upstream_request_id;
+    if (!opts.includeMeta) {
+        delete base.meta;
     }
-    delete response.provider;
-    delete response.requestId;
-    delete response.upstreamRequestId;
-    delete response.upstream_request_id;
-    return response;
+
+    return base;
+}
+
+export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
+    const inputTokens = raw?.input_tokens ?? irUsage?.inputTokens ?? 0;
+    const outputTokens = raw?.output_tokens ?? irUsage?.outputTokens ?? 0;
+    const serviceTier = raw?.service_tier ?? (irUsage as any)?.serviceTier ?? null;
+    const resolvedTier =
+        serviceTier === "standard" || serviceTier === "priority" || serviceTier === "batch"
+            ? serviceTier
+            : null;
+    const extras = raw && typeof raw === "object" ? { ...raw } : {};
+    delete extras.cache_creation;
+    delete extras.cache_creation_input_tokens;
+    delete extras.cache_read_input_tokens;
+    delete extras.input_tokens;
+    delete extras.output_tokens;
+    delete extras.server_tool_use;
+    delete extras.service_tier;
+    return {
+        ...extras,
+        cache_creation: raw?.cache_creation ?? null,
+        cache_creation_input_tokens: raw?.cache_creation_input_tokens ?? null,
+        cache_read_input_tokens: raw?.cache_read_input_tokens ?? null,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        server_tool_use: raw?.server_tool_use ?? null,
+        service_tier: resolvedTier,
+    };
 }
 
 function encodeChatUsage(usage: IRUsage) {
@@ -415,11 +548,9 @@ export function formatClientPayload(args: {
     ctx: PipelineContext;
     result: RequestResult;
     payload: any;
-    includeUsage: boolean;
     includeMeta: boolean;
 }) {
-    const { ctx, result, payload, includeUsage, includeMeta } = args;
-    const usage = includeUsage ? presentUsageForClient(payload?.usage) : undefined;
+    const { ctx, result, payload, includeMeta } = args;
     const meta = (() => {
         if (!includeMeta || !payload?.meta) return undefined;
         const clean = { ...payload.meta };
@@ -432,48 +563,65 @@ export function formatClientPayload(args: {
         return clean;
     })();
 
+    const usage = presentUsageForClient(payload?.usage, { endpoint: ctx.endpoint });
+
+    if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
+        const response = buildAnthropicMessagesPayload(ctx, result, payload, {
+            includeMeta,
+            meta,
+        });
+        if (usage) {
+            response.usage = normalizeAnthropicUsage(usage, result.ir?.usage);
+        }
+        return response;
+    }
+
     if (ctx.endpoint === "chat.completions") {
         if (ctx.protocol === "anthropic.messages") {
             return buildAnthropicMessagesPayload(ctx, result, payload, {
-                includeUsage,
                 includeMeta,
                 meta,
             });
         }
         const body = buildChatCompletionsPayload(ctx, result, payload);
-        if (!includeUsage && "usage" in body) delete body.usage;
         if (ctx.meta?.echoUpstreamRequest && payload?.upstream_request) {
             body.upstream_request = payload.upstream_request;
         }
         if (meta) body.meta = meta;
+        if (usage) body.usage = usage;
         return body;
     }
 
     if (ctx.endpoint === "responses") {
-        const {
-            provider,
-            requestId,
-            meta: _m,
-            usage: _u,
-            nativeResponseId: payloadNativeResponseId,
-            id: payloadId,
-            object: payloadObject,
-            ...rest
-        } = payload ?? {};
-        const resolvedId =
-            payloadId ?? requestId ?? ctx.requestId ?? payloadNativeResponseId ?? null;
-        const resolvedNativeResponseId = payloadNativeResponseId ?? null;
-        const body: any = {
-            id: resolvedId,
-            nativeResponseId: resolvedNativeResponseId,
-            object: payloadObject ?? "response",
-            ...rest,
-            ...(usage ? { usage } : {}),
-        };
-        if (resolvedNativeResponseId == null) {
+        // Use buildResponsesPayload to ensure all required OpenAI Responses API fields are present
+        // This is critical for both streaming and non-streaming responses
+        const body = buildResponsesPayload(ctx, result);
+
+        // Override with streamed payload fields if they exist (for streaming responses)
+        // The streamed payload may have accumulated data from SSE chunks
+        if (payload) {
+            Object.assign(body, payload);
+            // Re-apply id resolution to ensure consistency
+            body.id = payload.id ?? body.id;
+            body.nativeResponseId = payload.nativeResponseId ?? body.nativeResponseId;
+        }
+
+        // Handle usage visibility flag
+        if (usage) {
+            body.usage = usage;
+        }
+
+        // Clean up nativeResponseId if null
+        if (body.nativeResponseId == null) {
             delete body.nativeResponseId;
         }
+
+        // Add meta and upstream_request if needed
+        if (ctx.meta?.echoUpstreamRequest && payload?.upstream_request) {
+            body.upstream_request = payload.upstream_request;
+        }
         if (meta) body.meta = meta;
+
         return body;
     }
 
@@ -499,3 +647,13 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return fallback;
 }
+
+
+
+
+
+
+
+
+
+

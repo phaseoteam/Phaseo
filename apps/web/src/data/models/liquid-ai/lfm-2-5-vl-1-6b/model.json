@@ -1,0 +1,17 @@
+{
+  "model_id": "liquid-ai/lfm-2-5-vl-1-6b",
+  "organisation_id": "liquid-ai",
+  "name": "LFM 2.5 VL 1.6B",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

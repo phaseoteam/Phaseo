@@ -74,6 +74,9 @@ class DefaultApi
 
     /** @var string[] $contentTypes **/
     public const contentTypes = [
+        'createAnthropicMessage' => [
+            'application/json',
+        ],
         'createBatch' => [
             'application/json',
         ],
@@ -92,6 +95,12 @@ class DefaultApi
         'createModeration' => [
             'application/json',
         ],
+        'createOcr' => [
+            'application/json',
+        ],
+        'createProvisioningKey' => [
+            'application/json',
+        ],
         'createResponse' => [
             'application/json',
         ],
@@ -107,10 +116,34 @@ class DefaultApi
         'createVideo' => [
             'application/json',
         ],
+        'deleteProvisioningKey' => [
+            'application/json',
+        ],
+        'deleteVideo' => [
+            'application/json',
+        ],
+        'generateMusic' => [
+            'application/json',
+        ],
+        'getActivity' => [
+            'application/json',
+        ],
         'getAnalytics' => [
             'application/json',
         ],
+        'getCredits' => [
+            'application/json',
+        ],
         'getGeneration' => [
+            'application/json',
+        ],
+        'getProvisioningKey' => [
+            'application/json',
+        ],
+        'getVideo' => [
+            'application/json',
+        ],
+        'getVideoContent' => [
             'application/json',
         ],
         'healthz' => [
@@ -122,6 +155,12 @@ class DefaultApi
         'listModels' => [
             'application/json',
         ],
+        'listProviders' => [
+            'application/json',
+        ],
+        'listProvisioningKeys' => [
+            'application/json',
+        ],
         'retrieveBatch' => [
             'application/json',
         ],
@@ -129,6 +168,9 @@ class DefaultApi
             'application/json',
         ],
         'root' => [
+            'application/json',
+        ],
+        'updateProvisioningKey' => [
             'application/json',
         ],
         'uploadFile' => [
@@ -180,6 +222,277 @@ class DefaultApi
     public function getConfig()
     {
         return $this->config;
+    }
+
+    /**
+     * Operation createAnthropicMessage
+     *
+     * Create message
+     *
+     * @param  \AIStats\Sdk\Model\AnthropicMessagesRequest $anthropic_messages_request anthropic_messages_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createAnthropicMessage'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\AnthropicMessagesResponse
+     */
+    public function createAnthropicMessage($anthropic_messages_request, string $contentType = self::contentTypes['createAnthropicMessage'][0])
+    {
+        list($response) = $this->createAnthropicMessageWithHttpInfo($anthropic_messages_request, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation createAnthropicMessageWithHttpInfo
+     *
+     * Create message
+     *
+     * @param  \AIStats\Sdk\Model\AnthropicMessagesRequest $anthropic_messages_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createAnthropicMessage'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\AnthropicMessagesResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function createAnthropicMessageWithHttpInfo($anthropic_messages_request, string $contentType = self::contentTypes['createAnthropicMessage'][0])
+    {
+        $request = $this->createAnthropicMessageRequest($anthropic_messages_request, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\AnthropicMessagesResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\AnthropicMessagesResponse',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\AnthropicMessagesResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation createAnthropicMessageAsync
+     *
+     * Create message
+     *
+     * @param  \AIStats\Sdk\Model\AnthropicMessagesRequest $anthropic_messages_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createAnthropicMessage'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function createAnthropicMessageAsync($anthropic_messages_request, string $contentType = self::contentTypes['createAnthropicMessage'][0])
+    {
+        return $this->createAnthropicMessageAsyncWithHttpInfo($anthropic_messages_request, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation createAnthropicMessageAsyncWithHttpInfo
+     *
+     * Create message
+     *
+     * @param  \AIStats\Sdk\Model\AnthropicMessagesRequest $anthropic_messages_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createAnthropicMessage'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function createAnthropicMessageAsyncWithHttpInfo($anthropic_messages_request, string $contentType = self::contentTypes['createAnthropicMessage'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\AnthropicMessagesResponse';
+        $request = $this->createAnthropicMessageRequest($anthropic_messages_request, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'createAnthropicMessage'
+     *
+     * @param  \AIStats\Sdk\Model\AnthropicMessagesRequest $anthropic_messages_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createAnthropicMessage'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function createAnthropicMessageRequest($anthropic_messages_request, string $contentType = self::contentTypes['createAnthropicMessage'][0])
+    {
+
+        // verify the required parameter 'anthropic_messages_request' is set
+        if ($anthropic_messages_request === null || (is_array($anthropic_messages_request) && count($anthropic_messages_request) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $anthropic_messages_request when calling createAnthropicMessage'
+            );
+        }
+
+
+        $resourcePath = '/messages';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', 'text/event-stream', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (isset($anthropic_messages_request)) {
+            if (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the body
+                $httpBody = \GuzzleHttp\Utils::jsonEncode(ObjectSerializer::sanitizeForSerialization($anthropic_messages_request));
+            } else {
+                $httpBody = $anthropic_messages_request;
+            }
+        } elseif (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'POST',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
     }
 
     /**
@@ -1280,15 +1593,16 @@ class DefaultApi
      * @param  string|null $user user (optional)
      * @param  bool|null $meta meta (optional)
      * @param  bool|null $usage usage (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
      * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
      * @return \AIStats\Sdk\Model\ImagesEditResponse
      */
-    public function createImageEdit($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEdit($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
-        list($response) = $this->createImageEditWithHttpInfo($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $contentType);
+        list($response) = $this->createImageEditWithHttpInfo($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider, $contentType);
         return $response;
     }
 
@@ -1306,15 +1620,16 @@ class DefaultApi
      * @param  string|null $user (optional)
      * @param  bool|null $meta (optional)
      * @param  bool|null $usage (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
      * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
      * @return array of \AIStats\Sdk\Model\ImagesEditResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function createImageEditWithHttpInfo($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEditWithHttpInfo($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
-        $request = $this->createImageEditRequest($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $contentType);
+        $request = $this->createImageEditRequest($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider, $contentType);
 
         try {
             $options = $this->createHttpClientOption();
@@ -1399,14 +1714,15 @@ class DefaultApi
      * @param  string|null $user (optional)
      * @param  bool|null $meta (optional)
      * @param  bool|null $usage (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createImageEditAsync($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEditAsync($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
-        return $this->createImageEditAsyncWithHttpInfo($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $contentType)
+        return $this->createImageEditAsyncWithHttpInfo($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider, $contentType)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -1428,15 +1744,16 @@ class DefaultApi
      * @param  string|null $user (optional)
      * @param  bool|null $meta (optional)
      * @param  bool|null $usage (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createImageEditAsyncWithHttpInfo($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEditAsyncWithHttpInfo($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
         $returnType = '\AIStats\Sdk\Model\ImagesEditResponse';
-        $request = $this->createImageEditRequest($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $contentType);
+        $request = $this->createImageEditRequest($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider, $contentType);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -1486,12 +1803,13 @@ class DefaultApi
      * @param  string|null $user (optional)
      * @param  bool|null $meta (optional)
      * @param  bool|null $usage (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    public function createImageEditRequest($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEditRequest($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
 
         // verify the required parameter 'model' is set
@@ -1528,6 +1846,7 @@ class DefaultApi
 
 
 
+
         $resourcePath = '/images/edits';
         $formParams = [];
         $queryParams = [];
@@ -1551,6 +1870,7 @@ class DefaultApi
             'user' => $user,
             'meta' => $meta,
             'usage' => $usage,
+            'provider' => $provider,
         ]);
 
         $formParams = $formDataProcessor->flatten($formData);
@@ -1834,6 +2154,576 @@ class DefaultApi
                 $httpBody = \GuzzleHttp\Utils::jsonEncode(ObjectSerializer::sanitizeForSerialization($moderations_request));
             } else {
                 $httpBody = $moderations_request;
+            }
+        } elseif (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'POST',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation createOcr
+     *
+     * Create OCR
+     *
+     * @param  \AIStats\Sdk\Model\OcrRequest $ocr_request ocr_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createOcr'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array<string,mixed>
+     */
+    public function createOcr($ocr_request, string $contentType = self::contentTypes['createOcr'][0])
+    {
+        list($response) = $this->createOcrWithHttpInfo($ocr_request, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation createOcrWithHttpInfo
+     *
+     * Create OCR
+     *
+     * @param  \AIStats\Sdk\Model\OcrRequest $ocr_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createOcr'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of array<string,mixed>, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function createOcrWithHttpInfo($ocr_request, string $contentType = self::contentTypes['createOcr'][0])
+    {
+        $request = $this->createOcrRequest($ocr_request, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        'array<string,mixed>',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                'array<string,mixed>',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        'array<string,mixed>',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation createOcrAsync
+     *
+     * Create OCR
+     *
+     * @param  \AIStats\Sdk\Model\OcrRequest $ocr_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createOcr'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function createOcrAsync($ocr_request, string $contentType = self::contentTypes['createOcr'][0])
+    {
+        return $this->createOcrAsyncWithHttpInfo($ocr_request, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation createOcrAsyncWithHttpInfo
+     *
+     * Create OCR
+     *
+     * @param  \AIStats\Sdk\Model\OcrRequest $ocr_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createOcr'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function createOcrAsyncWithHttpInfo($ocr_request, string $contentType = self::contentTypes['createOcr'][0])
+    {
+        $returnType = 'array<string,mixed>';
+        $request = $this->createOcrRequest($ocr_request, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'createOcr'
+     *
+     * @param  \AIStats\Sdk\Model\OcrRequest $ocr_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createOcr'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function createOcrRequest($ocr_request, string $contentType = self::contentTypes['createOcr'][0])
+    {
+
+        // verify the required parameter 'ocr_request' is set
+        if ($ocr_request === null || (is_array($ocr_request) && count($ocr_request) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $ocr_request when calling createOcr'
+            );
+        }
+
+
+        $resourcePath = '/ocr';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (isset($ocr_request)) {
+            if (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the body
+                $httpBody = \GuzzleHttp\Utils::jsonEncode(ObjectSerializer::sanitizeForSerialization($ocr_request));
+            } else {
+                $httpBody = $ocr_request;
+            }
+        } elseif (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'POST',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation createProvisioningKey
+     *
+     * Create provisioning key
+     *
+     * @param  \AIStats\Sdk\Model\CreateProvisioningKeyRequest $create_provisioning_key_request create_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\CreateProvisioningKey201Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse
+     */
+    public function createProvisioningKey($create_provisioning_key_request, string $contentType = self::contentTypes['createProvisioningKey'][0])
+    {
+        list($response) = $this->createProvisioningKeyWithHttpInfo($create_provisioning_key_request, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation createProvisioningKeyWithHttpInfo
+     *
+     * Create provisioning key
+     *
+     * @param  \AIStats\Sdk\Model\CreateProvisioningKeyRequest $create_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\CreateProvisioningKey201Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function createProvisioningKeyWithHttpInfo($create_provisioning_key_request, string $contentType = self::contentTypes['createProvisioningKey'][0])
+    {
+        $request = $this->createProvisioningKeyRequest($create_provisioning_key_request, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 201:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\CreateProvisioningKey201Response',
+                        $request,
+                        $response,
+                    );
+                case 400:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+                case 500:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\CreateProvisioningKey201Response',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 201:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\CreateProvisioningKey201Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 400:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 500:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation createProvisioningKeyAsync
+     *
+     * Create provisioning key
+     *
+     * @param  \AIStats\Sdk\Model\CreateProvisioningKeyRequest $create_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function createProvisioningKeyAsync($create_provisioning_key_request, string $contentType = self::contentTypes['createProvisioningKey'][0])
+    {
+        return $this->createProvisioningKeyAsyncWithHttpInfo($create_provisioning_key_request, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation createProvisioningKeyAsyncWithHttpInfo
+     *
+     * Create provisioning key
+     *
+     * @param  \AIStats\Sdk\Model\CreateProvisioningKeyRequest $create_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function createProvisioningKeyAsyncWithHttpInfo($create_provisioning_key_request, string $contentType = self::contentTypes['createProvisioningKey'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\CreateProvisioningKey201Response';
+        $request = $this->createProvisioningKeyRequest($create_provisioning_key_request, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'createProvisioningKey'
+     *
+     * @param  \AIStats\Sdk\Model\CreateProvisioningKeyRequest $create_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function createProvisioningKeyRequest($create_provisioning_key_request, string $contentType = self::contentTypes['createProvisioningKey'][0])
+    {
+
+        // verify the required parameter 'create_provisioning_key_request' is set
+        if ($create_provisioning_key_request === null || (is_array($create_provisioning_key_request) && count($create_provisioning_key_request) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $create_provisioning_key_request when calling createProvisioningKey'
+            );
+        }
+
+
+        $resourcePath = '/provisioning/keys';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (isset($create_provisioning_key_request)) {
+            if (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the body
+                $httpBody = \GuzzleHttp\Utils::jsonEncode(ObjectSerializer::sanitizeForSerialization($create_provisioning_key_request));
+            } else {
+                $httpBody = $create_provisioning_key_request;
             }
         } elseif (count($formParams) > 0) {
             if ($multipart) {
@@ -2436,15 +3326,16 @@ class DefaultApi
      * @param  string|null $audio_url audio_url (optional)
      * @param  string|null $audio_b64 audio_b64 (optional)
      * @param  string|null $language language (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
      * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
      * @return \AIStats\Sdk\Model\AudioTranscriptionResponse
      */
-    public function createTranscription($model, $audio_url = null, $audio_b64 = null, $language = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscription($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
-        list($response) = $this->createTranscriptionWithHttpInfo($model, $audio_url, $audio_b64, $language, $contentType);
+        list($response) = $this->createTranscriptionWithHttpInfo($model, $audio_url, $audio_b64, $language, $provider, $contentType);
         return $response;
     }
 
@@ -2457,15 +3348,16 @@ class DefaultApi
      * @param  string|null $audio_url (optional)
      * @param  string|null $audio_b64 (optional)
      * @param  string|null $language (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
      * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
      * @return array of \AIStats\Sdk\Model\AudioTranscriptionResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function createTranscriptionWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscriptionWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
-        $request = $this->createTranscriptionRequest($model, $audio_url, $audio_b64, $language, $contentType);
+        $request = $this->createTranscriptionRequest($model, $audio_url, $audio_b64, $language, $provider, $contentType);
 
         try {
             $options = $this->createHttpClientOption();
@@ -2545,14 +3437,15 @@ class DefaultApi
      * @param  string|null $audio_url (optional)
      * @param  string|null $audio_b64 (optional)
      * @param  string|null $language (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createTranscriptionAsync($model, $audio_url = null, $audio_b64 = null, $language = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscriptionAsync($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
-        return $this->createTranscriptionAsyncWithHttpInfo($model, $audio_url, $audio_b64, $language, $contentType)
+        return $this->createTranscriptionAsyncWithHttpInfo($model, $audio_url, $audio_b64, $language, $provider, $contentType)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -2569,15 +3462,16 @@ class DefaultApi
      * @param  string|null $audio_url (optional)
      * @param  string|null $audio_b64 (optional)
      * @param  string|null $language (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createTranscriptionAsyncWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscriptionAsyncWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
         $returnType = '\AIStats\Sdk\Model\AudioTranscriptionResponse';
-        $request = $this->createTranscriptionRequest($model, $audio_url, $audio_b64, $language, $contentType);
+        $request = $this->createTranscriptionRequest($model, $audio_url, $audio_b64, $language, $provider, $contentType);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -2622,12 +3516,13 @@ class DefaultApi
      * @param  string|null $audio_url (optional)
      * @param  string|null $audio_b64 (optional)
      * @param  string|null $language (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    public function createTranscriptionRequest($model, $audio_url = null, $audio_b64 = null, $language = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscriptionRequest($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
 
         // verify the required parameter 'model' is set
@@ -2636,6 +3531,7 @@ class DefaultApi
                 'Missing the required parameter $model when calling createTranscription'
             );
         }
+
 
 
 
@@ -2659,6 +3555,7 @@ class DefaultApi
             'audio_url' => $audio_url,
             'audio_b64' => $audio_b64,
             'language' => $language,
+            'provider' => $provider,
         ]);
 
         $formParams = $formDataProcessor->flatten($formData);
@@ -2733,15 +3630,16 @@ class DefaultApi
      * @param  string|null $language language (optional)
      * @param  string|null $prompt prompt (optional)
      * @param  float|null $temperature temperature (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
      * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
      * @return \AIStats\Sdk\Model\AudioTranslationResponse
      */
-    public function createTranslation($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslation($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
-        list($response) = $this->createTranslationWithHttpInfo($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $contentType);
+        list($response) = $this->createTranslationWithHttpInfo($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider, $contentType);
         return $response;
     }
 
@@ -2756,15 +3654,16 @@ class DefaultApi
      * @param  string|null $language (optional)
      * @param  string|null $prompt (optional)
      * @param  float|null $temperature (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
      * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
      * @return array of \AIStats\Sdk\Model\AudioTranslationResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function createTranslationWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslationWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
-        $request = $this->createTranslationRequest($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $contentType);
+        $request = $this->createTranslationRequest($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider, $contentType);
 
         try {
             $options = $this->createHttpClientOption();
@@ -2846,14 +3745,15 @@ class DefaultApi
      * @param  string|null $language (optional)
      * @param  string|null $prompt (optional)
      * @param  float|null $temperature (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createTranslationAsync($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslationAsync($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
-        return $this->createTranslationAsyncWithHttpInfo($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $contentType)
+        return $this->createTranslationAsyncWithHttpInfo($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider, $contentType)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -2872,15 +3772,16 @@ class DefaultApi
      * @param  string|null $language (optional)
      * @param  string|null $prompt (optional)
      * @param  float|null $temperature (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createTranslationAsyncWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslationAsyncWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
         $returnType = '\AIStats\Sdk\Model\AudioTranslationResponse';
-        $request = $this->createTranslationRequest($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $contentType);
+        $request = $this->createTranslationRequest($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider, $contentType);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -2927,12 +3828,13 @@ class DefaultApi
      * @param  string|null $language (optional)
      * @param  string|null $prompt (optional)
      * @param  float|null $temperature (optional)
+     * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    public function createTranslationRequest($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslationRequest($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
 
         // verify the required parameter 'model' is set
@@ -2954,6 +3856,7 @@ class DefaultApi
         }
         
 
+
         $resourcePath = '/audio/translations';
         $formParams = [];
         $queryParams = [];
@@ -2974,6 +3877,7 @@ class DefaultApi
             'language' => $language,
             'prompt' => $prompt,
             'temperature' => $temperature,
+            'provider' => $provider,
         ]);
 
         $formParams = $formDataProcessor->flatten($formData);
@@ -3309,6 +4213,1210 @@ class DefaultApi
     }
 
     /**
+     * Operation deleteProvisioningKey
+     *
+     * Delete provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\DeleteProvisioningKey200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse
+     */
+    public function deleteProvisioningKey($id, string $contentType = self::contentTypes['deleteProvisioningKey'][0])
+    {
+        list($response) = $this->deleteProvisioningKeyWithHttpInfo($id, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation deleteProvisioningKeyWithHttpInfo
+     *
+     * Delete provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\DeleteProvisioningKey200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function deleteProvisioningKeyWithHttpInfo($id, string $contentType = self::contentTypes['deleteProvisioningKey'][0])
+    {
+        $request = $this->deleteProvisioningKeyRequest($id, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\DeleteProvisioningKey200Response',
+                        $request,
+                        $response,
+                    );
+                case 404:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+                case 500:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\DeleteProvisioningKey200Response',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\DeleteProvisioningKey200Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 404:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 500:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation deleteProvisioningKeyAsync
+     *
+     * Delete provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function deleteProvisioningKeyAsync($id, string $contentType = self::contentTypes['deleteProvisioningKey'][0])
+    {
+        return $this->deleteProvisioningKeyAsyncWithHttpInfo($id, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation deleteProvisioningKeyAsyncWithHttpInfo
+     *
+     * Delete provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function deleteProvisioningKeyAsyncWithHttpInfo($id, string $contentType = self::contentTypes['deleteProvisioningKey'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\DeleteProvisioningKey200Response';
+        $request = $this->deleteProvisioningKeyRequest($id, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'deleteProvisioningKey'
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function deleteProvisioningKeyRequest($id, string $contentType = self::contentTypes['deleteProvisioningKey'][0])
+    {
+
+        // verify the required parameter 'id' is set
+        if ($id === null || (is_array($id) && count($id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $id when calling deleteProvisioningKey'
+            );
+        }
+
+
+        $resourcePath = '/provisioning/keys/{id}';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+        // path params
+        if ($id !== null) {
+            $resourcePath = str_replace(
+                '{' . 'id' . '}',
+                ObjectSerializer::toPathValue($id),
+                $resourcePath
+            );
+        }
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'DELETE',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation deleteVideo
+     *
+     * Delete video
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteVideo'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\VideoDeleteResponse
+     */
+    public function deleteVideo($video_id, string $contentType = self::contentTypes['deleteVideo'][0])
+    {
+        list($response) = $this->deleteVideoWithHttpInfo($video_id, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation deleteVideoWithHttpInfo
+     *
+     * Delete video
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteVideo'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\VideoDeleteResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function deleteVideoWithHttpInfo($video_id, string $contentType = self::contentTypes['deleteVideo'][0])
+    {
+        $request = $this->deleteVideoRequest($video_id, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\VideoDeleteResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\VideoDeleteResponse',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\VideoDeleteResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation deleteVideoAsync
+     *
+     * Delete video
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteVideo'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function deleteVideoAsync($video_id, string $contentType = self::contentTypes['deleteVideo'][0])
+    {
+        return $this->deleteVideoAsyncWithHttpInfo($video_id, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation deleteVideoAsyncWithHttpInfo
+     *
+     * Delete video
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteVideo'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function deleteVideoAsyncWithHttpInfo($video_id, string $contentType = self::contentTypes['deleteVideo'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\VideoDeleteResponse';
+        $request = $this->deleteVideoRequest($video_id, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'deleteVideo'
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['deleteVideo'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function deleteVideoRequest($video_id, string $contentType = self::contentTypes['deleteVideo'][0])
+    {
+
+        // verify the required parameter 'video_id' is set
+        if ($video_id === null || (is_array($video_id) && count($video_id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $video_id when calling deleteVideo'
+            );
+        }
+
+
+        $resourcePath = '/videos/{video_id}';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+        // path params
+        if ($video_id !== null) {
+            $resourcePath = str_replace(
+                '{' . 'video_id' . '}',
+                ObjectSerializer::toPathValue($video_id),
+                $resourcePath
+            );
+        }
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'DELETE',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation generateMusic
+     *
+     * Generate music
+     *
+     * @param  \AIStats\Sdk\Model\MusicGenerateRequest $music_generate_request music_generate_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['generateMusic'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array<string,mixed>
+     */
+    public function generateMusic($music_generate_request, string $contentType = self::contentTypes['generateMusic'][0])
+    {
+        list($response) = $this->generateMusicWithHttpInfo($music_generate_request, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation generateMusicWithHttpInfo
+     *
+     * Generate music
+     *
+     * @param  \AIStats\Sdk\Model\MusicGenerateRequest $music_generate_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['generateMusic'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of array<string,mixed>, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function generateMusicWithHttpInfo($music_generate_request, string $contentType = self::contentTypes['generateMusic'][0])
+    {
+        $request = $this->generateMusicRequest($music_generate_request, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        'array<string,mixed>',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                'array<string,mixed>',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        'array<string,mixed>',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation generateMusicAsync
+     *
+     * Generate music
+     *
+     * @param  \AIStats\Sdk\Model\MusicGenerateRequest $music_generate_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['generateMusic'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function generateMusicAsync($music_generate_request, string $contentType = self::contentTypes['generateMusic'][0])
+    {
+        return $this->generateMusicAsyncWithHttpInfo($music_generate_request, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation generateMusicAsyncWithHttpInfo
+     *
+     * Generate music
+     *
+     * @param  \AIStats\Sdk\Model\MusicGenerateRequest $music_generate_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['generateMusic'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function generateMusicAsyncWithHttpInfo($music_generate_request, string $contentType = self::contentTypes['generateMusic'][0])
+    {
+        $returnType = 'array<string,mixed>';
+        $request = $this->generateMusicRequest($music_generate_request, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'generateMusic'
+     *
+     * @param  \AIStats\Sdk\Model\MusicGenerateRequest $music_generate_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['generateMusic'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function generateMusicRequest($music_generate_request, string $contentType = self::contentTypes['generateMusic'][0])
+    {
+
+        // verify the required parameter 'music_generate_request' is set
+        if ($music_generate_request === null || (is_array($music_generate_request) && count($music_generate_request) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $music_generate_request when calling generateMusic'
+            );
+        }
+
+
+        $resourcePath = '/music/generate';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (isset($music_generate_request)) {
+            if (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the body
+                $httpBody = \GuzzleHttp\Utils::jsonEncode(ObjectSerializer::sanitizeForSerialization($music_generate_request));
+            } else {
+                $httpBody = $music_generate_request;
+            }
+        } elseif (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'POST',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation getActivity
+     *
+     * Get activity
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $days Number of days to look back (optional, default to 30)
+     * @param  int|null $limit Maximum number of records to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getActivity'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\GetActivity200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse
+     */
+    public function getActivity($team_id, $days = 30, $limit = 50, $offset = 0, string $contentType = self::contentTypes['getActivity'][0])
+    {
+        list($response) = $this->getActivityWithHttpInfo($team_id, $days, $limit, $offset, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation getActivityWithHttpInfo
+     *
+     * Get activity
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $days Number of days to look back (optional, default to 30)
+     * @param  int|null $limit Maximum number of records to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getActivity'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\GetActivity200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function getActivityWithHttpInfo($team_id, $days = 30, $limit = 50, $offset = 0, string $contentType = self::contentTypes['getActivity'][0])
+    {
+        $request = $this->getActivityRequest($team_id, $days, $limit, $offset, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\GetActivity200Response',
+                        $request,
+                        $response,
+                    );
+                case 400:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+                case 500:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\GetActivity200Response',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\GetActivity200Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 400:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 500:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation getActivityAsync
+     *
+     * Get activity
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $days Number of days to look back (optional, default to 30)
+     * @param  int|null $limit Maximum number of records to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getActivity'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getActivityAsync($team_id, $days = 30, $limit = 50, $offset = 0, string $contentType = self::contentTypes['getActivity'][0])
+    {
+        return $this->getActivityAsyncWithHttpInfo($team_id, $days, $limit, $offset, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation getActivityAsyncWithHttpInfo
+     *
+     * Get activity
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $days Number of days to look back (optional, default to 30)
+     * @param  int|null $limit Maximum number of records to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getActivity'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getActivityAsyncWithHttpInfo($team_id, $days = 30, $limit = 50, $offset = 0, string $contentType = self::contentTypes['getActivity'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\GetActivity200Response';
+        $request = $this->getActivityRequest($team_id, $days, $limit, $offset, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'getActivity'
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $days Number of days to look back (optional, default to 30)
+     * @param  int|null $limit Maximum number of records to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getActivity'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function getActivityRequest($team_id, $days = 30, $limit = 50, $offset = 0, string $contentType = self::contentTypes['getActivity'][0])
+    {
+
+        // verify the required parameter 'team_id' is set
+        if ($team_id === null || (is_array($team_id) && count($team_id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $team_id when calling getActivity'
+            );
+        }
+
+        if ($days !== null && $days > 90) {
+            throw new \InvalidArgumentException('invalid value for "$days" when calling DefaultApi.getActivity, must be smaller than or equal to 90.');
+        }
+        if ($days !== null && $days < 1) {
+            throw new \InvalidArgumentException('invalid value for "$days" when calling DefaultApi.getActivity, must be bigger than or equal to 1.');
+        }
+        
+        if ($limit !== null && $limit > 250) {
+            throw new \InvalidArgumentException('invalid value for "$limit" when calling DefaultApi.getActivity, must be smaller than or equal to 250.');
+        }
+        if ($limit !== null && $limit < 1) {
+            throw new \InvalidArgumentException('invalid value for "$limit" when calling DefaultApi.getActivity, must be bigger than or equal to 1.');
+        }
+        
+        if ($offset !== null && $offset < 0) {
+            throw new \InvalidArgumentException('invalid value for "$offset" when calling DefaultApi.getActivity, must be bigger than or equal to 0.');
+        }
+        
+
+        $resourcePath = '/activity';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $team_id,
+            'team_id', // param base name
+            'string', // openApiType
+            'form', // style
+            true, // explode
+            true // required
+        ) ?? []);
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $days,
+            'days', // param base name
+            'integer', // openApiType
+            'form', // style
+            true, // explode
+            false // required
+        ) ?? []);
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $limit,
+            'limit', // param base name
+            'integer', // openApiType
+            'form', // style
+            true, // explode
+            false // required
+        ) ?? []);
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $offset,
+            'offset', // param base name
+            'integer', // openApiType
+            'form', // style
+            true, // explode
+            false // required
+        ) ?? []);
+
+
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'GET',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
      * Operation getAnalytics
      *
      * Get analytics
@@ -3580,6 +5688,307 @@ class DefaultApi
     }
 
     /**
+     * Operation getCredits
+     *
+     * Get remaining credits
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getCredits'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\GetCredits200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse
+     */
+    public function getCredits($team_id, string $contentType = self::contentTypes['getCredits'][0])
+    {
+        list($response) = $this->getCreditsWithHttpInfo($team_id, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation getCreditsWithHttpInfo
+     *
+     * Get remaining credits
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getCredits'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\GetCredits200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function getCreditsWithHttpInfo($team_id, string $contentType = self::contentTypes['getCredits'][0])
+    {
+        $request = $this->getCreditsRequest($team_id, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\GetCredits200Response',
+                        $request,
+                        $response,
+                    );
+                case 400:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+                case 500:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\GetCredits200Response',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\GetCredits200Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 400:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 500:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation getCreditsAsync
+     *
+     * Get remaining credits
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getCredits'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getCreditsAsync($team_id, string $contentType = self::contentTypes['getCredits'][0])
+    {
+        return $this->getCreditsAsyncWithHttpInfo($team_id, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation getCreditsAsyncWithHttpInfo
+     *
+     * Get remaining credits
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getCredits'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getCreditsAsyncWithHttpInfo($team_id, string $contentType = self::contentTypes['getCredits'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\GetCredits200Response';
+        $request = $this->getCreditsRequest($team_id, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'getCredits'
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getCredits'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function getCreditsRequest($team_id, string $contentType = self::contentTypes['getCredits'][0])
+    {
+
+        // verify the required parameter 'team_id' is set
+        if ($team_id === null || (is_array($team_id) && count($team_id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $team_id when calling getCredits'
+            );
+        }
+
+
+        $resourcePath = '/credits';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $team_id,
+            'team_id', // param base name
+            'string', // openApiType
+            'form', // style
+            true, // explode
+            true // required
+        ) ?? []);
+
+
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'GET',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
      * Operation getGeneration
      *
      * Get generation
@@ -3825,6 +6234,850 @@ class DefaultApi
 
         $headers = $this->headerSelector->selectHeaders(
             ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'GET',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation getProvisioningKey
+     *
+     * Get provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\GetProvisioningKey200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse
+     */
+    public function getProvisioningKey($id, string $contentType = self::contentTypes['getProvisioningKey'][0])
+    {
+        list($response) = $this->getProvisioningKeyWithHttpInfo($id, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation getProvisioningKeyWithHttpInfo
+     *
+     * Get provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\GetProvisioningKey200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function getProvisioningKeyWithHttpInfo($id, string $contentType = self::contentTypes['getProvisioningKey'][0])
+    {
+        $request = $this->getProvisioningKeyRequest($id, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\GetProvisioningKey200Response',
+                        $request,
+                        $response,
+                    );
+                case 404:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+                case 500:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\GetProvisioningKey200Response',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\GetProvisioningKey200Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 404:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 500:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation getProvisioningKeyAsync
+     *
+     * Get provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getProvisioningKeyAsync($id, string $contentType = self::contentTypes['getProvisioningKey'][0])
+    {
+        return $this->getProvisioningKeyAsyncWithHttpInfo($id, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation getProvisioningKeyAsyncWithHttpInfo
+     *
+     * Get provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getProvisioningKeyAsyncWithHttpInfo($id, string $contentType = self::contentTypes['getProvisioningKey'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\GetProvisioningKey200Response';
+        $request = $this->getProvisioningKeyRequest($id, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'getProvisioningKey'
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function getProvisioningKeyRequest($id, string $contentType = self::contentTypes['getProvisioningKey'][0])
+    {
+
+        // verify the required parameter 'id' is set
+        if ($id === null || (is_array($id) && count($id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $id when calling getProvisioningKey'
+            );
+        }
+
+
+        $resourcePath = '/provisioning/keys/{id}';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+        // path params
+        if ($id !== null) {
+            $resourcePath = str_replace(
+                '{' . 'id' . '}',
+                ObjectSerializer::toPathValue($id),
+                $resourcePath
+            );
+        }
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'GET',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation getVideo
+     *
+     * Get video status
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideo'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\VideoGenerationResponse
+     */
+    public function getVideo($video_id, string $contentType = self::contentTypes['getVideo'][0])
+    {
+        list($response) = $this->getVideoWithHttpInfo($video_id, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation getVideoWithHttpInfo
+     *
+     * Get video status
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideo'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\VideoGenerationResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function getVideoWithHttpInfo($video_id, string $contentType = self::contentTypes['getVideo'][0])
+    {
+        $request = $this->getVideoRequest($video_id, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\VideoGenerationResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\VideoGenerationResponse',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\VideoGenerationResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation getVideoAsync
+     *
+     * Get video status
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideo'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getVideoAsync($video_id, string $contentType = self::contentTypes['getVideo'][0])
+    {
+        return $this->getVideoAsyncWithHttpInfo($video_id, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation getVideoAsyncWithHttpInfo
+     *
+     * Get video status
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideo'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getVideoAsyncWithHttpInfo($video_id, string $contentType = self::contentTypes['getVideo'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\VideoGenerationResponse';
+        $request = $this->getVideoRequest($video_id, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'getVideo'
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideo'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function getVideoRequest($video_id, string $contentType = self::contentTypes['getVideo'][0])
+    {
+
+        // verify the required parameter 'video_id' is set
+        if ($video_id === null || (is_array($video_id) && count($video_id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $video_id when calling getVideo'
+            );
+        }
+
+
+        $resourcePath = '/videos/{video_id}';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+        // path params
+        if ($video_id !== null) {
+            $resourcePath = str_replace(
+                '{' . 'video_id' . '}',
+                ObjectSerializer::toPathValue($video_id),
+                $resourcePath
+            );
+        }
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'GET',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation getVideoContent
+     *
+     * Get video content
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideoContent'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \SplFileObject
+     */
+    public function getVideoContent($video_id, string $contentType = self::contentTypes['getVideoContent'][0])
+    {
+        list($response) = $this->getVideoContentWithHttpInfo($video_id, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation getVideoContentWithHttpInfo
+     *
+     * Get video content
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideoContent'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \SplFileObject, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function getVideoContentWithHttpInfo($video_id, string $contentType = self::contentTypes['getVideoContent'][0])
+    {
+        $request = $this->getVideoContentRequest($video_id, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\SplFileObject',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\SplFileObject',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\SplFileObject',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation getVideoContentAsync
+     *
+     * Get video content
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideoContent'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getVideoContentAsync($video_id, string $contentType = self::contentTypes['getVideoContent'][0])
+    {
+        return $this->getVideoContentAsyncWithHttpInfo($video_id, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation getVideoContentAsyncWithHttpInfo
+     *
+     * Get video content
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideoContent'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function getVideoContentAsyncWithHttpInfo($video_id, string $contentType = self::contentTypes['getVideoContent'][0])
+    {
+        $returnType = '\SplFileObject';
+        $request = $this->getVideoContentRequest($video_id, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'getVideoContent'
+     *
+     * @param  string $video_id The ID of the video generation request. (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['getVideoContent'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function getVideoContentRequest($video_id, string $contentType = self::contentTypes['getVideoContent'][0])
+    {
+
+        // verify the required parameter 'video_id' is set
+        if ($video_id === null || (is_array($video_id) && count($video_id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $video_id when calling getVideoContent'
+            );
+        }
+
+
+        $resourcePath = '/videos/{video_id}/content';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+        // path params
+        if ($video_id !== null) {
+            $resourcePath = str_replace(
+                '{' . 'video_id' . '}',
+                ObjectSerializer::toPathValue($video_id),
+                $resourcePath
+            );
+        }
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/octet-stream', ],
             $contentType,
             $multipart
         );
@@ -4765,6 +8018,648 @@ class DefaultApi
     }
 
     /**
+     * Operation listProviders
+     *
+     * List providers
+     *
+     * @param  int|null $limit Limit the number of results (optional, default to 50)
+     * @param  int|null $offset Offset for pagination (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProviders'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\ListProviders200Response|\AIStats\Sdk\Model\ListModels500Response
+     */
+    public function listProviders($limit = 50, $offset = 0, string $contentType = self::contentTypes['listProviders'][0])
+    {
+        list($response) = $this->listProvidersWithHttpInfo($limit, $offset, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation listProvidersWithHttpInfo
+     *
+     * List providers
+     *
+     * @param  int|null $limit Limit the number of results (optional, default to 50)
+     * @param  int|null $offset Offset for pagination (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProviders'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\ListProviders200Response|\AIStats\Sdk\Model\ListModels500Response, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function listProvidersWithHttpInfo($limit = 50, $offset = 0, string $contentType = self::contentTypes['listProviders'][0])
+    {
+        $request = $this->listProvidersRequest($limit, $offset, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ListProviders200Response',
+                        $request,
+                        $response,
+                    );
+                case 500:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ListModels500Response',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\ListProviders200Response',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ListProviders200Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 500:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ListModels500Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation listProvidersAsync
+     *
+     * List providers
+     *
+     * @param  int|null $limit Limit the number of results (optional, default to 50)
+     * @param  int|null $offset Offset for pagination (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProviders'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function listProvidersAsync($limit = 50, $offset = 0, string $contentType = self::contentTypes['listProviders'][0])
+    {
+        return $this->listProvidersAsyncWithHttpInfo($limit, $offset, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation listProvidersAsyncWithHttpInfo
+     *
+     * List providers
+     *
+     * @param  int|null $limit Limit the number of results (optional, default to 50)
+     * @param  int|null $offset Offset for pagination (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProviders'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function listProvidersAsyncWithHttpInfo($limit = 50, $offset = 0, string $contentType = self::contentTypes['listProviders'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\ListProviders200Response';
+        $request = $this->listProvidersRequest($limit, $offset, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'listProviders'
+     *
+     * @param  int|null $limit Limit the number of results (optional, default to 50)
+     * @param  int|null $offset Offset for pagination (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProviders'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function listProvidersRequest($limit = 50, $offset = 0, string $contentType = self::contentTypes['listProviders'][0])
+    {
+
+        if ($limit !== null && $limit > 250) {
+            throw new \InvalidArgumentException('invalid value for "$limit" when calling DefaultApi.listProviders, must be smaller than or equal to 250.');
+        }
+        if ($limit !== null && $limit < 1) {
+            throw new \InvalidArgumentException('invalid value for "$limit" when calling DefaultApi.listProviders, must be bigger than or equal to 1.');
+        }
+        
+
+
+        $resourcePath = '/providers';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $limit,
+            'limit', // param base name
+            'integer', // openApiType
+            'form', // style
+            true, // explode
+            false // required
+        ) ?? []);
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $offset,
+            'offset', // param base name
+            'integer', // openApiType
+            'form', // style
+            true, // explode
+            false // required
+        ) ?? []);
+
+
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'GET',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation listProvisioningKeys
+     *
+     * List provisioning keys
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $limit Maximum number of keys to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProvisioningKeys'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\ListProvisioningKeys200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse
+     */
+    public function listProvisioningKeys($team_id, $limit = 50, $offset = 0, string $contentType = self::contentTypes['listProvisioningKeys'][0])
+    {
+        list($response) = $this->listProvisioningKeysWithHttpInfo($team_id, $limit, $offset, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation listProvisioningKeysWithHttpInfo
+     *
+     * List provisioning keys
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $limit Maximum number of keys to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProvisioningKeys'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\ListProvisioningKeys200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function listProvisioningKeysWithHttpInfo($team_id, $limit = 50, $offset = 0, string $contentType = self::contentTypes['listProvisioningKeys'][0])
+    {
+        $request = $this->listProvisioningKeysRequest($team_id, $limit, $offset, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ListProvisioningKeys200Response',
+                        $request,
+                        $response,
+                    );
+                case 400:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+                case 500:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\ListProvisioningKeys200Response',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ListProvisioningKeys200Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 400:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 500:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation listProvisioningKeysAsync
+     *
+     * List provisioning keys
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $limit Maximum number of keys to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProvisioningKeys'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function listProvisioningKeysAsync($team_id, $limit = 50, $offset = 0, string $contentType = self::contentTypes['listProvisioningKeys'][0])
+    {
+        return $this->listProvisioningKeysAsyncWithHttpInfo($team_id, $limit, $offset, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation listProvisioningKeysAsyncWithHttpInfo
+     *
+     * List provisioning keys
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $limit Maximum number of keys to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProvisioningKeys'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function listProvisioningKeysAsyncWithHttpInfo($team_id, $limit = 50, $offset = 0, string $contentType = self::contentTypes['listProvisioningKeys'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\ListProvisioningKeys200Response';
+        $request = $this->listProvisioningKeysRequest($team_id, $limit, $offset, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'listProvisioningKeys'
+     *
+     * @param  string $team_id The team ID to query (required)
+     * @param  int|null $limit Maximum number of keys to return (optional, default to 50)
+     * @param  int|null $offset Pagination offset (optional, default to 0)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['listProvisioningKeys'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function listProvisioningKeysRequest($team_id, $limit = 50, $offset = 0, string $contentType = self::contentTypes['listProvisioningKeys'][0])
+    {
+
+        // verify the required parameter 'team_id' is set
+        if ($team_id === null || (is_array($team_id) && count($team_id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $team_id when calling listProvisioningKeys'
+            );
+        }
+
+        if ($limit !== null && $limit > 250) {
+            throw new \InvalidArgumentException('invalid value for "$limit" when calling DefaultApi.listProvisioningKeys, must be smaller than or equal to 250.');
+        }
+        if ($limit !== null && $limit < 1) {
+            throw new \InvalidArgumentException('invalid value for "$limit" when calling DefaultApi.listProvisioningKeys, must be bigger than or equal to 1.');
+        }
+        
+        if ($offset !== null && $offset < 0) {
+            throw new \InvalidArgumentException('invalid value for "$offset" when calling DefaultApi.listProvisioningKeys, must be bigger than or equal to 0.');
+        }
+        
+
+        $resourcePath = '/provisioning/keys';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $team_id,
+            'team_id', // param base name
+            'string', // openApiType
+            'form', // style
+            true, // explode
+            true // required
+        ) ?? []);
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $limit,
+            'limit', // param base name
+            'integer', // openApiType
+            'form', // style
+            true, // explode
+            false // required
+        ) ?? []);
+        // query params
+        $queryParams = array_merge($queryParams, ObjectSerializer::toQueryValue(
+            $offset,
+            'offset', // param base name
+            'integer', // openApiType
+            'form', // style
+            true, // explode
+            false // required
+        ) ?? []);
+
+
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'GET',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
      * Operation retrieveBatch
      *
      * Retrieve batch
@@ -5554,6 +9449,339 @@ class DefaultApi
         $query = ObjectSerializer::buildQuery($queryParams);
         return new Request(
             'GET',
+            $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
+            $headers,
+            $httpBody
+        );
+    }
+
+    /**
+     * Operation updateProvisioningKey
+     *
+     * Update provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  \AIStats\Sdk\Model\UpdateProvisioningKeyRequest $update_provisioning_key_request update_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['updateProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return \AIStats\Sdk\Model\UpdateProvisioningKey200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse
+     */
+    public function updateProvisioningKey($id, $update_provisioning_key_request, string $contentType = self::contentTypes['updateProvisioningKey'][0])
+    {
+        list($response) = $this->updateProvisioningKeyWithHttpInfo($id, $update_provisioning_key_request, $contentType);
+        return $response;
+    }
+
+    /**
+     * Operation updateProvisioningKeyWithHttpInfo
+     *
+     * Update provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  \AIStats\Sdk\Model\UpdateProvisioningKeyRequest $update_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['updateProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
+     * @throws \InvalidArgumentException
+     * @return array of \AIStats\Sdk\Model\UpdateProvisioningKey200Response|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse|\AIStats\Sdk\Model\ErrorResponse, HTTP status code, HTTP response headers (array of strings)
+     */
+    public function updateProvisioningKeyWithHttpInfo($id, $update_provisioning_key_request, string $contentType = self::contentTypes['updateProvisioningKey'][0])
+    {
+        $request = $this->updateProvisioningKeyRequest($id, $update_provisioning_key_request, $contentType);
+
+        try {
+            $options = $this->createHttpClientOption();
+            try {
+                $response = $this->client->send($request, $options);
+            } catch (RequestException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+                    $e->getResponse() ? (string) $e->getResponse()->getBody() : null
+                );
+            } catch (ConnectException $e) {
+                throw new ApiException(
+                    "[{$e->getCode()}] {$e->getMessage()}",
+                    (int) $e->getCode(),
+                    null,
+                    null
+                );
+            }
+
+            $statusCode = $response->getStatusCode();
+
+
+            switch($statusCode) {
+                case 200:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\UpdateProvisioningKey200Response',
+                        $request,
+                        $response,
+                    );
+                case 400:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+                case 404:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+                case 500:
+                    return $this->handleResponseWithDataType(
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $request,
+                        $response,
+                    );
+            }
+
+            
+
+            if ($statusCode < 200 || $statusCode > 299) {
+                throw new ApiException(
+                    sprintf(
+                        '[%d] Error connecting to the API (%s)',
+                        $statusCode,
+                        (string) $request->getUri()
+                    ),
+                    $statusCode,
+                    $response->getHeaders(),
+                    (string) $response->getBody()
+                );
+            }
+
+            return $this->handleResponseWithDataType(
+                '\AIStats\Sdk\Model\UpdateProvisioningKey200Response',
+                $request,
+                $response,
+            );
+        } catch (ApiException $e) {
+            switch ($e->getCode()) {
+                case 200:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\UpdateProvisioningKey200Response',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 400:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 404:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 500:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\AIStats\Sdk\Model\ErrorResponse',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+            }
+        
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Operation updateProvisioningKeyAsync
+     *
+     * Update provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  \AIStats\Sdk\Model\UpdateProvisioningKeyRequest $update_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['updateProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function updateProvisioningKeyAsync($id, $update_provisioning_key_request, string $contentType = self::contentTypes['updateProvisioningKey'][0])
+    {
+        return $this->updateProvisioningKeyAsyncWithHttpInfo($id, $update_provisioning_key_request, $contentType)
+            ->then(
+                function ($response) {
+                    return $response[0];
+                }
+            );
+    }
+
+    /**
+     * Operation updateProvisioningKeyAsyncWithHttpInfo
+     *
+     * Update provisioning key
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  \AIStats\Sdk\Model\UpdateProvisioningKeyRequest $update_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['updateProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Promise\PromiseInterface
+     */
+    public function updateProvisioningKeyAsyncWithHttpInfo($id, $update_provisioning_key_request, string $contentType = self::contentTypes['updateProvisioningKey'][0])
+    {
+        $returnType = '\AIStats\Sdk\Model\UpdateProvisioningKey200Response';
+        $request = $this->updateProvisioningKeyRequest($id, $update_provisioning_key_request, $contentType);
+
+        return $this->client
+            ->sendAsync($request, $this->createHttpClientOption())
+            ->then(
+                function ($response) use ($returnType) {
+                    if ($returnType === '\SplFileObject') {
+                        $content = $response->getBody(); //stream goes to serializer
+                    } else {
+                        $content = (string) $response->getBody();
+                        if ($returnType !== 'string') {
+                            $content = json_decode($content);
+                        }
+                    }
+
+                    return [
+                        ObjectSerializer::deserialize($content, $returnType, []),
+                        $response->getStatusCode(),
+                        $response->getHeaders()
+                    ];
+                },
+                function ($exception) {
+                    $response = $exception->getResponse();
+                    $statusCode = $response->getStatusCode();
+                    throw new ApiException(
+                        sprintf(
+                            '[%d] Error connecting to the API (%s)',
+                            $statusCode,
+                            $exception->getRequest()->getUri()
+                        ),
+                        $statusCode,
+                        $response->getHeaders(),
+                        (string) $response->getBody()
+                    );
+                }
+            );
+    }
+
+    /**
+     * Create request for operation 'updateProvisioningKey'
+     *
+     * @param  string $id The provisioning key ID (required)
+     * @param  \AIStats\Sdk\Model\UpdateProvisioningKeyRequest $update_provisioning_key_request (required)
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['updateProvisioningKey'] to see the possible values for this operation
+     *
+     * @throws \InvalidArgumentException
+     * @return \GuzzleHttp\Psr7\Request
+     */
+    public function updateProvisioningKeyRequest($id, $update_provisioning_key_request, string $contentType = self::contentTypes['updateProvisioningKey'][0])
+    {
+
+        // verify the required parameter 'id' is set
+        if ($id === null || (is_array($id) && count($id) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $id when calling updateProvisioningKey'
+            );
+        }
+
+        // verify the required parameter 'update_provisioning_key_request' is set
+        if ($update_provisioning_key_request === null || (is_array($update_provisioning_key_request) && count($update_provisioning_key_request) === 0)) {
+            throw new \InvalidArgumentException(
+                'Missing the required parameter $update_provisioning_key_request when calling updateProvisioningKey'
+            );
+        }
+
+
+        $resourcePath = '/provisioning/keys/{id}';
+        $formParams = [];
+        $queryParams = [];
+        $headerParams = [];
+        $httpBody = '';
+        $multipart = false;
+
+
+
+        // path params
+        if ($id !== null) {
+            $resourcePath = str_replace(
+                '{' . 'id' . '}',
+                ObjectSerializer::toPathValue($id),
+                $resourcePath
+            );
+        }
+
+
+        $headers = $this->headerSelector->selectHeaders(
+            ['application/json', ],
+            $contentType,
+            $multipart
+        );
+
+        // for model (json/xml)
+        if (isset($update_provisioning_key_request)) {
+            if (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the body
+                $httpBody = \GuzzleHttp\Utils::jsonEncode(ObjectSerializer::sanitizeForSerialization($update_provisioning_key_request));
+            } else {
+                $httpBody = $update_provisioning_key_request;
+            }
+        } elseif (count($formParams) > 0) {
+            if ($multipart) {
+                $multipartContents = [];
+                foreach ($formParams as $formParamName => $formParamValue) {
+                    $formParamValueItems = is_array($formParamValue) ? $formParamValue : [$formParamValue];
+                    foreach ($formParamValueItems as $formParamValueItem) {
+                        $multipartContents[] = [
+                            'name' => $formParamName,
+                            'contents' => $formParamValueItem
+                        ];
+                    }
+                }
+                // for HTTP post (form)
+                $httpBody = new MultipartStream($multipartContents);
+
+            } elseif (stripos($headers['Content-Type'], 'application/json') !== false) {
+                # if Content-Type contains "application/json", json_encode the form parameters
+                $httpBody = \GuzzleHttp\Utils::jsonEncode($formParams);
+            } else {
+                // for HTTP post (form)
+                $httpBody = ObjectSerializer::buildQuery($formParams);
+            }
+        }
+
+        // this endpoint requires Bearer authentication (access token)
+        if (!empty($this->config->getAccessToken())) {
+            $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+        }
+
+        $defaultHeaders = [];
+        if ($this->config->getUserAgent()) {
+            $defaultHeaders['User-Agent'] = $this->config->getUserAgent();
+        }
+
+        $headers = array_merge(
+            $defaultHeaders,
+            $headerParams,
+            $headers
+        );
+
+        $operationHost = $this->config->getHost();
+        $query = ObjectSerializer::buildQuery($queryParams);
+        return new Request(
+            'PATCH',
             $operationHost . $resourcePath . ($query ? "?{$query}" : ''),
             $headers,
             $httpBody

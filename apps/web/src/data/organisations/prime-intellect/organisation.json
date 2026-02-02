@@ -4,5 +4,30 @@
   "country_code": "US",
   "description": "Prime Intellect is a decentralised AI research and infrastructure organisation focused on training open models using distributed compute.",
   "colour": "#1C1C1C",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://www.primeintellect.ai"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/PrimeIntellect"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/primeintellect/"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/PrimeIntellect-ai"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/PrimeIntellect"
+    },
+    {
+      "platform": "discord",
+      "url": "https://discord.gg/primeintellect"
+    }
+  ]
 }

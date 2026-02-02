@@ -178,7 +178,7 @@ export function ReliabilitySection({ metrics }: ReliabilitySectionProps) {
 					<CardHeader className="space-y-2">
 						<CardTitle className="flex items-center gap-2 text-base">
 							<BarChart3 className="h-4 w-4 text-slate-500 dark:text-slate-300" />
-							Conduit tokens per hour (24h)
+							Gateway tokens per hour (24h)
 						</CardTitle>
 						<p className="text-sm text-slate-600 dark:text-slate-400">
 							Healthy token volume and stability driven by

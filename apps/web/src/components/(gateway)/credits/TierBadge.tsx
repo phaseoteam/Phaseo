@@ -47,7 +47,7 @@ export function TierBadge({
 						variant="secondary"
 						className="flex items-center gap-1 rounded-full bg-white/70 px-2 py-0 text-[11px] text-indigo-800 shadow-sm dark:bg-zinc-900/70 dark:text-indigo-200"
 					>
-						{feePct.toFixed(2)}%
+						{feePct.toFixed(1)}%
 						<ArrowUpRight className="h-3 w-3" aria-hidden />
 					</Badge>
 				</Link>
@@ -60,9 +60,9 @@ export function TierBadge({
 							Current tier: {tierName}
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Conduit fee: {feePct.toFixed(2)}%{" "}
+							Gateway fee: {feePct.toFixed(1)}%{" "}
 							{hasSavings
-								? `(saved ${savingsPoints.toFixed(2)} pts vs Level 0)`
+								? `(save ${savingsPoints.toFixed(1)}% vs Basic)`
 								: ""}
 						</div>
 					</div>
@@ -78,23 +78,21 @@ export function TierBadge({
 
 					{topTier ? (
 						<p className="text-xs text-muted-foreground">
-							You've unlocked the highest discount. Reach out if you
-							need bespoke pricing or dedicated support.
+							You're on Enterprise tier with the lowest fee. Reach out if you
+							need custom pricing or dedicated support.
 						</p>
 					) : (
 						<>
 							{nextTierName && remainingFormatted && (
 								<p className="text-xs text-muted-foreground">
-									Spend {remainingFormatted} more this UTC month to
-									start next month at {nextTierName}
+									Spend {remainingFormatted} more this month to
+									unlock {nextTierName} tier next month
 									{nextFeePct !== undefined && nextFeePct !== null ? (
 										<>
 											{" "}
-											({nextFeePct.toFixed(2)}%
+											({nextFeePct.toFixed(1)}% fee
 											{nextDiscountDelta
-												? `, ${nextDiscountDelta.toFixed(
-														2
-												  )} pts lower`
+												? `, save ${nextDiscountDelta.toFixed(1)}%`
 												: ""}
 											)
 										</>
@@ -106,7 +104,7 @@ export function TierBadge({
 					)}
 
 					<p className="text-xs text-muted-foreground">
-						Click to view the full tier ladder and discount details.
+						Click to view tier details and savings.
 					</p>
 				</div>
 			</HoverCardContent>

@@ -4,15 +4,16 @@ import { buildMetadata } from "@/lib/seo";
 import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { getModelAvailabilityCached } from "@/lib/fetchers/models/getModelAvailability";
 import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 import ModelAvailability from "@/components/(data)/model/ModelAvailability";
 import {
 	getModelIdFromParams,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 
-async function fetchModel(modelId: string) {
+async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
-		return await getModelOverviewCached(modelId);
+		return await getModelOverviewCached(modelId, includeHidden);
 	} catch (error) {
 		console.warn("[seo] failed to load model overview for metadata", {
 			modelId,
@@ -27,7 +28,8 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
-	const model = await fetchModel(modelId);
+	const includeHidden = await resolveIncludeHidden();
+	const model = await fetchModel(modelId, includeHidden);
 	const path = `/models/${modelId}/availability`;
 	const imagePath = `/og/models/${modelId}`;
 
@@ -82,12 +84,15 @@ export default async function Page({
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 
-	const model = await getModelOverviewCached(modelId);
-	const availability = await getModelAvailabilityCached(modelId);
-	const subscriptionPlans = await getModelSubscriptionPlansCached(modelId);
+	// Resolve includeHidden outside of cached functions to avoid using cookies() in cache scope
+	const includeHidden = await resolveIncludeHidden();
+
+	const model = await getModelOverviewCached(modelId, includeHidden);
+	const availability = await getModelAvailabilityCached(modelId, includeHidden);
+	const subscriptionPlans = await getModelSubscriptionPlansCached(modelId, includeHidden);
 
 	return (
-		<ModelDetailShell modelId={modelId} tab="availability">
+		<ModelDetailShell modelId={modelId} tab="availability" includeHidden={includeHidden}>
 			<ModelAvailability
 				availability={availability}
 				subscriptionPlans={subscriptionPlans}

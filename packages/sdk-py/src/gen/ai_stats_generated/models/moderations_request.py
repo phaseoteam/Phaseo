@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from ai_stats_generated.models.moderations_request_input import ModerationsRequestInput
+from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -30,7 +31,8 @@ class ModerationsRequest(BaseModel):
     model: StrictStr
     meta: Optional[StrictBool] = False
     input: ModerationsRequestInput
-    __properties: ClassVar[List[str]] = ["model", "meta", "input"]
+    provider: Optional[ProviderRoutingOptions] = None
+    __properties: ClassVar[List[str]] = ["model", "meta", "input", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -74,6 +76,9 @@ class ModerationsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of input
         if self.input:
             _dict['input'] = self.input.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of provider
+        if self.provider:
+            _dict['provider'] = self.provider.to_dict()
         return _dict
 
     @classmethod
@@ -88,7 +93,8 @@ class ModerationsRequest(BaseModel):
         _obj = cls.model_validate({
             "model": obj.get("model"),
             "meta": obj.get("meta") if obj.get("meta") is not None else False,
-            "input": ModerationsRequestInput.from_dict(obj["input"]) if obj.get("input") is not None else None
+            "input": ModerationsRequestInput.from_dict(obj["input"]) if obj.get("input") is not None else None,
+            "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj
 

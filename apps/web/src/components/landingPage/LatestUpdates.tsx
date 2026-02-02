@@ -8,13 +8,15 @@ import { getLatestUpdateCards } from "@/lib/fetchers/updates/getLatestUpdates";
 import { ArrowUpRight } from "lucide-react";
 import getRecentModelUpdates from "@/lib/fetchers/updates/getModelUpdates";
 import { getLatestModelUpdateCards } from "@/lib/fetchers/updates/getLatestModelUpdates";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 const CARD_LIMIT = 4;
 
 export default async function LatestUpdates() {
+	const includeHidden = await resolveIncludeHidden();
 	// Fetch model and watcher (other) updates in parallel
 	const [modelCards, watcherCards] = await Promise.all([
-		getLatestModelUpdateCards(CARD_LIMIT),
+		getLatestModelUpdateCards(CARD_LIMIT, includeHidden),
 		getLatestUpdateCards(CARD_LIMIT),
 	]);
 

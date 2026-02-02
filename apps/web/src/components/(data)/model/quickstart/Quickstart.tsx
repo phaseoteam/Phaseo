@@ -109,7 +109,7 @@ function buildExamplePayload(
                         return {
                                 model,
                                 voice: "alloy",
-                                input: "Welcome to the AI Stats Conduit where latency, uptime, and pricing are in your control.",
+                                input: "Welcome to the AI Stats Gateway where latency, uptime, and pricing are in your control.",
                                 format: "mp3",
                         };
                 case "audio.realtime":

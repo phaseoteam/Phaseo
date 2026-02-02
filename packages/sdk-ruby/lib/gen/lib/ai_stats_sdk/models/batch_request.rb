@@ -23,13 +23,16 @@ module AIStatsSdk
 
     attr_accessor :metadata
 
+    attr_accessor :provider
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'input_file_id' => :'input_file_id',
         :'endpoint' => :'endpoint',
         :'completion_window' => :'completion_window',
-        :'metadata' => :'metadata'
+        :'metadata' => :'metadata',
+        :'provider' => :'provider'
       }
     end
 
@@ -49,7 +52,8 @@ module AIStatsSdk
         :'input_file_id' => :'String',
         :'endpoint' => :'String',
         :'completion_window' => :'String',
-        :'metadata' => :'Object'
+        :'metadata' => :'Object',
+        :'provider' => :'ProviderRoutingOptions'
       }
     end
 
@@ -93,6 +97,10 @@ module AIStatsSdk
 
       if attributes.key?(:'metadata')
         self.metadata = attributes[:'metadata']
+      end
+
+      if attributes.key?(:'provider')
+        self.provider = attributes[:'provider']
       end
     end
 
@@ -149,7 +157,8 @@ module AIStatsSdk
           input_file_id == o.input_file_id &&
           endpoint == o.endpoint &&
           completion_window == o.completion_window &&
-          metadata == o.metadata
+          metadata == o.metadata &&
+          provider == o.provider
     end
 
     # @see the `==` method
@@ -161,7 +170,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [input_file_id, endpoint, completion_window, metadata].hash
+      [input_file_id, endpoint, completion_window, metadata, provider].hash
     end
 
     # Builds the object from hash

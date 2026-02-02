@@ -19,7 +19,7 @@ Adopting the Gateway across production workloads is straightforward when you est
 
 -   Store API keys in secret managers (AWS Secrets Manager, Doppler, 1Password) instead of `.env` files in production.
 -   Enable request signing on your own APIs so client applications never expose Gateway keys.
--   Log only truncated keys (for example `sk_prod_abcd…`) to avoid leaking credentials.
+-   Log only truncated keys (for example `sk_prod_abcd...`) to avoid leaking credentials.
 
 ---
 
@@ -46,7 +46,7 @@ Adopting the Gateway across production workloads is straightforward when you est
 
 -   Document prompt templates, input parameters, and output handling in your internal wiki.
 -   Share dashboards that highlight benchmark movements and how they affect your product.
--   Encourage regular reviews with product, research, and support teams to keep behaviour aligned.
+-   Encourage regular reviews with product, research, and support teams to keep behavior aligned.
 
 ---
 
@@ -54,4 +54,4 @@ Adopting the Gateway across production workloads is straightforward when you est
 
 -   Learn how to [Handle errors](./error-handling) gracefully.
 -   Explore [Rate limits](./rate-limits) to plan for scaling.
--   Check our [Examples](./examples) for reference implementations.
+-   See [Examples](../guides/examples) for reference implementations.

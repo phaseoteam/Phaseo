@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/utils/supabase/client";
+import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
 export interface PricingMeter {
     meter: string;
@@ -49,7 +50,9 @@ const parseModelKey = (modelKey: string) => {
 /**
  * Fetch all models that have pricing rules configured, grouped by provider/model/endpoint
  */
-export default async function getPricingModels(): Promise<PricingModel[]> {
+export default async function getPricingModels(
+    includeHidden: boolean
+): Promise<PricingModel[]> {
     const supabase = await createClient();
     const nowIso = new Date().toISOString();
 
@@ -94,16 +97,23 @@ export default async function getPricingModels(): Promise<PricingModel[]> {
     }
 
     const modelNameMap = new Map<string, string>();
+    const visibleInternalIds = new Set<string>();
     const internalIds = Array.from(
         new Set((providerModels ?? []).map((row) => row.internal_model_id).filter(Boolean))
     );
     if (internalIds.length) {
-        const { data: models } = await supabase
-            .from("data_models")
-            .select("model_id, name")
-            .in("model_id", internalIds);
+        const { data: models } = await applyHiddenFilter(
+            supabase
+                .from("data_models")
+                .select("model_id, name, hidden")
+                .in("model_id", internalIds),
+            includeHidden
+        );
         for (const model of models ?? []) {
-            if (model.model_id && model.name) modelNameMap.set(model.model_id, model.name);
+            if (model.model_id) {
+                visibleInternalIds.add(model.model_id);
+                if (model.name) modelNameMap.set(model.model_id, model.name);
+            }
         }
     }
 
@@ -132,6 +142,9 @@ export default async function getPricingModels(): Promise<PricingModel[]> {
         const comboKey = `${parsed.provider_id}:${parsed.api_model_id}:${rule.capability_id}`;
         const combo = comboMap.get(comboKey);
         if (!combo) continue;
+        if (!includeHidden && combo.internal_model_id && !visibleInternalIds.has(combo.internal_model_id)) {
+            continue;
+        }
         const modelId = combo.internal_model_id ?? parsed.api_model_id;
         const key = `${parsed.provider_id}:${modelId}:${rule.capability_id}:${rule.pricing_plan || "standard"}`;
 
@@ -174,7 +187,9 @@ export default async function getPricingModels(): Promise<PricingModel[]> {
 /**
  * Cached version of getPricingModels.
  */
-export async function getPricingModelsCached(): Promise<PricingModel[]> {
+export async function getPricingModelsCached(
+    includeHidden: boolean
+): Promise<PricingModel[]> {
     "use cache";
 
     cacheLife("hours"); // Cache for shorter time since pricing can change
@@ -182,5 +197,5 @@ export async function getPricingModelsCached(): Promise<PricingModel[]> {
     cacheTag("data:data_api_provider_models");
     cacheTag("data:models");
 
-    return getPricingModels();
+    return getPricingModels(includeHidden);
 }

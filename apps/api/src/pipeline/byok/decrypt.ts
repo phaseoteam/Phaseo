@@ -1,4 +1,8 @@
 // file: lib/byok/decrypt.ts
+// Purpose: BYOK helpers for decrypting and managing user-provided keys.
+// Why: Keeps key handling isolated and secure.
+// How: Exposes focused helpers for this module.
+
 import { getByokKey } from '../../../runtime/env';
 
 const te = new TextEncoder();
@@ -296,3 +300,12 @@ export async function decryptBYOK(row: {
 export function bytesToString(u8: Uint8Array): string {
     return td.decode(u8);
 }
+
+
+
+
+
+
+
+
+

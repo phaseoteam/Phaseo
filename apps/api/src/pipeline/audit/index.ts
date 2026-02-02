@@ -1,7 +1,12 @@
 // src/lib/gateway/audit/index.ts
+// Purpose: Persist audits and send analytics events.
+// Why: Ensures observability for every request.
+// How: Builds audit rows and ships them to Supabase/Axiom with retries.
+
 import { getBindings, getSupabaseAdmin, ensureRuntimeForBackground } from "@/runtime/env";
 import { sendAxiomEvent } from "./axiom";
 import { ensureAppId } from "../after/apps";
+import { normalizeFinishReason } from "./normalize-finish-reason";
 import type { Endpoint } from "@core/types";
 
 function supaAdmin() {
@@ -32,11 +37,11 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, label: string, attempts
     throw finalErr;
 }
 
-async function upsertGatewayRequest(row: any) {
+async function insertGatewayRequest(row: any) {
     const client = supaAdmin();
-    const { error } = await client.from("gateway_requests").upsert(row, { onConflict: "team_id,request_id" });
+    const { error } = await client.from("gateway_requests").insert(row);
     if (error) {
-        const err = new Error(`[audit] upsert gateway_requests error: ${error?.message ?? "unknown"}`);
+        const err = new Error(`[audit] insert gateway_requests error: ${error?.message ?? "unknown"}`);
         (err as any).cause = error;
         throw err;
     }
@@ -53,6 +58,12 @@ function buildSupaRow(args: {
     latencyMs?: number | null; generationMs?: number | null;
     usage?: any | null; costNanos?: number | null; currency?: string | null;
     pricingLines?: any[] | null; throughput?: number | null;
+    finishReason?: string | null;
+    edgeColo?: string | null;
+    edgeCity?: string | null;
+    edgeCountry?: string | null;
+    edgeContinent?: string | null;
+    edgeAsn?: number | null;
 }) {
     return {
         request_id: args.requestId,
@@ -76,6 +87,8 @@ function buildSupaRow(args: {
         pricing_lines: Array.isArray(args.pricingLines) ? args.pricingLines : [],
         key_id: args.keyId ?? null,
         throughput: args.throughput ?? null,
+        finish_reason: args.finishReason ?? null,
+        location: args.edgeColo ?? null,
     };
 }
 
@@ -99,12 +112,22 @@ export async function auditSuccess(args: {
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
+    edgeColo?: string | null;
+    edgeCity?: string | null;
+    edgeCountry?: string | null;
+    edgeContinent?: string | null;
+    edgeAsn?: number | null;
     generationMs?: number | null; latencyMs?: number | null;
     internalLatencyMs?: number | null;
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
     extraJson?: string | null;
+    // Wide event enrichment
+    teamEnrichment?: any | null;
+    keyEnrichment?: any | null;
+    requestEnrichment?: any | null;
+    routingContext?: any | null;
 }) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -134,11 +157,17 @@ export async function auditSuccess(args: {
             currency: args.currency,
             pricingLines,
             throughput: args.throughput ?? null,
+            edgeColo: args.edgeColo ?? null,
+            edgeCity: args.edgeCity ?? null,
+            edgeCountry: args.edgeCountry ?? null,
+            edgeContinent: args.edgeContinent ?? null,
+            edgeAsn: args.edgeAsn ?? null,
+            finishReason: args.finishReason ?? null,
         });
 
         let supabaseError: Error | null = null;
         try {
-            await retryWithBackoff(() => upsertGatewayRequest(row), "supabase_audit_success_upsert");
+            await retryWithBackoff(() => insertGatewayRequest(row), "supabase_audit_success_insert");
         } catch (err) {
             supabaseError = err instanceof Error ? err : new Error(String(err));
         }
@@ -147,6 +176,7 @@ export async function auditSuccess(args: {
             await retryWithBackoff(() => sendAxiomEvent({
                 requestId: args.requestId,
                 teamId: args.teamId,
+                keyId: args.keyId ?? null,
                 provider: args.provider,
                 model: args.model,
                 endpoint: args.endpoint,
@@ -161,6 +191,11 @@ export async function auditSuccess(args: {
                 userAgent: args.userAgent ?? null,
                 clientIp: args.clientIp ?? null,
                 cfRay: args.cfRay ?? null,
+                edgeColo: args.edgeColo ?? null,
+                edgeCity: args.edgeCity ?? null,
+                edgeCountry: args.edgeCountry ?? null,
+                edgeContinent: args.edgeContinent ?? null,
+                edgeAsn: args.edgeAsn ?? null,
                 nativeResponseId: args.nativeResponseId ?? null,
                 statusCode: args.statusCode,
                 success: true,
@@ -183,6 +218,11 @@ export async function auditSuccess(args: {
                 env: bindings.NODE_ENV ?? null,
                 apiVersion: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,
                 extraJson: args.extraJson ?? null,
+                // Wide event enrichment (loggingsucks.com pattern)
+                teamEnrichment: args.teamEnrichment ?? null,
+                keyEnrichment: args.keyEnrichment ?? null,
+                requestEnrichment: args.requestEnrichment ?? null,
+                routingContext: args.routingContext ?? null,
             }), "axiom_audit_success_ingest");
         } catch (err) {
             console.error("[audit] Axiom ingest failed (non-blocking)", err);
@@ -215,6 +255,11 @@ type AuditFailureBefore = {
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
+    edgeColo?: string | null;
+    edgeCity?: string | null;
+    edgeCountry?: string | null;
+    edgeContinent?: string | null;
+    edgeAsn?: number | null;
     extraJson?: string | null;
 };
 type AuditFailureExecute = {
@@ -240,6 +285,11 @@ type AuditFailureExecute = {
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
+    edgeColo?: string | null;
+    edgeCity?: string | null;
+    edgeCountry?: string | null;
+    edgeContinent?: string | null;
+    edgeAsn?: number | null;
     extraJson?: string | null;
 };
 
@@ -248,7 +298,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
     try {
         const bindings = getBindings();
         const runSupabase = async (row: any, label: string) => {
-            await retryWithBackoff(() => upsertGatewayRequest(row), label);
+            await retryWithBackoff(() => insertGatewayRequest(row), label);
         };
         const runAxiom = async (payload: Parameters<typeof sendAxiomEvent>[0], label: string) => {
             try {
@@ -271,19 +321,24 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 statusCode: args.statusCode,
                 success: false,
                 errorCode: args.errorCode,
-                errorMessage: args.errorMessage ?? null,
-                latencyMs: args.latencyMs ?? null,
-                generationMs: null,
-                usage: {},
-                currency: null,
-                pricingLines: [],
-                keyId: args.keyId ?? null,
-            });
+            errorMessage: args.errorMessage ?? null,
+            latencyMs: args.latencyMs ?? null,
+            generationMs: null,
+            usage: {},
+            currency: null,
+            pricingLines: [],
+            keyId: args.keyId ?? null,
+            edgeColo: args.edgeColo ?? null,
+            edgeCity: args.edgeCity ?? null,
+            edgeCountry: args.edgeCountry ?? null,
+            edgeContinent: args.edgeContinent ?? null,
+            edgeAsn: args.edgeAsn ?? null,
+        });
 
             let supabaseError: Error | null = null;
             if (args.teamId) {
                 try {
-                    await runSupabase(row, "supabase_audit_failure_before_upsert");
+                    await runSupabase(row, "supabase_audit_failure_before_insert");
                 } catch (err) {
                     supabaseError = err instanceof Error ? err : new Error(String(err));
                 }
@@ -306,6 +361,11 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 userAgent: args.userAgent ?? null,
                 clientIp: args.clientIp ?? null,
                 cfRay: args.cfRay ?? null,
+                edgeColo: args.edgeColo ?? null,
+                edgeCity: args.edgeCity ?? null,
+                edgeCountry: args.edgeCountry ?? null,
+                edgeContinent: args.edgeContinent ?? null,
+                edgeAsn: args.edgeAsn ?? null,
                 nativeResponseId: null,
                 statusCode: args.statusCode,
                 success: false,
@@ -347,12 +407,17 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             currency: null,
             pricingLines: [],
             keyId: args.keyId ?? null,
+            edgeColo: args.edgeColo ?? null,
+            edgeCity: args.edgeCity ?? null,
+            edgeCountry: args.edgeCountry ?? null,
+            edgeContinent: args.edgeContinent ?? null,
+            edgeAsn: args.edgeAsn ?? null,
         });
 
         let supabaseError: Error | null = null;
         if (args.teamId) {
             try {
-                await runSupabase(row, "supabase_audit_failure_execute_upsert");
+                await runSupabase(row, "supabase_audit_failure_execute_insert");
             } catch (err) {
                 supabaseError = err instanceof Error ? err : new Error(String(err));
             }
@@ -375,6 +440,11 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             userAgent: args.userAgent ?? null,
             clientIp: args.clientIp ?? null,
             cfRay: args.cfRay ?? null,
+            edgeColo: args.edgeColo ?? null,
+            edgeCity: args.edgeCity ?? null,
+            edgeCountry: args.edgeCountry ?? null,
+            edgeContinent: args.edgeContinent ?? null,
+            edgeAsn: args.edgeAsn ?? null,
             nativeResponseId: null,
             statusCode: args.statusCode,
             success: false,
@@ -397,3 +467,13 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         releaseRuntime();
     }
 }
+
+
+
+
+
+
+
+
+
+

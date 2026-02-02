@@ -60,7 +60,8 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'model' => 'string',
         'input' => 'string',
         'voice' => 'string',
-        'format' => 'string'
+        'format' => 'string',
+        'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
     /**
@@ -74,7 +75,8 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'model' => null,
         'input' => null,
         'voice' => null,
-        'format' => null
+        'format' => null,
+        'provider' => null
     ];
 
     /**
@@ -86,7 +88,8 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'model' => false,
         'input' => false,
         'voice' => false,
-        'format' => false
+        'format' => false,
+        'provider' => false
     ];
 
     /**
@@ -178,7 +181,8 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'model' => 'model',
         'input' => 'input',
         'voice' => 'voice',
-        'format' => 'format'
+        'format' => 'format',
+        'provider' => 'provider'
     ];
 
     /**
@@ -190,7 +194,8 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'model' => 'setModel',
         'input' => 'setInput',
         'voice' => 'setVoice',
-        'format' => 'setFormat'
+        'format' => 'setFormat',
+        'provider' => 'setProvider'
     ];
 
     /**
@@ -202,7 +207,8 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'model' => 'getModel',
         'input' => 'getInput',
         'voice' => 'getVoice',
-        'format' => 'getFormat'
+        'format' => 'getFormat',
+        'provider' => 'getProvider'
     ];
 
     /**
@@ -285,6 +291,7 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         $this->setIfExists('input', $data ?? [], null);
         $this->setIfExists('voice', $data ?? [], null);
         $this->setIfExists('format', $data ?? [], null);
+        $this->setIfExists('provider', $data ?? [], null);
     }
 
     /**
@@ -458,6 +465,33 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
             );
         }
         $this->container['format'] = $format;
+
+        return $this;
+    }
+
+    /**
+     * Gets provider
+     *
+     * @return \AIStats\Sdk\Model\ProviderRoutingOptions|null
+     */
+    public function getProvider()
+    {
+        return $this->container['provider'];
+    }
+
+    /**
+     * Sets provider
+     *
+     * @param \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider
+     *
+     * @return self
+     */
+    public function setProvider($provider)
+    {
+        if (is_null($provider)) {
+            throw new \InvalidArgumentException('non-nullable provider cannot be null');
+        }
+        $this->container['provider'] = $provider;
 
         return $this;
     }

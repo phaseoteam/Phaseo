@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/Logo";
 import {
     Accordion,
     AccordionContent,
@@ -31,7 +32,9 @@ type ModelSettingsDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     settings: ChatSettings;
+    selectedModelId: string | null;
     providerOptions: Array<{ id: string; name: string }>;
+    supportedProvidersForModel?: string[];
     temperatureValue: number;
     maxTokensValue: number;
     topPValue: number;
@@ -49,7 +52,9 @@ export function ModelSettingsDialog({
     open,
     onOpenChange,
     settings,
+    selectedModelId,
     providerOptions,
+    supportedProvidersForModel,
     temperatureValue,
     maxTokensValue,
     topPValue,
@@ -62,6 +67,11 @@ export function ModelSettingsDialog({
     onUpdate,
     onUpdateNumber,
 }: ModelSettingsDialogProps) {
+    const filteredProviderOptions = supportedProvidersForModel
+        ? providerOptions.filter((provider) =>
+              supportedProvidersForModel.includes(provider.id)
+          )
+        : providerOptions;
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden">
@@ -93,18 +103,40 @@ export function ModelSettingsDialog({
                                 }
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Auto (Conduit)" />
+                                    <SelectValue placeholder="Auto (Gateway)" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="auto">
-                                        Auto (Conduit)
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-4 h-4 shrink-0 flex items-center justify-center">
+                                                <svg
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    className="w-4 h-4"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                >
+                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                                </svg>
+                                            </span>
+                                            Auto (Gateway)
+                                        </div>
                                     </SelectItem>
-                                    {providerOptions.map((provider) => (
+                                    {filteredProviderOptions.map((provider) => (
                                         <SelectItem
                                             key={provider.id}
                                             value={provider.id}
                                         >
-                                            {provider.name}
+                                            <div className="flex items-center gap-2">
+                                                <Logo
+                                                    id={provider.id}
+                                                    alt={provider.name}
+                                                    width={16}
+                                                    height={16}
+                                                    className="shrink-0"
+                                                />
+                                                {provider.name}
+                                            </div>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

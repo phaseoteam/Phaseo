@@ -1,3 +1,7 @@
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
 import { getSupabaseAdmin } from "@/runtime/env";
 import type { PriceCard, PriceRule } from "./types";
 
@@ -66,3 +70,4 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
     };
     return card;
 }
+

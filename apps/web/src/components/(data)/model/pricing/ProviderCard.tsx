@@ -28,6 +28,7 @@ import {
 	TokenTripleSection,
 	ImageGenSection,
 	VideoGenSection,
+	InputsSection,
 	AdvancedTable,
 	CacheWriteSection,
 	RequestsSection,
@@ -205,13 +206,17 @@ export default function ProviderCard({
 		.filter((category) => category.endpoints.length > 0);
 
 	const isFreePlan = plan === "free";
-        const allEmpty =
-                !sec.textTokens &&
-                !sec.imageTokens &&
+	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
+	const videoInputs = sec.mediaInputs?.filter((r) => r.mod === "video") ?? [];
+	const allEmpty =
+		!sec.textTokens &&
+		!sec.imageTokens &&
 		!sec.audioTokens &&
 		!sec.videoTokens &&
 		!sec.imageGen &&
 		!sec.videoGen &&
+		!imageInputs.length &&
+		!videoInputs.length &&
 		!sec.cacheWrites?.length &&
 		!sec.requests?.length &&
 		!sec.otherRules.length;
@@ -356,7 +361,7 @@ export default function ProviderCard({
 								<PopoverContent className="w-72" side="right">
 									<div className="space-y-4">
 										<h4 className="font-semibold text-sm">
-											Conduit Endpoint Support
+											Gateway Endpoint Support
 										</h4>
 										<div className="space-y-4">
 											{endpointCategories.map(
@@ -424,6 +429,16 @@ export default function ProviderCard({
 				{/* Requests */}
 				{!isFreePlan && sec.requests && sec.requests.length > 0 && (
 					<RequestsSection rows={sec.requests} />
+				)}
+
+				{/* Image inputs */}
+				{!isFreePlan && imageInputs.length > 0 && (
+					<InputsSection title="Image inputs" rows={imageInputs} />
+				)}
+
+				{/* Video inputs */}
+				{!isFreePlan && videoInputs.length > 0 && (
+					<InputsSection title="Video inputs" rows={videoInputs} />
 				)}
 
 				{/* Image Tokens */}

@@ -1,85 +1,223 @@
-const COMPARISON_ROWS = [
+"use client";
+
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Check, Minus } from "lucide-react";
+
+const COMPARISON_DATA = [
 	{
-		capability: "Model coverage",
-		gateway:
-			"Largest verified catalogue across text, image, video, audio updated nightly.",
-		openRouter: "Large, varies by provider availability.",
-		vercel: "Bring your own adapters.",
+		capability: "Model Coverage",
+		description: "Number of models and providers supported",
+		gateway: {
+			value: "500+ models, 50+ providers",
+			highlight: true,
+			details: "Largest verified catalogue updated nightly",
+		},
+		openRouter: {
+			value: "200+ models",
+			highlight: false,
+			details: "Varies by provider availability",
+		},
+		vercel: {
+			value: "Bring your own",
+			highlight: false,
+			details: "Manual adapter setup required",
+		},
 	},
 	{
-		capability: "Routing intelligence",
-		gateway:
-			"Latency and error-aware routing with deterministic fallbacks and breaker states.",
-		openRouter: "Priority ordering per request.",
-		vercel: "Minimal routing across a few providers.",
+		capability: "Modalities",
+		description: "Supported input and output types",
+		gateway: {
+			value: "Text, Vision, Audio, Video, Embeddings",
+			highlight: true,
+			details: "First-class multimodal support",
+		},
+		openRouter: {
+			value: "Text, Vision",
+			highlight: false,
+			details: "Limited modality support",
+		},
+		vercel: {
+			value: "Text, Vision",
+			highlight: false,
+			details: "Provider-dependent",
+		},
+	},
+	{
+		capability: "Routing Intelligence",
+		description: "How requests are distributed across providers",
+		gateway: {
+			value: "Latency, cost, error-aware",
+			highlight: true,
+			details: "Deterministic fallbacks with circuit breakers",
+		},
+		openRouter: {
+			value: "Priority ordering",
+			highlight: false,
+			details: "Manual fallback configuration",
+		},
+		vercel: {
+			value: "Basic",
+			highlight: false,
+			details: "Limited multi-provider routing",
+		},
 	},
 	{
 		capability: "Observability",
-		gateway:
-			"Live dashboards, exportable logs, anomaly alerts, and cost tracking built in.",
-		openRouter: "Minimal analytics (requests and spend).",
-		vercel: "Require self-managed telemetry.",
+		description: "Built-in monitoring and analytics",
+		gateway: {
+			value: "Full-stack telemetry",
+			highlight: true,
+			details: "Live dashboards, alerts, cost tracking",
+		},
+		openRouter: {
+			value: "Basic analytics",
+			highlight: false,
+			details: "Requests and spend only",
+		},
+		vercel: {
+			value: "Self-managed",
+			highlight: false,
+			details: "Requires external tools",
+		},
 	},
 	{
-		capability: "Pricing model",
-		gateway:
-			"Automatic sliding scale from 10% down to 7.5% depending on usage, with no per-request add-ons.",
-		openRouter: "Flat 5.5% gateway fee.",
-		vercel: "0% gateway fee but no multi-provider routing.",
+		capability: "Pricing Model",
+		description: "Gateway fee structure",
+		gateway: {
+			value: "7% basic, 5% enterprise",
+			highlight: true,
+			details: "Volume discounts, no per-request fees",
+		},
+		openRouter: {
+			value: "5.5% flat",
+			highlight: false,
+			details: "Fixed rate for all usage",
+		},
+		vercel: {
+			value: "0% gateway fee",
+			highlight: false,
+			details: "But limited routing capabilities",
+		},
 	},
 ];
 
 export function CompareSection() {
 	return (
-		<section id="compare" className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-			<div className="space-y-6">
-				<div>
-					<h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+		<section className="relative overflow-hidden py-20 sm:py-28">
+			<div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+				{/* Section header */}
+				<div className="mx-auto max-w-3xl text-center">
+					<Badge
+						variant="secondary"
+						className="mb-4 border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600"
+					>
+						Comparison
+					</Badge>
+					<h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
 						How we compare
 					</h2>
-					<p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-						Optimised routing and observability are built in - no
+					<p className="mt-4 text-lg leading-relaxed text-slate-600">
+						Optimised routing and observability built in — no
 						homegrown adapters, no hidden markups.
 					</p>
 				</div>
-				<div className="overflow-hidden rounded-xl border border-slate-200">
-					<table className="w-full text-left text-sm">
-						<thead className="bg-slate-50 text-slate-600 dark:bg-neutral-900 dark:text-slate-300">
-							<tr>
-								<th className="px-4 py-3 font-medium">
-									Capability
-								</th>
-								<th className="px-4 py-3 font-medium">
-									AI Stats Conduit
-								</th>
-								<th className="px-4 py-3 font-medium">
-									OpenRouter
-								</th>
-								<th className="px-4 py-3 font-medium">
-									Vercel AI SDK
-								</th>
-							</tr>
-						</thead>
-						<tbody className="divide-y divide-slate-100">
-							{COMPARISON_ROWS.map((row) => (
-								<tr key={row.capability}>
-									<td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">
-										{row.capability}
-									</td>
-									<td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-										{row.gateway}
-									</td>
-									<td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-										{row.openRouter}
-									</td>
-									<td className="px-4 py-3 text-slate-600 dark:text-slate-400">
-										{row.vercel}
-									</td>
+
+				{/* Comparison table */}
+				<Card className="mt-16 overflow-hidden border-slate-200/60 shadow-sm">
+					<div className="overflow-x-auto">
+						<table className="w-full text-left">
+							<thead>
+								<tr className="border-b border-slate-200 bg-slate-50/80">
+									<th className="px-6 py-4 text-sm font-semibold text-slate-900">
+										Capability
+									</th>
+									<th className="px-6 py-4 text-sm font-semibold text-slate-900">
+										<div className="flex items-center gap-2">
+											<span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+												AI
+											</span>
+											AI Stats Gateway
+										</div>
+									</th>
+									<th className="px-6 py-4 text-sm font-semibold text-slate-600">
+										OpenRouter
+									</th>
+									<th className="px-6 py-4 text-sm font-semibold text-slate-600">
+										Vercel AI SDK
+									</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+							</thead>
+							<tbody className="divide-y divide-slate-100">
+								{COMPARISON_DATA.map((row) => (
+									<tr
+										key={row.capability}
+										className="transition-colors hover:bg-slate-50/50"
+									>
+										<td className="px-6 py-4">
+											<div className="space-y-1">
+												<p className="font-medium text-slate-900">
+													{row.capability}
+												</p>
+												<p className="text-xs text-slate-500">
+													{row.description}
+												</p>
+											</div>
+										</td>
+										<td className="px-6 py-4">
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													{row.gateway.highlight && (
+														<Check className="h-4 w-4 shrink-0 text-emerald-500" />
+													)}
+													<span
+														className={
+															row.gateway
+																.highlight
+																? "font-semibold text-slate-900"
+																: "text-slate-600"
+														}
+													>
+														{row.gateway.value}
+													</span>
+												</div>
+												<p className="text-xs text-slate-500">
+													{row.gateway.details}
+												</p>
+											</div>
+										</td>
+										<td className="px-6 py-4">
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													<Minus className="h-4 w-4 shrink-0 text-slate-400" />
+													<span className="text-slate-600">
+														{row.openRouter.value}
+													</span>
+												</div>
+												<p className="text-xs text-slate-500">
+													{row.openRouter.details}
+												</p>
+											</div>
+										</td>
+										<td className="px-6 py-4">
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													<Minus className="h-4 w-4 shrink-0 text-slate-400" />
+													<span className="text-slate-600">
+														{row.vercel.value}
+													</span>
+												</div>
+												<p className="text-xs text-slate-500">
+													{row.vercel.details}
+												</p>
+											</div>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				</Card>
 			</div>
 		</section>
 	);

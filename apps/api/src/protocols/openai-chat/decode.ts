@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // OpenAI Chat Completions Protocol - Decoder
 // Transforms OpenAI Chat Completions Request → IR
 
@@ -99,11 +103,14 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			? {
 				effort: req.reasoning.effort,
 				summary: req.reasoning.summary as any,
+				enabled: (req.reasoning as any).enabled,
+				maxTokens: (req.reasoning as any).max_tokens,
 			}
 			: undefined,
 
 		// Response format
 		responseFormat: normalizeResponseFormat(req.response_format),
+		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 
 		// Advanced parameters
 		frequencyPenalty: req.frequency_penalty,
@@ -247,3 +254,4 @@ function normalizeResponseFormat(format: any): IRChatRequest["responseFormat"] {
 
 	return undefined;
 }
+

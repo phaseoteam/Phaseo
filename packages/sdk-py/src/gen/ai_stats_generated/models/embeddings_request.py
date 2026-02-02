@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from ai_stats_generated.models.embeddings_request_input import EmbeddingsRequestInput
+from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -28,12 +28,15 @@ class EmbeddingsRequest(BaseModel):
     """
     EmbeddingsRequest
     """ # noqa: E501
-    model: StrictStr
-    input: EmbeddingsRequestInput
+    model: Optional[StrictStr] = None
+    input: Optional[Any] = None
+    inputs: Optional[Any] = Field(default=None, description="Alias for input.")
     encoding_format: Optional[StrictStr] = None
     dimensions: Optional[Annotated[int, Field(strict=True, ge=1)]] = None
+    embedding_options: Optional[object] = None
     user: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["model", "input", "encoding_format", "dimensions", "user"]
+    provider: Optional[ProviderRoutingOptions] = None
+    __properties: ClassVar[List[str]] = []
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -74,9 +77,6 @@ class EmbeddingsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of input
-        if self.input:
-            _dict['input'] = self.input.to_dict()
         return _dict
 
     @classmethod
@@ -89,11 +89,6 @@ class EmbeddingsRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "model": obj.get("model"),
-            "input": EmbeddingsRequestInput.from_dict(obj["input"]) if obj.get("input") is not None else None,
-            "encoding_format": obj.get("encoding_format"),
-            "dimensions": obj.get("dimensions"),
-            "user": obj.get("user")
         })
         return _obj
 

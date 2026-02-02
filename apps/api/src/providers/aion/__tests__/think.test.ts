@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import { describe, it, expect } from "vitest";
 import { createAionThinkStreamState, extractAionThinkBlocks, processAionThinkStreamDelta } from "../think";
 
@@ -22,3 +26,4 @@ describe("Aion think parsing", () => {
 		expect(state.reasoningChunks).toEqual(["abc", "def"]);
 	});
 });
+

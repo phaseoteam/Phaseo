@@ -1,4 +1,8 @@
 // src/routes/v1/control/analytics.ts
+// Purpose: Control-plane route handler for analytics operations.
+// Why: Separates admin/control traffic from data-plane requests.
+// How: Wires HTTP routes to pipeline entrypoints and response helpers.
+
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { withRuntime, json } from "../../utils";
@@ -19,3 +23,12 @@ async function handleAnalytics(req: Request) {
 export const analyticsRoutes = new Hono<Env>();
 
 analyticsRoutes.post("/", withRuntime(handleAnalytics));
+
+
+
+
+
+
+
+
+

@@ -30,7 +30,7 @@ interface ModelEditDialogProps {
   tab?: string
 }
 
-interface ModelData {
+export interface ModelData {
   model_id: string
   name: string | null
   status: string | null
@@ -193,10 +193,10 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
 
             <div className="mt-4">
               {currentTab === "basic" && (
-                <BasicTab model={model} onModelChange={setModel} />
+                <BasicTab model={model} onModelChange={(m) => setModel(m)} />
               )}
               {currentTab === "details" && (
-                <DetailsTab modelId={modelId} model={model} onModelChange={setModel} />
+                <DetailsTab modelId={modelId} model={model} onModelChange={(m) => setModel(m)} />
               )}
               {currentTab === "benchmarks" && <BenchmarksTab modelId={modelId} />}
               {currentTab === "pricing" && <PricingTab modelId={modelId} />}
@@ -204,7 +204,7 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
                 <ProvidersTab
                   modelId={modelId}
                   model={model}
-                  onModelChange={setModel}
+                  onModelChange={(m) => setModel(m)}
                   providers={providers}
                 />
               )}

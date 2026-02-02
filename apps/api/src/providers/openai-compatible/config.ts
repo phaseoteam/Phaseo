@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import { getBindings } from "@/runtime/env";
 import type { ProviderExecuteArgs } from "../types";
 import { resolveProviderKey, type ResolvedKey } from "../keys";
@@ -36,7 +40,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "OPENAI_BASE_URL",
         supportsResponses: true,
     },
-    // AI21 - NOT OpenAI compatible, has custom adapter
+    // AI21 - OpenAI-style Studio API
     alibaba: {
         providerId: "alibaba",
         baseUrl: "https://dashscope.aliyuncs.com",
@@ -51,6 +55,44 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         apiKeyEnv: "ATLAS_CLOUD_API_KEY",
         baseUrlEnv: "ATLAS_CLOUD_BASE_URL",
     },
+    atlascloud: {
+        providerId: "atlascloud",
+        baseUrl: "https://api.atlascloud.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "ATLAS_CLOUD_API_KEY",
+        baseUrlEnv: "ATLAS_CLOUD_BASE_URL",
+    },
+    arcee: {
+        providerId: "arcee",
+        baseUrl: "https://api.arcee.ai",
+        pathPrefix: "/api/v1",
+        apiKeyEnv: "ARCEE_API_KEY",
+        baseUrlEnv: "ARCEE_BASE_URL",
+        supportsResponses: false,
+    },
+    "arcee-ai": {
+        providerId: "arcee-ai",
+        baseUrl: "https://api.arcee.ai",
+        pathPrefix: "/api/v1",
+        apiKeyEnv: "ARCEE_API_KEY",
+        baseUrlEnv: "ARCEE_BASE_URL",
+        supportsResponses: false,
+    },
+    ai21: {
+        providerId: "ai21",
+        baseUrl: "https://api.ai21.com",
+        pathPrefix: "/studio/v1",
+        apiKeyEnv: "AI21_API_KEY",
+        baseUrlEnv: "AI21_BASE_URL",
+        supportsResponses: false,
+    },
+    "amazon-bedrock": {
+        providerId: "amazon-bedrock",
+        baseUrlEnv: "AMAZON_BEDROCK_BASE_URL",
+        apiKeyEnv: "AMAZON_BEDROCK_API_KEY",
+        pathPrefix: "/v1",
+        supportsResponses: true,
+    },
     baseten: {
         providerId: "baseten",
         baseUrl: "https://api.baseten.co",
@@ -58,12 +100,27 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         apiKeyEnv: "BASETEN_API_KEY",
         baseUrlEnv: "BASETEN_BASE_URL",
     },
+    "bytedance-seed": {
+        providerId: "bytedance-seed",
+        baseUrlEnv: "BYTEDANCE_SEED_BASE_URL",
+        apiKeyEnv: "BYTEDANCE_SEED_API_KEY",
+        pathPrefix: "/v1",
+        supportsResponses: false,
+    },
     cerebras: {
         providerId: "cerebras",
         baseUrl: "https://api.cerebras.ai",
         pathPrefix: "/v1",
         apiKeyEnv: "CEREBRAS_API_KEY",
         baseUrlEnv: "CEREBRAS_BASE_URL",
+    },
+    clarifai: {
+        providerId: "clarifai",
+        baseUrl: "https://api.clarifai.com",
+        pathPrefix: "/v2/ext/openai/v1",
+        apiKeyEnv: "CLARIFAI_PAT",
+        baseUrlEnv: "CLARIFAI_BASE_URL",
+        supportsResponses: true,
     },
     chutes: {
         providerId: "chutes",
@@ -93,6 +150,35 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         apiKeyEnv: "DEEPSEEK_API_KEY",
         baseUrlEnv: "DEEPSEEK_BASE_URL",
     },
+    featherless: {
+        providerId: "featherless",
+        baseUrl: "https://api.featherless.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "FEATHERLESS_API_KEY",
+        baseUrlEnv: "FEATHERLESS_BASE_URL",
+        apiKeyHeader: "Authentication",
+    },
+    friendli: {
+        providerId: "friendli",
+        baseUrl: "https://api.friendli.ai",
+        pathPrefix: "/serverless/v1",
+        apiKeyEnv: "FRIENDLI_TOKEN",
+        baseUrlEnv: "FRIENDLI_BASE_URL",
+    },
+    gmicloud: {
+        providerId: "gmicloud",
+        baseUrl: "https://api.gmi-serving.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "GMI_API_KEY",
+        baseUrlEnv: "GMI_BASE_URL",
+    },
+    "google-vertex": {
+        providerId: "google-vertex",
+        baseUrlEnv: "GOOGLE_VERTEX_BASE_URL",
+        apiKeyEnv: "GOOGLE_VERTEX_API_KEY",
+        pathPrefix: "",
+        supportsResponses: true,
+    },
     groq: {
         providerId: "groq",
         baseUrl: "https://api.groq.com",
@@ -100,8 +186,50 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         apiKeyEnv: "GROQ_API_KEY",
         baseUrlEnv: "GROQ_BASE_URL",
     },
+    hyperbolic: {
+        providerId: "hyperbolic",
+        baseUrl: "https://api.hyperbolic.xyz",
+        pathPrefix: "/v1",
+        apiKeyEnv: "HYPERBOLIC_API_KEY",
+        baseUrlEnv: "HYPERBOLIC_BASE_URL",
+    },
+    inception: {
+        providerId: "inception",
+        baseUrl: "https://api.inceptionlabs.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "INCEPTION_API_KEY",
+        baseUrlEnv: "INCEPTION_BASE_URL",
+    },
+    infermatic: {
+        providerId: "infermatic",
+        baseUrl: "https://api.totalgpt.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "INFERMATIC_API_KEY",
+        baseUrlEnv: "INFERMATIC_BASE_URL",
+    },
+    inflection: {
+        providerId: "inflection",
+        baseUrlEnv: "INFLECTION_BASE_URL",
+        apiKeyEnv: "INFLECTION_API_KEY",
+        pathPrefix: "/v1",
+        supportsResponses: false,
+    },
+    mancer: {
+        providerId: "mancer",
+        baseUrl: "https://mancer.tech",
+        pathPrefix: "/oai/v1",
+        apiKeyEnv: "MANCER_API_KEY",
+        baseUrlEnv: "MANCER_BASE_URL",
+    },
     minimax: {
         providerId: "minimax",
+        baseUrl: "https://api.minimax.chat",
+        pathPrefix: "/v1",
+        apiKeyEnv: "MINIMAX_API_KEY",
+        baseUrlEnv: "MINIMAX_BASE_URL",
+    },
+    "minimax-lightning": {
+        providerId: "minimax-lightning",
         baseUrl: "https://api.minimax.chat",
         pathPrefix: "/v1",
         apiKeyEnv: "MINIMAX_API_KEY",
@@ -121,12 +249,47 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         apiKeyEnv: "MOONSHOT_API_KEY",
         baseUrlEnv: "MOONSHOT_BASE_URL",
     },
+    "moonshot-ai": {
+        providerId: "moonshot-ai",
+        baseUrl: "https://api.moonshot.cn",
+        pathPrefix: "/v1",
+        apiKeyEnv: "MOONSHOT_API_KEY",
+        baseUrlEnv: "MOONSHOT_BASE_URL",
+    },
+    "moonshot-ai-turbo": {
+        providerId: "moonshot-ai-turbo",
+        baseUrl: "https://api.moonshot.cn",
+        pathPrefix: "/v1",
+        apiKeyEnv: "MOONSHOT_API_KEY",
+        baseUrlEnv: "MOONSHOT_BASE_URL",
+    },
+    morph: {
+        providerId: "morph",
+        baseUrl: "https://api.morphllm.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "MORPH_API_KEY",
+        baseUrlEnv: "MORPH_BASE_URL",
+    },
+    morpheus: {
+        providerId: "morpheus",
+        baseUrl: "https://api.mor.org",
+        pathPrefix: "/api/v1",
+        apiKeyEnv: "MORPHEUS_API_KEY",
+        baseUrlEnv: "MORPHEUS_BASE_URL",
+    },
     novitaai: {
         providerId: "novitaai",
         baseUrl: "https://api.novita.ai",
         pathPrefix: "/v3/openai",
         apiKeyEnv: "NOVITA_API_KEY",
         baseUrlEnv: "NOVITA_BASE_URL",
+    },
+    crusoe: {
+        providerId: "crusoe",
+        baseUrl: "https://api.crusoe.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "CRUSOE_API_KEY",
+        baseUrlEnv: "CRUSOE_BASE_URL",
     },
     parasail: {
         providerId: "parasail",
@@ -141,6 +304,36 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/compatible-mode/v1",
         apiKeyEnv: "QWEN_API_KEY",
         baseUrlEnv: "QWEN_BASE_URL",
+    },
+    phala: {
+        providerId: "phala",
+        baseUrl: "https://api.redpill.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "PHALA_API_KEY",
+        baseUrlEnv: "PHALA_BASE_URL",
+        supportsResponses: false,
+    },
+    sambanova: {
+        providerId: "sambanova",
+        apiKeyEnv: "SAMBANOVA_API_KEY",
+        baseUrlEnv: "SAMBANOVA_BASE_URL",
+        pathPrefix: "",
+        supportsResponses: false,
+    },
+    siliconflow: {
+        providerId: "siliconflow",
+        baseUrl: "https://api.siliconflow.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "SILICONFLOW_API_KEY",
+        baseUrlEnv: "SILICONFLOW_BASE_URL",
+    },
+    "weights-and-biases": {
+        providerId: "weights-and-biases",
+        baseUrl: "https://api.inference.wandb.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "WANDB_API_KEY",
+        baseUrlEnv: "WANDB_BASE_URL",
+        supportsResponses: false,
     },
     together: {
         providerId: "together",
@@ -157,12 +350,31 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "XIAOMI_MIMO_BASE_URL",
         supportsResponses: false,
     },
+    "google-ai-studio": {
+        providerId: "google-ai-studio",
+        pathPrefix: "/v1",
+        apiKeyEnv: "GOOGLE_AI_STUDIO_API_KEY",
+        baseUrlEnv: "GOOGLE_AI_STUDIO_BASE_URL",
+    },
+    google: {
+        providerId: "google",
+        pathPrefix: "/v1",
+        apiKeyEnv: "GOOGLE_API_KEY",
+        baseUrlEnv: "GOOGLE_BASE_URL",
+    },
     "x-ai": {
         providerId: "x-ai",
         baseUrl: "https://api.x.ai",
         pathPrefix: "/v1",
         apiKeyEnv: "XAI_API_KEY",
         baseUrlEnv: "XAI_BASE_URL",
+    },
+    cloudflare: {
+        providerId: "cloudflare",
+        baseUrlEnv: "CLOUDFLARE_AI_GATEWAY_BASE_URL",
+        apiKeyEnv: "CLOUDFLARE_API_TOKEN",
+        pathPrefix: "",
+        supportsResponses: false,
     },
     // New providers - added during IR optimization and provider onboarding
     fireworks: {
@@ -195,7 +407,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     },
     "nebius-token-factory": {
         providerId: "nebius-token-factory",
-        baseUrl: "https://api.studio.nebius.ai",
+        baseUrl: "https://api.tokenfactory.nebius.com",
         pathPrefix: "/v1",
         apiKeyEnv: "NEBIUS_API_KEY",
         baseUrlEnv: "NEBIUS_BASE_URL",
@@ -265,6 +477,10 @@ export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfi
     };
 }
 
+export function isOpenAICompatProvider(providerId: string): boolean {
+    return Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_CONFIG, providerId);
+}
+
 export function openAICompatUrl(providerId: string, path: string): string {
     const config = resolveOpenAICompatConfig(providerId);
     const base = config.baseUrl?.replace(/\/+$/, "") ?? "";
@@ -329,3 +545,4 @@ export function supportsOpenAICompatResponses(providerId: string, model?: string
     if (typeof config.supportsResponses === "boolean") return config.supportsResponses;
     return resolveOpenAICompatRoute(providerId, model) === "responses";
 }
+

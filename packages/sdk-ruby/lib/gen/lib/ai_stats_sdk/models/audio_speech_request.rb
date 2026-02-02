@@ -23,6 +23,8 @@ module AIStatsSdk
 
     attr_accessor :format
 
+    attr_accessor :provider
+
     class EnumAttributeValidator
       attr_reader :datatype
       attr_reader :allowable_values
@@ -51,7 +53,8 @@ module AIStatsSdk
         :'model' => :'model',
         :'input' => :'input',
         :'voice' => :'voice',
-        :'format' => :'format'
+        :'format' => :'format',
+        :'provider' => :'provider'
       }
     end
 
@@ -71,7 +74,8 @@ module AIStatsSdk
         :'model' => :'String',
         :'input' => :'String',
         :'voice' => :'String',
-        :'format' => :'String'
+        :'format' => :'String',
+        :'provider' => :'ProviderRoutingOptions'
       }
     end
 
@@ -115,6 +119,10 @@ module AIStatsSdk
 
       if attributes.key?(:'format')
         self.format = attributes[:'format']
+      end
+
+      if attributes.key?(:'provider')
+        self.provider = attributes[:'provider']
       end
     end
 
@@ -183,7 +191,8 @@ module AIStatsSdk
           model == o.model &&
           input == o.input &&
           voice == o.voice &&
-          format == o.format
+          format == o.format &&
+          provider == o.provider
     end
 
     # @see the `==` method
@@ -195,7 +204,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, input, voice, format].hash
+      [model, input, voice, format, provider].hash
     end
 
     # Builds the object from hash

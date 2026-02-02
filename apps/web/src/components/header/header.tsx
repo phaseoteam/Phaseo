@@ -5,12 +5,13 @@ import AuthControls from "./AuthControls"; // server island
 import MainNav from "./MainNav"; // client-only nav (no data)
 import { SearchWrapper } from "./Search/SearchWrapper";
 import { ChatIcon } from "./Chat/ChatIcon";
+import { RankingsIcon } from "./Rankings/RankingsIcon";
 import { HeaderAnnouncements } from "./HeaderAnnouncements";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const releaseMessage = "AI Stats Gateway is now the Conduit";
+const releaseMessage = "Introducing AI Stats Gateway";
 const changelogLink =
-	"https://docs.ai-stats.phaseo.app/v1/changelog#ai-stats-gateway-is-now-the-conduit";
+	"https://docs.ai-stats.phaseo.app/v1/changelog#ai-stats-conduit-is-now-the-gateway";
 
 export default function Header() {
 	return (
@@ -46,6 +47,7 @@ export default function Header() {
 					{/* Right actions: desktop auth + search */}
 					<div className="hidden lg:flex items-center gap-3 shrink-0">
 						<div className="flex items-center gap-1">
+							<RankingsIcon />
 							<ChatIcon />
 							<SearchWrapper />
 						</div>
@@ -79,7 +81,7 @@ export default function Header() {
 
 			<HeaderAnnouncements
 				message={releaseMessage}
-				href="/conduit"
+				href="/gateway"
 				secondaryLabel="Read more in the changelog"
 				secondaryHref={changelogLink}
 				label="New Release"

@@ -176,6 +176,19 @@ export default async function Page(props: {
 		console.log("[ERROR] unexpected recent transactions error:", String(e));
 	}
 
+	const latestPaymentSuccessAt = (() => {
+		let latest: number | null = null;
+		for (const tx of recentTransactions) {
+			const status = String(tx.status ?? "").toLowerCase();
+			if (status !== "paid" && status !== "succeeded") continue;
+			if ((tx.amount_nanos ?? 0) <= 0) continue;
+			const ts = tx.created_at ? new Date(tx.created_at).getTime() : NaN;
+			if (!Number.isFinite(ts)) continue;
+			if (latest === null || ts > latest) latest = ts;
+		}
+		return latest ? new Date(latest).toISOString() : null;
+	})();
+
 	// Tier stats (best-effort)
 	if (teamId) {
 		try {
@@ -251,7 +264,10 @@ export default async function Page(props: {
 				/>
 			</div>
 
-			<Banner queryString={queryString ?? null} />
+			<Banner
+				queryString={queryString ?? null}
+				latestPaymentSuccessAt={latestPaymentSuccessAt}
+			/>
 
 			<CurrentCredits balance={initialBalance} />
 

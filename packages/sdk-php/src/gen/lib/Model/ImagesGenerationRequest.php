@@ -64,7 +64,8 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'quality' => 'string',
         'response_format' => 'string',
         'style' => 'string',
-        'user' => 'string'
+        'user' => 'string',
+        'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
     /**
@@ -82,7 +83,8 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'quality' => null,
         'response_format' => null,
         'style' => null,
-        'user' => null
+        'user' => null,
+        'provider' => null
     ];
 
     /**
@@ -98,7 +100,8 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'quality' => false,
         'response_format' => false,
         'style' => false,
-        'user' => false
+        'user' => false,
+        'provider' => false
     ];
 
     /**
@@ -194,7 +197,8 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'quality' => 'quality',
         'response_format' => 'response_format',
         'style' => 'style',
-        'user' => 'user'
+        'user' => 'user',
+        'provider' => 'provider'
     ];
 
     /**
@@ -210,7 +214,8 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'quality' => 'setQuality',
         'response_format' => 'setResponseFormat',
         'style' => 'setStyle',
-        'user' => 'setUser'
+        'user' => 'setUser',
+        'provider' => 'setProvider'
     ];
 
     /**
@@ -226,7 +231,8 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'quality' => 'getQuality',
         'response_format' => 'getResponseFormat',
         'style' => 'getStyle',
-        'user' => 'getUser'
+        'user' => 'getUser',
+        'provider' => 'getProvider'
     ];
 
     /**
@@ -294,6 +300,7 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         $this->setIfExists('response_format', $data ?? [], null);
         $this->setIfExists('style', $data ?? [], null);
         $this->setIfExists('user', $data ?? [], null);
+        $this->setIfExists('provider', $data ?? [], null);
     }
 
     /**
@@ -572,6 +579,33 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
             throw new \InvalidArgumentException('non-nullable user cannot be null');
         }
         $this->container['user'] = $user;
+
+        return $this;
+    }
+
+    /**
+     * Gets provider
+     *
+     * @return \AIStats\Sdk\Model\ProviderRoutingOptions|null
+     */
+    public function getProvider()
+    {
+        return $this->container['provider'];
+    }
+
+    /**
+     * Sets provider
+     *
+     * @param \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider
+     *
+     * @return self
+     */
+    public function setProvider($provider)
+    {
+        if (is_null($provider)) {
+            throw new \InvalidArgumentException('non-nullable provider cannot be null');
+        }
+        $this->container['provider'] = $provider;
 
         return $this;
     }

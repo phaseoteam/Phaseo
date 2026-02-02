@@ -72,6 +72,15 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
+        /// Test the property 'Inputs'
+        /// </summary>
+        [Fact]
+        public void InputsTest()
+        {
+            // TODO unit test for the property 'Inputs'
+        }
+
+        /// <summary>
         /// Test the property 'EncodingFormat'
         /// </summary>
         [Fact]
@@ -90,12 +99,30 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
+        /// Test the property 'EmbeddingOptions'
+        /// </summary>
+        [Fact]
+        public void EmbeddingOptionsTest()
+        {
+            // TODO unit test for the property 'EmbeddingOptions'
+        }
+
+        /// <summary>
         /// Test the property 'User'
         /// </summary>
         [Fact]
         public void UserTest()
         {
             // TODO unit test for the property 'User'
+        }
+
+        /// <summary>
+        /// Test the property 'Provider'
+        /// </summary>
+        [Fact]
+        public void ProviderTest()
+        {
+            // TODO unit test for the property 'Provider'
         }
     }
 }

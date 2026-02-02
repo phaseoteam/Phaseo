@@ -15,7 +15,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-08-28T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +28,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-08-28T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +41,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-08-28T00:00:00"
     },
     {
       "meter": "input_audio_tokens",
@@ -51,7 +54,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-08-28T00:00:00"
     },
     {
       "meter": "cached_read_audio_tokens",
@@ -63,7 +67,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-08-28T00:00:00"
     },
     {
       "meter": "output_audio_tokens",
@@ -75,7 +80,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-08-28T00:00:00"
     },
     {
       "meter": "input_image_tokens",
@@ -87,7 +93,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-08-28T00:00:00"
     },
     {
       "meter": "cached_read_image_tokens",
@@ -99,7 +106,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-08-28T00:00:00"
     }
   ]
 }

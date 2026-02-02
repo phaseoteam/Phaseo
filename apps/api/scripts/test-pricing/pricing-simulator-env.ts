@@ -4,6 +4,50 @@ import { configureRuntime, clearRuntime, type GatewayBindings } from "../../src/
 
 export { clearRuntime };
 
+function createMemoryKv(): KVNamespace {
+    const store = new Map<string, { value: string; expiresAt?: number }>();
+
+    function isExpired(entry: { value: string; expiresAt?: number } | undefined): boolean {
+        if (!entry) return true;
+        if (!entry.expiresAt) return false;
+        return Date.now() >= entry.expiresAt;
+    }
+
+    return {
+        async get(key: string, type?: "text" | "json" | "arrayBuffer" | "stream") {
+            const entry = store.get(key);
+            if (isExpired(entry)) {
+                store.delete(key);
+                return null;
+            }
+            if (!entry) return null;
+            if (!type || type === "text") return entry.value;
+            if (type === "json") return JSON.parse(entry.value);
+            if (type === "arrayBuffer") return new TextEncoder().encode(entry.value).buffer;
+            if (type === "stream") return new Response(entry.value).body;
+            return entry.value;
+        },
+        async put(key: string, value: string | ArrayBuffer | ArrayBufferView | ReadableStream, options?: KVNamespacePutOptions) {
+            let textValue = "";
+            if (typeof value === "string") textValue = value;
+            else if (value instanceof ArrayBuffer) textValue = new TextDecoder().decode(value);
+            else if (ArrayBuffer.isView(value)) textValue = new TextDecoder().decode(value.buffer);
+            else {
+                const response = new Response(value);
+                textValue = await response.text();
+            }
+            const ttl = options?.expirationTtl;
+            store.set(key, {
+                value: textValue,
+                expiresAt: ttl ? Date.now() + ttl * 1000 : undefined,
+            });
+        },
+        async delete(key: string) {
+            store.delete(key);
+        },
+    } as KVNamespace;
+}
+
 export function loadEnvFromFiles(files: string[] = [".env.local", ".env", ".dev.vars"]): void {
     for (const file of files) {
         const fullPath = resolve(process.cwd(), file);
@@ -42,6 +86,7 @@ export function ensureRuntimeConfigured(): void {
     const bindings: GatewayBindings = {
         SUPABASE_URL: process.env.SUPABASE_URL!,
         SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        GATEWAY_CACHE: createMemoryKv(),
         NEXT_PUBLIC_GATEWAY_VERSION: process.env.NEXT_PUBLIC_GATEWAY_VERSION ?? "cli-simulator",
         AXIOM_API_KEY: process.env.AXIOM_API_KEY,
         AXIOM_DATASET: process.env.AXIOM_DATASET,
@@ -50,8 +95,6 @@ export function ensureRuntimeConfigured(): void {
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         XAI_API_KEY: process.env.XAI_API_KEY,
         KEY_PEPPER: process.env.KEY_PEPPER,
-        UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL ?? "https://example.com/dummy-redis",
-        UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN ?? "placeholder-token",
         NODE_ENV: process.env.NODE_ENV,
         BYOK_KMS_KEY_V1_B64: process.env.BYOK_KMS_KEY_V1_B64,
         BYOK_ACTIVE_KEY_VERSION: process.env.BYOK_ACTIVE_KEY_VERSION,

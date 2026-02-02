@@ -13,6 +13,16 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js",
 			"require": "./dist/index.cjs"
+		},
+		"./compat/openai": {
+			"types": "./dist/compat/openai.d.ts",
+			"import": "./dist/compat/openai.js",
+			"require": "./dist/compat/openai.cjs"
+		},
+		"./compat/anthropic": {
+			"types": "./dist/compat/anthropic.d.ts",
+			"import": "./dist/compat/anthropic.js",
+			"require": "./dist/compat/anthropic.cjs"
 		}
 	},
 	"files": [
@@ -26,8 +36,14 @@
 		"gen": "pnpm -w openapi:gen:ts",
 		"build": "tsc -p tsconfig.build.json",
 		"smoke:chat": "dotenv -e .env.local -- tsx tests/smoke.ts",
-		"test": "echo \"No tests configured\"",
+		"smoke:compat-openai": "dotenv -e .env.local -- tsx tests/compat-openai.ts",
+		"smoke:compat-anthropic": "dotenv -e .env.local -- tsx tests/compat-anthropic.ts",
+		"smoke:all": "pnpm smoke:chat && pnpm smoke:compat-openai && pnpm smoke:compat-anthropic",
+		"test": "pnpm smoke:all",
 		"pack:dry": "npm pack --dry-run"
+	},
+	"dependencies": {
+		"@ai-stats/devtools-core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^25.0.2",

@@ -60,7 +60,8 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'input_file_id' => 'string',
         'endpoint' => 'string',
         'completion_window' => 'string',
-        'metadata' => 'object'
+        'metadata' => 'object',
+        'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
     /**
@@ -74,7 +75,8 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'input_file_id' => null,
         'endpoint' => null,
         'completion_window' => null,
-        'metadata' => null
+        'metadata' => null,
+        'provider' => null
     ];
 
     /**
@@ -86,7 +88,8 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'input_file_id' => false,
         'endpoint' => false,
         'completion_window' => false,
-        'metadata' => false
+        'metadata' => false,
+        'provider' => false
     ];
 
     /**
@@ -178,7 +181,8 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'input_file_id' => 'input_file_id',
         'endpoint' => 'endpoint',
         'completion_window' => 'completion_window',
-        'metadata' => 'metadata'
+        'metadata' => 'metadata',
+        'provider' => 'provider'
     ];
 
     /**
@@ -190,7 +194,8 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'input_file_id' => 'setInputFileId',
         'endpoint' => 'setEndpoint',
         'completion_window' => 'setCompletionWindow',
-        'metadata' => 'setMetadata'
+        'metadata' => 'setMetadata',
+        'provider' => 'setProvider'
     ];
 
     /**
@@ -202,7 +207,8 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'input_file_id' => 'getInputFileId',
         'endpoint' => 'getEndpoint',
         'completion_window' => 'getCompletionWindow',
-        'metadata' => 'getMetadata'
+        'metadata' => 'getMetadata',
+        'provider' => 'getProvider'
     ];
 
     /**
@@ -266,6 +272,7 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('endpoint', $data ?? [], null);
         $this->setIfExists('completion_window', $data ?? [], null);
         $this->setIfExists('metadata', $data ?? [], null);
+        $this->setIfExists('provider', $data ?? [], null);
     }
 
     /**
@@ -420,6 +427,33 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable metadata cannot be null');
         }
         $this->container['metadata'] = $metadata;
+
+        return $this;
+    }
+
+    /**
+     * Gets provider
+     *
+     * @return \AIStats\Sdk\Model\ProviderRoutingOptions|null
+     */
+    public function getProvider()
+    {
+        return $this->container['provider'];
+    }
+
+    /**
+     * Sets provider
+     *
+     * @param \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider
+     *
+     * @return self
+     */
+    public function setProvider($provider)
+    {
+        if (is_null($provider)) {
+            throw new \InvalidArgumentException('non-nullable provider cannot be null');
+        }
+        $this->container['provider'] = $provider;
 
         return $this;
     }

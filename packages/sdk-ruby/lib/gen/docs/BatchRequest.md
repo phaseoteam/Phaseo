@@ -8,6 +8,7 @@
 | **endpoint** | **String** |  |  |
 | **completion_window** | **String** |  | [optional] |
 | **metadata** | **Object** |  | [optional] |
+| **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
 
@@ -18,7 +19,8 @@ instance = AIStatsSdk::BatchRequest.new(
   input_file_id: null,
   endpoint: null,
   completion_window: null,
-  metadata: null
+  metadata: null,
+  provider: null
 )
 ```
 

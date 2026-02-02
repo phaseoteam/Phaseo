@@ -252,7 +252,7 @@ export async function verifyMFAEnrollmentAction(
         const { data: allFactors } = await supabase.auth.mfa.listFactors()
         if (allFactors?.totp) {
             const cleanupPromises = allFactors.totp
-                .filter(f => f.id !== factorId && f.status === 'unverified')
+                .filter(f => f.id !== factorId && (f as any).status === 'unverified')
                 .map(f => supabase.auth.mfa.unenroll({ factorId: f.id }))
             await Promise.all(cleanupPromises)
         }
@@ -373,7 +373,7 @@ export async function cleanupUnverifiedMFAAction() {
         const { data: existingFactors } = await supabase.auth.mfa.listFactors()
         if (existingFactors?.totp) {
             const cleanupPromises = existingFactors.totp
-                .filter(factor => factor.status === 'unverified')
+                .filter(factor => (factor as any).status === 'unverified')
                 .map(factor => supabase.auth.mfa.unenroll({ factorId: factor.id }))
 
             await Promise.all(cleanupPromises)

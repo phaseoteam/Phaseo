@@ -29,8 +29,24 @@ export interface SubscriptionPlan {
     };
 }
 
-export default async function getModelSubscriptionPlans(modelId: string): Promise<SubscriptionPlan[]> {
+export default async function getModelSubscriptionPlans(
+    modelId: string,
+    includeHidden: boolean
+): Promise<SubscriptionPlan[]> {
     const supabase = await createClient();
+
+    const { data: modelRow, error: modelError } = await supabase
+        .from("data_models")
+        .select("hidden")
+        .eq("model_id", modelId)
+        .maybeSingle();
+
+    if (modelError) {
+        throw new Error(modelError.message || "Failed to load model metadata");
+    }
+    if (!modelRow || (!includeHidden && modelRow.hidden)) {
+        throw new Error("Model not found");
+    }
 
     // First, get all plan_uuid for this model
     const { data: modelPlansData, error: modelPlansError } = await supabase
@@ -127,7 +143,10 @@ export default async function getModelSubscriptionPlans(modelId: string): Promis
  *
  * This wraps the fetcher with `unstable_cache` for at least 1 week of caching.
  */
-export async function getModelSubscriptionPlansCached(modelId: string): Promise<SubscriptionPlan[]> {
+export async function getModelSubscriptionPlansCached(
+    modelId: string,
+    includeHidden: boolean
+): Promise<SubscriptionPlan[]> {
     "use cache";
 
     cacheLife("days");
@@ -137,5 +156,5 @@ export async function getModelSubscriptionPlansCached(modelId: string): Promise<
     cacheTag("data:subscription_plan_models");
 
     console.log("[fetch] HIT DB for model subscription plans", modelId);
-    return getModelSubscriptionPlans(modelId);
+    return getModelSubscriptionPlans(modelId, includeHidden);
 }

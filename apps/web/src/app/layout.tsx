@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 		template: "%s | AI Stats",
 	},
 	description:
-		"Discover and compare the world's most comprehensive AI model database and conduit. Browse benchmarks, features, pricing, and access state-of-the-art AI models.",
+		"Discover and compare the world's most comprehensive AI model database and gateway. Browse benchmarks, features, pricing, and access state-of-the-art AI models.",
 	authors: [{ name: "AI Stats" }],
 	metadataBase: METADATA_BASE,
 	openGraph: {

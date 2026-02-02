@@ -24,6 +24,7 @@ from ai_stats_generated.models.chat_completions_request_response_format import C
 from ai_stats_generated.models.chat_completions_request_tool_choice import ChatCompletionsRequestToolChoice
 from ai_stats_generated.models.chat_completions_request_tools_inner import ChatCompletionsRequestToolsInner
 from ai_stats_generated.models.chat_message import ChatMessage
+from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from ai_stats_generated.models.reasoning_config import ReasoningConfig
 from typing import Optional, Set
 from typing_extensions import Self
@@ -54,9 +55,10 @@ class ChatCompletionsRequest(BaseModel):
     top_p: Optional[Union[Annotated[float, Field(le=1, strict=True, ge=0)], Annotated[int, Field(le=1, strict=True, ge=0)]]] = None
     response_format: Optional[ChatCompletionsRequestResponseFormat] = None
     usage: Optional[StrictBool] = None
+    provider: Optional[ProviderRoutingOptions] = None
     user_id: Optional[StrictStr] = None
     service_tier: Optional[StrictStr] = 'standard'
-    __properties: ClassVar[List[str]] = ["model", "system", "messages", "reasoning", "frequency_penalty", "logit_bias", "max_output_tokens", "meta", "presence_penalty", "seed", "stream", "temperature", "tools", "max_tool_calls", "parallel_tool_calls", "tool_choice", "top_k", "logprobs", "top_logprobs", "top_p", "response_format", "usage", "user_id", "service_tier"]
+    __properties: ClassVar[List[str]] = ["model", "system", "messages", "reasoning", "frequency_penalty", "logit_bias", "max_output_tokens", "meta", "presence_penalty", "seed", "stream", "temperature", "tools", "max_tool_calls", "parallel_tool_calls", "tool_choice", "top_k", "logprobs", "top_logprobs", "top_p", "response_format", "usage", "provider", "user_id", "service_tier"]
 
     @field_validator('service_tier')
     def service_tier_validate_enum(cls, value):
@@ -130,6 +132,9 @@ class ChatCompletionsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of response_format
         if self.response_format:
             _dict['response_format'] = self.response_format.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of provider
+        if self.provider:
+            _dict['provider'] = self.provider.to_dict()
         return _dict
 
     @classmethod
@@ -164,6 +169,7 @@ class ChatCompletionsRequest(BaseModel):
             "top_p": obj.get("top_p"),
             "response_format": ChatCompletionsRequestResponseFormat.from_dict(obj["response_format"]) if obj.get("response_format") is not None else None,
             "usage": obj.get("usage"),
+            "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None,
             "user_id": obj.get("user_id"),
             "service_tier": obj.get("service_tier") if obj.get("service_tier") is not None else 'standard'
         })

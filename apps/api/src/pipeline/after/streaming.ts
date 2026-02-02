@@ -1,4 +1,8 @@
 // src/lib/gateway/streaming.ts
+// Purpose: After-stage logic for payload shaping, pricing, auditing, and streaming.
+// Why: Keeps post-execution side-effects consistent.
+// How: Parses SSE frames and accumulates usage.
+
 import type { PipelineContext } from "../before/types";
 import type { PriceCard } from "../pricing";
 
@@ -27,6 +31,10 @@ type PassthroughWithPricingOpts = {
      */
     onFinalUsage?: (usageRaw: any, info: { aborted: boolean; sawFinalUsage: boolean }) => Promise<void> | void;
     /**
+     * Called once with the final snapshot frame (if detected).
+     */
+    onFinalSnapshot?: (snapshot: any) => void;
+    /**
      * Optional Server-Timing value; if present we'll include it.
      */
     timingHeader?: string;
@@ -38,7 +46,7 @@ type PassthroughWithPricingOpts = {
  *  - detecting the final snapshot frame with `usage` to trigger onFinalUsage
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
-    const { upstream, rewriteFrame, onFinalUsage, timingHeader, ctx, provider } = opts;
+    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, timingHeader, ctx, provider } = opts;
 
     const reader = upstream.body?.getReader();
     const dec = new TextDecoder();
@@ -50,9 +58,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     let firstFrameAt: number | null = null;
     let firstFrameAtMs: number | null = null;
 
-    // Write one SSE JSON object as "data: {...}\n\n"
-    const writeJson = async (obj: unknown) => {
-        const line = `data: ${JSON.stringify(obj)}\n\n`;
+    // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
+    const writeJson = async (obj: unknown, eventName?: string | null) => {
+        const prefix = eventName ? `event: ${eventName}\n` : "";
+        const line = `${prefix}data: ${JSON.stringify(obj)}\n\n`;
         await writer.write(enc.encode(line));
     };
 
@@ -110,12 +119,14 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                 buf = frames.pop() ?? "";
 
                 for (const raw of frames) {
-                    // SSE fields - we only care about "data:"
+                    // SSE fields - capture event name and data payload
                     let dataStr = "";
+                    let eventName: string | null = null;
                     for (const line of raw.split(/\n/)) {
                         const l = line.replace(/\r$/, "");
+                        if (l.startsWith("event:")) eventName = l.slice(6).trim();
                         if (l.startsWith("data:")) dataStr += l.slice(5).trimStart();
-                        // Keep ignoring "event:", "id:" etc - we unify by content only
+                        // Keep ignoring "id:" etc - we preserve event when present
                     }
                     if (!dataStr) continue;
 
@@ -165,10 +176,13 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
                     // Detect final snapshot to extract usage for billing   
                     if (isFinalSnapshot) {
+                        if (onFinalSnapshot) {
+                            try { onFinalSnapshot(json); } catch { }
+                        }
                         await finalizeUsage(usageCandidate, "complete");    
                     }
 
-                    await writeJson(json);
+                    await writeJson(json, eventName);
                 }
             }
         } finally {
@@ -195,3 +209,13 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     // Do not add custom gateway headers; everything important is in-body now.
     return new Response(ts.readable, { status: upstream.status, headers });
 }
+
+
+
+
+
+
+
+
+
+

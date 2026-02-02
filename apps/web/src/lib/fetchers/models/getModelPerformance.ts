@@ -86,10 +86,24 @@ export interface ModelPerformanceMetrics {
 
 export async function getModelPerformanceMetrics(
 	modelId: string,
+	includeHidden: boolean,
 	hours: number = HOURS_DEFAULT
 ): Promise<ModelPerformanceMetrics> {
 	const t0 = Date.now();
 	const client = createAdminClient();
+
+	const { data: modelRow, error: modelError } = await client
+		.from("data_models")
+		.select("hidden")
+		.eq("model_id", modelId)
+		.maybeSingle();
+
+	if (modelError) {
+		throw new Error(modelError.message ?? "Failed to load model metadata");
+	}
+	if (!modelRow || (!includeHidden && modelRow.hidden)) {
+		throw new Error("Model not found");
+	}
 
 	console.log(`[perf] querying model_id="${modelId}"`);
 
@@ -144,6 +158,7 @@ export async function getModelPerformanceMetrics(
 
 export async function getModelPerformanceMetricsCached(
 	modelId: string,
+	includeHidden: boolean,
 	hours: number = HOURS_DEFAULT
 ): Promise<ModelPerformanceMetrics> {
 	"use cache";
@@ -151,7 +166,7 @@ export async function getModelPerformanceMetricsCached(
 	cacheLife("days");
 	cacheTag("data:gateway_requests");
 
-	return getModelPerformanceMetrics(modelId, hours);
+	return getModelPerformanceMetrics(modelId, includeHidden, hours);
 }
 
 function toNumber(value: any): number | null {

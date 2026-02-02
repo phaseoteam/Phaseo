@@ -1,9 +1,14 @@
 // src/lib/gateway/error-handler.ts
+// Purpose: Normalize errors into gateway responses and emit audits/metrics.
+// Why: Centralizes error handling for consistent client behavior.
+// How: Parses upstream errors, builds payloads, sets headers, and triggers audits.
+
 import type { Endpoint } from "./types";
 import type { PipelineContext } from "@pipeline/before/types";
 import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { emitGatewayRequestEvent } from "@observability/events";
+import { getEdgeMeta } from "./edge";
 
 // Helper to extract error code from a response body
 export function extractErrorCode(body: any, fallback: string): string {
@@ -122,6 +127,11 @@ export async function handleError({
                 userAgent: null,
                 clientIp: null,
                 cfRay: null,
+                edgeColo: null,
+                edgeCity: null,
+                edgeCountry: null,
+                edgeContinent: null,
+                edgeAsn: null,
             };
         }
         const forwardedFor = req.headers.get("x-forwarded-for");
@@ -136,6 +146,7 @@ export async function handleError({
                 return null;
             }
         })();
+        const edge = getEdgeMeta(req);
         return {
             requestMethod: req.method ?? null,
             requestPath,
@@ -143,6 +154,11 @@ export async function handleError({
             userAgent: req.headers.get("user-agent"),
             clientIp,
             cfRay: req.headers.get("cf-ray"),
+            edgeColo: edge.colo ?? null,
+            edgeCity: edge.city ?? null,
+            edgeCountry: edge.country ?? null,
+            edgeContinent: edge.continent ?? null,
+            edgeAsn: edge.asn ?? null,
         };
     })();
     const statusCode = res.status ?? (stage === "before" ? 500 : 502);
@@ -230,6 +246,11 @@ export async function handleError({
         userAgent: requestMeta.userAgent,
         clientIp: requestMeta.clientIp,
         cfRay: requestMeta.cfRay,
+        edgeColo: requestMeta.edgeColo,
+        edgeCity: requestMeta.edgeCity,
+        edgeCountry: requestMeta.edgeCountry,
+        edgeContinent: requestMeta.edgeContinent,
+        edgeAsn: requestMeta.edgeAsn,
         extraJson: auditExtraJson,
     };
     if (stage === "execute") {
@@ -258,4 +279,14 @@ export async function handleError({
 
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
+
+
+
+
+
+
+
+
+
+
 

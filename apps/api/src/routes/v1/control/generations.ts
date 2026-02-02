@@ -1,3 +1,7 @@
+// Purpose: Route handler module.
+// Why: Keeps HTTP wiring separate from pipeline logic.
+// How: Maps requests to pipeline entrypoints and responses.
+
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { authenticate } from "@pipeline/before/auth";
@@ -41,3 +45,4 @@ async function handleGeneration(req: Request) {
 export const generationsRoutes = new Hono<Env>();
 
 generationsRoutes.get("/", withRuntime(handleGeneration));
+

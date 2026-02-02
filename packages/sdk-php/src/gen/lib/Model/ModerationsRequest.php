@@ -59,7 +59,8 @@ class ModerationsRequest implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $openAPITypes = [
         'model' => 'string',
         'meta' => 'bool',
-        'input' => '\AIStats\Sdk\Model\ModerationsRequestInput'
+        'input' => '\AIStats\Sdk\Model\ModerationsRequestInput',
+        'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
     /**
@@ -72,7 +73,8 @@ class ModerationsRequest implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $openAPIFormats = [
         'model' => null,
         'meta' => null,
-        'input' => null
+        'input' => null,
+        'provider' => null
     ];
 
     /**
@@ -83,7 +85,8 @@ class ModerationsRequest implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static array $openAPINullables = [
         'model' => false,
         'meta' => false,
-        'input' => false
+        'input' => false,
+        'provider' => false
     ];
 
     /**
@@ -174,7 +177,8 @@ class ModerationsRequest implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $attributeMap = [
         'model' => 'model',
         'meta' => 'meta',
-        'input' => 'input'
+        'input' => 'input',
+        'provider' => 'provider'
     ];
 
     /**
@@ -185,7 +189,8 @@ class ModerationsRequest implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $setters = [
         'model' => 'setModel',
         'meta' => 'setMeta',
-        'input' => 'setInput'
+        'input' => 'setInput',
+        'provider' => 'setProvider'
     ];
 
     /**
@@ -196,7 +201,8 @@ class ModerationsRequest implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $getters = [
         'model' => 'getModel',
         'meta' => 'getMeta',
-        'input' => 'getInput'
+        'input' => 'getInput',
+        'provider' => 'getProvider'
     ];
 
     /**
@@ -259,6 +265,7 @@ class ModerationsRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         $this->setIfExists('model', $data ?? [], null);
         $this->setIfExists('meta', $data ?? [], false);
         $this->setIfExists('input', $data ?? [], null);
+        $this->setIfExists('provider', $data ?? [], null);
     }
 
     /**
@@ -386,6 +393,33 @@ class ModerationsRequest implements ModelInterface, ArrayAccess, \JsonSerializab
             throw new \InvalidArgumentException('non-nullable input cannot be null');
         }
         $this->container['input'] = $input;
+
+        return $this;
+    }
+
+    /**
+     * Gets provider
+     *
+     * @return \AIStats\Sdk\Model\ProviderRoutingOptions|null
+     */
+    public function getProvider()
+    {
+        return $this->container['provider'];
+    }
+
+    /**
+     * Sets provider
+     *
+     * @param \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider
+     *
+     * @return self
+     */
+    public function setProvider($provider)
+    {
+        if (is_null($provider)) {
+            throw new \InvalidArgumentException('non-nullable provider cannot be null');
+        }
+        $this->container['provider'] = $provider;
 
         return $this;
     }

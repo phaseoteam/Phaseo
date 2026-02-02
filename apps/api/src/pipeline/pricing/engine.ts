@@ -1,3 +1,7 @@
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
 import { parseUsdToNanos, formatUsdFromNanosExact, nanosToCentsCeil } from "./money";
 import { matchesConditions, shallowMerge, evaluateConditions } from "./conditions";
 import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, PricingResult } from "./types";
@@ -378,3 +382,4 @@ export function computeBill(
         },
     };
 }
+

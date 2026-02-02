@@ -1,6 +1,14 @@
-import { getBindings, getSupabaseAdmin, dispatchBackground, configureRuntime, clearRuntime } from "@/runtime/env";
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
+import { getBindings, getSupabaseAdmin, dispatchBackground, configureRuntime, clearRuntime, getCache } from "@/runtime/env";
+import { keyVersionToken } from "@/core/kv";
 
 const enc = new TextEncoder();
+const KEY_CACHE_PREFIX = "gateway:key";
+const KEY_CACHE_TTL_SECONDS = 60;
+const KEY_CACHE_TTL_NEGATIVE_SECONDS = 60;
 
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
@@ -111,13 +119,48 @@ export type AuthSuccess = {
     internal?: boolean;
 };
 
+type KeyRow = {
+    id: string;
+    team_id: string;
+    status: string;
+    hash: string;
+};
+
+async function getCachedKey(kid: string): Promise<KeyRow | null> {
+    const versionToken = await keyVersionToken("kid", kid);
+    const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
+    if (!cached || typeof cached !== "object") return null;
+    const row = cached as Partial<KeyRow>;
+    if (!row.id || !row.team_id || !row.status || !row.hash) return null;
+    return row as KeyRow;
+}
+
+async function cacheKey(kid: string, row: KeyRow) {
+    const versionToken = await keyVersionToken("kid", kid);
+    await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
+        expirationTtl: KEY_CACHE_TTL_SECONDS,
+    });
+}
+
+async function cacheNegativeKey(kid: string) {
+    const versionToken = await keyVersionToken("kid", kid);
+    await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify({ missing: true }), {
+        expirationTtl: KEY_CACHE_TTL_NEGATIVE_SECONDS,
+    });
+}
+
 /**
  * Authenticate an incoming request using an Authorization: Bearer header.
  *
+ * Supports both:
+ * - API Keys: aistats_v1_sk_{kid}_{secret} (HMAC validation)
+ * - OAuth JWT: Bearer {jwt_token} (JWT signature validation)
+ *
  * Steps:
  *  1. Parse and validate the token format.
- *  2. Look up key metadata (id, team_id, status, stored hash) in Supabase.
- *  3. Compute HMAC(secret + pepper) and compare against stored hash.
+ *  2a. If JWT: Validate signature, claims, and check revocation
+ *  2b. If API Key: Look up key metadata (id, team_id, status, stored hash) in Supabase.
+ *  3. Compute HMAC(secret + pepper) and compare against stored hash (API key only).
  *  4. On success, update last_used_at and return team + key reference.
  *
  * @param authorizationHeader - Raw "Authorization" header string
@@ -130,6 +173,12 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
     }
     const token = authorizationHeader.slice(7).trim();
 
+    // 2. Route to OAuth or API key authentication
+    // Check if token is a JWT (3 dot-separated parts, not starting with aistats_)
+    if (isJWTFormat(token)) {
+        return await authenticateOAuth(token);
+    }
+
     const bindings = getBindings();
 
     // 2. Parse structured token.
@@ -138,14 +187,23 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
 
     // 3. Look up key in Supabase.
     const supabase = getSupabaseAdmin();
+    let keyRow = await getCachedKey(parsed.kid);
+    if (!keyRow) {
+        const { data, error } = await supabase
+            .from("keys")
+            .select("id, team_id, status, hash")
+            .eq("kid", parsed.kid)
+            .maybeSingle();
 
-    const { data: keyRow, error } = await supabase
-        .from("keys")
-        .select("id, team_id, status, hash")
-        .eq("kid", parsed.kid)
-        .maybeSingle();
+        if (error) return { ok: false, reason: "db_error" };
+        if (!data) {
+            await cacheNegativeKey(parsed.kid);
+            return { ok: false, reason: "key_not_found_or_revoked" };
+        }
+        keyRow = data as KeyRow;
+        await cacheKey(parsed.kid, keyRow);
+    }
 
-    if (error) return { ok: false, reason: "db_error" };
     if (!keyRow || keyRow.status !== "active") {
         return { ok: false, reason: "key_not_found_or_revoked" };
     }
@@ -206,4 +264,123 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
     // 5. If all checks fail - reject.
     return { ok: false, reason: "invalid_secret" };
 }
+
+/* -------------------- OAuth JWT Authentication -------------------- */
+
+/**
+ * Authenticate using OAuth JWT token
+ *
+ * This is called when the Authorization header contains a JWT token
+ * (Bearer token with 3 dot-separated parts) instead of an API key.
+ */
+async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailure> {
+    const bindings = getBindings();
+
+    // Check if SUPABASE_URL is configured
+    const supabaseUrl = bindings.SUPABASE_URL;
+    if (!supabaseUrl) {
+        console.error("SUPABASE_URL not configured for OAuth");
+        return { ok: false, reason: "oauth_not_configured" };
+    }
+
+    try {
+        // Import OAuth utilities dynamically to avoid circular dependencies
+        const { getJWKSWithCache, getJWKSWithRetry } = await import("@/lib/oauth/jwks");
+        const { validateOAuthToken, isJWT } = await import("@/lib/oauth/jwt");
+
+        // Verify it's actually a JWT
+        if (!isJWT(token)) {
+            return { ok: false, reason: "invalid_jwt_format" };
+        }
+
+        // Get JWKS (with caching via KV)
+        let jwks = await getJWKSWithCache(supabaseUrl, bindings.KV || null);
+
+        // Validate token
+        let validation = await validateOAuthToken(
+            token,
+            jwks.keys,
+            supabaseUrl,
+            "authenticated" // Expected audience
+        );
+
+        // If validation fails due to key not found, refresh JWKS and retry
+        if (!validation.valid && validation.error?.includes("Public key not found")) {
+            jwks = await getJWKSWithRetry(supabaseUrl, bindings.KV || null, true);
+            validation = await validateOAuthToken(
+                token,
+                jwks.keys,
+                supabaseUrl,
+                "authenticated"
+            );
+        }
+
+        if (!validation.valid || !validation.claims) {
+            return {
+                ok: false,
+                reason: validation.error || "invalid_oauth_token",
+            };
+        }
+
+        const claims = validation.claims;
+
+        // Check if authorization is revoked in database
+        const supabase = getSupabaseAdmin();
+        const { data: authorization, error: authError } = await supabase
+            .from("oauth_authorizations")
+            .select("revoked_at")
+            .eq("user_id", claims.user_id)
+            .eq("client_id", claims.client_id)
+            .eq("team_id", claims.team_id)
+            .maybeSingle();
+
+        if (authError) {
+            console.error("Error checking OAuth authorization:", authError);
+            return { ok: false, reason: "oauth_db_error" };
+        }
+
+        // If no authorization found or it's revoked, reject
+        if (!authorization || authorization.revoked_at !== null) {
+            return { ok: false, reason: "oauth_authorization_revoked" };
+        }
+
+        // Update last_used_at (fire and forget)
+        dispatchBackground((async () => {
+            configureRuntime(bindings);
+            try {
+                await supabase
+                    .from("oauth_authorizations")
+                    .update({ last_used_at: new Date().toISOString() })
+                    .eq("user_id", claims.user_id)
+                    .eq("client_id", claims.client_id)
+                    .eq("team_id", claims.team_id);
+            } catch (error) {
+                console.error("Error updating OAuth last_used_at:", error);
+            } finally {
+                clearRuntime();
+            }
+        })());
+
+        // Return success with OAuth-specific context
+        return {
+            ok: true,
+            teamId: claims.team_id,
+            apiKeyId: claims.client_id, // Use client_id as key reference for OAuth
+            apiKeyRef: `oauth_${claims.client_id}`,
+            apiKeyKid: claims.client_id,
+            internal: false,
+        } as AuthSuccess;
+    } catch (error: any) {
+        console.error("OAuth authentication error:", error);
+        return { ok: false, reason: "oauth_authentication_failed" };
+    }
+}
+
+/**
+ * Check if token looks like a JWT (3 dot-separated parts)
+ */
+function isJWTFormat(token: string): boolean {
+    return token.split(".").length === 3 && !token.startsWith("aistats_");
+}
+
 

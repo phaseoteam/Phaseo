@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import type { ResponsesRequest } from "@core/schemas";
 import { ResponsesSchema } from "@core/schemas";
@@ -505,3 +509,4 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         byokKeyId: keyInfo.byokId,
     };
 }
+

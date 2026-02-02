@@ -7,10 +7,16 @@ import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import { withUTM } from "@/lib/utm";
 
-export default async function ModelPricing({ modelId }: { modelId: string }) {
+export default async function ModelPricing({
+	modelId,
+	includeHidden,
+}: {
+	modelId: string;
+	includeHidden: boolean;
+}) {
 	const [providers, header] = await Promise.all([
-		getModelPricing(modelId),
-		getModelOverviewHeader(modelId),
+		getModelPricing(modelId, includeHidden),
+		getModelOverviewHeader(modelId, includeHidden),
 	]);
 
 	// Only consider providers that actually have pricing rules

@@ -1,0 +1,77 @@
+{
+  "key": "x-ai:x-ai/grok-imagine-video:video.edit",
+  "api_provider_id": "x-ai",
+  "provider_slug": "x-ai",
+  "api_model_id": "x-ai/grok-imagine-video",
+  "capability_id": "video.edit",
+  "rules": [
+    {
+      "meter": "input_image",
+      "unit": "image",
+      "unit_size": 1,
+      "price_per_unit": 0.002,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-01-29T00:00:00"
+    },
+    {
+      "meter": "input_video_seconds",
+      "unit": "video",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-01-29T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "video",
+      "unit_size": 1,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "480p"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-01-29T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "video",
+      "unit_size": 1,
+      "price_per_unit": 0.07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720p"
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-01-29T00:00:00"
+    }
+  ]
+}

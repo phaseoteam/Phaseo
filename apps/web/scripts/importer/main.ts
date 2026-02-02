@@ -39,6 +39,7 @@ async function main() {
         pricing: tracker => loadPricing(tracker, { modelId: modelFilter ?? null }),
         model: async tracker => {
             await loadModels(tracker, { modelId: modelFilter ?? null });
+            await loadProviders(tracker, { modelId: modelFilter ?? null });
             await loadPricing(tracker, { modelId: modelFilter ?? null });
         },
         benchmarks: loadBenchmarks,

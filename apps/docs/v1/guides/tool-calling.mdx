@@ -1,0 +1,22 @@
+---
+title: "Tool Calling"
+description: "Let models invoke tools and functions through the Gateway."
+---
+
+Tool calling lets models request structured actions such as calling APIs or running functions. The Gateway forwards tool definitions to providers that support them and normalizes the response shape where possible.
+
+## Supported endpoints
+
+Tool calling is typically used with:
+
+- `/v1/responses`
+- `/v1/chat/completions`
+- `/v1/messages` (Anthropic-compatible)
+
+Refer to the [API Reference](/v1/api-reference/introduction) for the exact request fields and response shapes.
+
+## Guidance
+
+- Define tools with clear names, descriptions, and JSON schemas.
+- Validate tool arguments before executing external actions.
+- Always handle the case where a model returns no tool calls.

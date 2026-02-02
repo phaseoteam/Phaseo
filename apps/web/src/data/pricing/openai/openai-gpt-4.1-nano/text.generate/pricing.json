@@ -1,0 +1,87 @@
+{
+  "key": "openai:openai/gpt-4.1-nano:text.generate",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-4.1-nano",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2.5e-08,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 4e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 5e-08,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 8e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-04-14T00:00:00"
+    }
+  ]
+}

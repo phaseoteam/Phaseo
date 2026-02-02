@@ -1,4 +1,8 @@
 // lib/gateway/providers/openai/endpoints/embeddings.ts
+// Purpose: Provider endpoint adapter for openai (embeddings).
+// Why: Encapsulates provider-specific request/response mapping.
+// How: Defines provider-specific endpoint adapters and configuration helpers.
+
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { EmbeddingsSchema, type EmbeddingsRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
@@ -7,14 +11,25 @@ import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "..
 
 
 
-function mapGatewayToOpenAIEmbeddings(body: EmbeddingsRequest) {
-    return {
+function mapGatewayToOpenAIEmbeddings(body: EmbeddingsRequest, providerId: string) {
+    const req: Record<string, any> = {
         input: body.input,
         model: body.model,
         encoding_format: body.encoding_format,
         dimensions: body.dimensions,
         user: body.user,
     };
+    if (providerId === "mistral") {
+        const mistralOptions = body.embedding_options?.mistral;
+        const outputDimension = mistralOptions?.output_dimension ?? body.dimensions;
+        if (typeof outputDimension === "number") {
+            req.output_dimension = outputDimension;
+        }
+        if (mistralOptions?.output_dtype) {
+            req.output_dtype = mistralOptions.output_dtype;
+        }
+    }
+    return req;
 }
 
 function mapOpenAIToGatewayEmbeddings(json: any): any {
@@ -34,7 +49,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         ...sanitizedBody,
         model: args.providerModelSlug || args.model,
     };
-    const req = mapGatewayToOpenAIEmbeddings(modifiedBody);
+    const req = mapGatewayToOpenAIEmbeddings(modifiedBody, args.providerId);
     const res = await fetch(openAICompatUrl(args.providerId, "/embeddings"), {
         method: "POST",
         headers: openAICompatHeaders(args.providerId, key),
@@ -60,3 +75,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     
     return { kind: "completed", upstream: res, bill, normalized, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
 }
+
+
+
+
+
+
+
+
+

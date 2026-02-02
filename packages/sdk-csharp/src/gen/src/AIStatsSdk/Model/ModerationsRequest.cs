@@ -36,12 +36,14 @@ namespace AIStatsSdk.Model
         /// <param name="model">model</param>
         /// <param name="input">input</param>
         /// <param name="meta">meta (default to false)</param>
+        /// <param name="provider">provider</param>
         [JsonConstructor]
-        public ModerationsRequest(string model, ModerationsRequestInput input, Option<bool?> meta = default)
+        public ModerationsRequest(string model, ModerationsRequestInput input, Option<bool?> meta = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Input = input;
             MetaOption = meta;
+            ProviderOption = provider;
             OnCreated();
         }
 
@@ -73,6 +75,19 @@ namespace AIStatsSdk.Model
         public bool? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Provider
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<ProviderRoutingOptions?> ProviderOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Provider
+        /// </summary>
+        [JsonPropertyName("provider")]
+        public ProviderRoutingOptions? Provider { get { return this.ProviderOption; } set { this.ProviderOption = new(value); } }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -83,6 +98,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Model: ").Append(Model).Append("\n");
             sb.Append("  Input: ").Append(Input).Append("\n");
             sb.Append("  Meta: ").Append(Meta).Append("\n");
+            sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -123,6 +139,7 @@ namespace AIStatsSdk.Model
             Option<string?> model = default;
             Option<ModerationsRequestInput?> input = default;
             Option<bool?> meta = default;
+            Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
             {
@@ -148,6 +165,9 @@ namespace AIStatsSdk.Model
                         case "meta":
                             meta = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
+                        case "provider":
+                            provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         default:
                             break;
                     }
@@ -169,7 +189,10 @@ namespace AIStatsSdk.Model
             if (meta.IsSet && meta.Value == null)
                 throw new ArgumentNullException(nameof(meta), "Property is not nullable for class ModerationsRequest.");
 
-            return new ModerationsRequest(model.Value!, input.Value!, meta);
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider), "Property is not nullable for class ModerationsRequest.");
+
+            return new ModerationsRequest(model.Value!, input.Value!, meta, provider);
         }
 
         /// <summary>
@@ -202,12 +225,21 @@ namespace AIStatsSdk.Model
             if (moderationsRequest.Input == null)
                 throw new ArgumentNullException(nameof(moderationsRequest.Input), "Property is required for class ModerationsRequest.");
 
+            if (moderationsRequest.ProviderOption.IsSet && moderationsRequest.Provider == null)
+                throw new ArgumentNullException(nameof(moderationsRequest.Provider), "Property is required for class ModerationsRequest.");
+
             writer.WriteString("model", moderationsRequest.Model);
 
             writer.WritePropertyName("input");
             JsonSerializer.Serialize(writer, moderationsRequest.Input, jsonSerializerOptions);
             if (moderationsRequest.MetaOption.IsSet)
                 writer.WriteBoolean("meta", moderationsRequest.MetaOption.Value!.Value);
+
+            if (moderationsRequest.ProviderOption.IsSet)
+            {
+                writer.WritePropertyName("provider");
+                JsonSerializer.Serialize(writer, moderationsRequest.Provider, jsonSerializerOptions);
+            }
         }
     }
 }

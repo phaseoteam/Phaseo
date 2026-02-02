@@ -53,10 +53,12 @@ function createCountryBuilder(iso: string): CountryBuilder {
 	};
 }
 
-export async function getCountrySummaries(): Promise<CountrySummary[]> {
+export async function getCountrySummaries(
+	includeHidden: boolean
+): Promise<CountrySummary[]> {
 	const [organisations, models] = await Promise.all([
 		getAllOrganisationsCached(),
-		getAllModelsCached(),
+		getAllModelsCached(includeHidden),
 	]);
 
 	const countryBuilders = new Map<string, CountryBuilder>();
@@ -162,7 +164,9 @@ export async function getCountrySummaries(): Promise<CountrySummary[]> {
 	return summaries;
 }
 
-export async function getCountrySummariesCached(): Promise<CountrySummary[]> {
+export async function getCountrySummariesCached(
+	includeHidden: boolean
+): Promise<CountrySummary[]> {
 	"use cache";
 
 	cacheLife("days");
@@ -170,5 +174,5 @@ export async function getCountrySummariesCached(): Promise<CountrySummary[]> {
 	cacheTag("data:models");
 
 	console.log("[fetch] HIT DB for country summaries");
-	return getCountrySummaries();
+	return getCountrySummaries(includeHidden);
 }

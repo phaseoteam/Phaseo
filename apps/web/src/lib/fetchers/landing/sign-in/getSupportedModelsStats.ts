@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from 'next/cache';
 import { createClient } from '@/utils/supabase/client';
+import { applyHiddenFilter } from '@/lib/fetchers/models/visibility';
 
 export interface SupportedModelsStats {
     modelsCount: number;
@@ -8,7 +9,7 @@ export interface SupportedModelsStats {
     recentCount: number;
 }
 
-async function fetchStats(): Promise<SupportedModelsStats> {
+async function fetchStats(includeHidden: boolean): Promise<SupportedModelsStats> {
     const supabase = await createClient();
 
     const now = Date.now();
@@ -23,16 +24,22 @@ async function fetchStats(): Promise<SupportedModelsStats> {
 
     try {
         const [modelsRes, orgsRes, apiModelsRes, recentRes] = await Promise.all([
-            supabase.from('data_models').select('*', { count: 'exact', head: true }),
+            applyHiddenFilter(
+                supabase.from('data_models').select('*', { count: 'exact', head: true }),
+                includeHidden
+            ),
             supabase.from('data_organisations').select('*', { count: 'exact', head: true }),
             supabase
                 .from('data_api_provider_models')
                 .select('*', { count: 'exact', head: true })
                 .eq('is_active_gateway', true),
-            supabase
-                .from('data_models')
-                .select('*', { count: 'exact', head: true })
-                .gte('created_at', cutoff),
+            applyHiddenFilter(
+                supabase
+                    .from('data_models')
+                    .select('*', { count: 'exact', head: true })
+                    .gte('created_at', cutoff),
+                includeHidden
+            ),
         ]);
 
         const getCount = (res: { count: number | null; error: any } | any) => {
@@ -53,12 +60,14 @@ async function fetchStats(): Promise<SupportedModelsStats> {
     }
 }
 
-export async function getSupportedModelsStatsCached(): Promise<SupportedModelsStats> {
+export async function getSupportedModelsStatsCached(
+    includeHidden: boolean
+): Promise<SupportedModelsStats> {
     "use cache";
 
     cacheLife("days");
     cacheTag("data:sign-in:supported-models-stats");
 
     console.log("[fetch] HIT for supported models stats");
-    return fetchStats();
+    return fetchStats(includeHidden);
 }

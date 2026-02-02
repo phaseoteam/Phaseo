@@ -72,6 +72,18 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for createAnthropicMessage
+     *
+     * Create message.
+     *
+     */
+    public function testCreateAnthropicMessage()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for createBatch
      *
      * Create batch.
@@ -144,6 +156,30 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for createOcr
+     *
+     * Create OCR.
+     *
+     */
+    public function testCreateOcr()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for createProvisioningKey
+     *
+     * Create provisioning key.
+     *
+     */
+    public function testCreateProvisioningKey()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for createResponse
      *
      * Create response.
@@ -204,6 +240,54 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for deleteProvisioningKey
+     *
+     * Delete provisioning key.
+     *
+     */
+    public function testDeleteProvisioningKey()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for deleteVideo
+     *
+     * Delete video.
+     *
+     */
+    public function testDeleteVideo()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for generateMusic
+     *
+     * Generate music.
+     *
+     */
+    public function testGenerateMusic()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getActivity
+     *
+     * Get activity.
+     *
+     */
+    public function testGetActivity()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for getAnalytics
      *
      * Get analytics.
@@ -216,12 +300,60 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for getCredits
+     *
+     * Get remaining credits.
+     *
+     */
+    public function testGetCredits()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for getGeneration
      *
      * Get generation.
      *
      */
     public function testGetGeneration()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getProvisioningKey
+     *
+     * Get provisioning key.
+     *
+     */
+    public function testGetProvisioningKey()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getVideo
+     *
+     * Get video status.
+     *
+     */
+    public function testGetVideo()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getVideoContent
+     *
+     * Get video content.
+     *
+     */
+    public function testGetVideoContent()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -264,6 +396,30 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for listProviders
+     *
+     * List providers.
+     *
+     */
+    public function testListProviders()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for listProvisioningKeys
+     *
+     * List provisioning keys.
+     *
+     */
+    public function testListProvisioningKeys()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for retrieveBatch
      *
      * Retrieve batch.
@@ -294,6 +450,18 @@ class DefaultApiTest extends TestCase
      *
      */
     public function testRoot()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for updateProvisioningKey
+     *
+     * Update provisioning key.
+     *
+     */
+    public function testUpdateProvisioningKey()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

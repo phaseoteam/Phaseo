@@ -1,0 +1,35 @@
+{
+  "key": "openai:openai/o4-mini-deep-research:batch",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/o4-mini-deep-research",
+  "capability_id": "batch",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-06-26T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 4e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-06-26T00:00:00"
+    }
+  ]
+}

@@ -26,6 +26,7 @@ Name | Type | Description | Notes
 **TopP** | Pointer to **float32** |  | [optional] 
 **ResponseFormat** | Pointer to [**ChatCompletionsRequestResponseFormat**](ChatCompletionsRequestResponseFormat.md) |  | [optional] 
 **Usage** | Pointer to **bool** |  | [optional] 
+**Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 **UserId** | Pointer to **string** |  | [optional] 
 **ServiceTier** | Pointer to **string** |  | [optional] [default to "standard"]
 
@@ -587,6 +588,31 @@ SetUsage sets Usage field to given value.
 `func (o *ChatCompletionsRequest) HasUsage() bool`
 
 HasUsage returns a boolean if a field has been set.
+
+### GetProvider
+
+`func (o *ChatCompletionsRequest) GetProvider() ProviderRoutingOptions`
+
+GetProvider returns the Provider field if non-nil, zero value otherwise.
+
+### GetProviderOk
+
+`func (o *ChatCompletionsRequest) GetProviderOk() (*ProviderRoutingOptions, bool)`
+
+GetProviderOk returns a tuple with the Provider field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetProvider
+
+`func (o *ChatCompletionsRequest) SetProvider(v ProviderRoutingOptions)`
+
+SetProvider sets Provider field to given value.
+
+### HasProvider
+
+`func (o *ChatCompletionsRequest) HasProvider() bool`
+
+HasProvider returns a boolean if a field has been set.
 
 ### GetUserId
 

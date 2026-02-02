@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "test:oauth": "vitest --config=vitest.oauth.config.ts",
+    "test:oauth:unit": "vitest --config=vitest.oauth.config.ts src/lib/oauth/__tests__",
+    "test:oauth:integration": "vitest --config=vitest.oauth.config.ts tests/oauth/flow.test.ts",
+    "test:oauth:security": "vitest --config=vitest.oauth.config.ts tests/oauth/security.test.ts",
+    "test:oauth:performance": "vitest --config=vitest.oauth.config.ts tests/oauth/performance.test.ts",
+    "test:oauth:coverage": "vitest --config=vitest.oauth.config.ts --coverage",
+    "test:oauth:watch": "vitest --config=vitest.oauth.config.ts --watch",
+    "test:oauth:ui": "vitest --config=vitest.oauth.config.ts --ui"
+  }
+}

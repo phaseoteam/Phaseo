@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // OpenAI Chat Completions - Encoder Tests
 import { describe, it, expect } from "vitest";
 import { encodeOpenAIChatResponse } from "../encode";
@@ -14,7 +18,7 @@ describe("encodeOpenAIChatResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "Hello! How can I help you today?",
+						content: [{ type: "text", text: "Hello! How can I help you today?" }],
 					},
 					finishReason: "stop",
 				},
@@ -55,7 +59,7 @@ describe("encodeOpenAIChatResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "call_abc123",
@@ -98,7 +102,7 @@ describe("encodeOpenAIChatResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "call_1",
@@ -134,7 +138,7 @@ describe("encodeOpenAIChatResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "Response without usage",
+						content: [{ type: "text", text: "Response without usage" }],
 					},
 					finishReason: "stop",
 				},
@@ -165,7 +169,7 @@ describe("encodeOpenAIChatResponse", () => {
 				choices: [
 					{
 						index: 0,
-						message: { role: "assistant", content: "Test" },
+						message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 						finishReason: irReason,
 					},
 				],
@@ -186,7 +190,7 @@ describe("encodeOpenAIChatResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: null,
+						content: [],
 						toolCalls: [
 							{
 								id: "call_1",
@@ -202,7 +206,7 @@ describe("encodeOpenAIChatResponse", () => {
 
 		const response = encodeOpenAIChatResponse(ir, "req-123");
 
-		expect(response.choices[0].message.content).toBeNull();
+		expect(response.choices[0].message.content).toBe("");
 		expect(response.choices[0].message.tool_calls).toBeDefined();
 	});
 
@@ -213,7 +217,7 @@ describe("encodeOpenAIChatResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Test" },
+					message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 					finishReason: "stop",
 				},
 			],
@@ -232,7 +236,7 @@ describe("encodeOpenAIChatResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Test" },
+					message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 					finishReason: "stop",
 				},
 			],
@@ -252,7 +256,7 @@ describe("encodeOpenAIChatResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "" },
+					message: { role: "assistant", content: [{ type: "text", text: "" }] },
 					finishReason: "stop",
 				},
 			],
@@ -273,7 +277,7 @@ describe("encodeOpenAIChatResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						refusal: "I cannot help with that request.",
 					},
 					finishReason: "stop",
@@ -296,12 +300,12 @@ describe("encodeOpenAIChatResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "First response" },
+					message: { role: "assistant", content: [{ type: "text", text: "First response" }] },
 					finishReason: "stop",
 				},
 				{
 					index: 1,
-					message: { role: "assistant", content: "Second response" },
+					message: { role: "assistant", content: [{ type: "text", text: "Second response" }] },
 					finishReason: "stop",
 				},
 			],
@@ -314,7 +318,7 @@ describe("encodeOpenAIChatResponse", () => {
 		expect(response.choices[1].index).toBe(1);
 	});
 
-	it("should handle reasoning choices separately", () => {
+	it("should encode reasoning content on the message", () => {
 		const ir: IRChatResponse = {
 			id: "req-123",
 			nativeId: "chatcmpl-abc123",
@@ -322,43 +326,14 @@ describe("encodeOpenAIChatResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Thinking..." },
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "reasoning_text", text: "Thinking..." },
+							{ type: "text", text: "Final answer" },
+						],
+					},
 					finishReason: "stop",
-					reasoning: true,
-				},
-				{
-					index: 1,
-					message: { role: "assistant", content: "Final answer" },
-					finishReason: "stop",
-					reasoning: false,
-				},
-			],
-		};
-
-		const response = encodeOpenAIChatResponse(ir, "req-123");
-
-		// Should encode both choices
-		expect(response.choices).toHaveLength(2);
-	});
-
-	it("should split Aion reasoning into reasoning_details", () => {
-		const ir: IRChatResponse = {
-			id: "req-123",
-			nativeId: "chatcmpl-abc123",
-			model: "gpt-4",
-			provider: "aionlabs",
-			choices: [
-				{
-					index: 0,
-					message: { role: "assistant", content: "Thinking..." },
-					finishReason: "stop",
-					reasoning: true,
-				},
-				{
-					index: 1,
-					message: { role: "assistant", content: "Final answer" },
-					finishReason: "stop",
-					reasoning: false,
 				},
 			],
 		};
@@ -367,8 +342,10 @@ describe("encodeOpenAIChatResponse", () => {
 
 		expect(response.choices).toHaveLength(1);
 		expect(response.choices[0].message.content).toBe("Final answer");
-		expect(response.reasoning_details).toHaveLength(1);
-		expect(response.reasoning_details?.[0].type).toBe("reasoning.text");
-		expect(response.reasoning_details?.[0].reasoning_content).toBe("Thinking...");
+		expect(response.choices[0].message.reasoning_content).toBe("Thinking...");
+		expect(response.choices[0].message.reasoning_details).toHaveLength(1);
+		expect(response.choices[0].message.reasoning_details?.[0].type).toBe("text");
+		expect(response.choices[0].message.reasoning_details?.[0].text).toBe("Thinking...");
 	});
 });
+

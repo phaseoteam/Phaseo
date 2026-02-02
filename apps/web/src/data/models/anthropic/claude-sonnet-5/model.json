@@ -1,0 +1,17 @@
+{
+  "model_id": "anthropic/claude-sonnet-5",
+  "organisation_id": "anthropic",
+  "name": "Claude Sonnet 5",
+  "status": "Rumoured",
+  "previous_model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

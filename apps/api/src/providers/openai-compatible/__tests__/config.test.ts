@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import { describe, it, expect } from "vitest";
 import { resolveOpenAICompatRoute } from "../config";
 
@@ -12,3 +16,4 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("openai", "davinci-002")).toBe("legacy_completions");
 	});
 });
+

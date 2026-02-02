@@ -2,7 +2,32 @@
   "organisation_id": "naver-hyperclova",
   "name": "NAVER",
   "country_code": "KR",
-  "description": null,
+  "description": "NAVER’s HyperCLOVA / HyperCLOVA X is the company’s flagship Korean-centric LLM family, with public releases and research artifacts distributed via NAVER Cloud channels (e.g., GitHub and Hugging Face).",
   "colour": "#03C75A",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://clova.ai/en/hyperclova"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/NAVER__Cloud"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/navercloud/"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/NAVER-Cloud-HyperCLOVA-X"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/naver-hyperclovax"
+    },
+    {
+      "platform": "youtube",
+      "url": "https://www.youtube.com/@playnaver"
+    }
+  ]
 }

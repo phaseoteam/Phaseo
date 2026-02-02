@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
 	getMeterInputConfig,
 	formatMeterName,
+	parseMeter,
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 
@@ -31,13 +32,16 @@ export function UsageInputs({
 			</CardHeader>
 			<CardContent className="space-y-4">
 				{meters.map((meter) => {
-					const inputConfig = getMeterInputConfig(meter.unit);
+					const inputConfig = getMeterInputConfig(meter.unit, meter.meter);
+					const derivedUnit = parseMeter(meter.meter).unit;
+					const unitLabel =
+						derivedUnit !== "unknown" ? derivedUnit : meter.unit;
 					return (
 						<div key={meter.meter} className="space-y-2">
 							<Label htmlFor={meter.meter}>
 								{formatMeterName(meter.meter)}
 								<span className="text-xs text-muted-foreground ml-2">
-									({meter.unit})
+									({unitLabel})
 								</span>
 							</Label>
 							<Input

@@ -1,0 +1,31 @@
+---
+title: "Routing and Fallbacks"
+description: "How the Gateway selects providers and keeps requests reliable."
+---
+
+The AI Stats Gateway routes each request to a provider that can serve your chosen model. When a provider is slow, rate-limited, or returning errors, the Gateway can attempt fallbacks so your requests still complete.
+
+## How routing works at a high level
+
+- You send a request with a model id.
+- The Gateway evaluates provider health, latency, and capability coverage.
+- A provider is selected and the request is executed.
+
+Use the [Health endpoint](/v1/api-reference/endpoint/health) to inspect provider health, routing scores, and breaker status.
+
+## Fallback behavior
+
+If a provider returns errors or rate limits, the Gateway can retry or route to another provider that supports the same model. You should still handle 429 and 5xx responses with exponential backoff.
+
+Read more in:
+
+- [Rate limits](/v1/developers/rate-limits)
+- [Error handling](/v1/developers/error-handling)
+
+## BYOK considerations
+
+If you bring your own provider key, that provider's limits and policies apply. Fallbacks are still attempted where possible, but upstream account limits can constrain available options.
+
+## What to log
+
+For production workloads, log request ids, response status codes, and model ids so you can correlate failures and confirm routing behavior when debugging.

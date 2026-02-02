@@ -2,7 +2,32 @@
   "organisation_id": "liquid-ai",
   "name": "Liquid AI",
   "country_code": "US",
-  "description": null,
+  "description": "Liquid AI builds efficient, general-purpose foundation models for organisations, publishing models and related resources publicly (e.g., on Hugging Face) alongside their main site.",
   "colour": "#000000",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://www.liquid.ai"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/LiquidAI_"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/liquid-ai/"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/Liquid4All"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/liquidai"
+    },
+    {
+      "platform": "youtube",
+      "url": "https://www.youtube.com/@LiquidAI"
+    }
+  ]
 }

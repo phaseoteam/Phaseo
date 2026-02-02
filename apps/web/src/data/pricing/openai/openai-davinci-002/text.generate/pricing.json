@@ -1,0 +1,61 @@
+{
+  "key": "openai:openai/davinci-002:text.generate",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/davinci-002",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2023-08-22T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2023-08-22T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2023-08-22T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2023-08-22T00:00:00"
+    }
+  ]
+}

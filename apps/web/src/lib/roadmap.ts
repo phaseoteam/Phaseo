@@ -33,13 +33,13 @@ export type RoadmapMilestone = {
 export const MILESTONES: RoadmapMilestone[] = [
     {
         key: "gateway",
-        title: "Expanded Conduit",
+        title: "Expanded Gateway",
         status: "Ongoing",
         description:
             "Continuous expansion of supported models, modalities and providers with smarter and faster routing.",
         icon: "Infinity",
         continuous: true,
-        href: "/conduit",
+        href: "/gateway",
     },
     {
         key: "expanded-database",

@@ -1,0 +1,77 @@
+// Executor type contracts
+// Purpose: Shared type definitions for executor inputs/outputs and billing metadata.
+// Why: Keeps executor interfaces consistent across providers and capabilities.
+// How: Exposes typed shapes consumed by the execute pipeline and provider adapters.
+
+import type { IRChatRequest, IRChatResponse } from "@core/ir";
+import type { ByokKeyMeta } from "@pipeline/before/types";
+import type { Endpoint } from "@core/types";
+import type { Protocol } from "@protocols/detect";
+
+export type ExecutorExecuteArgs = {
+	ir: IRChatRequest;
+
+	requestId: string;
+	teamId: string;
+	providerId: string;
+	endpoint: Endpoint;
+	protocol?: Protocol;
+	capability?: string;
+
+	providerModelSlug?: string | null;
+	capabilityParams?: Record<string, any> | null;
+	maxInputTokens?: number | null;
+	maxOutputTokens?: number | null;
+
+	byokMeta: ByokKeyMeta[];
+	pricingCard: any;
+
+	meta: {
+		debug?: boolean;
+		returnMeta?: boolean;
+		echoUpstreamRequest?: boolean;
+		upstreamStartMs?: number; // Timestamp when upstream request started
+	};
+};
+
+export type Bill = {
+	cost_cents: number;
+	currency: string;
+	usage?: Record<string, any>;
+	upstream_id?: string | null;
+	finish_reason?: string | null;
+};
+
+export type ExecutorCompletedResult = {
+	kind: "completed";
+	ir?: IRChatResponse;
+	bill: Bill;
+	upstream: Response;
+	keySource: "gateway" | "byok";
+	byokKeyId: string | null;
+	mappedRequest?: string;
+	rawResponse?: any;
+	timing?: {
+		latencyMs?: number;
+		generationMs?: number;
+	};
+};
+
+export type ExecutorStreamingResult = {
+	kind: "stream";
+	stream: ReadableStream<Uint8Array>;
+	usageFinalizer: () => Promise<Bill | null>;
+	bill: Bill;
+	upstream: Response;
+	keySource: "gateway" | "byok";
+	byokKeyId: string | null;
+	mappedRequest?: string;
+	timing?: {
+		latencyMs?: number;
+		generationMs?: number;
+	};
+};
+
+export type ExecutorResult = ExecutorCompletedResult | ExecutorStreamingResult;
+
+export type ProviderExecutor = (args: ExecutorExecuteArgs) => Promise<ExecutorResult>;

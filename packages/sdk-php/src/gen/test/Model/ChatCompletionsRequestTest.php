@@ -278,6 +278,15 @@ class ChatCompletionsRequestTest extends TestCase
     }
 
     /**
+     * Test attribute "provider"
+     */
+    public function testPropertyProvider()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test attribute "user_id"
      */
     public function testPropertyUserId()

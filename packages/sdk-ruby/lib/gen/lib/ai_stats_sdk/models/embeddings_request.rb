@@ -19,20 +19,30 @@ module AIStatsSdk
 
     attr_accessor :input
 
+    # Alias for input.
+    attr_accessor :inputs
+
     attr_accessor :encoding_format
 
     attr_accessor :dimensions
 
+    attr_accessor :embedding_options
+
     attr_accessor :user
+
+    attr_accessor :provider
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'model' => :'model',
         :'input' => :'input',
+        :'inputs' => :'inputs',
         :'encoding_format' => :'encoding_format',
         :'dimensions' => :'dimensions',
-        :'user' => :'user'
+        :'embedding_options' => :'embedding_options',
+        :'user' => :'user',
+        :'provider' => :'provider'
       }
     end
 
@@ -50,16 +60,21 @@ module AIStatsSdk
     def self.openapi_types
       {
         :'model' => :'String',
-        :'input' => :'EmbeddingsRequestInput',
+        :'input' => :'OneOfstringarray',
+        :'inputs' => :'OneOfstringarray',
         :'encoding_format' => :'String',
         :'dimensions' => :'Integer',
-        :'user' => :'String'
+        :'embedding_options' => :'Object',
+        :'user' => :'String',
+        :'provider' => :'ProviderRoutingOptions'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'input',
+        :'inputs',
       ])
     end
 
@@ -81,14 +96,14 @@ module AIStatsSdk
 
       if attributes.key?(:'model')
         self.model = attributes[:'model']
-      else
-        self.model = nil
       end
 
       if attributes.key?(:'input')
         self.input = attributes[:'input']
-      else
-        self.input = nil
+      end
+
+      if attributes.key?(:'inputs')
+        self.inputs = attributes[:'inputs']
       end
 
       if attributes.key?(:'encoding_format')
@@ -99,8 +114,16 @@ module AIStatsSdk
         self.dimensions = attributes[:'dimensions']
       end
 
+      if attributes.key?(:'embedding_options')
+        self.embedding_options = attributes[:'embedding_options']
+      end
+
       if attributes.key?(:'user')
         self.user = attributes[:'user']
+      end
+
+      if attributes.key?(:'provider')
+        self.provider = attributes[:'provider']
       end
     end
 
@@ -109,14 +132,6 @@ module AIStatsSdk
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if @model.nil?
-        invalid_properties.push('invalid value for "model", model cannot be nil.')
-      end
-
-      if @input.nil?
-        invalid_properties.push('invalid value for "input", input cannot be nil.')
-      end
-
       if !@dimensions.nil? && @dimensions < 1
         invalid_properties.push('invalid value for "dimensions", must be greater than or equal to 1.')
       end
@@ -128,30 +143,8 @@ module AIStatsSdk
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      return false if @model.nil?
-      return false if @input.nil?
       return false if !@dimensions.nil? && @dimensions < 1
       true
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] model Value to be assigned
-    def model=(model)
-      if model.nil?
-        fail ArgumentError, 'model cannot be nil'
-      end
-
-      @model = model
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] input Value to be assigned
-    def input=(input)
-      if input.nil?
-        fail ArgumentError, 'input cannot be nil'
-      end
-
-      @input = input
     end
 
     # Custom attribute writer method with validation
@@ -175,9 +168,12 @@ module AIStatsSdk
       self.class == o.class &&
           model == o.model &&
           input == o.input &&
+          inputs == o.inputs &&
           encoding_format == o.encoding_format &&
           dimensions == o.dimensions &&
-          user == o.user
+          embedding_options == o.embedding_options &&
+          user == o.user &&
+          provider == o.provider
     end
 
     # @see the `==` method
@@ -189,7 +185,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, input, encoding_format, dimensions, user].hash
+      [model, input, inputs, encoding_format, dimensions, embedding_options, user, provider].hash
     end
 
     # Builds the object from hash

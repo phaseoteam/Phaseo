@@ -1,4 +1,8 @@
 // src/lib/gateway/audit/axiom.ts
+// Purpose: Persist audits and send analytics events.
+// Why: Ensures observability for every request.
+// How: Builds a flattened event and sends it to Axiom.
+
 import { getBindings } from "@/runtime/env";
 import type { Endpoint } from "@core/types";
 
@@ -10,6 +14,7 @@ export type AxiomArgs = {
     // Core identifiers
     requestId: string;
     teamId: string;
+    keyId?: string | null;
 
     // Request facts
     provider: string;
@@ -28,6 +33,11 @@ export type AxiomArgs = {
     userAgent?: string | null;
     clientIp?: string | null;
     cfRay?: string | null;
+    edgeColo?: string | null;
+    edgeCity?: string | null;
+    edgeCountry?: string | null;
+    edgeContinent?: string | null;
+    edgeAsn?: number | null;
 
     // Native / HTTP
     nativeResponseId?: string | null;
@@ -38,8 +48,8 @@ export type AxiomArgs = {
 
     // Timings (ms)
     // End-to-end (redundant but handy)
-    generationMs?: number | null;     // adapter/provider time you surface
-    latencyMs?: number | null;        // end-to-end total you want to show      
+    generationMs?: number | null;     // adapter/provider time you record
+    latencyMs?: number | null;        // end-to-end total you want to show
     throughput?: number | null;       // tokens/sec if you compute it
     internalLatencyMs?: number | null; // request->outbound dispatch time
 
@@ -68,13 +78,81 @@ export type AxiomArgs = {
         total_nanos?: number | null;
         total_usd_str?: string | null;
         currency?: "USD" | string | null;
-        // To avoid field explosion, we’ll stringify the line items.
+        // To avoid field explosion, we'll stringify the line items.
         lines_json?: string | null;     // JSON.stringify(payload.usage.pricing.lines) or null
         lines?: Array<{ dimension?: string; line_nanos?: number | null }> | null;
     } | null;
 
     // Completion
     finishReason?: string | null;
+
+    // ============================================================================
+    // TEAM & KEY ENRICHMENT (Wide Event Context for Observability)
+    // Purpose: User/team context following loggingsucks.com pattern
+    // ============================================================================
+    teamEnrichment?: {
+        tier?: string | null;
+        created_at?: string | null;
+        account_age_days?: number | null;
+        balance_nanos?: number | null;
+        balance_usd?: number | null;
+        balance_is_low?: boolean | null;
+        total_requests?: number | null;
+        total_spend_nanos?: number | null;
+        total_spend_usd?: number | null;
+        spend_24h_nanos?: number | null;
+        spend_24h_usd?: number | null;
+        spend_7d_nanos?: number | null;
+        spend_7d_usd?: number | null;
+        spend_30d_nanos?: number | null;
+        spend_30d_usd?: number | null;
+        requests_1h?: number | null;
+        requests_24h?: number | null;
+    } | null;
+
+    keyEnrichment?: {
+        name?: string | null;
+        created_at?: string | null;
+        key_age_days?: number | null;
+        total_requests?: number | null;
+        total_spend_nanos?: number | null;
+        total_spend_usd?: number | null;
+        requests_today?: number | null;
+        spend_today_nanos?: number | null;
+        spend_today_usd?: number | null;
+        daily_limit_pct?: number | null;
+    } | null;
+
+    // ============================================================================
+    // REQUEST ENRICHMENT (Business Context)
+    // ============================================================================
+    requestEnrichment?: {
+        has_tools?: boolean | null;
+        tool_count?: number | null;
+        has_images?: boolean | null;
+        has_audio?: boolean | null;
+        has_video?: boolean | null;
+        message_count?: number | null;
+        system_prompt_length?: number | null;
+        max_tokens_requested?: number | null;
+        temperature?: number | null;
+        top_p?: number | null;
+        presence_penalty?: number | null;
+        frequency_penalty?: number | null;
+    } | null;
+
+    // ============================================================================
+    // ROUTING & HEALTH CONTEXT (Flattened for queryability)
+    // ============================================================================
+    routingContext?: {
+        candidates_count?: number | null;
+        first_provider?: string | null;
+        attempts?: number | null;
+        failed_providers?: string[] | null;
+        failure_reasons?: string[] | null;
+        circuit_breaker_open?: boolean | null;
+        was_probe?: boolean | null;
+    } | null;
 
     // Misc
     env?: string | null;              // NODE_ENV, etc.
@@ -137,13 +215,14 @@ export function buildAxiomEvent(a: AxiomArgs) {
             ? a.pricing.total_nanos / 1_000_000_000
             : (totalCents / 100));
 
-    const tokens_per_dollar = totalUsd > 0 ? tokensTot / totalUsd : null;
-
-    // A single flat object (Axiom-friendly)
+    // A single flat object (Axiom-friendly) following loggingsucks.com wide event pattern
     return {
-        // identity
+        // ====================================================================
+        // IDENTITY & CORE
+        // ====================================================================
         request_id: a.requestId,
         team_id: a.teamId,
+        key_id: a.keyId ?? null,
 
         // app
         app_title: a.appTitle ?? null,
@@ -169,14 +248,23 @@ export function buildAxiomEvent(a: AxiomArgs) {
         user_agent: a.userAgent ?? null,
         client_ip: a.clientIp ?? null,
         cf_ray: a.cfRay ?? null,
+        location: a.edgeColo ?? null,
+        edge_city: a.edgeCity ?? null,
+        edge_country: a.edgeCountry ?? null,
+        edge_continent: a.edgeContinent ?? null,
+        edge_asn: a.edgeAsn ?? null,
 
-        // timing: surfaced
+        // ====================================================================
+        // TIMING
+        // ====================================================================
         generation_ms: a.generationMs ?? null,
         latency_ms: a.latencyMs ?? null,
         throughput_tps,
         internal_latency_ms: a.internalLatencyMs ?? null,
 
-        // usage
+        // ====================================================================
+        // USAGE
+        // ====================================================================
         usage_tokens_in: tokensIn,
         usage_tokens_out: tokensOut,
         usage_tokens_total: tokensTot,
@@ -193,7 +281,9 @@ export function buildAxiomEvent(a: AxiomArgs) {
         usage_video_input_count: a.usage?.input_video_count ?? null,
         usage_video_output_count: a.usage?.output_video_count ?? (a.usage as any)?.output_video_seconds ?? null,
 
-        // cost
+        // ====================================================================
+        // COST
+        // ====================================================================
         cost_total_cents: totalCents,
         cost_total_usd: totalUsd,
         cost_total_nanos: a.pricing?.total_nanos ?? null,
@@ -217,9 +307,72 @@ export function buildAxiomEvent(a: AxiomArgs) {
 
         // derived metrics
         tps_total: throughput_tps,
-        tokens_per_dollar: tokens_per_dollar,
 
-        // misc
+        // ====================================================================
+        // TEAM ENRICHMENT (Wide Event Context - "What type of user am I dealing with?")
+        // ====================================================================
+        team_tier: a.teamEnrichment?.tier ?? null,
+        team_created_at: a.teamEnrichment?.created_at ?? null,
+        team_account_age_days: a.teamEnrichment?.account_age_days ?? null,
+        team_balance_nanos: a.teamEnrichment?.balance_nanos ?? null,
+        team_balance_usd: a.teamEnrichment?.balance_usd ?? null,
+        team_balance_is_low: a.teamEnrichment?.balance_is_low ?? null,
+        team_total_requests: a.teamEnrichment?.total_requests ?? null,
+        team_total_spend_nanos: a.teamEnrichment?.total_spend_nanos ?? null,
+        team_total_spend_usd: a.teamEnrichment?.total_spend_usd ?? null,
+        team_spend_24h_nanos: a.teamEnrichment?.spend_24h_nanos ?? null,
+        team_spend_24h_usd: a.teamEnrichment?.spend_24h_usd ?? null,
+        team_spend_7d_nanos: a.teamEnrichment?.spend_7d_nanos ?? null,
+        team_spend_7d_usd: a.teamEnrichment?.spend_7d_usd ?? null,
+        team_spend_30d_nanos: a.teamEnrichment?.spend_30d_nanos ?? null,
+        team_spend_30d_usd: a.teamEnrichment?.spend_30d_usd ?? null,
+        team_requests_1h: a.teamEnrichment?.requests_1h ?? null,
+        team_requests_24h: a.teamEnrichment?.requests_24h ?? null,
+
+        // ====================================================================
+        // KEY ENRICHMENT (API Key Context)
+        // ====================================================================
+        key_name: a.keyEnrichment?.name ?? null,
+        key_created_at: a.keyEnrichment?.created_at ?? null,
+        key_age_days: a.keyEnrichment?.key_age_days ?? null,
+        key_total_requests: a.keyEnrichment?.total_requests ?? null,
+        key_total_spend_nanos: a.keyEnrichment?.total_spend_nanos ?? null,
+        key_total_spend_usd: a.keyEnrichment?.total_spend_usd ?? null,
+        key_requests_today: a.keyEnrichment?.requests_today ?? null,
+        key_spend_today_nanos: a.keyEnrichment?.spend_today_nanos ?? null,
+        key_spend_today_usd: a.keyEnrichment?.spend_today_usd ?? null,
+        key_daily_limit_pct: a.keyEnrichment?.daily_limit_pct ?? null,
+
+        // ====================================================================
+        // REQUEST ENRICHMENT (Business Context)
+        // ====================================================================
+        request_has_tools: a.requestEnrichment?.has_tools ?? null,
+        request_tool_count: a.requestEnrichment?.tool_count ?? null,
+        request_has_images: a.requestEnrichment?.has_images ?? null,
+        request_has_audio: a.requestEnrichment?.has_audio ?? null,
+        request_has_video: a.requestEnrichment?.has_video ?? null,
+        request_message_count: a.requestEnrichment?.message_count ?? null,
+        request_system_prompt_length: a.requestEnrichment?.system_prompt_length ?? null,
+        request_max_tokens: a.requestEnrichment?.max_tokens_requested ?? null,
+        request_temperature: a.requestEnrichment?.temperature ?? null,
+        request_top_p: a.requestEnrichment?.top_p ?? null,
+        request_presence_penalty: a.requestEnrichment?.presence_penalty ?? null,
+        request_frequency_penalty: a.requestEnrichment?.frequency_penalty ?? null,
+
+        // ====================================================================
+        // ROUTING & HEALTH CONTEXT (Flattened for queryability)
+        // ====================================================================
+        routing_candidates_count: a.routingContext?.candidates_count ?? null,
+        routing_first_provider: a.routingContext?.first_provider ?? null,
+        routing_attempts: a.routingContext?.attempts ?? null,
+        routing_failed_providers: a.routingContext?.failed_providers ?? null,
+        routing_failure_reasons: a.routingContext?.failure_reasons ?? null,
+        routing_circuit_breaker_open: a.routingContext?.circuit_breaker_open ?? null,
+        routing_was_probe: a.routingContext?.was_probe ?? null,
+
+        // ====================================================================
+        // MISC
+        // ====================================================================
         env: a.env ?? getBindings().NODE_ENV ?? null,
         api_version: a.apiVersion ?? null,
         extra_json: a.extraJson ?? null,
@@ -228,8 +381,29 @@ export function buildAxiomEvent(a: AxiomArgs) {
     };
 }
 
-/** Send one event to Axiom (JSON ingestion). */
+/** Send one event to Axiom (JSON ingestion) with tail sampling. */
 export async function sendAxiomEvent(args: AxiomArgs) {
+    // ============================================================================
+    // TAIL SAMPLING (loggingsucks.com pattern)
+    // ============================================================================
+    // Tail Sampling %: 100% (adjust to reduce log volume if needed)
+    const TAIL_SAMPLE_RATE = 1.0; // 1.0 = 100%, 0.05 = 5%, etc.
+
+    // Always log these (regardless of sample rate):
+    const alwaysLog = (
+        !args.success ||                                    // All errors
+        (args.statusCode && args.statusCode >= 500) ||      // All 5xx
+        args.teamEnrichment?.tier === "enterprise" ||       // Enterprise customers
+        (args.teamEnrichment?.spend_30d_usd ?? 0) > 100 ||  // High spenders ($100+/month)
+        args.routingContext?.circuit_breaker_open ||        // Circuit breaker open
+        (args.latencyMs && args.latencyMs > 10000)          // Very slow requests (>10s)
+    );
+
+    // Sample based on rate if not in "always log" category
+    if (!alwaysLog && Math.random() > TAIL_SAMPLE_RATE) {
+        return; // Skip this event (sampled out)
+    }
+
     const bindings = getBindings();
     const dataset = args.dataset ?? bindings.AXIOM_DATASET;
     const token = args.token ?? bindings.AXIOM_API_KEY;
@@ -273,3 +447,13 @@ export async function sendAxiomEvent(args: AxiomArgs) {
         clearTimeout(timeoutId);
     }
 }
+
+
+
+
+
+
+
+
+
+

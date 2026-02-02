@@ -1,4 +1,8 @@
 // lib/gateway/execute/providers.ts
+// Purpose: Execute-stage logic for routing, attempts, and provider health.
+// Why: Centralizes execution/failover behavior.
+// How: Ranks providers using health metrics and weights.
+
 import { routeProviders } from "./routing";
 import type { PipelineContext } from "../before/types";
 import type { ProviderCandidate } from "../before/types";
@@ -20,3 +24,13 @@ export async function rankProviders(
     }));
     return ranked;
 }
+
+
+
+
+
+
+
+
+
+

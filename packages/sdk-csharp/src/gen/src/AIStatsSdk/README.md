@@ -55,8 +55,8 @@ namespace YourProject
         {
             var host = CreateHostBuilder(args).Build();
             var api = host.Services.GetRequiredService<IDefaultApi>();
-            ICreateBatchApiResponse apiResponse = await api.CreateBatchAsync("todo");
-            BatchResponse? model = apiResponse.Ok();
+            ICreateAnthropicMessageApiResponse apiResponse = await api.CreateAnthropicMessageAsync("todo");
+            AnthropicMessagesResponse? model = apiResponse.Ok();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) => Host.CreateDefaultBuilder(args)

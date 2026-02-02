@@ -21,7 +21,7 @@ Make sure you have the following in place:
 ## 1. Create and store an API key
 
 1.  Log in to the AI Stats dashboard.
-2.  Navigate to **Gateway → API Keys**.
+2.  Navigate to **Gateway -> API Keys**.
 3.  Create a new key, give it a descriptive name, and copy the generated value.
 4.  Store the key securely using your secret manager or environment variables:
 
@@ -30,14 +30,14 @@ Make sure you have the following in place:
 AI_STATS_API_KEY="aistats_v1_k_xx_xxx"
 ```
 
-> 💡 **Tip**
+> Tip
 > Rotate keys regularly and remove any that are no longer needed. This keeps access scoped and auditable.
 
 ---
 
 ## 2. Choose an endpoint and model
 
-Pick the endpoint that matches your use case. The Gateway normalises payloads across providers, so request shapes are consistent:
+Pick the endpoint that matches your use case. The Gateway normalizes payloads across providers, so request shapes are consistent:
 
 | Endpoint                 | When to use it                                     |
 | ------------------------ | -------------------------------------------------- |
@@ -46,8 +46,6 @@ Pick the endpoint that matches your use case. The Gateway normalises payloads ac
 | `/v1/messages`           | Anthropic-compatible messages API.                 |
 | `/v1/moderations`        | Safety and content policy checks.                  |
 | `/v1/images/generations` | Image generation from text prompts.                |
-
-More endpoints are coming soon. We will keep the API compatible as we expand.
 
 Refer to the [API Reference](../api-reference/introduction) for the complete list of supported parameters and responses.
 
@@ -58,7 +56,7 @@ Refer to the [API Reference](../api-reference/introduction) for the complete lis
 Here is a minimal `curl` example using the chat completions endpoint:
 
 ```bash
-curl https://gateway.ai-stats.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.app/v1/chat/completions \
     -H "Authorization: Bearer $AI_STATS_API_KEY" \
     -H "Content-Type: application/json" \
     -d '{
@@ -70,11 +68,9 @@ curl https://gateway.ai-stats.phaseo.app/v1/chat/completions \
     }'
 ```
 
-The response includes metadata such as provider, model version, and token usage so you can track costs regardless of which provider served the request.
-
 ---
 
-## 4. Handle configuration for the API
+## 4. Configure environments
 
 Store your API key in environment variables for different environments:
 
@@ -83,8 +79,6 @@ Store your API key in environment variables for different environments:
 AI_STATS_API_KEY="aistats_v1_k_xx_xxx"
 AI_STATS_BASE_URL="https://api.phaseo.app/v1"
 ```
-
-This allows you to keep everything consistent across development, staging, and production.
 
 When making requests, always include the `Authorization` header with your API key:
 
@@ -97,7 +91,6 @@ Authorization: Bearer $AI_STATS_API_KEY
 ## 5. Next steps
 
 -   Review [Authentication](./authentication) to learn about header formats and workspace tokens.
--   Explore [Common use cases](./common-use-cases) for production-ready patterns.
--   Browse the [Examples](./examples) to see complete integrations in popular frameworks.
-
----
+-   Learn how [Routing and fallbacks](../guides/routing-and-fallbacks) work in production.
+-   Browse [Examples](../guides/examples) to see complete integrations in popular frameworks.
+-   Explore the [SDK Reference](/v1/sdk-reference/typescript/overview) for language-specific usage.

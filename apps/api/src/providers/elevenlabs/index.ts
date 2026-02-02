@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 // ElevenLabs Provider Adapter
 import type { ProviderAdapter, ProviderExecuteArgs, AdapterResult } from "../types";
 import * as musicGenerate from "./endpoints/music-generate";
@@ -19,3 +23,4 @@ export const ElevenLabsAdapter: ProviderAdapter = {
         }
     },
 };
+

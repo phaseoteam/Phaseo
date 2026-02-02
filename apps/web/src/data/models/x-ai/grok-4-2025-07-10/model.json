@@ -82,7 +82,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 7
+      "rank": 6
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -106,7 +106,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 13
+      "rank": 12
     },
     {
       "benchmark_id": "gpqa-diamond",

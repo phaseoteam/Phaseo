@@ -1,4 +1,8 @@
 // src/lib/gateway/audit/database.ts
+// Purpose: Persist audits and send analytics events.
+// Why: Ensures observability for every request.
+// How: Database helpers for audit persistence.
+
 
 import { getSupabaseAdmin } from "@/runtime/env";
 import type { Endpoint } from "@core/types";
@@ -206,3 +210,13 @@ function normalizeUsageTokens(usage: any) {
         return usage;
     }
 }
+
+
+
+
+
+
+
+
+
+

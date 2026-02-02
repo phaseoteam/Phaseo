@@ -1,7 +1,7 @@
 {
   "model_id": "openai/gpt-4-2023-03-14",
   "organisation_id": "openai",
-  "name": "GPT 4",
+  "name": "GPT 4 (2023-03-14)",
   "status": "Deprecated",
   "previous_model_id": "openai/gpt-3-5-turbo-2023-11-06",
   "announced_date": null,
@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 31
+      "rank": 30
     },
     {
       "benchmark_id": "gpqa-diamond",

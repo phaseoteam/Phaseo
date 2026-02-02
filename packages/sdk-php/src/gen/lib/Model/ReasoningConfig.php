@@ -57,7 +57,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
       * @var string[]
       */
     protected static $openAPITypes = [
-        'enabled' => 'bool',
         'effort' => 'string',
         'summary' => 'string'
     ];
@@ -70,7 +69,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
       * @psalm-var array<string, string|null>
       */
     protected static $openAPIFormats = [
-        'enabled' => null,
         'effort' => null,
         'summary' => null
     ];
@@ -81,7 +79,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
       * @var boolean[]
       */
     protected static array $openAPINullables = [
-        'enabled' => false,
         'effort' => false,
         'summary' => false
     ];
@@ -172,7 +169,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $attributeMap = [
-        'enabled' => 'enabled',
         'effort' => 'effort',
         'summary' => 'summary'
     ];
@@ -183,7 +179,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $setters = [
-        'enabled' => 'setEnabled',
         'effort' => 'setEffort',
         'summary' => 'setSummary'
     ];
@@ -194,7 +189,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $getters = [
-        'enabled' => 'getEnabled',
         'effort' => 'getEffort',
         'summary' => 'getSummary'
     ];
@@ -296,7 +290,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     public function __construct(?array $data = null)
     {
-        $this->setIfExists('enabled', $data ?? [], null);
         $this->setIfExists('effort', $data ?? [], 'medium');
         $this->setIfExists('summary', $data ?? [], 'auto');
     }
@@ -328,9 +321,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $invalidProperties = [];
 
-        if ($this->container['enabled'] === null) {
-            $invalidProperties[] = "'enabled' can't be null";
-        }
         $allowedValues = $this->getEffortAllowableValues();
         if (!is_null($this->container['effort']) && !in_array($this->container['effort'], $allowedValues, true)) {
             $invalidProperties[] = sprintf(
@@ -363,33 +353,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
         return count($this->listInvalidProperties()) === 0;
     }
 
-
-    /**
-     * Gets enabled
-     *
-     * @return bool
-     */
-    public function getEnabled()
-    {
-        return $this->container['enabled'];
-    }
-
-    /**
-     * Sets enabled
-     *
-     * @param bool $enabled enabled
-     *
-     * @return self
-     */
-    public function setEnabled($enabled)
-    {
-        if (is_null($enabled)) {
-            throw new \InvalidArgumentException('non-nullable enabled cannot be null');
-        }
-        $this->container['enabled'] = $enabled;
-
-        return $this;
-    }
 
     /**
      * Gets effort

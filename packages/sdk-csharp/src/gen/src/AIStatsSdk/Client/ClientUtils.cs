@@ -111,6 +111,12 @@ namespace AIStatsSdk.Client
                 return boolean
                     ? "true"
                     : "false";
+            if (obj is AnthropicContentBlock.TypeEnum anthropicContentBlockTypeEnum)
+                return AnthropicContentBlock.TypeEnumToJsonValue(anthropicContentBlockTypeEnum);
+            if (obj is AnthropicMessage.RoleEnum anthropicMessageRoleEnum)
+                return AnthropicMessage.RoleEnumToJsonValue(anthropicMessageRoleEnum);
+            if (obj is AnthropicMessagesResponse.RoleEnum anthropicMessagesResponseRoleEnum)
+                return AnthropicMessagesResponse.RoleEnumToJsonValue(anthropicMessagesResponseRoleEnum);
             if (obj is AudioContentPart.TypeEnum audioContentPartTypeEnum)
                 return AudioContentPart.TypeEnumToJsonValue(audioContentPartTypeEnum);
             if (obj is AudioContentPartInputAudio.FormatEnum audioContentPartInputAudioFormatEnum)
@@ -133,8 +139,18 @@ namespace AIStatsSdk.Client
                 return ImageModerationInput.TypeEnumToJsonValue(imageModerationInputTypeEnum);
             if (obj is ModelId modelId)
                 return ModelIdValueConverter.ToJsonValue(modelId);
+            if (obj is MusicGenerateRequest.FormatEnum musicGenerateRequestFormatEnum)
+                return MusicGenerateRequest.FormatEnumToJsonValue(musicGenerateRequestFormatEnum);
+            if (obj is MusicGenerateRequestSuno.VocalGenderEnum musicGenerateRequestSunoVocalGenderEnum)
+                return MusicGenerateRequestSuno.VocalGenderEnumToJsonValue(musicGenerateRequestSunoVocalGenderEnum);
             if (obj is OrganisationId organisationId)
                 return OrganisationIdValueConverter.ToJsonValue(organisationId);
+            if (obj is ProvisioningKey.StatusEnum provisioningKeyStatusEnum)
+                return ProvisioningKey.StatusEnumToJsonValue(provisioningKeyStatusEnum);
+            if (obj is ProvisioningKeyDetail.StatusEnum provisioningKeyDetailStatusEnum)
+                return ProvisioningKeyDetail.StatusEnumToJsonValue(provisioningKeyDetailStatusEnum);
+            if (obj is ProvisioningKeyWithValue.StatusEnum provisioningKeyWithValueStatusEnum)
+                return ProvisioningKeyWithValue.StatusEnumToJsonValue(provisioningKeyWithValueStatusEnum);
             if (obj is ReasoningConfig.EffortEnum reasoningConfigEffortEnum)
                 return ReasoningConfig.EffortEnumToJsonValue(reasoningConfigEffortEnum);
             if (obj is ReasoningConfig.SummaryEnum reasoningConfigSummaryEnum)
@@ -149,6 +165,8 @@ namespace AIStatsSdk.Client
                 return ToolCall.TypeEnumToJsonValue(toolCallTypeEnum);
             if (obj is ToolCallContentPart.TypeEnum toolCallContentPartTypeEnum)
                 return ToolCallContentPart.TypeEnumToJsonValue(toolCallContentPartTypeEnum);
+            if (obj is UpdateProvisioningKeyRequest.StatusEnum updateProvisioningKeyRequestStatusEnum)
+                return UpdateProvisioningKeyRequest.StatusEnumToJsonValue(updateProvisioningKeyRequestStatusEnum);
             if (obj is VideoContentPart.TypeEnum videoContentPartTypeEnum)
                 return VideoContentPart.TypeEnumToJsonValue(videoContentPartTypeEnum);
             if (obj is ICollection collection)
@@ -323,7 +341,7 @@ namespace AIStatsSdk.Client
         /// <summary>
         /// The base path of the API
         /// </summary>
-        public const string BASE_ADDRESS = "https://api.phaseo.app/v1";
+        public const string BASE_ADDRESS = "https://gateway.ai-stats.com/v1";
 
         /// <summary>
         /// The scheme of the API
@@ -338,7 +356,7 @@ namespace AIStatsSdk.Client
         /// <summary>
         /// The host of the API
         /// </summary>
-        public const string HOST = "api.phaseo.app";
+        public const string HOST = "gateway.ai-stats.com";
 
         /// <summary>
         /// The format to use for DateTime serialization

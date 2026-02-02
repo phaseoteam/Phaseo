@@ -123,7 +123,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 21
+      "rank": 20
     },
     {
       "benchmark_id": "elimination-game",
@@ -139,7 +139,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 6
+      "rank": 5
     },
     {
       "benchmark_id": "factscore-halluciation-rate",

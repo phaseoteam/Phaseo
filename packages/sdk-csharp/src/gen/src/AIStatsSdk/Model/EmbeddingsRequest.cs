@@ -35,33 +35,67 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="model">model</param>
         /// <param name="input">input</param>
+        /// <param name="inputs">Alias for input.</param>
         /// <param name="encodingFormat">encodingFormat</param>
         /// <param name="dimensions">dimensions</param>
+        /// <param name="embeddingOptions">embeddingOptions</param>
         /// <param name="user">user</param>
+        /// <param name="provider">provider</param>
         [JsonConstructor]
-        public EmbeddingsRequest(string model, EmbeddingsRequestInput input, Option<string?> encodingFormat = default, Option<int?> dimensions = default, Option<string?> user = default)
+        public EmbeddingsRequest(Option<string?> model = default, Option<OneOfstringarray?> input = default, Option<OneOfstringarray?> inputs = default, Option<string?> encodingFormat = default, Option<int?> dimensions = default, Option<Object?> embeddingOptions = default, Option<string?> user = default, Option<ProviderRoutingOptions?> provider = default)
         {
-            Model = model;
-            Input = input;
+            ModelOption = model;
+            InputOption = input;
+            InputsOption = inputs;
             EncodingFormatOption = encodingFormat;
             DimensionsOption = dimensions;
+            EmbeddingOptionsOption = embeddingOptions;
             UserOption = user;
+            ProviderOption = provider;
             OnCreated();
         }
 
         partial void OnCreated();
 
         /// <summary>
+        /// Used to track the state of Model
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<string?> ModelOption { get; private set; }
+
+        /// <summary>
         /// Gets or Sets Model
         /// </summary>
         [JsonPropertyName("model")]
-        public string Model { get; set; }
+        public string? Model { get { return this.ModelOption; } set { this.ModelOption = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of Input
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<OneOfstringarray?> InputOption { get; private set; }
 
         /// <summary>
         /// Gets or Sets Input
         /// </summary>
         [JsonPropertyName("input")]
-        public EmbeddingsRequestInput Input { get; set; }
+        public OneOfstringarray? Input { get { return this.InputOption; } set { this.InputOption = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of Inputs
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<OneOfstringarray?> InputsOption { get; private set; }
+
+        /// <summary>
+        /// Alias for input.
+        /// </summary>
+        /// <value>Alias for input.</value>
+        [JsonPropertyName("inputs")]
+        public OneOfstringarray? Inputs { get { return this.InputsOption; } set { this.InputsOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of EncodingFormat
@@ -90,6 +124,19 @@ namespace AIStatsSdk.Model
         public int? Dimensions { get { return this.DimensionsOption; } set { this.DimensionsOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of EmbeddingOptions
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<Object?> EmbeddingOptionsOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets EmbeddingOptions
+        /// </summary>
+        [JsonPropertyName("embedding_options")]
+        public Object? EmbeddingOptions { get { return this.EmbeddingOptionsOption; } set { this.EmbeddingOptionsOption = new(value); } }
+
+        /// <summary>
         /// Used to track the state of User
         /// </summary>
         [JsonIgnore]
@@ -103,6 +150,19 @@ namespace AIStatsSdk.Model
         public string? User { get { return this.UserOption; } set { this.UserOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Provider
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<ProviderRoutingOptions?> ProviderOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Provider
+        /// </summary>
+        [JsonPropertyName("provider")]
+        public ProviderRoutingOptions? Provider { get { return this.ProviderOption; } set { this.ProviderOption = new(value); } }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -112,9 +172,12 @@ namespace AIStatsSdk.Model
             sb.Append("class EmbeddingsRequest {\n");
             sb.Append("  Model: ").Append(Model).Append("\n");
             sb.Append("  Input: ").Append(Input).Append("\n");
+            sb.Append("  Inputs: ").Append(Inputs).Append("\n");
             sb.Append("  EncodingFormat: ").Append(EncodingFormat).Append("\n");
             sb.Append("  Dimensions: ").Append(Dimensions).Append("\n");
+            sb.Append("  EmbeddingOptions: ").Append(EmbeddingOptions).Append("\n");
             sb.Append("  User: ").Append(User).Append("\n");
+            sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -159,10 +222,13 @@ namespace AIStatsSdk.Model
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
             Option<string?> model = default;
-            Option<EmbeddingsRequestInput?> input = default;
+            Option<OneOfstringarray?> input = default;
+            Option<OneOfstringarray?> inputs = default;
             Option<string?> encodingFormat = default;
             Option<int?> dimensions = default;
+            Option<Object?> embeddingOptions = default;
             Option<string?> user = default;
+            Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
             {
@@ -183,7 +249,10 @@ namespace AIStatsSdk.Model
                             model = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "input":
-                            input = new Option<EmbeddingsRequestInput?>(JsonSerializer.Deserialize<EmbeddingsRequestInput>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            input = new Option<OneOfstringarray?>(JsonSerializer.Deserialize<OneOfstringarray>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
+                        case "inputs":
+                            inputs = new Option<OneOfstringarray?>(JsonSerializer.Deserialize<OneOfstringarray>(ref utf8JsonReader, jsonSerializerOptions));
                             break;
                         case "encoding_format":
                             encodingFormat = new Option<string?>(utf8JsonReader.GetString()!);
@@ -191,8 +260,14 @@ namespace AIStatsSdk.Model
                         case "dimensions":
                             dimensions = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
                             break;
+                        case "embedding_options":
+                            embeddingOptions = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         case "user":
                             user = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
+                        case "provider":
+                            provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         default:
                             break;
@@ -200,17 +275,8 @@ namespace AIStatsSdk.Model
                 }
             }
 
-            if (!model.IsSet)
-                throw new ArgumentException("Property is required for class EmbeddingsRequest.", nameof(model));
-
-            if (!input.IsSet)
-                throw new ArgumentException("Property is required for class EmbeddingsRequest.", nameof(input));
-
             if (model.IsSet && model.Value == null)
                 throw new ArgumentNullException(nameof(model), "Property is not nullable for class EmbeddingsRequest.");
-
-            if (input.IsSet && input.Value == null)
-                throw new ArgumentNullException(nameof(input), "Property is not nullable for class EmbeddingsRequest.");
 
             if (encodingFormat.IsSet && encodingFormat.Value == null)
                 throw new ArgumentNullException(nameof(encodingFormat), "Property is not nullable for class EmbeddingsRequest.");
@@ -218,10 +284,16 @@ namespace AIStatsSdk.Model
             if (dimensions.IsSet && dimensions.Value == null)
                 throw new ArgumentNullException(nameof(dimensions), "Property is not nullable for class EmbeddingsRequest.");
 
+            if (embeddingOptions.IsSet && embeddingOptions.Value == null)
+                throw new ArgumentNullException(nameof(embeddingOptions), "Property is not nullable for class EmbeddingsRequest.");
+
             if (user.IsSet && user.Value == null)
                 throw new ArgumentNullException(nameof(user), "Property is not nullable for class EmbeddingsRequest.");
 
-            return new EmbeddingsRequest(model.Value!, input.Value!, encodingFormat, dimensions, user);
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider), "Property is not nullable for class EmbeddingsRequest.");
+
+            return new EmbeddingsRequest(model, input, inputs, encodingFormat, dimensions, embeddingOptions, user, provider);
         }
 
         /// <summary>
@@ -248,30 +320,59 @@ namespace AIStatsSdk.Model
         /// <exception cref="NotImplementedException"></exception>
         public void WriteProperties(Utf8JsonWriter writer, EmbeddingsRequest embeddingsRequest, JsonSerializerOptions jsonSerializerOptions)
         {
-            if (embeddingsRequest.Model == null)
+            if (embeddingsRequest.ModelOption.IsSet && embeddingsRequest.Model == null)
                 throw new ArgumentNullException(nameof(embeddingsRequest.Model), "Property is required for class EmbeddingsRequest.");
-
-            if (embeddingsRequest.Input == null)
-                throw new ArgumentNullException(nameof(embeddingsRequest.Input), "Property is required for class EmbeddingsRequest.");
 
             if (embeddingsRequest.EncodingFormatOption.IsSet && embeddingsRequest.EncodingFormat == null)
                 throw new ArgumentNullException(nameof(embeddingsRequest.EncodingFormat), "Property is required for class EmbeddingsRequest.");
 
+            if (embeddingsRequest.EmbeddingOptionsOption.IsSet && embeddingsRequest.EmbeddingOptions == null)
+                throw new ArgumentNullException(nameof(embeddingsRequest.EmbeddingOptions), "Property is required for class EmbeddingsRequest.");
+
             if (embeddingsRequest.UserOption.IsSet && embeddingsRequest.User == null)
                 throw new ArgumentNullException(nameof(embeddingsRequest.User), "Property is required for class EmbeddingsRequest.");
 
-            writer.WriteString("model", embeddingsRequest.Model);
+            if (embeddingsRequest.ProviderOption.IsSet && embeddingsRequest.Provider == null)
+                throw new ArgumentNullException(nameof(embeddingsRequest.Provider), "Property is required for class EmbeddingsRequest.");
 
-            writer.WritePropertyName("input");
-            JsonSerializer.Serialize(writer, embeddingsRequest.Input, jsonSerializerOptions);
+            if (embeddingsRequest.ModelOption.IsSet)
+                writer.WriteString("model", embeddingsRequest.Model);
+
+            if (embeddingsRequest.InputOption.IsSet)
+                if (embeddingsRequest.InputOption.Value != null)
+                {
+                    writer.WritePropertyName("input");
+                    JsonSerializer.Serialize(writer, embeddingsRequest.Input, jsonSerializerOptions);
+                }
+                else
+                    writer.WriteNull("input");
+            if (embeddingsRequest.InputsOption.IsSet)
+                if (embeddingsRequest.InputsOption.Value != null)
+                {
+                    writer.WritePropertyName("inputs");
+                    JsonSerializer.Serialize(writer, embeddingsRequest.Inputs, jsonSerializerOptions);
+                }
+                else
+                    writer.WriteNull("inputs");
             if (embeddingsRequest.EncodingFormatOption.IsSet)
                 writer.WriteString("encoding_format", embeddingsRequest.EncodingFormat);
 
             if (embeddingsRequest.DimensionsOption.IsSet)
                 writer.WriteNumber("dimensions", embeddingsRequest.DimensionsOption.Value!.Value);
 
+            if (embeddingsRequest.EmbeddingOptionsOption.IsSet)
+            {
+                writer.WritePropertyName("embedding_options");
+                JsonSerializer.Serialize(writer, embeddingsRequest.EmbeddingOptions, jsonSerializerOptions);
+            }
             if (embeddingsRequest.UserOption.IsSet)
                 writer.WriteString("user", embeddingsRequest.User);
+
+            if (embeddingsRequest.ProviderOption.IsSet)
+            {
+                writer.WritePropertyName("provider");
+                JsonSerializer.Serialize(writer, embeddingsRequest.Provider, jsonSerializerOptions);
+            }
         }
     }
 }

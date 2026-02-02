@@ -235,15 +235,15 @@ function transformCountries(countries: CountrySummary[]): SearchableCountry[] {
 }
 
 // Main export
-export async function getSearchData(): Promise<SearchData> {
+export async function getSearchData(includeHidden: boolean): Promise<SearchData> {
     const [models, organisations, benchmarks, apiProviders, subscriptionPlans, countrySummaries] =
         await Promise.all([
-            getAllModelsCached(),
+            getAllModelsCached(includeHidden),
             getAllOrganisationsCached(),
             getAllBenchmarksCached(),
             getAllAPIProvidersCached(),
             transformSubscriptionPlans(),
-            getCountrySummariesCached(),
+            getCountrySummariesCached(includeHidden),
         ]);
 
     return {
@@ -256,7 +256,9 @@ export async function getSearchData(): Promise<SearchData> {
     };
 }
 
-export async function getSearchDataCached(): Promise<SearchData> {
+export async function getSearchDataCached(
+    includeHidden: boolean
+): Promise<SearchData> {
     "use cache";
 
     cacheLife("days");
@@ -267,5 +269,5 @@ export async function getSearchDataCached(): Promise<SearchData> {
     cacheTag("data:api_providers");
 
     console.log("[fetch] HIT DB for search data");
-    return getSearchData();
+    return getSearchData(includeHidden);
 }

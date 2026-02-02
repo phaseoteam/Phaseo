@@ -15,7 +15,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-09-30T00:00:00"
     }
   ]
 }

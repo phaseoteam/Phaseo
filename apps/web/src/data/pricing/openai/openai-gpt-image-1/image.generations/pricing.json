@@ -15,7 +15,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +28,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "input_image_tokens",
@@ -39,7 +41,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "cached_read_image_tokens",
@@ -51,7 +54,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image_tokens",
@@ -63,7 +67,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -90,7 +95,8 @@
           "value": "1024x1024"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -117,7 +123,8 @@
           "value": "1024x1536"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -144,7 +151,8 @@
           "value": "1536x1024"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -171,7 +179,8 @@
           "value": "1024x1024"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -198,7 +207,8 @@
           "value": "1024x1536"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -225,7 +235,8 @@
           "value": "1536x1024"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -252,7 +263,8 @@
           "value": "1024x1024"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -279,7 +291,8 @@
           "value": "1024x1536"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     },
     {
       "meter": "output_image",
@@ -306,7 +319,8 @@
           "value": "1536x1024"
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-04-23T00:00:00"
     }
   ]
 }

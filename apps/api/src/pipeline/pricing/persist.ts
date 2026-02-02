@@ -1,4 +1,8 @@
 import Stripe from "stripe";
+// Purpose: Pricing rules, billing, and persistence helpers.
+// Why: Centralizes all cost calculations.
+// How: Persists pricing/usage data into storage.
+
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "../../runtime/env";
 
 function getStripe(): Stripe {
@@ -25,7 +29,12 @@ export async function recordUsageAndCharge(args: {
         if (error) throw error;
 
         if (data.status === 'top_up_required') {
-            // Trigger charge
+            // Trigger auto-recharge
+            // NOTE: The amount charged is the raw auto_top_up_amount
+            // The Stripe webhook will:
+            // 1. Fetch the team's current tier from database (uses rolling 30-day calculation)
+            // 2. Apply reverse calculation: net = gross / (1 + tier_fee_rate)
+            // 3. Credit wallet with net amount (after tier-based fee deduction)
             const stripe = getStripe();
             const amount_cents = Math.round(data.auto_top_up_amount_nanos / 10_000_000); // since 1 cent = 10,000,000 nanos
 
@@ -40,9 +49,19 @@ export async function recordUsageAndCharge(args: {
             });
 
             // Log success or handle failure
-            console.log(`Auto top up initiated for team ${args.teamId}, payment intent ${paymentIntent.id}`);
+            console.log(`[auto-recharge] Initiated for team ${args.teamId}, payment intent ${paymentIntent.id}, amount: $${(amount_cents / 100).toFixed(2)}`);
         }
     } finally {
         releaseRuntime();
     }
 }
+
+
+
+
+
+
+
+
+
+

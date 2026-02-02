@@ -1,4 +1,8 @@
 // lib/gateway/execute/guards.ts
+// Purpose: Execute-stage logic for routing, attempts, and provider health.
+// Why: Centralizes execution/failover behavior.
+// How: Provides routing, health, and attempt helpers used by the execute stage.
+
 import type { PipelineContext } from "../before/types";
 import type { PipelineTiming } from "./index";
 import type { ProviderCandidate } from "../before/types";
@@ -97,3 +101,12 @@ export async function guardAllFailed(
 
     return { ok: false, response: res };
 }
+
+
+
+
+
+
+
+
+

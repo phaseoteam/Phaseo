@@ -1,52 +1,39 @@
 ---
 title: "Error Handling"
-description: "Design resilient clients by interpreting Gateway errors and applying retry strategies."
+description: "Understand error types and recovery strategies for reliable Gateway integrations."
 ---
 
 Even the best models encounter occasional failures. This guide explains how the Gateway reports errors and how you should respond.
 
 ---
 
-## Error format
+## Error categories
 
-Errors are returned in a structured JSON format, providing details about the issue encountered.
+Errors can originate from the Gateway, the provider, or your request. The error response will include metadata to help you diagnose the issue.
 
-```json
-{
-	"error": {
-		"type": "rate_limit_exceeded",
-		"message": "Too many requests in the last minute.",
-		"request_id": "req_abc123",
-		"provider": "openai"
-	}
-}
-```
-
-Use `request_id` when contacting support, as it links directly to internal logs for faster assistance.
-
-## Retry strategy
-
-Generally, 4xx status codes indicate a misconfiguration on your end, such as invalid parameters, missing fields, or authentication issues. These errors should be addressed by correcting your request rather than retrying.
-
-5xx status codes point to gateway or provider-side issues. If you encounter these repeatedly, please report them to our support team for investigation.
+| Status range | Meaning                                  | Typical action                        |
+| ----------- | ---------------------------------------- | ------------------------------------- |
+| 400-499     | Invalid request or authentication issues | Fix the payload or credentials.       |
+| 429         | Rate limited                             | Retry with backoff and respect limits |
+| 500-599     | Gateway or provider failure              | Retry with backoff and log details    |
 
 ---
 
-## Strictness controls
+## Retry behavior
 
-Use `X-AIStats-Strictness` to control how the gateway handles unsupported parameters:
-
-- `warn` (default): accept the request and log warnings.
-- `error`: reject if required parameters are unsupported.
-- `off`: best-effort behavior with no warnings.
-
-> We will always try and return helpful error messages, but if you see something unclear, please let us know!
+- Implement exponential backoff with jitter.
+- Use the `Retry-After` header when present.
+- Avoid infinite retries by setting a max retry count.
 
 ---
 
-## Working with providers
+## Provider errors
 
-Sometimes errors originate upstream. We will always attempt to indicate this in the error response. The router should attempt to navigate you away from that provider if possible, should these errors keep happening.
+Sometimes errors originate upstream. We will attempt to indicate this in the error response. The router should attempt to navigate you away from that provider if possible, should these errors keep happening.
 
-> 🧠 **Reminder**
-> The [Examples](./examples) repository includes snippets that implement all of the strategies described here.
+---
+
+## Next steps
+
+- Review [Rate limits](./rate-limits) to plan for throttling.
+- Learn how [Routing and fallbacks](../guides/routing-and-fallbacks) work.

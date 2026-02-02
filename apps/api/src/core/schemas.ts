@@ -1,3 +1,7 @@
+// Purpose: Core gateway primitives.
+// Why: Shared types/schemas/utilities used across modules.
+// How: Exposes reusable building blocks for the gateway.
+
 import { z } from "zod";
 import type { Endpoint } from "./types";
 
@@ -41,9 +45,12 @@ export const ResponsesSchema = z.object({
     }).optional(),
     prompt_cache_key: z.string().nullable().optional(),
     prompt_cache_retention: z.string().optional(),
+    modalities: z.array(z.enum(["text", "image"])).optional(),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh"]).nullable().optional(),
         summary: z.string().nullable().optional(),
+        enabled: z.boolean().nullable().optional(),
+        max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
     safety_identifier: z.string().nullable().optional(),
     service_tier: z.string().optional(),
@@ -60,7 +67,6 @@ export const ResponsesSchema = z.object({
     background: z.boolean().optional(),
     user: z.string().optional(),
     // Gateway-only flags (not forwarded upstream)
-    usage: z.boolean().optional().default(true),
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
     provider: ProviderRoutingSchema,
@@ -81,17 +87,44 @@ export const ResponsesSchema = z.object({
 export type ResponsesRequest = z.infer<typeof ResponsesSchema>;
 
 // Embeddings schema
+const EmbeddingOptionsSchema = z.object({
+    google: z.object({
+        output_dimensionality: z.number().int().positive().optional(),
+        task_type: z.enum(["TASK_TYPE_UNSPECIFIED", "RETRIEVAL_QUERY", "RETRIEVAL_DOCUMENT", "SEMANTIC_SIMILARITY", "CLASSIFICATION"]).optional(),
+        title: z.string().optional(),
+    }).optional(),
+    mistral: z.object({
+        output_dimension: z.number().int().positive().optional(),
+        output_dtype: z.enum(["float", "int8", "uint8", "binary", "ubinary"]).optional(),
+    }).optional(),
+}).optional();
+
 export const EmbeddingsSchema = z.object({
     model: z.string().min(1),
     input: z.union([
         z.string(),
         z.array(z.string())
-    ]),
+    ]).optional(),
+    inputs: z.union([
+        z.string(),
+        z.array(z.string())
+    ]).optional(),
     encoding_format: z.string().optional(),
     dimensions: z.number().int().positive().optional(),
+    embedding_options: EmbeddingOptionsSchema,
     user: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     provider: ProviderRoutingSchema,
+}).refine((obj) => obj.input != null || obj.inputs != null, {
+    message: "input or inputs is required",
+    path: ["input"],
+}).transform((obj) => {
+    const next: any = { ...obj };
+    if (next.input == null && next.inputs != null) {
+        next.input = next.inputs;
+    }
+    delete next.inputs;
+    return next;
 });
 export type EmbeddingsRequest = z.infer<typeof EmbeddingsSchema>;
 
@@ -194,6 +227,8 @@ export const ChatCompletionsSchema = z.object({
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh"]).optional().default("medium"),
         summary: z.enum(["auto", "concise", "detailed"]).optional().default("auto"),
+        enabled: z.boolean().optional(),
+        max_tokens: z.number().int().nonnegative().optional(),
     }).optional(),
     frequency_penalty: z.number().min(-2).max(2).optional(),
     logit_bias: z.record(z.number()).optional(),
@@ -224,8 +259,7 @@ export const ChatCompletionsSchema = z.object({
     top_logprobs: z.number().int().min(0).max(20).optional(),
     top_p: z.number().min(0).max(1).optional(),
     response_format: ResponseFormatSchema.optional(),
-    usage: z.boolean().optional(),
-
+    modalities: z.array(z.enum(["text", "image"])).optional(),
     // This is used as the safety identifer/userid across providers
     user_id: z.string().optional(),
 
@@ -238,80 +272,80 @@ export type ChatCompletionsRequest = z.infer<typeof ChatCompletionsSchema>;
 
 // Anthropic Messages schema
 const AnthropicTextContentSchema = z.object({
-	type: z.literal("text"),
-	text: z.string(),
+    type: z.literal("text"),
+    text: z.string(),
 });
 
 const AnthropicImageContentSchema = z.object({
-	type: z.literal("image"),
-	source: z.object({
-		type: z.enum(["base64", "url"]),
-		media_type: z.string().optional(),
-		data: z.string().optional(),
-		url: z.string().optional(),
-	}),
+    type: z.literal("image"),
+    source: z.object({
+        type: z.enum(["base64", "url"]),
+        media_type: z.string().optional(),
+        data: z.string().optional(),
+        url: z.string().optional(),
+    }),
 });
 
 const AnthropicToolUseContentSchema = z.object({
-	type: z.literal("tool_use"),
-	id: z.string(),
-	name: z.string(),
-	input: z.record(z.any()),
+    type: z.literal("tool_use"),
+    id: z.string(),
+    name: z.string(),
+    input: z.record(z.any()),
 });
 
 const AnthropicToolResultContentSchema = z.object({
-	type: z.literal("tool_result"),
-	tool_use_id: z.string(),
-	content: z.union([z.string(), z.array(z.any())]),
+    type: z.literal("tool_result"),
+    tool_use_id: z.string(),
+    content: z.union([z.string(), z.array(z.any())]),
 });
 
 const AnthropicContentBlockSchema = z.union([
-	AnthropicTextContentSchema,
-	AnthropicImageContentSchema,
-	AnthropicToolUseContentSchema,
-	AnthropicToolResultContentSchema,
+    AnthropicTextContentSchema,
+    AnthropicImageContentSchema,
+    AnthropicToolUseContentSchema,
+    AnthropicToolResultContentSchema,
 ]);
 
 const AnthropicMessageContentSchema = z.union([
-	z.string(),
-	z.array(AnthropicContentBlockSchema),
+    z.string(),
+    z.array(AnthropicContentBlockSchema),
 ]);
 
 const AnthropicToolSchema = z.object({
-	name: z.string(),
-	description: z.string().optional(),
-	input_schema: z.record(z.any()),
+    name: z.string(),
+    description: z.string().optional(),
+    input_schema: z.record(z.any()),
 });
 
 const AnthropicToolChoiceSchema = z.union([
-	z.object({ type: z.literal("auto") }),
-	z.object({ type: z.literal("any") }),
-	z.object({ type: z.literal("tool"), name: z.string() }),
+    z.object({ type: z.literal("auto") }),
+    z.object({ type: z.literal("any") }),
+    z.object({ type: z.literal("tool"), name: z.string() }),
 ]);
 
 export const AnthropicMessagesSchema = z.object({
-        model: z.string().min(1),
-	messages: z.array(
-		z.object({
-			role: z.enum(["user", "assistant"]),
-			content: AnthropicMessageContentSchema,
-		})
-	).min(1),
-	system: z.union([z.string(), z.array(AnthropicContentBlockSchema)]).optional(),
-	max_tokens: z.number().int().positive(),
-	temperature: z.number().min(0).max(1).optional(),
-	top_p: z.number().min(0).max(1).optional(),
-	top_k: z.number().int().positive().optional(),
-	stream: z.boolean().optional().default(false),
-	tools: z.array(AnthropicToolSchema).optional(),
-	tool_choice: AnthropicToolChoiceSchema.optional(),
-	metadata: z.record(z.any()).optional(),
-	stop_sequences: z.array(z.string()).optional(),
-        // Gateway-only flags (not forwarded upstream)
-        usage: z.boolean().optional(),
-        meta: z.boolean().optional(),
-        echo_upstream_request: z.boolean().optional(),
-        provider: ProviderRoutingSchema,
+    model: z.string().min(1),
+    messages: z.array(
+        z.object({
+            role: z.enum(["user", "assistant"]),
+            content: AnthropicMessageContentSchema,
+        })
+    ).min(1),
+    system: z.union([z.string(), z.array(AnthropicContentBlockSchema)]).optional(),
+    max_tokens: z.number().int().positive(),
+    temperature: z.number().min(0).max(1).optional(),
+    top_p: z.number().min(0).max(1).optional(),
+    top_k: z.number().int().positive().optional(),
+    stream: z.boolean().optional().default(false),
+    tools: z.array(AnthropicToolSchema).optional(),
+    tool_choice: AnthropicToolChoiceSchema.optional(),
+    metadata: z.record(z.any()).optional(),
+    modalities: z.array(z.enum(["text", "image"])).optional(),
+    stop_sequences: z.array(z.string()).optional(),
+    // Gateway-only flags (not forwarded upstream)
+    meta: z.boolean().optional(),
+    echo_upstream_request: z.boolean().optional(),
+    provider: ProviderRoutingSchema,
 }).passthrough();
 
 export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesSchema>;
@@ -341,7 +375,6 @@ export const ImagesEditSchema = z.object({
     n: z.number().int().min(1).max(10).optional(),
     user: z.string().optional(),
     meta: z.boolean().optional(),
-    usage: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
     provider: ProviderRoutingSchema,
 });
@@ -420,8 +453,25 @@ export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
 export const VideoGenerationSchema = z.object({
     model: z.string().min(1),
     prompt: z.string().min(1),
+    // OpenAI Sora fields
+    seconds: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
+    size: z.string().optional(),
+    input_reference: z.string().optional(),
+    input_reference_mime_type: z.string().optional(),
+
+    // Gateway-friendly aliases (mapped in adapters)
     duration: z.number().int().min(1).max(120).optional(),
+    duration_seconds: z.number().int().positive().optional(),
     ratio: z.string().optional(),
+    aspect_ratio: z.string().optional(),
+
+    // Veo/Gemini options
+    resolution: z.string().optional(),
+    negative_prompt: z.string().optional(),
+    sample_count: z.number().int().positive().optional(),
+    seed: z.number().int().optional(),
+    person_generation: z.string().optional(),
+    output_storage_uri: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     provider: ProviderRoutingSchema,
 });
@@ -509,6 +559,7 @@ export function schemaFor(endpoint: Endpoint): z.ZodTypeAny | null {
     switch (endpoint) {
         case "chat.completions": return ChatCompletionsSchema;
         case "responses": return ResponsesSchema;
+        case "messages": return AnthropicMessagesSchema;
         case "moderations": return ModerationsSchema;
         case "audio.speech": return AudioSpeechSchema;
         case "audio.transcription": return AudioTranscriptionSchema;
@@ -528,3 +579,4 @@ export function schemaFor(endpoint: Endpoint): z.ZodTypeAny | null {
             return null;
     }
 }
+

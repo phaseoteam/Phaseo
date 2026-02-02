@@ -1,0 +1,30 @@
+---
+title: "App Attribution"
+description: "Attach app metadata to Gateway requests for analytics and auditing."
+---
+
+App attribution lets you tag requests with the app name and referer so usage appears correctly in analytics and audits.
+
+## Supported headers
+
+- `x-title`: Human-readable app name.
+- `http-referer`: The URL that initiated the request.
+
+## Example
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "x-title: Acme Support Bot" \
+  -H "http-referer: https://acme.example/support" \
+  -d '{
+    "model": "gpt-5-nano-2025-08-07",
+    "messages": [{"role": "user", "content": "Summarize this ticket."}]
+  }'
+```
+
+## Notes
+
+- Keep titles consistent so dashboards group requests correctly.
+- Referer values can be set by your infrastructure or reverse proxy if not provided by clients.

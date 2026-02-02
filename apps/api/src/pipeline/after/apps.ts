@@ -1,4 +1,8 @@
 // src/lib/gateway/apps.ts
+// Purpose: After-stage logic for payload shaping, pricing, auditing, and streaming.
+// Why: Keeps post-execution side-effects consistent.
+// How: Resolves app attribution and persists app metadata.
+
 import { getSupabaseAdmin } from "@/runtime/env";
 
 function normalizeUrl(input?: string | null): string | null {
@@ -142,3 +146,13 @@ export async function ensureAppId(params: {
     }
     return data?.id ?? null;
 }
+
+
+
+
+
+
+
+
+
+

@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // Anthropic Messages API - Encoder Tests
 // Tests the CRITICAL FIX for tool_use block extraction bug
 import { describe, it, expect } from "vitest";
@@ -15,7 +19,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "Hello! How can I help you today?",
+						content: [{ type: "text", text: "Hello! How can I help you today?" }],
 					},
 					finishReason: "stop",
 				},
@@ -38,11 +42,17 @@ describe("encodeAnthropicMessagesResponse", () => {
 		expect(response.content[0]).toEqual({
 			type: "text",
 			text: "Hello! How can I help you today?",
+			citations: null,
 		});
 		expect(response.stop_reason).toBe("end_turn");
 		expect(response.usage).toEqual({
+			cache_creation: null,
+			cache_creation_input_tokens: null,
+			cache_read_input_tokens: null,
 			input_tokens: 10,
 			output_tokens: 9,
+			server_tool_use: null,
+			service_tier: null,
 		});
 	});
 
@@ -56,7 +66,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "toolu_abc123",
@@ -96,7 +106,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "toolu_1",
@@ -140,7 +150,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "Let me check that for you.",
+						content: [{ type: "text", text: "Let me check that for you." }],
 						toolCalls: [
 							{
 								id: "toolu_1",
@@ -160,6 +170,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 		expect(response.content[0]).toEqual({
 			type: "text",
 			text: "Let me check that for you.",
+			citations: null,
 		});
 		expect(response.content[1].type).toBe("tool_use");
 	});
@@ -183,7 +194,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 				choices: [
 					{
 						index: 0,
-						message: { role: "assistant", content: "Test" },
+						message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 						finishReason: irReason,
 					},
 				],
@@ -202,7 +213,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Test" },
+					message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 					finishReason: "stop",
 				},
 			],
@@ -210,7 +221,15 @@ describe("encodeAnthropicMessagesResponse", () => {
 
 		const response = encodeAnthropicMessagesResponse(ir);
 
-		expect(response.usage).toBeUndefined();
+		expect(response.usage).toEqual({
+			cache_creation: null,
+			cache_creation_input_tokens: null,
+			cache_read_input_tokens: null,
+			input_tokens: 0,
+			output_tokens: 0,
+			server_tool_use: null,
+			service_tier: null,
+		});
 	});
 
 	it("should use fallback ID when nativeId is missing", () => {
@@ -220,7 +239,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Test" },
+					message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 					finishReason: "stop",
 				},
 			],
@@ -240,7 +259,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "" },
+					message: { role: "assistant", content: [{ type: "text", text: "" }] },
 					finishReason: "stop",
 				},
 			],
@@ -249,7 +268,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 		const response = encodeAnthropicMessagesResponse(ir);
 
 		expect(response.content).toHaveLength(1);
-		expect(response.content[0]).toEqual({ type: "text", text: "" });
+		expect(response.content[0]).toEqual({ type: "text", text: "", citations: null });
 	});
 
 	it("should handle null content with tool calls", () => {
@@ -262,7 +281,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: null,
+						content: [],
 						toolCalls: [
 							{
 								id: "toolu_1",
@@ -283,7 +302,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 		expect(response.content[0].type).toBe("tool_use");
 	});
 
-	it("should prefer non-reasoning choice for main content", () => {
+	it("should encode reasoning as thinking blocks", () => {
 		const ir: IRChatResponse = {
 			id: "req-123",
 			nativeId: "msg_abc123",
@@ -291,29 +310,34 @@ describe("encodeAnthropicMessagesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Thinking..." },
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "reasoning_text", text: "Thinking..." },
+							{ type: "text", text: "Final answer" },
+						],
+					},
 					finishReason: "stop",
-					reasoning: true,
-				},
-				{
-					index: 1,
-					message: { role: "assistant", content: "Final answer" },
-					finishReason: "stop",
-					reasoning: false,
 				},
 			],
 		};
 
 		const response = encodeAnthropicMessagesResponse(ir);
 
-		expect(response.content).toHaveLength(1);
+		expect(response.content).toHaveLength(2);
 		expect(response.content[0]).toEqual({
 			type: "text",
 			text: "Final answer",
+			citations: null,
+		});
+		expect(response.content[1]).toEqual({
+			type: "thinking",
+			thinking: "Thinking...",
+			signature: "",
 		});
 	});
 
-	it("should use first choice if all are reasoning", () => {
+	it("should handle reasoning-only content", () => {
 		const ir: IRChatResponse = {
 			id: "req-123",
 			nativeId: "msg_abc123",
@@ -321,9 +345,8 @@ describe("encodeAnthropicMessagesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Thinking..." },
+					message: { role: "assistant", content: [{ type: "reasoning_text", text: "Thinking..." }] },
 					finishReason: "stop",
-					reasoning: true,
 				},
 			],
 		};
@@ -332,8 +355,9 @@ describe("encodeAnthropicMessagesResponse", () => {
 
 		expect(response.content).toHaveLength(1);
 		expect(response.content[0]).toEqual({
-			type: "text",
-			text: "Thinking...",
+			type: "thinking",
+			thinking: "Thinking...",
+			signature: "",
 		});
 	});
 
@@ -347,7 +371,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "toolu_1",
@@ -382,7 +406,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						refusal: "I cannot help with that request.",
 					},
 					finishReason: "stop",
@@ -397,6 +421,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 		expect(response.content[0]).toEqual({
 			type: "text",
 			text: "I cannot help with that request.",
+			citations: null,
 		});
 	});
 
@@ -410,7 +435,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "toolu_01ABC123xyz",
@@ -442,7 +467,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "toolu_1",
@@ -477,3 +502,4 @@ describe("encodeAnthropicMessagesResponse", () => {
 		}
 	});
 });
+

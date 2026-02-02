@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import type { ProviderAdapter, ProviderExecuteArgs, AdapterResult } from "../types";
 import * as chat from "./endpoints/chat";
 import * as embeddings from "./endpoints/embeddings";
@@ -15,3 +19,4 @@ export const AzureAdapter: ProviderAdapter = {
         }
     },
 };
+

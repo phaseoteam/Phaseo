@@ -32,6 +32,18 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for create_anthropic_message
+  # Create message
+  # Creates a message using the Anthropic Messages API.
+  # @param anthropic_messages_request 
+  # @param [Hash] opts the optional parameters
+  # @return [AnthropicMessagesResponse]
+  describe 'create_anthropic_message test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for create_batch
   # Create batch
   # Creates a batch of API requests.
@@ -93,6 +105,7 @@ describe 'DefaultApi' do
   # @option opts [String] :user 
   # @option opts [Boolean] :meta 
   # @option opts [Boolean] :usage 
+  # @option opts [ProviderRoutingOptions] :provider 
   # @return [ImagesEditResponse]
   describe 'create_image_edit test' do
     it 'should work' do
@@ -107,6 +120,30 @@ describe 'DefaultApi' do
   # @param [Hash] opts the optional parameters
   # @return [ModerationsResponse]
   describe 'create_moderation test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for create_ocr
+  # Create OCR
+  # Extracts text from an image using the requested model.
+  # @param ocr_request 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'create_ocr test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for create_provisioning_key
+  # Create provisioning key
+  # Creates a new provisioning key for a team.
+  # @param create_provisioning_key_request 
+  # @param [Hash] opts the optional parameters
+  # @return [CreateProvisioningKey201Response]
+  describe 'create_provisioning_key test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -144,6 +181,7 @@ describe 'DefaultApi' do
   # @option opts [String] :audio_url 
   # @option opts [String] :audio_b64 
   # @option opts [String] :language 
+  # @option opts [ProviderRoutingOptions] :provider 
   # @return [AudioTranscriptionResponse]
   describe 'create_transcription test' do
     it 'should work' do
@@ -161,6 +199,7 @@ describe 'DefaultApi' do
   # @option opts [String] :language 
   # @option opts [String] :prompt 
   # @option opts [Float] :temperature 
+  # @option opts [ProviderRoutingOptions] :provider 
   # @return [AudioTranslationResponse]
   describe 'create_translation test' do
     it 'should work' do
@@ -180,6 +219,57 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for delete_provisioning_key
+  # Delete provisioning key
+  # Permanently deletes a provisioning key.
+  # @param id The provisioning key ID
+  # @param [Hash] opts the optional parameters
+  # @return [DeleteProvisioningKey200Response]
+  describe 'delete_provisioning_key test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for delete_video
+  # Delete video
+  # Deletes a video generation request.
+  # @param video_id The ID of the video generation request.
+  # @param [Hash] opts the optional parameters
+  # @return [VideoDeleteResponse]
+  describe 'delete_video test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for generate_music
+  # Generate music
+  # Generates music using the requested model and provider settings.
+  # @param music_generate_request 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'generate_music test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_activity
+  # Get activity
+  # Returns recent API activity for a team.
+  # @param team_id The team ID to query
+  # @param [Hash] opts the optional parameters
+  # @option opts [Integer] :days Number of days to look back
+  # @option opts [Integer] :limit Maximum number of records to return
+  # @option opts [Integer] :offset Pagination offset
+  # @return [GetActivity200Response]
+  describe 'get_activity test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for get_analytics
   # Get analytics
   # Returns aggregated analytics data.
@@ -192,6 +282,18 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for get_credits
+  # Get remaining credits
+  # Returns the remaining credits and usage statistics for a team.
+  # @param team_id The team ID to query
+  # @param [Hash] opts the optional parameters
+  # @return [GetCredits200Response]
+  describe 'get_credits test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for get_generation
   # Get generation
   # Retrieve a specific generation by ID.
@@ -199,6 +301,42 @@ describe 'DefaultApi' do
   # @param [Hash] opts the optional parameters
   # @return [GenerationResponse]
   describe 'get_generation test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_provisioning_key
+  # Get provisioning key
+  # Returns details of a specific provisioning key.
+  # @param id The provisioning key ID
+  # @param [Hash] opts the optional parameters
+  # @return [GetProvisioningKey200Response]
+  describe 'get_provisioning_key test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_video
+  # Get video status
+  # Retrieves the status for a video generation request.
+  # @param video_id The ID of the video generation request.
+  # @param [Hash] opts the optional parameters
+  # @return [VideoGenerationResponse]
+  describe 'get_video test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_video_content
+  # Get video content
+  # Downloads the rendered video content.
+  # @param video_id The ID of the video generation request.
+  # @param [Hash] opts the optional parameters
+  # @return [File]
+  describe 'get_video_content test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -244,6 +382,33 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for list_providers
+  # List providers
+  # Returns a list of available API providers.
+  # @param [Hash] opts the optional parameters
+  # @option opts [Integer] :limit Limit the number of results
+  # @option opts [Integer] :offset Offset for pagination
+  # @return [ListProviders200Response]
+  describe 'list_providers test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for list_provisioning_keys
+  # List provisioning keys
+  # Returns all provisioning keys for a team.
+  # @param team_id The team ID to query
+  # @param [Hash] opts the optional parameters
+  # @option opts [Integer] :limit Maximum number of keys to return
+  # @option opts [Integer] :offset Pagination offset
+  # @return [ListProvisioningKeys200Response]
+  describe 'list_provisioning_keys test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for retrieve_batch
   # Retrieve batch
   # Retrieves a batch.
@@ -274,6 +439,19 @@ describe 'DefaultApi' do
   # @param [Hash] opts the optional parameters
   # @return [Root200Response]
   describe 'root test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for update_provisioning_key
+  # Update provisioning key
+  # Updates the name, status, or blocked state of a provisioning key.
+  # @param id The provisioning key ID
+  # @param update_provisioning_key_request 
+  # @param [Hash] opts the optional parameters
+  # @return [UpdateProvisioningKey200Response]
+  describe 'update_provisioning_key test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

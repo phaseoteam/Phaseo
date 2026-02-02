@@ -106,7 +106,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 8
+      "rank": 7
     },
     {
       "benchmark_id": "elimination-game",
@@ -122,7 +122,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 8
+      "rank": 7
     },
     {
       "benchmark_id": "gpqa-diamond",

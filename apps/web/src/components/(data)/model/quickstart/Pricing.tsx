@@ -11,6 +11,7 @@ import type { PricingRule } from "@/lib/fetchers/models/getModelPricing";
 
 interface PricingProps {
 	metadata: ModelGatewayMetadata;
+	includeHidden: boolean;
 }
 
 type Condition = {
@@ -91,8 +92,8 @@ function formatPrice(price: number, unit: string, unitSize: number): string {
 	return `$${price.toFixed(price < 0.01 ? 4 : 2)} per ${perUnit}`;
 }
 
-export default async function Pricing({ metadata }: PricingProps) {
-	const pricingData = await getModelPricingCached(metadata.modelId);
+export default async function Pricing({ metadata, includeHidden }: PricingProps) {
+	const pricingData = await getModelPricingCached(metadata.modelId, includeHidden);
 
 	if (!pricingData || pricingData.length === 0) {
 		return null;

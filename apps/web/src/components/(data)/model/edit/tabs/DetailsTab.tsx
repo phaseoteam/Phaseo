@@ -13,12 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { createClient } from "@/utils/supabase/client"
-
-interface ModelData {
-  model_id: string
-  input_types: string | null
-  output_types: string | null
-}
+import type { ModelData } from "../ModelEditDialog"
 
 interface DetailsTabProps {
   modelId: string

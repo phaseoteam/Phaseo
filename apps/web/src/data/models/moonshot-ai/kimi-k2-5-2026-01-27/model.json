@@ -1,0 +1,17 @@
+{
+  "model_id": "moonshot-ai/kimi-k2-5-2026-01-27",
+  "organisation_id": "moonshot-ai",
+  "name": "Kimi K2.5",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-27T00:00:00",
+  "release_date": "2026-01-27T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Modified MIT",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

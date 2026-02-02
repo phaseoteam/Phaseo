@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 12
+      "rank": 11
     },
     {
       "benchmark_id": "confabulations",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 12
+      "rank": 11
     },
     {
       "benchmark_id": "elimination-game",
@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 23
+      "rank": 22
     },
     {
       "benchmark_id": "gpqa-diamond",

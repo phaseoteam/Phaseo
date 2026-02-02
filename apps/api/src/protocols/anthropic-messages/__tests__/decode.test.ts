@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // Anthropic Messages API - Decoder Tests
 import { describe, it, expect } from "vitest";
 import { decodeAnthropicMessagesRequest } from "../decode";
@@ -511,3 +515,4 @@ describe("decodeAnthropicMessagesRequest", () => {
 		]);
 	});
 });
+

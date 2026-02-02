@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import type { ProviderAdapter, ProviderExecuteArgs, AdapterResult } from "../types";
 import * as compatChat from "./endpoints/chat";
 import * as responses from "../openai/endpoints/responses";
@@ -48,3 +52,4 @@ export function createOpenAICompatibleAdapter(providerId: string): ProviderAdapt
         },
     };
 }
+

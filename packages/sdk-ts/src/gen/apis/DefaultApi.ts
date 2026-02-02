@@ -15,6 +15,8 @@
 
 import * as runtime from '../runtime';
 import type {
+  AnthropicMessagesRequest,
+  AnthropicMessagesResponse,
   AudioSpeechRequest,
   AudioTranscriptionResponse,
   AudioTranslationResponse,
@@ -22,14 +24,21 @@ import type {
   BatchResponse,
   ChatCompletionsRequest,
   ChatCompletionsResponse,
+  CreateProvisioningKey201Response,
+  CreateProvisioningKeyRequest,
+  DeleteProvisioningKey200Response,
   EmbeddingsRequest,
   EmbeddingsResponse,
+  ErrorResponse,
   FileResponse,
   GenerationResponse,
+  GetActivity200Response,
   GetAnalytics200Response,
   GetAnalyticsRequest,
+  GetCredits200Response,
   GetGeneration401Response,
   GetGeneration404Response,
+  GetProvisioningKey200Response,
   Healthz200Response,
   ImagesEditResponse,
   ImagesGenerationRequest,
@@ -38,15 +47,27 @@ import type {
   ListModels200Response,
   ListModels500Response,
   ListModelsOrganisationParameter,
+  ListProviders200Response,
+  ListProvisioningKeys200Response,
   ModerationsRequest,
   ModerationsResponse,
+  MusicGenerateRequest,
+  OcrRequest,
+  ProviderRoutingOptions,
   ResponsesRequest,
   ResponsesResponse,
   Root200Response,
+  UpdateProvisioningKey200Response,
+  UpdateProvisioningKeyRequest,
+  VideoDeleteResponse,
   VideoGenerationRequest,
   VideoGenerationResponse,
 } from '../models/index';
 import {
+    AnthropicMessagesRequestFromJSON,
+    AnthropicMessagesRequestToJSON,
+    AnthropicMessagesResponseFromJSON,
+    AnthropicMessagesResponseToJSON,
     AudioSpeechRequestFromJSON,
     AudioSpeechRequestToJSON,
     AudioTranscriptionResponseFromJSON,
@@ -61,22 +82,36 @@ import {
     ChatCompletionsRequestToJSON,
     ChatCompletionsResponseFromJSON,
     ChatCompletionsResponseToJSON,
+    CreateProvisioningKey201ResponseFromJSON,
+    CreateProvisioningKey201ResponseToJSON,
+    CreateProvisioningKeyRequestFromJSON,
+    CreateProvisioningKeyRequestToJSON,
+    DeleteProvisioningKey200ResponseFromJSON,
+    DeleteProvisioningKey200ResponseToJSON,
     EmbeddingsRequestFromJSON,
     EmbeddingsRequestToJSON,
     EmbeddingsResponseFromJSON,
     EmbeddingsResponseToJSON,
+    ErrorResponseFromJSON,
+    ErrorResponseToJSON,
     FileResponseFromJSON,
     FileResponseToJSON,
     GenerationResponseFromJSON,
     GenerationResponseToJSON,
+    GetActivity200ResponseFromJSON,
+    GetActivity200ResponseToJSON,
     GetAnalytics200ResponseFromJSON,
     GetAnalytics200ResponseToJSON,
     GetAnalyticsRequestFromJSON,
     GetAnalyticsRequestToJSON,
+    GetCredits200ResponseFromJSON,
+    GetCredits200ResponseToJSON,
     GetGeneration401ResponseFromJSON,
     GetGeneration401ResponseToJSON,
     GetGeneration404ResponseFromJSON,
     GetGeneration404ResponseToJSON,
+    GetProvisioningKey200ResponseFromJSON,
+    GetProvisioningKey200ResponseToJSON,
     Healthz200ResponseFromJSON,
     Healthz200ResponseToJSON,
     ImagesEditResponseFromJSON,
@@ -93,21 +128,41 @@ import {
     ListModels500ResponseToJSON,
     ListModelsOrganisationParameterFromJSON,
     ListModelsOrganisationParameterToJSON,
+    ListProviders200ResponseFromJSON,
+    ListProviders200ResponseToJSON,
+    ListProvisioningKeys200ResponseFromJSON,
+    ListProvisioningKeys200ResponseToJSON,
     ModerationsRequestFromJSON,
     ModerationsRequestToJSON,
     ModerationsResponseFromJSON,
     ModerationsResponseToJSON,
+    MusicGenerateRequestFromJSON,
+    MusicGenerateRequestToJSON,
+    OcrRequestFromJSON,
+    OcrRequestToJSON,
+    ProviderRoutingOptionsFromJSON,
+    ProviderRoutingOptionsToJSON,
     ResponsesRequestFromJSON,
     ResponsesRequestToJSON,
     ResponsesResponseFromJSON,
     ResponsesResponseToJSON,
     Root200ResponseFromJSON,
     Root200ResponseToJSON,
+    UpdateProvisioningKey200ResponseFromJSON,
+    UpdateProvisioningKey200ResponseToJSON,
+    UpdateProvisioningKeyRequestFromJSON,
+    UpdateProvisioningKeyRequestToJSON,
+    VideoDeleteResponseFromJSON,
+    VideoDeleteResponseToJSON,
     VideoGenerationRequestFromJSON,
     VideoGenerationRequestToJSON,
     VideoGenerationResponseFromJSON,
     VideoGenerationResponseToJSON,
 } from '../models/index';
+
+export interface CreateAnthropicMessageRequest {
+    anthropicMessagesRequest: AnthropicMessagesRequest;
+}
 
 export interface CreateBatchRequest {
     batchRequest: BatchRequest;
@@ -118,7 +173,7 @@ export interface CreateChatCompletionRequest {
 }
 
 export interface CreateEmbeddingRequest {
-    embeddingsRequest: EmbeddingsRequest;
+    embeddingsRequest: EmbeddingsRequest | null;
 }
 
 export interface CreateImageRequest {
@@ -135,10 +190,19 @@ export interface CreateImageEditRequest {
     user?: string;
     meta?: boolean;
     usage?: boolean;
+    provider?: ProviderRoutingOptions;
 }
 
 export interface CreateModerationRequest {
     moderationsRequest: ModerationsRequest;
+}
+
+export interface CreateOcrRequest {
+    ocrRequest: OcrRequest;
+}
+
+export interface CreateProvisioningKeyOperationRequest {
+    createProvisioningKeyRequest: CreateProvisioningKeyRequest;
 }
 
 export interface CreateResponseRequest {
@@ -154,6 +218,7 @@ export interface CreateTranscriptionRequest {
     audioUrl?: string;
     audioB64?: string;
     language?: string;
+    provider?: ProviderRoutingOptions;
 }
 
 export interface CreateTranslationRequest {
@@ -163,18 +228,54 @@ export interface CreateTranslationRequest {
     language?: string;
     prompt?: string;
     temperature?: number;
+    provider?: ProviderRoutingOptions;
 }
 
 export interface CreateVideoRequest {
     videoGenerationRequest: VideoGenerationRequest;
 }
 
+export interface DeleteProvisioningKeyRequest {
+    id: string;
+}
+
+export interface DeleteVideoRequest {
+    videoId: string;
+}
+
+export interface GenerateMusicRequest {
+    musicGenerateRequest: MusicGenerateRequest;
+}
+
+export interface GetActivityRequest {
+    teamId: string;
+    days?: number;
+    limit?: number;
+    offset?: number;
+}
+
 export interface GetAnalyticsOperationRequest {
     getAnalyticsRequest: GetAnalyticsRequest;
 }
 
+export interface GetCreditsRequest {
+    teamId: string;
+}
+
 export interface GetGenerationRequest {
     id: string;
+}
+
+export interface GetProvisioningKeyRequest {
+    id: string;
+}
+
+export interface GetVideoRequest {
+    videoId: string;
+}
+
+export interface GetVideoContentRequest {
+    videoId: string;
 }
 
 export interface ListModelsRequest {
@@ -187,12 +288,28 @@ export interface ListModelsRequest {
     offset?: number;
 }
 
+export interface ListProvidersRequest {
+    limit?: number;
+    offset?: number;
+}
+
+export interface ListProvisioningKeysRequest {
+    teamId: string;
+    limit?: number;
+    offset?: number;
+}
+
 export interface RetrieveBatchRequest {
     batchId: string;
 }
 
 export interface RetrieveFileRequest {
     fileId: string;
+}
+
+export interface UpdateProvisioningKeyOperationRequest {
+    id: string;
+    updateProvisioningKeyRequest: UpdateProvisioningKeyRequest;
 }
 
 export interface UploadFileRequest {
@@ -204,6 +321,55 @@ export interface UploadFileRequest {
  * 
  */
 export class DefaultApi extends runtime.BaseAPI {
+
+    /**
+     * Creates a message using the Anthropic Messages API.
+     * Create message
+     */
+    async createAnthropicMessageRaw(requestParameters: CreateAnthropicMessageRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AnthropicMessagesResponse>> {
+        if (requestParameters['anthropicMessagesRequest'] == null) {
+            throw new runtime.RequiredError(
+                'anthropicMessagesRequest',
+                'Required parameter "anthropicMessagesRequest" was null or undefined when calling createAnthropicMessage().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/messages`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: AnthropicMessagesRequestToJSON(requestParameters['anthropicMessagesRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => AnthropicMessagesResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Creates a message using the Anthropic Messages API.
+     * Create message
+     */
+    async createAnthropicMessage(requestParameters: CreateAnthropicMessageRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AnthropicMessagesResponse> {
+        const response = await this.createAnthropicMessageRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates a batch of API requests.
@@ -489,6 +655,10 @@ export class DefaultApi extends runtime.BaseAPI {
             formParams.append('usage', requestParameters['usage'] as any);
         }
 
+        if (requestParameters['provider'] != null) {
+            formParams.append('provider', new Blob([JSON.stringify(ProviderRoutingOptionsToJSON(requestParameters['provider']))], { type: "application/json", }));
+                    }
+
 
         let urlPath = `/images/edits`;
 
@@ -558,6 +728,104 @@ export class DefaultApi extends runtime.BaseAPI {
      */
     async createModeration(requestParameters: CreateModerationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ModerationsResponse> {
         const response = await this.createModerationRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Extracts text from an image using the requested model.
+     * Create OCR
+     */
+    async createOcrRaw(requestParameters: CreateOcrRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<{ [key: string]: any; }>> {
+        if (requestParameters['ocrRequest'] == null) {
+            throw new runtime.RequiredError(
+                'ocrRequest',
+                'Required parameter "ocrRequest" was null or undefined when calling createOcr().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/ocr`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: OcrRequestToJSON(requestParameters['ocrRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse<any>(response);
+    }
+
+    /**
+     * Extracts text from an image using the requested model.
+     * Create OCR
+     */
+    async createOcr(requestParameters: CreateOcrRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<{ [key: string]: any; }> {
+        const response = await this.createOcrRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates a new provisioning key for a team.
+     * Create provisioning key
+     */
+    async createProvisioningKeyRaw(requestParameters: CreateProvisioningKeyOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreateProvisioningKey201Response>> {
+        if (requestParameters['createProvisioningKeyRequest'] == null) {
+            throw new runtime.RequiredError(
+                'createProvisioningKeyRequest',
+                'Required parameter "createProvisioningKeyRequest" was null or undefined when calling createProvisioningKey().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/provisioning/keys`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: CreateProvisioningKeyRequestToJSON(requestParameters['createProvisioningKeyRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => CreateProvisioningKey201ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Creates a new provisioning key for a team.
+     * Create provisioning key
+     */
+    async createProvisioningKey(requestParameters: CreateProvisioningKeyOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CreateProvisioningKey201Response> {
+        const response = await this.createProvisioningKeyRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -713,6 +981,10 @@ export class DefaultApi extends runtime.BaseAPI {
             formParams.append('language', requestParameters['language'] as any);
         }
 
+        if (requestParameters['provider'] != null) {
+            formParams.append('provider', new Blob([JSON.stringify(ProviderRoutingOptionsToJSON(requestParameters['provider']))], { type: "application/json", }));
+                    }
+
 
         let urlPath = `/audio/transcriptions`;
 
@@ -798,6 +1070,10 @@ export class DefaultApi extends runtime.BaseAPI {
             formParams.append('temperature', requestParameters['temperature'] as any);
         }
 
+        if (requestParameters['provider'] != null) {
+            formParams.append('provider', new Blob([JSON.stringify(ProviderRoutingOptionsToJSON(requestParameters['provider']))], { type: "application/json", }));
+                    }
+
 
         let urlPath = `/audio/translations`;
 
@@ -871,6 +1147,211 @@ export class DefaultApi extends runtime.BaseAPI {
     }
 
     /**
+     * Permanently deletes a provisioning key.
+     * Delete provisioning key
+     */
+    async deleteProvisioningKeyRaw(requestParameters: DeleteProvisioningKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DeleteProvisioningKey200Response>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling deleteProvisioningKey().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/provisioning/keys/{id}`;
+        urlPath = urlPath.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => DeleteProvisioningKey200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Permanently deletes a provisioning key.
+     * Delete provisioning key
+     */
+    async deleteProvisioningKey(requestParameters: DeleteProvisioningKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DeleteProvisioningKey200Response> {
+        const response = await this.deleteProvisioningKeyRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Deletes a video generation request.
+     * Delete video
+     */
+    async deleteVideoRaw(requestParameters: DeleteVideoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<VideoDeleteResponse>> {
+        if (requestParameters['videoId'] == null) {
+            throw new runtime.RequiredError(
+                'videoId',
+                'Required parameter "videoId" was null or undefined when calling deleteVideo().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/videos/{video_id}`;
+        urlPath = urlPath.replace(`{${"video_id"}}`, encodeURIComponent(String(requestParameters['videoId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => VideoDeleteResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Deletes a video generation request.
+     * Delete video
+     */
+    async deleteVideo(requestParameters: DeleteVideoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<VideoDeleteResponse> {
+        const response = await this.deleteVideoRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Generates music using the requested model and provider settings.
+     * Generate music
+     */
+    async generateMusicRaw(requestParameters: GenerateMusicRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<{ [key: string]: any; }>> {
+        if (requestParameters['musicGenerateRequest'] == null) {
+            throw new runtime.RequiredError(
+                'musicGenerateRequest',
+                'Required parameter "musicGenerateRequest" was null or undefined when calling generateMusic().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/music/generate`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: MusicGenerateRequestToJSON(requestParameters['musicGenerateRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse<any>(response);
+    }
+
+    /**
+     * Generates music using the requested model and provider settings.
+     * Generate music
+     */
+    async generateMusic(requestParameters: GenerateMusicRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<{ [key: string]: any; }> {
+        const response = await this.generateMusicRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Returns recent API activity for a team.
+     * Get activity
+     */
+    async getActivityRaw(requestParameters: GetActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GetActivity200Response>> {
+        if (requestParameters['teamId'] == null) {
+            throw new runtime.RequiredError(
+                'teamId',
+                'Required parameter "teamId" was null or undefined when calling getActivity().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['teamId'] != null) {
+            queryParameters['team_id'] = requestParameters['teamId'];
+        }
+
+        if (requestParameters['days'] != null) {
+            queryParameters['days'] = requestParameters['days'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['offset'] != null) {
+            queryParameters['offset'] = requestParameters['offset'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/activity`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => GetActivity200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Returns recent API activity for a team.
+     * Get activity
+     */
+    async getActivity(requestParameters: GetActivityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GetActivity200Response> {
+        const response = await this.getActivityRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Returns aggregated analytics data.
      * Get analytics
      */
@@ -916,6 +1397,56 @@ export class DefaultApi extends runtime.BaseAPI {
      */
     async getAnalytics(requestParameters: GetAnalyticsOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GetAnalytics200Response> {
         const response = await this.getAnalyticsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Returns the remaining credits and usage statistics for a team.
+     * Get remaining credits
+     */
+    async getCreditsRaw(requestParameters: GetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GetCredits200Response>> {
+        if (requestParameters['teamId'] == null) {
+            throw new runtime.RequiredError(
+                'teamId',
+                'Required parameter "teamId" was null or undefined when calling getCredits().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['teamId'] != null) {
+            queryParameters['team_id'] = requestParameters['teamId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/credits`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => GetCredits200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Returns the remaining credits and usage statistics for a team.
+     * Get remaining credits
+     */
+    async getCredits(requestParameters: GetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GetCredits200Response> {
+        const response = await this.getCreditsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -966,6 +1497,147 @@ export class DefaultApi extends runtime.BaseAPI {
      */
     async getGeneration(requestParameters: GetGenerationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GenerationResponse> {
         const response = await this.getGenerationRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Returns details of a specific provisioning key.
+     * Get provisioning key
+     */
+    async getProvisioningKeyRaw(requestParameters: GetProvisioningKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GetProvisioningKey200Response>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getProvisioningKey().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/provisioning/keys/{id}`;
+        urlPath = urlPath.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => GetProvisioningKey200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Returns details of a specific provisioning key.
+     * Get provisioning key
+     */
+    async getProvisioningKey(requestParameters: GetProvisioningKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GetProvisioningKey200Response> {
+        const response = await this.getProvisioningKeyRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Retrieves the status for a video generation request.
+     * Get video status
+     */
+    async getVideoRaw(requestParameters: GetVideoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<VideoGenerationResponse>> {
+        if (requestParameters['videoId'] == null) {
+            throw new runtime.RequiredError(
+                'videoId',
+                'Required parameter "videoId" was null or undefined when calling getVideo().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/videos/{video_id}`;
+        urlPath = urlPath.replace(`{${"video_id"}}`, encodeURIComponent(String(requestParameters['videoId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => VideoGenerationResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Retrieves the status for a video generation request.
+     * Get video status
+     */
+    async getVideo(requestParameters: GetVideoRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<VideoGenerationResponse> {
+        const response = await this.getVideoRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Downloads the rendered video content.
+     * Get video content
+     */
+    async getVideoContentRaw(requestParameters: GetVideoContentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Blob>> {
+        if (requestParameters['videoId'] == null) {
+            throw new runtime.RequiredError(
+                'videoId',
+                'Required parameter "videoId" was null or undefined when calling getVideoContent().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/videos/{video_id}/content`;
+        urlPath = urlPath.replace(`{${"video_id"}}`, encodeURIComponent(String(requestParameters['videoId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.BlobApiResponse(response);
+    }
+
+    /**
+     * Downloads the rendered video content.
+     * Get video content
+     */
+    async getVideoContent(requestParameters: GetVideoContentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Blob> {
+        const response = await this.getVideoContentRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -1115,6 +1787,111 @@ export class DefaultApi extends runtime.BaseAPI {
     }
 
     /**
+     * Returns a list of available API providers.
+     * List providers
+     */
+    async listProvidersRaw(requestParameters: ListProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListProviders200Response>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['offset'] != null) {
+            queryParameters['offset'] = requestParameters['offset'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/providers`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ListProviders200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Returns a list of available API providers.
+     * List providers
+     */
+    async listProviders(requestParameters: ListProvidersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListProviders200Response> {
+        const response = await this.listProvidersRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Returns all provisioning keys for a team.
+     * List provisioning keys
+     */
+    async listProvisioningKeysRaw(requestParameters: ListProvisioningKeysRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListProvisioningKeys200Response>> {
+        if (requestParameters['teamId'] == null) {
+            throw new runtime.RequiredError(
+                'teamId',
+                'Required parameter "teamId" was null or undefined when calling listProvisioningKeys().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['teamId'] != null) {
+            queryParameters['team_id'] = requestParameters['teamId'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['offset'] != null) {
+            queryParameters['offset'] = requestParameters['offset'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/provisioning/keys`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ListProvisioningKeys200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Returns all provisioning keys for a team.
+     * List provisioning keys
+     */
+    async listProvisioningKeys(requestParameters: ListProvisioningKeysRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListProvisioningKeys200Response> {
+        const response = await this.listProvisioningKeysRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Retrieves a batch.
      * Retrieve batch
      */
@@ -1244,6 +2021,63 @@ export class DefaultApi extends runtime.BaseAPI {
      */
     async root(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Root200Response> {
         const response = await this.rootRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Updates the name, status, or blocked state of a provisioning key.
+     * Update provisioning key
+     */
+    async updateProvisioningKeyRaw(requestParameters: UpdateProvisioningKeyOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UpdateProvisioningKey200Response>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updateProvisioningKey().'
+            );
+        }
+
+        if (requestParameters['updateProvisioningKeyRequest'] == null) {
+            throw new runtime.RequiredError(
+                'updateProvisioningKeyRequest',
+                'Required parameter "updateProvisioningKeyRequest" was null or undefined when calling updateProvisioningKey().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("BearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/provisioning/keys/{id}`;
+        urlPath = urlPath.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: UpdateProvisioningKeyRequestToJSON(requestParameters['updateProvisioningKeyRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => UpdateProvisioningKey200ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Updates the name, status, or blocked state of a provisioning key.
+     * Update provisioning key
+     */
+    async updateProvisioningKey(requestParameters: UpdateProvisioningKeyOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UpdateProvisioningKey200Response> {
+        const response = await this.updateProvisioningKeyRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

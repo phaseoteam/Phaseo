@@ -12,124 +12,123 @@ package ai_stats_sdk
 
 import (
 	"encoding/json"
-	"fmt"
-	"gopkg.in/validator.v2"
 )
 
-// ReasoningConfig - struct for ReasoningConfig
+// checks if the ReasoningConfig type satisfies the MappedNullable interface at compile time
+var _ MappedNullable = &ReasoningConfig{}
+
+// ReasoningConfig struct for ReasoningConfig
 type ReasoningConfig struct {
-	ReasoningConfigOneOf *ReasoningConfigOneOf
-	ReasoningConfigOneOf1 *ReasoningConfigOneOf1
+	Effort *string `json:"effort,omitempty"`
+	Summary *string `json:"summary,omitempty"`
 }
 
-// ReasoningConfigOneOfAsReasoningConfig is a convenience function that returns ReasoningConfigOneOf wrapped in ReasoningConfig
-func ReasoningConfigOneOfAsReasoningConfig(v *ReasoningConfigOneOf) ReasoningConfig {
-	return ReasoningConfig{
-		ReasoningConfigOneOf: v,
-	}
+// NewReasoningConfig instantiates a new ReasoningConfig object
+// This constructor will assign default values to properties that have it defined,
+// and makes sure properties required by API are set, but the set of arguments
+// will change when the set of required properties is changed
+func NewReasoningConfig() *ReasoningConfig {
+	this := ReasoningConfig{}
+	var effort string = "medium"
+	this.Effort = &effort
+	var summary string = "auto"
+	this.Summary = &summary
+	return &this
 }
 
-// ReasoningConfigOneOf1AsReasoningConfig is a convenience function that returns ReasoningConfigOneOf1 wrapped in ReasoningConfig
-func ReasoningConfigOneOf1AsReasoningConfig(v *ReasoningConfigOneOf1) ReasoningConfig {
-	return ReasoningConfig{
-		ReasoningConfigOneOf1: v,
-	}
+// NewReasoningConfigWithDefaults instantiates a new ReasoningConfig object
+// This constructor will only assign default values to properties that have it defined,
+// but it doesn't guarantee that properties required by API are set
+func NewReasoningConfigWithDefaults() *ReasoningConfig {
+	this := ReasoningConfig{}
+	var effort string = "medium"
+	this.Effort = &effort
+	var summary string = "auto"
+	this.Summary = &summary
+	return &this
 }
 
-
-// Unmarshal JSON data into one of the pointers in the struct
-func (dst *ReasoningConfig) UnmarshalJSON(data []byte) error {
-	var err error
-	match := 0
-	// try to unmarshal data into ReasoningConfigOneOf
-	err = newStrictDecoder(data).Decode(&dst.ReasoningConfigOneOf)
-	if err == nil {
-		jsonReasoningConfigOneOf, _ := json.Marshal(dst.ReasoningConfigOneOf)
-		if string(jsonReasoningConfigOneOf) == "{}" { // empty struct
-			dst.ReasoningConfigOneOf = nil
-		} else {
-			if err = validator.Validate(dst.ReasoningConfigOneOf); err != nil {
-				dst.ReasoningConfigOneOf = nil
-			} else {
-				match++
-			}
-		}
-	} else {
-		dst.ReasoningConfigOneOf = nil
+// GetEffort returns the Effort field value if set, zero value otherwise.
+func (o *ReasoningConfig) GetEffort() string {
+	if o == nil || IsNil(o.Effort) {
+		var ret string
+		return ret
 	}
-
-	// try to unmarshal data into ReasoningConfigOneOf1
-	err = newStrictDecoder(data).Decode(&dst.ReasoningConfigOneOf1)
-	if err == nil {
-		jsonReasoningConfigOneOf1, _ := json.Marshal(dst.ReasoningConfigOneOf1)
-		if string(jsonReasoningConfigOneOf1) == "{}" { // empty struct
-			dst.ReasoningConfigOneOf1 = nil
-		} else {
-			if err = validator.Validate(dst.ReasoningConfigOneOf1); err != nil {
-				dst.ReasoningConfigOneOf1 = nil
-			} else {
-				match++
-			}
-		}
-	} else {
-		dst.ReasoningConfigOneOf1 = nil
-	}
-
-	if match > 1 { // more than 1 match
-		// reset to nil
-		dst.ReasoningConfigOneOf = nil
-		dst.ReasoningConfigOneOf1 = nil
-
-		return fmt.Errorf("data matches more than one schema in oneOf(ReasoningConfig)")
-	} else if match == 1 {
-		return nil // exactly one match
-	} else { // no match
-		return fmt.Errorf("data failed to match schemas in oneOf(ReasoningConfig)")
-	}
+	return *o.Effort
 }
 
-// Marshal data from the first non-nil pointers in the struct to JSON
-func (src ReasoningConfig) MarshalJSON() ([]byte, error) {
-	if src.ReasoningConfigOneOf != nil {
-		return json.Marshal(&src.ReasoningConfigOneOf)
+// GetEffortOk returns a tuple with the Effort field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ReasoningConfig) GetEffortOk() (*string, bool) {
+	if o == nil || IsNil(o.Effort) {
+		return nil, false
 	}
-
-	if src.ReasoningConfigOneOf1 != nil {
-		return json.Marshal(&src.ReasoningConfigOneOf1)
-	}
-
-	return nil, nil // no data in oneOf schemas
+	return o.Effort, true
 }
 
-// Get the actual instance
-func (obj *ReasoningConfig) GetActualInstance() (interface{}) {
-	if obj == nil {
-		return nil
-	}
-	if obj.ReasoningConfigOneOf != nil {
-		return obj.ReasoningConfigOneOf
+// HasEffort returns a boolean if a field has been set.
+func (o *ReasoningConfig) HasEffort() bool {
+	if o != nil && !IsNil(o.Effort) {
+		return true
 	}
 
-	if obj.ReasoningConfigOneOf1 != nil {
-		return obj.ReasoningConfigOneOf1
-	}
-
-	// all schemas are nil
-	return nil
+	return false
 }
 
-// Get the actual instance value
-func (obj ReasoningConfig) GetActualInstanceValue() (interface{}) {
-	if obj.ReasoningConfigOneOf != nil {
-		return *obj.ReasoningConfigOneOf
+// SetEffort gets a reference to the given string and assigns it to the Effort field.
+func (o *ReasoningConfig) SetEffort(v string) {
+	o.Effort = &v
+}
+
+// GetSummary returns the Summary field value if set, zero value otherwise.
+func (o *ReasoningConfig) GetSummary() string {
+	if o == nil || IsNil(o.Summary) {
+		var ret string
+		return ret
+	}
+	return *o.Summary
+}
+
+// GetSummaryOk returns a tuple with the Summary field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ReasoningConfig) GetSummaryOk() (*string, bool) {
+	if o == nil || IsNil(o.Summary) {
+		return nil, false
+	}
+	return o.Summary, true
+}
+
+// HasSummary returns a boolean if a field has been set.
+func (o *ReasoningConfig) HasSummary() bool {
+	if o != nil && !IsNil(o.Summary) {
+		return true
 	}
 
-	if obj.ReasoningConfigOneOf1 != nil {
-		return *obj.ReasoningConfigOneOf1
-	}
+	return false
+}
 
-	// all schemas are nil
-	return nil
+// SetSummary gets a reference to the given string and assigns it to the Summary field.
+func (o *ReasoningConfig) SetSummary(v string) {
+	o.Summary = &v
+}
+
+func (o ReasoningConfig) MarshalJSON() ([]byte, error) {
+	toSerialize,err := o.ToMap()
+	if err != nil {
+		return []byte{}, err
+	}
+	return json.Marshal(toSerialize)
+}
+
+func (o ReasoningConfig) ToMap() (map[string]interface{}, error) {
+	toSerialize := map[string]interface{}{}
+	if !IsNil(o.Effort) {
+		toSerialize["effort"] = o.Effort
+	}
+	if !IsNil(o.Summary) {
+		toSerialize["summary"] = o.Summary
+	}
+	return toSerialize, nil
 }
 
 type NullableReasoningConfig struct {

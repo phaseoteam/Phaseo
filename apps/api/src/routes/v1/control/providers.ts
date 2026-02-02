@@ -1,8 +1,12 @@
+// Purpose: Route handler module.
+// Why: Keeps HTTP wiring separate from pipeline logic.
+// How: Maps requests to pipeline entrypoints and responses.
+
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
-import { json, withRuntime } from "@/routes/utils";
+import { json, withRuntime, cacheHeaders, cacheResponse } from "@/routes/utils";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
@@ -73,7 +77,12 @@ async function handleProviders(req: Request) {
             country_code: provider.country_code ?? null,
         }));
 
-        return json(
+        const cacheOptions = {
+            scope: `providers:${auth.value.teamId}`,
+            ttlSeconds: 300,
+            staleSeconds: 600,
+        };
+        const response = json(
             {
                 ok: true,
                 limit,
@@ -82,8 +91,9 @@ async function handleProviders(req: Request) {
                 providers: mapped,
             },
             200,
-            { "Cache-Control": "no-store" }
+            cacheHeaders(cacheOptions)
         );
+        return cacheResponse(req, response, cacheOptions);
     } catch (error: any) {
         return json(
             { ok: false, error: "failed", message: String(error?.message ?? error) },
@@ -96,3 +106,4 @@ async function handleProviders(req: Request) {
 export const providersRoutes = new Hono<Env>();
 
 providersRoutes.get("/", withRuntime(handleProviders));
+

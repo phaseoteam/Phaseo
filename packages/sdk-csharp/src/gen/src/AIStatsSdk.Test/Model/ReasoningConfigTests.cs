@@ -52,5 +52,23 @@ namespace AIStatsSdk.Test.Model
             // TODO uncomment below to test "IsType" ReasoningConfig
             //Assert.IsType<ReasoningConfig>(instance);
         }
+
+        /// <summary>
+        /// Test the property 'Effort'
+        /// </summary>
+        [Fact]
+        public void EffortTest()
+        {
+            // TODO unit test for the property 'Effort'
+        }
+
+        /// <summary>
+        /// Test the property 'Summary'
+        /// </summary>
+        [Fact]
+        public void SummaryTest()
+        {
+            // TODO unit test for the property 'Summary'
+        }
     }
 }

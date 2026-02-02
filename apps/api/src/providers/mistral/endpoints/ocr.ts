@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 // Mistral OCR endpoint - Uses Pixtral vision model for OCR
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { OcrSchema, type OcrRequest } from "@core/schemas";
@@ -78,3 +82,4 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         byokKeyId: keyInfo.byokId,
     };
 }
+

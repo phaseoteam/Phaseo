@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey, type ResolvedKey } from "../../keys";
@@ -42,3 +46,4 @@ export async function exec(args: ProviderExecuteArgs & { endpointPath: string; m
         byokKeyId: keyInfo.byokId,
     };
 }
+

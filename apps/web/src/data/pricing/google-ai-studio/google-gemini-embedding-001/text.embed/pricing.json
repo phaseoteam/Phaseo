@@ -1,0 +1,22 @@
+{
+  "key": "google-ai-studio:google/gemini-embedding-001:text.embed",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/gemini-embedding-001",
+  "capability_id": "text.embed",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1.5e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-05-20T00:00:00"
+    }
+  ]
+}

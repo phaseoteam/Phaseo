@@ -1,0 +1,17 @@
+---
+title: "OpenCode"
+description: "Connect OpenCode to the AI Stats Gateway for multi-provider routing."
+---
+
+If OpenCode supports OpenAI-compatible backends, configure it to use the AI Stats base URL and API key.
+
+## Recommended setup
+
+- Base URL: `https://api.phaseo.app/v1`
+- Auth: `Authorization: Bearer <AI_STATS_API_KEY>`
+- Endpoint: `/chat/completions` or `/responses`
+
+## Tips
+
+- Verify model availability with the [Models endpoint](/v1/api-reference/endpoint/models).
+- For Anthropic-compatible flows, prefer `/v1/messages`.

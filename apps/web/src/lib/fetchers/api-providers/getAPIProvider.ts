@@ -7,6 +7,7 @@ export interface APIProvider {
 }
 
 import { createClient } from '@/utils/supabase/client';
+import { applyHiddenFilter } from '@/lib/fetchers/models/visibility';
 
 export async function getAPIProvider(): Promise<APIProvider[]> {
     const supabase = await createClient();
@@ -59,7 +60,11 @@ export type ModelOutputType = 'text' | 'image' | 'video' | 'audio' | 'embeddings
  * Generic function for fetching models for a provider filtered by output modality.
  * Supports: text, image, video, audio, embeddings
  */
-export async function getAPIProviderModels(apiProviderId: string, outputType: ModelOutputType): Promise<APIProviderModels[]> {
+export async function getAPIProviderModels(
+    apiProviderId: string,
+    outputType: ModelOutputType,
+    includeHidden: boolean
+): Promise<APIProviderModels[]> {
     const modalityLookup: Record<ModelOutputType, string> = {
         text: 'text',
         image: 'image',
@@ -112,14 +117,19 @@ export async function getAPIProviderModels(apiProviderId: string, outputType: Mo
     const internalIds = Array.from(
         new Set(providerModels.map((row) => row.internal_model_id).filter(Boolean))
     );
-    const { data: models } = await supabase
-        .from('data_models')
-        .select('model_id, name, release_date')
-        .in('model_id', internalIds);
+    const { data: models } = await applyHiddenFilter(
+        supabase
+            .from('data_models')
+            .select('model_id, name, release_date, hidden')
+            .in('model_id', internalIds),
+        includeHidden
+    );
 
     const modelMapById = new Map<string, { name: string | null; release_date: string | null }>();
+    const visibleInternalIds = new Set<string>();
     for (const model of models ?? []) {
         if (!model.model_id) continue;
+        visibleInternalIds.add(model.model_id);
         modelMapById.set(model.model_id, {
             name: model.name ?? null,
             release_date: model.release_date ?? null,
@@ -135,7 +145,13 @@ export async function getAPIProviderModels(apiProviderId: string, outputType: Mo
         capMap.set(cap.provider_api_model_id, list);
     }
 
-    const modelsData = providerModels.map((row: any) => {
+    const modelsData = providerModels
+        .filter((row: any) => {
+            if (includeHidden) return true;
+            if (!row.internal_model_id) return true;
+            return visibleInternalIds.has(row.internal_model_id);
+        })
+        .map((row: any) => {
         const modelInfo = row.internal_model_id
             ? modelMapById.get(row.internal_model_id)
             : null;
@@ -204,7 +220,8 @@ export async function getAPIProviderModels(apiProviderId: string, outputType: Mo
 
 export async function getAPIProviderModelsCached(
     apiProviderId: string,
-    outputType: ModelOutputType
+    outputType: ModelOutputType,
+    includeHidden: boolean
 ): Promise<APIProviderModels[]> {
     "use cache";
 
@@ -212,36 +229,44 @@ export async function getAPIProviderModelsCached(
     cacheTag("data:api_providers");
 
     console.log(`[fetch] HIT JSON for API providers - ${apiProviderId} / ${outputType}`);
-    return getAPIProviderModels(apiProviderId, outputType);
+    return getAPIProviderModels(apiProviderId, outputType, includeHidden);
 }
 
 // Backwards-compatible wrappers for previous specific functions
-export async function getAPIProviderTextModels(apiProviderId: string): Promise<APIProviderModels[]> {
-    return getAPIProviderModels(apiProviderId, 'text');
+export async function getAPIProviderTextModels(
+    apiProviderId: string,
+    includeHidden: boolean
+): Promise<APIProviderModels[]> {
+    return getAPIProviderModels(apiProviderId, 'text', includeHidden);
 }
 
 export async function getAPIProviderTextModelsCached(
-    apiProviderId: string
+    apiProviderId: string,
+    includeHidden: boolean
 ): Promise<APIProviderModels[]> {
     "use cache";
 
     cacheLife("days");
     cacheTag("data:api_providers");
 
-    return getAPIProviderModels(apiProviderId, "text");
+    return getAPIProviderModels(apiProviderId, "text", includeHidden);
 }
 
-export async function getAPIProviderImageModels(apiProviderId: string): Promise<APIProviderModels[]> {
-    return getAPIProviderModels(apiProviderId, 'image');
+export async function getAPIProviderImageModels(
+    apiProviderId: string,
+    includeHidden: boolean
+): Promise<APIProviderModels[]> {
+    return getAPIProviderModels(apiProviderId, 'image', includeHidden);
 }
 
 export async function getAPIProviderImageModelsCached(
-    apiProviderId: string
+    apiProviderId: string,
+    includeHidden: boolean
 ): Promise<APIProviderModels[]> {
     "use cache";
 
     cacheLife("days");
     cacheTag("data:api_providers");
 
-    return getAPIProviderModels(apiProviderId, "image");
+    return getAPIProviderModels(apiProviderId, "image", includeHidden);
 }

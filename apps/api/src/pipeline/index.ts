@@ -1,6 +1,10 @@
 // src/lib/gateway/route-factory.ts
+// Purpose: Pipeline entrypoint that wires before/execute/after stages.
+// Why: Provides a single request lifecycle orchestrator.
+// How: Orchestrates before -> execute -> after with timing hooks.
+
 import { beforeRequest } from "./before";
-import { doRequest, doRequestWithIR, type IRRequestResult } from "./execute";
+import { doRequestWithIR, doRequest } from "./execute";
 import { finalizeRequest } from "./after";
 import type { Endpoint } from "@core/types";
 import { handleError } from "@core/error-handler";
@@ -9,7 +13,15 @@ import { Timer } from "./telemetry/timer";
 import type { PipelineTiming } from "./execute";
 import { detectProtocol } from "@protocols/detect";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
-import type { IRChatRequest, IRChatResponse } from "@core/ir";
+import type { IRChatRequest } from "@core/ir";
+import {
+	decodeOpenAIEmbeddingsRequest,
+	decodeOpenAIEmbeddingsResponse,
+} from "@protocols/openai-embeddings/decode";
+import {
+	encodeOpenAIEmbeddingsRequest,
+	encodeOpenAIEmbeddingsResponse,
+} from "@protocols/openai-embeddings/encode";
 
 export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) {
     const { endpoint, schema } = opts;
@@ -46,11 +58,58 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
         }
 
         // ==========================================================================
-        // IR PIPELINE (MANDATORY - ONLY EXECUTION PATH)
-        // Flow: validate → decode to IR → execute via provider surface → decode
+        // IR PIPELINE
+        // Flow: validate → decode to IR → execute via provider executor → decode
         // back to IR → render protocol envelope for the caller.
         // ==========================================================================
         try {
+            if (endpoint === "embeddings") {
+                // Embeddings use a separate IR flow (no chat normalization)
+                timing.timer.mark("protocol_detect");
+                (pre.ctx as any).protocol = "openai.embeddings";
+                timing.timer.end("protocol_detect");
+
+                timing.timer.mark("ir_decode");
+                const ir = decodeOpenAIEmbeddingsRequest(pre.ctx.body);
+                timing.timer.end("ir_decode");
+
+                // Normalize request body from IR before execution
+                pre.ctx.body = encodeOpenAIEmbeddingsRequest(ir);
+
+                timing.timer.mark("execute_start");
+                const exec = await doRequest(pre.ctx, timing);
+                if (exec instanceof Response) {
+                    const header = timing.timer.header();
+                    pre.ctx.timing = timing.timer.snapshot();
+                    return await handleError({
+                        stage: "execute",
+                        res: exec,
+                        endpoint,
+                        ctx: pre.ctx,
+                        timingHeader: header || undefined,
+                        auditFailure,
+                        req,
+                    });
+                }
+
+                // Normalize response via Embeddings IR
+                if (exec.result.kind === "completed" && exec.result.normalized) {
+                    const embeddingIr = decodeOpenAIEmbeddingsResponse(exec.result.normalized);
+                    exec.result.normalized = encodeOpenAIEmbeddingsResponse(embeddingIr);
+                }
+
+                const header = timing.timer.header();
+                pre.ctx.timing = timing.timer.snapshot();
+                pre.ctx.timer = timing.timer;
+
+                return finalizeRequest({
+                    pre,
+                    exec: { ok: true, result: exec.result },
+                    endpoint,
+                    timingHeader: header || undefined,
+                });
+            }
+
             // Protocol detection
             timing.timer.mark("protocol_detect");
             const requestPath = new URL(req.url).pathname;
@@ -96,7 +155,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
             // Store encoded response in result for finalizeRequest
             if (protocolResponse) {
-                (exec.result as any).normalized = protocolResponse;
+                exec.result.normalized = protocolResponse;
             }
 
             // Populate ctx timing
@@ -104,11 +163,9 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             pre.ctx.timing = timing.timer.snapshot();
             pre.ctx.timer = timing.timer;
 
-            // Finalize (convert IRRequestResult to RequestResult format)
-            const legacyResult = convertIRResultToLegacy(exec.result);
             return finalizeRequest({
                 pre,
-                exec: { ok: true, result: legacyResult },
+                exec: { ok: true, result: exec.result },
                 endpoint,
                 timingHeader: header || undefined,
             });
@@ -133,24 +190,13 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
     };
 }
 
-/**
- * Convert IRRequestResult to legacy RequestResult format
- * Bridge function to maintain compatibility with finalizeRequest
- */
-function convertIRResultToLegacy(irResult: IRRequestResult): any {
-    return {
-        kind: irResult.kind,
-        upstream: irResult.upstream,
-        stream: irResult.stream,
-        usageFinalizer: irResult.usageFinalizer,
-        provider: irResult.provider,
-        generationTimeMs: irResult.generationTimeMs,
-        bill: irResult.bill,
-        keySource: irResult.keySource,
-        byokKeyId: irResult.byokKeyId,
-        normalized: (irResult as any).normalized, // Encoded protocol response  
-        ir: irResult.ir,
-        mappedRequest: irResult.mappedRequest,
-        rawResponse: irResult.rawResponse,
-    };
-}
+
+
+
+
+
+
+
+
+
+

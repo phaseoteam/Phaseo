@@ -4,5 +4,5 @@ import {
 } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 
 export async function fetchFrontendGatewayModels(): Promise<GatewaySupportedModel[]> {
-    return getGatewaySupportedModels();
+    return getGatewaySupportedModels(false);
 }

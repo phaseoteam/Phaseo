@@ -1,3 +1,7 @@
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
 // Fixed-point helpers (USD nanos using numbers — no BigInt to keep outputs JSON-friendly)
 const NANOS_PER_USD = 1_000_000_000;
 const NANOS_PER_CENT = 10_000_000;
@@ -41,3 +45,4 @@ export function formatUsdFromNanosExact(nanos: number, dp = 9): string {
     const frac = frac9.slice(0, Math.min(9, dp)).padEnd(dp, "0");
     return `${neg}${dollars}.${frac}`;
 }
+

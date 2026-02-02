@@ -87,7 +87,8 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'background' => 'bool',
         'user' => 'string',
         'usage' => 'bool',
-        'meta' => 'bool'
+        'meta' => 'bool',
+        'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
     /**
@@ -128,7 +129,8 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'background' => null,
         'user' => null,
         'usage' => null,
-        'meta' => null
+        'meta' => null,
+        'provider' => null
     ];
 
     /**
@@ -167,7 +169,8 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'background' => false,
         'user' => false,
         'usage' => false,
-        'meta' => false
+        'meta' => false,
+        'provider' => false
     ];
 
     /**
@@ -286,7 +289,8 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'background' => 'background',
         'user' => 'user',
         'usage' => 'usage',
-        'meta' => 'meta'
+        'meta' => 'meta',
+        'provider' => 'provider'
     ];
 
     /**
@@ -325,7 +329,8 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'background' => 'setBackground',
         'user' => 'setUser',
         'usage' => 'setUsage',
-        'meta' => 'setMeta'
+        'meta' => 'setMeta',
+        'provider' => 'setProvider'
     ];
 
     /**
@@ -364,7 +369,8 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'background' => 'getBackground',
         'user' => 'getUser',
         'usage' => 'getUsage',
-        'meta' => 'getMeta'
+        'meta' => 'getMeta',
+        'provider' => 'getProvider'
     ];
 
     /**
@@ -455,6 +461,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('user', $data ?? [], null);
         $this->setIfExists('usage', $data ?? [], null);
         $this->setIfExists('meta', $data ?? [], null);
+        $this->setIfExists('provider', $data ?? [], null);
     }
 
     /**
@@ -1401,6 +1408,33 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable meta cannot be null');
         }
         $this->container['meta'] = $meta;
+
+        return $this;
+    }
+
+    /**
+     * Gets provider
+     *
+     * @return \AIStats\Sdk\Model\ProviderRoutingOptions|null
+     */
+    public function getProvider()
+    {
+        return $this->container['provider'];
+    }
+
+    /**
+     * Sets provider
+     *
+     * @param \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider
+     *
+     * @return self
+     */
+    public function setProvider($provider)
+    {
+        if (is_null($provider)) {
+            throw new \InvalidArgumentException('non-nullable provider cannot be null');
+        }
+        $this->container['provider'] = $provider;
 
         return $this;
     }

@@ -136,6 +136,64 @@ paths:
                                         type: string
                                     message:
                                         type: string
+    /providers:
+        get:
+            x-beta: true
+            operationId: listProviders
+            summary: List providers
+            description: Returns a list of available API providers.
+            parameters:
+                - name: limit
+                  in: query
+                  description: Limit the number of results
+                  schema:
+                      type: integer
+                      default: 50
+                      minimum: 1
+                      maximum: 250
+                - name: offset
+                  in: query
+                  description: Offset for pagination
+                  schema:
+                      type: integer
+                      default: 0
+            responses:
+                "200":
+                    description: List of providers
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    limit:
+                                        type: integer
+                                        example: 50
+                                    offset:
+                                        type: integer
+                                        example: 0
+                                    total:
+                                        type: integer
+                                        example: 25
+                                    providers:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Provider"
+                "500":
+                    description: Error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    error:
+                                        type: string
+                                    message:
+                                        type: string
     /generation:
         get:
             x-beta: true
@@ -609,6 +667,392 @@ paths:
                                         type: string
                                     message:
                                         type: string
+    /credits:
+        get:
+            x-beta: true
+            operationId: getCredits
+            summary: Get remaining credits
+            description: Returns the remaining credits and usage statistics for a team.
+            parameters:
+                - name: team_id
+                  in: query
+                  description: The team ID to query
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Credit information
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    credits:
+                                        type: object
+                                        properties:
+                                            remaining:
+                                                type: integer
+                                                description: Current credit balance in nanos
+                                                example: 15000000000
+                                            thirty_day_usage:
+                                                type: integer
+                                                description: Credits consumed in the last 30 days (nanos)
+                                                example: 250000000
+                                            thirty_day_requests:
+                                                type: integer
+                                                description: Number of API requests in the last 30 days
+                                                example: 1250
+                "400":
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /activity:
+        get:
+            x-beta: true
+            operationId: getActivity
+            summary: Get activity
+            description: Returns recent API activity for a team.
+            parameters:
+                - name: team_id
+                  in: query
+                  description: The team ID to query
+                  required: true
+                  schema:
+                      type: string
+                - name: days
+                  in: query
+                  description: Number of days to look back
+                  schema:
+                      type: integer
+                      default: 30
+                      minimum: 1
+                      maximum: 90
+                - name: limit
+                  in: query
+                  description: Maximum number of records to return
+                  schema:
+                      type: integer
+                      default: 50
+                      minimum: 1
+                      maximum: 250
+                - name: offset
+                  in: query
+                  description: Pagination offset
+                  schema:
+                      type: integer
+                      default: 0
+                      minimum: 0
+            responses:
+                "200":
+                    description: Activity data
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    period_days:
+                                        type: integer
+                                        example: 30
+                                    limit:
+                                        type: integer
+                                        example: 50
+                                    offset:
+                                        type: integer
+                                        example: 0
+                                    total:
+                                        type: integer
+                                        example: 1250
+                                    total_cost_cents:
+                                        type: number
+                                        example: 12.50
+                                    activity:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/ActivityEntry"
+                "400":
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /provisioning/keys:
+        get:
+            x-beta: true
+            operationId: listProvisioningKeys
+            summary: List provisioning keys
+            description: Returns all provisioning keys for a team.
+            parameters:
+                - name: team_id
+                  in: query
+                  description: The team ID to query
+                  required: true
+                  schema:
+                      type: string
+                - name: limit
+                  in: query
+                  description: Maximum number of keys to return
+                  schema:
+                      type: integer
+                      default: 50
+                      minimum: 1
+                      maximum: 250
+                - name: offset
+                  in: query
+                  description: Pagination offset
+                  schema:
+                      type: integer
+                      default: 0
+                      minimum: 0
+            responses:
+                "200":
+                    description: List of provisioning keys
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    limit:
+                                        type: integer
+                                        example: 50
+                                    offset:
+                                        type: integer
+                                        example: 0
+                                    total:
+                                        type: integer
+                                        example: 3
+                                    keys:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/ProvisioningKey"
+                "400":
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+        post:
+            x-beta: true
+            operationId: createProvisioningKey
+            summary: Create provisioning key
+            description: Creates a new provisioning key for a team.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - team_id
+                                - name
+                                - created_by
+                            properties:
+                                team_id:
+                                    type: string
+                                    description: The team ID this key belongs to
+                                name:
+                                    type: string
+                                    description: A descriptive name for the key
+                                scopes:
+                                    type: string
+                                    description: Comma-separated list of scopes
+                                    default: "read,write"
+                                created_by:
+                                    type: string
+                                    description: The user ID creating this key
+            responses:
+                "201":
+                    description: Created provisioning key
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    key:
+                                        $ref: "#/components/schemas/ProvisioningKeyWithValue"
+                "400":
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /provisioning/keys/{id}:
+        get:
+            x-beta: true
+            operationId: getProvisioningKey
+            summary: Get provisioning key
+            description: Returns details of a specific provisioning key.
+            parameters:
+                - name: id
+                  in: path
+                  description: The provisioning key ID
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Provisioning key details
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    key:
+                                        $ref: "#/components/schemas/ProvisioningKeyDetail"
+                "404":
+                    description: Key not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+        patch:
+            x-beta: true
+            operationId: updateProvisioningKey
+            summary: Update provisioning key
+            description: Updates the name, status, or blocked state of a provisioning key.
+            parameters:
+                - name: id
+                  in: path
+                  description: The provisioning key ID
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                name:
+                                    type: string
+                                    description: New name for the key
+                                status:
+                                    type: string
+                                    enum:
+                                        - active
+                                        - disabled
+                                        - revoked
+                                    description: New status for the key
+                                soft_blocked:
+                                    type: boolean
+                                    description: Whether to temporarily block the key
+            responses:
+                "200":
+                    description: Key updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    message:
+                                        type: string
+                                        example: Key updated successfully
+                "400":
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "404":
+                    description: Key not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+        delete:
+            x-beta: true
+            operationId: deleteProvisioningKey
+            summary: Delete provisioning key
+            description: Permanently deletes a provisioning key.
+            parameters:
+                - name: id
+                  in: path
+                  description: The provisioning key ID
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Key deleted successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    message:
+                                        type: string
+                "404":
+                    description: Key not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 components:
     securitySchemes:
         BearerAuth:
@@ -632,6 +1076,27 @@ components:
                     type: array
                     items:
                         type: string
+        Provider:
+            type: object
+            properties:
+                api_provider_id:
+                    type: string
+                    example: "openai"
+                api_provider_name:
+                    type: string
+                    nullable: true
+                    example: "OpenAI"
+                description:
+                    type: string
+                    nullable: true
+                link:
+                    type: string
+                    nullable: true
+                    example: "https://openai.com"
+                country_code:
+                    type: string
+                    nullable: true
+                    example: "US"
         Model:
             type: object
             properties:
@@ -1252,13 +1717,17 @@ components:
                     $ref: "#/components/schemas/Usage"
         EmbeddingsRequest:
             type: object
-            required:
-                - model
-                - input
             properties:
                 model:
                     type: string
                 input:
+                    oneOf:
+                        - type: string
+                        - type: array
+                          items:
+                              type: string
+                inputs:
+                    description: Alias for input.
                     oneOf:
                         - type: string
                         - type: array
@@ -1269,10 +1738,51 @@ components:
                 dimensions:
                     type: integer
                     minimum: 1
+                embedding_options:
+                    type: object
+                    properties:
+                        google:
+                            type: object
+                            properties:
+                                output_dimensionality:
+                                    type: integer
+                                    minimum: 1
+                                task_type:
+                                    type: string
+                                    enum:
+                                        - TASK_TYPE_UNSPECIFIED
+                                        - RETRIEVAL_QUERY
+                                        - RETRIEVAL_DOCUMENT
+                                        - SEMANTIC_SIMILARITY
+                                        - CLASSIFICATION
+                                title:
+                                    type: string
+                        mistral:
+                            type: object
+                            properties:
+                                output_dimension:
+                                    type: integer
+                                    minimum: 1
+                                    nullable: true
+                                output_dtype:
+                                    type: string
+                                    enum:
+                                        - float
+                                        - int8
+                                        - uint8
+                                        - binary
+                                        - ubinary
                 user:
                     type: string
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
+            anyOf:
+                - required:
+                      - model
+                      - input
+                - required:
+                      - model
+                      - inputs
         EmbeddingsResponse:
             type: object
             properties:
@@ -1577,11 +2087,37 @@ components:
                     type: string
                 prompt:
                     type: string
+                seconds:
+                    oneOf:
+                        - type: integer
+                        - type: string
+                size:
+                    type: string
+                input_reference:
+                    type: string
+                input_reference_mime_type:
+                    type: string
                 duration:
                     type: integer
                     minimum: 1
                     maximum: 120
+                duration_seconds:
+                    type: integer
                 ratio:
+                    type: string
+                aspect_ratio:
+                    type: string
+                resolution:
+                    type: string
+                negative_prompt:
+                    type: string
+                sample_count:
+                    type: integer
+                seed:
+                    type: integer
+                person_generation:
+                    type: string
+                output_storage_uri:
                     type: string
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
@@ -2658,3 +3194,155 @@ components:
                 - wildbench
                 - xlang-agent
                 - zebralogic
+        ErrorResponse:
+            type: object
+            properties:
+                ok:
+                    type: boolean
+                    example: false
+                error:
+                    type: string
+                    example: "error_type"
+                message:
+                    type: string
+                    example: "Human-readable error message"
+        ActivityEntry:
+            type: object
+            properties:
+                request_id:
+                    type: string
+                    example: "req_abc123"
+                provider:
+                    type: string
+                    example: "openai"
+                model:
+                    type: string
+                    example: "gpt-4o"
+                endpoint:
+                    type: string
+                    example: "chat.completions"
+                usage:
+                    type: object
+                    properties:
+                        input_tokens:
+                            type: integer
+                        output_tokens:
+                            type: integer
+                        total_tokens:
+                            type: integer
+                cost_cents:
+                    type: number
+                    example: 0.015
+                latency_ms:
+                    type: integer
+                    example: 450
+                timestamp:
+                    type: string
+                    format: date-time
+                    example: "2026-01-20T10:30:00Z"
+        ProvisioningKey:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    example: "pk_uuid_here"
+                name:
+                    type: string
+                    example: "Production Key"
+                prefix:
+                    type: string
+                    example: "pk_abc123"
+                status:
+                    type: string
+                    enum:
+                        - active
+                        - disabled
+                        - revoked
+                    example: "active"
+                scopes:
+                    type: string
+                    example: "read,write"
+                created_at:
+                    type: string
+                    format: date-time
+                    example: "2026-01-01T00:00:00Z"
+                last_used_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: "2026-01-20T10:30:00Z"
+        ProvisioningKeyWithValue:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    example: "pk_uuid_here"
+                name:
+                    type: string
+                    example: "My New Key"
+                prefix:
+                    type: string
+                    example: "pk_abc123xy"
+                status:
+                    type: string
+                    enum:
+                        - active
+                        - disabled
+                        - revoked
+                    example: "active"
+                scopes:
+                    type: string
+                    example: "read,write"
+                created_at:
+                    type: string
+                    format: date-time
+                    example: "2026-01-20T10:30:00Z"
+                key:
+                    type: string
+                    description: The raw provisioning key. Only returned on creation.
+                    example: "pk_abc123xy_abc123def456..."
+        ProvisioningKeyDetail:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                    example: "pk_uuid_here"
+                team_id:
+                    type: string
+                    format: uuid
+                    example: "team_uuid_here"
+                name:
+                    type: string
+                    example: "Production Key"
+                prefix:
+                    type: string
+                    example: "pk_abc123"
+                status:
+                    type: string
+                    enum:
+                        - active
+                        - disabled
+                        - revoked
+                    example: "active"
+                scopes:
+                    type: string
+                    example: "read,write"
+                created_by:
+                    type: string
+                    format: uuid
+                    example: "user_uuid_here"
+                created_at:
+                    type: string
+                    format: date-time
+                    example: "2026-01-01T00:00:00Z"
+                last_used_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: "2026-01-20T10:30:00Z"
+                soft_blocked:
+                    type: boolean
+                    example: false

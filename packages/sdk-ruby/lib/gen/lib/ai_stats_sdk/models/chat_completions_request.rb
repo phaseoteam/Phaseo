@@ -59,6 +59,8 @@ module AIStatsSdk
 
     attr_accessor :usage
 
+    attr_accessor :provider
+
     attr_accessor :user_id
 
     attr_accessor :service_tier
@@ -110,6 +112,7 @@ module AIStatsSdk
         :'top_p' => :'top_p',
         :'response_format' => :'response_format',
         :'usage' => :'usage',
+        :'provider' => :'provider',
         :'user_id' => :'user_id',
         :'service_tier' => :'service_tier'
       }
@@ -150,6 +153,7 @@ module AIStatsSdk
         :'top_p' => :'Float',
         :'response_format' => :'ChatCompletionsRequestResponseFormat',
         :'usage' => :'Boolean',
+        :'provider' => :'ProviderRoutingOptions',
         :'user_id' => :'String',
         :'service_tier' => :'String'
       }
@@ -283,6 +287,10 @@ module AIStatsSdk
 
       if attributes.key?(:'usage')
         self.usage = attributes[:'usage']
+      end
+
+      if attributes.key?(:'provider')
+        self.provider = attributes[:'provider']
       end
 
       if attributes.key?(:'user_id')
@@ -614,6 +622,7 @@ module AIStatsSdk
           top_p == o.top_p &&
           response_format == o.response_format &&
           usage == o.usage &&
+          provider == o.provider &&
           user_id == o.user_id &&
           service_tier == o.service_tier
     end
@@ -627,7 +636,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, system, messages, reasoning, frequency_penalty, logit_bias, max_output_tokens, meta, presence_penalty, seed, stream, temperature, tools, max_tool_calls, parallel_tool_calls, tool_choice, top_k, logprobs, top_logprobs, top_p, response_format, usage, user_id, service_tier].hash
+      [model, system, messages, reasoning, frequency_penalty, logit_bias, max_output_tokens, meta, presence_penalty, seed, stream, temperature, tools, max_tool_calls, parallel_tool_calls, tool_choice, top_k, logprobs, top_logprobs, top_p, response_format, usage, provider, user_id, service_tier].hash
     end
 
     # Builds the object from hash

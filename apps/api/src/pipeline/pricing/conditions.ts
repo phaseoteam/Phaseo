@@ -1,3 +1,7 @@
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
 import type { Condition } from "./types";
 
 export type ConditionEvaluation = {
@@ -125,4 +129,5 @@ export function getQuantityByPath(obj: any, path?: string | null): number | unde
     const v = getByPath(obj, path);
     return typeof v === "number" && isFinite(v) ? v : undefined;
 }
+
 

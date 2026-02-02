@@ -1,5 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import InternalToolsGrid from "@/components/internal/InternalToolsGrid";
+
+export const metadata = {
+	title: "Internal Tools",
+	description: "Admin tools and utilities for managing the AI Stats platform",
+};
 
 export default async function InternalPage() {
 	const supabase = await createClient();
@@ -23,23 +29,17 @@ export default async function InternalPage() {
 		redirect("/");
 	}
 
-	// Test query: fetch first 5 rows for debugging
-	const { data, error } = await supabase
-		.from("data_api_provider_model_capabilities")
-		.select("provider_api_model_id, capability_id, params, status")
-		.limit(5);
-
 	return (
-		<div className="container mx-auto py-8">
-			<h1 className="text-xl font-bold mb-4">
-				Test: data_api_provider_model_capabilities
-			</h1>
-			{data && (
-				<pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">
-					{JSON.stringify(data, null, 2)}
-				</pre>
-			)}
-			{!error && !data && <div>Loading...</div>}
-		</div>
+		<main className="flex min-h-screen flex-col">
+			<div className="container mx-auto px-4 py-8">
+				<div className="mb-8">
+					<h1 className="text-3xl font-bold mb-2">Internal Tools</h1>
+					<p className="text-muted-foreground">
+						Admin tools and utilities for managing the AI Stats platform.
+					</p>
+				</div>
+				<InternalToolsGrid />
+			</div>
+		</main>
 	);
 }

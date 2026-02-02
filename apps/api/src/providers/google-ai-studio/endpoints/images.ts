@@ -1,4 +1,8 @@
 // lib/gateway/providers/google-ai-studio/endpoints/images.ts
+// Purpose: Provider endpoint adapter for google-ai-studio (images).
+// Why: Encapsulates provider-specific request/response mapping.
+// How: Defines provider-specific endpoint adapters and configuration helpers.
+
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { ImagesGenerationSchema, type ImagesGenerationRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
@@ -68,3 +72,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     
     return { kind: "completed", upstream: res, bill, normalized, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
 }
+
+
+
+
+
+
+
+
+

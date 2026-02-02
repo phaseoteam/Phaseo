@@ -1,24 +1,5 @@
 [
   {
-    "api_model_id": "openai/ada-2020-06-11",
-    "provider_api_model_id": "openai:openai/ada-2020-06-11",
-    "provider_model_slug": "ada",
-    "internal_model_id": "openai/ada-2020-06-11",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2020-06-11T00:00:00",
-    "effective_to": "2024-01-04T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "openai/babbage-002",
     "provider_api_model_id": "openai:openai/babbage-002",
     "provider_model_slug": "babbage-002",
@@ -38,25 +19,6 @@
     ]
   },
   {
-    "api_model_id": "openai/babbage-2020-06-11",
-    "provider_api_model_id": "openai:openai/babbage-2020-06-11",
-    "provider_model_slug": "babbage",
-    "internal_model_id": "openai/babbage-2020-06-11",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2020-06-11T00:00:00",
-    "effective_to": "2024-01-04T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "openai/chatgpt-4o",
     "provider_api_model_id": "openai:openai/chatgpt-4o",
     "provider_model_slug": "chatgpt-4o-latest",
@@ -65,122 +27,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "effective_from": null,
+    "effective_from": "2024-05-13T00:00:00",
     "effective_to": "2026-02-17T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/chatgpt-image-latest-2025-12-16",
-    "provider_api_model_id": "openai:openai/chatgpt-image-latest-2025-12-16",
-    "provider_model_slug": "chatgpt-image-latest",
-    "internal_model_id": "openai/chatgpt-image-latest-2025-12-16",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text,image",
-    "effective_from": "2025-12-16T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/codex-mini-2025-05-16",
-    "provider_api_model_id": "openai:openai/codex-mini-2025-05-16",
-    "provider_model_slug": null,
-    "internal_model_id": "openai/codex-mini-2025-05-16",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "effective_from": "2025-05-16T00:00:00",
-    "effective_to": "2026-01-16T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/computer-use-preview",
-    "provider_api_model_id": "openai:openai/computer-use-preview",
-    "provider_model_slug": "computer-use-preview-2025-03-11",
-    "internal_model_id": "openai/computer-use-preview-2025-03-11",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/curie-2020-06-11",
-    "provider_api_model_id": "openai:openai/curie-2020-06-11",
-    "provider_model_slug": "curie",
-    "internal_model_id": "openai/curie-2020-06-11",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2020-06-11T00:00:00",
-    "effective_to": "2024-01-04T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/dall-e-2-2022-09-28",
-    "provider_api_model_id": "openai:openai/dall-e-2-2022-09-28",
-    "provider_model_slug": "dall-e-2",
-    "internal_model_id": "openai/dall-e-2-2022-09-28",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "image",
-    "effective_from": "2022-09-28T00:00:00",
-    "effective_to": "2026-05-12T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/dall-e-3-2023-10-19",
-    "provider_api_model_id": "openai:openai/dall-e-3-2023-10-19",
-    "provider_model_slug": "dall-e-3",
-    "internal_model_id": "openai/dall-e-3-2023-10-19",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "image",
-    "effective_from": "2023-10-19T00:00:00",
-    "effective_to": "2026-05-12T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -209,16 +57,16 @@
     ]
   },
   {
-    "api_model_id": "openai/davinci-2020-06-11",
-    "provider_api_model_id": "openai:openai/davinci-2020-06-11",
-    "provider_model_slug": "davinci",
-    "internal_model_id": "openai/davinci-2020-06-11",
+    "api_model_id": "openai/gpt-3.5-turbo",
+    "provider_api_model_id": "openai:openai/gpt-3.5-turbo",
+    "provider_model_slug": "gpt-3.5-turbo-1106",
+    "internal_model_id": "openai/gpt-3-5-turbo-2023-11-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "effective_from": "2020-06-11T00:00:00",
-    "effective_to": "2024-01-04T00:00:00",
+    "effective_from": "2023-11-06T00:00:00",
+    "effective_to": "2026-09-28T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -228,9 +76,9 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-3-5-turbo-16k-0613-2023-06-13",
-    "provider_api_model_id": "openai:openai/gpt-3-5-turbo-16k-0613-2023-06-13",
-    "provider_model_slug": null,
+    "api_model_id": "openai/gpt-3.5-turbo-16k",
+    "provider_api_model_id": "openai:openai/gpt-3.5-turbo-16k",
+    "provider_model_slug": "gpt-3.5-turbo-16k",
     "internal_model_id": "openai/gpt-3-5-turbo-16k-0613-2023-06-13",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -247,65 +95,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-3-5-turbo-2023-03-21",
-    "provider_api_model_id": "openai:openai/gpt-3-5-turbo-2023-03-21",
-    "provider_model_slug": null,
-    "internal_model_id": "openai/gpt-3-5-turbo-2023-03-21",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2023-03-21T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-3-5-turbo-2023-09-28",
-    "provider_api_model_id": "openai:openai/gpt-3-5-turbo-2023-09-28",
-    "provider_model_slug": null,
-    "internal_model_id": "openai/gpt-3-5-turbo-2023-09-28",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2023-09-28T00:00:00",
-    "effective_to": "2026-09-28T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-3-5-turbo-2023-11-06",
-    "provider_api_model_id": "openai:openai/gpt-3-5-turbo-2023-11-06",
-    "provider_model_slug": "gpt-3.5-turbo-1106",
-    "internal_model_id": "openai/gpt-3-5-turbo-2023-11-06",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2023-11-06T00:00:00",
-    "effective_to": "2026-09-28T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4-1-2025-04-14",
-    "provider_api_model_id": "openai:openai/gpt-4-1-2025-04-14",
+    "api_model_id": "openai/gpt-4.1",
+    "provider_api_model_id": "openai:openai/gpt-4.1",
     "provider_model_slug": "gpt-4.1-2025-04-14",
     "internal_model_id": "openai/gpt-4-1-2025-04-14",
     "is_active_gateway": true,
@@ -323,8 +114,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-4-1-mini-2025-04-14",
-    "provider_api_model_id": "openai:openai/gpt-4-1-mini-2025-04-14",
+    "api_model_id": "openai/gpt-4.1-mini",
+    "provider_api_model_id": "openai:openai/gpt-4.1-mini",
     "provider_model_slug": "gpt-4.1-mini-2025-04-14",
     "internal_model_id": "openai/gpt-4-1-mini-2025-04-14",
     "is_active_gateway": true,
@@ -342,8 +133,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-4-1-nano-2025-04-14",
-    "provider_api_model_id": "openai:openai/gpt-4-1-nano-2025-04-14",
+    "api_model_id": "openai/gpt-4.1-nano",
+    "provider_api_model_id": "openai:openai/gpt-4.1-nano",
     "provider_model_slug": "gpt-4.1-nano-2025-04-14",
     "internal_model_id": "openai/gpt-4-1-nano-2025-04-14",
     "is_active_gateway": true,
@@ -363,12 +154,12 @@
   {
     "api_model_id": "openai/gpt-4-2023-03-14",
     "provider_api_model_id": "openai:openai/gpt-4-2023-03-14",
-    "provider_model_slug": null,
+    "provider_model_slug": "gpt-4-0314",
     "internal_model_id": "openai/gpt-4-2023-03-14",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "effective_from": "2023-03-14T00:00:00",
     "effective_to": "2026-03-26T00:00:00",
     "capabilities": [
@@ -382,12 +173,12 @@
   {
     "api_model_id": "openai/gpt-4-2023-06-13",
     "provider_api_model_id": "openai:openai/gpt-4-2023-06-13",
-    "provider_model_slug": null,
+    "provider_model_slug": "gpt-4-0613",
     "internal_model_id": "openai/gpt-4-2023-06-13",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
     "effective_from": "2023-06-13T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -456,65 +247,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-4o-audio-2024-10-01",
-    "provider_api_model_id": "openai:openai/gpt-4o-audio-2024-10-01",
-    "provider_model_slug": "gpt-4o-audio-preview-2024-10-01",
-    "internal_model_id": "openai/gpt-4o-audio-2024-10-01",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text,audio",
-    "effective_from": "2024-10-01T00:00:00",
-    "effective_to": "2025-10-10T00:00:00",
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-audio-2024-12-17",
-    "provider_api_model_id": "openai:openai/gpt-4o-audio-2024-12-17",
-    "provider_model_slug": "gpt-4o-audio-preview-2024-12-17",
-    "internal_model_id": "openai/gpt-4o-audio-2024-12-17",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text,audio",
-    "effective_from": "2024-12-17T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-audio-2025-06-03",
-    "provider_api_model_id": "openai:openai/gpt-4o-audio-2025-06-03",
-    "provider_model_slug": "gpt-4o-audio-preview-2025-06-03",
-    "internal_model_id": "openai/gpt-4o-audio-2025-06-03",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text,audio",
-    "effective_from": "2025-06-03T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-mini-2024-07-18",
-    "provider_api_model_id": "openai:openai/gpt-4o-mini-2024-07-18",
+    "api_model_id": "openai/gpt-4o-mini",
+    "provider_api_model_id": "openai:openai/gpt-4o-mini",
     "provider_model_slug": "gpt-4o-mini-2024-07-18",
     "internal_model_id": "openai/gpt-4o-mini-2024-07-18",
     "is_active_gateway": true,
@@ -532,293 +266,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-4o-mini-audio-preview",
-    "provider_api_model_id": "openai:openai/gpt-4o-mini-audio-preview",
-    "provider_model_slug": "gpt-4o-mini-audio-preview-2024-12-17",
-    "internal_model_id": "openai/gpt-4o-mini-audio-preview-2024-12-17",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text,audio",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-mini-realtime-preview",
-    "provider_api_model_id": "openai:openai/gpt-4o-mini-realtime-preview",
-    "provider_model_slug": "gpt-4o-mini-realtime-preview-2024-12-17",
-    "internal_model_id": "openai/gpt-4o-mini-realtime-preview-2024-12-17",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text,audio",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-mini-search-preview",
-    "provider_api_model_id": "openai:openai/gpt-4o-mini-search-preview",
-    "provider_model_slug": "gpt-4o-search-preview-2025-03-11",
-    "internal_model_id": "openai/gpt-4o-mini-search-preview-2025-03-11",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-mini-transcribe",
-    "provider_api_model_id": "openai:openai/gpt-4o-mini-transcribe",
-    "provider_model_slug": "gpt-4o-mini-transcribe",
-    "internal_model_id": "openai/gpt-4o-mini-transcribe-2025-12-15",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-mini-tts",
-    "provider_api_model_id": "openai:openai/gpt-4o-mini-tts",
-    "provider_model_slug": "gpt-4o-mini-tts",
-    "internal_model_id": "openai/gpt-4o-mini-tts-2025-12-15",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "audio",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-search-preview",
-    "provider_api_model_id": "openai:openai/gpt-4o-search-preview",
-    "provider_model_slug": "gpt-4o-search-preview-2025-03-11",
-    "internal_model_id": "openai/gpt-4o-search-preview-2025-03-11",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4o-transcribe",
-    "provider_api_model_id": "openai:openai/gpt-4o-transcribe",
-    "provider_model_slug": "gpt-4o-transcribe",
-    "internal_model_id": "openai/gpt-4o-transcribe-2025-03-20",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4-turbo-2023-03-14",
-    "provider_api_model_id": "openai:openai/gpt-4-turbo-2023-03-14",
-    "provider_model_slug": null,
-    "internal_model_id": "openai/gpt-4-turbo-2023-03-14",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "effective_from": "2023-03-14T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4-turbo-2023-11-06",
-    "provider_api_model_id": "openai:openai/gpt-4-turbo-2023-11-06",
-    "provider_model_slug": null,
-    "internal_model_id": "openai/gpt-4-turbo-2023-11-06",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "effective_from": "2023-11-06T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-4-turbo-2024-01-25",
-    "provider_api_model_id": "openai:openai/gpt-4-turbo-2024-01-25",
-    "provider_model_slug": null,
-    "internal_model_id": "openai/gpt-4-turbo-2024-01-25",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "effective_from": "2024-01-25T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-5-1-2025-11-12",
-    "provider_api_model_id": "openai:openai/gpt-5-1-2025-11-12",
-    "provider_model_slug": "gpt-5.1-2025-11-13",
-    "internal_model_id": "openai/gpt-5-1-2025-11-12",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2025-11-12T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-5-1-chat-2025-11-13",
-    "provider_api_model_id": "openai:openai/gpt-5-1-chat-2025-11-13",
-    "provider_model_slug": "gpt-5.1-chat-latest",
-    "internal_model_id": "openai/gpt-5-1-chat-2025-11-13",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2025-11-13T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-5-1-codex-2025-11-13",
-    "provider_api_model_id": "openai:openai/gpt-5-1-codex-2025-11-13",
-    "provider_model_slug": "gpt-5.1-codex",
-    "internal_model_id": "openai/gpt-5-1-codex-2025-11-13",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": "2025-11-13T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-5-1-codex-max-2025-11-19",
-    "provider_api_model_id": "openai:openai/gpt-5-1-codex-max-2025-11-19",
-    "provider_model_slug": "gpt-5.1-codex-max",
-    "internal_model_id": "openai/gpt-5-1-codex-max-2025-11-19",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "image,text",
-    "output_modalities": "text",
-    "effective_from": "2025-11-19T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-5-1-codex-mini-2025-11-13",
-    "provider_api_model_id": "openai:openai/gpt-5-1-codex-mini-2025-11-13",
-    "provider_model_slug": "gpt-5.1-codex-mini",
-    "internal_model_id": "openai/gpt-5-1-codex-mini-2025-11-13",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "effective_from": "2025-11-13T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-5-2025-08-07",
-    "provider_api_model_id": "openai:openai/gpt-5-2025-08-07",
+    "api_model_id": "openai/gpt-5",
+    "provider_api_model_id": "openai:openai/gpt-5",
     "provider_model_slug": "gpt-5-2025-08-07",
     "internal_model_id": "openai/gpt-5-2025-08-07",
     "is_active_gateway": true,
@@ -836,8 +285,103 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-2-2025-12-11",
-    "provider_api_model_id": "openai:openai/gpt-5-2-2025-12-11",
+    "api_model_id": "openai/gpt-5.1",
+    "provider_api_model_id": "openai:openai/gpt-5.1",
+    "provider_model_slug": "gpt-5.1-2025-11-13",
+    "internal_model_id": "openai/gpt-5-1-2025-11-12",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-11-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.1-chat",
+    "provider_api_model_id": "openai:openai/gpt-5.1-chat",
+    "provider_model_slug": "gpt-5.1-chat-latest",
+    "internal_model_id": "openai/gpt-5-1-chat-2025-11-13",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-11-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.1-codex",
+    "provider_api_model_id": "openai:openai/gpt-5.1-codex",
+    "provider_model_slug": "gpt-5.1-codex",
+    "internal_model_id": "openai/gpt-5-1-codex-2025-11-13",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-11-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.1-codex-max",
+    "provider_api_model_id": "openai:openai/gpt-5.1-codex-max",
+    "provider_model_slug": "gpt-5.1-codex-max",
+    "internal_model_id": "openai/gpt-5-1-codex-max-2025-11-19",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-11-19T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.1-codex-mini",
+    "provider_api_model_id": "openai:openai/gpt-5.1-codex-mini",
+    "provider_model_slug": "gpt-5.1-codex-mini",
+    "internal_model_id": "openai/gpt-5-1-codex-mini-2025-11-13",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-11-13T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.2",
+    "provider_api_model_id": "openai:openai/gpt-5.2",
     "provider_model_slug": "gpt-5.2-2025-12-11",
     "internal_model_id": "openai/gpt-5-2-2025-12-11",
     "is_active_gateway": true,
@@ -855,8 +399,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-2-chat-2025-12-11",
-    "provider_api_model_id": "openai:openai/gpt-5-2-chat-2025-12-11",
+    "api_model_id": "openai/gpt-5.2-chat",
+    "provider_api_model_id": "openai:openai/gpt-5.2-chat",
     "provider_model_slug": "gpt-5.2-chat-latest",
     "internal_model_id": "openai/gpt-5-2-chat-2025-12-11",
     "is_active_gateway": true,
@@ -874,8 +418,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-2-codex-2025-12-18",
-    "provider_api_model_id": "openai:openai/gpt-5-2-codex-2025-12-18",
+    "api_model_id": "openai/gpt-5.2-codex",
+    "provider_api_model_id": "openai:openai/gpt-5.2-codex",
     "provider_model_slug": "gpt-5.2-codex",
     "internal_model_id": "openai/gpt-5-2-codex-2025-12-18",
     "is_active_gateway": true,
@@ -893,8 +437,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-2-pro-2025-12-11",
-    "provider_api_model_id": "openai:openai/gpt-5-2-pro-2025-12-11",
+    "api_model_id": "openai/gpt-5.2-pro",
+    "provider_api_model_id": "openai:openai/gpt-5.2-pro",
     "provider_model_slug": "gpt-5.2-pro-2025-12-11",
     "internal_model_id": "openai/gpt-5-2-pro-2025-12-11",
     "is_active_gateway": true,
@@ -912,8 +456,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-chat-2025-08-07",
-    "provider_api_model_id": "openai:openai/gpt-5-chat-2025-08-07",
+    "api_model_id": "openai/gpt-5-chat",
+    "provider_api_model_id": "openai:openai/gpt-5-chat",
     "provider_model_slug": "gpt-5-chat-latest",
     "internal_model_id": "openai/gpt-5-chat-2025-08-07",
     "is_active_gateway": true,
@@ -931,13 +475,13 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-codex-2025-09-15",
-    "provider_api_model_id": "openai:openai/gpt-5-codex-2025-09-15",
+    "api_model_id": "openai/gpt-5-codex",
+    "provider_api_model_id": "openai:openai/gpt-5-codex",
     "provider_model_slug": "gpt-5-codex",
     "internal_model_id": "openai/gpt-5-codex-2025-09-15",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "image,text",
+    "input_modalities": "text,image",
     "output_modalities": "text",
     "effective_from": "2025-09-15T00:00:00",
     "effective_to": null,
@@ -950,8 +494,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-mini-2025-08-07",
-    "provider_api_model_id": "openai:openai/gpt-5-mini-2025-08-07",
+    "api_model_id": "openai/gpt-5-mini",
+    "provider_api_model_id": "openai:openai/gpt-5-mini",
     "provider_model_slug": "gpt-5-mini-2025-08-07",
     "internal_model_id": "openai/gpt-5-mini-2025-08-07",
     "is_active_gateway": true,
@@ -969,8 +513,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-nano-2025-08-07",
-    "provider_api_model_id": "openai:openai/gpt-5-nano-2025-08-07",
+    "api_model_id": "openai/gpt-5-nano",
+    "provider_api_model_id": "openai:openai/gpt-5-nano",
     "provider_model_slug": "gpt-5-nano-2025-08-07",
     "internal_model_id": "openai/gpt-5-nano-2025-08-07",
     "is_active_gateway": true,
@@ -988,8 +532,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-5-pro-2025-08-07",
-    "provider_api_model_id": "openai:openai/gpt-5-pro-2025-08-07",
+    "api_model_id": "openai/gpt-5-pro",
+    "provider_api_model_id": "openai:openai/gpt-5-pro",
     "provider_model_slug": "gpt-5-pro-2025-10-06",
     "internal_model_id": "openai/gpt-5-pro-2025-08-07",
     "is_active_gateway": true,
@@ -1007,141 +551,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-audio",
-    "provider_api_model_id": "openai:openai/gpt-audio",
-    "provider_model_slug": "gpt-audio-2025-08-28",
-    "internal_model_id": "openai/gpt-audio-2025-08-28",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text,audio",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-audio-mini-2025-10-06",
-    "provider_api_model_id": "openai:openai/gpt-audio-mini-2025-10-06",
-    "provider_model_slug": "gpt-audio-mini-2025-10-06",
-    "internal_model_id": "openai/gpt-audio-mini-2025-10-06",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,audio",
-    "output_modalities": "text,audio",
-    "effective_from": "2025-10-06T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-image-1",
-    "provider_api_model_id": "openai:openai/gpt-image-1",
-    "provider_model_slug": "gpt-image-1",
-    "internal_model_id": "openai/gpt-image-1-2025-04-23",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "image",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-image-1-5-2025-12-16",
-    "provider_api_model_id": "openai:openai/gpt-image-1-5-2025-12-16",
-    "provider_model_slug": "gpt-image-1.5-2025-12-16",
-    "internal_model_id": "openai/gpt-image-1-5-2025-12-16",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text,image",
-    "effective_from": "2025-12-16T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-image-1-mini-2025-10-06",
-    "provider_api_model_id": "openai:openai/gpt-image-1-mini-2025-10-06",
-    "provider_model_slug": "gpt-image-1-mini",
-    "internal_model_id": "openai/gpt-image-1-mini-2025-10-06",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "image",
-    "effective_from": "2025-10-06T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-realtime",
-    "provider_api_model_id": "openai:openai/gpt-realtime",
-    "provider_model_slug": "gpt-realtime-2025-08-28",
-    "internal_model_id": "openai/gpt-realtime-2025-08-28",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,audio",
-    "output_modalities": "text,audio",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/gpt-realtime-mini-2025-10-06",
-    "provider_api_model_id": "openai:openai/gpt-realtime-mini-2025-10-06",
-    "provider_model_slug": "gpt-realtime-mini-2025-10-06",
-    "internal_model_id": "openai/gpt-realtime-mini-2025-10-06",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,audio",
-    "output_modalities": "text,audio",
-    "effective_from": "2025-10-06T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/o1-2024-12-17",
-    "provider_api_model_id": "openai:openai/o1-2024-12-17",
+    "api_model_id": "openai/o1",
+    "provider_api_model_id": "openai:openai/o1",
     "provider_model_slug": "o1-2024-12-17",
     "internal_model_id": "openai/o1-2024-12-17",
     "is_active_gateway": true,
@@ -1159,8 +570,8 @@
     ]
   },
   {
-    "api_model_id": "openai/o1-pro-2025-03-19",
-    "provider_api_model_id": "openai:openai/o1-pro-2025-03-19",
+    "api_model_id": "openai/o1-pro",
+    "provider_api_model_id": "openai:openai/o1-pro",
     "provider_model_slug": "o1-pro-2025-03-19",
     "internal_model_id": "openai/o1-pro-2025-03-19",
     "is_active_gateway": true,
@@ -1178,8 +589,8 @@
     ]
   },
   {
-    "api_model_id": "openai/o3-2025-04-16",
-    "provider_api_model_id": "openai:openai/o3-2025-04-16",
+    "api_model_id": "openai/o3",
+    "provider_api_model_id": "openai:openai/o3",
     "provider_model_slug": "o3-2025-04-16",
     "internal_model_id": "openai/o3-2025-04-16",
     "is_active_gateway": true,
@@ -1197,8 +608,8 @@
     ]
   },
   {
-    "api_model_id": "openai/o3-deep-research-2025-06-26",
-    "provider_api_model_id": "openai:openai/o3-deep-research-2025-06-26",
+    "api_model_id": "openai/o3-deep-research",
+    "provider_api_model_id": "openai:openai/o3-deep-research",
     "provider_model_slug": "o3-deep-research-2025-06-26",
     "internal_model_id": "openai/o3-deep-research-2025-06-26",
     "is_active_gateway": true,
@@ -1216,8 +627,8 @@
     ]
   },
   {
-    "api_model_id": "openai/o3-mini-2025-01-30",
-    "provider_api_model_id": "openai:openai/o3-mini-2025-01-30",
+    "api_model_id": "openai/o3-mini",
+    "provider_api_model_id": "openai:openai/o3-mini",
     "provider_model_slug": "o3-mini-2025-01-31",
     "internal_model_id": "openai/o3-mini-2025-01-30",
     "is_active_gateway": true,
@@ -1235,8 +646,8 @@
     ]
   },
   {
-    "api_model_id": "openai/o3-pro-2025-06-10",
-    "provider_api_model_id": "openai:openai/o3-pro-2025-06-10",
+    "api_model_id": "openai/o3-pro",
+    "provider_api_model_id": "openai:openai/o3-pro",
     "provider_model_slug": "o3-pro-2025-06-10",
     "internal_model_id": "openai/o3-pro-2025-06-10",
     "is_active_gateway": true,
@@ -1254,8 +665,8 @@
     ]
   },
   {
-    "api_model_id": "openai/o4-mini-2025-04-16",
-    "provider_api_model_id": "openai:openai/o4-mini-2025-04-16",
+    "api_model_id": "openai/o4-mini",
+    "provider_api_model_id": "openai:openai/o4-mini",
     "provider_model_slug": "o4-mini-2025-04-16",
     "internal_model_id": "openai/o4-mini-2025-04-16",
     "is_active_gateway": true,
@@ -1273,8 +684,8 @@
     ]
   },
   {
-    "api_model_id": "openai/o4-mini-deep-research-2025-06-26",
-    "provider_api_model_id": "openai:openai/o4-mini-deep-research-2025-06-26",
+    "api_model_id": "openai/o4-mini-deep-research",
+    "provider_api_model_id": "openai:openai/o4-mini-deep-research",
     "provider_model_slug": "o4-mini-deep-research-2025-06-26",
     "internal_model_id": "openai/o4-mini-deep-research-2025-06-26",
     "is_active_gateway": true,
@@ -1292,8 +703,8 @@
     ]
   },
   {
-    "api_model_id": "openai/omni-moderation-2024-09-26",
-    "provider_api_model_id": "openai:openai/omni-moderation-2024-09-26",
+    "api_model_id": "openai/omni-moderation",
+    "provider_api_model_id": "openai:openai/omni-moderation",
     "provider_model_slug": "omni-moderation-latest",
     "internal_model_id": "openai/omni-moderation-2024-09-26",
     "is_active_gateway": true,
@@ -1301,44 +712,6 @@
     "input_modalities": "text,image",
     "output_modalities": "text",
     "effective_from": "2024-09-26T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "moderations.create",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/sora-2-2025-09-30",
-    "provider_api_model_id": "openai:openai/sora-2-2025-09-30",
-    "provider_model_slug": "sora-2",
-    "internal_model_id": "openai/sora-2-2025-09-30",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "effective_from": "2025-09-30T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "openai/sora-2-pro-2025-10-03",
-    "provider_api_model_id": "openai:openai/sora-2-pro-2025-10-03",
-    "provider_model_slug": "sora-2-pro",
-    "internal_model_id": "openai/sora-2-pro-2025-10-03",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "effective_from": "2025-10-03T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -1357,7 +730,7 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "embeddings",
-    "effective_from": null,
+    "effective_from": "2024-01-25T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -1376,7 +749,7 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "embeddings",
-    "effective_from": null,
+    "effective_from": "2024-01-25T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -1395,7 +768,7 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "embeddings",
-    "effective_from": null,
+    "effective_from": "2022-12-15T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -1406,9 +779,449 @@
     ]
   },
   {
+    "api_model_id": "openai/ada",
+    "provider_api_model_id": "openai:openai/ada",
+    "provider_model_slug": "ada",
+    "internal_model_id": "openai/ada-2020-06-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2020-06-11T00:00:00",
+    "effective_to": "2024-01-04T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/babbage",
+    "provider_api_model_id": "openai:openai/babbage",
+    "provider_model_slug": "babbage",
+    "internal_model_id": "openai/babbage-2020-06-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2020-06-11T00:00:00",
+    "effective_to": "2024-01-04T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/chatgpt-image-latest",
+    "provider_api_model_id": "openai:openai/chatgpt-image-latest",
+    "provider_model_slug": "chatgpt-image-latest",
+    "internal_model_id": "openai/chatgpt-image-latest-2025-12-16",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text,image",
+    "effective_from": "2025-12-16T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/codex-mini",
+    "provider_api_model_id": "openai:openai/codex-mini",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/codex-mini-2025-05-16",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-05-16T00:00:00",
+    "effective_to": "2026-01-16T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/computer-use-preview",
+    "provider_api_model_id": "openai:openai/computer-use-preview",
+    "provider_model_slug": "computer-use-preview-2025-03-11",
+    "internal_model_id": "openai/computer-use-preview-2025-03-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/curie",
+    "provider_api_model_id": "openai:openai/curie",
+    "provider_model_slug": "curie",
+    "internal_model_id": "openai/curie-2020-06-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2020-06-11T00:00:00",
+    "effective_to": "2024-01-04T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/dall-e-2",
+    "provider_api_model_id": "openai:openai/dall-e-2",
+    "provider_model_slug": "dall-e-2",
+    "internal_model_id": "openai/dall-e-2-2022-09-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "effective_from": "2022-09-28T00:00:00",
+    "effective_to": "2026-05-12T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/dall-e-3",
+    "provider_api_model_id": "openai:openai/dall-e-3",
+    "provider_model_slug": "dall-e-3",
+    "internal_model_id": "openai/dall-e-3-2023-10-19",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "effective_from": "2023-10-19T00:00:00",
+    "effective_to": "2026-05-12T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/davinci",
+    "provider_api_model_id": "openai:openai/davinci",
+    "provider_model_slug": "davinci",
+    "internal_model_id": "openai/davinci-2020-06-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2020-06-11T00:00:00",
+    "effective_to": "2024-01-04T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-3.5-turbo-2023-03-21",
+    "provider_api_model_id": "openai:openai/gpt-3.5-turbo-2023-03-21",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-3-5-turbo-2023-03-21",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2023-03-21T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-3.5-turbo-2023-09-28",
+    "provider_api_model_id": "openai:openai/gpt-3.5-turbo-2023-09-28",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-3-5-turbo-2023-09-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": "2023-09-28T00:00:00",
+    "effective_to": "2026-09-28T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-audio-2024-10-01",
+    "provider_api_model_id": "openai:openai/gpt-4o-audio-2024-10-01",
+    "provider_model_slug": "gpt-4o-audio-preview-2024-10-01",
+    "internal_model_id": "openai/gpt-4o-audio-2024-10-01",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "effective_from": "2024-10-01T00:00:00",
+    "effective_to": "2025-10-10T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-audio-2024-12-17",
+    "provider_api_model_id": "openai:openai/gpt-4o-audio-2024-12-17",
+    "provider_model_slug": "gpt-4o-audio-preview-2024-12-17",
+    "internal_model_id": "openai/gpt-4o-audio-2024-12-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "effective_from": "2024-12-17T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-audio-2025-06-03",
+    "provider_api_model_id": "openai:openai/gpt-4o-audio-2025-06-03",
+    "provider_model_slug": "gpt-4o-audio-preview-2025-06-03",
+    "internal_model_id": "openai/gpt-4o-audio-2025-06-03",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "effective_from": "2025-06-03T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-mini-audio-preview",
+    "provider_api_model_id": "openai:openai/gpt-4o-mini-audio-preview",
+    "provider_model_slug": "gpt-4o-mini-audio-preview-2024-12-17",
+    "internal_model_id": "openai/gpt-4o-mini-audio-preview-2024-12-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-mini-realtime-preview",
+    "provider_api_model_id": "openai:openai/gpt-4o-mini-realtime-preview",
+    "provider_model_slug": "gpt-4o-mini-realtime-preview-2024-12-17",
+    "internal_model_id": "openai/gpt-4o-mini-realtime-preview-2024-12-17",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-mini-search-preview",
+    "provider_api_model_id": "openai:openai/gpt-4o-mini-search-preview",
+    "provider_model_slug": "gpt-4o-search-preview-2025-03-11",
+    "internal_model_id": "openai/gpt-4o-mini-search-preview-2025-03-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-mini-transcribe",
+    "provider_api_model_id": "openai:openai/gpt-4o-mini-transcribe",
+    "provider_model_slug": "gpt-4o-mini-transcribe",
+    "internal_model_id": "openai/gpt-4o-mini-transcribe-2025-12-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-mini-tts",
+    "provider_api_model_id": "openai:openai/gpt-4o-mini-tts",
+    "provider_model_slug": "gpt-4o-mini-tts",
+    "internal_model_id": "openai/gpt-4o-mini-tts-2025-12-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-search-preview",
+    "provider_api_model_id": "openai:openai/gpt-4o-search-preview",
+    "provider_model_slug": "gpt-4o-search-preview-2025-03-11",
+    "internal_model_id": "openai/gpt-4o-search-preview-2025-03-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4o-transcribe",
+    "provider_api_model_id": "openai:openai/gpt-4o-transcribe",
+    "provider_model_slug": "gpt-4o-transcribe",
+    "internal_model_id": "openai/gpt-4o-transcribe-2025-03-20",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4-turbo-2023-03-14",
+    "provider_api_model_id": "openai:openai/gpt-4-turbo-2023-03-14",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-4-turbo-2023-03-14",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2023-03-14T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4-turbo-2023-11-06",
+    "provider_api_model_id": "openai:openai/gpt-4-turbo-2023-11-06",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-4-turbo-2023-11-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2023-11-06T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-4-turbo-2024-01-25",
+    "provider_api_model_id": "openai:openai/gpt-4-turbo-2024-01-25",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-4-turbo-2024-01-25",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2024-01-25T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-audio",
+    "provider_api_model_id": "openai:openai/gpt-audio",
+    "provider_model_slug": "gpt-audio-2025-08-28",
+    "internal_model_id": "openai/gpt-audio-2025-08-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-audio-mini-2025-10-06",
+    "provider_api_model_id": "openai:openai/gpt-audio-mini-2025-10-06",
+    "provider_model_slug": "gpt-audio-mini-2025-10-06",
+    "internal_model_id": "openai/gpt-audio-mini-2025-10-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "effective_from": "2025-10-06T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-image-1",
+    "provider_api_model_id": "openai:openai/gpt-image-1",
+    "provider_model_slug": "gpt-image-1",
+    "internal_model_id": "openai/gpt-image-1-2025-04-23",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-image-1.5",
+    "provider_api_model_id": "openai:openai/gpt-image-1.5",
+    "provider_model_slug": "gpt-image-1.5-2025-12-16",
+    "internal_model_id": "openai/gpt-image-1-5-2025-12-16",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text,image",
+    "effective_from": "2025-12-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-image-1-mini-2025-10-06",
+    "provider_api_model_id": "openai:openai/gpt-image-1-mini-2025-10-06",
+    "provider_model_slug": "gpt-image-1-mini",
+    "internal_model_id": "openai/gpt-image-1-mini-2025-10-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "effective_from": "2025-10-06T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-realtime",
+    "provider_api_model_id": "openai:openai/gpt-realtime",
+    "provider_model_slug": "gpt-realtime-2025-08-28",
+    "internal_model_id": "openai/gpt-realtime-2025-08-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text,audio",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-realtime-mini-2025-10-06",
+    "provider_api_model_id": "openai:openai/gpt-realtime-mini-2025-10-06",
+    "provider_model_slug": "gpt-realtime-mini-2025-10-06",
+    "internal_model_id": "openai/gpt-realtime-mini-2025-10-06",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text,audio",
+    "effective_from": "2025-10-06T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/sora-2-2025-09-30",
+    "provider_api_model_id": "openai:openai/sora-2-2025-09-30",
+    "provider_model_slug": "sora-2",
+    "internal_model_id": "openai/sora-2-2025-09-30",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-09-30T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/sora-2-pro-2025-10-03",
+    "provider_api_model_id": "openai:openai/sora-2-pro-2025-10-03",
+    "provider_model_slug": "sora-2-pro",
+    "internal_model_id": "openai/sora-2-pro-2025-10-03",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": "2025-10-03T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
     "api_model_id": "openai/tts-1",
     "provider_api_model_id": "openai:openai/tts-1",
-    "provider_model_slug": null,
+    "provider_model_slug": "tts-1",
     "internal_model_id": "openai/tts-1-2023-11-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1416,18 +1229,12 @@
     "output_modalities": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
+    "capabilities": []
   },
   {
     "api_model_id": "openai/tts-1-hd",
     "provider_api_model_id": "openai:openai/tts-1-hd",
-    "provider_model_slug": null,
+    "provider_model_slug": "tts-1-hd",
     "internal_model_id": "openai/tts-1-hd-2023-11-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1435,19 +1242,26 @@
     "output_modalities": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
+    "capabilities": []
   },
   {
     "api_model_id": "openai/whisper-1",
     "provider_api_model_id": "openai:openai/whisper-1",
     "provider_model_slug": "whisper-1",
     "internal_model_id": "openai/whisper-1-2023-03-01",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/o1-mini",
+    "provider_api_model_id": "openai:openai/o1-mini",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/o1-mini-2024-09-12",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,

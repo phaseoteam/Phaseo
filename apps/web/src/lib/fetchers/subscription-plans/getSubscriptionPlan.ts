@@ -34,7 +34,10 @@ export interface SubscriptionPlanModel {
     };
 }
 
-export async function getSubscriptionPlan(baseId: string): Promise<SubscriptionPlanDetails | null> {
+export async function getSubscriptionPlan(
+    baseId: string,
+    includeHidden: boolean
+): Promise<SubscriptionPlanDetails | null> {
     const supabase = await createClient();
 
     // Get the plan details (all variants)
@@ -112,6 +115,7 @@ export async function getSubscriptionPlan(baseId: string): Promise<SubscriptionP
                 model_id,
                 name,
                 organisation_id,
+                hidden,
                 organisation: data_organisations (name)
             )
         `)
@@ -130,18 +134,20 @@ export async function getSubscriptionPlan(baseId: string): Promise<SubscriptionP
         other_info: raw.other_info,
     }));
 
-    const models: SubscriptionPlanModel[] = (modelsData ?? []).map((raw: any) => ({
-        model_id: raw.model_id,
-        model_info: raw.model_info,
-        rate_limit: raw.rate_limit,
-        other_info: raw.other_info,
-        model: {
-            model_id: raw.model.model_id,
-            name: raw.model.name,
-            organisation_id: raw.model.organisation_id,
-            organisation_name: raw.model.organisation?.name ?? null,
-        },
-    }));
+    const models: SubscriptionPlanModel[] = (modelsData ?? [])
+        .filter((raw: any) => includeHidden || !raw?.model?.hidden)
+        .map((raw: any) => ({
+            model_id: raw.model_id,
+            model_info: raw.model_info,
+            rate_limit: raw.rate_limit,
+            other_info: raw.other_info,
+            model: {
+                model_id: raw.model.model_id,
+                name: raw.model.name,
+                organisation_id: raw.model.organisation_id,
+                organisation_name: raw.model.organisation?.name ?? null,
+            },
+        }));
 
     return {
         plan_uuid: primaryPlan.plan_uuid,
@@ -158,7 +164,10 @@ export async function getSubscriptionPlan(baseId: string): Promise<SubscriptionP
     };
 }
 
-export async function getSubscriptionPlanCached(baseId: string): Promise<SubscriptionPlanDetails | null> {
+export async function getSubscriptionPlanCached(
+    baseId: string,
+    includeHidden: boolean
+): Promise<SubscriptionPlanDetails | null> {
     "use cache";
 
     cacheLife("days");
@@ -166,5 +175,5 @@ export async function getSubscriptionPlanCached(baseId: string): Promise<Subscri
     cacheTag(`data:subscription_plans:${baseId}`);
 
     console.log("[fetch] HIT DB for subscription plan", baseId);
-    return getSubscriptionPlan(baseId);
+    return getSubscriptionPlan(baseId, includeHidden);
 }

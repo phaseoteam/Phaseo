@@ -60,7 +60,8 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'model' => 'string',
         'prompt' => 'string',
         'duration' => 'int',
-        'ratio' => 'string'
+        'ratio' => 'string',
+        'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
     /**
@@ -74,7 +75,8 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'model' => null,
         'prompt' => null,
         'duration' => null,
-        'ratio' => null
+        'ratio' => null,
+        'provider' => null
     ];
 
     /**
@@ -86,7 +88,8 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'model' => false,
         'prompt' => false,
         'duration' => false,
-        'ratio' => false
+        'ratio' => false,
+        'provider' => false
     ];
 
     /**
@@ -178,7 +181,8 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'model' => 'model',
         'prompt' => 'prompt',
         'duration' => 'duration',
-        'ratio' => 'ratio'
+        'ratio' => 'ratio',
+        'provider' => 'provider'
     ];
 
     /**
@@ -190,7 +194,8 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'model' => 'setModel',
         'prompt' => 'setPrompt',
         'duration' => 'setDuration',
-        'ratio' => 'setRatio'
+        'ratio' => 'setRatio',
+        'provider' => 'setProvider'
     ];
 
     /**
@@ -202,7 +207,8 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'model' => 'getModel',
         'prompt' => 'getPrompt',
         'duration' => 'getDuration',
-        'ratio' => 'getRatio'
+        'ratio' => 'getRatio',
+        'provider' => 'getProvider'
     ];
 
     /**
@@ -266,6 +272,7 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         $this->setIfExists('prompt', $data ?? [], null);
         $this->setIfExists('duration', $data ?? [], null);
         $this->setIfExists('ratio', $data ?? [], null);
+        $this->setIfExists('provider', $data ?? [], null);
     }
 
     /**
@@ -436,6 +443,33 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
             throw new \InvalidArgumentException('non-nullable ratio cannot be null');
         }
         $this->container['ratio'] = $ratio;
+
+        return $this;
+    }
+
+    /**
+     * Gets provider
+     *
+     * @return \AIStats\Sdk\Model\ProviderRoutingOptions|null
+     */
+    public function getProvider()
+    {
+        return $this->container['provider'];
+    }
+
+    /**
+     * Sets provider
+     *
+     * @param \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider
+     *
+     * @return self
+     */
+    public function setProvider($provider)
+    {
+        if (is_null($provider)) {
+            throw new \InvalidArgumentException('non-nullable provider cannot be null');
+        }
+        $this->container['provider'] = $provider;
 
         return $this;
     }

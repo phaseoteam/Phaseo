@@ -1,4 +1,8 @@
 // lib/gateway/providers/openai/endpoints/images.ts
+// Purpose: Provider endpoint adapter for openai (images).
+// Why: Encapsulates provider-specific request/response mapping.
+// How: Defines provider-specific endpoint adapters and configuration helpers.
+
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { ImagesGenerationSchema, type ImagesGenerationRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
@@ -61,3 +65,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     
     return { kind: "completed", upstream: res, bill, normalized, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
 }
+
+
+
+
+
+
+
+
+

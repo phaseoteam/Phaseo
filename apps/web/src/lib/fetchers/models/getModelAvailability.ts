@@ -26,8 +26,24 @@ export interface ModelAvailabilityItem {
     };
 }
 
-export default async function getModelAvailability(modelId: string): Promise<ModelAvailabilityItem[]> {
+export default async function getModelAvailability(
+    modelId: string,
+    includeHidden: boolean
+): Promise<ModelAvailabilityItem[]> {
     const supabase = await createClient();
+
+    const { data: modelRow, error: modelError } = await supabase
+        .from("data_models")
+        .select("hidden")
+        .eq("model_id", modelId)
+        .maybeSingle();
+
+    if (modelError) {
+        throw new Error(modelError.message || "Failed to load model metadata");
+    }
+    if (!modelRow || (!includeHidden && modelRow.hidden)) {
+        throw new Error("Model not found");
+    }
 
     const { data: providerModels, error: providerError } = await supabase
         .from("data_api_provider_models")
@@ -119,11 +135,16 @@ export default async function getModelAvailability(modelId: string): Promise<Mod
 /**
  * Cached version of getModelAvailability.
  *
- * Usage: await getModelAvailabilityCached(modelId)
+ * Usage: await getModelAvailabilityCached(modelId, includeHidden)
  *
  * This wraps the fetcher with `unstable_cache` for at least 1 week of caching.
+ * Note: The includeHidden parameter must be resolved outside of this function
+ * to avoid using dynamic data sources (like cookies) inside a cached scope.
  */
-export async function getModelAvailabilityCached(modelId: string): Promise<ModelAvailabilityItem[]> {
+export async function getModelAvailabilityCached(
+    modelId: string,
+    includeHidden: boolean
+): Promise<ModelAvailabilityItem[]> {
     "use cache";
 
     cacheLife("days");
@@ -132,5 +153,5 @@ export async function getModelAvailabilityCached(modelId: string): Promise<Model
     cacheTag("data:data_api_provider_models");
 
     console.log("[fetch] HIT DB for model availability", modelId);
-    return getModelAvailability(modelId);
+    return getModelAvailability(modelId, includeHidden);
 }

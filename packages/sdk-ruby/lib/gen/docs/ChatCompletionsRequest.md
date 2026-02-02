@@ -26,6 +26,7 @@
 | **top_p** | **Float** |  | [optional] |
 | **response_format** | [**ChatCompletionsRequestResponseFormat**](ChatCompletionsRequestResponseFormat.md) |  | [optional] |
 | **usage** | **Boolean** |  | [optional] |
+| **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 | **user_id** | **String** |  | [optional] |
 | **service_tier** | **String** |  | [optional][default to &#39;standard&#39;] |
 
@@ -57,6 +58,7 @@ instance = AIStatsSdk::ChatCompletionsRequest.new(
   top_p: null,
   response_format: null,
   usage: null,
+  provider: null,
   user_id: null,
   service_tier: null
 )

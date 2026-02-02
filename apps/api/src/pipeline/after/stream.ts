@@ -1,4 +1,8 @@
 // lib/gateway/after/stream.ts
+// Purpose: After-stage logic for payload shaping, pricing, auditing, and streaming.
+// Why: Keeps post-execution side-effects consistent.
+// How: Wraps streaming responses and finalizes usage.
+
 import { passthroughWithPricing, passthrough } from "./streaming";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
@@ -7,13 +11,13 @@ import { calculatePricing } from "./pricing";
 import { handleSuccessAudit } from "./audit";
 import { recordUsageAndCharge } from "../pricing/persist";
 import { shapeUsageForClient } from "../usage";
-import { presentUsageForClient } from "./payload";
+import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { onCallEnd, reportProbeResult, maybeOpenOnRecentErrors } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
-import { createAionThinkStreamState, extractAionThinkBlocks, isAionProvider, processAionThinkStreamDelta } from "@/providers/aion/think";
+import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 
 export async function handleStreamResponse(
     ctx: PipelineContext,
@@ -31,9 +35,6 @@ export async function handleStreamResponse(
     const upstreamStatus = result.upstream.status;
     // Cache native ID from first chunk to avoid checking every frame
     let cachedNativeId: string | undefined;
-    const isAion = isAionProvider(result.provider);
-    const aionStates = new Map<number, ReturnType<typeof createAionThinkStreamState>>();
-
     if (ctx.meta?.debug) {
         void logDebugEvent("stream.start", {
             requestId: ctx.requestId,
@@ -52,15 +53,7 @@ export async function handleStreamResponse(
         rewriteFrame: (frame: any) => {
             if (!frame || typeof frame !== "object") return frame;
             const includeMeta = ctx.meta.returnMeta ?? false;
-            const includeUsage = ctx.meta.returnUsage ?? false;
             const next: any = { ...frame };
-            const reasoningDetails: Array<{
-                id: string;
-                index: number;
-                type: "reasoning.summary" | "reasoning.encrypted" | "reasoning.text";
-                reasoning_content: string;
-            }> = [];
-
             delete next.provider;
             delete next.gateway;
 
@@ -78,49 +71,11 @@ export async function handleStreamResponse(
                 next.id = ctx.requestId;
             }
 
-            if (isAion && Array.isArray(next.choices)) {
-                for (const choice of next.choices) {
-                    const idx = Number(choice.index ?? 0);
-                    const state = aionStates.get(idx) ?? createAionThinkStreamState();
-                    if (!aionStates.has(idx)) aionStates.set(idx, state);
-
-                    if (typeof choice.delta?.content === "string") {
-                        const { mainDelta, reasoningDelta } = processAionThinkStreamDelta(state, choice.delta.content);
-                        choice.delta.content = mainDelta;
-                        if (reasoningDelta.length > 0) {
-                            choice.delta.reasoning_details = [
-                                {
-                                    id: `${ctx.requestId}-reasoning-${idx + 1}-${state.reasoningChunks.length}`,
-                                    index: state.reasoningChunks.length - 1,
-                                    type: "reasoning.text",
-                                    reasoning_content: reasoningDelta,
-                                },
-                            ];
-                        }
-                    }
-
-                    if (typeof choice.message?.content === "string") {
-                        const parsed = extractAionThinkBlocks(choice.message.content);
-                        if (parsed.reasoning.length > 0 && state.reasoningChunks.length === 0) {
-                            for (const block of parsed.reasoning) {
-                                state.reasoningChunks.push(block);
-                            }
-                        }
-                        choice.message.content = parsed.main;
-                    }
-                }
-            }
-
             if (!includeMeta && "meta" in next) {
                 delete next.meta;
             }
 
-            if (!includeUsage) {
-                if ("usage" in next) delete next.usage;
-                if (next.response && typeof next.response === "object" && "usage" in next.response) {
-                    delete next.response.usage;
-                }
-            } else if (next.usage) {
+            if (next.usage) {
                 if (ctx.meta.debug) {
                     console.log("[gateway][pricing] stream frame usage", {
                         requestId: ctx.requestId,
@@ -129,15 +84,19 @@ export async function handleStreamResponse(
                         usage: next.usage,
                     });
                 }
-                if (card) {
+                if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
+                    next.usage = normalizeAnthropicUsage(next.usage);
+                } else if (card) {
                     const shapedUsage = shapeUsageForClient(next.usage, {
                         endpoint: ctx.endpoint,
                         body: ctx.body,
                     });
+                    const tier = ctx.teamEnrichment?.tier ?? 'basic';
                     const { pricedUsage } = calculatePricing(
                         shapedUsage,
                         card,
-                        ctx.body
+                        ctx.body,
+                        tier
                     );
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream frame priced usage", {
@@ -147,13 +106,14 @@ export async function handleStreamResponse(
                             pricing: (pricedUsage as any)?.pricing ?? null,
                         });
                     }
-                    next.usage = presentUsageForClient(pricedUsage);
+                    next.usage = presentUsageForClient(pricedUsage, { endpoint: ctx.endpoint });
                 } else {
                     next.usage = presentUsageForClient(
                         shapeUsageForClient(next.usage, {
                             endpoint: ctx.endpoint,
                             body: ctx.body,
-                        })
+                        }),
+                        { endpoint: ctx.endpoint }
                     );
                 }
             } else if (next.response?.usage) {
@@ -165,15 +125,19 @@ export async function handleStreamResponse(
                         usage: next.response.usage,
                     });
                 }
-                if (card) {
+                if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
+                    next.response.usage = normalizeAnthropicUsage(next.response.usage);
+                } else if (card) {
                     const shapedUsage = shapeUsageForClient(next.response.usage, {
                         endpoint: ctx.endpoint,
                         body: ctx.body,
                     });
+                    const tier = ctx.teamEnrichment?.tier ?? 'basic';
                     const { pricedUsage } = calculatePricing(
                         shapedUsage,
                         card,
-                        ctx.body
+                        ctx.body,
+                        tier
                     );
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream response priced usage", {
@@ -183,35 +147,15 @@ export async function handleStreamResponse(
                             pricing: (pricedUsage as any)?.pricing ?? null,
                         });
                     }
-                    next.response.usage = presentUsageForClient(pricedUsage);
+                    next.response.usage = presentUsageForClient(pricedUsage, { endpoint: ctx.endpoint });
                 } else {
                     next.response.usage = presentUsageForClient(
                         shapeUsageForClient(next.response.usage, {
                             endpoint: ctx.endpoint,
                             body: ctx.body,
-                        })
+                        }),
+                        { endpoint: ctx.endpoint }
                     );
-                }
-            }
-
-            if (isAion) {
-                const isFinalFrame =
-                    Boolean(next.usage) ||
-                    (Array.isArray(next.choices) && next.choices.some((c: any) => c.finish_reason));
-                if (isFinalFrame) {
-                    for (const [index, state] of aionStates.entries()) {
-                        state.reasoningChunks.forEach((chunk, chunkIdx) => {
-                            reasoningDetails.push({
-                                id: `${ctx.requestId}-reasoning-${index + 1}-${chunkIdx + 1}`,
-                                index: chunkIdx,
-                                type: "reasoning.text",
-                                reasoning_content: chunk,
-                            });
-                        });
-                    }
-                    if (reasoningDetails.length > 0) {
-                        next.reasoning_details = reasoningDetails;
-                    }
                 }
             }
 
@@ -237,6 +181,14 @@ export async function handleStreamResponse(
                 }
             }
             return next;
+        },
+        onFinalSnapshot: (snapshot: any) => {
+            const payload = snapshot?.response ?? snapshot;
+            const finishReason = extractFinishReason(payload);
+            if (finishReason) {
+                cachedFinishReason = finishReason;
+                result.bill.finish_reason = finishReason;
+            }
         },
         onFinalUsage: async (usageRaw: any, info) => {
             const releaseRuntime = ensureRuntimeForBackground();
@@ -290,6 +242,12 @@ export async function handleStreamResponse(
                 result.bill.usage = bill.usage ?? shapedUsage ?? result.bill.usage;
                 result.bill.finish_reason = bill.finish_reason ?? result.bill.finish_reason;
 
+                // Normalize finish reason for consistent storage
+                const normalizedFinishReason = normalizeFinishReason(
+                    bill.finish_reason ?? null,
+                    result.provider
+                );
+
                 const totalNanosOverride =
                     bill.usage?.pricing?.total_nanos ??
                     Math.round(bill.cost_cents * 1e7);
@@ -302,7 +260,7 @@ export async function handleStreamResponse(
                     bill.cost_cents,
                     totalNanosOverride,
                     bill.currency,
-                    bill.finish_reason ?? null,
+                    normalizedFinishReason,
                     upstreamStatus,
                     result.bill.upstream_id ?? null
                 );
@@ -311,7 +269,7 @@ export async function handleStreamResponse(
                     result,
                     statusCode: upstreamStatus,
                     success: true,
-                    finishReason: bill.finish_reason ?? null,
+                    finishReason: normalizedFinishReason,
                     usage: result.bill.usage ?? null,
                     pricing: {
                         total_cents: bill.cost_cents,
@@ -371,10 +329,12 @@ export async function handleStreamResponse(
                 return;
             }
 
+            const tier = ctx.teamEnrichment?.tier ?? 'basic';
             const { pricedUsage, totalCents, totalNanos, currency } = calculatePricing(
                 shapedUsage,
                 card,
-                ctx.body
+                ctx.body,
+                tier
             );
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final priced usage", {
@@ -448,3 +408,13 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
+
+
+
+
+
+
+
+
+
+

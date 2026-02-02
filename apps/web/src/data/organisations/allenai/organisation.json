@@ -4,5 +4,30 @@
   "country_code": "US",
   "description": "The Allen Institute for Artificial Intelligence (Ai2) is a Seattle-based non-profit AI research institute. Their mission is to develop foundational AI research and innovation and deliver real-world impact through large-scale open models, data and engineering.",
   "colour": "#f0529c",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://allenai.org"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/allen_ai"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/allenai"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/allenai"
+    },
+    {
+      "platform": "discord",
+      "url": "https://discord.gg/ai2"
+    },
+    {
+      "platform": "reddit",
+      "url": "https://www.reddit.com/r/allenai"
+    }
+  ]
 }

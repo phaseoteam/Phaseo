@@ -1,4 +1,8 @@
 // src/lib/gateway/pricing/types.ts
+// Purpose: Pricing rules, billing, and persistence helpers.
+// Why: Centralizes all cost calculations.
+// How: Defines types consumed by the pricing engine.
+
 export type PriceBand = {
     meter: string;
     unit_size: number;
@@ -94,3 +98,13 @@ export type PricingResult = {
     currency: "USD";
     lines: PricingBreakdownLine[];
 };
+
+
+
+
+
+
+
+
+
+

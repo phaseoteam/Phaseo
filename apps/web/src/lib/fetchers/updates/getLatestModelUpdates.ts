@@ -1,6 +1,7 @@
 // lib/fetchers/updates/getLatestModelUpdate.ts
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/utils/supabase/client";
+import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
 import type React from "react";
 import { Megaphone, Rocket, Ban, Archive } from "lucide-react";
@@ -128,12 +129,13 @@ function relTime(iso: string, now = new Date()) {
 // --------------------------------------
 // Build serialisable events from DB rows
 // --------------------------------------
-async function fetchAllModelRows(): Promise<ModelRow[]> {
+async function fetchAllModelRows(includeHidden: boolean): Promise<ModelRow[]> {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-        .from("data_models")
-        .select(`
+    const { data, error } = await applyHiddenFilter(
+        supabase
+            .from("data_models")
+            .select(`
       model_id,
       name,
       organisation_id,
@@ -143,9 +145,11 @@ async function fetchAllModelRows(): Promise<ModelRow[]> {
       retirement_date,
       organisation:data_organisations!data_models_organisation_id_fkey(organisation_id,name)
     `)
-        .or(
-            "announcement_date.not.is.null,release_date.not.is.null,deprecation_date.not.is.null,retirement_date.not.is.null"
-        );
+            .or(
+                "announcement_date.not.is.null,release_date.not.is.null,deprecation_date.not.is.null,retirement_date.not.is.null"
+            ),
+        includeHidden
+    );
 
     if (error) {
         console.error("[model-updates] Supabase query failed:", error);
@@ -213,13 +217,15 @@ function buildSerialisedEvents(rows: ModelRow[], now = new Date()): SerialisedMo
 // --------------------------------------
 const CACHE_LIMIT = 64;
 
-async function getSerialisedModelEventsCached(): Promise<SerialisedModelEvent[]> {
+async function getSerialisedModelEventsCached(
+    includeHidden: boolean
+): Promise<SerialisedModelEvent[]> {
     "use cache";
 
     cacheLife("days");
     cacheTag("data:model-updates");
 
-    const rows = await fetchAllModelRows();
+    const rows = await fetchAllModelRows(includeHidden);
     const events = buildSerialisedEvents(rows);
     return events.slice(0, CACHE_LIMIT);
 }
@@ -227,8 +233,11 @@ async function getSerialisedModelEventsCached(): Promise<SerialisedModelEvent[]>
 // --------------------------------------
 // Public: ready-to-render UpdateCard props
 // --------------------------------------
-export async function getLatestModelUpdateCards(limit = 5): Promise<UpdateCardProps[]> {
-    const events = await getSerialisedModelEventsCached();
+export async function getLatestModelUpdateCards(
+    limit = 5,
+    includeHidden: boolean
+): Promise<UpdateCardProps[]> {
+    const events = await getSerialisedModelEventsCached(includeHidden);
     return events.slice(0, limit).map((e) => {
         // Badges for each event type on this date/model
         const badges = e.types.map((t) => {

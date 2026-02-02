@@ -1,0 +1,17 @@
+{
+  "model_id": "baidu/ernie-5-0-2026-01-22",
+  "organisation_id": "baidu",
+  "name": "Ernie 5.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-22T00:00:00",
+  "release_date": "2026-01-22T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -4,5 +4,30 @@
   "country_code": "US",
   "description": "Arcee AI is an AI model company building domain-specific small language models (SLMs) and generative AI solutions for enterprise use.",
   "colour": "#008C8C",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://www.arcee.ai"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/arcee_ai"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/arcee-ai/"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/arcee-ai"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/arcee-ai"
+    },
+    {
+      "platform": "discord",
+      "url": "https://discord.gg/arceeai"
+    }
+  ]
 }

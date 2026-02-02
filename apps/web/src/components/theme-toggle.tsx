@@ -47,17 +47,21 @@ export function ThemeToggle() {
 }
 
 export function ThemeSelector() {
-	const { setTheme } = useTheme();
+	const { resolvedTheme, setTheme } = useTheme();
+	const isDark = resolvedTheme === "dark";
 
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button
 					variant="ghost"
-					className="w-fit py-1 px-2 h-7 flex items-center gap-2"
+					className="w-fit py-1 px-2 h-7"
 				>
-					<Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-					<Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+					{isDark ? (
+						<Moon className="h-4 w-4" />
+					) : (
+						<Sun className="h-4 w-4" />
+					)}
 					<span className="text-xs">Theme</span>
 				</Button>
 			</DropdownMenuTrigger>

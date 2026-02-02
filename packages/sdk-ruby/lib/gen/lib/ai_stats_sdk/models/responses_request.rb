@@ -77,6 +77,8 @@ module AIStatsSdk
 
     attr_accessor :meta
 
+    attr_accessor :provider
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -110,7 +112,8 @@ module AIStatsSdk
         :'background' => :'background',
         :'user' => :'user',
         :'usage' => :'usage',
-        :'meta' => :'meta'
+        :'meta' => :'meta',
+        :'provider' => :'provider'
       }
     end
 
@@ -157,7 +160,8 @@ module AIStatsSdk
         :'background' => :'Boolean',
         :'user' => :'String',
         :'usage' => :'Boolean',
-        :'meta' => :'Boolean'
+        :'meta' => :'Boolean',
+        :'provider' => :'ProviderRoutingOptions'
       }
     end
 
@@ -315,6 +319,10 @@ module AIStatsSdk
 
       if attributes.key?(:'meta')
         self.meta = attributes[:'meta']
+      end
+
+      if attributes.key?(:'provider')
+        self.provider = attributes[:'provider']
       end
     end
 
@@ -505,7 +513,8 @@ module AIStatsSdk
           background == o.background &&
           user == o.user &&
           usage == o.usage &&
-          meta == o.meta
+          meta == o.meta &&
+          provider == o.provider
     end
 
     # @see the `==` method
@@ -517,7 +526,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, input, input_items, conversation, include, instructions, max_output_tokens, max_tool_calls, metadata, parallel_tool_calls, previous_response_id, prompt, prompt_cache_key, prompt_cache_retention, reasoning, safety_identifier, service_tier, store, stream, stream_options, temperature, text, tool_choice, tools, top_logprobs, top_p, truncation, background, user, usage, meta].hash
+      [model, input, input_items, conversation, include, instructions, max_output_tokens, max_tool_calls, metadata, parallel_tool_calls, previous_response_id, prompt, prompt_cache_key, prompt_cache_retention, reasoning, safety_identifier, service_tier, store, stream, stream_options, temperature, text, tool_choice, tools, top_logprobs, top_p, truncation, background, user, usage, meta, provider].hash
     end
 
     # Builds the object from hash

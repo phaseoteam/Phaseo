@@ -1,7 +1,106 @@
 // lib/gateway/after/audit.ts
+// Purpose: After-stage logic for payload shaping, pricing, auditing, and streaming.
+// Why: Keeps post-execution side-effects consistent.
+// How: Emits audit events for success/failure requests.
+
 import { auditSuccess, auditFailure } from "../audit";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
+
+// ============================================================================
+// REQUEST & ROUTING ENRICHMENT (Wide Event Context)
+// ============================================================================
+
+/**
+ * Extract request enrichment from pipeline context
+ * Following loggingsucks.com: capture business context for this request
+ */
+function extractRequestEnrichment(ctx: PipelineContext): any {
+    try {
+        const body: any = ctx.body ?? {};
+
+        // Extract tools
+        const tools = Array.isArray(body.tools) ? body.tools : [];
+        const has_tools = tools.length > 0;
+        const tool_count = tools.length;
+
+        // Extract messages
+        const messages: any[] = Array.isArray(body.messages) ? body.messages :
+                                 Array.isArray(body.input) ? body.input :
+                                 Array.isArray(body.input_items) ? body.input_items : [];
+        const message_count = messages.length;
+
+        // Count multimodal content
+        let has_images = false;
+        let has_audio = false;
+        let has_video = false;
+        let system_prompt_length = 0;
+
+        for (const msg of messages) {
+            if (!msg) continue;
+
+            // System prompt
+            if (msg.role === "system" && typeof msg.content === "string") {
+                system_prompt_length += msg.content.length;
+            }
+
+            // Check multimodal content
+            const content = msg.content;
+            if (Array.isArray(content)) {
+                for (const part of content) {
+                    if (!part) continue;
+                    if (part.type === "image_url" || part.type === "input_image") has_images = true;
+                    if (part.type === "input_audio") has_audio = true;
+                    if (part.type === "input_video") has_video = true;
+                }
+            }
+        }
+
+        return {
+            has_tools,
+            tool_count,
+            has_images,
+            has_audio,
+            has_video,
+            message_count,
+            system_prompt_length: system_prompt_length > 0 ? system_prompt_length : null,
+            max_tokens_requested: body.max_tokens ?? body.max_output_tokens ?? null,
+            temperature: body.temperature ?? null,
+            top_p: body.top_p ?? null,
+            presence_penalty: body.presence_penalty ?? null,
+            frequency_penalty: body.frequency_penalty ?? null,
+        };
+    } catch (err) {
+        console.error("extractRequestEnrichment error", err);
+        return null;
+    }
+}
+
+/**
+ * Extract routing context from pipeline context
+ * Flattens routing decisions for queryability
+ */
+function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): any {
+    try {
+        const candidates = ctx.providers ?? [];
+        const attempts = (ctx as any).attemptErrors?.length ?? null;
+        const failed_providers = (ctx as any).attemptErrors?.map((e: any) => e.provider) ?? [];
+        const failure_reasons = (ctx as any).attemptErrors?.map((e: any) => e.reason) ?? [];
+
+        return {
+            candidates_count: candidates.length,
+            first_provider: result?.provider ?? candidates[0]?.providerId ?? null,
+            attempts,
+            failed_providers: failed_providers.length > 0 ? failed_providers : null,
+            failure_reasons: failure_reasons.length > 0 ? failure_reasons : null,
+            circuit_breaker_open: false, // Could be enriched from health context if available
+            was_probe: false, // Could be enriched from health context if available
+        };
+    } catch (err) {
+        console.error("extractRoutingContext error", err);
+        return null;
+    }
+}
 
 export async function handleFailureAudit(
     ctx: PipelineContext,
@@ -31,6 +130,13 @@ export async function handleFailureAudit(
                     user_agent: ctx.meta.userAgent ?? null,
                     client_ip: ctx.meta.clientIp ?? null,
                     cf_ray: ctx.meta.cfRay ?? null,
+                    edge: {
+                        colo: ctx.meta.edgeColo ?? null,
+                        city: ctx.meta.edgeCity ?? null,
+                        country: ctx.meta.edgeCountry ?? null,
+                        continent: ctx.meta.edgeContinent ?? null,
+                        asn: ctx.meta.edgeAsn ?? null,
+                    },
                 },
                 timing: (ctx as any)?.timing ?? null,
                 providers: ctx.providers?.map((p) => ({
@@ -69,6 +175,11 @@ export async function handleFailureAudit(
             userAgent: ctx.meta.userAgent ?? null,
             clientIp: ctx.meta.clientIp ?? null,
             cfRay: ctx.meta.cfRay ?? null,
+            edgeColo: ctx.meta.edgeColo ?? null,
+            edgeCity: ctx.meta.edgeCity ?? null,
+            edgeCountry: ctx.meta.edgeCountry ?? null,
+            edgeContinent: ctx.meta.edgeContinent ?? null,
+            edgeAsn: ctx.meta.edgeAsn ?? null,
             extraJson,
         });
     } catch (auditErr) {
@@ -129,6 +240,13 @@ export async function handleSuccessAudit(
                     user_agent: ctx.meta.userAgent ?? null,
                     client_ip: ctx.meta.clientIp ?? null,
                     cf_ray: ctx.meta.cfRay ?? null,
+                    edge: {
+                        colo: ctx.meta.edgeColo ?? null,
+                        city: ctx.meta.edgeCity ?? null,
+                        country: ctx.meta.edgeCountry ?? null,
+                        continent: ctx.meta.edgeContinent ?? null,
+                        asn: ctx.meta.edgeAsn ?? null,
+                    },
                 },
                 timing: (ctx as any)?.timing ?? null,
                 providers: ctx.providers?.map((p) => ({
@@ -143,6 +261,10 @@ export async function handleSuccessAudit(
             return null;
         }
     })();
+
+    // Extract enrichment data for wide event logging
+    const requestEnrichment = extractRequestEnrichment(ctx);
+    const routingContext = extractRoutingContext(ctx, result);
 
     try {
         console.log(`[audit] storing model_id="${ctx.model}" requestId=${ctx.requestId}`);
@@ -163,6 +285,11 @@ export async function handleSuccessAudit(
             userAgent: ctx.meta.userAgent ?? null,
             clientIp: ctx.meta.clientIp ?? null,
             cfRay: ctx.meta.cfRay ?? null,
+            edgeColo: ctx.meta.edgeColo ?? null,
+            edgeCity: ctx.meta.edgeCity ?? null,
+            edgeCountry: ctx.meta.edgeCountry ?? null,
+            edgeContinent: ctx.meta.edgeContinent ?? null,
+            edgeAsn: ctx.meta.edgeAsn ?? null,
             generationMs,
             latencyMs,
             internalLatencyMs,
@@ -173,8 +300,13 @@ export async function handleSuccessAudit(
             finishReason,
             statusCode,
             throughput: ctx.meta.throughput_tps ?? null,
-            keyId: ctx.meta.apiKeyId,
+            keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
             extraJson,
+            // Wide event enrichment
+            teamEnrichment: ctx.teamEnrichment ?? null,
+            keyEnrichment: ctx.keyEnrichment ?? null,
+            requestEnrichment,
+            routingContext,
         });
     } catch (auditErr) {
         console.error("auditSuccess failed", auditErr);
@@ -272,3 +404,13 @@ function enrichUsageWithMultimodal(ctx: PipelineContext, usagePriced: any): any 
         return usagePriced;
     }
 }
+
+
+
+
+
+
+
+
+
+

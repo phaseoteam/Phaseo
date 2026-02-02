@@ -1,4 +1,8 @@
 // src/routes/v1/data/index.ts
+// Purpose: Data-plane route handler for index requests.
+// Why: Keeps endpoint wiring separate from pipeline logic.
+// How: Wires HTTP routes to pipeline entrypoints and response helpers.
+
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 
@@ -35,3 +39,11 @@ dataRouter.route("/ocr", ocrRoutes);
 dataRouter.route("/music/generate", musicGenerateRoutes);
 dataRouter.route("/batch", batchRoutes);
 dataRouter.route("/files", filesRoutes);
+
+
+
+
+
+
+
+

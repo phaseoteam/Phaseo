@@ -16,6 +16,7 @@ import {
 	formatQuantity,
 	formatMeterName,
 	getExamplesForMeter,
+	parseMeter,
 	fmtUSD,
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
@@ -197,6 +198,9 @@ export function PricingReference({
 				{meters.map((meter) => {
 					const examples = getExamplesForMeter(meter);
 					const budgets = [1, 10, 100];
+					const derivedUnit = parseMeter(meter.meter).unit;
+					const unitLabel =
+						derivedUnit !== "unknown" ? derivedUnit : meter.unit;
 
 					return (
 						<div
@@ -206,7 +210,7 @@ export function PricingReference({
 							<div className="flex items-center justify-between">
 								<h4 className="font-semibold">{formatMeterName(meter.meter)}</h4>
 								<p className="text-xs text-muted-foreground">
-									{meter.price_per_unit} {meter.currency} per {meter.unit_size} {meter.unit}
+									{meter.price_per_unit} {meter.currency} per {meter.unit_size} {unitLabel}
 								</p>
 							</div>
 
@@ -223,7 +227,7 @@ export function PricingReference({
 												className="flex justify-between p-2 bg-muted rounded text-sm"
 											>
 												<span>
-													{formatQuantity(quantity)} {meter.unit}
+													{formatQuantity(quantity)} {unitLabel}
 												</span>
 												<span className="font-medium">{fmtUSD(cost)}</span>
 											</div>
@@ -244,7 +248,7 @@ export function PricingReference({
 											>
 												<span>{fmtUSD(budget)}</span>
 												<span className="font-medium">
-													{formatQuantity(units)} {meter.unit}
+													{formatQuantity(units)} {unitLabel}
 												</span>
 											</div>
 										);

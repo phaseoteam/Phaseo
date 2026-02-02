@@ -706,7 +706,7 @@ export function MonitorDataTable({
 										onClick={() => handleSort("status")}
 										className="h-auto p-0 font-semibold"
 									>
-										Conduit Status {getSortIcon("status")}
+										Gateway Status {getSortIcon("status")}
 									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-20 text-center border border-gray-200 shadow-sm">

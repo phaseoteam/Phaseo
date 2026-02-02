@@ -11,7 +11,7 @@
       
       "@pipeline/*": ["./pipeline/*"],
       "@protocols/*": ["./protocols/*"],
-      "@surfaces/*": ["./surfaces/*"],
+      "@executors/*": ["./executors/*"],
       "@providers/*": ["./providers/*"],
       "@observability/*": ["./observability/*"]
     },

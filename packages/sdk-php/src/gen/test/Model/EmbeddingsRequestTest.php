@@ -98,6 +98,15 @@ class EmbeddingsRequestTest extends TestCase
     }
 
     /**
+     * Test attribute "inputs"
+     */
+    public function testPropertyInputs()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test attribute "encoding_format"
      */
     public function testPropertyEncodingFormat()
@@ -116,9 +125,27 @@ class EmbeddingsRequestTest extends TestCase
     }
 
     /**
+     * Test attribute "embedding_options"
+     */
+    public function testPropertyEmbeddingOptions()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test attribute "user"
      */
     public function testPropertyUser()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test attribute "provider"
+     */
+    public function testPropertyProvider()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

@@ -1,9 +1,13 @@
+// Purpose: Route handler module.
+// Why: Keeps HTTP wiring separate from pipeline logic.
+// How: Maps requests to pipeline entrypoints and responses.
+
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import type { Endpoint } from "@core/types";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
-import { json, withRuntime } from "@/routes/utils";
+import { json, withRuntime, cacheHeaders, cacheResponse } from "@/routes/utils";
 
 type ProviderModelRow = {
     provider_api_model_id: string | null;
@@ -181,11 +185,13 @@ function normalizeStringSet(values?: string[]): string[] | undefined {
 
 async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
     const supabase = getSupabaseAdmin();
-    const { data: modelRows, error: modelError } = await supabase
+    const modelQuery = supabase
         .from("data_models")
         .select(
             "model_id, name, release_date, status, input_types, output_types, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code, colour)"
-        );
+        )
+        .eq("hidden", false);
+    const { data: modelRows, error: modelError } = await modelQuery;
     if (modelError) {
         throw new Error(modelError.message || "Failed to load model metadata");
     }
@@ -457,7 +463,6 @@ async function handleModels(req: Request) {
     const params = parseMultiValue(url.searchParams, "params");
     const limit = parsePaginationParam(url.searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
     const offset = parseOffsetParam(url.searchParams.get("offset"));
-
     try {
         const models = await fetchCatalogue({
             endpoints,
@@ -467,11 +472,17 @@ async function handleModels(req: Request) {
             params,
         });
         const paged = models.slice(offset, offset + limit);
-        return json(
+        const cacheOptions = {
+            scope: `models:${auth.value.teamId}`,
+            ttlSeconds: 300,
+            staleSeconds: 600,
+        };
+        const response = json(
             { ok: true, limit, offset, total: models.length, models: paged },
             200,
-            { "Cache-Control": "no-store" }
+            cacheHeaders(cacheOptions)
         );
+        return cacheResponse(req, response, cacheOptions);
     } catch (error: any) {
         return json(
             { ok: false, error: "failed", message: String(error?.message ?? error) },
@@ -484,3 +495,4 @@ async function handleModels(req: Request) {
 export const modelsRoutes = new Hono<Env>();
 
 modelsRoutes.get("/", withRuntime(handleModels));
+

@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 const THINK_OPEN = "<think>";
 const THINK_CLOSE = "</think>";
 
@@ -103,3 +107,4 @@ function splitForTagPrefix(input: string, tag: string): { body: string; carry: s
 	}
 	return { body: input, carry: "" };
 }
+

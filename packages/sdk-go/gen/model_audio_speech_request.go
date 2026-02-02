@@ -25,6 +25,7 @@ type AudioSpeechRequest struct {
 	Input string `json:"input"`
 	Voice *string `json:"voice,omitempty"`
 	Format *string `json:"format,omitempty"`
+	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
 
 type _AudioSpeechRequest AudioSpeechRequest
@@ -160,6 +161,38 @@ func (o *AudioSpeechRequest) SetFormat(v string) {
 	o.Format = &v
 }
 
+// GetProvider returns the Provider field value if set, zero value otherwise.
+func (o *AudioSpeechRequest) GetProvider() ProviderRoutingOptions {
+	if o == nil || IsNil(o.Provider) {
+		var ret ProviderRoutingOptions
+		return ret
+	}
+	return *o.Provider
+}
+
+// GetProviderOk returns a tuple with the Provider field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *AudioSpeechRequest) GetProviderOk() (*ProviderRoutingOptions, bool) {
+	if o == nil || IsNil(o.Provider) {
+		return nil, false
+	}
+	return o.Provider, true
+}
+
+// HasProvider returns a boolean if a field has been set.
+func (o *AudioSpeechRequest) HasProvider() bool {
+	if o != nil && !IsNil(o.Provider) {
+		return true
+	}
+
+	return false
+}
+
+// SetProvider gets a reference to the given ProviderRoutingOptions and assigns it to the Provider field.
+func (o *AudioSpeechRequest) SetProvider(v ProviderRoutingOptions) {
+	o.Provider = &v
+}
+
 func (o AudioSpeechRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -177,6 +210,9 @@ func (o AudioSpeechRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Format) {
 		toSerialize["format"] = o.Format
+	}
+	if !IsNil(o.Provider) {
+		toSerialize["provider"] = o.Provider
 	}
 	return toSerialize, nil
 }

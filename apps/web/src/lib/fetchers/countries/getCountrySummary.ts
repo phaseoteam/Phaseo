@@ -12,12 +12,13 @@ export function normaliseIso(isoInput: string | undefined) {
 }
 
 export async function getCountrySummaryByIso(
-	isoInput: string | undefined
+	isoInput: string | undefined,
+	includeHidden: boolean
 ): Promise<CountrySummary | undefined> {
 	const iso = normaliseIso(isoInput);
 	if (!iso) return undefined;
 
-	const summaries = await getCountrySummariesCached();
+	const summaries = await getCountrySummariesCached(includeHidden);
 	return summaries.find((entry) => entry.iso === iso);
 }
 

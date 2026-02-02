@@ -1,5 +1,49 @@
 import { configureRuntime, clearRuntime, type GatewayBindings } from "@/runtime/env";
 
+function createMemoryKv(): KVNamespace {
+    const store = new Map<string, { value: string; expiresAt?: number }>();
+
+    function isExpired(entry: { value: string; expiresAt?: number } | undefined): boolean {
+        if (!entry) return true;
+        if (!entry.expiresAt) return false;
+        return Date.now() >= entry.expiresAt;
+    }
+
+    return {
+        async get(key: string, type?: "text" | "json" | "arrayBuffer" | "stream") {
+            const entry = store.get(key);
+            if (isExpired(entry)) {
+                store.delete(key);
+                return null;
+            }
+            if (!entry) return null;
+            if (!type || type === "text") return entry.value;
+            if (type === "json") return JSON.parse(entry.value);
+            if (type === "arrayBuffer") return new TextEncoder().encode(entry.value).buffer;
+            if (type === "stream") return new Response(entry.value).body;
+            return entry.value;
+        },
+        async put(key: string, value: string | ArrayBuffer | ArrayBufferView | ReadableStream, options?: KVNamespacePutOptions) {
+            let textValue = "";
+            if (typeof value === "string") textValue = value;
+            else if (value instanceof ArrayBuffer) textValue = new TextDecoder().decode(value);
+            else if (ArrayBuffer.isView(value)) textValue = new TextDecoder().decode(value.buffer);
+            else {
+                const response = new Response(value);
+                textValue = await response.text();
+            }
+            const ttl = options?.expirationTtl;
+            store.set(key, {
+                value: textValue,
+                expiresAt: ttl ? Date.now() + ttl * 1000 : undefined,
+            });
+        },
+        async delete(key: string) {
+            store.delete(key);
+        },
+    } as KVNamespace;
+}
+
 let configured = false;
 
 export function setupTestRuntime() {
@@ -8,10 +52,12 @@ export function setupTestRuntime() {
     configureRuntime({
         SUPABASE_URL: "https://example.supabase.co",
         SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
-        UPSTASH_REDIS_REST_URL: "https://example.upstash.io",
-        UPSTASH_REDIS_REST_TOKEN: "test-upstash-token",
+        GATEWAY_CACHE: createMemoryKv(),
         OPENAI_API_KEY: "test-openai-key",
         GOOGLE_AI_STUDIO_API_KEY: "test-google-key",
+        GOOGLE_AI_STUDIO_BASE_URL: "https://api.google-ai-studio.example",
+        GOOGLE_API_KEY: "test-google-key",
+        GOOGLE_BASE_URL: "https://api.google.example",
         ANTHROPIC_API_KEY: "test-anthropic-key",
         XAI_API_KEY: "test-xai-key",
         AI21_API_KEY: "test-ai21-key",
@@ -36,6 +82,8 @@ export function setupTestRuntime() {
         GROQ_BASE_URL: "https://api.groq.example",
         MINIMAX_API_KEY: "test-minimax-key",
         MINIMAX_BASE_URL: "https://api.minimax.example",
+        ZAI_API_KEY: "test-zai-key",
+        ZAI_BASE_URL: "https://api.zai.example",
         MISTRAL_API_KEY: "test-mistral-key",
         MISTRAL_BASE_URL: "https://api.mistral.example",
         MOONSHOT_API_KEY: "test-moonshot-key",
@@ -77,8 +125,7 @@ export function setupRuntimeFromEnv(env: Partial<GatewayBindings>) {
     configureRuntime({
         SUPABASE_URL: env.SUPABASE_URL ?? "https://example.supabase.co",
         SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY ?? "test-service-role-key",
-        UPSTASH_REDIS_REST_URL: env.UPSTASH_REDIS_REST_URL ?? "https://example.upstash.io",
-        UPSTASH_REDIS_REST_TOKEN: env.UPSTASH_REDIS_REST_TOKEN ?? "test-upstash-token",
+        GATEWAY_CACHE: env.GATEWAY_CACHE ?? createMemoryKv(),
         OPENAI_API_KEY: env.OPENAI_API_KEY,
         OPENAI_BASE_URL: env.OPENAI_BASE_URL,
         NODE_ENV: env.NODE_ENV ?? "test",

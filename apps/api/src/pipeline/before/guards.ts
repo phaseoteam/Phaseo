@@ -1,6 +1,11 @@
 // lib/gateway/before/guards.ts
+// Purpose: Before-stage helpers for auth, validation, and context building.
+// Why: Keeps pre-execution logic centralized and consistent.
+// How: Implements guard functions that return ok/response tuples.
+
 import { z } from "zod";
 import type { Endpoint, RequestMeta } from "@core/types";
+import { getEdgeMeta } from "@core/edge";
 import { err } from "./http";
 import { extractModel, formatZodErrors, buildProviderCandidates } from "./utils";
 import { fetchGatewayContext } from "./context";
@@ -93,22 +98,17 @@ export async function guardContext(args: {
     model: string;
     requestId: string;
     internal?: boolean;
+    disableCache?: boolean;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null }>> {
     try {
-        console.log(
-            `[DEBUG] guardContext called with model: ${args.model}, endpoint: ${args.endpoint}, capability: ${args.capability}`
-        );
         const context = await fetchGatewayContext({
             teamId: args.teamId,
             model: args.model,
             endpoint: args.capability,
             apiKeyId: args.apiKeyId,
+            disableCache: args.disableCache,
         });
 
-        console.log(`[DEBUG] guardContext: context loaded, resolvedModel: ${context.resolvedModel}`);
-        console.log(`[DEBUG] guardContext: context.providers:`, context.providers);
-
-        // Key validity
         if (!context.key.ok) {
             return {
                 ok: false,
@@ -120,7 +120,6 @@ export async function guardContext(args: {
             };
         }
 
-        // Key limits
         if (!args.internal && !context.keyLimit.ok) {
             return {
                 ok: false,
@@ -133,7 +132,6 @@ export async function guardContext(args: {
             };
         }
 
-        // Credit check
         if (!args.internal && !context.credit.ok) {
             return {
                 ok: false,
@@ -147,9 +145,7 @@ export async function guardContext(args: {
         }
 
         const providers = buildProviderCandidates(context);
-        console.log(`[DEBUG] guardContext: providers built, count: ${providers.length}`);
         if (!providers.length) {
-            console.log(`[DEBUG] guardContext: no providers found for model ${args.model}`);
             return {
                 ok: false,
                 response: err("unsupported_model_or_endpoint", {
@@ -163,7 +159,7 @@ export async function guardContext(args: {
 
         return { ok: true, value: { context, providers, resolvedModel: context.resolvedModel } };
     } catch (e) {
-        console.error("[DEBUG] guardContext error:", e);
+        console.error("[guardContext] gateway_context_failed", e);
         return {
             ok: false,
             response: err("upstream_error", {
@@ -182,15 +178,16 @@ export function makeMeta(input: {
     requestId: string;
     stream: boolean;
     req: Request;
-    returnUsage?: boolean;
     returnMeta?: boolean;
     echoUpstreamRequest?: boolean;
+    providerCapabilitiesBeta?: boolean;
 }): RequestMeta {
     const { referer, appTitle } = readAttributionHeaders(input.req);
     const debugHeader = input.req.headers.get("x-gateway-debug");
     const debugEnabled = normalizeReturnFlag(debugHeader) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
     const cfRay = input.req.headers.get("cf-ray");
+    const edge = getEdgeMeta(input.req);
     const forwardedFor = input.req.headers.get("x-forwarded-for");
     const clientIp =
         input.req.headers.get("cf-connecting-ip") ??
@@ -227,7 +224,12 @@ export function makeMeta(input: {
         userAgent,
         clientIp,
         cfRay,
-        returnUsage: input.returnUsage ?? false,
+        edgeColo: edge.colo ?? null,
+        edgeCity: edge.city ?? null,
+        edgeCountry: edge.country ?? null,
+        edgeContinent: edge.continent ?? null,
+        edgeAsn: edge.asn ?? null,
         returnMeta: input.returnMeta ?? false,
+        providerCapabilitiesBeta: input.providerCapabilitiesBeta ?? false,
     };
 }

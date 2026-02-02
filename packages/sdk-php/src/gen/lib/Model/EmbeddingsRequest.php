@@ -58,10 +58,13 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
       */
     protected static $openAPITypes = [
         'model' => 'string',
-        'input' => '\AIStats\Sdk\Model\EmbeddingsRequestInput',
+        'input' => 'string|string[]',
+        'inputs' => 'string|string[]',
         'encoding_format' => 'string',
         'dimensions' => 'int',
-        'user' => 'string'
+        'embedding_options' => 'object',
+        'user' => 'string',
+        'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
     /**
@@ -74,9 +77,12 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $openAPIFormats = [
         'model' => null,
         'input' => null,
+        'inputs' => null,
         'encoding_format' => null,
         'dimensions' => null,
-        'user' => null
+        'embedding_options' => null,
+        'user' => null,
+        'provider' => null
     ];
 
     /**
@@ -86,10 +92,13 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
       */
     protected static array $openAPINullables = [
         'model' => false,
-        'input' => false,
+        'input' => true,
+        'inputs' => true,
         'encoding_format' => false,
         'dimensions' => false,
-        'user' => false
+        'embedding_options' => false,
+        'user' => false,
+        'provider' => false
     ];
 
     /**
@@ -180,9 +189,12 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $attributeMap = [
         'model' => 'model',
         'input' => 'input',
+        'inputs' => 'inputs',
         'encoding_format' => 'encoding_format',
         'dimensions' => 'dimensions',
-        'user' => 'user'
+        'embedding_options' => 'embedding_options',
+        'user' => 'user',
+        'provider' => 'provider'
     ];
 
     /**
@@ -193,9 +205,12 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $setters = [
         'model' => 'setModel',
         'input' => 'setInput',
+        'inputs' => 'setInputs',
         'encoding_format' => 'setEncodingFormat',
         'dimensions' => 'setDimensions',
-        'user' => 'setUser'
+        'embedding_options' => 'setEmbeddingOptions',
+        'user' => 'setUser',
+        'provider' => 'setProvider'
     ];
 
     /**
@@ -206,9 +221,12 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $getters = [
         'model' => 'getModel',
         'input' => 'getInput',
+        'inputs' => 'getInputs',
         'encoding_format' => 'getEncodingFormat',
         'dimensions' => 'getDimensions',
-        'user' => 'getUser'
+        'embedding_options' => 'getEmbeddingOptions',
+        'user' => 'getUser',
+        'provider' => 'getProvider'
     ];
 
     /**
@@ -270,9 +288,12 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     {
         $this->setIfExists('model', $data ?? [], null);
         $this->setIfExists('input', $data ?? [], null);
+        $this->setIfExists('inputs', $data ?? [], null);
         $this->setIfExists('encoding_format', $data ?? [], null);
         $this->setIfExists('dimensions', $data ?? [], null);
+        $this->setIfExists('embedding_options', $data ?? [], null);
         $this->setIfExists('user', $data ?? [], null);
+        $this->setIfExists('provider', $data ?? [], null);
     }
 
     /**
@@ -302,12 +323,6 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     {
         $invalidProperties = [];
 
-        if ($this->container['model'] === null) {
-            $invalidProperties[] = "'model' can't be null";
-        }
-        if ($this->container['input'] === null) {
-            $invalidProperties[] = "'input' can't be null";
-        }
         if (!is_null($this->container['dimensions']) && ($this->container['dimensions'] < 1)) {
             $invalidProperties[] = "invalid value for 'dimensions', must be bigger than or equal to 1.";
         }
@@ -330,7 +345,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     /**
      * Gets model
      *
-     * @return string
+     * @return string|null
      */
     public function getModel()
     {
@@ -340,7 +355,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     /**
      * Sets model
      *
-     * @param string $model model
+     * @param string|null $model model
      *
      * @return self
      */
@@ -357,7 +372,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     /**
      * Gets input
      *
-     * @return \AIStats\Sdk\Model\EmbeddingsRequestInput
+     * @return string|string[]|null
      */
     public function getInput()
     {
@@ -367,16 +382,57 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     /**
      * Sets input
      *
-     * @param \AIStats\Sdk\Model\EmbeddingsRequestInput $input input
+     * @param string|string[]|null $input input
      *
      * @return self
      */
     public function setInput($input)
     {
         if (is_null($input)) {
-            throw new \InvalidArgumentException('non-nullable input cannot be null');
+            array_push($this->openAPINullablesSetToNull, 'input');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('input', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
         }
         $this->container['input'] = $input;
+
+        return $this;
+    }
+
+    /**
+     * Gets inputs
+     *
+     * @return string|string[]|null
+     */
+    public function getInputs()
+    {
+        return $this->container['inputs'];
+    }
+
+    /**
+     * Sets inputs
+     *
+     * @param string|string[]|null $inputs Alias for input.
+     *
+     * @return self
+     */
+    public function setInputs($inputs)
+    {
+        if (is_null($inputs)) {
+            array_push($this->openAPINullablesSetToNull, 'inputs');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('inputs', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        $this->container['inputs'] = $inputs;
 
         return $this;
     }
@@ -441,6 +497,33 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
     }
 
     /**
+     * Gets embedding_options
+     *
+     * @return object|null
+     */
+    public function getEmbeddingOptions()
+    {
+        return $this->container['embedding_options'];
+    }
+
+    /**
+     * Sets embedding_options
+     *
+     * @param object|null $embedding_options embedding_options
+     *
+     * @return self
+     */
+    public function setEmbeddingOptions($embedding_options)
+    {
+        if (is_null($embedding_options)) {
+            throw new \InvalidArgumentException('non-nullable embedding_options cannot be null');
+        }
+        $this->container['embedding_options'] = $embedding_options;
+
+        return $this;
+    }
+
+    /**
      * Gets user
      *
      * @return string|null
@@ -463,6 +546,33 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
             throw new \InvalidArgumentException('non-nullable user cannot be null');
         }
         $this->container['user'] = $user;
+
+        return $this;
+    }
+
+    /**
+     * Gets provider
+     *
+     * @return \AIStats\Sdk\Model\ProviderRoutingOptions|null
+     */
+    public function getProvider()
+    {
+        return $this->container['provider'];
+    }
+
+    /**
+     * Sets provider
+     *
+     * @param \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider
+     *
+     * @return self
+     */
+    public function setProvider($provider)
+    {
+        if (is_null($provider)) {
+            throw new \InvalidArgumentException('non-nullable provider cannot be null');
+        }
+        $this->container['provider'] = $provider;
 
         return $this;
     }

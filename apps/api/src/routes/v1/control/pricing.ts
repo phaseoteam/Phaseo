@@ -1,9 +1,13 @@
 // src/routes/v1/control/pricing.ts
+// Purpose: Control-plane route handler for pricing operations.
+// Why: Separates admin/control traffic from data-plane requests.
+// How: Wires HTTP routes to pipeline entrypoints and response helpers.
+
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
-import { json, withRuntime } from "@/routes/utils";
+import { json, withRuntime, cacheHeaders, cacheResponse } from "@/routes/utils";
 import type { PriceCard } from "@pipeline/pricing/types";
 
 type PricingModel = {
@@ -79,7 +83,7 @@ async function handlePricingModels(req: Request) {
         );
         const { data: models, error: mError } = await supabase
             .from("data_models")
-            .select("model_id, name")
+            .select("model_id, name, hidden")
             .in("model_id", modelIds);
 
         if (mError) {
@@ -87,9 +91,13 @@ async function handlePricingModels(req: Request) {
         }
 
         const modelNameMap = new Map<string, string>();
+        const visibleModelIds = new Set<string>();
         for (const model of models ?? []) {
             if (model.model_id && model.name) {
                 modelNameMap.set(model.model_id, model.name);
+            }
+            if (model.model_id && !model.hidden) {
+                visibleModelIds.add(model.model_id);
             }
         }
 
@@ -130,6 +138,9 @@ async function handlePricingModels(req: Request) {
             const comboKey = `${parsedKey.providerId}:${parsedKey.apiModelId}:${capabilityId}`;
             const combo = comboMap.get(comboKey);
             if (!combo) continue;
+            if (combo.internal_model_id && !visibleModelIds.has(combo.internal_model_id)) {
+                continue;
+            }
             const modelId = combo.internal_model_id ?? parsedKey.apiModelId;
             const key = `${parsedKey.providerId}:${modelId}:${capabilityId}:${rule.pricing_plan || "standard"}`;
 
@@ -165,11 +176,17 @@ async function handlePricingModels(req: Request) {
             return a.endpoint.localeCompare(b.endpoint);
         });
 
-        return json(
+        const cacheOptions = {
+            scope: `pricing-models:${auth.value.teamId}`,
+            ttlSeconds: 300,
+            staleSeconds: 600,
+        };
+        const response = json(
             { ok: true, models: pricingModels },
             200,
-            { "Cache-Control": "no-store" }
+            cacheHeaders(cacheOptions)
         );
+        return cacheResponse(req, response, cacheOptions);
     } catch (error: any) {
         return json(
             { ok: false, error: "failed", message: String(error?.message ?? error) },
@@ -229,3 +246,14 @@ export const pricingRoutes = new Hono<Env>();
 
 pricingRoutes.get("/models", withRuntime(handlePricingModels));
 pricingRoutes.post("/calculate", withRuntime(handlePricingCalculate));
+
+
+
+
+
+
+
+
+
+
+

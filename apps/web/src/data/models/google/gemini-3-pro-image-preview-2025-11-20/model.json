@@ -1,7 +1,7 @@
 {
   "model_id": "google/gemini-3-pro-image-preview-2025-11-20",
   "organisation_id": "google",
-  "name": "Gemini 3 Pro Image Preview (Nano Banana 2)",
+  "name": "Gemini 3 Pro Image Preview (Nano Banana Pro)",
   "status": "Available",
   "previous_model_id": "google/gemini-2-5-flash-image-preview",
   "announced_date": "2025-11-20T00:00:00",

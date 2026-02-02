@@ -1,4 +1,8 @@
 // src/lib/telemetry/timer.ts
+// Purpose: Timing utilities for measuring request stages.
+// Why: Consistent latency metrics across the pipeline.
+// How: Records timestamps and computes durations.
+
 export type TimingSnapshot = Record<string, number>; // ms (1 decimal)
 
 export class Timer {
@@ -119,3 +123,13 @@ function toToken(s: string) {
     // Server-Timing token charset (token)
     return s.replace(/[^A-Za-z0-9._-]/g, "_");
 }
+
+
+
+
+
+
+
+
+
+

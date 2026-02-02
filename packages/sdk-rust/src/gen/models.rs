@@ -2,6 +2,70 @@ use std::collections::HashMap;
 
 pub type JsonValue = String;
 
+pub struct ActivityEntry {
+	pub cost_cents: Option<f64>,
+	pub endpoint: Option<String>,
+	pub latency_ms: Option<i64>,
+	pub model: Option<String>,
+	pub provider: Option<String>,
+	pub request_id: Option<String>,
+	pub timestamp: Option<String>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct AnthropicContentBlock {
+	pub content: Option<String>,
+	pub id: Option<String>,
+	pub input: Option<HashMap<String, String>>,
+	pub name: Option<String>,
+	pub source: Option<HashMap<String, String>>,
+	pub text: Option<String>,
+	pub tool_use_id: Option<String>,
+	pub type: Option<String>,
+}
+
+pub struct AnthropicMessage {
+	pub content: String,
+	pub role: String,
+}
+
+pub struct AnthropicMessagesRequest {
+	pub max_tokens: Option<i64>,
+	pub messages: Vec<HashMap<String, String>>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+	pub stream: Option<bool>,
+	pub system: Option<String>,
+	pub temperature: Option<f64>,
+	pub tool_choice: Option<String>,
+	pub tools: Option<Vec<HashMap<String, String>>>,
+	pub top_k: Option<i64>,
+	pub top_p: Option<f64>,
+}
+
+pub struct AnthropicMessagesResponse {
+	pub content: Option<Vec<HashMap<String, String>>>,
+	pub id: Option<String>,
+	pub model: Option<String>,
+	pub role: Option<String>,
+	pub stop_reason: Option<String>,
+	pub stop_sequence: Option<String>,
+	pub type: Option<String>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct AnthropicTool {
+	pub description: Option<String>,
+	pub input_schema: Option<HashMap<String, String>>,
+	pub name: String,
+}
+
+pub struct AnthropicUsage {
+	pub input_tokens: Option<i64>,
+	pub output_tokens: Option<i64>,
+}
+
 pub struct AudioContentPart {
 	pub input_audio: HashMap<String, String>,
 	pub type: String,
@@ -11,6 +75,7 @@ pub struct AudioSpeechRequest {
 	pub format: Option<String>,
 	pub input: String,
 	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
 	pub voice: Option<String>,
 }
 
@@ -19,6 +84,7 @@ pub struct AudioTranscriptionRequest {
 	pub audio_url: Option<String>,
 	pub language: Option<String>,
 	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
 }
 
 pub struct AudioTranscriptionResponse {
@@ -31,6 +97,7 @@ pub struct AudioTranslationRequest {
 	pub language: Option<String>,
 	pub model: String,
 	pub prompt: Option<String>,
+	pub provider: Option<HashMap<String, String>>,
 	pub temperature: Option<f64>,
 }
 
@@ -43,6 +110,7 @@ pub struct BatchRequest {
 	pub endpoint: String,
 	pub input_file_id: String,
 	pub metadata: Option<HashMap<String, String>>,
+	pub provider: Option<HashMap<String, String>>,
 }
 
 pub struct BatchRequestCounts {
@@ -93,6 +161,7 @@ pub struct ChatCompletionsRequest {
 	pub model: String,
 	pub parallel_tool_calls: Option<bool>,
 	pub presence_penalty: Option<f64>,
+	pub provider: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
 	pub response_format: Option<String>,
 	pub seed: Option<i64>,
@@ -137,6 +206,7 @@ pub struct EmbeddingsRequest {
 	pub encoding_format: Option<String>,
 	pub input: String,
 	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
 	pub user: Option<String>,
 }
 
@@ -145,6 +215,12 @@ pub struct EmbeddingsResponse {
 	pub model: Option<String>,
 	pub object: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
+}
+
+pub struct ErrorResponse {
+	pub error: Option<String>,
+	pub message: Option<String>,
+	pub ok: Option<bool>,
 }
 
 pub struct FileResponse {
@@ -210,6 +286,7 @@ pub struct ImagesEditRequest {
 	pub model: String,
 	pub n: Option<i64>,
 	pub prompt: String,
+	pub provider: Option<HashMap<String, String>>,
 	pub size: Option<String>,
 	pub usage: Option<bool>,
 	pub user: Option<String>,
@@ -224,6 +301,7 @@ pub struct ImagesGenerationRequest {
 	pub model: String,
 	pub n: Option<i64>,
 	pub prompt: String,
+	pub provider: Option<HashMap<String, String>>,
 	pub quality: Option<String>,
 	pub response_format: Option<String>,
 	pub size: Option<String>,
@@ -296,6 +374,7 @@ pub struct ModerationsRequest {
 	pub input: String,
 	pub meta: Option<bool>,
 	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
 }
 
 pub struct ModerationsResponse {
@@ -304,9 +383,81 @@ pub struct ModerationsResponse {
 	pub results: Option<Vec<HashMap<String, String>>>,
 }
 
+pub struct MusicGenerateRequest {
+	pub duration: Option<i64>,
+	pub echo_upstream_request: Option<bool>,
+	pub elevenlabs: Option<HashMap<String, String>>,
+	pub format: Option<String>,
+	pub model: String,
+	pub prompt: Option<String>,
+	pub provider: Option<HashMap<String, String>>,
+	pub suno: Option<HashMap<String, String>>,
+}
+
+pub struct MusicGenerateResponse {
+}
+
+pub struct OcrRequest {
+	pub echo_upstream_request: Option<bool>,
+	pub image: String,
+	pub language: Option<String>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+}
+
+pub struct OcrResponse {
+}
+
 pub type OrganisationId = JsonValue;
 
 pub type OrganisationIdList = JsonValue;
+
+pub struct Provider {
+	pub api_provider_id: Option<String>,
+	pub api_provider_name: Option<Option<String>>,
+	pub country_code: Option<Option<String>>,
+	pub description: Option<Option<String>>,
+	pub link: Option<Option<String>>,
+}
+
+pub struct ProviderRoutingOptions {
+	pub ignore: Option<Vec<String>>,
+	pub only: Option<Vec<String>>,
+	pub order: Option<Vec<String>>,
+}
+
+pub struct ProvisioningKey {
+	pub created_at: Option<String>,
+	pub id: Option<String>,
+	pub last_used_at: Option<Option<String>>,
+	pub name: Option<String>,
+	pub prefix: Option<String>,
+	pub scopes: Option<String>,
+	pub status: Option<String>,
+}
+
+pub struct ProvisioningKeyDetail {
+	pub created_at: Option<String>,
+	pub created_by: Option<String>,
+	pub id: Option<String>,
+	pub last_used_at: Option<Option<String>>,
+	pub name: Option<String>,
+	pub prefix: Option<String>,
+	pub scopes: Option<String>,
+	pub soft_blocked: Option<bool>,
+	pub status: Option<String>,
+	pub team_id: Option<String>,
+}
+
+pub struct ProvisioningKeyWithValue {
+	pub created_at: Option<String>,
+	pub id: Option<String>,
+	pub key: Option<String>,
+	pub name: Option<String>,
+	pub prefix: Option<String>,
+	pub scopes: Option<String>,
+	pub status: Option<String>,
+}
 
 pub struct ReasoningConfig {
 	pub effort: Option<String>,
@@ -330,6 +481,7 @@ pub struct ResponsesRequest {
 	pub prompt: Option<HashMap<String, String>>,
 	pub prompt_cache_key: Option<String>,
 	pub prompt_cache_retention: Option<String>,
+	pub provider: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
 	pub safety_identifier: Option<String>,
 	pub service_tier: Option<String>,
@@ -392,10 +544,17 @@ pub struct VideoContentPart {
 	pub video_url: String,
 }
 
+pub struct VideoDeleteResponse {
+	pub deleted: Option<bool>,
+	pub id: Option<String>,
+	pub object: Option<String>,
+}
+
 pub struct VideoGenerationRequest {
 	pub duration: Option<i64>,
 	pub model: String,
 	pub prompt: String,
+	pub provider: Option<HashMap<String, String>>,
 	pub ratio: Option<String>,
 }
 

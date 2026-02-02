@@ -6,6 +6,70 @@
 #include <vector>
 
 namespace ai_stats::gen {
+struct ActivityEntry {
+	std::optional<double> cost_cents;
+	std::string endpoint;
+	std::optional<int> latency_ms;
+	std::string model;
+	std::string provider;
+	std::string request_id;
+	std::string timestamp;
+	std::map<std::string, std::any> usage;
+};
+
+struct AnthropicContentBlock {
+	std::string content;
+	std::string id;
+	std::map<std::string, std::any> input;
+	std::string name;
+	std::map<std::string, std::any> source;
+	std::string text;
+	std::string tool_use_id;
+	std::any type;
+};
+
+struct AnthropicMessage {
+	std::any content;
+	std::any role;
+};
+
+struct AnthropicMessagesRequest {
+	std::optional<int> max_tokens;
+	std::vector<std::map<std::string, std::any>> messages;
+	std::map<std::string, std::any> metadata;
+	std::string model;
+	std::map<std::string, std::any> provider;
+	std::optional<bool> stream;
+	std::any system;
+	std::optional<double> temperature;
+	std::any tool_choice;
+	std::vector<std::map<std::string, std::any>> tools;
+	std::optional<int> top_k;
+	std::optional<double> top_p;
+};
+
+struct AnthropicMessagesResponse {
+	std::vector<std::map<std::string, std::any>> content;
+	std::string id;
+	std::string model;
+	std::any role;
+	std::string stop_reason;
+	std::string stop_sequence;
+	std::string type;
+	std::map<std::string, std::any> usage;
+};
+
+struct AnthropicTool {
+	std::string description;
+	std::map<std::string, std::any> input_schema;
+	std::string name;
+};
+
+struct AnthropicUsage {
+	std::optional<int> input_tokens;
+	std::optional<int> output_tokens;
+};
+
 struct AudioContentPart {
 	std::map<std::string, std::any> input_audio;
 	std::any type;
@@ -15,6 +79,7 @@ struct AudioSpeechRequest {
 	std::any format;
 	std::string input;
 	std::string model;
+	std::map<std::string, std::any> provider;
 	std::string voice;
 };
 
@@ -23,6 +88,7 @@ struct AudioTranscriptionRequest {
 	std::string audio_url;
 	std::string language;
 	std::string model;
+	std::map<std::string, std::any> provider;
 };
 
 struct AudioTranscriptionResponse {
@@ -35,6 +101,7 @@ struct AudioTranslationRequest {
 	std::string language;
 	std::string model;
 	std::string prompt;
+	std::map<std::string, std::any> provider;
 	std::optional<double> temperature;
 };
 
@@ -47,6 +114,7 @@ struct BatchRequest {
 	std::string endpoint;
 	std::string input_file_id;
 	std::map<std::string, std::any> metadata;
+	std::map<std::string, std::any> provider;
 };
 
 struct BatchRequestCounts {
@@ -97,6 +165,7 @@ struct ChatCompletionsRequest {
 	std::string model;
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
+	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> reasoning;
 	std::any response_format;
 	std::optional<int> seed;
@@ -141,6 +210,7 @@ struct EmbeddingsRequest {
 	std::string encoding_format;
 	std::any input;
 	std::string model;
+	std::map<std::string, std::any> provider;
 	std::string user;
 };
 
@@ -149,6 +219,12 @@ struct EmbeddingsResponse {
 	std::string model;
 	std::string object;
 	std::map<std::string, std::any> usage;
+};
+
+struct ErrorResponse {
+	std::string error;
+	std::string message;
+	std::optional<bool> ok;
 };
 
 struct FileResponse {
@@ -214,6 +290,7 @@ struct ImagesEditRequest {
 	std::string model;
 	std::optional<int> n;
 	std::string prompt;
+	std::map<std::string, std::any> provider;
 	std::string size;
 	std::optional<bool> usage;
 	std::string user;
@@ -228,6 +305,7 @@ struct ImagesGenerationRequest {
 	std::string model;
 	std::optional<int> n;
 	std::string prompt;
+	std::map<std::string, std::any> provider;
 	std::string quality;
 	std::string response_format;
 	std::string size;
@@ -300,6 +378,7 @@ struct ModerationsRequest {
 	std::any input;
 	std::optional<bool> meta;
 	std::string model;
+	std::map<std::string, std::any> provider;
 };
 
 struct ModerationsResponse {
@@ -308,9 +387,81 @@ struct ModerationsResponse {
 	std::vector<std::map<std::string, std::any>> results;
 };
 
+struct MusicGenerateRequest {
+	std::optional<int> duration;
+	std::optional<bool> echo_upstream_request;
+	std::map<std::string, std::any> elevenlabs;
+	std::any format;
+	std::string model;
+	std::string prompt;
+	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> suno;
+};
+
+struct MusicGenerateResponse {
+};
+
+struct OcrRequest {
+	std::optional<bool> echo_upstream_request;
+	std::string image;
+	std::string language;
+	std::string model;
+	std::map<std::string, std::any> provider;
+};
+
+struct OcrResponse {
+};
+
 using OrganisationId = std::any;
 
 using OrganisationIdList = std::any;
+
+struct Provider {
+	std::string api_provider_id;
+	std::optional<std::string> api_provider_name;
+	std::optional<std::string> country_code;
+	std::optional<std::string> description;
+	std::optional<std::string> link;
+};
+
+struct ProviderRoutingOptions {
+	std::vector<std::string> ignore;
+	std::vector<std::string> only;
+	std::vector<std::string> order;
+};
+
+struct ProvisioningKey {
+	std::string created_at;
+	std::string id;
+	std::optional<std::string> last_used_at;
+	std::string name;
+	std::string prefix;
+	std::string scopes;
+	std::any status;
+};
+
+struct ProvisioningKeyDetail {
+	std::string created_at;
+	std::string created_by;
+	std::string id;
+	std::optional<std::string> last_used_at;
+	std::string name;
+	std::string prefix;
+	std::string scopes;
+	std::optional<bool> soft_blocked;
+	std::any status;
+	std::string team_id;
+};
+
+struct ProvisioningKeyWithValue {
+	std::string created_at;
+	std::string id;
+	std::string key;
+	std::string name;
+	std::string prefix;
+	std::string scopes;
+	std::any status;
+};
 
 struct ReasoningConfig {
 	std::any effort;
@@ -334,6 +485,7 @@ struct ResponsesRequest {
 	std::map<std::string, std::any> prompt;
 	std::string prompt_cache_key;
 	std::string prompt_cache_retention;
+	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> reasoning;
 	std::string safety_identifier;
 	std::string service_tier;
@@ -396,10 +548,17 @@ struct VideoContentPart {
 	std::string video_url;
 };
 
+struct VideoDeleteResponse {
+	std::optional<bool> deleted;
+	std::string id;
+	std::string object;
+};
+
 struct VideoGenerationRequest {
 	std::optional<int> duration;
 	std::string model;
 	std::string prompt;
+	std::map<std::string, std::any> provider;
 	std::string ratio;
 };
 

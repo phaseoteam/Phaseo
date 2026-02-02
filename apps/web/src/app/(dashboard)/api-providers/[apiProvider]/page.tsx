@@ -32,7 +32,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI API Provider Performance Analytics",
 			description:
-				"Inspect AI API provider performance on AI Stats. Explore latency, throughput, and reliability metrics captured by the AI Stats Conduit.",
+				"Inspect AI API provider performance on AI Stats. Explore latency, throughput, and reliability metrics captured by the AI Stats Gateway.",
 			path: `/api-providers/${apiProvider}`,
 			keywords: [
 				"AI API provider",
@@ -53,7 +53,7 @@ export async function generateMetadata(props: {
 	const providerName = header.api_provider_name ?? "AI API provider";
 
 	const description = [
-		`${providerName} on AI Stats - real-world performance analytics from the AI Stats Conduit.`,
+		`${providerName} on AI Stats - real-world performance analytics from the AI Stats Gateway.`,
 		"Review latency, throughput, and average generation time, see which apps rely on this provider most, and track newly added models and integrations.",
 	]
 		.filter(Boolean)
@@ -113,7 +113,7 @@ export default async function Page({
 					"name": `What is ${providerName}?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `${providerName} is an AI API provider that offers access to various AI models. On AI Stats, you can view real-world performance metrics captured by the AI Stats Conduit, including latency, throughput, and reliability data.`,
+						"text": `${providerName} is an AI API provider that offers access to various AI models. On AI Stats, you can view real-world performance metrics captured by the AI Stats Gateway, including latency, throughput, and reliability data.`,
 					},
 				},
 				{
@@ -121,7 +121,7 @@ export default async function Page({
 					"name": `How is ${providerName} performance measured?`,
 					"acceptedAnswer": {
 						"@type": "Answer",
-						"text": `${providerName} performance is measured using real-world data from the AI Stats Conduit. We track metrics including average latency (time to first token and total generation time), throughput (tokens per second), request success rates, and API reliability across different models and endpoints.`,
+						"text": `${providerName} performance is measured using real-world data from the AI Stats Gateway. We track metrics including average latency (time to first token and total generation time), throughput (tokens per second), request success rates, and API reliability across different models and endpoints.`,
 					},
 				},
 				{

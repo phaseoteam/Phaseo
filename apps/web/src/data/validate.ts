@@ -483,8 +483,6 @@ function checkPricing(state: ValidationState): string[] {
     return errors;
 }
 
-}
-
 function checkSubscriptionPlans(state: ValidationState): string[] {
     const errors: string[] = [];
     const plansDir = path.join(DATA_ROOT, 'subscription_plans');

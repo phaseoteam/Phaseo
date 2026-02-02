@@ -98,7 +98,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 11
+      "rank": 10
     },
     {
       "benchmark_id": "factscore-halluciation-rate",

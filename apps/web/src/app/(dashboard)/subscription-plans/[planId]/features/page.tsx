@@ -7,7 +7,7 @@ import { buildMetadata } from "@/lib/seo";
 
 async function fetchPlanForFeatures(planId: string) {
 	try {
-		return await getSubscriptionPlanCached(planId);
+		return await getSubscriptionPlanCached(planId, false);
 	} catch (error) {
 		console.warn(
 			"[seo] failed to load subscription plan features metadata",
@@ -74,7 +74,7 @@ export default async function Page({
 }) {
 	const { planId } = await params;
 
-	const plan = await getSubscriptionPlanCached(planId);
+	const plan = await getSubscriptionPlanCached(planId, false);
 
 	if (!plan) {
 		return null; // Shell handles not found

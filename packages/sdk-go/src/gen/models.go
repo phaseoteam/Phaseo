@@ -1,5 +1,69 @@
 package gen
 
+type ActivityEntry struct {
+	CostCents *float64 `json:"cost_cents,omitempty"`
+	Endpoint *string `json:"endpoint,omitempty"`
+	LatencyMs *int `json:"latency_ms,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
+	Timestamp *string `json:"timestamp,omitempty"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type AnthropicContentBlock struct {
+	Content *string `json:"content,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Input *map[string]interface{} `json:"input,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Source *map[string]interface{} `json:"source,omitempty"`
+	Text *string `json:"text,omitempty"`
+	ToolUseId *string `json:"tool_use_id,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
+type AnthropicMessage struct {
+	Content interface{} `json:"content"`
+	Role string `json:"role"`
+}
+
+type AnthropicMessagesRequest struct {
+	MaxTokens *int `json:"max_tokens,omitempty"`
+	Messages []map[string]interface{} `json:"messages"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Stream *bool `json:"stream,omitempty"`
+	System interface{} `json:"system,omitempty"`
+	Temperature *float64 `json:"temperature,omitempty"`
+	ToolChoice interface{} `json:"tool_choice,omitempty"`
+	Tools *[]map[string]interface{} `json:"tools,omitempty"`
+	TopK *int `json:"top_k,omitempty"`
+	TopP *float64 `json:"top_p,omitempty"`
+}
+
+type AnthropicMessagesResponse struct {
+	Content *[]map[string]interface{} `json:"content,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Role *string `json:"role,omitempty"`
+	StopReason *string `json:"stop_reason,omitempty"`
+	StopSequence *string `json:"stop_sequence,omitempty"`
+	Type *string `json:"type,omitempty"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type AnthropicTool struct {
+	Description *string `json:"description,omitempty"`
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+	Name string `json:"name"`
+}
+
+type AnthropicUsage struct {
+	InputTokens *int `json:"input_tokens,omitempty"`
+	OutputTokens *int `json:"output_tokens,omitempty"`
+}
+
 type AudioContentPart struct {
 	InputAudio map[string]interface{} `json:"input_audio"`
 	Type string `json:"type"`
@@ -9,6 +73,7 @@ type AudioSpeechRequest struct {
 	Format *string `json:"format,omitempty"`
 	Input string `json:"input"`
 	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Voice *string `json:"voice,omitempty"`
 }
 
@@ -17,6 +82,7 @@ type AudioTranscriptionRequest struct {
 	AudioUrl *string `json:"audio_url,omitempty"`
 	Language *string `json:"language,omitempty"`
 	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 }
 
 type AudioTranscriptionResponse struct {
@@ -29,6 +95,7 @@ type AudioTranslationRequest struct {
 	Language *string `json:"language,omitempty"`
 	Model string `json:"model"`
 	Prompt *string `json:"prompt,omitempty"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Temperature *float64 `json:"temperature,omitempty"`
 }
 
@@ -41,6 +108,7 @@ type BatchRequest struct {
 	Endpoint string `json:"endpoint"`
 	InputFileId string `json:"input_file_id"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 }
 
 type BatchRequestCounts struct {
@@ -231,6 +299,7 @@ type ChatCompletionsRequest struct {
 	Model string `json:"model"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
 	ResponseFormat interface{} `json:"response_format,omitempty"`
 	Seed *int `json:"seed,omitempty"`
@@ -275,6 +344,7 @@ type EmbeddingsRequest struct {
 	EncodingFormat *string `json:"encoding_format,omitempty"`
 	Input interface{} `json:"input"`
 	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 	User *string `json:"user,omitempty"`
 }
 
@@ -283,6 +353,12 @@ type EmbeddingsResponse struct {
 	Model *string `json:"model,omitempty"`
 	Object *string `json:"object,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type ErrorResponse struct {
+	Error *string `json:"error,omitempty"`
+	Message *string `json:"message,omitempty"`
+	Ok *bool `json:"ok,omitempty"`
 }
 
 type FileResponse struct {
@@ -348,6 +424,7 @@ type ImagesEditRequest struct {
 	Model string `json:"model"`
 	N *int `json:"n,omitempty"`
 	Prompt string `json:"prompt"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Size *string `json:"size,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
 	User *string `json:"user,omitempty"`
@@ -362,6 +439,7 @@ type ImagesGenerationRequest struct {
 	Model string `json:"model"`
 	N *int `json:"n,omitempty"`
 	Prompt string `json:"prompt"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Quality *string `json:"quality,omitempty"`
 	ResponseFormat *string `json:"response_format,omitempty"`
 	Size *string `json:"size,omitempty"`
@@ -1028,12 +1106,38 @@ type ModerationsRequest struct {
 	Input interface{} `json:"input"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 }
 
 type ModerationsResponse struct {
 	Id *string `json:"id,omitempty"`
 	Model *string `json:"model,omitempty"`
 	Results *[]map[string]interface{} `json:"results,omitempty"`
+}
+
+type MusicGenerateRequest struct {
+	Duration *int `json:"duration,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Elevenlabs *map[string]interface{} `json:"elevenlabs,omitempty"`
+	Format *string `json:"format,omitempty"`
+	Model string `json:"model"`
+	Prompt *string `json:"prompt,omitempty"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Suno *map[string]interface{} `json:"suno,omitempty"`
+}
+
+type MusicGenerateResponse struct {
+}
+
+type OcrRequest struct {
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Image string `json:"image"`
+	Language *string `json:"language,omitempty"`
+	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+}
+
+type OcrResponse struct {
 }
 
 type OrganisationId string
@@ -1071,6 +1175,53 @@ const (
 
 type OrganisationIdList = []string
 
+type Provider struct {
+	ApiProviderId *string `json:"api_provider_id,omitempty"`
+	ApiProviderName *string `json:"api_provider_name,omitempty"`
+	CountryCode *string `json:"country_code,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Link *string `json:"link,omitempty"`
+}
+
+type ProviderRoutingOptions struct {
+	Ignore *[]string `json:"ignore,omitempty"`
+	Only *[]string `json:"only,omitempty"`
+	Order *[]string `json:"order,omitempty"`
+}
+
+type ProvisioningKey struct {
+	CreatedAt *string `json:"created_at,omitempty"`
+	Id *string `json:"id,omitempty"`
+	LastUsedAt *string `json:"last_used_at,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Prefix *string `json:"prefix,omitempty"`
+	Scopes *string `json:"scopes,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
+type ProvisioningKeyDetail struct {
+	CreatedAt *string `json:"created_at,omitempty"`
+	CreatedBy *string `json:"created_by,omitempty"`
+	Id *string `json:"id,omitempty"`
+	LastUsedAt *string `json:"last_used_at,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Prefix *string `json:"prefix,omitempty"`
+	Scopes *string `json:"scopes,omitempty"`
+	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	Status *string `json:"status,omitempty"`
+	TeamId *string `json:"team_id,omitempty"`
+}
+
+type ProvisioningKeyWithValue struct {
+	CreatedAt *string `json:"created_at,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Key *string `json:"key,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Prefix *string `json:"prefix,omitempty"`
+	Scopes *string `json:"scopes,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
 type ReasoningConfig struct {
 	Effort *string `json:"effort,omitempty"`
 	Summary *string `json:"summary,omitempty"`
@@ -1093,6 +1244,7 @@ type ResponsesRequest struct {
 	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
 	SafetyIdentifier *string `json:"safety_identifier,omitempty"`
 	ServiceTier *string `json:"service_tier,omitempty"`
@@ -1155,10 +1307,17 @@ type VideoContentPart struct {
 	VideoUrl string `json:"video_url"`
 }
 
+type VideoDeleteResponse struct {
+	Deleted *bool `json:"deleted,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Object *string `json:"object,omitempty"`
+}
+
 type VideoGenerationRequest struct {
 	Duration *int `json:"duration,omitempty"`
 	Model string `json:"model"`
 	Prompt string `json:"prompt"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
 	Ratio *string `json:"ratio,omitempty"`
 }
 

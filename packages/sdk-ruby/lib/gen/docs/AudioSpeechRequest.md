@@ -8,6 +8,7 @@
 | **input** | **String** |  |  |
 | **voice** | **String** |  | [optional] |
 | **format** | **String** |  | [optional] |
+| **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
 
@@ -18,7 +19,8 @@ instance = AIStatsSdk::AudioSpeechRequest.new(
   model: null,
   input: null,
   voice: null,
-  format: null
+  format: null,
+  provider: null
 )
 ```
 

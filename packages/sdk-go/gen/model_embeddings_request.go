@@ -12,8 +12,6 @@ package ai_stats_sdk
 
 import (
 	"encoding/json"
-	"bytes"
-	"fmt"
 )
 
 // checks if the EmbeddingsRequest type satisfies the MappedNullable interface at compile time
@@ -21,23 +19,23 @@ var _ MappedNullable = &EmbeddingsRequest{}
 
 // EmbeddingsRequest struct for EmbeddingsRequest
 type EmbeddingsRequest struct {
-	Model string `json:"model"`
-	Input EmbeddingsRequestInput `json:"input"`
-	EncodingFormat *string `json:"encoding_format,omitempty"`
-	Dimensions *int32 `json:"dimensions,omitempty"`
-	User *string `json:"user,omitempty"`
+	Model *string
+	Input NullableOneOfstringarray
+	// Alias for input.
+	Inputs NullableOneOfstringarray
+	EncodingFormat *string
+	Dimensions *int32
+	EmbeddingOptions *map[string]interface{}
+	User *string
+	Provider *ProviderRoutingOptions
 }
-
-type _EmbeddingsRequest EmbeddingsRequest
 
 // NewEmbeddingsRequest instantiates a new EmbeddingsRequest object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewEmbeddingsRequest(model string, input EmbeddingsRequestInput) *EmbeddingsRequest {
+func NewEmbeddingsRequest() *EmbeddingsRequest {
 	this := EmbeddingsRequest{}
-	this.Model = model
-	this.Input = input
 	return &this
 }
 
@@ -49,52 +47,120 @@ func NewEmbeddingsRequestWithDefaults() *EmbeddingsRequest {
 	return &this
 }
 
-// GetModel returns the Model field value
+// GetModel returns the Model field value if set, zero value otherwise.
 func (o *EmbeddingsRequest) GetModel() string {
-	if o == nil {
+	if o == nil || IsNil(o.Model) {
 		var ret string
 		return ret
 	}
-
-	return o.Model
+	return *o.Model
 }
 
-// GetModelOk returns a tuple with the Model field value
+// GetModelOk returns a tuple with the Model field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *EmbeddingsRequest) GetModelOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.Model) {
 		return nil, false
 	}
-	return &o.Model, true
+	return o.Model, true
 }
 
-// SetModel sets field value
+// HasModel returns a boolean if a field has been set.
+func (o *EmbeddingsRequest) HasModel() bool {
+	if o != nil && !IsNil(o.Model) {
+		return true
+	}
+
+	return false
+}
+
+// SetModel gets a reference to the given string and assigns it to the Model field.
 func (o *EmbeddingsRequest) SetModel(v string) {
-	o.Model = v
+	o.Model = &v
 }
 
-// GetInput returns the Input field value
-func (o *EmbeddingsRequest) GetInput() EmbeddingsRequestInput {
-	if o == nil {
-		var ret EmbeddingsRequestInput
+// GetInput returns the Input field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *EmbeddingsRequest) GetInput() OneOfstringarray {
+	if o == nil || IsNil(o.Input.Get()) {
+		var ret OneOfstringarray
 		return ret
 	}
-
-	return o.Input
+	return *o.Input.Get()
 }
 
-// GetInputOk returns a tuple with the Input field value
+// GetInputOk returns a tuple with the Input field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *EmbeddingsRequest) GetInputOk() (*EmbeddingsRequestInput, bool) {
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *EmbeddingsRequest) GetInputOk() (*OneOfstringarray, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Input, true
+	return o.Input.Get(), o.Input.IsSet()
 }
 
-// SetInput sets field value
-func (o *EmbeddingsRequest) SetInput(v EmbeddingsRequestInput) {
-	o.Input = v
+// HasInput returns a boolean if a field has been set.
+func (o *EmbeddingsRequest) HasInput() bool {
+	if o != nil && o.Input.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetInput gets a reference to the given NullableOneOfstringarray and assigns it to the Input field.
+func (o *EmbeddingsRequest) SetInput(v OneOfstringarray) {
+	o.Input.Set(&v)
+}
+// SetInputNil sets the value for Input to be an explicit nil
+func (o *EmbeddingsRequest) SetInputNil() {
+	o.Input.Set(nil)
+}
+
+// UnsetInput ensures that no value is present for Input, not even an explicit nil
+func (o *EmbeddingsRequest) UnsetInput() {
+	o.Input.Unset()
+}
+
+// GetInputs returns the Inputs field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *EmbeddingsRequest) GetInputs() OneOfstringarray {
+	if o == nil || IsNil(o.Inputs.Get()) {
+		var ret OneOfstringarray
+		return ret
+	}
+	return *o.Inputs.Get()
+}
+
+// GetInputsOk returns a tuple with the Inputs field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *EmbeddingsRequest) GetInputsOk() (*OneOfstringarray, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Inputs.Get(), o.Inputs.IsSet()
+}
+
+// HasInputs returns a boolean if a field has been set.
+func (o *EmbeddingsRequest) HasInputs() bool {
+	if o != nil && o.Inputs.IsSet() {
+		return true
+	}
+
+	return false
+}
+
+// SetInputs gets a reference to the given NullableOneOfstringarray and assigns it to the Inputs field.
+func (o *EmbeddingsRequest) SetInputs(v OneOfstringarray) {
+	o.Inputs.Set(&v)
+}
+// SetInputsNil sets the value for Inputs to be an explicit nil
+func (o *EmbeddingsRequest) SetInputsNil() {
+	o.Inputs.Set(nil)
+}
+
+// UnsetInputs ensures that no value is present for Inputs, not even an explicit nil
+func (o *EmbeddingsRequest) UnsetInputs() {
+	o.Inputs.Unset()
 }
 
 // GetEncodingFormat returns the EncodingFormat field value if set, zero value otherwise.
@@ -161,6 +227,38 @@ func (o *EmbeddingsRequest) SetDimensions(v int32) {
 	o.Dimensions = &v
 }
 
+// GetEmbeddingOptions returns the EmbeddingOptions field value if set, zero value otherwise.
+func (o *EmbeddingsRequest) GetEmbeddingOptions() map[string]interface{} {
+	if o == nil || IsNil(o.EmbeddingOptions) {
+		var ret map[string]interface{}
+		return ret
+	}
+	return *o.EmbeddingOptions
+}
+
+// GetEmbeddingOptionsOk returns a tuple with the EmbeddingOptions field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *EmbeddingsRequest) GetEmbeddingOptionsOk() (*map[string]interface{}, bool) {
+	if o == nil || IsNil(o.EmbeddingOptions) {
+		return nil, false
+	}
+	return o.EmbeddingOptions, true
+}
+
+// HasEmbeddingOptions returns a boolean if a field has been set.
+func (o *EmbeddingsRequest) HasEmbeddingOptions() bool {
+	if o != nil && !IsNil(o.EmbeddingOptions) {
+		return true
+	}
+
+	return false
+}
+
+// SetEmbeddingOptions gets a reference to the given map[string]interface{} and assigns it to the EmbeddingOptions field.
+func (o *EmbeddingsRequest) SetEmbeddingOptions(v map[string]interface{}) {
+	o.EmbeddingOptions = &v
+}
+
 // GetUser returns the User field value if set, zero value otherwise.
 func (o *EmbeddingsRequest) GetUser() string {
 	if o == nil || IsNil(o.User) {
@@ -193,6 +291,38 @@ func (o *EmbeddingsRequest) SetUser(v string) {
 	o.User = &v
 }
 
+// GetProvider returns the Provider field value if set, zero value otherwise.
+func (o *EmbeddingsRequest) GetProvider() ProviderRoutingOptions {
+	if o == nil || IsNil(o.Provider) {
+		var ret ProviderRoutingOptions
+		return ret
+	}
+	return *o.Provider
+}
+
+// GetProviderOk returns a tuple with the Provider field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *EmbeddingsRequest) GetProviderOk() (*ProviderRoutingOptions, bool) {
+	if o == nil || IsNil(o.Provider) {
+		return nil, false
+	}
+	return o.Provider, true
+}
+
+// HasProvider returns a boolean if a field has been set.
+func (o *EmbeddingsRequest) HasProvider() bool {
+	if o != nil && !IsNil(o.Provider) {
+		return true
+	}
+
+	return false
+}
+
+// SetProvider gets a reference to the given ProviderRoutingOptions and assigns it to the Provider field.
+func (o *EmbeddingsRequest) SetProvider(v ProviderRoutingOptions) {
+	o.Provider = &v
+}
+
 func (o EmbeddingsRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -203,56 +333,31 @@ func (o EmbeddingsRequest) MarshalJSON() ([]byte, error) {
 
 func (o EmbeddingsRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["model"] = o.Model
-	toSerialize["input"] = o.Input
+	if !IsNil(o.Model) {
+		toSerialize["model"] = o.Model
+	}
+	if o.Input.IsSet() {
+		toSerialize["input"] = o.Input.Get()
+	}
+	if o.Inputs.IsSet() {
+		toSerialize["inputs"] = o.Inputs.Get()
+	}
 	if !IsNil(o.EncodingFormat) {
 		toSerialize["encoding_format"] = o.EncodingFormat
 	}
 	if !IsNil(o.Dimensions) {
 		toSerialize["dimensions"] = o.Dimensions
 	}
+	if !IsNil(o.EmbeddingOptions) {
+		toSerialize["embedding_options"] = o.EmbeddingOptions
+	}
 	if !IsNil(o.User) {
 		toSerialize["user"] = o.User
 	}
+	if !IsNil(o.Provider) {
+		toSerialize["provider"] = o.Provider
+	}
 	return toSerialize, nil
-}
-
-func (o *EmbeddingsRequest) UnmarshalJSON(data []byte) (err error) {
-	// This validates that all required properties are included in the JSON object
-	// by unmarshalling the object into a generic map with string keys and checking
-	// that every required field exists as a key in the generic map.
-	requiredProperties := []string{
-		"model",
-		"input",
-	}
-
-	allProperties := make(map[string]interface{})
-
-	err = json.Unmarshal(data, &allProperties)
-
-	if err != nil {
-		return err;
-	}
-
-	for _, requiredProperty := range(requiredProperties) {
-		if _, exists := allProperties[requiredProperty]; !exists {
-			return fmt.Errorf("no value given for required property %v", requiredProperty)
-		}
-	}
-
-	varEmbeddingsRequest := _EmbeddingsRequest{}
-
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varEmbeddingsRequest)
-
-	if err != nil {
-		return err
-	}
-
-	*o = EmbeddingsRequest(varEmbeddingsRequest)
-
-	return err
 }
 
 type NullableEmbeddingsRequest struct {

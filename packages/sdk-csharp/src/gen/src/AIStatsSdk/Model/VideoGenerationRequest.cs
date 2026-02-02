@@ -37,13 +37,15 @@ namespace AIStatsSdk.Model
         /// <param name="prompt">prompt</param>
         /// <param name="duration">duration</param>
         /// <param name="ratio">ratio</param>
+        /// <param name="provider">provider</param>
         [JsonConstructor]
-        public VideoGenerationRequest(string model, string prompt, Option<int?> duration = default, Option<string?> ratio = default)
+        public VideoGenerationRequest(string model, string prompt, Option<int?> duration = default, Option<string?> ratio = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Prompt = prompt;
             DurationOption = duration;
             RatioOption = ratio;
+            ProviderOption = provider;
             OnCreated();
         }
 
@@ -88,6 +90,19 @@ namespace AIStatsSdk.Model
         public string? Ratio { get { return this.RatioOption; } set { this.RatioOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Provider
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<ProviderRoutingOptions?> ProviderOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Provider
+        /// </summary>
+        [JsonPropertyName("provider")]
+        public ProviderRoutingOptions? Provider { get { return this.ProviderOption; } set { this.ProviderOption = new(value); } }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -99,6 +114,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Prompt: ").Append(Prompt).Append("\n");
             sb.Append("  Duration: ").Append(Duration).Append("\n");
             sb.Append("  Ratio: ").Append(Ratio).Append("\n");
+            sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -152,6 +168,7 @@ namespace AIStatsSdk.Model
             Option<string?> prompt = default;
             Option<int?> duration = default;
             Option<string?> ratio = default;
+            Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
             {
@@ -180,6 +197,9 @@ namespace AIStatsSdk.Model
                         case "ratio":
                             ratio = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
+                        case "provider":
+                            provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         default:
                             break;
                     }
@@ -204,7 +224,10 @@ namespace AIStatsSdk.Model
             if (ratio.IsSet && ratio.Value == null)
                 throw new ArgumentNullException(nameof(ratio), "Property is not nullable for class VideoGenerationRequest.");
 
-            return new VideoGenerationRequest(model.Value!, prompt.Value!, duration, ratio);
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider), "Property is not nullable for class VideoGenerationRequest.");
+
+            return new VideoGenerationRequest(model.Value!, prompt.Value!, duration, ratio, provider);
         }
 
         /// <summary>
@@ -240,6 +263,9 @@ namespace AIStatsSdk.Model
             if (videoGenerationRequest.RatioOption.IsSet && videoGenerationRequest.Ratio == null)
                 throw new ArgumentNullException(nameof(videoGenerationRequest.Ratio), "Property is required for class VideoGenerationRequest.");
 
+            if (videoGenerationRequest.ProviderOption.IsSet && videoGenerationRequest.Provider == null)
+                throw new ArgumentNullException(nameof(videoGenerationRequest.Provider), "Property is required for class VideoGenerationRequest.");
+
             writer.WriteString("model", videoGenerationRequest.Model);
 
             writer.WriteString("prompt", videoGenerationRequest.Prompt);
@@ -249,6 +275,12 @@ namespace AIStatsSdk.Model
 
             if (videoGenerationRequest.RatioOption.IsSet)
                 writer.WriteString("ratio", videoGenerationRequest.Ratio);
+
+            if (videoGenerationRequest.ProviderOption.IsSet)
+            {
+                writer.WritePropertyName("provider");
+                JsonSerializer.Serialize(writer, videoGenerationRequest.Provider, jsonSerializerOptions);
+            }
         }
     }
 }

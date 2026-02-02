@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 
 import { createClient } from "@/utils/supabase/client";
+import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
 export interface ModelBenchmarkOrganisation {
 	organisation_id: string;
@@ -130,16 +131,17 @@ function normalizeMaybeArray<T>(value: T | T[] | null | undefined): T | null {
 }
 
 async function fetchBenchmarkResultsRaw(
-	modelId: string
+	modelId: string,
+	includeHidden: boolean
 ): Promise<RawBenchmarkPayload> {
 	const supabase = await createClient();
 
-	const { data, error } = await supabase
-		.from("data_models")
-		.select(
+	const { data, error } = await applyHiddenFilter(
+		supabase.from("data_models").select(
 			`
 				model_id,
 				name,
+				hidden,
 				organisation: data_organisations (
 					organisation_id,
 					name,
@@ -164,7 +166,9 @@ async function fetchBenchmarkResultsRaw(
 					)
 				)
 			`
-		)
+		),
+		includeHidden
+	)
 		.eq("model_id", modelId)
 		.single();
 
@@ -175,6 +179,9 @@ async function fetchBenchmarkResultsRaw(
 	}
 
 	if (!data) {
+		throw new Error(`Model ${modelId} not found`);
+	}
+	if (!includeHidden && (data as any).hidden) {
 		throw new Error(`Model ${modelId} not found`);
 	}
 
@@ -243,13 +250,15 @@ async function fetchBenchmarkResultsRaw(
 }
 
 async function loadBenchmarkResults(
-	modelId: string
+	modelId: string,
+	includeHidden: boolean
 ): Promise<RawBenchmarkPayload> {
-	let promise = rawResultsPromiseCache.get(modelId);
+	const cacheKey = `${modelId}:${includeHidden ? "1" : "0"}`;
+	let promise = rawResultsPromiseCache.get(cacheKey);
 
 	if (!promise) {
-		promise = fetchBenchmarkResultsRaw(modelId);
-		rawResultsPromiseCache.set(modelId, promise);
+		promise = fetchBenchmarkResultsRaw(modelId, includeHidden);
+		rawResultsPromiseCache.set(cacheKey, promise);
 	}
 
 	return promise;
@@ -513,10 +522,12 @@ function aggregateComparisonRows(
 }
 
 async function fetchBenchmarkComparisonCharts(
-	modelId: string
+	modelId: string,
+	includeHidden: boolean
 ): Promise<BenchmarkComparisonChart[]> {
 	const { results, modelId: currentModelId } = await loadBenchmarkResults(
-		modelId
+		modelId,
+		includeHidden
 	);
 
 	if (!results.length) {
@@ -545,6 +556,7 @@ async function fetchBenchmarkComparisonCharts(
 					model:data_models (
 						model_id,
 						name,
+						hidden,
 						organisation: data_organisations (
 							organisation_id,
 							name,
@@ -564,7 +576,11 @@ async function fetchBenchmarkComparisonCharts(
 			);
 		}
 
-		const rows: ComparisonRow[] = data ?? [];
+		const rows: ComparisonRow[] = (data ?? []).filter((row: any) => {
+			if (includeHidden) return true;
+			const modelEntry = normalizeMaybeArray(row?.model);
+			return !modelEntry?.hidden;
+		});
 		if (!rows.length) continue;
 
 		const aggregated = aggregateComparisonRows(rows, currentModelId);
@@ -587,36 +603,39 @@ async function fetchBenchmarkComparisonCharts(
 }
 
 export async function getModelBenchmarkHighlights(
-	modelId: string
+	modelId: string,
+	includeHidden: boolean
 ): Promise<ModelBenchmarkHighlight[]> {
 	"use cache";
 
 	cacheLife("days");
 	cacheTag(`model:benchmarks:highlights:${modelId}`);
 
-	const { results } = await loadBenchmarkResults(modelId);
+	const { results } = await loadBenchmarkResults(modelId, includeHidden);
 	return selectHighlightResults(results);
 }
 
 export async function getModelBenchmarkTableData(
-	modelId: string
+	modelId: string,
+	includeHidden: boolean
 ): Promise<Record<string, ModelBenchmarkResult[]>> {
 	"use cache";
 
 	cacheLife("days");
 	cacheTag(`model:benchmarks:table:${modelId}`);
 
-	const { results } = await loadBenchmarkResults(modelId);
+	const { results } = await loadBenchmarkResults(modelId, includeHidden);
 	return groupResultsByBenchmarkName(results);
 }
 
 export async function getModelBenchmarkComparisonData(
-	modelId: string
+	modelId: string,
+	includeHidden: boolean
 ): Promise<BenchmarkComparisonChart[]> {
 	"use cache";
 
 	cacheLife("days");
 	cacheTag(`model:benchmarks:comparisons:${modelId}`);
 
-	return fetchBenchmarkComparisonCharts(modelId);
+	return fetchBenchmarkComparisonCharts(modelId, includeHidden);
 }

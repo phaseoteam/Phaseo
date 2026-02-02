@@ -80,15 +80,6 @@ class ReasoningConfigTest extends TestCase
     }
 
     /**
-     * Test attribute "enabled"
-     */
-    public function testPropertyEnabled()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "effort"
      */
     public function testPropertyEffort()

@@ -1,0 +1,23 @@
+---
+title: "Provisioning Keys API"
+badge: "Beta"
+openapi: "GET /provisioning/keys"
+description: "Manage provisioning keys for elevated API access to your AI Stats resources."
+---
+
+Provisioning keys provide elevated privileges for programmatic management of your AI Stats resources. Use provisioning keys to list, manage, and delete keys for your team.
+
+## Authentication
+
+All endpoints require a provisioning key in the Authorization header:
+
+```http
+Authorization: Bearer <your-provisioning-key>
+```
+
+## Related Resources
+
+- [Get Credits](/v1/api-reference/endpoint/credits)
+- [Get Activity](/v1/api-reference/endpoint/activity)
+- [Provisioning Keys Guide](/v1/developers/provisioning-keys)
+- [Authentication](/v1/developers/authentication)

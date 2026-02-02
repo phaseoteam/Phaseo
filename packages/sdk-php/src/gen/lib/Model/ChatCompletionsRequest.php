@@ -79,6 +79,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_p' => 'float',
         'response_format' => '\AIStats\Sdk\Model\ChatCompletionsRequestResponseFormat',
         'usage' => 'bool',
+        'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions',
         'user_id' => 'string',
         'service_tier' => 'string'
     ];
@@ -113,6 +114,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_p' => null,
         'response_format' => null,
         'usage' => null,
+        'provider' => null,
         'user_id' => null,
         'service_tier' => null
     ];
@@ -145,6 +147,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_p' => false,
         'response_format' => false,
         'usage' => false,
+        'provider' => false,
         'user_id' => false,
         'service_tier' => false
     ];
@@ -257,6 +260,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_p' => 'top_p',
         'response_format' => 'response_format',
         'usage' => 'usage',
+        'provider' => 'provider',
         'user_id' => 'user_id',
         'service_tier' => 'service_tier'
     ];
@@ -289,6 +293,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_p' => 'setTopP',
         'response_format' => 'setResponseFormat',
         'usage' => 'setUsage',
+        'provider' => 'setProvider',
         'user_id' => 'setUserId',
         'service_tier' => 'setServiceTier'
     ];
@@ -321,6 +326,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_p' => 'getTopP',
         'response_format' => 'getResponseFormat',
         'usage' => 'getUsage',
+        'provider' => 'getProvider',
         'user_id' => 'getUserId',
         'service_tier' => 'getServiceTier'
     ];
@@ -421,6 +427,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         $this->setIfExists('top_p', $data ?? [], null);
         $this->setIfExists('response_format', $data ?? [], null);
         $this->setIfExists('usage', $data ?? [], null);
+        $this->setIfExists('provider', $data ?? [], null);
         $this->setIfExists('user_id', $data ?? [], null);
         $this->setIfExists('service_tier', $data ?? [], 'standard');
     }
@@ -1204,6 +1211,33 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
             throw new \InvalidArgumentException('non-nullable usage cannot be null');
         }
         $this->container['usage'] = $usage;
+
+        return $this;
+    }
+
+    /**
+     * Gets provider
+     *
+     * @return \AIStats\Sdk\Model\ProviderRoutingOptions|null
+     */
+    public function getProvider()
+    {
+        return $this->container['provider'];
+    }
+
+    /**
+     * Sets provider
+     *
+     * @param \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider
+     *
+     * @return self
+     */
+    public function setProvider($provider)
+    {
+        if (is_null($provider)) {
+            throw new \InvalidArgumentException('non-nullable provider cannot be null');
+        }
+        $this->container['provider'] = $provider;
 
         return $this;
     }

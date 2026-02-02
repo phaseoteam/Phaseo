@@ -1,4 +1,8 @@
 // file: lib/gateway/execute/routing.ts
+// Purpose: Execute-stage logic for routing, attempts, and provider health.
+// Why: Centralizes execution/failover behavior.
+// How: Captures routing snapshots for analytics and debugging.
+
 import type { Endpoint } from "@core/types";
 import type { ProviderCandidate } from "../before/types";
 import { readHealthMany, ProviderHealth } from "./health";
@@ -52,6 +56,52 @@ export type RoutedCandidate = {
     health: ProviderHealth;
 };
 
+/**
+ * Extracts the requested max_tokens from the request body
+ */
+function getRequestedMaxTokens(body: any): number | null {
+    if (typeof body?.max_tokens === "number" && body.max_tokens > 0) {
+        return body.max_tokens;
+    }
+    if (typeof body?.max_output_tokens === "number" && body.max_output_tokens > 0) {
+        return body.max_output_tokens;
+    }
+    return null;
+}
+
+/**
+ * Calculates a token affinity score (0-1) based on how well the provider's
+ * max_output_tokens matches the requested max_tokens.
+ * Providers with limits closest to (but >= ) the request get higher scores.
+ */
+function calculateTokenAffinityScore(
+    requestedMaxTokens: number | null,
+    providerMaxOutputTokens: number | null | undefined
+): number {
+    // If no tokens requested or provider has no limit, return neutral score
+    if (requestedMaxTokens === null || providerMaxOutputTokens === null || providerMaxOutputTokens === undefined) {
+        return 0.5;
+    }
+
+    // Provider must support at least the requested amount (this should already be filtered)
+    if (providerMaxOutputTokens < requestedMaxTokens) {
+        return 0;
+    }
+
+    // Calculate how much "headroom" the provider has
+    // Less headroom = better match = higher score
+    const headroom = providerMaxOutputTokens - requestedMaxTokens;
+    const maxReasonableHeadroom = requestedMaxTokens * 2; // 2x the request is "reasonable"
+
+    if (headroom === 0) {
+        return 1.0; // Perfect match
+    }
+
+    // Linear decay: 1.0 at 0 headroom, 0.5 at maxReasonableHeadroom, approaches 0 beyond
+    const score = Math.max(0, Math.min(1, 1 - (headroom / (maxReasonableHeadroom * 2))));
+    return score;
+}
+
 export async function routeProviders(
     candidates: ProviderCandidate[],
     ctx: { endpoint: Endpoint; model: string; teamId: string; body?: any }
@@ -59,6 +109,7 @@ export async function routeProviders(
     const { base, priority, strict } = parsePriority(ctx.model);
     const preset = PRESETS[priority];
     const hints = (ctx.body?.provider ?? {}) as { order?: string[]; only?: string[]; ignore?: string[] };
+    const requestedMaxTokens = getRequestedMaxTokens(ctx.body);
 
     let poolCandidates = candidates;
     if (hints.only?.length) {
@@ -123,12 +174,17 @@ export async function routeProviders(
         const tpsNorm = maxTPS > 0 ? normalise(h.tp_ewma_60s, minTPS, maxTPS) : 0;
         const loadPen = h.current_load;
 
+        // Token affinity: prefer providers with limits close to requested max_tokens
+        const tokenAffinity = calculateTokenAffinityScore(requestedMaxTokens, v.candidate.maxOutputTokens);
+        const tokenWeight = 0.10; // 10% weight for token affinity
+
         const baseScore =
             preset.wSucc * succ +
             preset.wP50 * (0.5 * p50Curve + 0.5 * p50Norm) +
             preset.wTail * tailNorm +
             preset.wTPS * tpsNorm -
             preset.wLoad * loadPen +
+            tokenWeight * tokenAffinity +
             preset.noise * Math.random();
 
         const score = Math.max(0, baseScore * Math.max(weight, 0.0001));
@@ -153,3 +209,13 @@ export async function routeProviders(
 
     return weightedOrder(scored, (s) => s.score);
 }
+
+
+
+
+
+
+
+
+
+

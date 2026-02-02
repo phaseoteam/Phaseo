@@ -1,3 +1,7 @@
+// Purpose: Route handler module.
+// Why: Keeps HTTP wiring separate from pipeline logic.
+// How: Maps requests to pipeline entrypoints and responses.
+
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { withRuntime } from "../../utils";
@@ -46,3 +50,4 @@ export const batchRoutes = new Hono<Env>();
 
 batchRoutes.post("/", withRuntime(handleCreate));
 batchRoutes.get("/:id", withRuntime((req) => handleRetrieve(req, (req as any).param?.("id") ?? req.url.split("/").pop() ?? "")));
+

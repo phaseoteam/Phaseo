@@ -1,0 +1,34 @@
+---
+title: "Editing an Organisation"
+description: "Update organisation records in the AI Stats data set."
+---
+
+Organisation data lives in JSON files under `apps/web/src/data/organisations`.
+
+## 1. Find the organisation
+
+Each organisation is a single JSON file, for example:
+
+`apps/web/src/data/organisations/openai.json`
+
+## 2. Make your edits
+
+Typical updates include:
+
+- Name, description, and website
+- Country code or metadata fields
+- Relationship links to models or providers
+
+Keep formatting and field order consistent with nearby files.
+
+## 3. Validate data
+
+Run the data validation script before opening a PR:
+
+```bash
+pnpm validate:data
+```
+
+## 4. Open a PR
+
+Include sources or references for any factual changes.

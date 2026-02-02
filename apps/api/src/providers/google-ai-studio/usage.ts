@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 type ModalityTokenCount = {
     modality?: string;
     tokenCount?: number;
@@ -63,3 +67,4 @@ export function normalizeGoogleUsage(meta: UsageMetadata | undefined): UsageShap
 
     return Object.keys(usage).length ? usage : undefined;
 }
+

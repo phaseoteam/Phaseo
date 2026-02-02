@@ -10,10 +10,11 @@ import {
 	getModelIdFromParams,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
-async function fetchModel(modelId: string) {
+async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
-		return await getModelOverviewCached(modelId);
+		return await getModelOverviewCached(modelId, includeHidden);
 	} catch (error) {
 		console.warn("[seo] failed to load model overview for metadata", {
 			modelId,
@@ -28,7 +29,8 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
-	const model = await fetchModel(modelId);
+	const includeHidden = await resolveIncludeHidden();
+	const model = await fetchModel(modelId, includeHidden);
 	const path = `/models/${modelId}`;
 	const imagePath = `/og/models/${modelId}`;
 
@@ -105,8 +107,9 @@ export default async function Page({
 }) {
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
+	const includeHidden = await resolveIncludeHidden();
 
-	const model = await getModelOverviewCached(modelId);
+	const model = await getModelOverviewCached(modelId, includeHidden);
 
 	// Generate structured data and FAQs for SEO
 	const generateStructuredData = () => {
@@ -202,7 +205,7 @@ export default async function Page({
 					"@type": "ListItem",
 					"position": 3,
 					"name": organisationName,
-					"item": `https://aistats.org/models/${model.organisation?.id || ""}`,
+					"item": `https://aistats.org/models/${routeParams.organisationId}`,
 				},
 				{
 					"@type": "ListItem",
@@ -296,7 +299,7 @@ export default async function Page({
 					/>
 				</>
 			)}
-			<ModelDetailShell modelId={modelId} tab="overview">
+		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
 				<ModelOverview model={model} />
 			</ModelDetailShell>
 		</>

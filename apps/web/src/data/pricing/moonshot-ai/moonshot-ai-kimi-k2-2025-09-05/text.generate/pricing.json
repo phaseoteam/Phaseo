@@ -1,0 +1,48 @@
+{
+  "key": "moonshot-ai:moonshot-ai/kimi-k2-2025-09-05:text.generate",
+  "api_provider_id": "moonshot-ai",
+  "provider_slug": "moonshot-ai",
+  "api_model_id": "moonshot-ai/kimi-k2-2025-09-05",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 6e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-09-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1.5e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-09-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2.5e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-09-05T00:00:00"
+    }
+  ]
+}

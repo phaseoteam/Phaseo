@@ -49,6 +49,7 @@ export type GatewaySupportedModel = {
 
 async function fetchActiveGatewayModels(
     client: SupabaseClient,
+    includeHidden: boolean,
     _now = new Date()
 ): Promise<ActiveGatewayModelRow[]> {
     const { data: providerModels, error } = await client
@@ -96,7 +97,7 @@ async function fetchActiveGatewayModels(
     const { data: models } = await client
         .from("data_models")
         .select(
-            "model_id, name, status, organisation_id, release_date, announcement_date, organisation:data_organisations!data_models_organisation_id_fkey(name)"
+            "model_id, name, status, organisation_id, release_date, announcement_date, hidden, organisation:data_organisations!data_models_organisation_id_fkey(name)"
         )
         .in("model_id", modelIds);
 
@@ -109,6 +110,7 @@ async function fetchActiveGatewayModels(
     const modelMap = new Map<string, NonNullable<ActiveGatewayModelRow["model"]>>();
     for (const model of models ?? []) {
         if (!model.model_id) continue;
+        if (!includeHidden && model.hidden) continue;
         const organisation = Array.isArray(model.organisation)
             ? model.organisation[0] ?? null
             : model.organisation ?? null;
@@ -137,14 +139,16 @@ async function fetchActiveGatewayModels(
     return rows;
 }
 
-export async function getGatewaySupportedModels(): Promise<GatewaySupportedModel[]> {
+export async function getGatewaySupportedModels(
+    includeHidden: boolean
+): Promise<GatewaySupportedModel[]> {
     "use cache";
 
     cacheLife("days");
     cacheTag("gateway-supported-models");
 
     const client = createAdminClient();
-    const rows = await fetchActiveGatewayModels(client, new Date());
+    const rows = await fetchActiveGatewayModels(client, includeHidden, new Date());
     const seen = new Set<string>();
     const models: GatewaySupportedModel[] = [];
     const nowIso = new Date().toISOString();

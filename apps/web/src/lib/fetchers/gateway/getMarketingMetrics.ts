@@ -12,6 +12,8 @@ type RawGatewayRequest = {
 	usage?: any;
 	provider?: string | null;
 	model_id?: string | null;
+	error_code?: string | null;
+	status_code?: number | null;
 };
 
 type ActiveProviderModelRow = {
@@ -174,10 +176,6 @@ function applyUsageSnapshot(
 		...metrics,
 		summary: {
 			...metrics.summary,
-			uptimePct:
-				typeof snapshot.uptimePct === "number"
-					? snapshot.uptimePct
-					: metrics.summary.uptimePct,
 			tokens24h:
 				typeof snapshot.totalTokens === "number"
 					? snapshot.totalTokens
@@ -237,7 +235,7 @@ async function fetchRequests(
 		const { data, error } = await client
 			.from("gateway_requests")
 			.select(
-				"created_at, success, latency_ms, generation_ms, usage, provider, model_id"
+				"created_at, success, latency_ms, generation_ms, usage, provider, model_id, error_code, status_code"
 			)
 			.gte("created_at", fromIso)
 			.lte("created_at", toIso)
@@ -257,6 +255,19 @@ async function fetchRequests(
 	}
 
 	return rows;
+}
+
+function isUserError(row: RawGatewayRequest): boolean {
+	const code = String(row?.error_code ?? "").toLowerCase();
+	if (code.startsWith("user:")) return true;
+	if (code.startsWith("upstream:")) return false;
+	const sc = Number(row?.status_code ?? 0);
+	if (Number.isFinite(sc)) {
+		if (sc >= 500) return false;
+		if (sc === 408 || sc === 429) return false;
+		if (sc >= 400 && sc < 500) return true;
+	}
+	return row?.success === false || row?.success === "false";
 }
 
 async function fetchActiveGatewayModels(
@@ -321,11 +332,14 @@ function buildMetricsFromRows(
 		bucket.requests += 1;
 		totalRequests += 1;
 
-		const success =
+		const rawSuccess =
 			row.success === true ||
 			row.success === 1 ||
 			row.success === "true" ||
-			row.success === "t";
+			row.success === "t" ||
+			(Number.isFinite(Number(row.status_code)) &&
+				Number(row.status_code) < 400);
+		const success = isUserError(row) ? true : rawSuccess;
 		if (success) {
 			bucket.success += 1;
 			totalSuccess += 1;

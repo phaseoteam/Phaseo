@@ -24,6 +24,17 @@ export type TokenTriple = { in: TokenTier[]; cached: TokenTier[]; out: TokenTier
 
 export type QualityRow = { quality: string; items: { label: string; price: number }[]; };
 export type ResolutionRow = { resolution: string; unitLabel: string; price: number };
+export type UsageRow = {
+    label: string;
+    price: number;
+    unitLabel: string;
+    mod: "image" | "video";
+    basePrice?: number | null;
+    discountEndsAt?: string | null;
+    endpoint?: string | null;
+    ruleId?: string | null;
+    isCurrent: boolean;
+};
 
 export type ProviderSections = {
     providerName: string;
@@ -35,6 +46,7 @@ export type ProviderSections = {
     cacheWrites?: TokenTier[];               // NEW: cached_write_text_tokens etc.
     imageGen?: QualityRow[];
     videoGen?: ResolutionRow[];
+    mediaInputs?: UsageRow[];                // NEW: input_image, input_video_seconds
     requests?: TokenTier[];                  // NEW: requests pricing
     otherRules: {
         meter: string;
@@ -376,8 +388,9 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
 
         // 2) image generation (per image, output)
         if (mod === "image" && dir === "output" && unit === "image") {
-            const quality = (conds.find(c => c.path.toLowerCase().includes("quality"))?.value ?? "Unspecified") as string;
+            const qualityCondition = conds.find(c => c.path.toLowerCase().includes("quality"));
             const resVals = extractResolutionLabels(conds);
+            const quality = (qualityCondition?.value ?? (resVals.length ? "Standard" : "Unspecified")) as string;
             const resolution = resVals.length ? resVals.join(" • ") : "Any resolution";
             (out.imageGen ??= []);
             let q = out.imageGen.find(x => x.quality.toLowerCase() === String(quality).toLowerCase());
@@ -394,7 +407,28 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             continue;
         }
 
-        // 4) requests (per call/request)
+        // 4) media inputs (per image / per second)
+        if (
+            dir === "input" &&
+            ((mod === "image" && unit === "image") ||
+                (mod === "video" && (unit === "second" || unit === "minute")))
+        ) {
+            const label = conciseConditionLabel(conds);
+            (out.mediaInputs ??= []).push({
+                label,
+                price,
+                unitLabel: unitLabel(unit, unitSize),
+                mod: mod === "image" ? "image" : "video",
+                basePrice,
+                discountEndsAt,
+                endpoint: entry.endpoint,
+                ruleId: r.id ?? null,
+                isCurrent: current,
+            });
+            continue;
+        }
+
+        // 5) requests (per call/request)
         if (unit === "call" && (r.meter || "").toLowerCase().includes("request")) {
             const label = conciseConditionLabel(conds);
             const tier: TokenTier = {
@@ -413,7 +447,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             continue;
         }
 
-        // 5) everything else → Advanced
+        // 6) everything else → Advanced
         out.otherRules.push({
             meter: r.meter || "—",
             unitLabel: unitLabel(unit, unitSize),
@@ -447,6 +481,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         return mina - minb;
     });
     out.videoGen?.sort((a, b) => a.resolution.localeCompare(b.resolution));
+    out.mediaInputs?.sort((a, b) => a.price - b.price);
     out.requests?.sort((a, b) => a.price - b.price);
 
     return out;
@@ -506,16 +541,21 @@ export function formatQuantity(n: number): string {
  */
 export function getExamplesForMeter(meter: PricingMeter): number[] {
     const unit = meter.unit.toLowerCase();
+    const meterName = meter.meter.toLowerCase();
     if (unit.includes("token")) {
         return [1000, 1_000_000, 1_000_000_000]; // 1K, 1M, 1B
     } else if (
         unit.includes("second") ||
         unit.includes("minute") ||
-        unit.includes("hour")
+        unit.includes("hour") ||
+        meterName.includes("second") ||
+        meterName.includes("minute")
     ) {
         return [1, 10, 60]; // 1s, 10s, 1min
     } else if (unit.includes("request") || unit.includes("call")) {
         return [1, 10, 100]; // 1, 10, 100
+    } else if (unit.includes("image") || meterName.includes("image")) {
+        return [1, 5, 20];
     } else {
         return [1, 10, 100]; // default
     }
@@ -533,26 +573,30 @@ export function formatMeterName(meter: string): string {
 /**
  * Get input configuration (type, step, placeholder) based on unit type
  */
-export function getMeterInputConfig(unit: string): {
+export function getMeterInputConfig(
+    unit: string,
+    meterName?: string
+): {
     type: string;
     step: string;
     placeholder: string;
 } {
     const u = unit.toLowerCase();
+    const m = (meterName || "").toLowerCase();
 
     if (u.includes("token")) {
         return { type: "number", step: "1000", placeholder: "e.g., 10000" };
     }
-    if (u.includes("second")) {
+    if (u.includes("second") || m.includes("second")) {
         return { type: "number", step: "1", placeholder: "e.g., 60" };
     }
-    if (u.includes("minute")) {
+    if (u.includes("minute") || m.includes("minute")) {
         return { type: "number", step: "1", placeholder: "e.g., 10" };
     }
     if (u.includes("request") || u.includes("call")) {
         return { type: "number", step: "1", placeholder: "e.g., 100" };
     }
-    if (u.includes("image")) {
+    if (u.includes("image") || m.includes("image")) {
         return { type: "number", step: "1", placeholder: "e.g., 10" };
     }
 

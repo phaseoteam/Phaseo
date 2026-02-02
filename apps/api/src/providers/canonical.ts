@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import { z } from "zod";
 import {
     ChatCompletionsSchema,
@@ -53,3 +57,4 @@ export function pruneGatewayFields<T extends Record<string, any>, K extends read
     }
     return clone;
 }
+

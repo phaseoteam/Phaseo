@@ -1,4 +1,8 @@
 // file: lib/gateway/execute/health.config.ts
+// Purpose: Execute-stage logic for routing, attempts, and provider health.
+// Why: Centralizes execution/failover behavior.
+// How: Defines constants for breaker thresholds and sampling windows.
+
 export const HEALTH_CONSTANTS = {
     // EWMA horizons (ms)
     TAU_10S_MS: 10_000,
@@ -29,3 +33,13 @@ export const HEALTH_KEYS = {
     health: (endpoint: string, model: string) => `gw:health:${endpoint}:${model}`,
     half: (endpoint: string, model: string, provider: string) => `gw:health:${endpoint}:${model}:half:${provider}`,
 };
+
+
+
+
+
+
+
+
+
+

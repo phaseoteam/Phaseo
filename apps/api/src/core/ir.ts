@@ -1,3 +1,7 @@
+// Purpose: Core gateway primitives.
+// Why: Shared types/schemas/utilities used across modules.
+// How: Exposes reusable building blocks for the gateway.
+
 // Intermediate Representation (IR) types for the AI Stats Gateway
 // This IR provides a protocol-agnostic format for chat completions that can:
 // 1. Represent OpenAI Chat Completions, OpenAI Responses API, and Anthropic Messages
@@ -11,27 +15,40 @@
 
 /**
  * Content parts represent different types of media in messages
+ *
+ * Image parts can be used for both:
+ * - Input images (user messages) - typically from URLs or base64
+ * - Output images (assistant messages) - from models like Google Nano Banana (gemini-2.5-flash-image)
+ *   that generate images alongside text in text.generate responses
  */
 export type IRContentPart =
 	| { type: "text"; text: string }
 	| {
-			type: "image";
-			source: "url" | "data";
-			data: string; // URL or base64
-			mimeType?: string;
-			detail?: "auto" | "low" | "high"; // OpenAI detail level
-	  }
+		type: "reasoning_text";
+		text: string;
+		thoughtSignature?: string; // Encrypted state for multi-turn conversations
+		summary?: string; // Abbreviated thought (Gemini 2.5+)
+	}
 	| {
-			type: "audio";
-			source: "url" | "data";
-			data: string; // URL or base64
-			format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
-	  }
+		type: "image";
+		source: "url" | "data";
+		data: string; // URL or base64
+		mimeType?: string;
+		detail?: "auto" | "low" | "high"; // OpenAI detail level
+		// Optional signature for preserving reasoning context across turns (Google Nano Banana)
+		thoughtSignature?: string;
+	}
 	| {
-			type: "video";
-			source: "url";
-			url: string;
-	  };
+		type: "audio";
+		source: "url" | "data";
+		data: string; // URL or base64
+		format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
+	}
+	| {
+		type: "video";
+		source: "url";
+		url: string;
+	};
 
 // ============================================================================
 // TOOL CALLING
@@ -82,22 +99,26 @@ export type IRToolResult = {
  */
 export type IRMessage =
 	| {
-			role: "system";
-			content: IRContentPart[];
-	  }
+		role: "system";
+		content: IRContentPart[];
+	}
 	| {
-			role: "user";
-			content: IRContentPart[];
-	  }
+		role: "developer";
+		content: IRContentPart[];
+	}
 	| {
-			role: "assistant";
-			content: IRContentPart[]; // Regular assistant content
-			toolCalls?: IRToolCall[]; // Optional tool calls
-	  }
+		role: "user";
+		content: IRContentPart[];
+	}
 	| {
-			role: "tool";
-			toolResults: IRToolResult[]; // Results from tool executions
-	  };
+		role: "assistant";
+		content: IRContentPart[]; // Regular assistant content
+		toolCalls?: IRToolCall[]; // Optional tool calls
+	}
+	| {
+		role: "tool";
+		toolResults: IRToolResult[]; // Results from tool executions
+	};
 
 // ============================================================================
 // REQUEST
@@ -121,6 +142,8 @@ export type IRToolChoice =
 export type IRReasoning = {
 	effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
 	summary?: "auto" | "concise" | "detailed";
+	enabled?: boolean;
+	maxTokens?: number;
 };
 
 /**
@@ -133,7 +156,7 @@ export type IRResponseFormat =
 
 /**
  * Complete chat request in IR format
- * This can be decoded from any protocol and encoded to any surface
+ * This can be decoded from any protocol and encoded to any provider protocol
  */
 export type IRChatRequest = {
 	// Core fields
@@ -159,6 +182,8 @@ export type IRChatRequest = {
 
 	// Response format
 	responseFormat?: IRResponseFormat;
+	// Output modalities (text, image)
+	modalities?: Array<"text" | "image">;
 
 	// Advanced parameters
 	frequencyPenalty?: number;
@@ -182,6 +207,48 @@ export type IRChatRequest = {
 };
 
 // ============================================================================
+// EMBEDDINGS
+// ============================================================================
+
+export type IREmbeddingsRequest = {
+	model: string;
+	input: string | string[];
+	encodingFormat?: string;
+	dimensions?: number;
+	embeddingOptions?: {
+		google?: {
+			outputDimensionality?: number;
+			taskType?: string;
+			title?: string;
+		};
+		mistral?: {
+			outputDimension?: number;
+			outputDtype?: "float" | "int8" | "uint8" | "binary" | "ubinary";
+		};
+	};
+	userId?: string;
+	metadata?: Record<string, string>;
+};
+
+export type IREmbedding = {
+	index: number;
+	embedding: number[];
+};
+
+export type IREmbeddingsUsage = {
+	inputTokens?: number;
+	totalTokens?: number;
+	embeddingTokens?: number;
+};
+
+export type IREmbeddingsResponse = {
+	object: "list";
+	model: string;
+	data: IREmbedding[];
+	usage?: IREmbeddingsUsage;
+};
+
+// ============================================================================
 // RESPONSE
 // ============================================================================
 
@@ -201,13 +268,14 @@ export type IRLogprobs = {
 
 /**
  * A single completion choice
- * For reasoning models, there may be multiple choices (reasoning + answer)
+ * For reasoning models, content array may contain both reasoning_text and text parts
+ * For multimodal output models (e.g., Google Nano Banana), content may include image parts
  */
 export type IRChoice = {
 	index: number;
 	message: {
 		role: "assistant";
-		content: string;
+		content: IRContentPart[]; // Array of content parts (can include reasoning_text, image, etc.)
 		toolCalls?: IRToolCall[];
 		refusal?: string; // Refusal to answer (content filter)
 	};
@@ -216,10 +284,6 @@ export type IRChoice = {
 	// Which stop sequence triggered (if finishReason is "stop")
 	// Useful for debugging and understanding model behavior
 	stopSequence?: string;
-
-	// Reasoning flag: true if this choice contains reasoning/thinking
-	// Used for o1-style models and MiniMax interleaved thinking
-	reasoning?: boolean;
 
 	// Token-level logprobs
 	logprobs?: IRLogprobs[];
@@ -285,7 +349,8 @@ export type IRChatResponse = {
  */
 export type IRStreamDelta = {
 	role?: "assistant";
-	content?: string; // Incremental text
+	content?: string; // Incremental text (legacy - will be deprecated)
+	contentParts?: IRContentPart[]; // Incremental content parts (supports reasoning_text)
 	toolCalls?: Array<{
 		index: number; // Index in the tool_calls array
 		id?: string; // Only in first chunk
@@ -308,7 +373,6 @@ export type IRStreamChunk = {
 		index: number;
 		delta: IRStreamDelta;
 		finishReason?: IRChoice["finishReason"];
-		reasoning?: boolean; // True if this is a reasoning chunk
 		logprobs?: IRLogprobs;
 	}>;
 
@@ -343,6 +407,12 @@ export function isTextContent(part: IRContentPart): part is Extract<IRContentPar
 	return part.type === "text";
 }
 
+export function isReasoningContent(
+	part: IRContentPart,
+): part is Extract<IRContentPart, { type: "reasoning_text" }> {
+	return part.type === "reasoning_text";
+}
+
 export function isImageContent(
 	part: IRContentPart,
 ): part is Extract<IRContentPart, { type: "image" }> {
@@ -354,13 +424,33 @@ export function isImageContent(
 // ============================================================================
 
 /**
- * Extract all text content from a message
+ * Extract all text content from a message (excludes reasoning_text)
  */
 export function extractText(message: IRMessage): string {
 	if (message.role === "tool") {
 		return message.toolResults.map((r) => r.content).join("\n");
 	}
 	return message.content.filter(isTextContent).map((p) => p.text).join("");
+}
+
+/**
+ * Extract all reasoning content from a message
+ */
+export function extractReasoning(message: IRMessage): string {
+	if (message.role === "tool") {
+		return "";
+	}
+	return message.content.filter(isReasoningContent).map((p) => p.text).join("");
+}
+
+/**
+ * Extract all text and reasoning content from content parts
+ */
+export function extractAllText(parts: IRContentPart[]): string {
+	return parts
+		.filter((p) => p.type === "text" || p.type === "reasoning_text")
+		.map((p) => p.text)
+		.join("");
 }
 
 /**

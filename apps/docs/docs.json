@@ -25,52 +25,119 @@
 						"icon": "book",
 						"groups": [
 							{
-								"group": "Introduction",
-								"pages": ["v1/index", "v1/quickstart"]
+								"group": "Start here",
+								"pages": [
+									"v1/index",
+									"v1/quickstart",
+									"v1/guides/principles"
+								]
 							},
 							{
-								"group": "Contributing to AI Stats",
-								"pages": [
-									"v1/contributing/overview",
-									"v1/contributing/how-to-contribute",
-									"v1/contributing/repo-structure"
-								]
-							}
-						]
-					},
-					{
-						"tab": "Developers",
-						"icon": "code",
-						"groups": [
-							{
-								"group": "Getting Started with the Gateway",
+								"group": "Gateway basics",
 								"pages": [
 									"v1/developers/introduction",
 									"v1/developers/integrating-with-the-gateway",
-									"v1/developers/authentication"
-								]
-							},
-							{
-								"group": "Advanced Usage",
-								"pages": [
-									"v1/developers/best-practices",
+									"v1/developers/authentication",
+									"v1/developers/provisioning-keys",
+									"v1/developers/rate-limits",
 									"v1/developers/error-handling",
-									"v1/developers/rate-limits"
+									"v1/developers/best-practices"
 								]
 							},
 							{
-								"group": "Gateway Architecture",
+								"group": "Pricing",
+								"pages": [
+									"v1/pricing/tiers"
+								]
+							},
+							{
+								"group": "Routing and capabilities",
+								"pages": [
+									"v1/guides/routing-and-fallbacks",
+									"v1/guides/multimodality"
+								]
+							},
+							{
+								"group": "Features",
+								"pages": [
+									"v1/guides/tool-calling",
+									"v1/guides/structured-outputs",
+									"v1/guides/presets",
+									"v1/guides/app-attribution"
+								]
+							},
+							{
+								"group": "Integrations and migrations",
+								"pages": [
+									{
+										"group": "Integrations",
+										"pages": [
+											"v1/guides/integrations/index",
+											"v1/guides/integrations/ai-sdk",
+											"v1/guides/integrations/claude-code",
+											"v1/guides/integrations/codex",
+											"v1/guides/integrations/opencode",
+											"v1/guides/examples"
+										]
+									},
+									{
+										"group": "Migrations",
+										"pages": [
+											"v1/migration-guides/index",
+											"v1/migration-guides/from-openai",
+											"v1/migration-guides/from-anthropic",
+											"v1/migration-guides/from-openrouter",
+											"v1/migration-guides/from-vercel",
+											"v1/migration-guides/from-litellm",
+											"v1/migration-guides/from-cloudflare",
+											"v1/migration-guides/from-helicone"
+										]
+									}
+								]
+							},
+							{
+								"group": "Gateway architecture",
 								"pages": [
 									"v1/developers/gateway-architecture/overview",
 									"v1/developers/gateway-architecture/ir-and-protocols",
 									"v1/developers/gateway-architecture/routes",
 									"v1/developers/gateway-architecture/providers",
+									"v1/developers/gateway-architecture/id-handling",
 									"v1/developers/gateway-architecture/observability"
 								]
 							},
 							{
-								"group": "Research & Methodology",
-								"pages": ["v1/research/citation"]
+								"group": "Data and research",
+								"pages": [
+									"v1/exploring/overview",
+									"v1/exploring/models",
+									"v1/exploring/organisations",
+									"v1/exploring/api-providers",
+									"v1/exploring/benchmarks",
+									"v1/exploring/pricing-performance",
+									"v1/exploring/subscription-plans",
+									"v1/research/benchmark-methodology",
+									"v1/research/citation",
+									"v1/research/submitting-scores"
+								]
+							},
+							{
+								"group": "Contributing",
+								"pages": [
+									"v1/contributing/overview",
+									"v1/contributing/how-to-contribute",
+									"v1/contributing/repo-structure",
+									"v1/contributing/editing-a-model",
+									"v1/contributing/editing-an-organisation",
+									"v1/community/code-of-conduct"
+								]
+							},
+							{
+								"group": "Support",
+								"pages": [
+									"v1/community/faq",
+									"v1/community/contact-and-support"
+								]
 							}
 						]
 					},
@@ -79,102 +146,144 @@
 						"icon": "server",
 						"groups": [
 							{
-								"group": "API Reference",
+								"group": "Introduction",
+								"expanded": false,
 								"pages": [
 									"v1/api-reference/introduction",
 									"v1/api-reference/authentication",
-									"v1/api-reference/errors",
+									"v1/api-reference/errors"
+								]
+							},
+							{
+								"group": "Generation APIs",
+								"icon": "sparkles",
+								"expanded": false,
+								"pages": [
 									{
-										"group": "Generation APIs",
-										"expanded": true,
+										"group": "Text Generation",
+										"expanded": false,
 										"pages": [
-											{
-												"group": "Text Generation",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/responses",
-													"v1/api-reference/endpoint/chat-completions",
-													"v1/api-reference/endpoint/anthropic-messages"
-												]
-											},
-											{
-												"group": "Images",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/images-generations",
-													"v1/api-reference/endpoint/images-edits"
-												]
-											},
-											{
-												"group": "Audio",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/audio-speech",
-													"v1/api-reference/endpoint/audio-transcriptions",
-													"v1/api-reference/endpoint/audio-translations"
-												]
-											},
-											{
-												"group": "Video",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/video-generation",
-													"v1/api-reference/endpoint/video-status",
-													"v1/api-reference/endpoint/video-content",
-													"v1/api-reference/endpoint/video-delete"
-												]
-											},
-											{
-												"group": "Music",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/music-generate"
-												]
-											}
+											"v1/api-reference/endpoint/responses",
+											"v1/api-reference/endpoint/chat-completions",
+											"v1/api-reference/endpoint/anthropic-messages"
 										]
 									},
 									{
-										"group": "Utility APIs",
-										"expanded": true,
+										"group": "Images",
+										"expanded": false,
 										"pages": [
-											{
-												"group": "Batches and Files",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/batches",
-													"v1/api-reference/endpoint/files"
-												]
-											},
-											{
-												"group": "Models",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/models"
-												]
-											},
-											{
-												"group": "Analytics and Health",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/analytics",
-													"v1/api-reference/endpoint/health"
-												]
-											},
-											{
-												"group": "Generations",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/generation"
-												]
-											},
-											{
-												"group": "Access & Billing",
-												"expanded": false,
-												"pages": [
-													"v1/api-reference/endpoint/api-keys",
-													"v1/api-reference/endpoint/credits"
-												]
-											}
+											"v1/api-reference/endpoint/images-generations",
+											"v1/api-reference/endpoint/images-edits"
+										]
+									},
+									{
+										"group": "Audio",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/audio-speech",
+											"v1/api-reference/endpoint/audio-transcriptions",
+											"v1/api-reference/endpoint/audio-translations"
+										]
+									},
+									{
+										"group": "Embeddings",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/embeddings"
+										]
+									},
+									{
+										"group": "Moderations",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/moderations"
+										]
+									},
+									{
+										"group": "Video",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/video-generation",
+											"v1/api-reference/endpoint/video-status",
+											"v1/api-reference/endpoint/video-content",
+											"v1/api-reference/endpoint/video-delete"
+										]
+									},
+									{
+										"group": "Music",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/music-generate"
+										]
+									},
+									{
+										"group": "Batches and Files",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/batches",
+											"v1/api-reference/endpoint/files"
+										]
+									}
+								]
+							},
+							{
+								"group": "Admin APIs",
+								"icon": "settings",
+								"expanded": false,
+								"pages": [
+									{
+										"group": "Analytics and Health",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/activity",
+											"v1/api-reference/endpoint/health"
+										]
+									},
+									{
+										"group": "Credits",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/credits"
+										]
+									},
+									{
+										"group": "Keys",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/provisioning/index",
+											"v1/api-reference/endpoint/provisioning/keys-list",
+											"v1/api-reference/endpoint/provisioning/keys-create",
+											"v1/api-reference/endpoint/provisioning/keys-get",
+											"v1/api-reference/endpoint/provisioning/keys-update",
+											"v1/api-reference/endpoint/provisioning/keys-delete"
+										]
+									},
+									{
+										"group": "Generations",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/generation"
+										]
+									}
+								]
+							},
+							{
+								"group": "Data APIs",
+								"icon": "database",
+								"expanded": false,
+								"pages": [
+									{
+										"group": "Models",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/models"
+										]
+									},
+									{
+										"group": "Providers",
+										"expanded": false,
+										"pages": [
+											"v1/api-reference/endpoint/providers"
 										]
 									}
 								]
@@ -536,28 +645,6 @@
 							{
 								"group": "Latest updates",
 								"pages": ["v1/changelog", "v1/data-changelog"]
-							}
-						]
-					},
-					{
-						"tab": "Migration Guides",
-						"icon": "arrow-right",
-						"groups": [
-							{
-								"group": "AI Stats Breaking Changes",
-								"pages": ["v1/migration-guides/index"]
-							},
-							{
-								"group": "From Other Platforms",
-								"pages": [
-									"v1/migration-guides/from-openai",
-									"v1/migration-guides/from-anthropic",
-									"v1/migration-guides/from-openrouter",
-									"v1/migration-guides/from-vercel",
-									"v1/migration-guides/from-litellm",
-									"v1/migration-guides/from-cloudflare",
-									"v1/migration-guides/from-helicone"
-								]
 							}
 						]
 					}

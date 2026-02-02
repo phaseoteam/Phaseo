@@ -36952,6 +36952,25 @@ components:
                 minItems: 1
                 items:
                   type: integer
+        inputs:
+          description: >
+            Alias for `input`. Use this when sending batched inputs as a convenience field. One of
+            `input` or `inputs` is required.
+          anyOf:
+            - type: string
+              title: string
+              description: The string that will be turned into an embedding.
+              default: ''
+              example: This is a test.
+            - type: array
+              title: Array of strings
+              description: The array of strings that will be turned into an embedding.
+              minItems: 1
+              maxItems: 2048
+              items:
+                type: string
+                default: ''
+                example: '[''This is a test.'']'
         model:
           description: >
             ID of the model to use. You can use the [List
@@ -36984,15 +37003,69 @@ components:
             `text-embedding-3` and later models.
           type: integer
           minimum: 1
+        embedding_options:
+          type: object
+          description: >
+            Provider-specific embedding options. Use nested objects keyed by provider.
+          additionalProperties: false
+          properties:
+            google:
+              type: object
+              additionalProperties: false
+              properties:
+                output_dimensionality:
+                  description: >
+                    Output dimensionality hint for Gemini embeddings (`outputDimensionality`).
+                  type: integer
+                  minimum: 1
+                task_type:
+                  description: >
+                    Task type for Gemini embeddings, such as `RETRIEVAL_QUERY` or `RETRIEVAL_DOCUMENT`.
+                  type: string
+                  enum:
+                    - TASK_TYPE_UNSPECIFIED
+                    - RETRIEVAL_QUERY
+                    - RETRIEVAL_DOCUMENT
+                    - SEMANTIC_SIMILARITY
+                    - CLASSIFICATION
+                title:
+                  description: >
+                    Optional title associated with the input (Gemini embeddings).
+                  type: string
+            mistral:
+              type: object
+              additionalProperties: false
+              properties:
+                output_dimension:
+                  description: >
+                    The number of dimensions the resulting output embeddings should have for providers that
+                    support explicit output sizing (e.g. Mistral). If set, overrides `dimensions`.
+                  type: integer
+                  minimum: 1
+                  nullable: true
+                output_dtype:
+                  description: >
+                    Output data type for embeddings when supported by the provider (e.g. Mistral).
+                  type: string
+                  enum:
+                    - float
+                    - int8
+                    - uint8
+                    - binary
+                    - ubinary
         user:
           type: string
           example: user-1234
           description: >
             A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
             [Learn more](https://platform.openai.com/docs/guides/safety-best-practices#end-user-ids).
-      required:
-        - model
-        - input
+      anyOf:
+        - required:
+            - model
+            - input
+        - required:
+            - model
+            - inputs
     CreateEmbeddingResponse:
       type: object
       properties:
@@ -66185,6 +66258,9 @@ components:
           type: string
           format: binary
           description: Optional image reference that guides generation.
+        input_reference_mime_type:
+          type: string
+          description: Optional MIME type for the input_reference when sending base64.
         seconds:
           $ref: '#/components/schemas/VideoSeconds'
           description: 'Clip duration in seconds (allowed values: 4, 8, 12). Defaults to 4 seconds.'
@@ -66193,6 +66269,33 @@ components:
           description: >-
             Output resolution formatted as width x height (allowed values: 720x1280, 1280x720, 1024x1792,
             1792x1024). Defaults to 720x1280.
+        duration_seconds:
+          type: integer
+          description: Optional duration override in seconds for providers that accept durationSeconds.
+        aspect_ratio:
+          type: string
+          description: Optional aspect ratio hint (e.g., 16:9, 9:16) for providers that accept aspectRatio.
+        ratio:
+          type: string
+          description: Alias for aspect_ratio.
+        resolution:
+          type: string
+          description: Output resolution hint for providers that accept a resolution enum (e.g., 720p, 1080p, 4k).
+        negative_prompt:
+          type: string
+          description: Negative prompt hint for providers that support it.
+        sample_count:
+          type: integer
+          description: Number of samples to generate when supported by the provider.
+        seed:
+          type: integer
+          description: Random seed when supported by the provider.
+        person_generation:
+          type: string
+          description: Person generation policy for providers that support it.
+        output_storage_uri:
+          type: string
+          description: Optional output storage URI (e.g., GCS) for providers that support it.
       type: object
       required:
         - prompt

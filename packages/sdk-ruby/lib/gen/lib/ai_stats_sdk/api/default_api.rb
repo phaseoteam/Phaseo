@@ -19,6 +19,74 @@ module AIStatsSdk
     def initialize(api_client = ApiClient.default)
       @api_client = api_client
     end
+    # Create message
+    # Creates a message using the Anthropic Messages API.
+    # @param anthropic_messages_request [AnthropicMessagesRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [AnthropicMessagesResponse]
+    def create_anthropic_message(anthropic_messages_request, opts = {})
+      data, _status_code, _headers = create_anthropic_message_with_http_info(anthropic_messages_request, opts)
+      data
+    end
+
+    # Create message
+    # Creates a message using the Anthropic Messages API.
+    # @param anthropic_messages_request [AnthropicMessagesRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(AnthropicMessagesResponse, Integer, Hash)>] AnthropicMessagesResponse data, response status code and response headers
+    def create_anthropic_message_with_http_info(anthropic_messages_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.create_anthropic_message ...'
+      end
+      # verify the required parameter 'anthropic_messages_request' is set
+      if @api_client.config.client_side_validation && anthropic_messages_request.nil?
+        fail ArgumentError, "Missing the required parameter 'anthropic_messages_request' when calling DefaultApi.create_anthropic_message"
+      end
+      # resource path
+      local_var_path = '/messages'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json', 'text/event-stream']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(anthropic_messages_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'AnthropicMessagesResponse'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.create_anthropic_message",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#create_anthropic_message\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Create batch
     # Creates a batch of API requests.
     # @param batch_request [BatchRequest] 
@@ -174,10 +242,6 @@ module AIStatsSdk
       if @api_client.config.debugging
         @api_client.config.logger.debug 'Calling API: DefaultApi.create_embedding ...'
       end
-      # verify the required parameter 'embeddings_request' is set
-      if @api_client.config.client_side_validation && embeddings_request.nil?
-        fail ArgumentError, "Missing the required parameter 'embeddings_request' when calling DefaultApi.create_embedding"
-      end
       # resource path
       local_var_path = '/embeddings'
 
@@ -303,6 +367,7 @@ module AIStatsSdk
     # @option opts [String] :user 
     # @option opts [Boolean] :meta 
     # @option opts [Boolean] :usage 
+    # @option opts [ProviderRoutingOptions] :provider 
     # @return [ImagesEditResponse]
     def create_image_edit(model, image, prompt, opts = {})
       data, _status_code, _headers = create_image_edit_with_http_info(model, image, prompt, opts)
@@ -321,6 +386,7 @@ module AIStatsSdk
     # @option opts [String] :user 
     # @option opts [Boolean] :meta 
     # @option opts [Boolean] :usage 
+    # @option opts [ProviderRoutingOptions] :provider 
     # @return [Array<(ImagesEditResponse, Integer, Hash)>] ImagesEditResponse data, response status code and response headers
     def create_image_edit_with_http_info(model, image, prompt, opts = {})
       if @api_client.config.debugging
@@ -373,6 +439,7 @@ module AIStatsSdk
       form_params['user'] = opts[:'user'] if !opts[:'user'].nil?
       form_params['meta'] = opts[:'meta'] if !opts[:'meta'].nil?
       form_params['usage'] = opts[:'usage'] if !opts[:'usage'].nil?
+      form_params['provider'] = opts[:'provider'] if !opts[:'provider'].nil?
 
       # http body (model)
       post_body = opts[:debug_body]
@@ -464,6 +531,142 @@ module AIStatsSdk
       data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: DefaultApi#create_moderation\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Create OCR
+    # Extracts text from an image using the requested model.
+    # @param ocr_request [OcrRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Hash<String, Object>]
+    def create_ocr(ocr_request, opts = {})
+      data, _status_code, _headers = create_ocr_with_http_info(ocr_request, opts)
+      data
+    end
+
+    # Create OCR
+    # Extracts text from an image using the requested model.
+    # @param ocr_request [OcrRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(Hash<String, Object>, Integer, Hash)>] Hash<String, Object> data, response status code and response headers
+    def create_ocr_with_http_info(ocr_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.create_ocr ...'
+      end
+      # verify the required parameter 'ocr_request' is set
+      if @api_client.config.client_side_validation && ocr_request.nil?
+        fail ArgumentError, "Missing the required parameter 'ocr_request' when calling DefaultApi.create_ocr"
+      end
+      # resource path
+      local_var_path = '/ocr'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(ocr_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'Hash<String, Object>'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.create_ocr",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#create_ocr\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Create provisioning key
+    # Creates a new provisioning key for a team.
+    # @param create_provisioning_key_request [CreateProvisioningKeyRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [CreateProvisioningKey201Response]
+    def create_provisioning_key(create_provisioning_key_request, opts = {})
+      data, _status_code, _headers = create_provisioning_key_with_http_info(create_provisioning_key_request, opts)
+      data
+    end
+
+    # Create provisioning key
+    # Creates a new provisioning key for a team.
+    # @param create_provisioning_key_request [CreateProvisioningKeyRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(CreateProvisioningKey201Response, Integer, Hash)>] CreateProvisioningKey201Response data, response status code and response headers
+    def create_provisioning_key_with_http_info(create_provisioning_key_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.create_provisioning_key ...'
+      end
+      # verify the required parameter 'create_provisioning_key_request' is set
+      if @api_client.config.client_side_validation && create_provisioning_key_request.nil?
+        fail ArgumentError, "Missing the required parameter 'create_provisioning_key_request' when calling DefaultApi.create_provisioning_key"
+      end
+      # resource path
+      local_var_path = '/provisioning/keys'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(create_provisioning_key_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'CreateProvisioningKey201Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.create_provisioning_key",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#create_provisioning_key\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end
@@ -611,6 +814,7 @@ module AIStatsSdk
     # @option opts [String] :audio_url 
     # @option opts [String] :audio_b64 
     # @option opts [String] :language 
+    # @option opts [ProviderRoutingOptions] :provider 
     # @return [AudioTranscriptionResponse]
     def create_transcription(model, opts = {})
       data, _status_code, _headers = create_transcription_with_http_info(model, opts)
@@ -624,6 +828,7 @@ module AIStatsSdk
     # @option opts [String] :audio_url 
     # @option opts [String] :audio_b64 
     # @option opts [String] :language 
+    # @option opts [ProviderRoutingOptions] :provider 
     # @return [Array<(AudioTranscriptionResponse, Integer, Hash)>] AudioTranscriptionResponse data, response status code and response headers
     def create_transcription_with_http_info(model, opts = {})
       if @api_client.config.debugging
@@ -655,6 +860,7 @@ module AIStatsSdk
       form_params['audio_url'] = opts[:'audio_url'] if !opts[:'audio_url'].nil?
       form_params['audio_b64'] = opts[:'audio_b64'] if !opts[:'audio_b64'].nil?
       form_params['language'] = opts[:'language'] if !opts[:'language'].nil?
+      form_params['provider'] = opts[:'provider'] if !opts[:'provider'].nil?
 
       # http body (model)
       post_body = opts[:debug_body]
@@ -691,6 +897,7 @@ module AIStatsSdk
     # @option opts [String] :language 
     # @option opts [String] :prompt 
     # @option opts [Float] :temperature 
+    # @option opts [ProviderRoutingOptions] :provider 
     # @return [AudioTranslationResponse]
     def create_translation(model, opts = {})
       data, _status_code, _headers = create_translation_with_http_info(model, opts)
@@ -706,6 +913,7 @@ module AIStatsSdk
     # @option opts [String] :language 
     # @option opts [String] :prompt 
     # @option opts [Float] :temperature 
+    # @option opts [ProviderRoutingOptions] :provider 
     # @return [Array<(AudioTranslationResponse, Integer, Hash)>] AudioTranslationResponse data, response status code and response headers
     def create_translation_with_http_info(model, opts = {})
       if @api_client.config.debugging
@@ -747,6 +955,7 @@ module AIStatsSdk
       form_params['language'] = opts[:'language'] if !opts[:'language'].nil?
       form_params['prompt'] = opts[:'prompt'] if !opts[:'prompt'].nil?
       form_params['temperature'] = opts[:'temperature'] if !opts[:'temperature'].nil?
+      form_params['provider'] = opts[:'provider'] if !opts[:'provider'].nil?
 
       # http body (model)
       post_body = opts[:debug_body]
@@ -842,6 +1051,293 @@ module AIStatsSdk
       return data, status_code, headers
     end
 
+    # Delete provisioning key
+    # Permanently deletes a provisioning key.
+    # @param id [String] The provisioning key ID
+    # @param [Hash] opts the optional parameters
+    # @return [DeleteProvisioningKey200Response]
+    def delete_provisioning_key(id, opts = {})
+      data, _status_code, _headers = delete_provisioning_key_with_http_info(id, opts)
+      data
+    end
+
+    # Delete provisioning key
+    # Permanently deletes a provisioning key.
+    # @param id [String] The provisioning key ID
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(DeleteProvisioningKey200Response, Integer, Hash)>] DeleteProvisioningKey200Response data, response status code and response headers
+    def delete_provisioning_key_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.delete_provisioning_key ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling DefaultApi.delete_provisioning_key"
+      end
+      # resource path
+      local_var_path = '/provisioning/keys/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'DeleteProvisioningKey200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.delete_provisioning_key",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#delete_provisioning_key\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Delete video
+    # Deletes a video generation request.
+    # @param video_id [String] The ID of the video generation request.
+    # @param [Hash] opts the optional parameters
+    # @return [VideoDeleteResponse]
+    def delete_video(video_id, opts = {})
+      data, _status_code, _headers = delete_video_with_http_info(video_id, opts)
+      data
+    end
+
+    # Delete video
+    # Deletes a video generation request.
+    # @param video_id [String] The ID of the video generation request.
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(VideoDeleteResponse, Integer, Hash)>] VideoDeleteResponse data, response status code and response headers
+    def delete_video_with_http_info(video_id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.delete_video ...'
+      end
+      # verify the required parameter 'video_id' is set
+      if @api_client.config.client_side_validation && video_id.nil?
+        fail ArgumentError, "Missing the required parameter 'video_id' when calling DefaultApi.delete_video"
+      end
+      # resource path
+      local_var_path = '/videos/{video_id}'.sub('{' + 'video_id' + '}', CGI.escape(video_id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'VideoDeleteResponse'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.delete_video",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:DELETE, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#delete_video\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Generate music
+    # Generates music using the requested model and provider settings.
+    # @param music_generate_request [MusicGenerateRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Hash<String, Object>]
+    def generate_music(music_generate_request, opts = {})
+      data, _status_code, _headers = generate_music_with_http_info(music_generate_request, opts)
+      data
+    end
+
+    # Generate music
+    # Generates music using the requested model and provider settings.
+    # @param music_generate_request [MusicGenerateRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(Hash<String, Object>, Integer, Hash)>] Hash<String, Object> data, response status code and response headers
+    def generate_music_with_http_info(music_generate_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.generate_music ...'
+      end
+      # verify the required parameter 'music_generate_request' is set
+      if @api_client.config.client_side_validation && music_generate_request.nil?
+        fail ArgumentError, "Missing the required parameter 'music_generate_request' when calling DefaultApi.generate_music"
+      end
+      # resource path
+      local_var_path = '/music/generate'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(music_generate_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'Hash<String, Object>'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.generate_music",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:POST, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#generate_music\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Get activity
+    # Returns recent API activity for a team.
+    # @param team_id [String] The team ID to query
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :days Number of days to look back (default to 30)
+    # @option opts [Integer] :limit Maximum number of records to return (default to 50)
+    # @option opts [Integer] :offset Pagination offset (default to 0)
+    # @return [GetActivity200Response]
+    def get_activity(team_id, opts = {})
+      data, _status_code, _headers = get_activity_with_http_info(team_id, opts)
+      data
+    end
+
+    # Get activity
+    # Returns recent API activity for a team.
+    # @param team_id [String] The team ID to query
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :days Number of days to look back (default to 30)
+    # @option opts [Integer] :limit Maximum number of records to return (default to 50)
+    # @option opts [Integer] :offset Pagination offset (default to 0)
+    # @return [Array<(GetActivity200Response, Integer, Hash)>] GetActivity200Response data, response status code and response headers
+    def get_activity_with_http_info(team_id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.get_activity ...'
+      end
+      # verify the required parameter 'team_id' is set
+      if @api_client.config.client_side_validation && team_id.nil?
+        fail ArgumentError, "Missing the required parameter 'team_id' when calling DefaultApi.get_activity"
+      end
+      if @api_client.config.client_side_validation && !opts[:'days'].nil? && opts[:'days'] > 90
+        fail ArgumentError, 'invalid value for "opts[:"days"]" when calling DefaultApi.get_activity, must be smaller than or equal to 90.'
+      end
+
+      if @api_client.config.client_side_validation && !opts[:'days'].nil? && opts[:'days'] < 1
+        fail ArgumentError, 'invalid value for "opts[:"days"]" when calling DefaultApi.get_activity, must be greater than or equal to 1.'
+      end
+
+      if @api_client.config.client_side_validation && !opts[:'limit'].nil? && opts[:'limit'] > 250
+        fail ArgumentError, 'invalid value for "opts[:"limit"]" when calling DefaultApi.get_activity, must be smaller than or equal to 250.'
+      end
+
+      if @api_client.config.client_side_validation && !opts[:'limit'].nil? && opts[:'limit'] < 1
+        fail ArgumentError, 'invalid value for "opts[:"limit"]" when calling DefaultApi.get_activity, must be greater than or equal to 1.'
+      end
+
+      if @api_client.config.client_side_validation && !opts[:'offset'].nil? && opts[:'offset'] < 0
+        fail ArgumentError, 'invalid value for "opts[:"offset"]" when calling DefaultApi.get_activity, must be greater than or equal to 0.'
+      end
+
+      # resource path
+      local_var_path = '/activity'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'team_id'] = team_id
+      query_params[:'days'] = opts[:'days'] if !opts[:'days'].nil?
+      query_params[:'limit'] = opts[:'limit'] if !opts[:'limit'].nil?
+      query_params[:'offset'] = opts[:'offset'] if !opts[:'offset'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'GetActivity200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.get_activity",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#get_activity\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Get analytics
     # Returns aggregated analytics data.
     # @param get_analytics_request [GetAnalyticsRequest] 
@@ -910,6 +1406,70 @@ module AIStatsSdk
       return data, status_code, headers
     end
 
+    # Get remaining credits
+    # Returns the remaining credits and usage statistics for a team.
+    # @param team_id [String] The team ID to query
+    # @param [Hash] opts the optional parameters
+    # @return [GetCredits200Response]
+    def get_credits(team_id, opts = {})
+      data, _status_code, _headers = get_credits_with_http_info(team_id, opts)
+      data
+    end
+
+    # Get remaining credits
+    # Returns the remaining credits and usage statistics for a team.
+    # @param team_id [String] The team ID to query
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(GetCredits200Response, Integer, Hash)>] GetCredits200Response data, response status code and response headers
+    def get_credits_with_http_info(team_id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.get_credits ...'
+      end
+      # verify the required parameter 'team_id' is set
+      if @api_client.config.client_side_validation && team_id.nil?
+        fail ArgumentError, "Missing the required parameter 'team_id' when calling DefaultApi.get_credits"
+      end
+      # resource path
+      local_var_path = '/credits'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'team_id'] = team_id
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'GetCredits200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.get_credits",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#get_credits\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Get generation
     # Retrieve a specific generation by ID.
     # @param id [String] The ID of the generation
@@ -970,6 +1530,195 @@ module AIStatsSdk
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: DefaultApi#get_generation\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Get provisioning key
+    # Returns details of a specific provisioning key.
+    # @param id [String] The provisioning key ID
+    # @param [Hash] opts the optional parameters
+    # @return [GetProvisioningKey200Response]
+    def get_provisioning_key(id, opts = {})
+      data, _status_code, _headers = get_provisioning_key_with_http_info(id, opts)
+      data
+    end
+
+    # Get provisioning key
+    # Returns details of a specific provisioning key.
+    # @param id [String] The provisioning key ID
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(GetProvisioningKey200Response, Integer, Hash)>] GetProvisioningKey200Response data, response status code and response headers
+    def get_provisioning_key_with_http_info(id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.get_provisioning_key ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling DefaultApi.get_provisioning_key"
+      end
+      # resource path
+      local_var_path = '/provisioning/keys/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'GetProvisioningKey200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.get_provisioning_key",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#get_provisioning_key\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Get video status
+    # Retrieves the status for a video generation request.
+    # @param video_id [String] The ID of the video generation request.
+    # @param [Hash] opts the optional parameters
+    # @return [VideoGenerationResponse]
+    def get_video(video_id, opts = {})
+      data, _status_code, _headers = get_video_with_http_info(video_id, opts)
+      data
+    end
+
+    # Get video status
+    # Retrieves the status for a video generation request.
+    # @param video_id [String] The ID of the video generation request.
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(VideoGenerationResponse, Integer, Hash)>] VideoGenerationResponse data, response status code and response headers
+    def get_video_with_http_info(video_id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.get_video ...'
+      end
+      # verify the required parameter 'video_id' is set
+      if @api_client.config.client_side_validation && video_id.nil?
+        fail ArgumentError, "Missing the required parameter 'video_id' when calling DefaultApi.get_video"
+      end
+      # resource path
+      local_var_path = '/videos/{video_id}'.sub('{' + 'video_id' + '}', CGI.escape(video_id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'VideoGenerationResponse'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.get_video",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#get_video\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Get video content
+    # Downloads the rendered video content.
+    # @param video_id [String] The ID of the video generation request.
+    # @param [Hash] opts the optional parameters
+    # @return [File]
+    def get_video_content(video_id, opts = {})
+      data, _status_code, _headers = get_video_content_with_http_info(video_id, opts)
+      data
+    end
+
+    # Get video content
+    # Downloads the rendered video content.
+    # @param video_id [String] The ID of the video generation request.
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(File, Integer, Hash)>] File data, response status code and response headers
+    def get_video_content_with_http_info(video_id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.get_video_content ...'
+      end
+      # verify the required parameter 'video_id' is set
+      if @api_client.config.client_side_validation && video_id.nil?
+        fail ArgumentError, "Missing the required parameter 'video_id' when calling DefaultApi.get_video_content"
+      end
+      # resource path
+      local_var_path = '/videos/{video_id}/content'.sub('{' + 'video_id' + '}', CGI.escape(video_id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/octet-stream']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'File'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.get_video_content",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#get_video_content\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end
@@ -1178,6 +1927,159 @@ module AIStatsSdk
       return data, status_code, headers
     end
 
+    # List providers
+    # Returns a list of available API providers.
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :limit Limit the number of results (default to 50)
+    # @option opts [Integer] :offset Offset for pagination (default to 0)
+    # @return [ListProviders200Response]
+    def list_providers(opts = {})
+      data, _status_code, _headers = list_providers_with_http_info(opts)
+      data
+    end
+
+    # List providers
+    # Returns a list of available API providers.
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :limit Limit the number of results (default to 50)
+    # @option opts [Integer] :offset Offset for pagination (default to 0)
+    # @return [Array<(ListProviders200Response, Integer, Hash)>] ListProviders200Response data, response status code and response headers
+    def list_providers_with_http_info(opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.list_providers ...'
+      end
+      if @api_client.config.client_side_validation && !opts[:'limit'].nil? && opts[:'limit'] > 250
+        fail ArgumentError, 'invalid value for "opts[:"limit"]" when calling DefaultApi.list_providers, must be smaller than or equal to 250.'
+      end
+
+      if @api_client.config.client_side_validation && !opts[:'limit'].nil? && opts[:'limit'] < 1
+        fail ArgumentError, 'invalid value for "opts[:"limit"]" when calling DefaultApi.list_providers, must be greater than or equal to 1.'
+      end
+
+      # resource path
+      local_var_path = '/providers'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'limit'] = opts[:'limit'] if !opts[:'limit'].nil?
+      query_params[:'offset'] = opts[:'offset'] if !opts[:'offset'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ListProviders200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.list_providers",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#list_providers\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # List provisioning keys
+    # Returns all provisioning keys for a team.
+    # @param team_id [String] The team ID to query
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :limit Maximum number of keys to return (default to 50)
+    # @option opts [Integer] :offset Pagination offset (default to 0)
+    # @return [ListProvisioningKeys200Response]
+    def list_provisioning_keys(team_id, opts = {})
+      data, _status_code, _headers = list_provisioning_keys_with_http_info(team_id, opts)
+      data
+    end
+
+    # List provisioning keys
+    # Returns all provisioning keys for a team.
+    # @param team_id [String] The team ID to query
+    # @param [Hash] opts the optional parameters
+    # @option opts [Integer] :limit Maximum number of keys to return (default to 50)
+    # @option opts [Integer] :offset Pagination offset (default to 0)
+    # @return [Array<(ListProvisioningKeys200Response, Integer, Hash)>] ListProvisioningKeys200Response data, response status code and response headers
+    def list_provisioning_keys_with_http_info(team_id, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.list_provisioning_keys ...'
+      end
+      # verify the required parameter 'team_id' is set
+      if @api_client.config.client_side_validation && team_id.nil?
+        fail ArgumentError, "Missing the required parameter 'team_id' when calling DefaultApi.list_provisioning_keys"
+      end
+      if @api_client.config.client_side_validation && !opts[:'limit'].nil? && opts[:'limit'] > 250
+        fail ArgumentError, 'invalid value for "opts[:"limit"]" when calling DefaultApi.list_provisioning_keys, must be smaller than or equal to 250.'
+      end
+
+      if @api_client.config.client_side_validation && !opts[:'limit'].nil? && opts[:'limit'] < 1
+        fail ArgumentError, 'invalid value for "opts[:"limit"]" when calling DefaultApi.list_provisioning_keys, must be greater than or equal to 1.'
+      end
+
+      if @api_client.config.client_side_validation && !opts[:'offset'].nil? && opts[:'offset'] < 0
+        fail ArgumentError, 'invalid value for "opts[:"offset"]" when calling DefaultApi.list_provisioning_keys, must be greater than or equal to 0.'
+      end
+
+      # resource path
+      local_var_path = '/provisioning/keys'
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+      query_params[:'team_id'] = team_id
+      query_params[:'limit'] = opts[:'limit'] if !opts[:'limit'].nil?
+      query_params[:'offset'] = opts[:'offset'] if !opts[:'offset'].nil?
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body]
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'ListProvisioningKeys200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.list_provisioning_keys",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#list_provisioning_keys\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
     # Retrieve batch
     # Retrieves a batch.
     # @param batch_id [String] The ID of the batch to retrieve.
@@ -1357,6 +2259,80 @@ module AIStatsSdk
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
         @api_client.config.logger.debug "API called: DefaultApi#root\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+      end
+      return data, status_code, headers
+    end
+
+    # Update provisioning key
+    # Updates the name, status, or blocked state of a provisioning key.
+    # @param id [String] The provisioning key ID
+    # @param update_provisioning_key_request [UpdateProvisioningKeyRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [UpdateProvisioningKey200Response]
+    def update_provisioning_key(id, update_provisioning_key_request, opts = {})
+      data, _status_code, _headers = update_provisioning_key_with_http_info(id, update_provisioning_key_request, opts)
+      data
+    end
+
+    # Update provisioning key
+    # Updates the name, status, or blocked state of a provisioning key.
+    # @param id [String] The provisioning key ID
+    # @param update_provisioning_key_request [UpdateProvisioningKeyRequest] 
+    # @param [Hash] opts the optional parameters
+    # @return [Array<(UpdateProvisioningKey200Response, Integer, Hash)>] UpdateProvisioningKey200Response data, response status code and response headers
+    def update_provisioning_key_with_http_info(id, update_provisioning_key_request, opts = {})
+      if @api_client.config.debugging
+        @api_client.config.logger.debug 'Calling API: DefaultApi.update_provisioning_key ...'
+      end
+      # verify the required parameter 'id' is set
+      if @api_client.config.client_side_validation && id.nil?
+        fail ArgumentError, "Missing the required parameter 'id' when calling DefaultApi.update_provisioning_key"
+      end
+      # verify the required parameter 'update_provisioning_key_request' is set
+      if @api_client.config.client_side_validation && update_provisioning_key_request.nil?
+        fail ArgumentError, "Missing the required parameter 'update_provisioning_key_request' when calling DefaultApi.update_provisioning_key"
+      end
+      # resource path
+      local_var_path = '/provisioning/keys/{id}'.sub('{' + 'id' + '}', CGI.escape(id.to_s))
+
+      # query parameters
+      query_params = opts[:query_params] || {}
+
+      # header parameters
+      header_params = opts[:header_params] || {}
+      # HTTP header 'Accept' (if needed)
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
+      # HTTP header 'Content-Type'
+      content_type = @api_client.select_header_content_type(['application/json'])
+      if !content_type.nil?
+          header_params['Content-Type'] = content_type
+      end
+
+      # form parameters
+      form_params = opts[:form_params] || {}
+
+      # http body (model)
+      post_body = opts[:debug_body] || @api_client.object_to_http_body(update_provisioning_key_request)
+
+      # return_type
+      return_type = opts[:debug_return_type] || 'UpdateProvisioningKey200Response'
+
+      # auth_names
+      auth_names = opts[:debug_auth_names] || ['BearerAuth']
+
+      new_options = opts.merge(
+        :operation => :"DefaultApi.update_provisioning_key",
+        :header_params => header_params,
+        :query_params => query_params,
+        :form_params => form_params,
+        :body => post_body,
+        :auth_names => auth_names,
+        :return_type => return_type
+      )
+
+      data, status_code, headers = @api_client.call_api(:PATCH, local_var_path, new_options)
+      if @api_client.config.debugging
+        @api_client.config.logger.debug "API called: DefaultApi#update_provisioning_key\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

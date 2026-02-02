@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowRight, Check, Lock } from "lucide-react";
+import { ArrowRight, Check, Lock, TrendingUp, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 import {
@@ -59,8 +59,8 @@ export default async function TieringProgress({
 		}
 	}
 
-        const lastMonth = lastMonthCents / 1_000_000_000;
-        const mtd = mtdCents / 1_000_000_000;
+	const lastMonth = lastMonthCents / 1_000_000_000;
+	const mtd = mtdCents / 1_000_000_000;
 
 	console.log("[TIER PROGRESS] lastMonth:", lastMonth, "mtd:", mtd);
 
@@ -72,36 +72,32 @@ export default async function TieringProgress({
 		remainingToNext,
 		savingVsBase,
 		projectedSavings,
-		nextDiscountDelta,
-		projectedIndex,
 		projected,
+		isEnterprise,
+		willUpgradeNextMonth,
+		willDowngradeRisk,
 	} = computeTierInfo({ lastMonth, mtd, tiers });
 
 	const currentFee = current.feePct;
+	const [basicTier, enterpriseTier] = tiers;
+	const enterpriseThreshold = enterpriseTier.threshold;
 
-	const now = new Date();
-	const dayOfMonth = now.getDate();
-	const isLast4DaysOfMonth = dayOfMonth >= 28;
-	const nextTier = tiers[currentIndex + 1];
-	const within10PercentOfNext =
-		nextTier &&
-		remainingToNext > 0 &&
-		remainingToNext / nextTier.threshold < 0.05;
+	// Calculate progress percentage for Basic users
+	const progressPct = isEnterprise ? 100 : Math.min(100, (mtd / enterpriseThreshold) * 100);
 
 	return (
 		<Card>
-			{/* HEADER — unchanged on desktop; stacks on small screens */}
 			<CardHeader className="pb-2">
 				<div className="flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
-					<CardTitle className="m-0">Tier Progress</CardTitle>
+					<CardTitle className="m-0">Pricing Tier</CardTitle>
 					<div className="text-sm text-muted-foreground md:text-right">
-						Last month’s spend: {money(lastMonth, currency)}
+						Last month: {money(lastMonth, currency)}
 					</div>
 				</div>
 			</CardHeader>
 
 			<CardContent className="space-y-5">
-				{/* TOP STRIP — keep design on desktop, stack on mobile */}
+				{/* CURRENT TIER DISPLAY */}
 				<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 					<div className="space-y-1.5">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -111,39 +107,37 @@ export default async function TieringProgress({
 							<div className="text-lg font-semibold md:text-xl">
 								{current.name}
 							</div>
+							{isEnterprise && (
+								<Badge variant="secondary" className="text-[11px]">
+									Premium
+								</Badge>
+							)}
 						</div>
 						<p className="text-xs leading-relaxed text-muted-foreground md:max-w-[48ch]">
 							{current.description}
 						</p>
 						{projectedSavings > 0 && (
-							<p className="text-xs text-muted-foreground">
-								~ {money(projectedSavings, currency)} saved on
-								this month’s gateway spend versus Level 0
-								pricing.
+							<p className="text-xs text-emerald-600 dark:text-emerald-400">
+								💰 Saving ~{money(projectedSavings, currency)} this month vs Basic pricing
 							</p>
 						)}
 					</div>
 
 					<div className="space-y-1 text-left md:text-right">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Conduit fee
+							Gateway fee
 						</div>
 						<div className="flex items-center justify-start gap-2 text-lg font-semibold md:justify-end md:text-xl">
-							<span>{currentFee.toFixed(2)}%</span>
+							<span>{currentFee.toFixed(1)}%</span>
 
-							{topTier ? (
-								<Badge
-									variant="secondary"
-									className="text-[11px]"
-								>
-									Max tier
-								</Badge>
-							) : projected && projected.feePct !== currentFee ? (
+							{willUpgradeNextMonth && (
 								<>
-									<ArrowRight className="h-4 w-4 text-muted-foreground" />
-									<span>{projected.feePct.toFixed(2)}%</span>
+									<ArrowRight className="h-4 w-4 text-orange-500" />
+									<span className="text-orange-600 dark:text-orange-400">
+										{projected.feePct.toFixed(1)}%
+									</span>
 								</>
-							) : null}
+							)}
 						</div>
 						<div
 							className={cn(
@@ -154,180 +148,140 @@ export default async function TieringProgress({
 							)}
 						>
 							{savingVsBase > 0
-								? `-${savingVsBase.toFixed(2)} pts vs Starter`
+								? `Save ${savingVsBase.toFixed(1)}% vs Basic`
 								: "Standard pricing"}
 						</div>
 					</div>
 				</div>
 
-				{isLast4DaysOfMonth && within10PercentOfNext && (
+				{/* UPGRADE ALERT (for Basic users near threshold) */}
+				{!isEnterprise && remainingToNext > 0 && remainingToNext < enterpriseThreshold * 0.2 && (
 					<Alert>
+						<TrendingUp className="h-4 w-4" />
 						<AlertDescription>
-							Only {money(remainingToNext, currency)} left to
-							unlock {nextTier.name} tier!
+							Only {money(remainingToNext, currency)} away from Enterprise tier!
+							Spend {money(enterpriseThreshold, currency)}+ this month to unlock 5% pricing next month.
 						</AlertDescription>
 					</Alert>
 				)}
 
-				{/* CHECKPOINTS — wraps into rows on mobile; 7 columns on md+ */}
-				<div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-7 md:gap-2">
-					{tiers.map((tier, idx) => {
-						const reached = idx <= currentIndex;
-						const isCurrent = idx === currentIndex;
-						const isProjected = idx === projectedIndex;
-						return (
-							<div
-								key={tier.key}
-								className="flex flex-col items-center"
-							>
-								<div
-									className={cn(
-										"relative grid h-7 w-7 place-items-center rounded-full border sm:h-7 sm:w-7 md:h-6 md:w-6",
-										reached
-											? "border-indigo-600 bg-indigo-600 text-white"
-											: "border-border bg-background text-muted-foreground",
-										isProjected && !reached
-											? "border-orange-500"
-											: ""
-									)}
-									title={`${tier.name} ${
-										reached
-											? "reached"
-											: isProjected
-											? "projected"
-											: "locked"
-									}`}
-									aria-label={`${tier.name} ${
-										reached
-											? "reached"
-											: isProjected
-											? "projected"
-											: "locked"
-									}`}
-								>
-									{reached ? (
-										<Check
-											className="h-4 w-4 md:h-3.5 md:w-3.5"
-											aria-hidden
-										/>
-									) : (
-										<Lock
-											className="h-4 w-4 md:h-3.5 md:w-3.5"
-											aria-hidden
-										/>
-									)}
-									{isCurrent && (
-										<span className="pointer-events-none absolute -inset-1 rounded-full ring-2 ring-indigo-300/70 dark:ring-indigo-500/40" />
-									)}
-								</div>
-								<div className="mt-2 text-xs font-medium">
-									{tier.name}
-								</div>
-								<div className="text-[11px] text-muted-foreground">
-									{money(tier.threshold, currency)}
-								</div>
-								<div className="text-[11px] text-muted-foreground">
-									Fee: {tier.feePct.toFixed(2)}%
-								</div>
-							</div>
-						);
-					})}
-				</div>
+				{/* DOWNGRADE WARNING (for Enterprise users with low MTD) */}
+				{willDowngradeRisk && (
+					<Alert variant="destructive">
+						<AlertTriangle className="h-4 w-4" />
+						<AlertDescription>
+							Your month-to-date spend ({money(mtd, currency)}) is below the Enterprise threshold.
+							Spend {money(enterpriseThreshold, currency)}+ to maintain Enterprise pricing.
+							Note: Tier downgrades occur after 3 consecutive months below threshold.
+						</AlertDescription>
+					</Alert>
+				)}
 
-				{/* LEGEND — wraps neatly on small screens */}
-				<div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground md:gap-4">
-					<div className="flex items-center gap-2">
-						<span className="h-3 w-3 rounded-sm bg-indigo-600" />
-						<span>Current tier</span>
+				{/* SIMPLE TWO-TIER DISPLAY */}
+				<div className="space-y-3">
+					<div className="flex items-center justify-between">
+						<span className="text-sm text-muted-foreground">
+							This month: {money(mtd, currency)}
+						</span>
+						{!isEnterprise && (
+							<span className="text-xs text-muted-foreground">
+								{progressPct.toFixed(0)}% to Enterprise
+							</span>
+						)}
 					</div>
-					<div className="flex items-center gap-2">
-						<span className="h-3 w-3 rounded-sm border border-orange-500 bg-background" />
-						<span>Projected for next month</span>
+
+					{/* PROGRESS BAR (for Basic users) */}
+					{!isEnterprise && (
+						<div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+							<div
+								className="h-full bg-indigo-600 transition-all duration-300"
+								style={{ width: `${progressPct}%` }}
+							/>
+						</div>
+					)}
+
+					{/* TIER CHECKPOINTS */}
+					<div className="grid grid-cols-2 gap-4">
+						{/* Basic Tier */}
+						<div className="flex flex-col items-center rounded-lg border p-4">
+							<div
+								className={cn(
+									"mb-2 grid h-10 w-10 place-items-center rounded-full border-2",
+									!isEnterprise
+										? "border-indigo-600 bg-indigo-600 text-white"
+										: "border-muted-foreground/30 bg-muted text-muted-foreground"
+								)}
+							>
+								<Check className="h-5 w-5" />
+							</div>
+							<div className="text-sm font-semibold">{basicTier.name}</div>
+							<div className="text-xs text-muted-foreground">
+								{basicTier.feePct.toFixed(1)}% fee
+							</div>
+							<div className="mt-1 text-xs text-muted-foreground">
+								{money(basicTier.threshold, currency)}+
+							</div>
+						</div>
+
+						{/* Enterprise Tier */}
+						<div className="flex flex-col items-center rounded-lg border p-4">
+							<div
+								className={cn(
+									"mb-2 grid h-10 w-10 place-items-center rounded-full border-2",
+									isEnterprise
+										? "border-indigo-600 bg-indigo-600 text-white"
+										: willUpgradeNextMonth
+										? "border-orange-500 bg-orange-500/10 text-orange-600"
+										: "border-muted-foreground/30 bg-muted text-muted-foreground"
+								)}
+							>
+								{isEnterprise ? (
+									<Check className="h-5 w-5" />
+								) : (
+									<Lock className="h-5 w-5" />
+								)}
+							</div>
+							<div className="text-sm font-semibold">{enterpriseTier.name}</div>
+							<div className="text-xs text-muted-foreground">
+								{enterpriseTier.feePct.toFixed(1)}% fee
+							</div>
+							<div className="mt-1 text-xs text-muted-foreground">
+								{money(enterpriseTier.threshold, currency)}+/mo
+							</div>
+							{willUpgradeNextMonth && (
+								<Badge variant="outline" className="mt-2 text-[10px] border-orange-500 text-orange-600">
+									Unlocking
+								</Badge>
+							)}
+						</div>
 					</div>
 				</div>
 
 				<Separator />
 
-				{/* BENEFITS — tighter padding on mobile; same info density on desktop */}
+				{/* TIER DETAILS */}
 				<div>
-					<div className="mb-2 text-sm font-medium">Benefits</div>
-					<ul className="divide-y rounded-lg border">
-						{tiers.map((tier, idx) => {
-							const reached = idx <= currentIndex;
-							const isProjected = idx === projectedIndex;
-							return (
-								<li
-									key={tier.key}
-									className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"
-								>
-									<div className="flex items-start gap-3">
-										<span
-											className={cn(
-												"grid h-6 w-6 place-items-center rounded-full border text-xs font-medium",
-												reached
-													? "border-indigo-600 bg-indigo-600 text-white"
-													: "border-border bg-background text-muted-foreground",
-												isProjected && !reached
-													? "border-orange-500"
-													: ""
-											)}
-											aria-hidden
-										>
-											{idx}
-										</span>
-										<div>
-											<div className="text-sm font-medium">
-												{tier.name}
-											</div>
-											<div className="text-xs text-muted-foreground">
-												Threshold:{" "}
-												{money(
-													tier.threshold,
-													currency
-												)}
-											</div>
-											<div className="text-xs text-muted-foreground">
-												{tier.description}
-											</div>
-										</div>
-									</div>
-
-									<div className="text-left sm:text-right">
-										<div className="text-sm">
-											Conduit fee:{" "}
-											<span className="font-medium">
-												{tier.feePct.toFixed(2)}%
-											</span>
-										</div>
-										<div
-											className={cn(
-												"text-xs",
-												reached
-													? "text-emerald-600 dark:text-emerald-400"
-													: isProjected
-													? "text-orange-600 dark:text-orange-400"
-													: "text-muted-foreground"
-											)}
-										>
-											{reached
-												? "Unlocked"
-												: isProjected
-												? "Projected"
-												: "Locked"}
-										</div>
-									</div>
-								</li>
-							);
-						})}
-					</ul>
-					<p className="mt-2 text-xs text-muted-foreground">
-						Fees decrease as your monthly spend increases. We review
-						your tier on the first of each month.
+					<div className="mb-2 text-sm font-medium">How it works</div>
+					<div className="space-y-3 rounded-lg border p-4 text-sm">
+						<div>
+							<div className="font-medium">✓ Basic Tier (7%)</div>
+							<p className="text-xs text-muted-foreground">
+								All teams start here. Automatic upgrade after spending {money(enterpriseThreshold, currency)}+ in any month.
+							</p>
+						</div>
+						<div>
+							<div className="font-medium">✓ Enterprise Tier (5%)</div>
+							<p className="text-xs text-muted-foreground">
+								High-volume teams save 2% on all requests. Maintained while spending {money(enterpriseThreshold, currency)}+ monthly.
+								Downgrade to Basic after 3 consecutive months below threshold.
+							</p>
+						</div>
+					</div>
+					<p className="mt-3 text-xs text-muted-foreground">
+						💡 Tiers are automatically updated on the 1st of each month based on the previous month's spend.
 					</p>
 					<p className="mt-2 text-xs text-muted-foreground">
-						If you have questions about benefits or want help
-						maximising your savings, please contact our support
-						team.
+						Questions? Contact support for custom pricing or volume discounts.
 					</p>
 				</div>
 			</CardContent>

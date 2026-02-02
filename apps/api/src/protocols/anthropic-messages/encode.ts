@@ -1,8 +1,11 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // Anthropic Messages Protocol - Encoder
 // Transforms IR → Anthropic Messages Response
 
-import type { IRChatResponse, IRChoice } from "@core/ir";
-import { isAionProvider } from "@/providers/aion/think";
+import type { IRChatResponse, IRChoice, IRContentPart } from "@core/ir";
 
 /**
  * Anthropic Messages response type
@@ -19,16 +22,21 @@ export type AnthropicMessagesResponse = {
 	content: AnthropicResponseContent[];
 	model: string;
 	stop_reason: "end_turn" | "max_tokens" | "stop_sequence" | "tool_use" | null;
-	stop_sequence?: string | null;
-	usage?: {
+	stop_sequence: string | null;
+	usage: {
+		cache_creation: any | null;
+		cache_creation_input_tokens: number | null;
+		cache_read_input_tokens: number | null;
 		input_tokens: number;
 		output_tokens: number;
+		server_tool_use: any | null;
+		service_tier: "standard" | "priority" | "batch" | null;
 	};
 };
 
 export type AnthropicResponseContent =
-	| { type: "text"; text: string }
-	| { type: "thinking"; thinking: string }
+	| { type: "text"; text: string; citations: any[] | null }
+	| { type: "thinking"; thinking: string; signature: string }
 	| { type: "tool_use"; id: string; name: string; input: Record<string, any> };
 
 /**
@@ -41,12 +49,10 @@ export type AnthropicResponseContent =
  */
 export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMessagesResponse {
 	const content: AnthropicResponseContent[] = [];
-	const isAion = isAionProvider(ir.provider);
-	const reasoningChoices = isAion ? ir.choices.filter((c) => c.reasoning) : [];
 
 	// Anthropic Messages API doesn't support multiple choices
-	// Take the first non-reasoning choice
-	const mainChoice = ir.choices.find((c) => !c.reasoning) || ir.choices[0];
+	// Take the first choice
+	const mainChoice = ir.choices[0];
 
 	if (!mainChoice) {
 		// Fallback: empty response
@@ -55,30 +61,29 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 			nativeResponseId: ir.nativeId,
 			type: "message",
 			role: "assistant",
-			content: [{ type: "text", text: "" }],
+			content: [{ type: "text", text: "", citations: null }],
 			model: ir.model,
 			stop_reason: "end_turn",
-			usage: encodeUsage(ir.usage),
+			stop_sequence: null,
+			usage: encodeUsage(ir.usage, ir.serviceTier),
 		};
 	}
 
 	const hasToolCalls = (mainChoice.message.toolCalls?.length ?? 0) > 0;
-	const contentText =
-		mainChoice.message.refusal ??
-		(typeof mainChoice.message.content === "string"
-			? mainChoice.message.content
-			: mainChoice.message.content ?? "");
+	const { text, reasoningParts } = splitContentParts(mainChoice.message.content as IRContentPart[]);
+	const contentText = mainChoice.message.refusal ?? text;
 
 	if (typeof contentText === "string") {
 		const shouldIncludeText =
 			Boolean(mainChoice.message.refusal) ||
 			contentText.length > 0 ||
-			(contentText === "" && !hasToolCalls);
+			(contentText === "" && !hasToolCalls && reasoningParts.length === 0);
 
 		if (shouldIncludeText) {
 			content.push({
 				type: "text",
 				text: contentText,
+				citations: null,
 			});
 		}
 	}
@@ -95,11 +100,14 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 		}
 	}
 
-	if (reasoningChoices.length > 0) {
-		for (const choice of reasoningChoices) {
-			const reasoningText = typeof choice.message.content === "string" ? choice.message.content : "";
-			if (reasoningText.length > 0) {
-				content.push({ type: "thinking", thinking: reasoningText });
+	if (reasoningParts.length > 0) {
+		for (const reasoning of reasoningParts) {
+			if (reasoning.text.length > 0) {
+				content.push({
+					type: "thinking",
+					thinking: reasoning.text,
+					signature: reasoning.signature ?? "",
+				});
 			}
 		}
 	}
@@ -116,7 +124,7 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 		model: ir.model,
 		stop_reason: stopReason,
 		stop_sequence: mainChoice.stopSequence ?? null,
-		usage: encodeUsage(ir.usage),
+		usage: encodeUsage(ir.usage, ir.serviceTier),
 	};
 }
 
@@ -142,15 +150,25 @@ function mapFinishReasonToAnthropic(
 	}
 }
 
-function encodeUsage(usage?: IRChatResponse["usage"]): AnthropicMessagesResponse["usage"] {
-	if (!usage) return undefined;
+function encodeUsage(
+	usage: IRChatResponse["usage"] | undefined,
+	serviceTier: IRChatResponse["serviceTier"] | undefined,
+): AnthropicMessagesResponse["usage"] {
 	const anyUsage = usage as any;
 	const inputTokens = anyUsage.inputTokens ?? anyUsage.promptTokens;
 	const outputTokens = anyUsage.outputTokens ?? anyUsage.completionTokens;
-	if (inputTokens == null && outputTokens == null) return undefined;
+	const tier =
+		serviceTier === "standard" || serviceTier === "priority" || serviceTier === "batch"
+			? serviceTier
+			: null;
 	return {
+		cache_creation: null,
+		cache_creation_input_tokens: null,
+		cache_read_input_tokens: anyUsage?.cachedInputTokens ?? null,
 		input_tokens: inputTokens ?? 0,
 		output_tokens: outputTokens ?? 0,
+		server_tool_use: null,
+		service_tier: tier,
 	};
 }
 
@@ -162,3 +180,21 @@ function safeParseToolArguments(raw: string): Record<string, any> {
 		return {};
 	}
 }
+
+function splitContentParts(
+	parts: IRContentPart[],
+): { text: string; reasoningParts: Array<{ text: string; signature?: string }> } {
+	if (!Array.isArray(parts)) return { text: "", reasoningParts: [] };
+	const text = parts
+		.filter((part) => part.type === "text")
+		.map((part) => part.text)
+		.join("");
+	const reasoningParts = parts
+		.filter((part) => part.type === "reasoning_text")
+		.map((part) => ({
+			text: part.text,
+			signature: part.thoughtSignature,
+		}));
+	return { text, reasoningParts };
+}
+

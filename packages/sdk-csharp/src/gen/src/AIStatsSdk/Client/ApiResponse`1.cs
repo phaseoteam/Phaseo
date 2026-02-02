@@ -188,6 +188,26 @@ namespace AIStatsSdk.Client
     /// An interface for responses of type 
     /// </summary>
     /// <typeparam name="TType"></typeparam>
+    public interface IBadRequest<TType> : IApiResponse
+    {
+        /// <summary>
+        /// Deserializes the response if the response is BadRequest
+        /// </summary>
+        /// <returns></returns>
+        TType BadRequest();
+
+        /// <summary>
+        /// Returns true if the response is BadRequest and the deserialized response is not null
+        /// </summary>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        bool TryBadRequest([NotNullWhen(true)]out TType? result);
+    }
+
+    /// <summary>
+    /// An interface for responses of type 
+    /// </summary>
+    /// <typeparam name="TType"></typeparam>
     public interface IUnauthorized<TType> : IApiResponse
     {
         /// <summary>
@@ -242,6 +262,26 @@ namespace AIStatsSdk.Client
         /// <param name="result"></param>
         /// <returns></returns>
         bool TryInternalServerError([NotNullWhen(true)]out TType? result);
+    }
+
+    /// <summary>
+    /// An interface for responses of type 
+    /// </summary>
+    /// <typeparam name="TType"></typeparam>
+    public interface ICreated<TType> : IApiResponse
+    {
+        /// <summary>
+        /// Deserializes the response if the response is Created
+        /// </summary>
+        /// <returns></returns>
+        TType Created();
+
+        /// <summary>
+        /// Returns true if the response is Created and the deserialized response is not null
+        /// </summary>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        bool TryCreated([NotNullWhen(true)]out TType? result);
     }
 
     /// <summary>

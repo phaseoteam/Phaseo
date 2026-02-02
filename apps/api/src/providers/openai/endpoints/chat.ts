@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import type { GatewayCompletionsResponse, GatewayCompletionsChoice, GatewayUsage } from "@core/types";
 import { ChatCompletionsSchema, type ChatCompletionsRequest } from "@core/schemas";
@@ -1104,3 +1108,4 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         byokKeyId: keyInfo.byokId,
     };
 }
+

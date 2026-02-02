@@ -1,0 +1,35 @@
+---
+title: "Editing a Model"
+description: "Update model metadata, pricing, and capabilities in the AI Stats data set."
+---
+
+Model data lives in JSON files under `apps/web/src/data/models`. Each model has its own folder and a `model.json` file.
+
+## 1. Find the model
+
+Locate the model directory by provider and model name, for example:
+
+`apps/web/src/data/models/openai/gpt-5-2025-08-07/model.json`
+
+## 2. Make your edits
+
+Common updates include:
+
+- Descriptions and links
+- Capabilities and supported endpoints
+- Pricing or availability notes
+- Benchmark references
+
+Keep values consistent with the existing schema in nearby files.
+
+## 3. Validate data
+
+Run the data validation script before opening a PR:
+
+```bash
+pnpm validate:data
+```
+
+## 4. Open a PR
+
+Include a short summary of what changed and any sources used for the update.

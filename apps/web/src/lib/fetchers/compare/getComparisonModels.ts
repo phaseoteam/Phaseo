@@ -300,7 +300,10 @@ function convertModelToExtended(
 	return extended;
 }
 
-async function fetchComparisonModels(serializedKey: string): Promise<ComparisonMap> {
+async function fetchComparisonModels(
+	serializedKey: string,
+	includeHidden: boolean
+): Promise<ComparisonMap> {
 	"use cache";
 	cacheLife("days");              // use preset profile
 	cacheTag("data:models");        // tag for revalidation
@@ -312,9 +315,9 @@ async function fetchComparisonModels(serializedKey: string): Promise<ComparisonM
 		ids.map(async (id) => {
 			try {
 				const [model, providerPricing, subscriptionPlans] = await Promise.all([
-					getModelCached(id),
-					getModelPricingCached(id),
-					getModelSubscriptionPlansCached(id),
+					getModelCached(id, includeHidden),
+					getModelPricingCached(id, includeHidden),
+					getModelSubscriptionPlansCached(id, includeHidden),
 				]);
 				return convertModelToExtended(model, providerPricing, subscriptionPlans);
 			} catch (error) {
@@ -335,7 +338,8 @@ async function fetchComparisonModels(serializedKey: string): Promise<ComparisonM
 }
 
 export async function getComparisonModelsCached(
-	modelIds: string[]
+	modelIds: string[],
+	includeHidden: boolean
 ): Promise<ExtendedModel[]> {
 	const uniqueOrdered: string[] = [];
 	const seen = new Set<string>();
@@ -357,7 +361,7 @@ export async function getComparisonModelsCached(
 	console.log("[compare] Fetching models for cache key", cacheKey);
 
 	// 👇 no cacheLife/cacheTag here any more
-	let resultMap = await fetchComparisonModels(cacheKey);
+	let resultMap = await fetchComparisonModels(cacheKey, includeHidden);
 
 	console.log("[compare] Received detailed models", resultMap);
 
@@ -368,7 +372,7 @@ export async function getComparisonModelsCached(
 			missingIds
 		);
 
-		const fallbackModels = await loadCompareModelsCached();
+		const fallbackModels = await loadCompareModelsCached(includeHidden);
 		console.log(
 			"[compare] Fallback compare models count",
 			fallbackModels.length

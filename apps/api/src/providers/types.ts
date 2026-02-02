@@ -1,4 +1,8 @@
 // lib/gateway/providers/types.ts
+// Purpose: Provider adapter module for types.ts.
+// Why: Isolates provider-specific configuration and utilities.
+// How: Defines provider-specific endpoint adapters and configuration helpers.
+
 import type { Endpoint, GatewayResponsePayload, RequestMeta } from "@core/types";
 import type { Bill } from "@pipeline/execute";
 import type { PriceCard } from "@pipeline/pricing";
@@ -83,3 +87,12 @@ export function mergeUsage(base: NormalizedUsage, add?: NormalizedUsage): Normal
     }
     return out;
 }
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,17 @@
+{
+  "model_id": "arcee-ai/trinity-large-2026-01-27",
+  "organisation_id": "arcee-ai",
+  "name": "Trinity Large",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-12-01T00:00:00",
+  "release_date": "2026-01-27T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

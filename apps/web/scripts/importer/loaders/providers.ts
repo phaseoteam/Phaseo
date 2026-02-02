@@ -45,8 +45,12 @@ const squashCapabilityParams = (value: unknown): Record<string, unknown> => {
     return {};
 };
 
-export async function loadProviders(tracker: ChangeTracker) {
+export async function loadProviders(
+    tracker: ChangeTracker,
+    opts?: { modelId?: string | null }
+) {
     tracker.touchPrefix(DIR_PROVIDERS);
+    const modelFilter = opts?.modelId ?? null;
     const dirs = await listDirs(DIR_PROVIDERS);
     const supa = client();
     const providerIds = new Set<string>();
@@ -72,8 +76,6 @@ export async function loadProviders(tracker: ChangeTracker) {
         params: Record<string, unknown>;
         max_input_tokens: number | null;
         max_output_tokens: number | null;
-        effective_from: string | null;
-        effective_to: string | null;
         notes: string | null;
     }> = [];
     let touched = false;
@@ -116,6 +118,7 @@ export async function loadProviders(tracker: ChangeTracker) {
 
             for (const model of models ?? []) {
                 if (!model?.provider_api_model_id || !model?.api_model_id) continue;
+                if (modelFilter && model.internal_model_id !== modelFilter) continue;
                 const provider_api_model_id = model.provider_api_model_id;
                 providerModelIds.add(provider_api_model_id);
                 providerModelsToUpsert.push({
@@ -143,8 +146,6 @@ export async function loadProviders(tracker: ChangeTracker) {
                         params: squashCapabilityParams(cap.params),
                         max_input_tokens: cap.max_input_tokens ?? null,
                         max_output_tokens: cap.max_output_tokens ?? null,
-                        effective_from: model.effective_from ?? null,
-                        effective_to: model.effective_to ?? null,
                         notes: null,
                     });
                 }
@@ -199,7 +200,7 @@ export async function loadProviders(tracker: ChangeTracker) {
         }
     }
 
-    if (providerModelIds.size && !isDryRun()) {
+    if (providerModelIds.size && !isDryRun() && !modelFilter) {
         await pruneRowsByColumn(
             supa,
             "data_api_provider_models",
@@ -209,7 +210,7 @@ export async function loadProviders(tracker: ChangeTracker) {
         );
     }
 
-    if (capabilityKeys.size && !isDryRun()) {
+    if (capabilityKeys.size && !isDryRun() && !modelFilter) {
         const keys = Array.from(capabilityKeys);
         for (const group of chunk(keys, 500)) {
             const providerIdsChunk = Array.from(

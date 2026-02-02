@@ -1,11 +1,18 @@
 // lib/gateway/before/index.ts
+// Purpose: Before-stage helpers for auth, validation, and context building.
+// Why: Keeps pre-execution logic centralized and consistent.
+// How: Orchestrates auth, validation, and context loading to build PipelineContext.
+
 import { z } from "zod";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
+import { err } from "./http";
 import { Timer } from "../telemetry/timer";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
+import { validateCapabilities } from "./capabilityValidation";
+import { isDebugAllowed } from "../debug";
 
 /**
  * BEFORE STAGE
@@ -30,6 +37,12 @@ export async function beforeRequest(
     const j = await timer.span("guardJson", () => guardJson(req, teamId, requestId));
     if (!j.ok) return j as { ok: false; response: Response };
     const rawBody = j.value;
+    const betaCapabilities = normalizeReturnFlag(
+        req.headers.get("x-aistats-beta-capabilities") ??
+        rawBody?.beta_capabilities ??
+        rawBody?.provider_capabilities_beta
+    );
+    const debugEnabled = normalizeReturnFlag(req.headers.get("x-gateway-debug")) && isDebugAllowed();
 
     // 3) Zod (route schema: shape depends on request path)
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, teamId, requestId));
@@ -52,14 +65,71 @@ export async function beforeRequest(
             model,
             requestId,
             internal,
+            disableCache: debugEnabled,
         })
     );
     if (!c.ok) return c as { ok: false; response: Response };
     const { context, providers, resolvedModel } = c.value;
+
+    // 5.3) Apply preset configuration if present
+    let mergedBody = body;
+    let presetFilteredProviders = providers;
+    let presetInfo: { id: string; name: string; config: any } | null = null;
+
+    if (context.preset) {
+        const { mergePresetWithBody, filterProvidersByPreset, applyProviderPreferences } = await import("./presetMerge");
+
+        // Merge preset config with request body
+        mergedBody = mergePresetWithBody(body, context.preset);
+
+        // Filter providers by preset constraints
+        presetFilteredProviders = filterProvidersByPreset(providers, context.preset.config);
+
+        // Apply provider preferences/weights
+        presetFilteredProviders = applyProviderPreferences(presetFilteredProviders, context.preset.config);
+
+        // Save preset info for context
+        presetInfo = {
+            id: context.preset.id,
+            name: context.preset.name,
+            config: context.preset.config,
+        };
+
+        if (!presetFilteredProviders.length) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    details: [{
+                        message: `Preset "${context.preset.name}" filters resulted in no available providers`,
+                        path: ["preset"],
+                        keyword: "no_providers_after_preset_filter",
+                        params: { preset: context.preset.name },
+                    }],
+                    request_id: requestId,
+                    team_id: teamId,
+                }),
+            };
+        }
+    }
+
+    // 5.5) Capability validation - parameter support and token limits
+    const capabilityValidation = await timer.span("validateCapabilities", () =>
+        validateCapabilities({
+            endpoint,
+            rawBody,
+            body: mergedBody,
+            requestId,
+            teamId,
+            providers: presetFilteredProviders,
+            model: resolvedModel || model,
+        })
+    );
+    if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
+    const filteredProviders = capabilityValidation.providers;
+
     // console.log(`[DEBUG] beforeRequest: resolvedModel: ${resolvedModel}, original model: ${model}`);
 
     // 6) Meta + final ctx
-    const returnUsage = normalizeReturnFlag(body?.usage ?? rawBody?.usage);
     const returnMeta = normalizeReturnFlag(body?.meta ?? rawBody?.meta);
     const echoUpstreamRequest = normalizeReturnFlag(
         body?.echo_upstream_request ??
@@ -78,9 +148,9 @@ export async function beforeRequest(
         requestId,
         stream,
         req,
-        returnUsage,
         returnMeta,
         echoUpstreamRequest,
+        providerCapabilitiesBeta: betaCapabilities,
     });
     const requestPath = (() => {
         try {
@@ -96,22 +166,36 @@ export async function beforeRequest(
         requestId,
         meta,
         rawBody,
-        body,
+        body: mergedBody,
         model: resolvedModel || model,
         teamId,
         stream,
         requestPath: requestPath ?? undefined,
-        providers,
+        providers: filteredProviders,
+        providerCapabilitiesBeta: betaCapabilities,
         pricing: context.pricing,
         gating: {
             key: context.key,
             keyLimit: context.keyLimit,
             credit: context.credit,
         },
+        preset: presetInfo,
         internal,
+        // Enrichment data for observability (wide events)
+        teamEnrichment: context.teamEnrichment ?? null,
+        keyEnrichment: context.keyEnrichment ?? null,
+        keyId: apiKeyId ?? null,
     };
 
     // console.log(`[DEBUG] beforeRequest: final ctx.model: ${ctx.model}`);
 
     return { ok: true, ctx };
 }
+
+
+
+
+
+
+
+

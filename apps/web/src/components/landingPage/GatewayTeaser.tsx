@@ -16,7 +16,7 @@ export default function GatewayTeaser({
 			<Card className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 md:p-6 border-dashed">
 				<div className="text-left">
 					<p className="text-sm text-muted-foreground mb-1">
-						AI Stats Conduit
+						AI Stats Gateway
 					</p>
 					<h3 className="text-lg md:text-xl font-semibold">
 						One API for every model. Smart routing, clear analytics,
@@ -33,7 +33,7 @@ export default function GatewayTeaser({
 				</div>
 				<div className="shrink-0">
 					<Button asChild size="sm">
-						<Link href="/conduit">Explore the Conduit</Link>
+						<Link href="/gateway">Explore the Gateway</Link>
 					</Button>
 				</div>
 			</Card>

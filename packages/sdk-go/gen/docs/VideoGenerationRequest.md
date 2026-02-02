@@ -8,6 +8,7 @@ Name | Type | Description | Notes
 **Prompt** | **string** |  | 
 **Duration** | Pointer to **int32** |  | [optional] 
 **Ratio** | Pointer to **string** |  | [optional] 
+**Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 ## Methods
 
@@ -117,6 +118,31 @@ SetRatio sets Ratio field to given value.
 `func (o *VideoGenerationRequest) HasRatio() bool`
 
 HasRatio returns a boolean if a field has been set.
+
+### GetProvider
+
+`func (o *VideoGenerationRequest) GetProvider() ProviderRoutingOptions`
+
+GetProvider returns the Provider field if non-nil, zero value otherwise.
+
+### GetProviderOk
+
+`func (o *VideoGenerationRequest) GetProviderOk() (*ProviderRoutingOptions, bool)`
+
+GetProviderOk returns a tuple with the Provider field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetProvider
+
+`func (o *VideoGenerationRequest) SetProvider(v ProviderRoutingOptions)`
+
+SetProvider sets Provider field to given value.
+
+### HasProvider
+
+`func (o *VideoGenerationRequest) HasProvider() bool`
+
+HasProvider returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

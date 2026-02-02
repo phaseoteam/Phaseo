@@ -1,0 +1,35 @@
+{
+  "key": "openai:openai/gpt-4o-mini:batch",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-4o-mini",
+  "capability_id": "batch",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 7.5e-08,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2024-07-18T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 3e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2024-07-18T00:00:00"
+    }
+  ]
+}

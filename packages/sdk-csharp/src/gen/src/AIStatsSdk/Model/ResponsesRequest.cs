@@ -64,8 +64,9 @@ namespace AIStatsSdk.Model
         /// <param name="user">user</param>
         /// <param name="usage">usage</param>
         /// <param name="meta">meta</param>
+        /// <param name="provider">provider</param>
         [JsonConstructor]
-        public ResponsesRequest(string model, Option<Object?> input = default, Option<List<Object>?> inputItems = default, Option<ChatCompletionsRequestToolChoice?> conversation = default, Option<List<string>?> include = default, Option<string?> instructions = default, Option<int?> maxOutputTokens = default, Option<int?> maxToolCalls = default, Option<Dictionary<string, string>?> metadata = default, Option<bool?> parallelToolCalls = default, Option<string?> previousResponseId = default, Option<ResponsesRequestPrompt?> prompt = default, Option<string?> promptCacheKey = default, Option<string?> promptCacheRetention = default, Option<ResponsesRequestReasoning?> reasoning = default, Option<string?> safetyIdentifier = default, Option<string?> serviceTier = default, Option<bool?> store = default, Option<bool?> stream = default, Option<Object?> streamOptions = default, Option<decimal?> temperature = default, Option<Object?> text = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<List<Object>?> tools = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<string?> truncation = default, Option<bool?> background = default, Option<string?> user = default, Option<bool?> usage = default, Option<bool?> meta = default)
+        public ResponsesRequest(string model, Option<Object?> input = default, Option<List<Object>?> inputItems = default, Option<ChatCompletionsRequestToolChoice?> conversation = default, Option<List<string>?> include = default, Option<string?> instructions = default, Option<int?> maxOutputTokens = default, Option<int?> maxToolCalls = default, Option<Dictionary<string, string>?> metadata = default, Option<bool?> parallelToolCalls = default, Option<string?> previousResponseId = default, Option<ResponsesRequestPrompt?> prompt = default, Option<string?> promptCacheKey = default, Option<string?> promptCacheRetention = default, Option<ResponsesRequestReasoning?> reasoning = default, Option<string?> safetyIdentifier = default, Option<string?> serviceTier = default, Option<bool?> store = default, Option<bool?> stream = default, Option<Object?> streamOptions = default, Option<decimal?> temperature = default, Option<Object?> text = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<List<Object>?> tools = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<string?> truncation = default, Option<bool?> background = default, Option<string?> user = default, Option<bool?> usage = default, Option<bool?> meta = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             InputOption = input;
@@ -98,6 +99,7 @@ namespace AIStatsSdk.Model
             UserOption = user;
             UsageOption = usage;
             MetaOption = meta;
+            ProviderOption = provider;
             OnCreated();
         }
 
@@ -500,6 +502,19 @@ namespace AIStatsSdk.Model
         public bool? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Provider
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<ProviderRoutingOptions?> ProviderOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Provider
+        /// </summary>
+        [JsonPropertyName("provider")]
+        public ProviderRoutingOptions? Provider { get { return this.ProviderOption; } set { this.ProviderOption = new(value); } }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -538,6 +553,7 @@ namespace AIStatsSdk.Model
             sb.Append("  User: ").Append(User).Append("\n");
             sb.Append("  Usage: ").Append(Usage).Append("\n");
             sb.Append("  Meta: ").Append(Meta).Append("\n");
+            sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -654,6 +670,7 @@ namespace AIStatsSdk.Model
             Option<string?> user = default;
             Option<bool?> usage = default;
             Option<bool?> meta = default;
+            Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
             {
@@ -763,6 +780,9 @@ namespace AIStatsSdk.Model
                         case "meta":
                             meta = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
+                        case "provider":
+                            provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         default:
                             break;
                     }
@@ -865,7 +885,10 @@ namespace AIStatsSdk.Model
             if (meta.IsSet && meta.Value == null)
                 throw new ArgumentNullException(nameof(meta), "Property is not nullable for class ResponsesRequest.");
 
-            return new ResponsesRequest(model.Value!, input, inputItems, conversation, include, instructions, maxOutputTokens, maxToolCalls, metadata, parallelToolCalls, previousResponseId, prompt, promptCacheKey, promptCacheRetention, reasoning, safetyIdentifier, serviceTier, store, stream, streamOptions, temperature, text, toolChoice, tools, topLogprobs, topP, truncation, background, user, usage, meta);
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider), "Property is not nullable for class ResponsesRequest.");
+
+            return new ResponsesRequest(model.Value!, input, inputItems, conversation, include, instructions, maxOutputTokens, maxToolCalls, metadata, parallelToolCalls, previousResponseId, prompt, promptCacheKey, promptCacheRetention, reasoning, safetyIdentifier, serviceTier, store, stream, streamOptions, temperature, text, toolChoice, tools, topLogprobs, topP, truncation, background, user, usage, meta, provider);
         }
 
         /// <summary>
@@ -951,6 +974,9 @@ namespace AIStatsSdk.Model
 
             if (responsesRequest.UserOption.IsSet && responsesRequest.User == null)
                 throw new ArgumentNullException(nameof(responsesRequest.User), "Property is required for class ResponsesRequest.");
+
+            if (responsesRequest.ProviderOption.IsSet && responsesRequest.Provider == null)
+                throw new ArgumentNullException(nameof(responsesRequest.Provider), "Property is required for class ResponsesRequest.");
 
             writer.WriteString("model", responsesRequest.Model);
 
@@ -1065,6 +1091,12 @@ namespace AIStatsSdk.Model
 
             if (responsesRequest.MetaOption.IsSet)
                 writer.WriteBoolean("meta", responsesRequest.MetaOption.Value!.Value);
+
+            if (responsesRequest.ProviderOption.IsSet)
+            {
+                writer.WritePropertyName("provider");
+                JsonSerializer.Serialize(writer, responsesRequest.Provider, jsonSerializerOptions);
+            }
         }
     }
 }

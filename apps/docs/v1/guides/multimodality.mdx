@@ -1,0 +1,26 @@
+---
+title: "Multimodality"
+description: "Use text, image, audio, video, and other modalities through the Gateway."
+---
+
+The Gateway exposes multiple modalities through a unified API surface. Each endpoint maps to a different capability, and model support varies by provider.
+
+## Modalities and endpoints
+
+| Modality | Primary endpoints | Notes |
+| --- | --- | --- |
+| Text | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Structured and conversational outputs. |
+| Images | `/v1/images/generations`, `/v1/images/edits` | Text-to-image and image editing. |
+| Audio | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Speech synthesis and speech-to-text. |
+| Video | `/v1/video/generation`, `/v1/video/status`, `/v1/video/content`, `/v1/video/delete` | Generate and retrieve video outputs. |
+| Music | `/v1/music/generate` | Music generation via supported providers. |
+| OCR | `/v1/ocr` | Extract text from images where supported. |
+
+## Checking model support
+
+Use the [Models endpoint](/v1/api-reference/endpoint/models) to see which models are available and which endpoints they support. Provider coverage is available via the [Providers endpoint](/v1/api-reference/endpoint/providers).
+
+## Best practices
+
+- Match the endpoint to the modality you need, even if the model name is shared across modalities.
+- Validate payloads against the [API Reference](/v1/api-reference/introduction) before shipping.

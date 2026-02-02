@@ -158,7 +158,7 @@ module AIStatsSdk
 
     def initialize
       @scheme = 'https'
-      @host = 'api.phaseo.app'
+      @host = 'gateway.ai-stats.com'
       @base_path = '/v1'
       @server_index = nil
       @server_operation_index = {}
@@ -258,7 +258,7 @@ module AIStatsSdk
     def server_settings
       [
         {
-          url: "https://api.phaseo.app/v1",
+          url: "https://gateway.ai-stats.com/v1",
           description: "No description provided",
         }
       ]

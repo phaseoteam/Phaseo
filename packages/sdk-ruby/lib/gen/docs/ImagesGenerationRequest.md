@@ -12,6 +12,7 @@
 | **response_format** | **String** |  | [optional] |
 | **style** | **String** |  | [optional] |
 | **user** | **String** |  | [optional] |
+| **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
 
@@ -26,7 +27,8 @@ instance = AIStatsSdk::ImagesGenerationRequest.new(
   quality: null,
   response_format: null,
   style: null,
-  user: null
+  user: null,
+  provider: null
 )
 ```
 

@@ -50,10 +50,9 @@ public class Client {
 			builder.header("Content-Type", "application/json");
 		}
 		HttpResponse<String> response = http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-		String responseBody = response.body();
 		if (response.statusCode() >= 400) {
-			throw new IOException("Request failed: " + response.statusCode() + " " + responseBody);
+			throw new IOException("Request failed: " + response.statusCode());
 		}
-		return responseBody;
+		return response.body();
 	}
 }

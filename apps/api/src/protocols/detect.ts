@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // Protocol detection logic
 // Determines which protocol codec to use based on the endpoint and request path
 
@@ -10,7 +14,11 @@ import type { Endpoint } from "@core/types";
  * - openai.responses: OpenAI Responses API (unified responses format)
  * - anthropic.messages: Anthropic Messages API
  */
-export type Protocol = "openai.chat.completions" | "openai.responses" | "anthropic.messages";
+export type Protocol =
+	| "openai.chat.completions"
+	| "openai.responses"
+	| "openai.embeddings"
+	| "anthropic.messages";
 
 /**
  * Detect which protocol the client is using based on endpoint and request path
@@ -34,6 +42,9 @@ export function detectProtocol(endpoint: Endpoint, requestPath?: string): Protoc
 		case "responses":
 			return "openai.responses";
 
+		case "embeddings":
+			return "openai.embeddings";
+
 		case "chat.completions":
 			return "openai.chat.completions";
 
@@ -54,6 +65,8 @@ export function getProtocolPath(protocol: Protocol): string {
 			return "/v1/chat/completions";
 		case "openai.responses":
 			return "/v1/responses";
+		case "openai.embeddings":
+			return "/v1/embeddings";
 		case "anthropic.messages":
 			return "/v1/messages";
 	}
@@ -73,7 +86,7 @@ export function protocolSupportsFeature(
 
 		case "streaming":
 			// All protocols support streaming
-			return true;
+			return protocol !== "openai.embeddings";
 
 		case "reasoning":
 			// OpenAI Responses API has native reasoning support
@@ -99,7 +112,10 @@ export function getProtocolDisplayName(protocol: Protocol): string {
 			return "OpenAI Chat Completions";
 		case "openai.responses":
 			return "OpenAI Responses";
+		case "openai.embeddings":
+			return "OpenAI Embeddings";
 		case "anthropic.messages":
 			return "Anthropic Messages";
 	}
 }
+

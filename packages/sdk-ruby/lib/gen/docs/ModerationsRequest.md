@@ -7,6 +7,7 @@
 | **model** | **String** |  |  |
 | **meta** | **Boolean** |  | [optional][default to false] |
 | **input** | [**ModerationsRequestInput**](ModerationsRequestInput.md) |  |  |
+| **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
 
@@ -16,7 +17,8 @@ require 'ai_stats_sdk'
 instance = AIStatsSdk::ModerationsRequest.new(
   model: null,
   meta: null,
-  input: null
+  input: null,
+  provider: null
 )
 ```
 

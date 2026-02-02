@@ -59,6 +59,7 @@ type ChatConversationProps = {
 	onOpenSettings: () => void;
 	accentColor: string;
 	selectedOrgId: string;
+	selectedModelId: string;
 	selectedModelLabel: string;
 	onOpenModelPicker: () => void;
 };
@@ -94,6 +95,23 @@ function ensureVariants(message: ChatMessage) {
 	];
 }
 
+const SAMPLE_QUESTIONS = [
+	"Why do we get bugs in production but not locally?",
+	"What is the best way to handle errors in async code?",
+	"Can you explain closures in JavaScript?",
+	"How do I center a div? (Just kidding, I actually know this one)",
+	"Why does my regex work on regex101 but not in my code?",
+	"What's the difference between interface and type in TypeScript?",
+	"How do I write a recursive function without infinite loops?",
+	"What's the cleanest way to handle null and undefined?",
+	"Why did my API call return 403 when it worked yesterday?",
+	"How do I debug code that only fails in production?",
+];
+
+function getRandomPlaceholder() {
+	return SAMPLE_QUESTIONS[Math.floor(Math.random() * SAMPLE_QUESTIONS.length)];
+}
+
 export function ChatConversation({
 	activeThread,
 	isSending,
@@ -109,6 +127,7 @@ export function ChatConversation({
 	onOpenSettings,
 	accentColor,
 	selectedOrgId,
+	selectedModelId,
 	selectedModelLabel,
 	onOpenModelPicker,
 }: ChatConversationProps) {
@@ -122,6 +141,10 @@ export function ChatConversation({
 	const [attachments, setAttachments] = useState<File[]>([]);
 	const [searchEnabled, setSearchEnabled] = useState(false);
 	const appliedPresetRef = useRef<string | null>(null);
+
+	const placeholder = useMemo(() => {
+		return getRandomPlaceholder();
+	}, [activeThread?.id]);
 
 	const latestMessageContent =
 		activeThread?.messages[activeThread.messages.length - 1]?.content ?? "";
@@ -742,35 +765,34 @@ export function ChatConversation({
 								}
 							}}
 							rows={2}
-							placeholder="Send a message..."
+							placeholder={placeholder}
 							className="min-h-[56px] resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
 						/>
 						<div className="flex items-center justify-between pt-2">
-							<div className="flex items-center gap-1">
+							<div className="flex items-center gap-2">
 								<Tooltip>
 									<TooltipTrigger asChild>
 										<Button
 											variant="ghost"
-											size="icon"
 											onClick={onOpenModelPicker}
-											className="h-8 w-8"
+											className="h-8 px-2 gap-1.5"
 										>
-											{selectedModelLabel ===
-											"Select model" ? (
-												<Cpu className="h-4 w-4 text-muted-foreground" />
-											) : (
-												<Logo
-													id={selectedOrgId}
-													alt={selectedOrgId}
-													width={16}
-													height={16}
-													className="rounded-xl shrink-0"
-												/>
-											)}
-										</Button>
+										{selectedModelLabel ===
+										"Select model" ? (
+											<Cpu className="h-4 w-4 text-muted-foreground" />
+										) : (
+											<Logo
+												id={selectedOrgId}
+												alt={selectedOrgId}
+												width={16}
+												height={16}
+												className="rounded-xl shrink-0"
+											/>
+										)}
+									</Button>
 									</TooltipTrigger>
 									<TooltipContent>
-										{selectedModelLabel || "Select model"}
+										{selectedModelId || "Select model"}
 									</TooltipContent>
 								</Tooltip>
 								<Tooltip>

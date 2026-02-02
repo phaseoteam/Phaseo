@@ -47,7 +47,10 @@ export interface BenchmarkPage {
     type?: string | null;
 }
 
-export default async function getBenchmark(benchmark_id: string): Promise<BenchmarkPage | null> {
+export default async function getBenchmark(
+    benchmark_id: string,
+    includeHidden: boolean
+): Promise<BenchmarkPage | null> {
     const supabase = await createClient(); // must allow read via RLS for these tables
 
     // Fetch the single benchmark and include nested results -> models -> organisations
@@ -77,6 +80,7 @@ export default async function getBenchmark(benchmark_id: string): Promise<Benchm
                     release_date,
                     announcement_date,
                     organisation_id,
+                    hidden,
                     data_organisations(*)
                 )
             )
@@ -94,7 +98,12 @@ export default async function getBenchmark(benchmark_id: string): Promise<Benchm
     const row = benchmarks as any | undefined;
     if (!row) return null;
 
-    const results: BenchmarkResult[] = (row.data_benchmark_results ?? []).map((r: any) => {
+    const results: BenchmarkResult[] = (row.data_benchmark_results ?? [])
+        .filter((r: any) => {
+            if (includeHidden) return true;
+            return !r?.data_models?.hidden;
+        })
+        .map((r: any) => {
         const modelRow = r.data_models ?? null;
         const orgRow = modelRow?.data_organisations ?? null;
 
@@ -147,12 +156,15 @@ export default async function getBenchmark(benchmark_id: string): Promise<Benchm
     return formatted;
 }
 
-export async function getBenchmarkCached(benchmark_id: string): Promise<BenchmarkPage | null> {
+export async function getBenchmarkCached(
+    benchmark_id: string,
+    includeHidden: boolean
+): Promise<BenchmarkPage | null> {
     "use cache";
 
     cacheLife("days");
     cacheTag("data:benchmarks");
 
     console.log("[fetch] HIT DB for benchmark:", benchmark_id);
-    return getBenchmark(benchmark_id);
+    return getBenchmark(benchmark_id, includeHidden);
 }

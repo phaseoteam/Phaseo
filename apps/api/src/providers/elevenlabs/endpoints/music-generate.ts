@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 // ElevenLabs Music Generation endpoint
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { MusicGenerateSchema, type MusicGenerateRequest } from "@core/schemas";
@@ -95,3 +99,4 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         byokKeyId: keyInfo.byokId,
     };
 }
+

@@ -1,0 +1,22 @@
+{
+  "key": "google-ai-studio:google/veo-3.1-preview:video.generations",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/veo-3.1-preview",
+  "capability_id": "video.generations",
+  "rules": [
+    {
+      "meter": "output_video_seconds",
+      "unit": "video",
+      "unit_size": 1,
+      "price_per_unit": 0.4,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-10-15T00:00:00"
+    }
+  ]
+}

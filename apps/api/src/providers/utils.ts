@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import { z } from "zod";
 
 // Sanitize provider payloads using the schema we already validate against.
@@ -22,3 +26,4 @@ export function buildAdapterPayload<
     }
     return { canonical, adapterPayload: adapterPayload as Omit<z.infer<T>, K> };
 }
+

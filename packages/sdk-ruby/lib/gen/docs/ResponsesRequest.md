@@ -35,6 +35,7 @@
 | **user** | **String** |  | [optional] |
 | **usage** | **Boolean** |  | [optional] |
 | **meta** | **Boolean** |  | [optional] |
+| **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
 
@@ -72,7 +73,8 @@ instance = AIStatsSdk::ResponsesRequest.new(
   background: null,
   user: null,
   usage: null,
-  meta: null
+  meta: null,
+  provider: null
 )
 ```
 

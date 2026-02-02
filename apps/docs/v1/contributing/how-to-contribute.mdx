@@ -4,13 +4,13 @@ description: "A step-by-step guide on how to make your first contribution to AI 
 ---
 
 Contributing to **AI Stats** is simple, transparent, and open to everyone.  
-This guide walks you through the entire process, whether you’re editing a model entry, updating benchmark data, improving documentation, or contributing new ideas.
+This guide walks you through the entire process, whether you're editing a model entry, updating benchmark data, improving documentation, or contributing new ideas.
 
 ---
 
 ## Before you start
 
-You’ll need a few basic tools installed:
+You'll need a few basic tools installed:
 
 | Tool               | Purpose                                        | Installation                                       |
 | ------------------ | ---------------------------------------------- | -------------------------------------------------- |
@@ -25,7 +25,7 @@ If you only want to edit **data** or **Markdown documentation**, you can make ch
 
 ## 1. Fork the repository
 
-Go to the [AI Stats GitHub Repository](https://github.com/AI-Stats/AI-Stats) and click **“Fork”** in the top-right corner.  
+Go to the [AI Stats GitHub Repository](https://github.com/AI-Stats/AI-Stats) and click **Fork** in the top-right corner.  
 This creates your own copy of the project that you can freely edit.
 
 ---
@@ -43,7 +43,7 @@ This downloads your fork to your local machine.
 
 ## 3. Create a new branch
 
-It’s best practice to make a new branch for each change you make:
+It's best practice to make a new branch for each change you make:
 
 ```bash
 git checkout -b update-benchmark-data
@@ -64,21 +64,21 @@ Examples:
 
 Depending on what you want to edit:
 
-| Area                  | Files                                    | Description                                           |
-| --------------------- | ---------------------------------------- | ----------------------------------------------------- |
-| **Model data**        | `/apps/web/data/models/**/*.json`        | Add or update model metadata, pricing, or benchmarks. |
-| **Organisation data** | `/apps/web/data/organisations/**/*.json` | Update details about companies or research groups.    |
-| **Benchmark data**    | `/apps/web/data/benchmarks/**/*.json`    | Submit new evaluation results or corrections.         |
-| **Documentation**     | `/apps/docs/v1/**/*.mdx`                 | Improve or expand guides, references, and docs pages. |
-| **Gateway**           | `/apps/api/*`                            | Make changes to the API Gateway.                      |
+| Area                  | Files                                         | Description                                           |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------- |
+| **Model data**        | `/apps/web/src/data/models/**/model.json`     | Add or update model metadata, pricing, or benchmarks. |
+| **Organisation data** | `/apps/web/src/data/organisations/*.json`     | Update details about companies or research groups.    |
+| **Benchmark data**    | `/apps/web/src/data/benchmarks/**/*.json`     | Submit new evaluation results or corrections.         |
+| **Documentation**     | `/apps/docs/v1/**/*.mdx`                      | Improve or expand guides, references, and docs pages. |
+| **Gateway**           | `/apps/api/*`                                 | Make changes to the API Gateway.                      |
 
-If you’re editing data, please follow the schemas and field formats described in [Repo Structure](/v1/contributing/repo-structure).
+If you're editing data, please follow the schemas and field formats described in [Repo Structure](/v1/contributing/repo-structure).
 
 ---
 
 ## 5. Preview your changes (optional)
 
-If you’d like to preview your edits locally:
+If you'd like to preview your edits locally:
 
 ```bash
 pnpm install
@@ -91,7 +91,7 @@ Use [http://localhost:3100](http://localhost:3100) for web changes, and [http://
 
 ## 6. Commit your changes
 
-Once you’re satisfied, commit your work:
+Once you're satisfied, commit your work:
 
 ```bash
 git add .
@@ -113,17 +113,17 @@ git push origin update-benchmark-data
 ## 8. Create a Pull Request (PR)
 
 1. Go to your fork on GitHub.
-2. You’ll see a message offering to create a PR - click **“Compare & Pull Request.”**
-3. Fill out the PR template with the appropriate information for your changes
-4. Submit the PR!
+2. You'll see a message offering to create a PR - click **Compare & Pull Request.**
+3. Fill out the PR template with the appropriate information for your changes.
+4. Submit the PR.
 
 Once your PR is reviewed and approved, it will be merged into the main AI Stats repository.
 
 ---
 
-## 9. Celebrate 🎉
+## 9. Celebrate
 
-Your contribution will be live once merged. If you made it this far, we appreciate your effort and support and will be forever grateful for all your help! ❤️
+Your contribution will be live once merged. If you made it this far, we appreciate your effort and support.
 
 <Card
 	title="View Contributors"
@@ -131,7 +131,7 @@ Your contribution will be live once merged. If you made it this far, we apprecia
 	href="https://ai-stats.phaseo.app/contribute"
 	horizontal
 >
-	See everyone who’s helped build AI Stats.
+	See everyone who's helped build AI Stats.
 </Card>
 
 ---
@@ -158,7 +158,7 @@ cd AI-Stats
 git checkout -b add-openai-new-model
 
 # 3. Make changes
-# e.g., update /data/models/new-openai-model.json
+# e.g., update apps/web/src/data/models/openai/new-model/model.json
 
 # 4. Commit and push
 git add .
@@ -185,6 +185,6 @@ git push origin add-new-openai-model
 		icon="brain"
 		href="/v1/contributing/editing-a-model"
 	>
-		Start with a practical example — updating or adding a model entry.
+		Start with a practical example - updating or adding a model entry.
 	</Card>
 </Columns>

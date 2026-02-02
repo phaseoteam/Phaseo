@@ -9,7 +9,7 @@ import { SignUp } from "@/components/(gateway)/auth/sign-up/SignUp";
 
 export const metadata: Metadata = {
 	title: "Sign Up",
-	description: "Create an account to access the AI Stats Conduit.",
+	description: "Create an account to access the AI Stats Gateway.",
 };
 
 export default function Page() {

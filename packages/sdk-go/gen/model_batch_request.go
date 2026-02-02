@@ -25,6 +25,7 @@ type BatchRequest struct {
 	Endpoint string `json:"endpoint"`
 	CompletionWindow *string `json:"completion_window,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
 
 type _BatchRequest BatchRequest
@@ -160,6 +161,38 @@ func (o *BatchRequest) SetMetadata(v map[string]interface{}) {
 	o.Metadata = v
 }
 
+// GetProvider returns the Provider field value if set, zero value otherwise.
+func (o *BatchRequest) GetProvider() ProviderRoutingOptions {
+	if o == nil || IsNil(o.Provider) {
+		var ret ProviderRoutingOptions
+		return ret
+	}
+	return *o.Provider
+}
+
+// GetProviderOk returns a tuple with the Provider field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *BatchRequest) GetProviderOk() (*ProviderRoutingOptions, bool) {
+	if o == nil || IsNil(o.Provider) {
+		return nil, false
+	}
+	return o.Provider, true
+}
+
+// HasProvider returns a boolean if a field has been set.
+func (o *BatchRequest) HasProvider() bool {
+	if o != nil && !IsNil(o.Provider) {
+		return true
+	}
+
+	return false
+}
+
+// SetProvider gets a reference to the given ProviderRoutingOptions and assigns it to the Provider field.
+func (o *BatchRequest) SetProvider(v ProviderRoutingOptions) {
+	o.Provider = &v
+}
+
 func (o BatchRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -177,6 +210,9 @@ func (o BatchRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Metadata) {
 		toSerialize["metadata"] = o.Metadata
+	}
+	if !IsNil(o.Provider) {
+		toSerialize["provider"] = o.Provider
 	}
 	return toSerialize, nil
 }

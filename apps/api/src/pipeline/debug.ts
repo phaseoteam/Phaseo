@@ -1,3 +1,7 @@
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
 const DEFAULT_PREVIEW_LIMIT = 8000;
 
 function truncate(text: string, limit: number): string {
@@ -33,3 +37,4 @@ export async function logDebugEvent(kind: string, payload: Record<string, unknow
         // Swallow debug logging errors to avoid impacting requests
     }
 }
+

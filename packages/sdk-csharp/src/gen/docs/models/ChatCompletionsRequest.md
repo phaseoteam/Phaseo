@@ -26,6 +26,7 @@ Name | Type | Description | Notes
 **TopP** | **decimal** |  | [optional] 
 **ResponseFormat** | [**ChatCompletionsRequestResponseFormat**](ChatCompletionsRequestResponseFormat.md) |  | [optional] 
 **Usage** | **bool** |  | [optional] 
+**Provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 **UserId** | **string** |  | [optional] 
 **ServiceTier** | **string** |  | [optional] [default to ServiceTierEnum.Standard]
 

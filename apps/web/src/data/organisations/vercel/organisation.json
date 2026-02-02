@@ -2,7 +2,28 @@
   "organisation_id": "vercel",
   "name": "Vercel",
   "country_code": "US",
-  "description": null,
+  "description": "Vercel is a developer cloud platform for building and deploying web experiences (including AI apps), providing tooling and infrastructure for shipping and scaling modern frontends.",
   "colour": "#000000",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://vercel.com"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/vercel"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/vercel"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/vercel"
+    },
+    {
+      "platform": "youtube",
+      "url": "https://www.youtube.com/@VercelHQ"
+    }
+  ]
 }

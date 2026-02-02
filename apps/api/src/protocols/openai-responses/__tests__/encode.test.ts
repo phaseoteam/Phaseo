@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // OpenAI Responses API - Encoder Tests
 import { describe, it, expect } from "vitest";
 import { encodeOpenAIResponsesResponse } from "../encode";
@@ -14,7 +18,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "Hello! How can I help?",
+						content: [{ type: "text", text: "Hello! How can I help?" }],
 					},
 					finishReason: "stop",
 				},
@@ -55,7 +59,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "call_abc123",
@@ -90,7 +94,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						toolCalls: [
 							{
 								id: "call_1",
@@ -133,7 +137,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "Let me check that for you.",
+						content: [{ type: "text", text: "Let me check that for you." }],
 						toolCalls: [
 							{
 								id: "call_1",
@@ -164,19 +168,12 @@ describe("encodeOpenAIResponsesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "Let me think about this...",
+						content: [
+							{ type: "reasoning_text", text: "Let me think about this..." },
+							{ type: "text", text: "The answer is 42." },
+						],
 					},
 					finishReason: "stop",
-					reasoning: true,
-				},
-				{
-					index: 1,
-					message: {
-						role: "assistant",
-						content: "The answer is 42.",
-					},
-					finishReason: "stop",
-					reasoning: false,
 				},
 			],
 		};
@@ -185,13 +182,14 @@ describe("encodeOpenAIResponsesResponse", () => {
 
 		expect(response.output).toHaveLength(2);
 
-		// First output should be reasoning_details
-		expect(response.output[0].type).toBe("reasoning_details");
-		if (response.output[0].type === "reasoning_details") {
-			expect(response.output[0].reasoning).toHaveLength(1);
-			expect(response.output[0].reasoning[0]).toEqual({
-				type: "text",
+		// First output should be reasoning
+		expect(response.output[0].type).toBe("reasoning");
+		if (response.output[0].type === "reasoning") {
+			expect(response.output[0].content).toHaveLength(1);
+			expect(response.output[0].content[0]).toEqual({
+				type: "output_text",
 				text: "Let me think about this...",
+				annotations: [],
 			});
 		}
 
@@ -212,32 +210,25 @@ describe("encodeOpenAIResponsesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Step 1..." },
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "reasoning_text", text: "Step 1..." },
+							{ type: "reasoning_text", text: "Step 2..." },
+							{ type: "text", text: "Final answer" },
+						],
+					},
 					finishReason: "stop",
-					reasoning: true,
-				},
-				{
-					index: 1,
-					message: { role: "assistant", content: "Step 2..." },
-					finishReason: "stop",
-					reasoning: true,
-				},
-				{
-					index: 2,
-					message: { role: "assistant", content: "Final answer" },
-					finishReason: "stop",
-					reasoning: false,
 				},
 			],
 		};
 
 		const response = encodeOpenAIResponsesResponse(ir, "req-123");
 
-		expect(response.output).toHaveLength(2);
-		expect(response.output[0].type).toBe("reasoning_details");
-		if (response.output[0].type === "reasoning_details") {
-			expect(response.output[0].reasoning).toHaveLength(2);
-		}
+		expect(response.output).toHaveLength(3);
+		expect(response.output[0].type).toBe("reasoning");
+		expect(response.output[1].type).toBe("reasoning");
+		expect(response.output[2].type).toBe("message");
 	});
 
 	it("should handle missing usage", () => {
@@ -248,7 +239,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Test" },
+					message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 					finishReason: "stop",
 				},
 			],
@@ -266,7 +257,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Test" },
+					message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 					finishReason: "stop",
 				},
 			],
@@ -285,7 +276,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "" },
+					message: { role: "assistant", content: [{ type: "text", text: "" }] },
 					finishReason: "stop",
 				},
 			],
@@ -310,7 +301,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: null,
+						content: [],
 						toolCalls: [
 							{
 								id: "call_1",
@@ -341,7 +332,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 					index: 0,
 					message: {
 						role: "assistant",
-						content: "",
+						content: [],
 						refusal: "I cannot help with that.",
 					},
 					finishReason: "stop",
@@ -365,7 +356,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Test" },
+					message: { role: "assistant", content: [{ type: "text", text: "Test" }] },
 					finishReason: "stop",
 				},
 			],
@@ -385,9 +376,8 @@ describe("encodeOpenAIResponsesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Thinking..." },
+					message: { role: "assistant", content: [{ type: "reasoning_text", text: "Thinking..." }] },
 					finishReason: "stop",
-					reasoning: true,
 				},
 			],
 		};
@@ -395,7 +385,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 		const response = encodeOpenAIResponsesResponse(ir, "req-123");
 
 		expect(response.output).toHaveLength(1);
-		expect(response.output[0].type).toBe("reasoning_details");
+		expect(response.output[0].type).toBe("reasoning");
 	});
 
 	it("should handle content with no reasoning flag (defaults to main content)", () => {
@@ -406,7 +396,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 			choices: [
 				{
 					index: 0,
-					message: { role: "assistant", content: "Regular response" },
+					message: { role: "assistant", content: [{ type: "text", text: "Regular response" }] },
 					finishReason: "stop",
 				},
 			],
@@ -418,3 +408,4 @@ describe("encodeOpenAIResponsesResponse", () => {
 		expect(response.output[0].type).toBe("message");
 	});
 });
+

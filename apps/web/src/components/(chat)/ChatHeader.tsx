@@ -83,7 +83,7 @@ type ModelOption = {
 type ModelOptions = {
 	featured: ModelOption[];
 	grouped: Map<string, ModelOption[]>;
-	comingSoon: ModelOption[];
+	comingSoon: Map<string, ModelOption[]>;
 };
 
 type PersonalizationSettings = {
@@ -115,12 +115,26 @@ const getModelBadgeProps = (suffix: string) => {
 				className:
 					"text-xs shrink-0 bg-green-200 text-green-900 border-green-400 dark:bg-green-800 dark:text-green-100 dark:border-green-600 font-normal px-1 py-0",
 			};
+		case "new":
+			return {
+				variant: "secondary" as const,
+				className:
+					"text-xs shrink-0 bg-blue-200 text-blue-900 border-blue-400 dark:bg-blue-800 dark:text-blue-100 dark:border-blue-600 font-normal px-1 py-0",
+			};
 		default:
 			return {
 				variant: "outline" as const,
 				className: "text-xs shrink-0 font-normal px-1.5 py-0.5",
 			};
 	}
+};
+
+const isNewModel = (releaseDate: string | null): boolean => {
+	if (!releaseDate) return false;
+	const release = new Date(releaseDate);
+	const now = new Date();
+	const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+	return release >= twoWeeksAgo;
 };
 
 type ChatHeaderProps = {
@@ -192,6 +206,18 @@ export function ChatHeader({
 		() => Array.from(modelOptions.grouped.entries()),
 		[modelOptions.grouped]
 	);
+	const comingSoonEntries = useMemo(
+		() => Array.from(modelOptions.comingSoon.entries()),
+		[modelOptions.comingSoon]
+	);
+	const comingSoonCount = useMemo(
+		() =>
+			comingSoonEntries.reduce(
+				(total, [, list]) => total + list.length,
+				0
+			),
+		[comingSoonEntries]
+	);
 	const normalizeSearch = (value: string) =>
 		value
 			.toLowerCase()
@@ -262,7 +288,7 @@ export function ChatHeader({
 							width={18}
 							height={18}
 							className={cn(
-								"rounded-full border border-background bg-background shrink-0",
+								"border border-background bg-background shrink-0",
 								option.providerAvailability?.[providerId]
 									? null
 									: "grayscale opacity-60"
@@ -305,18 +331,21 @@ export function ChatHeader({
 				>
 					<ModelSelectorTrigger asChild>
 						<Button variant="ghost" className="gap-2">
-							{activeThread?.modelId ? (
-								<Logo
-									id={selectedOrgId}
-									alt={selectedOrgId}
-									width={18}
-									height={18}
-									className="rounded-full shrink-0"
-								/>
-							) : (
-								<Cpu className="h-4 w-4 text-muted-foreground" />
-							)}
-							<span className="max-w-[180px] truncate text-left text-sm">
+						{activeThread?.modelId ? (
+							<Logo
+								id={selectedOrgId}
+								alt={selectedOrgId}
+								width={18}
+								height={18}
+								className="shrink-0"
+							/>
+						) : (
+							<Cpu className="h-4 w-4 text-muted-foreground" />
+						)}
+							<span className="hidden md:inline text-left text-sm">
+								{selectedModelLabel}
+							</span>
+							<span className="md:hidden max-w-[180px] truncate text-left text-sm">
 								{selectedModelLabel}
 							</span>
 							<ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -332,10 +361,11 @@ export function ChatHeader({
 								No models found.
 							</ModelSelectorEmpty>
 							{modelOptions.featured.length > 0 && (
-								<ModelSelectorGroup
-									heading="Featured"
-									className="pb-2"
-								>
+								<>
+									<ModelSelectorGroup
+										heading="Featured"
+										className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
+									>
 									{modelOptions.featured.map((option) => (
 										<ModelSelectorItem
 											key={option.modelId}
@@ -359,85 +389,8 @@ export function ChatHeader({
 												alt={option.orgId}
 												width={18}
 												height={18}
-												className="rounded-full shrink-0"
+												className="shrink-0"
 											/>
-											<div className="flex min-w-0 flex-1 items-center gap-2">
-												<div className="flex items-center gap-2 min-w-0 flex-1">
-													<span className="truncate text-sm font-medium">
-														{
-															option.label.split(
-																":"
-															)[0]
-														}
-													</span>
-													{option.modelId.includes(
-														":"
-													) && (
-														<Badge
-															{...getModelBadgeProps(
-																option.modelId.split(
-																	":"
-																)[1]
-															)}
-														>
-															{
-																option.modelId.split(
-																	":"
-																)[1]
-															}
-														</Badge>
-													)}
-													{activeThread?.modelId ===
-														option.modelId && (
-														<Check className="h-4 w-4 text-foreground ml-1" />
-													)}
-												</div>
-												{renderProviderLogos(option)}
-											</div>
-											{renderProviderLogos(option)}
-										</ModelSelectorItem>
-									))}
-								</ModelSelectorGroup>
-							)}
-							{groupedEntries.map(([orgId, options]) => {
-								const orgLabel =
-									options[0]?.orgName ??
-									formatOrgLabel(orgId);
-								return (
-									<ModelSelectorGroup
-										key={orgId}
-										heading={orgLabel}
-										className="pb-2"
-									>
-										{options.map((option) => (
-											<ModelSelectorItem
-												key={option.modelId}
-												value={option.modelId}
-												onSelect={() => {
-													onUpdateModel(
-														option.modelId
-													);
-													onModelPickerOpenChange(
-														false
-													);
-												}}
-												keywords={buildSearchKeywords(
-													option
-												)}
-												className={cn(
-													"flex items-center gap-3",
-													activeThread?.modelId ===
-														option.modelId &&
-														"bg-foreground/5"
-												)}
-											>
-												<Logo
-													id={option.orgId}
-													alt={option.orgId}
-													width={18}
-													height={18}
-													className="rounded-full shrink-0"
-												/>
 												<div className="flex min-w-0 flex-1 items-center gap-2">
 													<div className="flex items-center gap-2 min-w-0 flex-1">
 														<span className="truncate text-sm font-medium">
@@ -447,6 +400,194 @@ export function ChatHeader({
 																)[0]
 															}
 														</span>
+												{option.modelId.includes(
+													":"
+												) && (
+													<Badge
+														{...getModelBadgeProps(
+															option.modelId.split(
+																":"
+															)[1]
+														)}
+													>
+														{option.modelId
+															.split(":")[1]
+															.replace(
+																	/^free$/,
+																	"Free"
+																)}
+													</Badge>
+												)}
+												{isNewModel(
+													option.releaseDate
+												) && (
+													<Badge
+														{...getModelBadgeProps(
+															"new"
+														)}
+													>
+														New
+													</Badge>
+												)}
+												{activeThread?.modelId ===
+													option.modelId && (
+													<Check className="h-4 w-4 text-foreground ml-1" />
+												)}
+											</div>
+											{renderProviderLogos(option)}
+										</div>
+									</ModelSelectorItem>
+								))}
+							</ModelSelectorGroup>
+							<ModelSelectorSeparator />
+						</>
+					)}
+											{groupedEntries.map(([orgId, options]) => {
+													const orgLabel =
+														options[0]?.orgName ??
+														formatOrgLabel(orgId);
+													return (
+														<ModelSelectorGroup
+															key={orgId}
+															heading={orgLabel}
+															className="pb-2"
+														>
+															{options.map((option) => (
+																<ModelSelectorItem
+																	key={option.modelId}
+																	value={option.modelId}
+																	onSelect={() => {
+																		onUpdateModel(option.modelId);
+																		onModelPickerOpenChange(false);
+																	}}
+																	keywords={buildSearchKeywords(option)}
+																	className={cn(
+																		"flex items-center gap-3",
+																		activeThread?.modelId ===
+																			option.modelId &&
+																			"bg-foreground/5"
+																	)}
+																>
+																	<Logo
+																		id={option.orgId}
+																		alt={option.orgId}
+																		width={18}
+																		height={18}
+																		className="shrink-0"
+																	/>
+												<div className="flex min-w-0 flex-1 items-center gap-2">
+													<div className="flex items-center gap-2 min-w-0 flex-1">
+														<span className="truncate text-sm font-medium">
+															{
+																option.label.split(
+																	":"
+																)[0]
+															}
+														</span>
+												{option.modelId.includes(
+													":"
+												) && (
+													<Badge
+														{...getModelBadgeProps(
+															option.modelId.split(
+																":"
+															)[1]
+														)}
+													>
+														{option.modelId
+															.split(":")[1]
+															.replace(
+																	/^free$/,
+																	"Free"
+																)}
+													</Badge>
+												)}
+												{isNewModel(
+													option.releaseDate
+												) && (
+													<Badge
+														{...getModelBadgeProps(
+															"new"
+														)}
+													>
+														New
+													</Badge>
+												)}
+												{activeThread?.modelId ===
+													option.modelId && (
+													<Check className="h-4 w-4 text-foreground ml-1" />
+												)}
+											</div>
+											{renderProviderLogos(
+												option
+											)}
+										</div>
+									</ModelSelectorItem>
+								))}
+							</ModelSelectorGroup>
+						);
+					})}
+					{comingSoonCount > 0 && (
+								<>
+									<ModelSelectorSeparator />
+									{comingSoonEntries.map(
+										([orgId, options]) => {
+											const orgLabel =
+												options[0]?.orgName ??
+												formatOrgLabel(orgId);
+											return (
+												<ModelSelectorGroup
+													key={`coming-soon-${orgId}`}
+													heading={`${orgLabel} - Coming Soon`}
+													className="pb-2"
+												>
+													{options.map((option) => (
+														<ModelSelectorItem
+															key={
+																option.modelId
+															}
+															value={
+																option.modelId
+															}
+															onSelect={() => {
+																onUpdateModel(
+																	option.modelId
+																);
+																onModelPickerOpenChange(
+																	false
+																);
+															}}
+															keywords={buildSearchKeywords(
+																option
+															)}
+															className={cn(
+																"flex items-center gap-3 opacity-60",
+																activeThread?.modelId ===
+																	option.modelId &&
+																	"bg-foreground/5"
+															)}
+															disabled
+														>
+												<Logo
+													id={
+														option.orgId
+													}
+													alt={
+														option.orgId
+													}
+													width={18}
+													height={18}
+													className="shrink-0 grayscale"
+												/>
+															<div className="flex min-w-0 flex-1 items-center gap-2">
+																<div className="flex items-center gap-2 min-w-0 flex-1">
+																	<span className="truncate text-sm font-medium">
+																		{
+																			option.label.split(
+																				":"
+																			)[0]
+																		}
+																	</span>
 														{option.modelId.includes(
 															":"
 														) && (
@@ -457,100 +598,36 @@ export function ChatHeader({
 																	)[1]
 																)}
 															>
-																{
-																	option.modelId.split(
-																		":"
-																	)[1]
-																}
+																{option.modelId
+																	.split(":")[1]
+																	.replace(
+																		/^free$/,
+																		"Free"
+																		)}
 															</Badge>
 														)}
-														{activeThread?.modelId ===
-															option.modelId && (
-															<Check className="h-4 w-4 text-foreground ml-1" />
+														{isNewModel(
+															option.releaseDate
+														) && (
+															<Badge
+																{...getModelBadgeProps(
+																	"new"
+																)}
+															>
+																New
+															</Badge>
 														)}
 													</div>
 													{renderProviderLogos(
-														option
-													)}
-												</div>
-											</ModelSelectorItem>
-										))}
-									</ModelSelectorGroup>
-								);
-							})}
-							{modelOptions.comingSoon.length > 0 && (
-								<>
-									<ModelSelectorSeparator />
-									<ModelSelectorGroup
-										heading="Coming Soon"
-										className="pb-2"
-									>
-										{modelOptions.comingSoon.map(
-											(option) => (
-												<ModelSelectorItem
-													key={option.modelId}
-													value={option.modelId}
-													onSelect={() => {
-														onUpdateModel(
-															option.modelId
-														);
-														onModelPickerOpenChange(
-															false
-														);
-													}}
-													keywords={buildSearchKeywords(
-														option
-													)}
-													className={cn(
-														"flex items-center gap-3 opacity-60",
-														activeThread?.modelId ===
-															option.modelId &&
-															"bg-foreground/5"
-													)}
-													disabled
-												>
-													<Logo
-														id={option.orgId}
-														alt={option.orgId}
-														width={18}
-														height={18}
-														className="rounded-full shrink-0 grayscale"
-													/>
-													<div className="flex min-w-0 flex-1 items-center gap-2">
-														<div className="flex items-center gap-2 min-w-0 flex-1">
-															<span className="truncate text-sm font-medium">
-																{
-																	option.label.split(
-																		":"
-																	)[0]
-																}
-															</span>
-															{option.modelId.includes(
-																":"
-															) && (
-																<Badge
-																	{...getModelBadgeProps(
-																		option.modelId.split(
-																			":"
-																		)[1]
-																	)}
-																>
-																	{
-																		option.modelId.split(
-																			":"
-																		)[1]
-																	}
-																</Badge>
-															)}
-														</div>
-														{renderProviderLogos(
-															option
-														)}
-													</div>
-												</ModelSelectorItem>
-											)
-										)}
-									</ModelSelectorGroup>
+																	option
+																)}
+															</div>
+														</ModelSelectorItem>
+													))}
+												</ModelSelectorGroup>
+											);
+										}
+									)}
 								</>
 							)}
 						</ModelSelectorList>

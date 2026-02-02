@@ -1,3 +1,7 @@
+// Purpose: Pipeline module for the gateway request lifecycle.
+// Why: Keeps stage-specific logic isolated and testable.
+// How: Exposes helpers used by before/execute/after orchestration.
+
 /**
  * Extract attribution-related headers from an incoming request.
  *
@@ -26,3 +30,4 @@ export function readAttributionHeaders(req: Request) {
     // Return structured attribution metadata
     return { referer, appTitle };
 }
+

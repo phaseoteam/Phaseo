@@ -55,10 +55,11 @@ namespace AIStatsSdk.Model
         /// <param name="topP">topP</param>
         /// <param name="responseFormat">responseFormat</param>
         /// <param name="usage">usage</param>
+        /// <param name="provider">provider</param>
         /// <param name="userId">userId</param>
         /// <param name="serviceTier">serviceTier (default to ServiceTierEnum.Standard)</param>
         [JsonConstructor]
-        public ChatCompletionsRequest(string model, List<ChatMessage> messages, Option<string?> @system = default, Option<ReasoningConfig?> reasoning = default, Option<decimal?> frequencyPenalty = default, Option<Dictionary<string, decimal>?> logitBias = default, Option<int?> maxOutputTokens = default, Option<bool?> meta = default, Option<decimal?> presencePenalty = default, Option<long?> seed = default, Option<bool?> stream = default, Option<decimal?> temperature = default, Option<List<ChatCompletionsRequestToolsInner>?> tools = default, Option<int?> maxToolCalls = default, Option<bool?> parallelToolCalls = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<int?> topK = default, Option<bool?> logprobs = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<ChatCompletionsRequestResponseFormat?> responseFormat = default, Option<bool?> usage = default, Option<string?> userId = default, Option<ServiceTierEnum?> serviceTier = default)
+        public ChatCompletionsRequest(string model, List<ChatMessage> messages, Option<string?> @system = default, Option<ReasoningConfig?> reasoning = default, Option<decimal?> frequencyPenalty = default, Option<Dictionary<string, decimal>?> logitBias = default, Option<int?> maxOutputTokens = default, Option<bool?> meta = default, Option<decimal?> presencePenalty = default, Option<long?> seed = default, Option<bool?> stream = default, Option<decimal?> temperature = default, Option<List<ChatCompletionsRequestToolsInner>?> tools = default, Option<int?> maxToolCalls = default, Option<bool?> parallelToolCalls = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<int?> topK = default, Option<bool?> logprobs = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<ChatCompletionsRequestResponseFormat?> responseFormat = default, Option<bool?> usage = default, Option<ProviderRoutingOptions?> provider = default, Option<string?> userId = default, Option<ServiceTierEnum?> serviceTier = default)
         {
             Model = model;
             Messages = messages;
@@ -82,6 +83,7 @@ namespace AIStatsSdk.Model
             TopPOption = topP;
             ResponseFormatOption = responseFormat;
             UsageOption = usage;
+            ProviderOption = provider;
             UserIdOption = userId;
             ServiceTierOption = serviceTier;
             OnCreated();
@@ -455,6 +457,19 @@ namespace AIStatsSdk.Model
         public bool? Usage { get { return this.UsageOption; } set { this.UsageOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Provider
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<ProviderRoutingOptions?> ProviderOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Provider
+        /// </summary>
+        [JsonPropertyName("provider")]
+        public ProviderRoutingOptions? Provider { get { return this.ProviderOption; } set { this.ProviderOption = new(value); } }
+
+        /// <summary>
         /// Used to track the state of UserId
         /// </summary>
         [JsonIgnore]
@@ -497,6 +512,7 @@ namespace AIStatsSdk.Model
             sb.Append("  TopP: ").Append(TopP).Append("\n");
             sb.Append("  ResponseFormat: ").Append(ResponseFormat).Append("\n");
             sb.Append("  Usage: ").Append(Usage).Append("\n");
+            sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("  UserId: ").Append(UserId).Append("\n");
             sb.Append("  ServiceTier: ").Append(ServiceTier).Append("\n");
             sb.Append("}\n");
@@ -648,6 +664,7 @@ namespace AIStatsSdk.Model
             Option<decimal?> topP = default;
             Option<ChatCompletionsRequestResponseFormat?> responseFormat = default;
             Option<bool?> usage = default;
+            Option<ProviderRoutingOptions?> provider = default;
             Option<string?> userId = default;
             Option<ChatCompletionsRequest.ServiceTierEnum?> serviceTier = default;
 
@@ -731,6 +748,9 @@ namespace AIStatsSdk.Model
                             break;
                         case "usage":
                             usage = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                            break;
+                        case "provider":
+                            provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         case "user_id":
                             userId = new Option<string?>(utf8JsonReader.GetString()!);
@@ -818,13 +838,16 @@ namespace AIStatsSdk.Model
             if (usage.IsSet && usage.Value == null)
                 throw new ArgumentNullException(nameof(usage), "Property is not nullable for class ChatCompletionsRequest.");
 
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider), "Property is not nullable for class ChatCompletionsRequest.");
+
             if (userId.IsSet && userId.Value == null)
                 throw new ArgumentNullException(nameof(userId), "Property is not nullable for class ChatCompletionsRequest.");
 
             if (serviceTier.IsSet && serviceTier.Value == null)
                 throw new ArgumentNullException(nameof(serviceTier), "Property is not nullable for class ChatCompletionsRequest.");
 
-            return new ChatCompletionsRequest(model.Value!, messages.Value!, varSystem, reasoning, frequencyPenalty, logitBias, maxOutputTokens, meta, presencePenalty, seed, stream, temperature, tools, maxToolCalls, parallelToolCalls, toolChoice, topK, logprobs, topLogprobs, topP, responseFormat, usage, userId, serviceTier);
+            return new ChatCompletionsRequest(model.Value!, messages.Value!, varSystem, reasoning, frequencyPenalty, logitBias, maxOutputTokens, meta, presencePenalty, seed, stream, temperature, tools, maxToolCalls, parallelToolCalls, toolChoice, topK, logprobs, topLogprobs, topP, responseFormat, usage, provider, userId, serviceTier);
         }
 
         /// <summary>
@@ -874,6 +897,9 @@ namespace AIStatsSdk.Model
 
             if (chatCompletionsRequest.ResponseFormatOption.IsSet && chatCompletionsRequest.ResponseFormat == null)
                 throw new ArgumentNullException(nameof(chatCompletionsRequest.ResponseFormat), "Property is required for class ChatCompletionsRequest.");
+
+            if (chatCompletionsRequest.ProviderOption.IsSet && chatCompletionsRequest.Provider == null)
+                throw new ArgumentNullException(nameof(chatCompletionsRequest.Provider), "Property is required for class ChatCompletionsRequest.");
 
             if (chatCompletionsRequest.UserIdOption.IsSet && chatCompletionsRequest.UserId == null)
                 throw new ArgumentNullException(nameof(chatCompletionsRequest.UserId), "Property is required for class ChatCompletionsRequest.");
@@ -952,6 +978,11 @@ namespace AIStatsSdk.Model
             if (chatCompletionsRequest.UsageOption.IsSet)
                 writer.WriteBoolean("usage", chatCompletionsRequest.UsageOption.Value!.Value);
 
+            if (chatCompletionsRequest.ProviderOption.IsSet)
+            {
+                writer.WritePropertyName("provider");
+                JsonSerializer.Serialize(writer, chatCompletionsRequest.Provider, jsonSerializerOptions);
+            }
             if (chatCompletionsRequest.UserIdOption.IsSet)
                 writer.WriteString("user_id", chatCompletionsRequest.UserId);
 

@@ -36,7 +36,7 @@ function parseFamilyId(input: string[] | string | undefined): string {
 
 async function fetchFamily(familyId: string) {
 	try {
-		return await getFamilyModelsCached(familyId);
+		return await getFamilyModelsCached(familyId, false);
 	} catch (error) {
 		console.warn("[seo] failed to load family metadata", {
 			familyId,
@@ -90,7 +90,7 @@ export default async function Page({
 }) {
 	const { familyId: rawFamilyId } = await params;
 	const familyId = parseFamilyId(rawFamilyId);
-	const family = await getFamilyModelsCached(familyId);
+	const family = await getFamilyModelsCached(familyId, false);
 
 	if (!family) {
 		notFound();

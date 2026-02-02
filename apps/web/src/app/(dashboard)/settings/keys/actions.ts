@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { makeKeyV2, hmacSecret } from '@/lib/keygen';
+import { invalidateGatewayKeyCache } from '@/lib/gateway/invalidateKeyCache';
 
 export type KeyLimitPayload = {
     dailyRequests?: number | null;
@@ -71,6 +72,10 @@ export async function updateApiKeyAction(
     const { error } = await supabase.from("keys").update(updateObj).eq("id", id)
     if (error) throw error
 
+    if (Object.prototype.hasOwnProperty.call(updateObj, "status")) {
+        await invalidateGatewayKeyCache(id);
+    }
+
     revalidatePath("/settings/keys")
     return { success: true }
 }
@@ -88,6 +93,8 @@ export async function deleteApiKeyAction(id: string, confirmName?: string) {
 
     const { error } = await supabase.from("keys").delete().eq("id", id)
     if (error) throw error
+
+    await invalidateGatewayKeyCache(id);
 
     revalidatePath("/settings/keys")
     return { success: true }

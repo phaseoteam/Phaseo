@@ -1,4 +1,7 @@
 // lib/gateway/execute/utils.ts
+// Purpose: Execute-stage logic for routing, attempts, and provider health.
+// Why: Centralizes execution/failover behavior.
+// How: Helpers for timing and attempt metadata.
 import type { PipelineContext } from "../before/types";
 import type { PipelineTiming } from "./index";
 
@@ -20,3 +23,13 @@ export function stripPrioritySuffix(model: string): string {
 export function calculateMaxTries(candidatesLength: number): number {
     return Math.min(5, candidatesLength);
 }
+
+
+
+
+
+
+
+
+
+

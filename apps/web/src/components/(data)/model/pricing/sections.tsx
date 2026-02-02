@@ -16,6 +16,7 @@ import type {
 	QualityRow,
 	ResolutionRow,
 	ProviderSections,
+	UsageRow,
 } from "./pricingHelpers";
 import { fmtUSD } from "./pricingHelpers";
 
@@ -202,17 +203,28 @@ export function VideoGenSection({ rows }: { rows?: ResolutionRow[] }) {
 	if (!rows || !rows.length) return null;
 	const byUnit: Record<string, ResolutionRow[]> = {};
 	for (const r of rows) (byUnit[r.unitLabel] ??= []).push(r);
+	const unitEntries = Object.entries(byUnit);
+	const hasSingleUnit = unitEntries.length === 1;
 
 	return (
 		<div className="space-y-2">
-			<h4 className="text-sm font-semibold">Video generation</h4>
-			{Object.entries(byUnit).map(([unit, list]) => (
+			<div className="flex items-center justify-between">
+				<h4 className="text-sm font-semibold">Video generation</h4>
+				{hasSingleUnit ? (
+					<span className="text-xs text-muted-foreground">
+						{unitEntries[0][0]}
+					</span>
+				) : null}
+			</div>
+			{unitEntries.map(([unit, list]) => (
 				<div key={unit} className="space-y-2">
-					<div className="flex items-center justify-end">
-						<span className="text-xs text-muted-foreground">
-							{unit}
-						</span>
-					</div>
+					{!hasSingleUnit ? (
+						<div className="flex items-center justify-between">
+							<span className="text-xs text-muted-foreground">
+								{unit}
+							</span>
+						</div>
+					) : null}
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
 						{list
 							.sort((a, b) =>
@@ -230,6 +242,64 @@ export function VideoGenSection({ rows }: { rows?: ResolutionRow[] }) {
 									</div>
 								</div>
 							))}
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
+export function InputsSection({
+	rows,
+	title,
+}: {
+	rows?: UsageRow[];
+	title: string;
+}) {
+	if (!rows?.length) return null;
+	const byUnit: Record<string, UsageRow[]> = {};
+	for (const r of rows) (byUnit[r.unitLabel] ??= []).push(r);
+	const unitEntries = Object.entries(byUnit);
+	const hasSingleUnit = unitEntries.length === 1;
+
+	return (
+		<div className="space-y-2">
+			<div className="flex items-center justify-between">
+				<h4 className="text-sm font-semibold">{title}</h4>
+				{hasSingleUnit ? (
+					<span className="text-xs text-muted-foreground">
+						{unitEntries[0][0]}
+					</span>
+				) : null}
+			</div>
+			{unitEntries.map(([unit, list]) => (
+				<div key={unit} className="space-y-2">
+					{!hasSingleUnit ? (
+						<div className="flex items-center justify-between">
+							<span className="text-xs text-muted-foreground">
+								{unit}
+							</span>
+						</div>
+					) : null}
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+						{list.map((r, i) => (
+							<div key={i} className="rounded-lg border p-3">
+								{r.label === "All usage" ? (
+									<div className="text-sm font-semibold">
+										{fmtUSD(r.price)}
+									</div>
+								) : (
+									<div className="flex justify-between items-center">
+										<span className="text-sm font-semibold">
+											{fmtUSD(r.price)}
+										</span>
+										<span className="text-xs text-muted-foreground">
+											{r.label}
+										</span>
+									</div>
+								)}
+							</div>
+						))}
 					</div>
 				</div>
 			))}

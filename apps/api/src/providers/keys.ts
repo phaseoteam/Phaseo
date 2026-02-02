@@ -1,3 +1,7 @@
+// Purpose: Provider adapter module.
+// Why: Encapsulates provider-specific configuration and endpoint mapping.
+// How: Exposes provider-specific helpers for routing and execution.
+
 import type { ProviderExecuteArgs } from "./types";
 import type { ByokKeyMeta } from "@pipeline/before/types";
 
@@ -25,7 +29,7 @@ function resolveByokKey(metaList: ByokKeyMeta[]): { key: string; byokId: string 
 }
 
 export function resolveProviderKey(
-    args: ProviderExecuteArgs,
+    args: Pick<ProviderExecuteArgs, "providerId" | "byokMeta">,
     fallbackKey: () => string | undefined,
     options?: { allowEmptyFallback?: boolean }
 ): ResolvedKey {
@@ -45,3 +49,4 @@ export function resolveProviderKey(
 
     throw new Error(`${args.providerId}_key_missing`);
 }
+

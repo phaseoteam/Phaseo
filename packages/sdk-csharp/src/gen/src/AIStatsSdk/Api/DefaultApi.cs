@@ -36,6 +36,29 @@ namespace AIStatsSdk.Api
         DefaultApiEvents Events { get; }
 
         /// <summary>
+        /// Create message
+        /// </summary>
+        /// <remarks>
+        /// Creates a message using the Anthropic Messages API.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="anthropicMessagesRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateAnthropicMessageApiResponse"/>&gt;</returns>
+        Task<ICreateAnthropicMessageApiResponse> CreateAnthropicMessageAsync(AnthropicMessagesRequest anthropicMessagesRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Create message
+        /// </summary>
+        /// <remarks>
+        /// Creates a message using the Anthropic Messages API.
+        /// </remarks>
+        /// <param name="anthropicMessagesRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateAnthropicMessageApiResponse"/>?&gt;</returns>
+        Task<ICreateAnthropicMessageApiResponse?> CreateAnthropicMessageOrDefaultAsync(AnthropicMessagesRequest anthropicMessagesRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Create batch
         /// </summary>
         /// <remarks>
@@ -91,7 +114,7 @@ namespace AIStatsSdk.Api
         /// <param name="embeddingsRequest"></param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateEmbeddingApiResponse"/>&gt;</returns>
-        Task<ICreateEmbeddingApiResponse> CreateEmbeddingAsync(EmbeddingsRequest embeddingsRequest, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateEmbeddingApiResponse> CreateEmbeddingAsync(EmbeddingsRequest? embeddingsRequest = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create embeddings
@@ -102,7 +125,7 @@ namespace AIStatsSdk.Api
         /// <param name="embeddingsRequest"></param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateEmbeddingApiResponse"/>?&gt;</returns>
-        Task<ICreateEmbeddingApiResponse?> CreateEmbeddingOrDefaultAsync(EmbeddingsRequest embeddingsRequest, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateEmbeddingApiResponse?> CreateEmbeddingOrDefaultAsync(EmbeddingsRequest? embeddingsRequest = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create image
@@ -143,9 +166,10 @@ namespace AIStatsSdk.Api
         /// <param name="user"> (optional)</param>
         /// <param name="meta"> (optional)</param>
         /// <param name="usage"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateImageEditApiResponse"/>&gt;</returns>
-        Task<ICreateImageEditApiResponse> CreateImageEditAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateImageEditApiResponse> CreateImageEditAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create image edit
@@ -162,9 +186,10 @@ namespace AIStatsSdk.Api
         /// <param name="user"> (optional)</param>
         /// <param name="meta"> (optional)</param>
         /// <param name="usage"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateImageEditApiResponse"/>?&gt;</returns>
-        Task<ICreateImageEditApiResponse?> CreateImageEditOrDefaultAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateImageEditApiResponse?> CreateImageEditOrDefaultAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create moderation
@@ -188,6 +213,52 @@ namespace AIStatsSdk.Api
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateModerationApiResponse"/>?&gt;</returns>
         Task<ICreateModerationApiResponse?> CreateModerationOrDefaultAsync(ModerationsRequest moderationsRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Create OCR
+        /// </summary>
+        /// <remarks>
+        /// Extracts text from an image using the requested model.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="ocrRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateOcrApiResponse"/>&gt;</returns>
+        Task<ICreateOcrApiResponse> CreateOcrAsync(OcrRequest ocrRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Create OCR
+        /// </summary>
+        /// <remarks>
+        /// Extracts text from an image using the requested model.
+        /// </remarks>
+        /// <param name="ocrRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateOcrApiResponse"/>?&gt;</returns>
+        Task<ICreateOcrApiResponse?> CreateOcrOrDefaultAsync(OcrRequest ocrRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Create provisioning key
+        /// </summary>
+        /// <remarks>
+        /// Creates a new provisioning key for a team.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="createProvisioningKeyRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateProvisioningKeyApiResponse"/>&gt;</returns>
+        Task<ICreateProvisioningKeyApiResponse> CreateProvisioningKeyAsync(CreateProvisioningKeyRequest createProvisioningKeyRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Create provisioning key
+        /// </summary>
+        /// <remarks>
+        /// Creates a new provisioning key for a team.
+        /// </remarks>
+        /// <param name="createProvisioningKeyRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateProvisioningKeyApiResponse"/>?&gt;</returns>
+        Task<ICreateProvisioningKeyApiResponse?> CreateProvisioningKeyOrDefaultAsync(CreateProvisioningKeyRequest createProvisioningKeyRequest, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create response
@@ -246,9 +317,10 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"> (optional)</param>
         /// <param name="audioB64"> (optional)</param>
         /// <param name="language"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranscriptionApiResponse"/>&gt;</returns>
-        Task<ICreateTranscriptionApiResponse> CreateTranscriptionAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateTranscriptionApiResponse> CreateTranscriptionAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create transcription
@@ -260,9 +332,10 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"> (optional)</param>
         /// <param name="audioB64"> (optional)</param>
         /// <param name="language"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranscriptionApiResponse"/>?&gt;</returns>
-        Task<ICreateTranscriptionApiResponse?> CreateTranscriptionOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateTranscriptionApiResponse?> CreateTranscriptionOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create translation
@@ -277,9 +350,10 @@ namespace AIStatsSdk.Api
         /// <param name="language"> (optional)</param>
         /// <param name="prompt"> (optional)</param>
         /// <param name="temperature"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranslationApiResponse"/>&gt;</returns>
-        Task<ICreateTranslationApiResponse> CreateTranslationAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateTranslationApiResponse> CreateTranslationAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create translation
@@ -293,9 +367,10 @@ namespace AIStatsSdk.Api
         /// <param name="language"> (optional)</param>
         /// <param name="prompt"> (optional)</param>
         /// <param name="temperature"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranslationApiResponse"/>?&gt;</returns>
-        Task<ICreateTranslationApiResponse?> CreateTranslationOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateTranslationApiResponse?> CreateTranslationOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create video
@@ -321,6 +396,104 @@ namespace AIStatsSdk.Api
         Task<ICreateVideoApiResponse?> CreateVideoOrDefaultAsync(VideoGenerationRequest videoGenerationRequest, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Delete provisioning key
+        /// </summary>
+        /// <remarks>
+        /// Permanently deletes a provisioning key.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IDeleteProvisioningKeyApiResponse"/>&gt;</returns>
+        Task<IDeleteProvisioningKeyApiResponse> DeleteProvisioningKeyAsync(string id, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete provisioning key
+        /// </summary>
+        /// <remarks>
+        /// Permanently deletes a provisioning key.
+        /// </remarks>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IDeleteProvisioningKeyApiResponse"/>?&gt;</returns>
+        Task<IDeleteProvisioningKeyApiResponse?> DeleteProvisioningKeyOrDefaultAsync(string id, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete video
+        /// </summary>
+        /// <remarks>
+        /// Deletes a video generation request.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IDeleteVideoApiResponse"/>&gt;</returns>
+        Task<IDeleteVideoApiResponse> DeleteVideoAsync(string videoId, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete video
+        /// </summary>
+        /// <remarks>
+        /// Deletes a video generation request.
+        /// </remarks>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IDeleteVideoApiResponse"/>?&gt;</returns>
+        Task<IDeleteVideoApiResponse?> DeleteVideoOrDefaultAsync(string videoId, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Generate music
+        /// </summary>
+        /// <remarks>
+        /// Generates music using the requested model and provider settings.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="musicGenerateRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGenerateMusicApiResponse"/>&gt;</returns>
+        Task<IGenerateMusicApiResponse> GenerateMusicAsync(MusicGenerateRequest musicGenerateRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Generate music
+        /// </summary>
+        /// <remarks>
+        /// Generates music using the requested model and provider settings.
+        /// </remarks>
+        /// <param name="musicGenerateRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGenerateMusicApiResponse"/>?&gt;</returns>
+        Task<IGenerateMusicApiResponse?> GenerateMusicOrDefaultAsync(MusicGenerateRequest musicGenerateRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get activity
+        /// </summary>
+        /// <remarks>
+        /// Returns recent API activity for a team.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="days">Number of days to look back (optional, default to 30)</param>
+        /// <param name="limit">Maximum number of records to return (optional, default to 50)</param>
+        /// <param name="offset">Pagination offset (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetActivityApiResponse"/>&gt;</returns>
+        Task<IGetActivityApiResponse> GetActivityAsync(string teamId, Option<int> days = default, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get activity
+        /// </summary>
+        /// <remarks>
+        /// Returns recent API activity for a team.
+        /// </remarks>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="days">Number of days to look back (optional, default to 30)</param>
+        /// <param name="limit">Maximum number of records to return (optional, default to 50)</param>
+        /// <param name="offset">Pagination offset (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetActivityApiResponse"/>?&gt;</returns>
+        Task<IGetActivityApiResponse?> GetActivityOrDefaultAsync(string teamId, Option<int> days = default, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Get analytics
         /// </summary>
         /// <remarks>
@@ -344,6 +517,29 @@ namespace AIStatsSdk.Api
         Task<IGetAnalyticsApiResponse?> GetAnalyticsOrDefaultAsync(GetAnalyticsRequest getAnalyticsRequest, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Get remaining credits
+        /// </summary>
+        /// <remarks>
+        /// Returns the remaining credits and usage statistics for a team.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetCreditsApiResponse"/>&gt;</returns>
+        Task<IGetCreditsApiResponse> GetCreditsAsync(string teamId, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get remaining credits
+        /// </summary>
+        /// <remarks>
+        /// Returns the remaining credits and usage statistics for a team.
+        /// </remarks>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetCreditsApiResponse"/>?&gt;</returns>
+        Task<IGetCreditsApiResponse?> GetCreditsOrDefaultAsync(string teamId, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Get generation
         /// </summary>
         /// <remarks>
@@ -365,6 +561,75 @@ namespace AIStatsSdk.Api
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="IGetGenerationApiResponse"/>?&gt;</returns>
         Task<IGetGenerationApiResponse?> GetGenerationOrDefaultAsync(string id, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get provisioning key
+        /// </summary>
+        /// <remarks>
+        /// Returns details of a specific provisioning key.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetProvisioningKeyApiResponse"/>&gt;</returns>
+        Task<IGetProvisioningKeyApiResponse> GetProvisioningKeyAsync(string id, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get provisioning key
+        /// </summary>
+        /// <remarks>
+        /// Returns details of a specific provisioning key.
+        /// </remarks>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetProvisioningKeyApiResponse"/>?&gt;</returns>
+        Task<IGetProvisioningKeyApiResponse?> GetProvisioningKeyOrDefaultAsync(string id, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get video status
+        /// </summary>
+        /// <remarks>
+        /// Retrieves the status for a video generation request.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetVideoApiResponse"/>&gt;</returns>
+        Task<IGetVideoApiResponse> GetVideoAsync(string videoId, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get video status
+        /// </summary>
+        /// <remarks>
+        /// Retrieves the status for a video generation request.
+        /// </remarks>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetVideoApiResponse"/>?&gt;</returns>
+        Task<IGetVideoApiResponse?> GetVideoOrDefaultAsync(string videoId, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get video content
+        /// </summary>
+        /// <remarks>
+        /// Downloads the rendered video content.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetVideoContentApiResponse"/>&gt;</returns>
+        Task<IGetVideoContentApiResponse> GetVideoContentAsync(string videoId, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Get video content
+        /// </summary>
+        /// <remarks>
+        /// Downloads the rendered video content.
+        /// </remarks>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetVideoContentApiResponse"/>?&gt;</returns>
+        Task<IGetVideoContentApiResponse?> GetVideoContentOrDefaultAsync(string videoId, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Health check
@@ -444,6 +709,58 @@ namespace AIStatsSdk.Api
         Task<IListModelsApiResponse?> ListModelsOrDefaultAsync(Option<List<string>> endpoints = default, Option<ListModelsOrganisationParameter> organisation = default, Option<List<string>> inputTypes = default, Option<List<string>> outputTypes = default, Option<List<string>> varParams = default, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// List providers
+        /// </summary>
+        /// <remarks>
+        /// Returns a list of available API providers.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="limit">Limit the number of results (optional, default to 50)</param>
+        /// <param name="offset">Offset for pagination (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IListProvidersApiResponse"/>&gt;</returns>
+        Task<IListProvidersApiResponse> ListProvidersAsync(Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// List providers
+        /// </summary>
+        /// <remarks>
+        /// Returns a list of available API providers.
+        /// </remarks>
+        /// <param name="limit">Limit the number of results (optional, default to 50)</param>
+        /// <param name="offset">Offset for pagination (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IListProvidersApiResponse"/>?&gt;</returns>
+        Task<IListProvidersApiResponse?> ListProvidersOrDefaultAsync(Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// List provisioning keys
+        /// </summary>
+        /// <remarks>
+        /// Returns all provisioning keys for a team.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="limit">Maximum number of keys to return (optional, default to 50)</param>
+        /// <param name="offset">Pagination offset (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IListProvisioningKeysApiResponse"/>&gt;</returns>
+        Task<IListProvisioningKeysApiResponse> ListProvisioningKeysAsync(string teamId, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// List provisioning keys
+        /// </summary>
+        /// <remarks>
+        /// Returns all provisioning keys for a team.
+        /// </remarks>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="limit">Maximum number of keys to return (optional, default to 50)</param>
+        /// <param name="offset">Pagination offset (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IListProvisioningKeysApiResponse"/>?&gt;</returns>
+        Task<IListProvisioningKeysApiResponse?> ListProvisioningKeysOrDefaultAsync(string teamId, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Retrieve batch
         /// </summary>
         /// <remarks>
@@ -511,6 +828,31 @@ namespace AIStatsSdk.Api
         Task<IRootApiResponse?> RootOrDefaultAsync(System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Update provisioning key
+        /// </summary>
+        /// <remarks>
+        /// Updates the name, status, or blocked state of a provisioning key.
+        /// </remarks>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IUpdateProvisioningKeyApiResponse"/>&gt;</returns>
+        Task<IUpdateProvisioningKeyApiResponse> UpdateProvisioningKeyAsync(string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Update provisioning key
+        /// </summary>
+        /// <remarks>
+        /// Updates the name, status, or blocked state of a provisioning key.
+        /// </remarks>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IUpdateProvisioningKeyApiResponse"/>?&gt;</returns>
+        Task<IUpdateProvisioningKeyApiResponse?> UpdateProvisioningKeyOrDefaultAsync(string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest, System.Threading.CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Upload file
         /// </summary>
         /// <remarks>
@@ -534,6 +876,18 @@ namespace AIStatsSdk.Api
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="IUploadFileApiResponse"/>?&gt;</returns>
         Task<IUploadFileApiResponse?> UploadFileOrDefaultAsync(System.IO.Stream file, string purpose, System.Threading.CancellationToken cancellationToken = default);
+    }
+
+    /// <summary>
+    /// The <see cref="ICreateAnthropicMessageApiResponse"/>
+    /// </summary>
+    public interface ICreateAnthropicMessageApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.AnthropicMessagesResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
     }
 
     /// <summary>
@@ -609,6 +963,42 @@ namespace AIStatsSdk.Api
     }
 
     /// <summary>
+    /// The <see cref="ICreateOcrApiResponse"/>
+    /// </summary>
+    public interface ICreateOcrApiResponse : AIStatsSdk.Client.IApiResponse, IOk<Dictionary<string, Object>?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="ICreateProvisioningKeyApiResponse"/>
+    /// </summary>
+    public interface ICreateProvisioningKeyApiResponse : AIStatsSdk.Client.IApiResponse, ICreated<AIStatsSdk.Model.CreateProvisioningKey201Response?>, IBadRequest<AIStatsSdk.Model.ErrorResponse?>, IInternalServerError<AIStatsSdk.Model.ErrorResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 201 Created
+        /// </summary>
+        /// <returns></returns>
+        bool IsCreated { get; }
+
+        /// <summary>
+        /// Returns true if the response is 400 BadRequest
+        /// </summary>
+        /// <returns></returns>
+        bool IsBadRequest { get; }
+
+        /// <summary>
+        /// Returns true if the response is 500 InternalServerError
+        /// </summary>
+        /// <returns></returns>
+        bool IsInternalServerError { get; }
+    }
+
+    /// <summary>
     /// The <see cref="ICreateResponseApiResponse"/>
     /// </summary>
     public interface ICreateResponseApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.ResponsesResponse?>
@@ -669,6 +1059,78 @@ namespace AIStatsSdk.Api
     }
 
     /// <summary>
+    /// The <see cref="IDeleteProvisioningKeyApiResponse"/>
+    /// </summary>
+    public interface IDeleteProvisioningKeyApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.DeleteProvisioningKey200Response?>, INotFound<AIStatsSdk.Model.ErrorResponse?>, IInternalServerError<AIStatsSdk.Model.ErrorResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+
+        /// <summary>
+        /// Returns true if the response is 404 NotFound
+        /// </summary>
+        /// <returns></returns>
+        bool IsNotFound { get; }
+
+        /// <summary>
+        /// Returns true if the response is 500 InternalServerError
+        /// </summary>
+        /// <returns></returns>
+        bool IsInternalServerError { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="IDeleteVideoApiResponse"/>
+    /// </summary>
+    public interface IDeleteVideoApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.VideoDeleteResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="IGenerateMusicApiResponse"/>
+    /// </summary>
+    public interface IGenerateMusicApiResponse : AIStatsSdk.Client.IApiResponse, IOk<Dictionary<string, Object>?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="IGetActivityApiResponse"/>
+    /// </summary>
+    public interface IGetActivityApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.GetActivity200Response?>, IBadRequest<AIStatsSdk.Model.ErrorResponse?>, IInternalServerError<AIStatsSdk.Model.ErrorResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+
+        /// <summary>
+        /// Returns true if the response is 400 BadRequest
+        /// </summary>
+        /// <returns></returns>
+        bool IsBadRequest { get; }
+
+        /// <summary>
+        /// Returns true if the response is 500 InternalServerError
+        /// </summary>
+        /// <returns></returns>
+        bool IsInternalServerError { get; }
+    }
+
+    /// <summary>
     /// The <see cref="IGetAnalyticsApiResponse"/>
     /// </summary>
     public interface IGetAnalyticsApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.GetAnalytics200Response?>
@@ -678,6 +1140,30 @@ namespace AIStatsSdk.Api
         /// </summary>
         /// <returns></returns>
         bool IsOk { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="IGetCreditsApiResponse"/>
+    /// </summary>
+    public interface IGetCreditsApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.GetCredits200Response?>, IBadRequest<AIStatsSdk.Model.ErrorResponse?>, IInternalServerError<AIStatsSdk.Model.ErrorResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+
+        /// <summary>
+        /// Returns true if the response is 400 BadRequest
+        /// </summary>
+        /// <returns></returns>
+        bool IsBadRequest { get; }
+
+        /// <summary>
+        /// Returns true if the response is 500 InternalServerError
+        /// </summary>
+        /// <returns></returns>
+        bool IsInternalServerError { get; }
     }
 
     /// <summary>
@@ -702,6 +1188,54 @@ namespace AIStatsSdk.Api
         /// </summary>
         /// <returns></returns>
         bool IsNotFound { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="IGetProvisioningKeyApiResponse"/>
+    /// </summary>
+    public interface IGetProvisioningKeyApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.GetProvisioningKey200Response?>, INotFound<AIStatsSdk.Model.ErrorResponse?>, IInternalServerError<AIStatsSdk.Model.ErrorResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+
+        /// <summary>
+        /// Returns true if the response is 404 NotFound
+        /// </summary>
+        /// <returns></returns>
+        bool IsNotFound { get; }
+
+        /// <summary>
+        /// Returns true if the response is 500 InternalServerError
+        /// </summary>
+        /// <returns></returns>
+        bool IsInternalServerError { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="IGetVideoApiResponse"/>
+    /// </summary>
+    public interface IGetVideoApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.VideoGenerationResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="IGetVideoContentApiResponse"/>
+    /// </summary>
+    public interface IGetVideoContentApiResponse : AIStatsSdk.Client.IApiResponse, IOk<System.IO.Stream?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
     }
 
     /// <summary>
@@ -747,6 +1281,48 @@ namespace AIStatsSdk.Api
     }
 
     /// <summary>
+    /// The <see cref="IListProvidersApiResponse"/>
+    /// </summary>
+    public interface IListProvidersApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.ListProviders200Response?>, IInternalServerError<AIStatsSdk.Model.ListModels500Response?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+
+        /// <summary>
+        /// Returns true if the response is 500 InternalServerError
+        /// </summary>
+        /// <returns></returns>
+        bool IsInternalServerError { get; }
+    }
+
+    /// <summary>
+    /// The <see cref="IListProvisioningKeysApiResponse"/>
+    /// </summary>
+    public interface IListProvisioningKeysApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.ListProvisioningKeys200Response?>, IBadRequest<AIStatsSdk.Model.ErrorResponse?>, IInternalServerError<AIStatsSdk.Model.ErrorResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+
+        /// <summary>
+        /// Returns true if the response is 400 BadRequest
+        /// </summary>
+        /// <returns></returns>
+        bool IsBadRequest { get; }
+
+        /// <summary>
+        /// Returns true if the response is 500 InternalServerError
+        /// </summary>
+        /// <returns></returns>
+        bool IsInternalServerError { get; }
+    }
+
+    /// <summary>
     /// The <see cref="IRetrieveBatchApiResponse"/>
     /// </summary>
     public interface IRetrieveBatchApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.BatchResponse?>
@@ -783,6 +1359,36 @@ namespace AIStatsSdk.Api
     }
 
     /// <summary>
+    /// The <see cref="IUpdateProvisioningKeyApiResponse"/>
+    /// </summary>
+    public interface IUpdateProvisioningKeyApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.UpdateProvisioningKey200Response?>, IBadRequest<AIStatsSdk.Model.ErrorResponse?>, INotFound<AIStatsSdk.Model.ErrorResponse?>, IInternalServerError<AIStatsSdk.Model.ErrorResponse?>
+    {
+        /// <summary>
+        /// Returns true if the response is 200 Ok
+        /// </summary>
+        /// <returns></returns>
+        bool IsOk { get; }
+
+        /// <summary>
+        /// Returns true if the response is 400 BadRequest
+        /// </summary>
+        /// <returns></returns>
+        bool IsBadRequest { get; }
+
+        /// <summary>
+        /// Returns true if the response is 404 NotFound
+        /// </summary>
+        /// <returns></returns>
+        bool IsNotFound { get; }
+
+        /// <summary>
+        /// Returns true if the response is 500 InternalServerError
+        /// </summary>
+        /// <returns></returns>
+        bool IsInternalServerError { get; }
+    }
+
+    /// <summary>
     /// The <see cref="IUploadFileApiResponse"/>
     /// </summary>
     public interface IUploadFileApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.FileResponse?>
@@ -799,6 +1405,26 @@ namespace AIStatsSdk.Api
     /// </summary>
     public class DefaultApiEvents
     {
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnCreateAnthropicMessage;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorCreateAnthropicMessage;
+
+        internal void ExecuteOnCreateAnthropicMessage(DefaultApi.CreateAnthropicMessageApiResponse apiResponse)
+        {
+            OnCreateAnthropicMessage?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorCreateAnthropicMessage(Exception exception)
+        {
+            OnErrorCreateAnthropicMessage?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
         /// <summary>
         /// The event raised after the server response
         /// </summary>
@@ -922,6 +1548,46 @@ namespace AIStatsSdk.Api
         /// <summary>
         /// The event raised after the server response
         /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnCreateOcr;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorCreateOcr;
+
+        internal void ExecuteOnCreateOcr(DefaultApi.CreateOcrApiResponse apiResponse)
+        {
+            OnCreateOcr?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorCreateOcr(Exception exception)
+        {
+            OnErrorCreateOcr?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnCreateProvisioningKey;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorCreateProvisioningKey;
+
+        internal void ExecuteOnCreateProvisioningKey(DefaultApi.CreateProvisioningKeyApiResponse apiResponse)
+        {
+            OnCreateProvisioningKey?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorCreateProvisioningKey(Exception exception)
+        {
+            OnErrorCreateProvisioningKey?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
         public event EventHandler<ApiResponseEventArgs>? OnCreateResponse;
 
         /// <summary>
@@ -1022,6 +1688,86 @@ namespace AIStatsSdk.Api
         /// <summary>
         /// The event raised after the server response
         /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnDeleteProvisioningKey;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorDeleteProvisioningKey;
+
+        internal void ExecuteOnDeleteProvisioningKey(DefaultApi.DeleteProvisioningKeyApiResponse apiResponse)
+        {
+            OnDeleteProvisioningKey?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorDeleteProvisioningKey(Exception exception)
+        {
+            OnErrorDeleteProvisioningKey?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnDeleteVideo;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorDeleteVideo;
+
+        internal void ExecuteOnDeleteVideo(DefaultApi.DeleteVideoApiResponse apiResponse)
+        {
+            OnDeleteVideo?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorDeleteVideo(Exception exception)
+        {
+            OnErrorDeleteVideo?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnGenerateMusic;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorGenerateMusic;
+
+        internal void ExecuteOnGenerateMusic(DefaultApi.GenerateMusicApiResponse apiResponse)
+        {
+            OnGenerateMusic?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorGenerateMusic(Exception exception)
+        {
+            OnErrorGenerateMusic?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnGetActivity;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorGetActivity;
+
+        internal void ExecuteOnGetActivity(DefaultApi.GetActivityApiResponse apiResponse)
+        {
+            OnGetActivity?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorGetActivity(Exception exception)
+        {
+            OnErrorGetActivity?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
         public event EventHandler<ApiResponseEventArgs>? OnGetAnalytics;
 
         /// <summary>
@@ -1042,6 +1788,26 @@ namespace AIStatsSdk.Api
         /// <summary>
         /// The event raised after the server response
         /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnGetCredits;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorGetCredits;
+
+        internal void ExecuteOnGetCredits(DefaultApi.GetCreditsApiResponse apiResponse)
+        {
+            OnGetCredits?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorGetCredits(Exception exception)
+        {
+            OnErrorGetCredits?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
         public event EventHandler<ApiResponseEventArgs>? OnGetGeneration;
 
         /// <summary>
@@ -1057,6 +1823,66 @@ namespace AIStatsSdk.Api
         internal void ExecuteOnErrorGetGeneration(Exception exception)
         {
             OnErrorGetGeneration?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnGetProvisioningKey;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorGetProvisioningKey;
+
+        internal void ExecuteOnGetProvisioningKey(DefaultApi.GetProvisioningKeyApiResponse apiResponse)
+        {
+            OnGetProvisioningKey?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorGetProvisioningKey(Exception exception)
+        {
+            OnErrorGetProvisioningKey?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnGetVideo;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorGetVideo;
+
+        internal void ExecuteOnGetVideo(DefaultApi.GetVideoApiResponse apiResponse)
+        {
+            OnGetVideo?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorGetVideo(Exception exception)
+        {
+            OnErrorGetVideo?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnGetVideoContent;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorGetVideoContent;
+
+        internal void ExecuteOnGetVideoContent(DefaultApi.GetVideoContentApiResponse apiResponse)
+        {
+            OnGetVideoContent?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorGetVideoContent(Exception exception)
+        {
+            OnErrorGetVideoContent?.Invoke(this, new ExceptionEventArgs(exception));
         }
 
         /// <summary>
@@ -1122,6 +1948,46 @@ namespace AIStatsSdk.Api
         /// <summary>
         /// The event raised after the server response
         /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnListProviders;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorListProviders;
+
+        internal void ExecuteOnListProviders(DefaultApi.ListProvidersApiResponse apiResponse)
+        {
+            OnListProviders?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorListProviders(Exception exception)
+        {
+            OnErrorListProviders?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnListProvisioningKeys;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorListProvisioningKeys;
+
+        internal void ExecuteOnListProvisioningKeys(DefaultApi.ListProvisioningKeysApiResponse apiResponse)
+        {
+            OnListProvisioningKeys?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorListProvisioningKeys(Exception exception)
+        {
+            OnErrorListProvisioningKeys?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
         public event EventHandler<ApiResponseEventArgs>? OnRetrieveBatch;
 
         /// <summary>
@@ -1177,6 +2043,26 @@ namespace AIStatsSdk.Api
         internal void ExecuteOnErrorRoot(Exception exception)
         {
             OnErrorRoot?.Invoke(this, new ExceptionEventArgs(exception));
+        }
+
+        /// <summary>
+        /// The event raised after the server response
+        /// </summary>
+        public event EventHandler<ApiResponseEventArgs>? OnUpdateProvisioningKey;
+
+        /// <summary>
+        /// The event raised after an error querying the server
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs>? OnErrorUpdateProvisioningKey;
+
+        internal void ExecuteOnUpdateProvisioningKey(DefaultApi.UpdateProvisioningKeyApiResponse apiResponse)
+        {
+            OnUpdateProvisioningKey?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+        }
+
+        internal void ExecuteOnErrorUpdateProvisioningKey(Exception exception)
+        {
+            OnErrorUpdateProvisioningKey?.Invoke(this, new ExceptionEventArgs(exception));
         }
 
         /// <summary>
@@ -1245,6 +2131,272 @@ namespace AIStatsSdk.Api
             HttpClient = httpClient;
             Events = defaultApiEvents;
             BearerTokenProvider = bearerTokenProvider;
+        }
+
+        partial void FormatCreateAnthropicMessage(AnthropicMessagesRequest anthropicMessagesRequest);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="anthropicMessagesRequest"></param>
+        /// <returns></returns>
+        private void ValidateCreateAnthropicMessage(AnthropicMessagesRequest anthropicMessagesRequest)
+        {
+            if (anthropicMessagesRequest == null)
+                throw new ArgumentNullException(nameof(anthropicMessagesRequest));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="anthropicMessagesRequest"></param>
+        private void AfterCreateAnthropicMessageDefaultImplementation(ICreateAnthropicMessageApiResponse apiResponseLocalVar, AnthropicMessagesRequest anthropicMessagesRequest)
+        {
+            bool suppressDefaultLog = false;
+            AfterCreateAnthropicMessage(ref suppressDefaultLog, apiResponseLocalVar, anthropicMessagesRequest);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="anthropicMessagesRequest"></param>
+        partial void AfterCreateAnthropicMessage(ref bool suppressDefaultLog, ICreateAnthropicMessageApiResponse apiResponseLocalVar, AnthropicMessagesRequest anthropicMessagesRequest);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="anthropicMessagesRequest"></param>
+        private void OnErrorCreateAnthropicMessageDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, AnthropicMessagesRequest anthropicMessagesRequest)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorCreateAnthropicMessage(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, anthropicMessagesRequest);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="anthropicMessagesRequest"></param>
+        partial void OnErrorCreateAnthropicMessage(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, AnthropicMessagesRequest anthropicMessagesRequest);
+
+        /// <summary>
+        /// Create message Creates a message using the Anthropic Messages API.
+        /// </summary>
+        /// <param name="anthropicMessagesRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateAnthropicMessageApiResponse"/>&gt;</returns>
+        public async Task<ICreateAnthropicMessageApiResponse?> CreateAnthropicMessageOrDefaultAsync(AnthropicMessagesRequest anthropicMessagesRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await CreateAnthropicMessageAsync(anthropicMessagesRequest, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Create message Creates a message using the Anthropic Messages API.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="anthropicMessagesRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateAnthropicMessageApiResponse"/>&gt;</returns>
+        public async Task<ICreateAnthropicMessageApiResponse> CreateAnthropicMessageAsync(AnthropicMessagesRequest anthropicMessagesRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateCreateAnthropicMessage(anthropicMessagesRequest);
+
+                FormatCreateAnthropicMessage(anthropicMessagesRequest);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/messages"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/messages");
+
+                    httpRequestMessageLocalVar.Content = (anthropicMessagesRequest as object) is System.IO.Stream stream
+                        ? httpRequestMessageLocalVar.Content = new StreamContent(stream)
+                        : httpRequestMessageLocalVar.Content = new StringContent(JsonSerializer.Serialize(anthropicMessagesRequest, _jsonSerializerOptions));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] contentTypes = new string[] {
+                        "application/json"
+                    };
+
+                    string? contentTypeLocalVar = ClientUtils.SelectHeaderContentType(contentTypes);
+
+                    if (contentTypeLocalVar != null && httpRequestMessageLocalVar.Content != null)
+                        httpRequestMessageLocalVar.Content.Headers.ContentType = new MediaTypeHeaderValue(contentTypeLocalVar);
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json",
+                        "text/event-stream"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Post;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<CreateAnthropicMessageApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<CreateAnthropicMessageApiResponse>();
+                        CreateAnthropicMessageApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/messages", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterCreateAnthropicMessageDefaultImplementation(apiResponseLocalVar, anthropicMessagesRequest);
+
+                        Events.ExecuteOnCreateAnthropicMessage(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorCreateAnthropicMessageDefaultImplementation(e, "/messages", uriBuilderLocalVar.Path, anthropicMessagesRequest);
+                Events.ExecuteOnErrorCreateAnthropicMessage(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="CreateAnthropicMessageApiResponse"/>
+        /// </summary>
+        public partial class CreateAnthropicMessageApiResponse : AIStatsSdk.Client.ApiResponse, ICreateAnthropicMessageApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<CreateAnthropicMessageApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="CreateAnthropicMessageApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public CreateAnthropicMessageApiResponse(ILogger<CreateAnthropicMessageApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="CreateAnthropicMessageApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public CreateAnthropicMessageApiResponse(ILogger<CreateAnthropicMessageApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.AnthropicMessagesResponse? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.AnthropicMessagesResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.AnthropicMessagesResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
         partial void FormatCreateBatch(BatchRequest batchRequest);
@@ -1777,25 +2929,14 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
-        partial void FormatCreateEmbedding(EmbeddingsRequest embeddingsRequest);
-
-        /// <summary>
-        /// Validates the request parameters
-        /// </summary>
-        /// <param name="embeddingsRequest"></param>
-        /// <returns></returns>
-        private void ValidateCreateEmbedding(EmbeddingsRequest embeddingsRequest)
-        {
-            if (embeddingsRequest == null)
-                throw new ArgumentNullException(nameof(embeddingsRequest));
-        }
+        partial void FormatCreateEmbedding(EmbeddingsRequest? embeddingsRequest);
 
         /// <summary>
         /// Processes the server response
         /// </summary>
         /// <param name="apiResponseLocalVar"></param>
         /// <param name="embeddingsRequest"></param>
-        private void AfterCreateEmbeddingDefaultImplementation(ICreateEmbeddingApiResponse apiResponseLocalVar, EmbeddingsRequest embeddingsRequest)
+        private void AfterCreateEmbeddingDefaultImplementation(ICreateEmbeddingApiResponse apiResponseLocalVar, EmbeddingsRequest? embeddingsRequest)
         {
             bool suppressDefaultLog = false;
             AfterCreateEmbedding(ref suppressDefaultLog, apiResponseLocalVar, embeddingsRequest);
@@ -1809,7 +2950,7 @@ namespace AIStatsSdk.Api
         /// <param name="suppressDefaultLog"></param>
         /// <param name="apiResponseLocalVar"></param>
         /// <param name="embeddingsRequest"></param>
-        partial void AfterCreateEmbedding(ref bool suppressDefaultLog, ICreateEmbeddingApiResponse apiResponseLocalVar, EmbeddingsRequest embeddingsRequest);
+        partial void AfterCreateEmbedding(ref bool suppressDefaultLog, ICreateEmbeddingApiResponse apiResponseLocalVar, EmbeddingsRequest? embeddingsRequest);
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -1818,7 +2959,7 @@ namespace AIStatsSdk.Api
         /// <param name="pathFormatLocalVar"></param>
         /// <param name="pathLocalVar"></param>
         /// <param name="embeddingsRequest"></param>
-        private void OnErrorCreateEmbeddingDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, EmbeddingsRequest embeddingsRequest)
+        private void OnErrorCreateEmbeddingDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, EmbeddingsRequest? embeddingsRequest)
         {
             bool suppressDefaultLogLocalVar = false;
             OnErrorCreateEmbedding(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, embeddingsRequest);
@@ -1834,7 +2975,7 @@ namespace AIStatsSdk.Api
         /// <param name="pathFormatLocalVar"></param>
         /// <param name="pathLocalVar"></param>
         /// <param name="embeddingsRequest"></param>
-        partial void OnErrorCreateEmbedding(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, EmbeddingsRequest embeddingsRequest);
+        partial void OnErrorCreateEmbedding(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, EmbeddingsRequest? embeddingsRequest);
 
         /// <summary>
         /// Create embeddings Creates an embedding vector representing the input text.
@@ -1842,7 +2983,7 @@ namespace AIStatsSdk.Api
         /// <param name="embeddingsRequest"></param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateEmbeddingApiResponse"/>&gt;</returns>
-        public async Task<ICreateEmbeddingApiResponse?> CreateEmbeddingOrDefaultAsync(EmbeddingsRequest embeddingsRequest, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateEmbeddingApiResponse?> CreateEmbeddingOrDefaultAsync(EmbeddingsRequest? embeddingsRequest = default, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
@@ -1861,14 +3002,12 @@ namespace AIStatsSdk.Api
         /// <param name="embeddingsRequest"></param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateEmbeddingApiResponse"/>&gt;</returns>
-        public async Task<ICreateEmbeddingApiResponse> CreateEmbeddingAsync(EmbeddingsRequest embeddingsRequest, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateEmbeddingApiResponse> CreateEmbeddingAsync(EmbeddingsRequest? embeddingsRequest = default, System.Threading.CancellationToken cancellationToken = default)
         {
             UriBuilder uriBuilderLocalVar = new UriBuilder();
 
             try
             {
-                ValidateCreateEmbedding(embeddingsRequest);
-
                 FormatCreateEmbedding(embeddingsRequest);
 
                 using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
@@ -2307,7 +3446,7 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
-        partial void FormatCreateImageEdit(ref string model, ref string image, ref string prompt, ref Option<string> mask, ref Option<string> size, ref Option<int> n, ref Option<string> user, ref Option<bool> meta, ref Option<bool> usage);
+        partial void FormatCreateImageEdit(ref string model, ref string image, ref string prompt, ref Option<string> mask, ref Option<string> size, ref Option<int> n, ref Option<string> user, ref Option<bool> meta, ref Option<bool> usage, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Validates the request parameters
@@ -2318,8 +3457,9 @@ namespace AIStatsSdk.Api
         /// <param name="mask"></param>
         /// <param name="size"></param>
         /// <param name="user"></param>
+        /// <param name="provider"></param>
         /// <returns></returns>
-        private void ValidateCreateImageEdit(string model, string image, string prompt, Option<string> mask, Option<string> size, Option<string> user)
+        private void ValidateCreateImageEdit(string model, string image, string prompt, Option<string> mask, Option<string> size, Option<string> user, Option<ProviderRoutingOptions> provider)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -2338,6 +3478,9 @@ namespace AIStatsSdk.Api
 
             if (user.IsSet && user.Value == null)
                 throw new ArgumentNullException(nameof(user));
+
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider));
         }
 
         /// <summary>
@@ -2353,10 +3496,11 @@ namespace AIStatsSdk.Api
         /// <param name="user"></param>
         /// <param name="meta"></param>
         /// <param name="usage"></param>
-        private void AfterCreateImageEditDefaultImplementation(ICreateImageEditApiResponse apiResponseLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage)
+        /// <param name="provider"></param>
+        private void AfterCreateImageEditDefaultImplementation(ICreateImageEditApiResponse apiResponseLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLog = false;
-            AfterCreateImageEdit(ref suppressDefaultLog, apiResponseLocalVar, model, image, prompt, mask, size, n, user, meta, usage);
+            AfterCreateImageEdit(ref suppressDefaultLog, apiResponseLocalVar, model, image, prompt, mask, size, n, user, meta, usage, provider);
             if (!suppressDefaultLog)
                 Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
         }
@@ -2375,7 +3519,8 @@ namespace AIStatsSdk.Api
         /// <param name="user"></param>
         /// <param name="meta"></param>
         /// <param name="usage"></param>
-        partial void AfterCreateImageEdit(ref bool suppressDefaultLog, ICreateImageEditApiResponse apiResponseLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage);
+        /// <param name="provider"></param>
+        partial void AfterCreateImageEdit(ref bool suppressDefaultLog, ICreateImageEditApiResponse apiResponseLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -2392,10 +3537,11 @@ namespace AIStatsSdk.Api
         /// <param name="user"></param>
         /// <param name="meta"></param>
         /// <param name="usage"></param>
-        private void OnErrorCreateImageEditDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage)
+        /// <param name="provider"></param>
+        private void OnErrorCreateImageEditDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLogLocalVar = false;
-            OnErrorCreateImageEdit(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, image, prompt, mask, size, n, user, meta, usage);
+            OnErrorCreateImageEdit(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, image, prompt, mask, size, n, user, meta, usage, provider);
             if (!suppressDefaultLogLocalVar)
                 Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
         }
@@ -2416,7 +3562,8 @@ namespace AIStatsSdk.Api
         /// <param name="user"></param>
         /// <param name="meta"></param>
         /// <param name="usage"></param>
-        partial void OnErrorCreateImageEdit(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage);
+        /// <param name="provider"></param>
+        partial void OnErrorCreateImageEdit(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Create image edit Creates an edited or extended image given an original image and a prompt.
@@ -2430,13 +3577,14 @@ namespace AIStatsSdk.Api
         /// <param name="user"> (optional)</param>
         /// <param name="meta"> (optional)</param>
         /// <param name="usage"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateImageEditApiResponse"/>&gt;</returns>
-        public async Task<ICreateImageEditApiResponse?> CreateImageEditOrDefaultAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateImageEditApiResponse?> CreateImageEditOrDefaultAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                return await CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, cancellationToken).ConfigureAwait(false);
+                return await CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, provider, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -2457,17 +3605,18 @@ namespace AIStatsSdk.Api
         /// <param name="user"> (optional)</param>
         /// <param name="meta"> (optional)</param>
         /// <param name="usage"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateImageEditApiResponse"/>&gt;</returns>
-        public async Task<ICreateImageEditApiResponse> CreateImageEditAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateImageEditApiResponse> CreateImageEditAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             UriBuilder uriBuilderLocalVar = new UriBuilder();
 
             try
             {
-                ValidateCreateImageEdit(model, image, prompt, mask, size, user);
+                ValidateCreateImageEdit(model, image, prompt, mask, size, user, provider);
 
-                FormatCreateImageEdit(ref model, ref image, ref prompt, ref mask, ref size, ref n, ref user, ref meta, ref usage);
+                FormatCreateImageEdit(ref model, ref image, ref prompt, ref mask, ref size, ref n, ref user, ref meta, ref usage, provider);
 
                 using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
                 {
@@ -2509,6 +3658,9 @@ namespace AIStatsSdk.Api
 
                     if (usage.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("usage", ClientUtils.ParameterToString(usage.Value)));
+
+                    if (provider.IsSet)
+                        formParameterLocalVars.Add(new KeyValuePair<string?, string?>("provider", ClientUtils.ParameterToString(provider.Value)));
 
                     List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
                     httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
@@ -2555,7 +3707,7 @@ namespace AIStatsSdk.Api
                             }
                         }
 
-                        AfterCreateImageEditDefaultImplementation(apiResponseLocalVar, model, image, prompt, mask, size, n, user, meta, usage);
+                        AfterCreateImageEditDefaultImplementation(apiResponseLocalVar, model, image, prompt, mask, size, n, user, meta, usage, provider);
 
                         Events.ExecuteOnCreateImageEdit(apiResponseLocalVar);
 
@@ -2569,7 +3721,7 @@ namespace AIStatsSdk.Api
             }
             catch(Exception e)
             {
-                OnErrorCreateImageEditDefaultImplementation(e, "/images/edits", uriBuilderLocalVar.Path, model, image, prompt, mask, size, n, user, meta, usage);
+                OnErrorCreateImageEditDefaultImplementation(e, "/images/edits", uriBuilderLocalVar.Path, model, image, prompt, mask, size, n, user, meta, usage, provider);
                 Events.ExecuteOnErrorCreateImageEdit(e);
                 throw;
             }
@@ -2917,6 +4069,612 @@ namespace AIStatsSdk.Api
                 } catch (Exception e)
                 {
                     OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatCreateOcr(OcrRequest ocrRequest);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="ocrRequest"></param>
+        /// <returns></returns>
+        private void ValidateCreateOcr(OcrRequest ocrRequest)
+        {
+            if (ocrRequest == null)
+                throw new ArgumentNullException(nameof(ocrRequest));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="ocrRequest"></param>
+        private void AfterCreateOcrDefaultImplementation(ICreateOcrApiResponse apiResponseLocalVar, OcrRequest ocrRequest)
+        {
+            bool suppressDefaultLog = false;
+            AfterCreateOcr(ref suppressDefaultLog, apiResponseLocalVar, ocrRequest);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="ocrRequest"></param>
+        partial void AfterCreateOcr(ref bool suppressDefaultLog, ICreateOcrApiResponse apiResponseLocalVar, OcrRequest ocrRequest);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="ocrRequest"></param>
+        private void OnErrorCreateOcrDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, OcrRequest ocrRequest)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorCreateOcr(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, ocrRequest);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="ocrRequest"></param>
+        partial void OnErrorCreateOcr(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, OcrRequest ocrRequest);
+
+        /// <summary>
+        /// Create OCR Extracts text from an image using the requested model.
+        /// </summary>
+        /// <param name="ocrRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateOcrApiResponse"/>&gt;</returns>
+        public async Task<ICreateOcrApiResponse?> CreateOcrOrDefaultAsync(OcrRequest ocrRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await CreateOcrAsync(ocrRequest, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Create OCR Extracts text from an image using the requested model.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="ocrRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateOcrApiResponse"/>&gt;</returns>
+        public async Task<ICreateOcrApiResponse> CreateOcrAsync(OcrRequest ocrRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateCreateOcr(ocrRequest);
+
+                FormatCreateOcr(ocrRequest);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/ocr"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/ocr");
+
+                    httpRequestMessageLocalVar.Content = (ocrRequest as object) is System.IO.Stream stream
+                        ? httpRequestMessageLocalVar.Content = new StreamContent(stream)
+                        : httpRequestMessageLocalVar.Content = new StringContent(JsonSerializer.Serialize(ocrRequest, _jsonSerializerOptions));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] contentTypes = new string[] {
+                        "application/json"
+                    };
+
+                    string? contentTypeLocalVar = ClientUtils.SelectHeaderContentType(contentTypes);
+
+                    if (contentTypeLocalVar != null && httpRequestMessageLocalVar.Content != null)
+                        httpRequestMessageLocalVar.Content.Headers.ContentType = new MediaTypeHeaderValue(contentTypeLocalVar);
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Post;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<CreateOcrApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<CreateOcrApiResponse>();
+                        CreateOcrApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/ocr", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterCreateOcrDefaultImplementation(apiResponseLocalVar, ocrRequest);
+
+                        Events.ExecuteOnCreateOcr(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorCreateOcrDefaultImplementation(e, "/ocr", uriBuilderLocalVar.Path, ocrRequest);
+                Events.ExecuteOnErrorCreateOcr(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="CreateOcrApiResponse"/>
+        /// </summary>
+        public partial class CreateOcrApiResponse : AIStatsSdk.Client.ApiResponse, ICreateOcrApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<CreateOcrApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="CreateOcrApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public CreateOcrApiResponse(ILogger<CreateOcrApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="CreateOcrApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public CreateOcrApiResponse(ILogger<CreateOcrApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public Dictionary<string, Object>? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, Object>>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out Dictionary<string, Object>? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatCreateProvisioningKey(CreateProvisioningKeyRequest createProvisioningKeyRequest);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="createProvisioningKeyRequest"></param>
+        /// <returns></returns>
+        private void ValidateCreateProvisioningKey(CreateProvisioningKeyRequest createProvisioningKeyRequest)
+        {
+            if (createProvisioningKeyRequest == null)
+                throw new ArgumentNullException(nameof(createProvisioningKeyRequest));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="createProvisioningKeyRequest"></param>
+        private void AfterCreateProvisioningKeyDefaultImplementation(ICreateProvisioningKeyApiResponse apiResponseLocalVar, CreateProvisioningKeyRequest createProvisioningKeyRequest)
+        {
+            bool suppressDefaultLog = false;
+            AfterCreateProvisioningKey(ref suppressDefaultLog, apiResponseLocalVar, createProvisioningKeyRequest);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="createProvisioningKeyRequest"></param>
+        partial void AfterCreateProvisioningKey(ref bool suppressDefaultLog, ICreateProvisioningKeyApiResponse apiResponseLocalVar, CreateProvisioningKeyRequest createProvisioningKeyRequest);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="createProvisioningKeyRequest"></param>
+        private void OnErrorCreateProvisioningKeyDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, CreateProvisioningKeyRequest createProvisioningKeyRequest)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorCreateProvisioningKey(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, createProvisioningKeyRequest);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="createProvisioningKeyRequest"></param>
+        partial void OnErrorCreateProvisioningKey(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, CreateProvisioningKeyRequest createProvisioningKeyRequest);
+
+        /// <summary>
+        /// Create provisioning key Creates a new provisioning key for a team.
+        /// </summary>
+        /// <param name="createProvisioningKeyRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateProvisioningKeyApiResponse"/>&gt;</returns>
+        public async Task<ICreateProvisioningKeyApiResponse?> CreateProvisioningKeyOrDefaultAsync(CreateProvisioningKeyRequest createProvisioningKeyRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await CreateProvisioningKeyAsync(createProvisioningKeyRequest, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Create provisioning key Creates a new provisioning key for a team.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="createProvisioningKeyRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="ICreateProvisioningKeyApiResponse"/>&gt;</returns>
+        public async Task<ICreateProvisioningKeyApiResponse> CreateProvisioningKeyAsync(CreateProvisioningKeyRequest createProvisioningKeyRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateCreateProvisioningKey(createProvisioningKeyRequest);
+
+                FormatCreateProvisioningKey(createProvisioningKeyRequest);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/provisioning/keys"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/provisioning/keys");
+
+                    httpRequestMessageLocalVar.Content = (createProvisioningKeyRequest as object) is System.IO.Stream stream
+                        ? httpRequestMessageLocalVar.Content = new StreamContent(stream)
+                        : httpRequestMessageLocalVar.Content = new StringContent(JsonSerializer.Serialize(createProvisioningKeyRequest, _jsonSerializerOptions));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] contentTypes = new string[] {
+                        "application/json"
+                    };
+
+                    string? contentTypeLocalVar = ClientUtils.SelectHeaderContentType(contentTypes);
+
+                    if (contentTypeLocalVar != null && httpRequestMessageLocalVar.Content != null)
+                        httpRequestMessageLocalVar.Content.Headers.ContentType = new MediaTypeHeaderValue(contentTypeLocalVar);
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Post;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<CreateProvisioningKeyApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<CreateProvisioningKeyApiResponse>();
+                        CreateProvisioningKeyApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/provisioning/keys", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterCreateProvisioningKeyDefaultImplementation(apiResponseLocalVar, createProvisioningKeyRequest);
+
+                        Events.ExecuteOnCreateProvisioningKey(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorCreateProvisioningKeyDefaultImplementation(e, "/provisioning/keys", uriBuilderLocalVar.Path, createProvisioningKeyRequest);
+                Events.ExecuteOnErrorCreateProvisioningKey(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="CreateProvisioningKeyApiResponse"/>
+        /// </summary>
+        public partial class CreateProvisioningKeyApiResponse : AIStatsSdk.Client.ApiResponse, ICreateProvisioningKeyApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<CreateProvisioningKeyApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="CreateProvisioningKeyApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public CreateProvisioningKeyApiResponse(ILogger<CreateProvisioningKeyApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="CreateProvisioningKeyApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public CreateProvisioningKeyApiResponse(ILogger<CreateProvisioningKeyApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 201 Created
+            /// </summary>
+            /// <returns></returns>
+            public bool IsCreated => 201 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 201 Created
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.CreateProvisioningKey201Response? Created()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsCreated
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.CreateProvisioningKey201Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 201 Created and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryCreated([NotNullWhen(true)]out AIStatsSdk.Model.CreateProvisioningKey201Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Created();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)201);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public bool IsBadRequest => 400 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? BadRequest()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsBadRequest
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryBadRequest([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = BadRequest();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)400);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public bool IsInternalServerError => 500 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? InternalServerError()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsInternalServerError
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryInternalServerError([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = InternalServerError();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)500);
                 }
 
                 return result != null;
@@ -3471,7 +5229,7 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
-        partial void FormatCreateTranscription(ref string model, ref Option<string> audioUrl, ref Option<string> audioB64, ref Option<string> language);
+        partial void FormatCreateTranscription(ref string model, ref Option<string> audioUrl, ref Option<string> audioB64, ref Option<string> language, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Validates the request parameters
@@ -3480,8 +5238,9 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
+        /// <param name="provider"></param>
         /// <returns></returns>
-        private void ValidateCreateTranscription(string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language)
+        private void ValidateCreateTranscription(string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -3494,6 +5253,9 @@ namespace AIStatsSdk.Api
 
             if (language.IsSet && language.Value == null)
                 throw new ArgumentNullException(nameof(language));
+
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider));
         }
 
         /// <summary>
@@ -3504,10 +5266,11 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        private void AfterCreateTranscriptionDefaultImplementation(ICreateTranscriptionApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language)
+        /// <param name="provider"></param>
+        private void AfterCreateTranscriptionDefaultImplementation(ICreateTranscriptionApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLog = false;
-            AfterCreateTranscription(ref suppressDefaultLog, apiResponseLocalVar, model, audioUrl, audioB64, language);
+            AfterCreateTranscription(ref suppressDefaultLog, apiResponseLocalVar, model, audioUrl, audioB64, language, provider);
             if (!suppressDefaultLog)
                 Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
         }
@@ -3521,7 +5284,8 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        partial void AfterCreateTranscription(ref bool suppressDefaultLog, ICreateTranscriptionApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language);
+        /// <param name="provider"></param>
+        partial void AfterCreateTranscription(ref bool suppressDefaultLog, ICreateTranscriptionApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -3533,10 +5297,11 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        private void OnErrorCreateTranscriptionDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language)
+        /// <param name="provider"></param>
+        private void OnErrorCreateTranscriptionDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLogLocalVar = false;
-            OnErrorCreateTranscription(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, audioUrl, audioB64, language);
+            OnErrorCreateTranscription(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, audioUrl, audioB64, language, provider);
             if (!suppressDefaultLogLocalVar)
                 Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
         }
@@ -3552,7 +5317,8 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        partial void OnErrorCreateTranscription(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language);
+        /// <param name="provider"></param>
+        partial void OnErrorCreateTranscription(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Create transcription Transcribes audio into the input language.
@@ -3561,13 +5327,14 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"> (optional)</param>
         /// <param name="audioB64"> (optional)</param>
         /// <param name="language"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranscriptionApiResponse"/>&gt;</returns>
-        public async Task<ICreateTranscriptionApiResponse?> CreateTranscriptionOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateTranscriptionApiResponse?> CreateTranscriptionOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                return await CreateTranscriptionAsync(model, audioUrl, audioB64, language, cancellationToken).ConfigureAwait(false);
+                return await CreateTranscriptionAsync(model, audioUrl, audioB64, language, provider, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -3583,17 +5350,18 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"> (optional)</param>
         /// <param name="audioB64"> (optional)</param>
         /// <param name="language"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranscriptionApiResponse"/>&gt;</returns>
-        public async Task<ICreateTranscriptionApiResponse> CreateTranscriptionAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateTranscriptionApiResponse> CreateTranscriptionAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             UriBuilder uriBuilderLocalVar = new UriBuilder();
 
             try
             {
-                ValidateCreateTranscription(model, audioUrl, audioB64, language);
+                ValidateCreateTranscription(model, audioUrl, audioB64, language, provider);
 
-                FormatCreateTranscription(ref model, ref audioUrl, ref audioB64, ref language);
+                FormatCreateTranscription(ref model, ref audioUrl, ref audioB64, ref language, provider);
 
                 using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
                 {
@@ -3622,6 +5390,9 @@ namespace AIStatsSdk.Api
 
                     if (language.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("language", ClientUtils.ParameterToString(language.Value)));
+
+                    if (provider.IsSet)
+                        formParameterLocalVars.Add(new KeyValuePair<string?, string?>("provider", ClientUtils.ParameterToString(provider.Value)));
 
                     List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
                     httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
@@ -3668,7 +5439,7 @@ namespace AIStatsSdk.Api
                             }
                         }
 
-                        AfterCreateTranscriptionDefaultImplementation(apiResponseLocalVar, model, audioUrl, audioB64, language);
+                        AfterCreateTranscriptionDefaultImplementation(apiResponseLocalVar, model, audioUrl, audioB64, language, provider);
 
                         Events.ExecuteOnCreateTranscription(apiResponseLocalVar);
 
@@ -3682,7 +5453,7 @@ namespace AIStatsSdk.Api
             }
             catch(Exception e)
             {
-                OnErrorCreateTranscriptionDefaultImplementation(e, "/audio/transcriptions", uriBuilderLocalVar.Path, model, audioUrl, audioB64, language);
+                OnErrorCreateTranscriptionDefaultImplementation(e, "/audio/transcriptions", uriBuilderLocalVar.Path, model, audioUrl, audioB64, language, provider);
                 Events.ExecuteOnErrorCreateTranscription(e);
                 throw;
             }
@@ -3781,7 +5552,7 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
-        partial void FormatCreateTranslation(ref string model, ref Option<string> audioUrl, ref Option<string> audioB64, ref Option<string> language, ref Option<string> prompt, ref Option<decimal> temperature);
+        partial void FormatCreateTranslation(ref string model, ref Option<string> audioUrl, ref Option<string> audioB64, ref Option<string> language, ref Option<string> prompt, ref Option<decimal> temperature, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Validates the request parameters
@@ -3791,8 +5562,9 @@ namespace AIStatsSdk.Api
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
         /// <param name="prompt"></param>
+        /// <param name="provider"></param>
         /// <returns></returns>
-        private void ValidateCreateTranslation(string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt)
+        private void ValidateCreateTranslation(string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<ProviderRoutingOptions> provider)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -3808,6 +5580,9 @@ namespace AIStatsSdk.Api
 
             if (prompt.IsSet && prompt.Value == null)
                 throw new ArgumentNullException(nameof(prompt));
+
+            if (provider.IsSet && provider.Value == null)
+                throw new ArgumentNullException(nameof(provider));
         }
 
         /// <summary>
@@ -3820,10 +5595,11 @@ namespace AIStatsSdk.Api
         /// <param name="language"></param>
         /// <param name="prompt"></param>
         /// <param name="temperature"></param>
-        private void AfterCreateTranslationDefaultImplementation(ICreateTranslationApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature)
+        /// <param name="provider"></param>
+        private void AfterCreateTranslationDefaultImplementation(ICreateTranslationApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLog = false;
-            AfterCreateTranslation(ref suppressDefaultLog, apiResponseLocalVar, model, audioUrl, audioB64, language, prompt, temperature);
+            AfterCreateTranslation(ref suppressDefaultLog, apiResponseLocalVar, model, audioUrl, audioB64, language, prompt, temperature, provider);
             if (!suppressDefaultLog)
                 Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
         }
@@ -3839,7 +5615,8 @@ namespace AIStatsSdk.Api
         /// <param name="language"></param>
         /// <param name="prompt"></param>
         /// <param name="temperature"></param>
-        partial void AfterCreateTranslation(ref bool suppressDefaultLog, ICreateTranslationApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature);
+        /// <param name="provider"></param>
+        partial void AfterCreateTranslation(ref bool suppressDefaultLog, ICreateTranslationApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -3853,10 +5630,11 @@ namespace AIStatsSdk.Api
         /// <param name="language"></param>
         /// <param name="prompt"></param>
         /// <param name="temperature"></param>
-        private void OnErrorCreateTranslationDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature)
+        /// <param name="provider"></param>
+        private void OnErrorCreateTranslationDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLogLocalVar = false;
-            OnErrorCreateTranslation(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, audioUrl, audioB64, language, prompt, temperature);
+            OnErrorCreateTranslation(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, audioUrl, audioB64, language, prompt, temperature, provider);
             if (!suppressDefaultLogLocalVar)
                 Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
         }
@@ -3874,7 +5652,8 @@ namespace AIStatsSdk.Api
         /// <param name="language"></param>
         /// <param name="prompt"></param>
         /// <param name="temperature"></param>
-        partial void OnErrorCreateTranslation(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature);
+        /// <param name="provider"></param>
+        partial void OnErrorCreateTranslation(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Create translation Translates audio into English.
@@ -3885,13 +5664,14 @@ namespace AIStatsSdk.Api
         /// <param name="language"> (optional)</param>
         /// <param name="prompt"> (optional)</param>
         /// <param name="temperature"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranslationApiResponse"/>&gt;</returns>
-        public async Task<ICreateTranslationApiResponse?> CreateTranslationOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateTranslationApiResponse?> CreateTranslationOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                return await CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, cancellationToken).ConfigureAwait(false);
+                return await CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, provider, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -3909,17 +5689,18 @@ namespace AIStatsSdk.Api
         /// <param name="language"> (optional)</param>
         /// <param name="prompt"> (optional)</param>
         /// <param name="temperature"> (optional)</param>
+        /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranslationApiResponse"/>&gt;</returns>
-        public async Task<ICreateTranslationApiResponse> CreateTranslationAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateTranslationApiResponse> CreateTranslationAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             UriBuilder uriBuilderLocalVar = new UriBuilder();
 
             try
             {
-                ValidateCreateTranslation(model, audioUrl, audioB64, language, prompt);
+                ValidateCreateTranslation(model, audioUrl, audioB64, language, prompt, provider);
 
-                FormatCreateTranslation(ref model, ref audioUrl, ref audioB64, ref language, ref prompt, ref temperature);
+                FormatCreateTranslation(ref model, ref audioUrl, ref audioB64, ref language, ref prompt, ref temperature, provider);
 
                 using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
                 {
@@ -3954,6 +5735,9 @@ namespace AIStatsSdk.Api
 
                     if (temperature.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("temperature", ClientUtils.ParameterToString(temperature.Value)));
+
+                    if (provider.IsSet)
+                        formParameterLocalVars.Add(new KeyValuePair<string?, string?>("provider", ClientUtils.ParameterToString(provider.Value)));
 
                     List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
                     httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
@@ -4000,7 +5784,7 @@ namespace AIStatsSdk.Api
                             }
                         }
 
-                        AfterCreateTranslationDefaultImplementation(apiResponseLocalVar, model, audioUrl, audioB64, language, prompt, temperature);
+                        AfterCreateTranslationDefaultImplementation(apiResponseLocalVar, model, audioUrl, audioB64, language, prompt, temperature, provider);
 
                         Events.ExecuteOnCreateTranslation(apiResponseLocalVar);
 
@@ -4014,7 +5798,7 @@ namespace AIStatsSdk.Api
             }
             catch(Exception e)
             {
-                OnErrorCreateTranslationDefaultImplementation(e, "/audio/translations", uriBuilderLocalVar.Path, model, audioUrl, audioB64, language, prompt, temperature);
+                OnErrorCreateTranslationDefaultImplementation(e, "/audio/translations", uriBuilderLocalVar.Path, model, audioUrl, audioB64, language, prompt, temperature, provider);
                 Events.ExecuteOnErrorCreateTranslation(e);
                 throw;
             }
@@ -4378,6 +6162,1214 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
+        partial void FormatDeleteProvisioningKey(ref string id);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private void ValidateDeleteProvisioningKey(string id)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="id"></param>
+        private void AfterDeleteProvisioningKeyDefaultImplementation(IDeleteProvisioningKeyApiResponse apiResponseLocalVar, string id)
+        {
+            bool suppressDefaultLog = false;
+            AfterDeleteProvisioningKey(ref suppressDefaultLog, apiResponseLocalVar, id);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="id"></param>
+        partial void AfterDeleteProvisioningKey(ref bool suppressDefaultLog, IDeleteProvisioningKeyApiResponse apiResponseLocalVar, string id);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="id"></param>
+        private void OnErrorDeleteProvisioningKeyDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string id)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorDeleteProvisioningKey(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, id);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="id"></param>
+        partial void OnErrorDeleteProvisioningKey(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string id);
+
+        /// <summary>
+        /// Delete provisioning key Permanently deletes a provisioning key.
+        /// </summary>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IDeleteProvisioningKeyApiResponse"/>&gt;</returns>
+        public async Task<IDeleteProvisioningKeyApiResponse?> DeleteProvisioningKeyOrDefaultAsync(string id, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await DeleteProvisioningKeyAsync(id, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Delete provisioning key Permanently deletes a provisioning key.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IDeleteProvisioningKeyApiResponse"/>&gt;</returns>
+        public async Task<IDeleteProvisioningKeyApiResponse> DeleteProvisioningKeyAsync(string id, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateDeleteProvisioningKey(id);
+
+                FormatDeleteProvisioningKey(ref id);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/provisioning/keys/{id}"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/provisioning/keys/{id}");
+                    uriBuilderLocalVar.Path = uriBuilderLocalVar.Path.Replace("%7Bid%7D", Uri.EscapeDataString(id.ToString()));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Delete;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<DeleteProvisioningKeyApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<DeleteProvisioningKeyApiResponse>();
+                        DeleteProvisioningKeyApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/provisioning/keys/{id}", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterDeleteProvisioningKeyDefaultImplementation(apiResponseLocalVar, id);
+
+                        Events.ExecuteOnDeleteProvisioningKey(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorDeleteProvisioningKeyDefaultImplementation(e, "/provisioning/keys/{id}", uriBuilderLocalVar.Path, id);
+                Events.ExecuteOnErrorDeleteProvisioningKey(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="DeleteProvisioningKeyApiResponse"/>
+        /// </summary>
+        public partial class DeleteProvisioningKeyApiResponse : AIStatsSdk.Client.ApiResponse, IDeleteProvisioningKeyApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<DeleteProvisioningKeyApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="DeleteProvisioningKeyApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public DeleteProvisioningKeyApiResponse(ILogger<DeleteProvisioningKeyApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="DeleteProvisioningKeyApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public DeleteProvisioningKeyApiResponse(ILogger<DeleteProvisioningKeyApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.DeleteProvisioningKey200Response? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.DeleteProvisioningKey200Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.DeleteProvisioningKey200Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 404 NotFound
+            /// </summary>
+            /// <returns></returns>
+            public bool IsNotFound => 404 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 404 NotFound
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? NotFound()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsNotFound
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 404 NotFound and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryNotFound([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = NotFound();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)404);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public bool IsInternalServerError => 500 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? InternalServerError()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsInternalServerError
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryInternalServerError([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = InternalServerError();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)500);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatDeleteVideo(ref string videoId);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="videoId"></param>
+        /// <returns></returns>
+        private void ValidateDeleteVideo(string videoId)
+        {
+            if (videoId == null)
+                throw new ArgumentNullException(nameof(videoId));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="videoId"></param>
+        private void AfterDeleteVideoDefaultImplementation(IDeleteVideoApiResponse apiResponseLocalVar, string videoId)
+        {
+            bool suppressDefaultLog = false;
+            AfterDeleteVideo(ref suppressDefaultLog, apiResponseLocalVar, videoId);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="videoId"></param>
+        partial void AfterDeleteVideo(ref bool suppressDefaultLog, IDeleteVideoApiResponse apiResponseLocalVar, string videoId);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="videoId"></param>
+        private void OnErrorDeleteVideoDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string videoId)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorDeleteVideo(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, videoId);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="videoId"></param>
+        partial void OnErrorDeleteVideo(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string videoId);
+
+        /// <summary>
+        /// Delete video Deletes a video generation request.
+        /// </summary>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IDeleteVideoApiResponse"/>&gt;</returns>
+        public async Task<IDeleteVideoApiResponse?> DeleteVideoOrDefaultAsync(string videoId, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await DeleteVideoAsync(videoId, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Delete video Deletes a video generation request.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IDeleteVideoApiResponse"/>&gt;</returns>
+        public async Task<IDeleteVideoApiResponse> DeleteVideoAsync(string videoId, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateDeleteVideo(videoId);
+
+                FormatDeleteVideo(ref videoId);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/videos/{video_id}"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/videos/{video_id}");
+                    uriBuilderLocalVar.Path = uriBuilderLocalVar.Path.Replace("%7Bvideo_id%7D", Uri.EscapeDataString(videoId.ToString()));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Delete;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<DeleteVideoApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<DeleteVideoApiResponse>();
+                        DeleteVideoApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/videos/{video_id}", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterDeleteVideoDefaultImplementation(apiResponseLocalVar, videoId);
+
+                        Events.ExecuteOnDeleteVideo(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorDeleteVideoDefaultImplementation(e, "/videos/{video_id}", uriBuilderLocalVar.Path, videoId);
+                Events.ExecuteOnErrorDeleteVideo(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="DeleteVideoApiResponse"/>
+        /// </summary>
+        public partial class DeleteVideoApiResponse : AIStatsSdk.Client.ApiResponse, IDeleteVideoApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<DeleteVideoApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="DeleteVideoApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public DeleteVideoApiResponse(ILogger<DeleteVideoApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="DeleteVideoApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public DeleteVideoApiResponse(ILogger<DeleteVideoApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.VideoDeleteResponse? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.VideoDeleteResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.VideoDeleteResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatGenerateMusic(MusicGenerateRequest musicGenerateRequest);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="musicGenerateRequest"></param>
+        /// <returns></returns>
+        private void ValidateGenerateMusic(MusicGenerateRequest musicGenerateRequest)
+        {
+            if (musicGenerateRequest == null)
+                throw new ArgumentNullException(nameof(musicGenerateRequest));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="musicGenerateRequest"></param>
+        private void AfterGenerateMusicDefaultImplementation(IGenerateMusicApiResponse apiResponseLocalVar, MusicGenerateRequest musicGenerateRequest)
+        {
+            bool suppressDefaultLog = false;
+            AfterGenerateMusic(ref suppressDefaultLog, apiResponseLocalVar, musicGenerateRequest);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="musicGenerateRequest"></param>
+        partial void AfterGenerateMusic(ref bool suppressDefaultLog, IGenerateMusicApiResponse apiResponseLocalVar, MusicGenerateRequest musicGenerateRequest);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="musicGenerateRequest"></param>
+        private void OnErrorGenerateMusicDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, MusicGenerateRequest musicGenerateRequest)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorGenerateMusic(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, musicGenerateRequest);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="musicGenerateRequest"></param>
+        partial void OnErrorGenerateMusic(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, MusicGenerateRequest musicGenerateRequest);
+
+        /// <summary>
+        /// Generate music Generates music using the requested model and provider settings.
+        /// </summary>
+        /// <param name="musicGenerateRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGenerateMusicApiResponse"/>&gt;</returns>
+        public async Task<IGenerateMusicApiResponse?> GenerateMusicOrDefaultAsync(MusicGenerateRequest musicGenerateRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await GenerateMusicAsync(musicGenerateRequest, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Generate music Generates music using the requested model and provider settings.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="musicGenerateRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGenerateMusicApiResponse"/>&gt;</returns>
+        public async Task<IGenerateMusicApiResponse> GenerateMusicAsync(MusicGenerateRequest musicGenerateRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateGenerateMusic(musicGenerateRequest);
+
+                FormatGenerateMusic(musicGenerateRequest);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/music/generate"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/music/generate");
+
+                    httpRequestMessageLocalVar.Content = (musicGenerateRequest as object) is System.IO.Stream stream
+                        ? httpRequestMessageLocalVar.Content = new StreamContent(stream)
+                        : httpRequestMessageLocalVar.Content = new StringContent(JsonSerializer.Serialize(musicGenerateRequest, _jsonSerializerOptions));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] contentTypes = new string[] {
+                        "application/json"
+                    };
+
+                    string? contentTypeLocalVar = ClientUtils.SelectHeaderContentType(contentTypes);
+
+                    if (contentTypeLocalVar != null && httpRequestMessageLocalVar.Content != null)
+                        httpRequestMessageLocalVar.Content.Headers.ContentType = new MediaTypeHeaderValue(contentTypeLocalVar);
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Post;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<GenerateMusicApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<GenerateMusicApiResponse>();
+                        GenerateMusicApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/music/generate", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterGenerateMusicDefaultImplementation(apiResponseLocalVar, musicGenerateRequest);
+
+                        Events.ExecuteOnGenerateMusic(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorGenerateMusicDefaultImplementation(e, "/music/generate", uriBuilderLocalVar.Path, musicGenerateRequest);
+                Events.ExecuteOnErrorGenerateMusic(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="GenerateMusicApiResponse"/>
+        /// </summary>
+        public partial class GenerateMusicApiResponse : AIStatsSdk.Client.ApiResponse, IGenerateMusicApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<GenerateMusicApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="GenerateMusicApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GenerateMusicApiResponse(ILogger<GenerateMusicApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="GenerateMusicApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GenerateMusicApiResponse(ILogger<GenerateMusicApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public Dictionary<string, Object>? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, Object>>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out Dictionary<string, Object>? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatGetActivity(ref string teamId, ref Option<int> days, ref Option<int> limit, ref Option<int> offset);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="teamId"></param>
+        /// <returns></returns>
+        private void ValidateGetActivity(string teamId)
+        {
+            if (teamId == null)
+                throw new ArgumentNullException(nameof(teamId));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="teamId"></param>
+        /// <param name="days"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        private void AfterGetActivityDefaultImplementation(IGetActivityApiResponse apiResponseLocalVar, string teamId, Option<int> days, Option<int> limit, Option<int> offset)
+        {
+            bool suppressDefaultLog = false;
+            AfterGetActivity(ref suppressDefaultLog, apiResponseLocalVar, teamId, days, limit, offset);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="teamId"></param>
+        /// <param name="days"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        partial void AfterGetActivity(ref bool suppressDefaultLog, IGetActivityApiResponse apiResponseLocalVar, string teamId, Option<int> days, Option<int> limit, Option<int> offset);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="teamId"></param>
+        /// <param name="days"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        private void OnErrorGetActivityDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string teamId, Option<int> days, Option<int> limit, Option<int> offset)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorGetActivity(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, teamId, days, limit, offset);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="teamId"></param>
+        /// <param name="days"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        partial void OnErrorGetActivity(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string teamId, Option<int> days, Option<int> limit, Option<int> offset);
+
+        /// <summary>
+        /// Get activity Returns recent API activity for a team.
+        /// </summary>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="days">Number of days to look back (optional, default to 30)</param>
+        /// <param name="limit">Maximum number of records to return (optional, default to 50)</param>
+        /// <param name="offset">Pagination offset (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetActivityApiResponse"/>&gt;</returns>
+        public async Task<IGetActivityApiResponse?> GetActivityOrDefaultAsync(string teamId, Option<int> days = default, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await GetActivityAsync(teamId, days, limit, offset, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Get activity Returns recent API activity for a team.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="days">Number of days to look back (optional, default to 30)</param>
+        /// <param name="limit">Maximum number of records to return (optional, default to 50)</param>
+        /// <param name="offset">Pagination offset (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetActivityApiResponse"/>&gt;</returns>
+        public async Task<IGetActivityApiResponse> GetActivityAsync(string teamId, Option<int> days = default, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateGetActivity(teamId);
+
+                FormatGetActivity(ref teamId, ref days, ref limit, ref offset);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/activity"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/activity");
+
+                    System.Collections.Specialized.NameValueCollection parseQueryStringLocalVar = System.Web.HttpUtility.ParseQueryString(string.Empty);
+
+                    parseQueryStringLocalVar["team_id"] = ClientUtils.ParameterToString(teamId);
+
+                    if (days.IsSet)
+                        parseQueryStringLocalVar["days"] = ClientUtils.ParameterToString(days.Value);
+
+                    if (limit.IsSet)
+                        parseQueryStringLocalVar["limit"] = ClientUtils.ParameterToString(limit.Value);
+
+                    if (offset.IsSet)
+                        parseQueryStringLocalVar["offset"] = ClientUtils.ParameterToString(offset.Value);
+
+                    uriBuilderLocalVar.Query = parseQueryStringLocalVar.ToString();
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Get;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<GetActivityApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<GetActivityApiResponse>();
+                        GetActivityApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/activity", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterGetActivityDefaultImplementation(apiResponseLocalVar, teamId, days, limit, offset);
+
+                        Events.ExecuteOnGetActivity(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorGetActivityDefaultImplementation(e, "/activity", uriBuilderLocalVar.Path, teamId, days, limit, offset);
+                Events.ExecuteOnErrorGetActivity(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="GetActivityApiResponse"/>
+        /// </summary>
+        public partial class GetActivityApiResponse : AIStatsSdk.Client.ApiResponse, IGetActivityApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<GetActivityApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="GetActivityApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetActivityApiResponse(ILogger<GetActivityApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="GetActivityApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetActivityApiResponse(ILogger<GetActivityApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.GetActivity200Response? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.GetActivity200Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.GetActivity200Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public bool IsBadRequest => 400 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? BadRequest()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsBadRequest
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryBadRequest([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = BadRequest();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)400);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public bool IsInternalServerError => 500 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? InternalServerError()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsInternalServerError
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryInternalServerError([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = InternalServerError();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)500);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
         partial void FormatGetAnalytics(GetAnalyticsRequest getAnalyticsRequest);
 
         /// <summary>
@@ -4627,6 +7619,340 @@ namespace AIStatsSdk.Api
                 } catch (Exception e)
                 {
                     OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatGetCredits(ref string teamId);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="teamId"></param>
+        /// <returns></returns>
+        private void ValidateGetCredits(string teamId)
+        {
+            if (teamId == null)
+                throw new ArgumentNullException(nameof(teamId));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="teamId"></param>
+        private void AfterGetCreditsDefaultImplementation(IGetCreditsApiResponse apiResponseLocalVar, string teamId)
+        {
+            bool suppressDefaultLog = false;
+            AfterGetCredits(ref suppressDefaultLog, apiResponseLocalVar, teamId);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="teamId"></param>
+        partial void AfterGetCredits(ref bool suppressDefaultLog, IGetCreditsApiResponse apiResponseLocalVar, string teamId);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="teamId"></param>
+        private void OnErrorGetCreditsDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string teamId)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorGetCredits(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, teamId);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="teamId"></param>
+        partial void OnErrorGetCredits(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string teamId);
+
+        /// <summary>
+        /// Get remaining credits Returns the remaining credits and usage statistics for a team.
+        /// </summary>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetCreditsApiResponse"/>&gt;</returns>
+        public async Task<IGetCreditsApiResponse?> GetCreditsOrDefaultAsync(string teamId, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await GetCreditsAsync(teamId, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Get remaining credits Returns the remaining credits and usage statistics for a team.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetCreditsApiResponse"/>&gt;</returns>
+        public async Task<IGetCreditsApiResponse> GetCreditsAsync(string teamId, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateGetCredits(teamId);
+
+                FormatGetCredits(ref teamId);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/credits"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/credits");
+
+                    System.Collections.Specialized.NameValueCollection parseQueryStringLocalVar = System.Web.HttpUtility.ParseQueryString(string.Empty);
+
+                    parseQueryStringLocalVar["team_id"] = ClientUtils.ParameterToString(teamId);
+
+                    uriBuilderLocalVar.Query = parseQueryStringLocalVar.ToString();
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Get;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<GetCreditsApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<GetCreditsApiResponse>();
+                        GetCreditsApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/credits", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterGetCreditsDefaultImplementation(apiResponseLocalVar, teamId);
+
+                        Events.ExecuteOnGetCredits(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorGetCreditsDefaultImplementation(e, "/credits", uriBuilderLocalVar.Path, teamId);
+                Events.ExecuteOnErrorGetCredits(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="GetCreditsApiResponse"/>
+        /// </summary>
+        public partial class GetCreditsApiResponse : AIStatsSdk.Client.ApiResponse, IGetCreditsApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<GetCreditsApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="GetCreditsApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetCreditsApiResponse(ILogger<GetCreditsApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="GetCreditsApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetCreditsApiResponse(ILogger<GetCreditsApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.GetCredits200Response? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.GetCredits200Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.GetCredits200Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public bool IsBadRequest => 400 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? BadRequest()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsBadRequest
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryBadRequest([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = BadRequest();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)400);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public bool IsInternalServerError => 500 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? InternalServerError()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsInternalServerError
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryInternalServerError([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = InternalServerError();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)500);
                 }
 
                 return result != null;
@@ -4961,6 +8287,849 @@ namespace AIStatsSdk.Api
                 } catch (Exception e)
                 {
                     OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)404);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatGetProvisioningKey(ref string id);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private void ValidateGetProvisioningKey(string id)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="id"></param>
+        private void AfterGetProvisioningKeyDefaultImplementation(IGetProvisioningKeyApiResponse apiResponseLocalVar, string id)
+        {
+            bool suppressDefaultLog = false;
+            AfterGetProvisioningKey(ref suppressDefaultLog, apiResponseLocalVar, id);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="id"></param>
+        partial void AfterGetProvisioningKey(ref bool suppressDefaultLog, IGetProvisioningKeyApiResponse apiResponseLocalVar, string id);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="id"></param>
+        private void OnErrorGetProvisioningKeyDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string id)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorGetProvisioningKey(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, id);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="id"></param>
+        partial void OnErrorGetProvisioningKey(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string id);
+
+        /// <summary>
+        /// Get provisioning key Returns details of a specific provisioning key.
+        /// </summary>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetProvisioningKeyApiResponse"/>&gt;</returns>
+        public async Task<IGetProvisioningKeyApiResponse?> GetProvisioningKeyOrDefaultAsync(string id, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await GetProvisioningKeyAsync(id, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Get provisioning key Returns details of a specific provisioning key.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetProvisioningKeyApiResponse"/>&gt;</returns>
+        public async Task<IGetProvisioningKeyApiResponse> GetProvisioningKeyAsync(string id, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateGetProvisioningKey(id);
+
+                FormatGetProvisioningKey(ref id);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/provisioning/keys/{id}"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/provisioning/keys/{id}");
+                    uriBuilderLocalVar.Path = uriBuilderLocalVar.Path.Replace("%7Bid%7D", Uri.EscapeDataString(id.ToString()));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Get;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<GetProvisioningKeyApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<GetProvisioningKeyApiResponse>();
+                        GetProvisioningKeyApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/provisioning/keys/{id}", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterGetProvisioningKeyDefaultImplementation(apiResponseLocalVar, id);
+
+                        Events.ExecuteOnGetProvisioningKey(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorGetProvisioningKeyDefaultImplementation(e, "/provisioning/keys/{id}", uriBuilderLocalVar.Path, id);
+                Events.ExecuteOnErrorGetProvisioningKey(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="GetProvisioningKeyApiResponse"/>
+        /// </summary>
+        public partial class GetProvisioningKeyApiResponse : AIStatsSdk.Client.ApiResponse, IGetProvisioningKeyApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<GetProvisioningKeyApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="GetProvisioningKeyApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetProvisioningKeyApiResponse(ILogger<GetProvisioningKeyApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="GetProvisioningKeyApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetProvisioningKeyApiResponse(ILogger<GetProvisioningKeyApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.GetProvisioningKey200Response? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.GetProvisioningKey200Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.GetProvisioningKey200Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 404 NotFound
+            /// </summary>
+            /// <returns></returns>
+            public bool IsNotFound => 404 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 404 NotFound
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? NotFound()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsNotFound
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 404 NotFound and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryNotFound([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = NotFound();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)404);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public bool IsInternalServerError => 500 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? InternalServerError()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsInternalServerError
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryInternalServerError([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = InternalServerError();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)500);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatGetVideo(ref string videoId);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="videoId"></param>
+        /// <returns></returns>
+        private void ValidateGetVideo(string videoId)
+        {
+            if (videoId == null)
+                throw new ArgumentNullException(nameof(videoId));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="videoId"></param>
+        private void AfterGetVideoDefaultImplementation(IGetVideoApiResponse apiResponseLocalVar, string videoId)
+        {
+            bool suppressDefaultLog = false;
+            AfterGetVideo(ref suppressDefaultLog, apiResponseLocalVar, videoId);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="videoId"></param>
+        partial void AfterGetVideo(ref bool suppressDefaultLog, IGetVideoApiResponse apiResponseLocalVar, string videoId);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="videoId"></param>
+        private void OnErrorGetVideoDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string videoId)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorGetVideo(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, videoId);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="videoId"></param>
+        partial void OnErrorGetVideo(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string videoId);
+
+        /// <summary>
+        /// Get video status Retrieves the status for a video generation request.
+        /// </summary>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetVideoApiResponse"/>&gt;</returns>
+        public async Task<IGetVideoApiResponse?> GetVideoOrDefaultAsync(string videoId, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await GetVideoAsync(videoId, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Get video status Retrieves the status for a video generation request.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetVideoApiResponse"/>&gt;</returns>
+        public async Task<IGetVideoApiResponse> GetVideoAsync(string videoId, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateGetVideo(videoId);
+
+                FormatGetVideo(ref videoId);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/videos/{video_id}"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/videos/{video_id}");
+                    uriBuilderLocalVar.Path = uriBuilderLocalVar.Path.Replace("%7Bvideo_id%7D", Uri.EscapeDataString(videoId.ToString()));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Get;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<GetVideoApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<GetVideoApiResponse>();
+                        GetVideoApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/videos/{video_id}", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterGetVideoDefaultImplementation(apiResponseLocalVar, videoId);
+
+                        Events.ExecuteOnGetVideo(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorGetVideoDefaultImplementation(e, "/videos/{video_id}", uriBuilderLocalVar.Path, videoId);
+                Events.ExecuteOnErrorGetVideo(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="GetVideoApiResponse"/>
+        /// </summary>
+        public partial class GetVideoApiResponse : AIStatsSdk.Client.ApiResponse, IGetVideoApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<GetVideoApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="GetVideoApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetVideoApiResponse(ILogger<GetVideoApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="GetVideoApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetVideoApiResponse(ILogger<GetVideoApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.VideoGenerationResponse? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.VideoGenerationResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.VideoGenerationResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatGetVideoContent(ref string videoId);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="videoId"></param>
+        /// <returns></returns>
+        private void ValidateGetVideoContent(string videoId)
+        {
+            if (videoId == null)
+                throw new ArgumentNullException(nameof(videoId));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="videoId"></param>
+        private void AfterGetVideoContentDefaultImplementation(IGetVideoContentApiResponse apiResponseLocalVar, string videoId)
+        {
+            bool suppressDefaultLog = false;
+            AfterGetVideoContent(ref suppressDefaultLog, apiResponseLocalVar, videoId);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="videoId"></param>
+        partial void AfterGetVideoContent(ref bool suppressDefaultLog, IGetVideoContentApiResponse apiResponseLocalVar, string videoId);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="videoId"></param>
+        private void OnErrorGetVideoContentDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string videoId)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorGetVideoContent(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, videoId);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="videoId"></param>
+        partial void OnErrorGetVideoContent(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string videoId);
+
+        /// <summary>
+        /// Get video content Downloads the rendered video content.
+        /// </summary>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetVideoContentApiResponse"/>&gt;</returns>
+        public async Task<IGetVideoContentApiResponse?> GetVideoContentOrDefaultAsync(string videoId, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await GetVideoContentAsync(videoId, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Get video content Downloads the rendered video content.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="videoId">The ID of the video generation request.</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IGetVideoContentApiResponse"/>&gt;</returns>
+        public async Task<IGetVideoContentApiResponse> GetVideoContentAsync(string videoId, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateGetVideoContent(videoId);
+
+                FormatGetVideoContent(ref videoId);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/videos/{video_id}/content"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/videos/{video_id}/content");
+                    uriBuilderLocalVar.Path = uriBuilderLocalVar.Path.Replace("%7Bvideo_id%7D", Uri.EscapeDataString(videoId.ToString()));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/octet-stream"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Get;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<GetVideoContentApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<GetVideoContentApiResponse>();
+                        GetVideoContentApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            case (200):
+                            {
+                                byte[] responseBytesArrayLocalVar = await httpResponseMessageLocalVar.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+                                System.IO.Stream responseContentStreamLocalVar = new System.IO.MemoryStream(responseBytesArrayLocalVar);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentStreamLocalVar, "/videos/{video_id}/content", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/videos/{video_id}/content", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterGetVideoContentDefaultImplementation(apiResponseLocalVar, videoId);
+
+                        Events.ExecuteOnGetVideoContent(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorGetVideoContentDefaultImplementation(e, "/videos/{video_id}/content", uriBuilderLocalVar.Path, videoId);
+                Events.ExecuteOnErrorGetVideoContent(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="GetVideoContentApiResponse"/>
+        /// </summary>
+        public partial class GetVideoContentApiResponse : AIStatsSdk.Client.ApiResponse, IGetVideoContentApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<GetVideoContentApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="GetVideoContentApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetVideoContentApiResponse(ILogger<GetVideoContentApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="GetVideoContentApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public GetVideoContentApiResponse(ILogger<GetVideoContentApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public System.IO.Stream? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? ContentStream
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out System.IO.Stream? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
                 }
 
                 return result != null;
@@ -5802,6 +9971,651 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
+        partial void FormatListProviders(ref Option<int> limit, ref Option<int> offset);
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        private void AfterListProvidersDefaultImplementation(IListProvidersApiResponse apiResponseLocalVar, Option<int> limit, Option<int> offset)
+        {
+            bool suppressDefaultLog = false;
+            AfterListProviders(ref suppressDefaultLog, apiResponseLocalVar, limit, offset);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        partial void AfterListProviders(ref bool suppressDefaultLog, IListProvidersApiResponse apiResponseLocalVar, Option<int> limit, Option<int> offset);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        private void OnErrorListProvidersDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, Option<int> limit, Option<int> offset)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorListProviders(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, limit, offset);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        partial void OnErrorListProviders(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, Option<int> limit, Option<int> offset);
+
+        /// <summary>
+        /// List providers Returns a list of available API providers.
+        /// </summary>
+        /// <param name="limit">Limit the number of results (optional, default to 50)</param>
+        /// <param name="offset">Offset for pagination (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IListProvidersApiResponse"/>&gt;</returns>
+        public async Task<IListProvidersApiResponse?> ListProvidersOrDefaultAsync(Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await ListProvidersAsync(limit, offset, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// List providers Returns a list of available API providers.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="limit">Limit the number of results (optional, default to 50)</param>
+        /// <param name="offset">Offset for pagination (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IListProvidersApiResponse"/>&gt;</returns>
+        public async Task<IListProvidersApiResponse> ListProvidersAsync(Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                FormatListProviders(ref limit, ref offset);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/providers"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/providers");
+
+                    System.Collections.Specialized.NameValueCollection parseQueryStringLocalVar = System.Web.HttpUtility.ParseQueryString(string.Empty);
+
+                    if (limit.IsSet)
+                        parseQueryStringLocalVar["limit"] = ClientUtils.ParameterToString(limit.Value);
+
+                    if (offset.IsSet)
+                        parseQueryStringLocalVar["offset"] = ClientUtils.ParameterToString(offset.Value);
+
+                    uriBuilderLocalVar.Query = parseQueryStringLocalVar.ToString();
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Get;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<ListProvidersApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<ListProvidersApiResponse>();
+                        ListProvidersApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/providers", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterListProvidersDefaultImplementation(apiResponseLocalVar, limit, offset);
+
+                        Events.ExecuteOnListProviders(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorListProvidersDefaultImplementation(e, "/providers", uriBuilderLocalVar.Path, limit, offset);
+                Events.ExecuteOnErrorListProviders(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="ListProvidersApiResponse"/>
+        /// </summary>
+        public partial class ListProvidersApiResponse : AIStatsSdk.Client.ApiResponse, IListProvidersApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<ListProvidersApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="ListProvidersApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public ListProvidersApiResponse(ILogger<ListProvidersApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="ListProvidersApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public ListProvidersApiResponse(ILogger<ListProvidersApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ListProviders200Response? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ListProviders200Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.ListProviders200Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public bool IsInternalServerError => 500 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ListModels500Response? InternalServerError()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsInternalServerError
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ListModels500Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryInternalServerError([NotNullWhen(true)]out AIStatsSdk.Model.ListModels500Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = InternalServerError();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)500);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatListProvisioningKeys(ref string teamId, ref Option<int> limit, ref Option<int> offset);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="teamId"></param>
+        /// <returns></returns>
+        private void ValidateListProvisioningKeys(string teamId)
+        {
+            if (teamId == null)
+                throw new ArgumentNullException(nameof(teamId));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="teamId"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        private void AfterListProvisioningKeysDefaultImplementation(IListProvisioningKeysApiResponse apiResponseLocalVar, string teamId, Option<int> limit, Option<int> offset)
+        {
+            bool suppressDefaultLog = false;
+            AfterListProvisioningKeys(ref suppressDefaultLog, apiResponseLocalVar, teamId, limit, offset);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="teamId"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        partial void AfterListProvisioningKeys(ref bool suppressDefaultLog, IListProvisioningKeysApiResponse apiResponseLocalVar, string teamId, Option<int> limit, Option<int> offset);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="teamId"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        private void OnErrorListProvisioningKeysDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string teamId, Option<int> limit, Option<int> offset)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorListProvisioningKeys(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, teamId, limit, offset);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="teamId"></param>
+        /// <param name="limit"></param>
+        /// <param name="offset"></param>
+        partial void OnErrorListProvisioningKeys(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string teamId, Option<int> limit, Option<int> offset);
+
+        /// <summary>
+        /// List provisioning keys Returns all provisioning keys for a team.
+        /// </summary>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="limit">Maximum number of keys to return (optional, default to 50)</param>
+        /// <param name="offset">Pagination offset (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IListProvisioningKeysApiResponse"/>&gt;</returns>
+        public async Task<IListProvisioningKeysApiResponse?> ListProvisioningKeysOrDefaultAsync(string teamId, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await ListProvisioningKeysAsync(teamId, limit, offset, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// List provisioning keys Returns all provisioning keys for a team.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="teamId">The team ID to query</param>
+        /// <param name="limit">Maximum number of keys to return (optional, default to 50)</param>
+        /// <param name="offset">Pagination offset (optional, default to 0)</param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IListProvisioningKeysApiResponse"/>&gt;</returns>
+        public async Task<IListProvisioningKeysApiResponse> ListProvisioningKeysAsync(string teamId, Option<int> limit = default, Option<int> offset = default, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateListProvisioningKeys(teamId);
+
+                FormatListProvisioningKeys(ref teamId, ref limit, ref offset);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/provisioning/keys"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/provisioning/keys");
+
+                    System.Collections.Specialized.NameValueCollection parseQueryStringLocalVar = System.Web.HttpUtility.ParseQueryString(string.Empty);
+
+                    parseQueryStringLocalVar["team_id"] = ClientUtils.ParameterToString(teamId);
+
+                    if (limit.IsSet)
+                        parseQueryStringLocalVar["limit"] = ClientUtils.ParameterToString(limit.Value);
+
+                    if (offset.IsSet)
+                        parseQueryStringLocalVar["offset"] = ClientUtils.ParameterToString(offset.Value);
+
+                    uriBuilderLocalVar.Query = parseQueryStringLocalVar.ToString();
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Get;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<ListProvisioningKeysApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<ListProvisioningKeysApiResponse>();
+                        ListProvisioningKeysApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/provisioning/keys", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterListProvisioningKeysDefaultImplementation(apiResponseLocalVar, teamId, limit, offset);
+
+                        Events.ExecuteOnListProvisioningKeys(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorListProvisioningKeysDefaultImplementation(e, "/provisioning/keys", uriBuilderLocalVar.Path, teamId, limit, offset);
+                Events.ExecuteOnErrorListProvisioningKeys(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="ListProvisioningKeysApiResponse"/>
+        /// </summary>
+        public partial class ListProvisioningKeysApiResponse : AIStatsSdk.Client.ApiResponse, IListProvisioningKeysApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<ListProvisioningKeysApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="ListProvisioningKeysApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public ListProvisioningKeysApiResponse(ILogger<ListProvisioningKeysApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="ListProvisioningKeysApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public ListProvisioningKeysApiResponse(ILogger<ListProvisioningKeysApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ListProvisioningKeys200Response? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ListProvisioningKeys200Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.ListProvisioningKeys200Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public bool IsBadRequest => 400 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? BadRequest()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsBadRequest
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryBadRequest([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = BadRequest();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)400);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public bool IsInternalServerError => 500 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? InternalServerError()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsInternalServerError
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryInternalServerError([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = InternalServerError();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)500);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
         partial void FormatRetrieveBatch(ref string batchId);
 
         /// <summary>
@@ -6521,6 +11335,396 @@ namespace AIStatsSdk.Api
                 } catch (Exception e)
                 {
                     OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            private void OnDeserializationErrorDefaultImplementation(Exception exception, HttpStatusCode httpStatusCode)
+            {
+                bool suppressDefaultLog = false;
+                OnDeserializationError(ref suppressDefaultLog, exception, httpStatusCode);
+                if (!suppressDefaultLog)
+                    Logger.LogError(exception, "An error occurred while deserializing the {code} response.", httpStatusCode);
+            }
+
+            partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
+        }
+
+        partial void FormatUpdateProvisioningKey(ref string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest);
+
+        /// <summary>
+        /// Validates the request parameters
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        /// <returns></returns>
+        private void ValidateUpdateProvisioningKey(string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest)
+        {
+            if (id == null)
+                throw new ArgumentNullException(nameof(id));
+
+            if (updateProvisioningKeyRequest == null)
+                throw new ArgumentNullException(nameof(updateProvisioningKeyRequest));
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="id"></param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        private void AfterUpdateProvisioningKeyDefaultImplementation(IUpdateProvisioningKeyApiResponse apiResponseLocalVar, string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest)
+        {
+            bool suppressDefaultLog = false;
+            AfterUpdateProvisioningKey(ref suppressDefaultLog, apiResponseLocalVar, id, updateProvisioningKeyRequest);
+            if (!suppressDefaultLog)
+                Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
+        }
+
+        /// <summary>
+        /// Processes the server response
+        /// </summary>
+        /// <param name="suppressDefaultLog"></param>
+        /// <param name="apiResponseLocalVar"></param>
+        /// <param name="id"></param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        partial void AfterUpdateProvisioningKey(ref bool suppressDefaultLog, IUpdateProvisioningKeyApiResponse apiResponseLocalVar, string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest);
+
+        /// <summary>
+        /// Logs exceptions that occur while retrieving the server response
+        /// </summary>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="id"></param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        private void OnErrorUpdateProvisioningKeyDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest)
+        {
+            bool suppressDefaultLogLocalVar = false;
+            OnErrorUpdateProvisioningKey(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, id, updateProvisioningKeyRequest);
+            if (!suppressDefaultLogLocalVar)
+                Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
+        }
+
+        /// <summary>
+        /// A partial method that gives developers a way to provide customized exception handling
+        /// </summary>
+        /// <param name="suppressDefaultLogLocalVar"></param>
+        /// <param name="exceptionLocalVar"></param>
+        /// <param name="pathFormatLocalVar"></param>
+        /// <param name="pathLocalVar"></param>
+        /// <param name="id"></param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        partial void OnErrorUpdateProvisioningKey(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest);
+
+        /// <summary>
+        /// Update provisioning key Updates the name, status, or blocked state of a provisioning key.
+        /// </summary>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IUpdateProvisioningKeyApiResponse"/>&gt;</returns>
+        public async Task<IUpdateProvisioningKeyApiResponse?> UpdateProvisioningKeyOrDefaultAsync(string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await UpdateProvisioningKeyAsync(id, updateProvisioningKeyRequest, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Update provisioning key Updates the name, status, or blocked state of a provisioning key.
+        /// </summary>
+        /// <exception cref="ApiException">Thrown when fails to make API call</exception>
+        /// <param name="id">The provisioning key ID</param>
+        /// <param name="updateProvisioningKeyRequest"></param>
+        /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
+        /// <returns><see cref="Task"/>&lt;<see cref="IUpdateProvisioningKeyApiResponse"/>&gt;</returns>
+        public async Task<IUpdateProvisioningKeyApiResponse> UpdateProvisioningKeyAsync(string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest, System.Threading.CancellationToken cancellationToken = default)
+        {
+            UriBuilder uriBuilderLocalVar = new UriBuilder();
+
+            try
+            {
+                ValidateUpdateProvisioningKey(id, updateProvisioningKeyRequest);
+
+                FormatUpdateProvisioningKey(ref id, updateProvisioningKeyRequest);
+
+                using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
+                {
+                    uriBuilderLocalVar.Host = HttpClient.BaseAddress!.Host;
+                    uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
+                    uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
+                    uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
+                        ? "/provisioning/keys/{id}"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/provisioning/keys/{id}");
+                    uriBuilderLocalVar.Path = uriBuilderLocalVar.Path.Replace("%7Bid%7D", Uri.EscapeDataString(id.ToString()));
+
+                    httpRequestMessageLocalVar.Content = (updateProvisioningKeyRequest as object) is System.IO.Stream stream
+                        ? httpRequestMessageLocalVar.Content = new StreamContent(stream)
+                        : httpRequestMessageLocalVar.Content = new StringContent(JsonSerializer.Serialize(updateProvisioningKeyRequest, _jsonSerializerOptions));
+
+                    List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
+                    httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
+
+                    BearerToken bearerTokenLocalVar1 = (BearerToken) await BearerTokenProvider.GetAsync(cancellation: cancellationToken).ConfigureAwait(false);
+
+                    tokenBaseLocalVars.Add(bearerTokenLocalVar1);
+
+                    bearerTokenLocalVar1.UseInHeader(httpRequestMessageLocalVar, "");
+
+                    string[] contentTypes = new string[] {
+                        "application/json"
+                    };
+
+                    string? contentTypeLocalVar = ClientUtils.SelectHeaderContentType(contentTypes);
+
+                    if (contentTypeLocalVar != null && httpRequestMessageLocalVar.Content != null)
+                        httpRequestMessageLocalVar.Content.Headers.ContentType = new MediaTypeHeaderValue(contentTypeLocalVar);
+
+                    string[] acceptLocalVars = new string[] {
+                        "application/json"
+                    };
+
+                    string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
+
+                    if (acceptLocalVar != null)
+                        httpRequestMessageLocalVar.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(acceptLocalVar));
+
+                    httpRequestMessageLocalVar.Method = HttpMethod.Patch;
+
+                    DateTime requestedAtLocalVar = DateTime.UtcNow;
+
+                    using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
+                    {
+                        ILogger<UpdateProvisioningKeyApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<UpdateProvisioningKeyApiResponse>();
+                        UpdateProvisioningKeyApiResponse apiResponseLocalVar;
+
+                        switch ((int)httpResponseMessageLocalVar.StatusCode) {
+                            default: {
+                                string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/provisioning/keys/{id}", requestedAtLocalVar, _jsonSerializerOptions);
+
+                                break;
+                            }
+                        }
+
+                        AfterUpdateProvisioningKeyDefaultImplementation(apiResponseLocalVar, id, updateProvisioningKeyRequest);
+
+                        Events.ExecuteOnUpdateProvisioningKey(apiResponseLocalVar);
+
+                        if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
+                            foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
+                                tokenBaseLocalVar.BeginRateLimit();
+
+                        return apiResponseLocalVar;
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                OnErrorUpdateProvisioningKeyDefaultImplementation(e, "/provisioning/keys/{id}", uriBuilderLocalVar.Path, id, updateProvisioningKeyRequest);
+                Events.ExecuteOnErrorUpdateProvisioningKey(e);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// The <see cref="UpdateProvisioningKeyApiResponse"/>
+        /// </summary>
+        public partial class UpdateProvisioningKeyApiResponse : AIStatsSdk.Client.ApiResponse, IUpdateProvisioningKeyApiResponse
+        {
+            /// <summary>
+            /// The logger
+            /// </summary>
+            public ILogger<UpdateProvisioningKeyApiResponse> Logger { get; }
+
+            /// <summary>
+            /// The <see cref="UpdateProvisioningKeyApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="rawContent"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public UpdateProvisioningKeyApiResponse(ILogger<UpdateProvisioningKeyApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            /// <summary>
+            /// The <see cref="UpdateProvisioningKeyApiResponse"/>
+            /// </summary>
+            /// <param name="logger"></param>
+            /// <param name="httpRequestMessage"></param>
+            /// <param name="httpResponseMessage"></param>
+            /// <param name="contentStream"></param>
+            /// <param name="path"></param>
+            /// <param name="requestedAt"></param>
+            /// <param name="jsonSerializerOptions"></param>
+            public UpdateProvisioningKeyApiResponse(ILogger<UpdateProvisioningKeyApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            {
+                Logger = logger;
+                OnCreated(httpRequestMessage, httpResponseMessage);
+            }
+
+            partial void OnCreated(global::System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage);
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public bool IsOk => 200 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 200 Ok
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.UpdateProvisioningKey200Response? Ok()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsOk
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.UpdateProvisioningKey200Response>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 200 Ok and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.UpdateProvisioningKey200Response? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = Ok();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)200);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public bool IsBadRequest => 400 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 400 BadRequest
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? BadRequest()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsBadRequest
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 400 BadRequest and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryBadRequest([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = BadRequest();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)400);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 404 NotFound
+            /// </summary>
+            /// <returns></returns>
+            public bool IsNotFound => 404 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 404 NotFound
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? NotFound()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsNotFound
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 404 NotFound and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryNotFound([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = NotFound();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)404);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public bool IsInternalServerError => 500 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 500 InternalServerError
+            /// </summary>
+            /// <returns></returns>
+            public AIStatsSdk.Model.ErrorResponse? InternalServerError()
+            {
+                // This logic may be modified with the AsModel.mustache template
+                return IsInternalServerError
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.ErrorResponse>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 500 InternalServerError and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryInternalServerError([NotNullWhen(true)]out AIStatsSdk.Model.ErrorResponse? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = InternalServerError();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)500);
                 }
 
                 return result != null;

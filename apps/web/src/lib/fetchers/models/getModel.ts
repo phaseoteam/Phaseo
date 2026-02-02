@@ -1,11 +1,13 @@
 // lib/fetchers/models/getModel.ts
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/utils/supabase/client";
+import { applyHiddenFilter } from "./visibility";
 
 export interface ModelPage {
     model_id: string;
     name: string;
     organisation_id: string;
+    hidden?: boolean;
     status?: string | null;
     previous_model_id?: string | null;
     announcement_date?: string | null;
@@ -71,16 +73,21 @@ const parseModelKey = (modelKey: string) => {
     };
 };
 
-export default async function getModel(modelId: string): Promise<ModelPage> {
+export default async function getModel(
+    modelId: string,
+    includeHidden: boolean
+): Promise<ModelPage> {
     const supabase = await createClient(); // must allow read via RLS for these tables
 
     console.log("[getModel] Fetching model", modelId);
-    const { data: models, error } = await supabase.from("data_models").select(`
+    const query = applyHiddenFilter(
+        supabase.from("data_models").select(`
         model_id,
         name,
         status,
         previous_model_id,
         organisation_id,
+        hidden,
         announcement_date,
         release_date,
         deprecation_date,
@@ -111,7 +118,10 @@ export default async function getModel(modelId: string): Promise<ModelPage> {
                 link
             )
         )
-    `).eq("model_id", modelId);
+    `),
+        includeHidden
+    );
+    const { data: models, error } = await query.eq("model_id", modelId);
 
     if (error) {
         console.error("[getModel] Supabase error", { modelId, error });
@@ -119,6 +129,9 @@ export default async function getModel(modelId: string): Promise<ModelPage> {
     }
 
     const model = models[0] as unknown as ModelPage;
+    if (!model) {
+        throw new Error("Model not found");
+    }
     console.log("[getModel] Raw row", {
         modelId,
         rows: models?.length ?? 0,
@@ -256,14 +269,19 @@ export interface ModelOverviewPage {
     pricing?: PricingRule[];
 }
 
-export async function getModelOverview(modelId: string): Promise<ModelOverviewPage | null> {
+export async function getModelOverview(
+    modelId: string,
+    includeHidden: boolean
+): Promise<ModelOverviewPage | null> {
     const supabase = await createClient();
 
-    const { data: models, error } = await supabase.from("data_models").select(`
+    const query = applyHiddenFilter(
+        supabase.from("data_models").select(`
         model_id,
         name,
         status,
         organisation_id,
+        hidden,
         announcement_date,
         release_date,
         deprecation_date,
@@ -277,7 +295,10 @@ export async function getModelOverview(modelId: string): Promise<ModelOverviewPa
         model_links: data_model_links(url, platform),
         model_family: data_model_families(family_name),
         model_details: data_model_details(detail_name, detail_value)
-    `).eq("model_id", modelId);
+    `),
+        includeHidden
+    );
+    const { data: models, error } = await query.eq("model_id", modelId);
 
     if (error) {
         throw new Error(error.message || "Failed to fetch models");
@@ -306,7 +327,10 @@ export async function getModelOverview(modelId: string): Promise<ModelOverviewPa
  *
  * Uses `use cache` with a ~1-day-ish lifetime and tagging.
  */
-export async function getModelCached(modelId: string): Promise<ModelPage> {
+export async function getModelCached(
+    modelId: string,
+    includeHidden: boolean
+): Promise<ModelPage> {
     "use cache";
 
     // Rough equivalent of "revalidate: 1 day".
@@ -317,7 +341,7 @@ export async function getModelCached(modelId: string): Promise<ModelPage> {
     cacheTag(`data:models:${modelId}`);
 
     console.log("[getModelCached] Cache-aware fetch for model", modelId);
-    return getModel(modelId);
+    return getModel(modelId, includeHidden);
 }
 
 /**
@@ -329,6 +353,7 @@ export async function getModelCached(modelId: string): Promise<ModelPage> {
  */
 export async function getModelOverviewCached(
     modelId: string,
+    includeHidden: boolean
 ): Promise<ModelOverviewPage | null> {
     "use cache";
 
@@ -342,5 +367,5 @@ export async function getModelOverviewCached(
     cacheTag(`data:models:${modelId}`);
 
     console.log("[getModelOverviewCached] Cache-aware fetch for model overview", modelId);
-    return getModelOverview(modelId);
+    return getModelOverview(modelId, includeHidden);
 }

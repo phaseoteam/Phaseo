@@ -26,7 +26,8 @@
           ]
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-10-03T00:00:00"
     },
     {
       "meter": "output_video_seconds",
@@ -49,7 +50,8 @@
           ]
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2025-10-03T00:00:00"
     }
   ]
 }

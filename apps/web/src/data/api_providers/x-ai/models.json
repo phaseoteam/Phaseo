@@ -1,33 +1,14 @@
 [
   {
-    "api_model_id": "x-ai/grok-2-image-1212",
-    "provider_api_model_id": "x-ai:x-ai/grok-2-image-1212",
-    "provider_model_slug": "grok-2-image-1212",
-    "internal_model_id": "x-ai/grok-2-image-1212",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "image",
-    "effective_from": null,
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "x-ai/grok-2-vision-1212",
-    "provider_api_model_id": "x-ai:x-ai/grok-2-vision-1212",
+    "api_model_id": "x-ai/grok-2-vision",
+    "provider_api_model_id": "x-ai:x-ai/grok-2-vision",
     "provider_model_slug": "grok-2-vision-1212",
     "internal_model_id": "x-ai/grok-2-vision-1212",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "effective_from": null,
+    "effective_from": "2024-12-12T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -38,11 +19,11 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-3-2025-04-18",
-    "provider_api_model_id": "x-ai:x-ai/grok-3-2025-04-18",
+    "api_model_id": "x-ai/grok-3",
+    "provider_api_model_id": "x-ai:x-ai/grok-3",
     "provider_model_slug": "grok-3",
     "internal_model_id": "x-ai/grok-3-2025-04-18",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -57,11 +38,11 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-3-mini-2025-04-18",
-    "provider_api_model_id": "x-ai:x-ai/grok-3-mini-2025-04-18",
+    "api_model_id": "x-ai/grok-3-mini",
+    "provider_api_model_id": "x-ai:x-ai/grok-3-mini",
     "provider_model_slug": "grok-3-mini",
     "internal_model_id": "x-ai/grok-3-mini-2025-04-18",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -76,49 +57,11 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4-1-non-thinking-2025-11-17",
-    "provider_api_model_id": "x-ai:x-ai/grok-4-1-non-thinking-2025-11-17",
-    "provider_model_slug": "grok-4-1-fast-non-reasoning",
-    "internal_model_id": "x-ai/grok-4-1-non-thinking-2025-11-17",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "effective_from": "2025-11-17T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "x-ai/grok-4-1-thinking-2025-11-17",
-    "provider_api_model_id": "x-ai:x-ai/grok-4-1-thinking-2025-11-17",
-    "provider_model_slug": "grok-4-1-fast-reasoning",
-    "internal_model_id": "x-ai/grok-4-1-thinking-2025-11-17",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "effective_from": "2025-11-17T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "x-ai/grok-4-2025-07-10",
-    "provider_api_model_id": "x-ai:x-ai/grok-4-2025-07-10",
+    "api_model_id": "x-ai/grok-4",
+    "provider_api_model_id": "x-ai:x-ai/grok-4",
     "provider_model_slug": "grok-4-0709",
     "internal_model_id": "x-ai/grok-4-2025-07-10",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -133,11 +76,43 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4-fast-non-reasoning-2025-09-20",
-    "provider_api_model_id": "x-ai:x-ai/grok-4-fast-non-reasoning-2025-09-20",
+    "api_model_id": "x-ai/grok-4.1",
+    "provider_api_model_id": "x-ai:x-ai/grok-4.1",
+    "provider_model_slug": "grok-4-1-fast-non-reasoning",
+    "internal_model_id": "x-ai/grok-4-1-non-thinking-2025-11-17",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-11-17T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "x-ai/grok-4.1-thinking",
+    "provider_api_model_id": "x-ai:x-ai/grok-4.1-thinking",
+    "provider_model_slug": "grok-4-1-fast-reasoning",
+    "internal_model_id": "x-ai/grok-4-1-thinking-2025-11-17",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2025-11-17T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "x-ai/grok-4-fast-non-reasoning",
+    "provider_api_model_id": "x-ai:x-ai/grok-4-fast-non-reasoning",
     "provider_model_slug": "grok-4-fast-non-reasoning",
     "internal_model_id": "x-ai/grok-4-fast-non-reasoning-2025-09-20",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text,image",
@@ -152,11 +127,11 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-4-fast-reasoning-2025-09-20",
-    "provider_api_model_id": "x-ai:x-ai/grok-4-fast-reasoning-2025-09-20",
+    "api_model_id": "x-ai/grok-4-fast-reasoning",
+    "provider_api_model_id": "x-ai:x-ai/grok-4-fast-reasoning",
     "provider_model_slug": "grok-4-fast",
     "internal_model_id": "x-ai/grok-4-fast-reasoning-2025-09-20",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text,image",
@@ -171,11 +146,11 @@
     ]
   },
   {
-    "api_model_id": "x-ai/grok-code-fast-1-2025-08-28",
-    "provider_api_model_id": "x-ai:x-ai/grok-code-fast-1-2025-08-28",
+    "api_model_id": "x-ai/grok-code-fast-1",
+    "provider_api_model_id": "x-ai:x-ai/grok-code-fast-1",
     "provider_model_slug": "grok-code-fast-1-0825",
     "internal_model_id": "x-ai/grok-code-fast-1-2025-08-28",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -184,6 +159,67 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "x-ai/grok-2-image",
+    "provider_api_model_id": "x-ai:x-ai/grok-2-image",
+    "provider_model_slug": "grok-2-image-1212",
+    "internal_model_id": "x-ai/grok-2-image-1212",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "image",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "x-ai/grok-imagine-image",
+    "provider_api_model_id": "x-ai:x-ai/grok-imagine-image",
+    "provider_model_slug": "grok-imagine-image",
+    "internal_model_id": "x-ai/grok-imagine-image-2026-01-29",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "effective_from": "2026-01-29T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "x-ai/grok-imagine-video",
+    "provider_api_model_id": "x-ai:x-ai/grok-imagine-video",
+    "provider_model_slug": "grok-imagine-video",
+    "internal_model_id": "x-ai/grok-imagine-video-2026-01-29",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "effective_from": "2026-01-29T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "video.edit",
         "status": "active",
         "params": []
       }

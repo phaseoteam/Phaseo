@@ -1,5 +1,6 @@
 // lib/fetchers/landing/getModelUpdates.ts
 import { createClient } from "@/utils/supabase/client";
+import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
 export type EventType = "Announced" | "Released" | "Deprecated" | "Retired";
 
@@ -25,6 +26,7 @@ type Args = {
     now?: Date;
     upcomingLimit?: number;
     pastMonths?: number;
+    includeHidden?: boolean;
 };
 
 type Row = {
@@ -98,13 +100,21 @@ function compareAscending(a: ModelEvent, b: ModelEvent) {
 }
 
 export async function getRecentModelUpdatesSplit(
-    { limit = 5, offset = 0, now = new Date(), upcomingLimit = 5, pastMonths }: Args = {}
+    {
+        limit = 5,
+        offset = 0,
+        now = new Date(),
+        upcomingLimit = 5,
+        pastMonths,
+        includeHidden = false,
+    }: Args = {}
 ): Promise<ModelEventSegments> {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-        .from("data_models")
-        .select(`
+    const { data, error } = await applyHiddenFilter(
+        supabase
+            .from("data_models")
+            .select(`
             model_id,
             name,
             organisation_id,
@@ -114,10 +124,12 @@ export async function getRecentModelUpdatesSplit(
             retirement_date,
             organisation:data_organisations!data_models_organisation_id_fkey(organisation_id,name)
         `)
-        .or(
-            "announcement_date.not.is.null,release_date.not.is.null,deprecation_date.not.is.null,retirement_date.not.is.null"
-        )
-        .overrideTypes<Row[], { merge: false }>();
+            .or(
+                "announcement_date.not.is.null,release_date.not.is.null,deprecation_date.not.is.null,retirement_date.not.is.null"
+            )
+            .overrideTypes<Row[], { merge: false }>(),
+        includeHidden
+    );
 
     if (error) throw error;
 
@@ -178,4 +190,3 @@ export default async function getRecentModelUpdates(
     const { past } = await getRecentModelUpdatesSplit(args);
     return past;
 }
-

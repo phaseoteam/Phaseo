@@ -26,6 +26,7 @@ Name | Type | Description | Notes
 **top_p** | **float** |  | [optional]
 **response_format** | [**\AIStats\Sdk\Model\ChatCompletionsRequestResponseFormat**](ChatCompletionsRequestResponseFormat.md) |  | [optional]
 **usage** | **bool** |  | [optional]
+**provider** | [**\AIStats\Sdk\Model\ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional]
 **user_id** | **string** |  | [optional]
 **service_tier** | **string** |  | [optional] [default to 'standard']
 

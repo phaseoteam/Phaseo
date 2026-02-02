@@ -1,0 +1,17 @@
+{
+  "model_id": "upstage/solar-pro-3-2026-01-26",
+  "organisation_id": "upstage",
+  "name": "Solar Pro 3 (2026-01-26)",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-01-26T00:00:00",
+  "release_date": "2026-01-26T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

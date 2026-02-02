@@ -1,3 +1,7 @@
+// Purpose: Protocol adapter for client-facing payloads.
+// Why: Keeps protocol encoding/decoding separate from provider logic.
+// How: Maps between protocol payloads and IR structures.
+
 // OpenAI Responses API - Decoder Tests
 import { describe, it, expect } from "vitest";
 import { decodeOpenAIResponsesRequest } from "../decode";
@@ -480,3 +484,4 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.metadata).toEqual({ custom: "value" });
 	});
 });
+

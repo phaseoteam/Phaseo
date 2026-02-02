@@ -13,6 +13,8 @@ import {
 	TooltipTrigger,
 	TooltipContent,
 } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import UsageItem from "./UsageItem";
 import EditKeyItem from "./EditKeyItem";
 import DeleteKeyItem from "./DeleteKeyItem";
@@ -51,65 +53,54 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 							No keys for this team.
 						</div>
 					) : (
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-							{team.keys.map((k: any) => (
-								<div
-									key={k.id}
-									className="relative p-4 border rounded-md bg-white dark:bg-zinc-950"
-								>
-									<div className="flex items-center">
-										<div className="flex items-center flex-1">
-											{/* status dot is now small and inline with title */}
-											<div>
-												<div className="mb-2 font-medium flex items-center gap-2">
-													<span>{k.name}</span>
+						<div className="space-y-4">
+							{team.keys.map((k: any) => {
+								const dailyLimit = k.daily_limit_requests || 0;
+								const currentUsage = k.current_usage_daily || 0;
+								const usagePercent = dailyLimit > 0 ? Math.min((currentUsage / dailyLimit) * 100, 100) : 0;
+								const isNearLimit = usagePercent > 80;
 
-													{/* status dot: green for active, yellow for paused, fallback to gray (Unknown) */}
-													<Tooltip delayDuration={0}>
-														<TooltipTrigger asChild>
-															<span className="relative flex size-2">
-																<span
-																	className={`absolute inline-flex h-full w-full animate-ping rounded-full ${
-																		k.status ===
-																		"active"
-																			? "bg-emerald-400"
-																			: k.status ===
-																			  "paused"
-																			? "bg-amber-400"
-																			: "bg-zinc-400"
-																	} opacity-75`}
-																></span>
-																<span
-																	className={`relative inline-flex size-2 rounded-full ${
-																		k.status ===
-																		"active"
-																			? "bg-emerald-500"
-																			: k.status ===
-																			  "paused"
-																			? "bg-amber-500"
-																			: "bg-zinc-500"
-																	}`}
-																></span>
-															</span>
-														</TooltipTrigger>
-														<TooltipContent>
-															{k.status ===
-															"active"
-																? "Active"
-																: k.status ===
-																  "paused"
-																? "Paused"
-																: "Unknown"}
-														</TooltipContent>
-													</Tooltip>
-												</div>
-
-												<div className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
-													{k.prefix}
-												</div>
+								return (
+									<div
+										key={k.id}
+										className="relative p-4 border rounded-md bg-white dark:bg-zinc-950"
+									>
+										{/* Header: Name, Status, Actions */}
+										<div className="flex items-center justify-between mb-3">
+											<div className="flex items-center gap-2">
+												<span className="font-medium">{k.name}</span>
+												<Tooltip delayDuration={0}>
+													<TooltipTrigger asChild>
+														<span className="relative flex size-2">
+															<span
+																className={`absolute inline-flex h-full w-full animate-ping rounded-full ${
+																	k.status === "active"
+																		? "bg-emerald-400"
+																		: k.status === "paused"
+																		? "bg-amber-400"
+																		: "bg-zinc-400"
+																} opacity-75`}
+															></span>
+															<span
+																className={`relative inline-flex size-2 rounded-full ${
+																	k.status === "active"
+																		? "bg-emerald-500"
+																		: k.status === "paused"
+																		? "bg-amber-500"
+																		: "bg-zinc-500"
+																}`}
+															></span>
+														</span>
+													</TooltipTrigger>
+													<TooltipContent>
+														{k.status === "active"
+															? "Active"
+															: k.status === "paused"
+															? "Paused"
+															: "Unknown"}
+													</TooltipContent>
+												</Tooltip>
 											</div>
-										</div>
-										<div className="ml-2">
 											<DropdownMenu>
 												<DropdownMenuTrigger asChild>
 													<Button
@@ -131,9 +122,66 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 												</DropdownMenuContent>
 											</DropdownMenu>
 										</div>
+
+										{/* Key Prefix */}
+										<div className="font-mono text-sm text-zinc-700 dark:text-zinc-300 mb-3">
+											{k.prefix}
+										</div>
+
+										{/* Details in Rows */}
+										<div className="space-y-2 text-xs">
+											<div className="flex justify-between">
+												<div>
+													<div className="text-zinc-500 dark:text-zinc-400">Last Used</div>
+													<div className="font-medium">
+														{k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : 'Never'}
+													</div>
+												</div>
+												<div>
+													<div className="text-zinc-500 dark:text-zinc-400">Expires</div>
+													<div className="font-medium">
+														{k.expires_at ? `${Math.ceil((new Date(k.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days` : 'No expiry'}
+													</div>
+												</div>
+											</div>
+											<div className="flex gap-4">
+												<div className="flex-1">
+													<div className="text-zinc-500 dark:text-zinc-400">Limits</div>
+													<div className="flex gap-1 flex-wrap mt-1">
+														{k.daily_limit_requests && (
+															<Badge variant="outline" className="text-xs">
+																Daily: {k.daily_limit_requests}
+															</Badge>
+														)}
+														{k.weekly_limit_requests && (
+															<Badge variant="outline" className="text-xs">
+																Weekly: {k.weekly_limit_requests}
+															</Badge>
+														)}
+														{k.monthly_limit_requests && (
+															<Badge variant="outline" className="text-xs">
+																Monthly: {k.monthly_limit_requests}
+															</Badge>
+														)}
+														{!k.daily_limit_requests && !k.weekly_limit_requests && !k.monthly_limit_requests && (
+															<Badge variant="outline" className="text-xs">No limits</Badge>
+														)}
+													</div>
+												</div>
+												<div className="flex-1">
+													<div className="text-zinc-500 dark:text-zinc-400">Usage (Daily)</div>
+													<div className="flex items-center gap-2 mt-1">
+														<Progress value={usagePercent} className="flex-1" />
+														<span className={`text-xs font-medium ${isNearLimit ? 'text-red-500' : 'text-zinc-700 dark:text-zinc-300'}`}>
+															{currentUsage} / {dailyLimit || '∞'}
+														</span>
+													</div>
+												</div>
+											</div>
+										</div>
 									</div>
-								</div>
-							))}
+								);
+							})}
 						</div>
 					)}
 				</div>

@@ -254,8 +254,8 @@ export default function Footer() {
 					</div>
 
 					{/* --- Desktop: Social --- */}
-					<div className="hidden lg:flex flex-col items-center gap-2">
-						<span className="font-semibold text-sm mb-2">
+					<div className="hidden lg:flex flex-col items-start gap-2">
+						<span className="font-semibold text-sm pl-2">
 							Social
 						</span>
 						<div className="flex flex-col gap-1">
@@ -369,8 +369,8 @@ export default function Footer() {
 
 					{/* --- Desktop: Explore (Docs + Roadmap + Wrapped) --- */}
 					{/* <div className="hidden sm:flex flex-col items-center justify-center"> */}
-					<div className="hidden lg:flex flex-col items-center gap-2">
-						<span className="font-semibold text-sm mb-2">
+					<div className="hidden lg:flex flex-col items-start gap-2">
+						<span className="font-semibold text-sm pl-2">
 							Explore
 						</span>
 						<div className="flex flex-col gap-1">
@@ -411,8 +411,8 @@ export default function Footer() {
 					</div>
 
 					{/* --- Desktop: Actions (Contribute, Sources, Theme) --- */}
-					<div className="hidden lg:flex flex-col items-center gap-2">
-						<span className="font-semibold text-sm mb-2">More</span>
+					<div className="hidden lg:flex flex-col items-start gap-2">
+						<span className="font-semibold text-sm pl-2">More</span>
 						<div className="flex flex-col gap-1">
 							{/* Contribute */}
 							<Button
@@ -467,8 +467,8 @@ export default function Footer() {
 						</div>
 					</div>
 					{/* --- Desktop: Legal --- */}
-					<div className="hidden lg:flex flex-col items-center gap-2">
-						<span className="font-semibold text-sm mb-2">
+					<div className="hidden lg:flex flex-col items-start gap-2">
+						<span className="font-semibold text-sm pl-2">
 							Legal
 						</span>
 						<div className="flex flex-col gap-1">

@@ -6,7 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 
 async function fetchPlan(baseId: string) {
 	try {
-		return await getSubscriptionPlanCached(baseId);
+		return await getSubscriptionPlanCached(baseId, false);
 	} catch (error) {
 		console.warn("[seo] failed to load subscription plan metadata", {
 			baseId,
@@ -90,7 +90,7 @@ export default async function Page({
 }) {
 	const { planId } = await params;
 
-	const plan = await getSubscriptionPlanCached(planId);
+	const plan = await getSubscriptionPlanCached(planId, false);
 
 	if (!plan) {
 		return (

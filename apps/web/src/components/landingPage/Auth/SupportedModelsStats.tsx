@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { getSupportedModelsStatsCached } from "@/lib/fetchers/landing/sign-in/getSupportedModelsStats";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 function roundBucket(value: number, bucket: number) {
 	if (bucket <= 0) return { value, rounded: false } as const;
@@ -25,7 +26,8 @@ export default async function SupportedModelsStats() {
 	let recentCount = 0;
 
 	try {
-		const stats = await getSupportedModelsStatsCached();
+		const includeHidden = await resolveIncludeHidden();
+		const stats = await getSupportedModelsStatsCached(includeHidden);
 		modelsCount = stats.modelsCount ?? 0;
 		orgsCount = stats.orgsCount ?? 0;
 		apiCount = stats.apiCount ?? 0;

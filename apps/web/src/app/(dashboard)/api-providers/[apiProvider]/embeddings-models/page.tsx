@@ -16,6 +16,7 @@ import APIProviderDetailShell from "@/components/(data)/api-providers/APIProvide
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHeader";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 async function fetchProviderMeta(apiProviderId: string) {
 	try {
@@ -88,9 +89,11 @@ export default async function Page({
 	params: Promise<{ apiProvider: string }>;
 }) {
 	const { apiProvider } = await params;
+	const includeHidden = await resolveIncludeHidden();
 	const models = (await getAPIProviderModelsCached(
 		apiProvider,
-		"embeddings"
+		"embeddings",
+		includeHidden
 	)) as APIProviderModels[];
 	const helperText =
 		"Models can support multiple endpoints. We group them by model and list every supported API route.";

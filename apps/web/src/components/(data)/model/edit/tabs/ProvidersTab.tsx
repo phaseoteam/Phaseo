@@ -15,11 +15,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { deleteProviderModel } from "@/app/(dashboard)/models/actions"
 import { createClient } from "@/utils/supabase/client"
-
-interface ModelData {
-  model_id: string
-  family_id: string | null
-}
+import type { ModelData } from "../ModelEditDialog"
 
 interface ProviderModel {
   id: string

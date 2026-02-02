@@ -31,10 +31,10 @@ const suggestions = [
 		icon: BookOpen,
 	},
 	{
-		href: "/conduit",
-		label: "Explore the Conduit",
+		href: "/gateway",
+		label: "Explore the Gateway",
 		description:
-			"Use the AI Stats Conduit to reach every model with one API.",
+			"Use the AI Stats Gateway to reach every model with one API.",
 		icon: Network,
 	},
 ];

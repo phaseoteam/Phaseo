@@ -10,7 +10,11 @@ export type ModelStats = {
     total_tokens?: number | null;
 };
 
-export async function getTopModels(apiProviderId: string, count: number = 6): Promise<ModelStats[]> {
+export async function getTopModels(
+    apiProviderId: string,
+    includeHidden: boolean,
+    count: number = 6
+): Promise<ModelStats[]> {
     const supabase = createAdminClient();
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
@@ -31,7 +35,25 @@ export async function getTopModels(apiProviderId: string, count: number = 6): Pr
             return [];
         }
 
-        return data.map((row: any) => ({
+        let rows = data as any[];
+
+        if (!includeHidden) {
+            const modelIds = rows.map((row) => row.model_id).filter(Boolean);
+            if (modelIds.length) {
+                const { data: models } = await supabase
+                    .from("data_models")
+                    .select("model_id, hidden")
+                    .in("model_id", modelIds);
+                const hiddenById = new Map<string, boolean>();
+                for (const model of models ?? []) {
+                    if (!model.model_id) continue;
+                    hiddenById.set(model.model_id, Boolean(model.hidden));
+                }
+                rows = rows.filter((row) => !hiddenById.get(row.model_id));
+            }
+        }
+
+        return rows.map((row: any) => ({
             model_id: row.model_id,
             model_name: row.model_name,
             request_count: Number(row.request_count),
@@ -52,6 +74,7 @@ export async function getTopModels(apiProviderId: string, count: number = 6): Pr
 
 export async function getTopModelsCached(
     apiProviderId: string,
+    includeHidden: boolean,
     count: number = 6
 ): Promise<ModelStats[]> {
     "use cache";
@@ -60,5 +83,5 @@ export async function getTopModelsCached(
     cacheTag("data:top_models");
 
     console.log(`[fetch] HIT JSON for top models - ${apiProviderId}`);
-    return getTopModels(apiProviderId, count);
+    return getTopModels(apiProviderId, includeHidden, count);
 }

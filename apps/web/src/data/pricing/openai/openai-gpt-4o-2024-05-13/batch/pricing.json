@@ -15,7 +15,8 @@
       "pricing_plan": "batch",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2024-05-13T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -27,7 +28,8 @@
       "pricing_plan": "batch",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2024-05-13T00:00:00"
     }
   ]
 }

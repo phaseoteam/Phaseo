@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 28
+      "rank": 27
     },
     {
       "benchmark_id": "eqbench",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 30
+      "rank": 29
     },
     {
       "benchmark_id": "gpqa-diamond",

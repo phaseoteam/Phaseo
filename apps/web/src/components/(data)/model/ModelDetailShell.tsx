@@ -6,19 +6,22 @@ import TabBar from "@/components/(data)/model/ModelTabs";
 import { Logo } from "@/components/Logo";
 import { withUTM } from "@/lib/utm";
 import ModelEditButton from "./edit/ModelEditButton";
+import { Badge } from "@/components/ui/badge";
 
 interface ModelDetailShellProps {
 	modelId: string;
 	children: ReactNode;
 	tab?: string;
+	includeHidden?: boolean;
 }
 
 export default async function ModelDetailShell({
 	modelId,
 	children,
 	tab,
+	includeHidden = false,
 }: ModelDetailShellProps) {
-	const header = await getModelOverviewHeader(modelId);
+	const header = await getModelOverviewHeader(modelId, includeHidden);
 
 	if (!header) {
 		return (
@@ -91,6 +94,9 @@ export default async function ModelDetailShell({
 								<h1 className="mb-1 text-center text-3xl font-bold md:text-left md:text-5xl">
 									{header.name}
 								</h1>
+								{includeHidden && header.hidden ? (
+									<Badge variant="secondary">Hidden</Badge>
+								) : null}
 								<Suspense fallback={null}>
 									<ModelEditButton
 										modelId={modelId}

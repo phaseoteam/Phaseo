@@ -1,0 +1,17 @@
+{
+  "model_id": "liquid-ai/lfm-2-5-audio-1-5b",
+  "organisation_id": "liquid-ai",
+  "name": "LFM 2.5 Audio 1.5B",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

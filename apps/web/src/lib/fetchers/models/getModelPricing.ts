@@ -32,6 +32,7 @@ export interface ProviderModel {
     effective_to?: string | null;
     created_at?: string;
     updated_at?: string;
+    params?: Record<string, unknown> | null;
 }
 
 export interface ProviderInfo {
@@ -47,9 +48,23 @@ export interface ProviderPricing {
     pricing_rules: PricingRule[];
 }
 
-export default async function getModelPricing(modelId: string): Promise<ProviderPricing[]> {
+export default async function getModelPricing(
+    modelId: string,
+    includeHidden: boolean
+): Promise<ProviderPricing[]> {
     // console.log(`[getModelPricing] Starting for modelId: ${modelId}`);
     const supabase = await createClient();
+
+    const { data: modelRow, error: modelError } = await supabase
+        .from("data_models")
+        .select("hidden")
+        .eq("model_id", modelId)
+        .maybeSingle();
+
+    if (modelError) throw new Error(modelError.message || "Failed to load model metadata");
+    if (!modelRow || (!includeHidden && modelRow.hidden)) {
+        throw new Error("Model not found");
+    }
 
     // Fetch provider models with capabilities and provider info in one query
     const { data: pmRows, error: pmError } = await supabase
@@ -226,7 +241,10 @@ export default async function getModelPricing(modelId: string): Promise<Provider
  *
  * This wraps the fetcher with `unstable_cache` for at least 1 week of caching.
  */
-export async function getModelPricingCached(modelId: string): Promise<ProviderPricing[]> {
+export async function getModelPricingCached(
+    modelId: string,
+    includeHidden: boolean
+): Promise<ProviderPricing[]> {
     "use cache";
 
     cacheLife("days");
@@ -236,5 +254,5 @@ export async function getModelPricingCached(modelId: string): Promise<ProviderPr
     cacheTag("data:data_api_provider_models");
 
     // console.log("[fetch] HIT DB for model pricing", modelId);
-    return getModelPricing(modelId);
+    return getModelPricing(modelId, includeHidden);
 }

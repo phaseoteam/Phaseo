@@ -6,6 +6,7 @@ import { loadCompareModelsCached } from "@/lib/fetchers/compare/loadCompareModel
 import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
 import CompareMiniHeader from "@/components/(data)/compare/CompareMiniHeader";
+import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Compare AI Models Side-by-Side | AI Stats",
@@ -52,7 +53,8 @@ const normalizeSelection = (value: string | string[] | undefined): string[] => {
 };
 
 export default async function Page({ searchParams }: PageProps = {}) {
-	const models: ExtendedModel[] = await loadCompareModelsCached();
+	const includeHidden = await resolveIncludeHidden();
+	const models: ExtendedModel[] = await loadCompareModelsCached(includeHidden);
 	const resolvedSearchParams = await searchParams;
 	const selection = normalizeSelection(resolvedSearchParams?.models).map(
 		decodeModelIdFromUrl
@@ -69,7 +71,7 @@ export default async function Page({ searchParams }: PageProps = {}) {
 		.filter((value): value is string => Boolean(value));
 
 	const comparisonData = resolvedIds.length
-		? await getComparisonModelsCached(resolvedIds)
+		? await getComparisonModelsCached(resolvedIds, includeHidden)
 		: [];
 
 	console.log("[compare] Page selection", {

@@ -1,0 +1,17 @@
+---
+title: "Codex"
+description: "Use AI Stats as the backend for Codex-style coding agents."
+---
+
+If your coding agent supports OpenAI-compatible configuration, you can route it through AI Stats.
+
+## Recommended setup
+
+- Base URL: `https://api.phaseo.app/v1`
+- Auth: `Authorization: Bearer <AI_STATS_API_KEY>`
+- Endpoint: `/chat/completions` or `/responses`
+
+## Tips
+
+- Keep prompts and tool definitions consistent across environments.
+- Use [Routing and fallbacks](/v1/guides/routing-and-fallbacks) guidance for production workloads.

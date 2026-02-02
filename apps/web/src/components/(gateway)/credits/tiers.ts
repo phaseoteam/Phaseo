@@ -1,64 +1,33 @@
+// Two-tier pricing system: Basic (7%) and Enterprise (5%)
+// Tier determination based on previous calendar month spending
+// - Upgrade: Spend >= $10k in previous month → Enterprise
+// - Downgrade: Spend < $10k for 3 consecutive months → Basic
+
 export type GatewayTier = {
 	key: string;
 	name: string;
-	threshold: number;
+	threshold: number; // Monthly spend threshold in dollars
 	feePct: number;
 	description: string;
 };
 
 export const GATEWAY_TIERS: readonly GatewayTier[] = [
 	{
-		key: "starter",
-		name: "Starter",
+		key: "basic",
+		name: "Basic",
 		threshold: 0,
-		feePct: 10.0,
-		description: "Default tier for new teams getting started.",
-	},
-	{
-		key: "builder",
-		name: "Builder",
-		threshold: 100,
-		feePct: 9.75,
-		description: "For casual builders unlocking their first discount.",
-	},
-	{
-		key: "growth",
-		name: "Growth",
-		threshold: 1_000,
-		feePct: 9.5,
-		description: "Growing projects with steady gateway usage.",
-	},
-	{
-		key: "scale",
-		name: "Scale",
-		threshold: 10_000,
-		feePct: 9.0,
-		description: "Scaling teams consolidating model workloads.",
+		feePct: 7.0,
+		description: "Standard pricing for all teams. Automatic upgrade to Enterprise after spending $10k+ in a month.",
 	},
 	{
 		key: "enterprise",
 		name: "Enterprise",
-		threshold: 100_000,
-		feePct: 8.5,
-		description: "Enterprise deployments with significant volume.",
-	},
-	{
-		key: "partner",
-		name: "Partner",
-		threshold: 1_000_000,
-		feePct: 8.0,
-		description: "Strategic partners with dedicated support needs.",
-	},
-	{
-		key: "enterprise_plus",
-		name: "Enterprise+",
-		threshold: 10_000_000,
-		feePct: 7.5,
-		description: "Ultra-scale usage with bespoke commercial terms.",
+		threshold: 10_000, // $10k threshold
+		feePct: 5.0,
+		description: "Premium pricing for high-volume teams. Maintained while spending $10k+ monthly.",
 	},
 ] as const;
 
-// ✅ Add this missing type
 export type ComputeArgs = {
 	lastMonth: number;              // previous month total (currency units)
 	mtd: number;                    // month-to-date total (currency units)
@@ -76,6 +45,10 @@ export type TierComputation = {
 	nextDiscountDelta: number;
 	projectedIndex: number;
 	projected: GatewayTier;
+	// Two-tier specific fields
+	isEnterprise: boolean;
+	willUpgradeNextMonth: boolean;
+	willDowngradeRisk: boolean; // True if on Enterprise but MTD < threshold
 };
 
 export function computeTierInfo({
@@ -86,33 +59,32 @@ export function computeTierInfo({
 	const tierCount = tiers.length;
 	if (tierCount === 0) throw new Error("No tiers configured");
 
+	const [basicTier, enterpriseTier] = tiers;
+	const enterpriseThreshold = enterpriseTier.threshold;
+
 	// Current tier is based on lastMonth only
-	let currentIndex = 0;
-	for (let i = 0; i < tierCount; i++) {
-		if (lastMonth >= tiers[i].threshold) currentIndex = i;
-	}
+	const isEnterprise = lastMonth >= enterpriseThreshold;
+	const currentIndex = isEnterprise ? 1 : 0;
 	const current = tiers[currentIndex];
 	const topTier = currentIndex === tierCount - 1;
 	const next = topTier ? null : tiers[currentIndex + 1];
 
 	// Projected tier is based on MTD (what next month will be)
-	let projectedIndex = 0;
-	for (let i = 0; i < tierCount; i++) {
-		if (mtd >= tiers[i].threshold) projectedIndex = i;
-	}
+	const willUpgradeNextMonth = mtd >= enterpriseThreshold && !isEnterprise;
+	const projectedIndex = mtd >= enterpriseThreshold ? 1 : 0;
 	const projected = tiers[projectedIndex];
 
-	// Savings
-	const baseFee = tiers[0].feePct;
+	// Downgrade risk: on Enterprise but MTD < threshold
+	const willDowngradeRisk = isEnterprise && mtd < enterpriseThreshold;
+
+	// Savings vs Basic tier
+	const baseFee = basicTier.feePct;
 	const savingVsBase = Math.max(0, baseFee - current.feePct);
 	const projectedSavings = savingVsBase > 0 ? Math.max(0, (mtd * savingVsBase) / 100) : 0;
 	const nextDiscountDelta = !topTier && next ? Math.max(0, current.feePct - next.feePct) : 0;
 
-	// Progress toward next (MTD within the current step)
-	let remainingToNext = 0;
-	if (!topTier && next) {
-		remainingToNext = Math.max(next.threshold - mtd, 0);
-	}
+	// Progress toward Enterprise tier (if on Basic)
+	const remainingToNext = !topTier && next ? Math.max(next.threshold - mtd, 0) : 0;
 
 	return {
 		currentIndex,
@@ -125,5 +97,8 @@ export function computeTierInfo({
 		nextDiscountDelta,
 		projectedIndex,
 		projected,
+		isEnterprise,
+		willUpgradeNextMonth,
+		willDowngradeRisk,
 	};
 }

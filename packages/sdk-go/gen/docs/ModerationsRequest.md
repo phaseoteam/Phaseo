@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 **Model** | **string** |  | 
 **Meta** | Pointer to **bool** |  | [optional] [default to false]
 **Input** | [**ModerationsRequestInput**](ModerationsRequestInput.md) |  | 
+**Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 ## Methods
 
@@ -91,6 +92,31 @@ and a boolean to check if the value has been set.
 
 SetInput sets Input field to given value.
 
+
+### GetProvider
+
+`func (o *ModerationsRequest) GetProvider() ProviderRoutingOptions`
+
+GetProvider returns the Provider field if non-nil, zero value otherwise.
+
+### GetProviderOk
+
+`func (o *ModerationsRequest) GetProviderOk() (*ProviderRoutingOptions, bool)`
+
+GetProviderOk returns a tuple with the Provider field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetProvider
+
+`func (o *ModerationsRequest) SetProvider(v ProviderRoutingOptions)`
+
+SetProvider sets Provider field to given value.
+
+### HasProvider
+
+`func (o *ModerationsRequest) HasProvider() bool`
+
+HasProvider returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

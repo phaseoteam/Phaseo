@@ -2,6 +2,7 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import type { ExtendedModel, Provider } from "@/data/types";
 import { createClient } from "@/utils/supabase/client";
+import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
 interface DbSimpleModel {
 	model_id: string;
@@ -15,13 +16,16 @@ interface DbSimpleModel {
 	};
 }
 
-export async function loadCompareModels(): Promise<ExtendedModel[]> {
+export async function loadCompareModels(
+    includeHidden: boolean
+): Promise<ExtendedModel[]> {
 	const supabase = await createClient();
 	console.log("[loadCompareModels] Querying data_models");
 
-	const { data: models, error } = await supabase
-		.from("data_models")
-		.select(`
+	const { data: models, error } = await applyHiddenFilter(
+		supabase
+			.from("data_models")
+			.select(`
             model_id,
             name,
             organisation_id,
@@ -32,7 +36,9 @@ export async function loadCompareModels(): Promise<ExtendedModel[]> {
                 name
             )
         `)
-		.order("name", { ascending: true });
+			.order("name", { ascending: true }),
+		includeHidden
+	);
 
 	if (error) {
 		console.error("[loadCompareModels] Database error:", error);
@@ -96,12 +102,14 @@ export async function loadCompareModels(): Promise<ExtendedModel[]> {
 	return extendedModels;
 }
 
-export async function loadCompareModelsCached(): Promise<ExtendedModel[]> {
+export async function loadCompareModelsCached(
+    includeHidden: boolean
+): Promise<ExtendedModel[]> {
 	"use cache";
 
 	cacheLife("days");
 	cacheTag("data:models");
 
 	console.log("[compare] HIT DB for compare models");
-	return loadCompareModels();
+	return loadCompareModels(includeHidden);
 }
