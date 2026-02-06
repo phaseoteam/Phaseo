@@ -15,7 +15,6 @@ import {
     InputOTPGroup,
     InputOTPSlot,
 } from '@/components/ui/input-otp'
-import { RecoveryCodesDisplay } from './RecoveryCodesDisplay'
 import {
     enrollMFAAction,
     verifyMFAEnrollmentAction,
@@ -24,7 +23,7 @@ import { toast } from 'sonner'
 import { Loader2, QrCode, Key, CheckCircle2, Copy } from 'lucide-react'
 import Image from 'next/image'
 
-type EnrollmentStep = 'qr-code' | 'verify' | 'recovery-codes' | 'success'
+type EnrollmentStep = 'qr-code' | 'verify' | 'success'
 
 interface MFAEnrollmentFlowProps {
     open: boolean
@@ -43,7 +42,6 @@ export function MFAEnrollmentFlow({
     const [secret, setSecret] = React.useState<string | null>(null)
     const [factorId, setFactorId] = React.useState<string | null>(null)
     const [verificationCode, setVerificationCode] = React.useState('')
-    const [recoveryCodes, setRecoveryCodes] = React.useState<string[]>([])
     const [secretCopied, setSecretCopied] = React.useState(false)
 
     // Reset state when dialog closes
@@ -55,7 +53,6 @@ export function MFAEnrollmentFlow({
                 setSecret(null)
                 setFactorId(null)
                 setVerificationCode('')
-                setRecoveryCodes([])
                 setSecretCopied(false)
             }, 300)
         }
@@ -103,12 +100,8 @@ export function MFAEnrollmentFlow({
 
         setLoading(true)
         try {
-            const result = await verifyMFAEnrollmentAction(
-                factorId,
-                verificationCode
-            )
-            setRecoveryCodes(result.recoveryCodes)
-            setStep('recovery-codes')
+            await verifyMFAEnrollmentAction(factorId, verificationCode)
+            setStep('success')
             toast.success('Two-factor authentication enabled!')
         } catch (error: any) {
             toast.error(error.message || 'Invalid code. Please try again.')
@@ -116,10 +109,6 @@ export function MFAEnrollmentFlow({
         } finally {
             setLoading(false)
         }
-    }
-
-    const handleRecoveryCodesConfirmed = () => {
-        setStep('success')
     }
 
     const handleComplete = () => {
@@ -275,24 +264,6 @@ export function MFAEnrollmentFlow({
                     </>
                 )}
 
-                {/* Recovery Codes Step */}
-                {step === 'recovery-codes' && (
-                    <>
-                        <DialogHeader>
-                            <DialogTitle>Save your recovery codes</DialogTitle>
-                            <DialogDescription>
-                                Use these codes to access your account if you
-                                lose your authenticator device
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <RecoveryCodesDisplay
-                            codes={recoveryCodes}
-                            onConfirm={handleRecoveryCodesConfirmed}
-                        />
-                    </>
-                )}
-
                 {/* Success Step */}
                 {step === 'success' && (
                     <>
@@ -311,8 +282,9 @@ export function MFAEnrollmentFlow({
                             <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900/50 dark:bg-green-900/10">
                                 <p className="text-sm text-green-900 dark:text-green-200">
                                     You'll need your authenticator app to sign
-                                    in from now on. Make sure you've saved your
-                                    recovery codes in a secure place.
+                                    in from now on. For backup access, add a
+                                    second authenticator app in account
+                                    settings.
                                 </p>
                             </div>
 

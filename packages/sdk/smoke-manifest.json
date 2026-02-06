@@ -1,0 +1,79 @@
+{
+  "apiKeyEnv": "AI_STATS_API_KEY",
+  "baseUrlEnv": "AI_STATS_BASE_URL",
+  "defaultBaseUrl": "https://api.phaseo.app/v1",
+  "testModel": "openai/gpt-5-nano",
+  "operations": {
+    "responses": {
+      "description": "Responses API test with gpt-5-nano",
+      "endpoint": "/responses",
+      "method": "POST",
+      "body": {
+        "model": "openai/gpt-5-nano",
+        "input": "Hi",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hi"
+          }
+        ]
+      },
+      "expectStatus": 200,
+      "validateResponse": {
+        "choices": "array",
+        "choices.0.message.content": "string"
+      }
+    },
+    "chat": {
+      "description": "Text generation test with gpt-5-nano",
+      "endpoint": "/chat/completions",
+      "method": "POST",
+      "body": {
+        "model": "openai/gpt-5-nano",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Hi"
+          }
+        ]
+      },
+      "expectStatus": 200,
+      "validateResponse": {
+        "choices": "array",
+        "choices.0.message.content": "string"
+      }
+    },
+    "unauthorized": {
+      "description": "Test unauthorized access handling",
+      "path": "/chat/completions",
+      "method": "POST",
+      "expectStatus": 401
+    },
+    "notFound": {
+      "description": "Test 404 handling",
+      "path": "/invalid-endpoint-test",
+      "method": "GET",
+      "expectStatus": 404
+    },
+    "health": {
+      "description": "Health check endpoint",
+      "path": "/health",
+      "method": "GET",
+      "expectStatus": 200
+    },
+    "models": {
+      "description": "List available models",
+      "path": "/models",
+      "method": "GET",
+      "expectStatus": 200,
+      "validateResponse": {
+        "models": "array"
+      }
+    }
+  },
+  "constraints": {
+    "onlyTextGeneration": true,
+    "requiredModel": "gpt-5-nano",
+    "timeout": 30000
+  }
+}

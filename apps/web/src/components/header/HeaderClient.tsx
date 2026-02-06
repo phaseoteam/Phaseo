@@ -81,6 +81,7 @@ export default function HeaderClient({
 		navLink("/models", "Models"),
 		navLink("/benchmarks", "Benchmarks"),
 		navLink("/api-providers", "API Providers"),
+		navLink("/help", "Help"),
 	];
 
 	if (variant === "mobile") {

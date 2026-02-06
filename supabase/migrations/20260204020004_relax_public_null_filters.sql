@@ -1,0 +1,209 @@
+-- Relax public rankings RPCs to allow null model_id/provider (grouped as "Unknown")
+
+CREATE OR REPLACE FUNCTION public.get_public_model_rankings(
+  p_time_range text DEFAULT 'week',
+  p_metric text DEFAULT 'tokens',
+  p_limit integer DEFAULT 50
+)
+RETURNS TABLE (
+  model_id text,
+  provider text,
+  requests bigint,
+  total_tokens bigint,
+  input_tokens bigint,
+  output_tokens bigint,
+  total_cost_usd numeric,
+  median_latency_ms numeric,
+  median_throughput numeric,
+  success_rate numeric,
+  rank integer,
+  prev_rank integer,
+  trend text
+) AS $$
+DECLARE
+  v_since timestamptz;
+  v_prev_since timestamptz;
+  v_prev_until timestamptz;
+  v_now timestamptz := now();
+BEGIN
+  CASE p_time_range
+    WHEN 'today' THEN
+      v_since := date_trunc('day', v_now);
+      v_prev_since := v_since - interval '1 day';
+      v_prev_until := v_since;
+    WHEN 'week' THEN
+      v_since := v_now - interval '7 days';
+      v_prev_since := v_now - interval '14 days';
+      v_prev_until := v_now - interval '7 days';
+    WHEN 'month' THEN
+      v_since := date_trunc('month', v_now);
+      v_prev_since := v_since - interval '1 month';
+      v_prev_until := v_since;
+    ELSE
+      v_since := '2020-01-01'::timestamptz;
+      v_prev_since := v_since;
+      v_prev_until := v_since;
+  END CASE;
+
+  RETURN QUERY
+  WITH current_period AS (
+    SELECT
+      COALESCE(gr.model_id, 'Unknown') as model_id,
+      COALESCE(gr.provider, 'Unknown') as provider,
+      COUNT(*) as req_count,
+      SUM(COALESCE((gr.usage->>'total_tokens')::bigint, 0)) as total_tok,
+      SUM(COALESCE((gr.usage->>'input_tokens')::bigint, 0)) as input_tok,
+      SUM(COALESCE((gr.usage->>'output_tokens')::bigint, 0)) as output_tok,
+      SUM(COALESCE(gr.cost_nanos, 0)) as total_cost_nano,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY gr.latency_ms) as p50_latency,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY gr.throughput) as p50_throughput,
+      AVG(CASE WHEN gr.success THEN 1.0 ELSE 0.0 END) as succ_rate
+    FROM public.gateway_requests gr
+    WHERE gr.created_at >= v_since
+    GROUP BY 1, 2
+  ),
+  previous_period AS (
+    SELECT
+      COALESCE(gr.model_id, 'Unknown') as model_id,
+      COALESCE(gr.provider, 'Unknown') as provider,
+      COUNT(*) as req_count
+    FROM public.gateway_requests gr
+    WHERE gr.created_at >= v_prev_since
+      AND gr.created_at < v_prev_until
+    GROUP BY 1, 2
+  ),
+  ranked_current AS (
+    SELECT
+      cp.*,
+      ROW_NUMBER() OVER (
+        ORDER BY
+          CASE p_metric
+            WHEN 'tokens' THEN cp.total_tok
+            WHEN 'requests' THEN cp.req_count
+            WHEN 'cost' THEN cp.total_cost_nano
+            ELSE cp.total_tok
+          END DESC
+      ) as rk
+    FROM current_period cp
+  ),
+  ranked_previous AS (
+    SELECT
+      pp.model_id,
+      pp.provider,
+      ROW_NUMBER() OVER (
+        ORDER BY pp.req_count DESC
+      ) as rk
+    FROM previous_period pp
+  )
+  SELECT
+    rc.model_id,
+    rc.provider,
+    rc.req_count::bigint,
+    rc.total_tok::bigint,
+    rc.input_tok::bigint,
+    rc.output_tok::bigint,
+    ROUND(rc.total_cost_nano / 1000000000.0, 2) as total_cost_usd,
+    ROUND(rc.p50_latency::numeric, 0) as median_latency_ms,
+    ROUND(rc.p50_throughput::numeric, 2) as median_throughput,
+    ROUND(rc.succ_rate::numeric, 4) as success_rate,
+    rc.rk::integer as rank,
+    COALESCE(rp.rk, 9999)::integer as prev_rank,
+    CASE
+      WHEN rp.rk IS NULL THEN 'new'
+      WHEN rp.rk > rc.rk THEN 'up'
+      WHEN rp.rk < rc.rk THEN 'down'
+      ELSE 'same'
+    END as trend
+  FROM ranked_current rc
+  LEFT JOIN ranked_previous rp ON rc.model_id = rp.model_id AND rc.provider = rp.provider
+  WHERE rc.rk <= p_limit
+  ORDER BY rc.rk;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+CREATE OR REPLACE FUNCTION public.get_public_model_performance(
+  p_hours integer DEFAULT 24,
+  p_min_requests integer DEFAULT 0
+)
+RETURNS TABLE (
+  model_id text,
+  provider text,
+  requests bigint,
+  cost_per_1m_tokens numeric,
+  median_latency_ms numeric,
+  p95_latency_ms numeric,
+  median_throughput numeric,
+  success_rate numeric
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    COALESCE(gr.model_id, 'Unknown') as model_id,
+    COALESCE(gr.provider, 'Unknown') as provider,
+    COUNT(*)::bigint as requests,
+    CASE
+      WHEN SUM(COALESCE((gr.usage->>'total_tokens')::bigint, 0)) > 0 THEN
+        ROUND(
+          (SUM(COALESCE(gr.cost_nanos, 0)) / 1000000000.0) /
+          (SUM(COALESCE((gr.usage->>'total_tokens')::bigint, 0)) / 1000000.0),
+          2
+        )
+      ELSE 0
+    END as cost_per_1m_tokens,
+    ROUND(percentile_cont(0.5) WITHIN GROUP (ORDER BY gr.latency_ms)::numeric, 0) as median_latency_ms,
+    ROUND(percentile_cont(0.95) WITHIN GROUP (ORDER BY gr.latency_ms)::numeric, 0) as p95_latency_ms,
+    ROUND(percentile_cont(0.5) WITHIN GROUP (ORDER BY gr.throughput)::numeric, 2) as median_throughput,
+    ROUND(AVG(CASE WHEN gr.success THEN 1.0 ELSE 0.0 END)::numeric, 4) as success_rate
+  FROM public.gateway_requests gr
+  WHERE gr.created_at >= now() - (p_hours || ' hours')::interval
+  GROUP BY 1, 2
+  HAVING COUNT(*) >= p_min_requests
+  ORDER BY requests DESC;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+CREATE OR REPLACE FUNCTION public.get_public_trending_models(
+  p_limit integer DEFAULT 20,
+  p_min_requests integer DEFAULT 0
+)
+RETURNS TABLE (
+  model_id text,
+  provider text,
+  current_week_requests bigint,
+  previous_week_requests bigint,
+  two_weeks_ago_requests bigint,
+  velocity numeric,
+  momentum_score numeric
+) AS $$
+DECLARE
+  v_now timestamptz := now();
+BEGIN
+  RETURN QUERY
+  WITH weekly_stats AS (
+    SELECT
+      COALESCE(gr.model_id, 'Unknown') as model_id,
+      COALESCE(gr.provider, 'Unknown') as provider,
+      COUNT(*) FILTER (WHERE gr.created_at >= v_now - interval '7 days') as week_0,
+      COUNT(*) FILTER (WHERE gr.created_at >= v_now - interval '14 days'
+                          AND gr.created_at < v_now - interval '7 days') as week_1,
+      COUNT(*) FILTER (WHERE gr.created_at >= v_now - interval '21 days'
+                          AND gr.created_at < v_now - interval '14 days') as week_2
+    FROM public.gateway_requests gr
+    WHERE gr.created_at >= v_now - interval '21 days'
+    GROUP BY 1, 2
+    HAVING COUNT(*) FILTER (WHERE gr.created_at >= v_now - interval '7 days') >= p_min_requests
+  )
+  SELECT
+    ws.model_id,
+    ws.provider,
+    ws.week_0::bigint,
+    ws.week_1::bigint,
+    ws.week_2::bigint,
+    ((ws.week_0 - ws.week_1) - (ws.week_1 - ws.week_2))::numeric as velocity,
+    (((ws.week_0 - ws.week_1) - (ws.week_1 - ws.week_2)) * 2.0 + (ws.week_0 - ws.week_1))::numeric as momentum_score
+  FROM weekly_stats ws
+  WHERE ws.week_0 > ws.week_1
+  ORDER BY momentum_score DESC
+  LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql STABLE;

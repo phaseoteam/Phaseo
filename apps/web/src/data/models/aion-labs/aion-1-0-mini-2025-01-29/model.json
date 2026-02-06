@@ -1,0 +1,17 @@
+{
+  "model_id": "aion-labs/aion-1-0-mini-2025-01-29",
+  "organisation_id": "aion-labs",
+  "name": "Aion 1.0 Mini",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-01-29T00:00:00",
+  "release_date": "2025-01-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

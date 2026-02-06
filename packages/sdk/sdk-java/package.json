@@ -1,0 +1,10 @@
+{
+  "name": "@ai-stats/java-sdk",
+  "version": "0.2.1-alpha.0",
+  "private": true,
+  "description": "AI Stats Java SDK (preview) - generated client with models wrapper",
+  "license": "MIT",
+  "scripts": {
+    "smoke:chat": "dotenv -e .env.local -- cmd /c \"javac -d tests/out src/gen/*.java tests/SmokeChat.java && java -cp tests/out SmokeChat\""
+  }
+}

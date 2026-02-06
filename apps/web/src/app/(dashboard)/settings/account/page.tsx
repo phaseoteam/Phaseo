@@ -3,6 +3,7 @@ import AccountSettingsClient, {
 	UserPayload,
 } from "@/components/(gateway)/settings/account/AccountSettingsClient";
 import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function AccountSettingsPage() {
 	const supabase = await createClient();
@@ -41,11 +42,31 @@ export default async function AccountSettingsPage() {
 		createdAt: userRow?.created_at,
 	};
 
-	// Check if user has MFA enabled
+	// Check if user has MFA enabled and whether this session still needs MFA verification.
 	const { data: mfaData } = await supabase.auth.mfa.listFactors();
-	const mfaFactor = mfaData?.totp?.find((f) => f.status === "verified");
-	const mfaEnabled = !!mfaFactor;
-	const mfaFactorId = mfaFactor?.id ?? null;
+	const verifiedMfaFactors = (mfaData?.totp ?? []).filter(
+		(factor) => factor.status === "verified"
+	);
+	const mfaEnabled = verifiedMfaFactors.length > 0;
+
+	const { data: aalData } =
+		await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+	if (
+		mfaEnabled &&
+		aalData?.currentLevel === "aal1" &&
+		aalData?.nextLevel === "aal2"
+	) {
+		redirect("/auth/verify-mfa?next=/settings/account");
+	}
+
+	const mfaFactors = verifiedMfaFactors.map((factor) => ({
+		id: factor.id,
+		friendlyName:
+			(factor as any).friendly_name ??
+			(factor as any).friendlyName ??
+			"Authenticator app",
+		createdAt: (factor as any).created_at ?? (factor as any).createdAt ?? null,
+	}));
 
 	// Check if user has password (OAuth users don't)
 	// OAuth providers: google, github, gitlab, etc.
@@ -82,8 +103,7 @@ export default async function AccountSettingsPage() {
 				<AccountSettingsClient
 					user={user}
 					teams={teams}
-					mfaEnabled={mfaEnabled}
-					mfaFactorId={mfaFactorId}
+					mfaFactors={mfaFactors}
 					hasPassword={hasPassword}
 				/>
 			</div>

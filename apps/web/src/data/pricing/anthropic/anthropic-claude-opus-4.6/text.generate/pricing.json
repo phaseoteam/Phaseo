@@ -1,0 +1,177 @@
+{
+  "key": "anthropic:anthropic/claude-opus-4.6:text.generate",
+  "api_provider_id": "anthropic",
+  "provider_slug": "anthropic",
+  "api_model_id": "anthropic/claude-opus-4.6",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 5e-06,
+      "currency": "USD",
+      "tiering_mode": "cliff",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-05T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-05,
+      "currency": "USD",
+      "tiering_mode": "cliff",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2.5e-05,
+      "currency": "USD",
+      "tiering_mode": "cliff",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 3.75e-05,
+      "currency": "USD",
+      "tiering_mode": "cliff",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 5e-07,
+      "currency": "USD",
+      "tiering_mode": "cliff",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1e-06,
+      "currency": "USD",
+      "tiering_mode": "cliff",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-05T00:00:00"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 6.25e-06,
+      "currency": "USD",
+      "tiering_mode": "cliff",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-05T00:00:00"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 1.25e-05,
+      "currency": "USD",
+      "tiering_mode": "cliff",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-02-05T00:00:00"
+    }
+  ]
+}

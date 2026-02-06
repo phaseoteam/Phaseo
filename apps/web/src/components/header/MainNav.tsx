@@ -11,6 +11,7 @@ const LINKS = [
 	{ href: "/models", label: "Models" },
 	{ href: "/benchmarks", label: "Benchmarks" },
 	{ href: "/api-providers", label: "API Providers" },
+	{ href: "/help", label: "Help" },
 ];
 
 export default function MainNav() {

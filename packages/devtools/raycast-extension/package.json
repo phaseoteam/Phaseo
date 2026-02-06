@@ -1,0 +1,70 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "ai-stats",
+  "title": "AI Stats",
+  "description": "Browse AI models, organisations, and providers from AI Stats",
+  "icon": "icon.png",
+  "author": "AI Stats",
+  "license": "MIT",
+  "categories": [
+    "Developer Tools",
+    "Data"
+  ],
+  "commands": [
+    {
+      "name": "models",
+      "title": "Browse Models",
+      "description": "Search and compare AI models",
+      "mode": "view"
+    },
+    {
+      "name": "organisations",
+      "title": "Browse Organisations",
+      "description": "Explore AI model organisations",
+      "mode": "view"
+    },
+    {
+      "name": "providers",
+      "title": "Browse API Providers",
+      "description": "View API providers for AI models",
+      "mode": "view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "apiKey",
+      "type": "password",
+      "required": true,
+      "title": "API Key",
+      "description": "Your AI Stats API key from api.phaseo.app",
+      "placeholder": "aistats_..."
+    },
+    {
+      "name": "apiUrl",
+      "type": "textfield",
+      "required": false,
+      "title": "API URL",
+      "description": "Custom API URL (optional)",
+      "default": "https://api.phaseo.app/v1",
+      "placeholder": "https://api.phaseo.app/v1"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.104.1",
+    "@raycast/utils": "^1.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.10",
+    "eslint": "^9.22.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "@raycast/eslint-config": "^1.0.11"
+  },
+  "scripts": {
+    "dev": "ray develop",
+    "build": "ray build -e dist",
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix"
+  }
+}

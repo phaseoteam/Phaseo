@@ -1,0 +1,26 @@
+{
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.json"
+                },
+    "type":  "module",
+    "types":  "./dist/index.d.ts",
+    "version":  "0.0.0",
+    "files":  [
+                  "dist"
+              ],
+    "name":  "@ai-stats/oapi-backend-rust",
+    "private":  true,
+    "exports":  {
+                    ".":  {
+                              "types":  "./dist/index.d.ts",
+                              "default":  "./dist/index.js"
+                          }
+                },
+    "devDependencies":  {
+                            "@types/node":  "^25.0.2",
+                            "typescript":  "^5.6.3"
+                        },
+    "dependencies":  {
+                         "@ai-stats/oapi-core":  "workspace:*"
+                     }
+}

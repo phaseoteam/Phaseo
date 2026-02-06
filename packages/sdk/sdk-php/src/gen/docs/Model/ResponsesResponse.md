@@ -1,0 +1,45 @@
+# # ResponsesResponse
+
+## Properties
+
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**id** | **string** |  | [optional]
+**object** | **string** |  | [optional]
+**created_at** | **int** |  | [optional]
+**status** | **string** |  | [optional]
+**completed_at** | **int** |  | [optional]
+**error** | **object** |  | [optional]
+**incomplete_details** | **object** |  | [optional]
+**instructions** | **string** |  | [optional]
+**max_output_tokens** | **int** |  | [optional]
+**max_tool_calls** | **int** |  | [optional]
+**model** | **string** |  | [optional]
+**output** | [**\AIStats\Sdk\Model\ResponsesOutputItem[]**](ResponsesOutputItem.md) |  | [optional]
+**parallel_tool_calls** | **bool** |  | [optional]
+**previous_response_id** | **string** |  | [optional]
+**reasoning** | [**\AIStats\Sdk\Model\ResponsesResponseReasoning**](ResponsesResponseReasoning.md) |  | [optional]
+**frequency_penalty** | **float** |  | [optional]
+**presence_penalty** | **float** |  | [optional]
+**store** | **bool** |  | [optional]
+**temperature** | **float** |  | [optional]
+**text** | **object** |  | [optional]
+**tool_choice** | [**\AIStats\Sdk\Model\ChatCompletionsRequestToolChoice**](ChatCompletionsRequestToolChoice.md) |  | [optional]
+**tools** | **object[]** |  | [optional]
+**top_logprobs** | **int** |  | [optional]
+**top_p** | **float** |  | [optional]
+**truncation** | **string** |  | [optional]
+**user** | **string** |  | [optional]
+**background** | **bool** |  | [optional]
+**service_tier** | **string** |  | [optional]
+**safety_identifier** | **string** |  | [optional]
+**prompt_cache_key** | **string** |  | [optional]
+**metadata** | **object** |  | [optional]
+**native_response_id** | **string** |  | [optional]
+**meta** | **object** |  | [optional]
+**debug** | [**\AIStats\Sdk\Model\DebugResponse**](DebugResponse.md) |  | [optional]
+**upstream_request** | [**\AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest**](ChatCompletionsResponseUpstreamRequest.md) |  | [optional]
+**upstream_response** | [**\AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest**](ChatCompletionsResponseUpstreamRequest.md) |  | [optional]
+**usage** | [**\AIStats\Sdk\Model\Usage**](Usage.md) |  | [optional]
+
+[[Back to Model list]](../../README.md#models) [[Back to API list]](../../README.md#endpoints) [[Back to README]](../../README.md)

@@ -1,0 +1,43 @@
+# @ai-stats/py-sdk
+
+## 0.2.1-alpha.0
+
+### Patch Changes
+
+-   Bump all SDKs for the next alpha drop so they land on 0.2.1-alpha.0 together.
+
+## 0.2.0
+
+### Minor Changes
+
+-   [#8](https://github.com/AI-Stats/AI-Stats/pull/8) [`144dad5`](https://github.com/AI-Stats/AI-Stats/commit/144dad5cbf8f56b0e1d987b0eafb9d0be5a98d5e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Regenerated the SDKs from the latest OpenAPI spec to reflect the updated Gateway API contract. This may include typing and surface-area changes where the API schema changed.
+
+## 0.1.4
+
+### Patch Changes
+
+-   [#6](https://github.com/AI-Stats/AI-Stats/pull/6) [`4322886`](https://github.com/AI-Stats/AI-Stats/commit/4322886327dde92030846969718c9131a2a30431) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add some older Google Models + IF Bench
+
+## 0.1.3
+
+### Patch Changes
+
+-   [`d322b30`](https://github.com/AI-Stats/AI-Stats/commit/d322b30bbe33cde56ca80f17c5612c4609d58f3c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Nova 2 Models + Adjust Deepseek V3.2
+
+## 0.1.2
+
+### Patch Changes
+
+-   [`6210556`](https://github.com/AI-Stats/AI-Stats/commit/62105560578881ccfb086074755ab1a8bf67d767) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add Mistral 3 Models
+
+## 0.1.1
+
+### Patch Changes
+
+-   [`d96c317`](https://github.com/AI-Stats/AI-Stats/commit/d96c3178a85269e72836524492137574d285fe1d) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update Readme
+
+## 0.1.1
+
+### Patch Changes
+
+-   [`01d8857`](https://github.com/AI-Stats/AI-Stats/commit/01d8857e1cb2144c2c1e2b3b34cca758aaba2728) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update README

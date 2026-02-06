@@ -1,0 +1,19 @@
+{
+    "compilerOptions":  {
+                            "sourceMap":  true,
+                            "declaration":  true,
+                            "declarationMap":  true,
+                            "moduleResolution":  "Bundler",
+                            "types":  [
+                                          "node"
+                                      ],
+                            "rootDir":  "src",
+                            "outDir":  "dist",
+                            "module":  "ESNext"
+                        },
+    "include":  [
+                    "src"
+                ],
+    "extends": "../../../tsconfig.base.json"
+}
+

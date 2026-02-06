@@ -1,0 +1,21 @@
+---
+title: "Rust SDK Installation"
+description: "How to build and use the preview Rust SDK"
+---
+
+<Note type="warning">
+  **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
+</Note>
+
+<Note type="warning">This package is not yet published to crates.io.</Note>
+
+## Local build
+
+- Requires a recent Rust toolchain (stable).
+- From the repo root, go to `packages/sdk/sdk-rust`.
+- Build with Cargo and use the crate as a path dependency.
+
+```bash
+cd packages/sdk/sdk-rust
+cargo build
+```

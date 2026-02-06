@@ -1,0 +1,11 @@
+# AIStatsSdk.Model.AnthropicMessageStartEvent
+
+## Properties
+
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**Event** | **string** |  | [optional] 
+**Data** | [**AnthropicMessageStartEventData**](AnthropicMessageStartEventData.md) |  | [optional] 
+
+[[Back to Model list]](../../README.md#documentation-for-models) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to README]](../../README.md)
+

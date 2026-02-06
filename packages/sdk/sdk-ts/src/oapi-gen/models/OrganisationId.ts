@@ -1,0 +1,31 @@
+/**
+ * Organisation identifier.
+ */
+export type OrganisationId =
+  | "ai21"
+  | "amazon"
+  | "anthropic"
+  | "baidu"
+  | "black-forest-labs"
+  | "bytedance"
+  | "cohere"
+  | "deepseek"
+  | "eleven-labs"
+  | "essential-ai"
+  | "google"
+  | "ibm"
+  | "inclusionai"
+  | "lg"
+  | "meta"
+  | "microsoft"
+  | "minimax"
+  | "mistral"
+  | "moonshotai"
+  | "nous"
+  | "nvidia"
+  | "openai"
+  | "perplexity"
+  | "qwen"
+  | "suno"
+  | "x-ai"
+  | "z-ai";

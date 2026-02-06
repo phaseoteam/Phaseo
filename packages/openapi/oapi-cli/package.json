@@ -1,0 +1,39 @@
+{
+	"name": "@ai-stats/oapi-cli",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"bin": {
+		"oapi": "./dist/cli.js"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"test": "node --test --loader tsx tests/*.test.ts"
+	},
+	"dependencies": {
+		"@ai-stats/oapi-backend-cpp": "workspace:*",
+		"@ai-stats/oapi-backend-csharp": "workspace:*",
+		"@ai-stats/oapi-backend-ts": "workspace:*",
+		"@ai-stats/oapi-backend-go": "workspace:*",
+		"@ai-stats/oapi-backend-java": "workspace:*",
+		"@ai-stats/oapi-backend-php": "workspace:*",
+		"@ai-stats/oapi-backend-python": "workspace:*",
+		"@ai-stats/oapi-backend-ruby": "workspace:*",
+		"@ai-stats/oapi-backend-rust": "workspace:*",
+		"@ai-stats/oapi-core": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.2",
+		"tsx": "^4.21.0",
+		"typescript": "^5.6.3"
+	}
+}

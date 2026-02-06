@@ -1,0 +1,11 @@
+[package]
+name = "ai-stats-rust-sdk"
+version = "0.2.1-alpha.0"
+edition = "2021"
+
+[dependencies]
+serde_json = "1.0"
+ureq = "2.9"
+
+[lib]
+path = "src/lib.rs"

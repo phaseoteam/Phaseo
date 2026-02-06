@@ -26,7 +26,6 @@ import {
 import { SwapTeam } from "@/app/(dashboard)/actions";
 import { CurrentUserAvatar } from "../ui/current-user-avatar";
 import { cn } from "@/lib/utils";
-import { openHeyo } from "@/lib/heyo-client";
 import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";
 import { toast } from "sonner";
 
@@ -263,7 +262,7 @@ export default function TeamSwitcher({
 						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
 						onSelect={(e) => {
 							e.preventDefault();
-							openHeyo();
+							router.push("/contact");
 						}}
 					>
 						<div className="flex items-center justify-between w-full">
