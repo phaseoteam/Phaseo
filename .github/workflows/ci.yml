@@ -19,22 +19,22 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
+                  cache: bun
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Validate data files
-              run: pnpm validate:data && pnpm validate:pricing && pnpm validate:gateway
+              run: bun run validate:data && bun run validate:pricing && bun run validate:gateway
 
     check-paths:
         name: Check for data changes
@@ -59,22 +59,22 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
+                  cache: bun
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Lint OpenAPI spec
-              run: pnpm openapi:lint
+              run: bun run openapi:lint
 
     apps:
         name: Apps ${{ matrix.app }}
@@ -87,37 +87,38 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
+                  cache: bun
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: API lint & build
               if: matrix.app == 'api'
               run: |
-                  pnpm validate:api
-                  pnpm --filter @ai-stats/gateway-api exec tsx scripts/pricing-simulator-cli.ts
+                  bun run validate:api
+                  cd apps/api && bunx tsx scripts/pricing-simulator-cli.ts
 
             - name: Docs links
               if: matrix.app == 'docs'
               continue-on-error: true
-              run: pnpm docs:links
+              run: bun run docs:links
 
             - name: Web lint & typecheck
               if: matrix.app == 'web'
               continue-on-error: true
               run: |
-                  pnpm --filter @ai-stats/web lint
-                  pnpm --filter @ai-stats/web typecheck
+                  cd apps/web
+                  bun run lint
+                  bun run typecheck
 
     importer:
         name: Run importer on main
@@ -132,26 +133,26 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
+                  cache: bun
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Run importer (all sections)
               if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && env.NEXT_PUBLIC_SUPABASE_URL != '' }}
               env:
                   SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
                   NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-              run: pnpm --filter @ai-stats/web exec tsx scripts/importer/main.ts --section=all
+              run: cd apps/web && bunx tsx scripts/importer/main.ts --section=all
 
     sdk-gen:
         name: Generate SDKs
@@ -179,32 +180,32 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
+                  cache: bun
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             # --- DEBUG: show generator versions ---
             - name: Debug generator versions
               run: |
                   echo "Node: $(node -v)"
-                  echo "pnpm: $(pnpm -v)"
+                  echo "bun: $(bun -v)"
                   # Adjust package names to whatever you actually use
                   if [ "${{ matrix.sdk }}" = "ts" ]; then
                     node -p "console.log('openapi-typescript-codegen:', require('openapi-typescript-codegen/package.json').version)" || true
                   fi
                   if [ "${{ matrix.sdk }}" = "csharp" ]; then
                     node -p "console.log('@openapitools/openapi-generator-cli:', require('@openapitools/openapi-generator-cli/package.json').version)" || true
-                    pnpm exec openapi-generator-cli version || true
+                    bunx openapi-generator-cli version || true
                   fi
 
             - name: Show openapi:gen scripts
@@ -231,12 +232,12 @@ jobs:
             - name: Generate ${{ matrix.sdk }} SDK
               run: |
                   case "${{ matrix.sdk }}" in
-                    ts) pnpm openapi:gen:ts ;;
-                    py) pnpm openapi:gen:py ;;
-                    go) pnpm openapi:gen:go ;;
-                    csharp) pnpm openapi:gen:csharp ;;
-                    php) pnpm openapi:gen:php ;;
-                    ruby) pnpm openapi:gen:ruby ;;
+                    ts) bun run openapi:gen:ts ;;
+                    py) bun run openapi:gen:py ;;
+                    go) bun run openapi:gen:go ;;
+                    csharp) bun run openapi:gen:csharp ;;
+                    php) bun run openapi:gen:php ;;
+                    ruby) bun run openapi:gen:ruby ;;
                   esac
 
             # --- DEBUG: show key parts of the files *after* generation ---
@@ -268,7 +269,7 @@ jobs:
                   echo "Checking that OpenAPI spec and '${{ matrix.sdk }}' SDK are up to date..."
                   if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet apps/docs/openapi/v1/openapi.yaml $gen_path; then
                     echo "::error::Detected *non-whitespace* differences in OpenAPI spec or generated '${{ matrix.sdk }}' SDK."
-                    echo "::error::Please run 'pnpm $gen_script' locally and commit the updated files."
+                    echo "::error::Please run 'bun run $gen_script' locally and commit the updated files."
                     echo ""
                     echo "Full diff:"
                     git diff apps/docs/openapi/v1/openapi.yaml $gen_path
@@ -295,22 +296,22 @@ jobs:
                   python -m pip install build pytest
                   python -m pip install -e packages/sdk-py
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
+                  cache: bun
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Build SDKs
-              run: pnpm validate:packages
+              run: bun run validate:packages
 
     deploy-preview-web:
         name: Deploy Web (Preview)
@@ -323,19 +324,19 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
+                  cache: bun
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Install Vercel CLI
               run: npm install --global vercel@latest
@@ -377,15 +378,15 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
 
             # ---------- WEB (Vercel) ----------
-            - name: Setup pnpm
+            - name: Setup Bun
               if: matrix.target == 'web'
-              uses: pnpm/action-setup@v4
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Install dependencies
               if: matrix.target == 'web'
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Install Vercel CLI
               if: matrix.target == 'web'
@@ -402,16 +403,16 @@ jobs:
                   vercel build --prod --token=$VERCEL_TOKEN
                   vercel deploy --prebuilt --archive=tgz --prod --token=$VERCEL_TOKEN
             # ---------- API (Cloudflare Workers) ----------
-            # Setup pnpm and install deps so wrangler can resolve imports
-            - name: Setup pnpm
+            # Setup Bun and install deps so wrangler can resolve imports
+            - name: Setup Bun
               if: matrix.target == 'api'
-              uses: pnpm/action-setup@v4
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Install dependencies (for API)
               if: matrix.target == 'api'
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             # Wrangler CLI (you already had this)
             - name: Install Wrangler CLI
@@ -455,16 +456,16 @@ jobs:
                   app-id: ${{ secrets.AI_STATS_APP_ID }}
                   private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
 
-            - name: Setup pnpm
-              uses: pnpm/action-setup@v4
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
               with:
-                  package_json_file: package.json
+                  bun-version: "1.3.5"
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: pnpm
+                  cache: bun
 
             - name: Upgrade npm (for trusted publishing)
               run: |
@@ -473,14 +474,14 @@ jobs:
                   npm -v
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: bun install --frozen-lockfile
 
             - name: Create release PR / publish
               id: changesets
               uses: changesets/action@v1
               with:
-                  version: pnpm changeset:version
-                  publish: pnpm changeset:publish
+                  version: bun run changeset:version
+                  publish: bun run changeset:publish
                   createGithubReleases: false
                   commitMode: github-api
               env:
@@ -512,4 +513,5 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
               run: |
-                  pnpm release-from-changelogs
+                  bun run release-from-changelogs
+

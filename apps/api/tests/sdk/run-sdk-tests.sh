@@ -44,13 +44,13 @@ echo ""
 
 # Check if gateway is reachable
 echo "🔍 Checking gateway connectivity..."
-if curl -s -f -o /dev/null "$GATEWAY_BASE_URL/healthz" 2>/dev/null; then
+if curl -s -f -o /dev/null "$GATEWAY_BASE_URL/health" 2>/dev/null; then
     echo -e "${GREEN}✓ Gateway is reachable${NC}"
 else
     echo -e "${RED}❌ Cannot reach gateway at $GATEWAY_BASE_URL${NC}"
     echo ""
     echo "Make sure the gateway is running:"
-    echo "  pnpm --filter @ai-stats/gateway-api dev"
+    echo "  bun run --cwd apps/api dev"
     echo ""
     exit 1
 fi
@@ -63,15 +63,15 @@ echo ""
 case "${1:-all}" in
     openai)
         echo "Running OpenAI SDK tests only..."
-        pnpm test tests/sdk/openai-sdk-compat
+        bun run test tests/sdk/openai-sdk-compat
         ;;
     anthropic)
         echo "Running Anthropic SDK tests only..."
-        pnpm test tests/sdk/anthropic-sdk-compat
+        bun run test tests/sdk/anthropic-sdk-compat
         ;;
     all)
         echo "Running all SDK tests..."
-        pnpm test tests/sdk
+        bun run test tests/sdk
         ;;
     *)
         echo -e "${RED}Unknown option: $1${NC}"

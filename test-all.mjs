@@ -30,61 +30,75 @@ const testConfigs = [
     // AI SDK
     {
         name: 'AI SDK (ai-sdk-ai-stats)',
-        path: 'packages/ai-sdk-ai-stats',
-        command: 'pnpm',
-        args: ['test'],
+        path: 'packages/integrations/ai-sdk-ai-stats',
+        command: 'bun',
+        args: ['run', 'test'],
         timeout: 60000,
     },
 
     // Devtools
     {
         name: 'Devtools Core',
-        path: 'packages/devtools-core',
-        command: 'pnpm',
-        args: ['test', 'run'],
+        path: 'packages/devtools/devtools-core',
+        command: 'bun',
+        args: ['run', 'test'],
         timeout: 60000,
     },
     {
         name: 'Devtools Viewer',
-        path: 'packages/devtools-viewer',
-        command: 'pnpm',
-        args: ['test', 'run'],
+        path: 'packages/devtools/devtools-viewer',
+        command: 'bun',
+        args: ['run', 'test'],
         timeout: 60000,
     },
 
     // TypeScript SDK
     {
         name: 'SDK TypeScript',
-        path: 'packages/sdk-ts',
-        command: 'pnpm',
-        args: ['smoke:chat'],
+        path: 'packages/sdk/sdk-ts',
+        command: 'bun',
+        args: ['run', 'smoke:responses'],
         timeout: 30000,
     },
 
     // Python SDK
     {
         name: 'SDK Python',
-        path: 'packages/sdk-py',
-        command: 'pytest',
-        args: ['-v', 'tests/'],
+        path: 'packages/sdk/sdk-py',
+        command: 'python',
+        args: ['-m', 'pytest', '-v', 'tests/'],
         timeout: 60000,
         skipIfNoCommand: true,
+        env: {
+            PYTHONPATH: 'src',
+        },
     },
 
     // Go SDK
     {
         name: 'SDK Go',
-        path: 'packages/sdk-go',
+        path: 'packages/sdk/sdk-go',
         command: 'go',
         args: ['test', '-v', './...'],
         timeout: 60000,
         skipIfNoCommand: true,
     },
 
+    // C++ SDK (if g++ is available)
+    {
+        name: 'SDK C++',
+        path: 'packages/sdk/sdk-cpp',
+        command: 'bun',
+        args: ['run', 'smoke:chat'],
+        timeout: 60000,
+        skipIfNoCommand: true,
+        requiredCommand: 'g++',
+    },
+
     // Rust SDK
     {
         name: 'SDK Rust',
-        path: 'packages/sdk-rust',
+        path: 'packages/sdk/sdk-rust',
         command: 'cargo',
         args: ['test'],
         timeout: 120000,
@@ -94,17 +108,18 @@ const testConfigs = [
     // C# SDK (if dotnet is available)
     {
         name: 'SDK C#',
-        path: 'packages/sdk-csharp',
-        command: 'dotnet',
-        args: ['test'],
+        path: 'packages/sdk/sdk-csharp',
+        command: 'bun',
+        args: ['run', 'smoke:responses'],
         timeout: 60000,
         skipIfNoCommand: true,
+        requiredCommand: 'dotnet',
     },
 
     // Java SDK (if maven is available)
     {
         name: 'SDK Java',
-        path: 'packages/sdk-java',
+        path: 'packages/sdk/sdk-java',
         command: 'mvn',
         args: ['test'],
         timeout: 120000,
@@ -114,28 +129,37 @@ const testConfigs = [
     // PHP SDK (if phpunit is available)
     {
         name: 'SDK PHP',
-        path: 'packages/sdk-php',
-        command: 'vendor/bin/phpunit',
-        args: [],
+        path: 'packages/sdk/sdk-php',
+        command: 'php',
+        args: ['vendor/bin/phpunit', 'tests'],
         timeout: 60000,
         skipIfNoCommand: true,
+        requiredCommand: 'php',
+        localBinary: 'vendor/bin/phpunit',
     },
 
     // Ruby SDK (if rspec is available)
     {
         name: 'SDK Ruby',
-        path: 'packages/sdk-ruby',
-        command: 'bundle',
-        args: ['exec', 'rspec'],
+        path: 'packages/sdk/sdk-ruby',
+        command: 'ruby',
+        args: ['smoke.rb'],
         timeout: 60000,
         skipIfNoCommand: true,
     },
 ];
 
+const cliArgs = process.argv.slice(2);
+const sdkOnly = cliArgs.includes("--sdks");
+const effectiveConfigs = sdkOnly
+    ? testConfigs.filter((config) => config.name.startsWith("SDK "))
+    : testConfigs;
+
 // Check if command exists
 function commandExists(command) {
     return new Promise((resolve) => {
-        const proc = spawn('which', [command], { shell: true });
+        const locator = process.platform === 'win32' ? 'where' : 'which';
+        const proc = spawn(locator, [command], { shell: true });
         proc.on('close', (code) => resolve(code === 0));
     });
 }
@@ -155,13 +179,26 @@ async function runTest(config) {
     }
 
     // Check if command exists (for non-npm commands)
+    if (config.localBinary) {
+        const localPath = join(fullPath, config.localBinary);
+        if (!existsSync(localPath)) {
+            return {
+                name: config.name,
+                status: 'SKIP',
+                reason: `${config.localBinary} not installed`,
+                duration: 0,
+            };
+        }
+    }
+
     if (config.skipIfNoCommand) {
-        const exists = await commandExists(config.command);
+        const requiredCommand = config.requiredCommand || config.command;
+        const exists = await commandExists(requiredCommand);
         if (!exists) {
             return {
                 name: config.name,
                 status: 'SKIP',
-                reason: `${config.command} not installed`,
+                reason: `${requiredCommand} not installed`,
                 duration: 0,
             };
         }
@@ -173,6 +210,10 @@ async function runTest(config) {
         const proc = spawn(config.command, config.args, {
             cwd: fullPath,
             shell: true,
+            env: {
+                ...process.env,
+                ...(config.env || {}),
+            },
             stdio: 'pipe',
         });
 
@@ -301,12 +342,12 @@ async function main() {
     console.log('╚══════════════════════════════════════════════════════════╝');
     console.log(colors.reset);
 
-    console.log(`\n${colors.cyan}Running ${testConfigs.length} test suites in parallel...${colors.reset}\n`);
+    console.log(`\n${colors.cyan}Running ${effectiveConfigs.length} test suites in parallel...${colors.reset}\n`);
 
     const startTime = Date.now();
 
     // Run all tests in parallel
-    const results = await Promise.all(testConfigs.map(runTest));
+    const results = await Promise.all(effectiveConfigs.map(runTest));
 
     const totalTime = Date.now() - startTime;
 

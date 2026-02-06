@@ -23,7 +23,7 @@ try {
 } catch {
 	tsxPath = "";
 }
-const javaGenDir = resolve(repoRoot, "packages", "sdk-java", "src", "gen");
+const javaGenDir = resolve(repoRoot, "packages", "sdk", "sdk-java", "src", "gen");
 const javaSources = existsSync(javaGenDir)
 	? readdirSync(javaGenDir)
 			.filter((file) => file.endsWith(".java"))
@@ -33,7 +33,7 @@ const javaSources = existsSync(javaGenDir)
 const entries: Entry[] = [
 	{
 		label: "ts",
-		cwd: resolve(repoRoot, "packages", "sdk-ts"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-ts"),
 		steps: [
 			{
 				command: process.execPath,
@@ -43,7 +43,7 @@ const entries: Entry[] = [
 	},
 	{
 		label: "py",
-		cwd: resolve(repoRoot, "packages", "sdk-py"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-py"),
 		steps: [
 			{
 				command: resolveExecutable("PYTHON_EXE", "python"),
@@ -53,7 +53,7 @@ const entries: Entry[] = [
 	},
 	{
 		label: "go",
-		cwd: resolve(repoRoot, "packages", "sdk-go"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-go"),
 		env: {
 			GOCACHE: resolve(repoRoot, ".cache", "go-build")
 		},
@@ -66,7 +66,7 @@ const entries: Entry[] = [
 	},
 	{
 		label: "ruby",
-		cwd: resolve(repoRoot, "packages", "sdk-ruby"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-ruby"),
 		steps: [
 			{
 				command: resolveExecutable("RUBY_EXE", "ruby"),
@@ -76,7 +76,7 @@ const entries: Entry[] = [
 	},
 	{
 		label: "php",
-		cwd: resolve(repoRoot, "packages", "sdk-php"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-php"),
 		steps: [
 			{
 				command: resolveExecutable("PHP_EXE", "php"),
@@ -86,7 +86,7 @@ const entries: Entry[] = [
 	},
 	{
 		label: "csharp",
-		cwd: resolve(repoRoot, "packages", "sdk-csharp"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-csharp"),
 		steps: [
 			{
 				command: resolveExecutable("DOTNET_EXE", "dotnet"),
@@ -96,7 +96,7 @@ const entries: Entry[] = [
 	},
 	{
 		label: "java",
-		cwd: resolve(repoRoot, "packages", "sdk-java"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-java"),
 		steps: [
 			{
 				command: resolveExecutable("JAVAC_EXE", "javac"),
@@ -110,7 +110,7 @@ const entries: Entry[] = [
 	},
 	{
 		label: "rust",
-		cwd: resolve(repoRoot, "packages", "sdk-rust"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-rust"),
 		steps: [
 			{
 				command: resolveExecutable("CARGO_EXE", "cargo"),
@@ -120,14 +120,14 @@ const entries: Entry[] = [
 	},
 	{
 		label: "cpp",
-		cwd: resolve(repoRoot, "packages", "sdk-cpp"),
+		cwd: resolve(repoRoot, "packages", "sdk", "sdk-cpp"),
 		steps: [
 			{
 				command: resolveExecutable("GPP_EXE", "g++"),
 				args: ["-std=c++17", "-I", "src/gen", "-o", "tests/smoke_chat.exe", "tests/smoke_chat.cpp"]
 			},
 			{
-				command: resolve(repoRoot, "packages", "sdk-cpp", "tests", "smoke_chat.exe"),
+				command: resolve(repoRoot, "packages", "sdk", "sdk-cpp", "tests", "smoke_chat.exe"),
 				args: []
 			}
 		]
@@ -251,7 +251,7 @@ function ensureCacheDirs(env: Record<string, string | undefined>): void {
 
 function preflightFailure(label: string): string | null {
 	if (label === "ts" && !tsxPath) {
-		return "tsx is not available. Run pnpm install.";
+		return "tsx is not available. Run bun install.";
 	}
 	if (label === "java" && javaSources.length === 0) {
 		return `No Java sources found under ${javaGenDir}.`;

@@ -6,7 +6,7 @@
 	"engines": {
 		"node": ">=20.10.0"
 	},
-	"packageManager": "pnpm@10.18.2",
+	"packageManager": "bun@1.3.5",
 	"scripts": {
 		"dev": "next dev --turbopack --port 3100",
 		"build": "next build",
@@ -23,7 +23,6 @@
 	},
 	"dependencies": {
 		"@dqbd/tiktoken": "^1.0.22",
-		"@heyo.so/js": "^1.1.2",
 		"@hookform/resolvers": "^5.2.1",
 		"@next/third-parties": "16.1.0",
 		"@number-flow/react": "^0.5.10",
@@ -57,8 +56,8 @@
 		"@radix-ui/react-toggle-group": "^1.1.11",
 		"@radix-ui/react-tooltip": "^1.2.8",
 		"@radix-ui/react-use-controllable-state": "^1.2.2",
-		"@stripe/react-stripe-js": "^3.9.2",
-		"@stripe/stripe-js": "^7.9.0",
+		"@stripe/react-stripe-js": "^5.6.0",
+		"@stripe/stripe-js": "^8.7.0",
 		"@supabase/ssr": "^0.6.1",
 		"@supabase/supabase-js": "^2.56.1",
 		"@tanstack/react-table": "^8.21.3",
@@ -111,7 +110,7 @@
 		"shiki": "^3.14.0",
 		"sonner": "^2.0.7",
 		"streamdown": "^1.6.10",
-		"stripe": "^18.4.0",
+		"stripe": "^20.3.0",
 		"tailwind-merge": "^3.3.1",
 		"tailwindcss-animate": "^1.0.7",
 		"tokenlens": "^1.3.1",
@@ -141,10 +140,8 @@
 		"typescript-eslint": "^8.46.0",
 		"wrangler": "^4.42.0"
 	},
-	"pnpm": {
-		"overrides": {
-			"@types/react": "19.2.7",
-			"@types/react-dom": "19.2.3"
-		}
+	"overrides": {
+		"@types/react": "19.2.7",
+		"@types/react-dom": "19.2.3"
 	}
 }
