@@ -30,10 +30,10 @@ jobs:
               uses: actions/setup-node@v4
               with:
                   node-version: ${{ env.NODE_VERSION }}
-                  cache: bun
+                  cache: pnpm
 
             - name: Install dependencies
-              run: bun install --frozen-lockfile
+              run: pnpm install --frozen-lockfile
 
             - name: Check for new models
               env:
@@ -45,4 +45,5 @@ jobs:
                   DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
                   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
-              run: bun run data:check-new-models
+              run: pnpm run data:check-new-models
+

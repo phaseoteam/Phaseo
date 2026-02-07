@@ -98,15 +98,6 @@ class ChatMessageTest extends TestCase
     }
 
     /**
-     * Test attribute "reasoning_content"
-     */
-    public function testPropertyReasoningContent()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "name"
      */
     public function testPropertyName()

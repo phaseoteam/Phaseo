@@ -17,15 +17,11 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from ai_stats_generated.models.chat_completions_request_tool_choice import ChatCompletionsRequestToolChoice
-from ai_stats_generated.models.chat_message import ChatMessage
-from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
-from ai_stats_generated.models.responses_input_item import ResponsesInputItem
-from ai_stats_generated.models.responses_request_input import ResponsesRequestInput
 from ai_stats_generated.models.responses_request_prompt import ResponsesRequestPrompt
 from ai_stats_generated.models.responses_request_reasoning import ResponsesRequestReasoning
 from typing import Optional, Set
@@ -36,23 +32,19 @@ class ResponsesRequest(BaseModel):
     ResponsesRequest
     """ # noqa: E501
     model: StrictStr
-    input: Optional[ResponsesRequestInput] = None
-    messages: Optional[Annotated[List[ChatMessage], Field(min_length=1)]] = None
-    input_items: Optional[List[ResponsesInputItem]] = None
+    input: Optional[Dict[str, Any]] = None
+    input_items: Optional[List[Dict[str, Any]]] = None
     conversation: Optional[ChatCompletionsRequestToolChoice] = None
     include: Optional[List[StrictStr]] = None
     instructions: Optional[StrictStr] = None
     max_output_tokens: Optional[Annotated[int, Field(strict=True, ge=1)]] = None
     max_tool_calls: Optional[Annotated[int, Field(strict=True, ge=0)]] = None
-    max_tools_calls: Optional[Annotated[int, Field(strict=True, ge=0)]] = None
     metadata: Optional[Dict[str, StrictStr]] = None
-    debug: Optional[DebugOptions] = None
     parallel_tool_calls: Optional[StrictBool] = None
     previous_response_id: Optional[StrictStr] = None
     prompt: Optional[ResponsesRequestPrompt] = None
     prompt_cache_key: Optional[StrictStr] = None
     prompt_cache_retention: Optional[StrictStr] = None
-    modalities: Optional[List[StrictStr]] = None
     reasoning: Optional[ResponsesRequestReasoning] = None
     safety_identifier: Optional[StrictStr] = None
     service_tier: Optional[StrictStr] = None
@@ -68,20 +60,10 @@ class ResponsesRequest(BaseModel):
     truncation: Optional[StrictStr] = None
     background: Optional[StrictBool] = None
     user: Optional[StrictStr] = None
+    usage: Optional[StrictBool] = None
     meta: Optional[StrictBool] = None
     provider: Optional[ProviderRoutingOptions] = None
-    __properties: ClassVar[List[str]] = ["model", "input", "messages", "input_items", "conversation", "include", "instructions", "max_output_tokens", "max_tool_calls", "max_tools_calls", "metadata", "debug", "parallel_tool_calls", "previous_response_id", "prompt", "prompt_cache_key", "prompt_cache_retention", "modalities", "reasoning", "safety_identifier", "service_tier", "store", "stream", "stream_options", "temperature", "text", "tool_choice", "tools", "top_logprobs", "top_p", "truncation", "background", "user", "meta", "provider"]
-
-    @field_validator('modalities')
-    def modalities_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        for i in value:
-            if i not in set(['text', 'image', 'audio', 'video']):
-                raise ValueError("each list item must be one of ('text', 'image', 'audio', 'video')")
-        return value
+    __properties: ClassVar[List[str]] = ["model", "input", "input_items", "conversation", "include", "instructions", "max_output_tokens", "max_tool_calls", "metadata", "parallel_tool_calls", "previous_response_id", "prompt", "prompt_cache_key", "prompt_cache_retention", "reasoning", "safety_identifier", "service_tier", "store", "stream", "stream_options", "temperature", "text", "tool_choice", "tools", "top_logprobs", "top_p", "truncation", "background", "user", "usage", "meta", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -122,29 +104,9 @@ class ResponsesRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of input
-        if self.input:
-            _dict['input'] = self.input.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of each item in messages (list)
-        _items = []
-        if self.messages:
-            for _item_messages in self.messages:
-                if _item_messages:
-                    _items.append(_item_messages.to_dict())
-            _dict['messages'] = _items
-        # override the default output from pydantic by calling `to_dict()` of each item in input_items (list)
-        _items = []
-        if self.input_items:
-            for _item_input_items in self.input_items:
-                if _item_input_items:
-                    _items.append(_item_input_items.to_dict())
-            _dict['input_items'] = _items
         # override the default output from pydantic by calling `to_dict()` of conversation
         if self.conversation:
             _dict['conversation'] = self.conversation.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of debug
-        if self.debug:
-            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of prompt
         if self.prompt:
             _dict['prompt'] = self.prompt.to_dict()
@@ -170,23 +132,19 @@ class ResponsesRequest(BaseModel):
 
         _obj = cls.model_validate({
             "model": obj.get("model"),
-            "input": ResponsesRequestInput.from_dict(obj["input"]) if obj.get("input") is not None else None,
-            "messages": [ChatMessage.from_dict(_item) for _item in obj["messages"]] if obj.get("messages") is not None else None,
-            "input_items": [ResponsesInputItem.from_dict(_item) for _item in obj["input_items"]] if obj.get("input_items") is not None else None,
+            "input": obj.get("input"),
+            "input_items": obj.get("input_items"),
             "conversation": ChatCompletionsRequestToolChoice.from_dict(obj["conversation"]) if obj.get("conversation") is not None else None,
             "include": obj.get("include"),
             "instructions": obj.get("instructions"),
             "max_output_tokens": obj.get("max_output_tokens"),
             "max_tool_calls": obj.get("max_tool_calls"),
-            "max_tools_calls": obj.get("max_tools_calls"),
             "metadata": obj.get("metadata"),
-            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "parallel_tool_calls": obj.get("parallel_tool_calls"),
             "previous_response_id": obj.get("previous_response_id"),
             "prompt": ResponsesRequestPrompt.from_dict(obj["prompt"]) if obj.get("prompt") is not None else None,
             "prompt_cache_key": obj.get("prompt_cache_key"),
             "prompt_cache_retention": obj.get("prompt_cache_retention"),
-            "modalities": obj.get("modalities"),
             "reasoning": ResponsesRequestReasoning.from_dict(obj["reasoning"]) if obj.get("reasoning") is not None else None,
             "safety_identifier": obj.get("safety_identifier"),
             "service_tier": obj.get("service_tier"),
@@ -202,6 +160,7 @@ class ResponsesRequest(BaseModel):
             "truncation": obj.get("truncation"),
             "background": obj.get("background"),
             "user": obj.get("user"),
+            "usage": obj.get("usage"),
             "meta": obj.get("meta"),
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Gateway Integration Tests (Optional - Requires API Key)
  *
  * These tests make actual calls to the AI Stats Gateway.
@@ -12,9 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { generateText, streamText, embed } from 'ai';
 import { createAIStats } from '../src/index.js';
 
-const resolvedApiKey = process.env.AI_STATS_API_KEY
-  || process.env.AI_STATS_GATEWAY_API_KEY
-  || process.env.OPENAI_GATEWAY_API_KEY;
+const resolvedApiKey = process.env.AI_STATS_API_KEY || process.env.OPENAI_GATEWAY_API_KEY;
 const resolvedBaseUrl = process.env.AI_STATS_BASE_URL;
 const hasApiKey = !!resolvedApiKey;
 const testIf = (condition: boolean) => (condition ? it : it.skip);
@@ -25,21 +23,21 @@ const aiStats = hasApiKey
   : null as any;
 
 describe('Gateway Integration - Language Models', () => {
-  testIf(hasApiKey)('should generate text with OpenAI GPT-5 Nano', async () => {
+  testIf(hasApiKey)('should generate text with OpenAI GPT-4o', async () => {
     const result = await generateText({
-      model: aiStats('openai/gpt-5-nano'),
+      model: aiStats('openai/gpt-4o-mini'),
       prompt: 'Say "Hello from AI Stats Gateway" and nothing else.',
       maxTokens: 20,
     });
 
     expect(result.text).toContain('Hello');
-    expect(result.usage.inputTokens).toBeGreaterThan(0);
-    expect(result.usage.outputTokens).toBeGreaterThan(0);
+    expect(result.usage.promptTokens).toBeGreaterThan(0);
+    expect(result.usage.completionTokens).toBeGreaterThan(0);
   }, 30000);
 
-  testIf(hasApiKey)('should stream text with OpenAI GPT-5 Nano', async () => {
+  testIf(hasApiKey)('should stream text with Anthropic Claude', async () => {
     const result = streamText({
-      model: aiStats('openai/gpt-5-nano'),
+      model: aiStats('anthropic/claude-3-5-haiku-20241022'),
       prompt: 'Count from 1 to 5 with just numbers.',
       maxTokens: 30,
     });
@@ -56,7 +54,7 @@ describe('Gateway Integration - Language Models', () => {
 
   testIf(hasApiKey)('should handle tool calls', async () => {
     const result = await generateText({
-      model: aiStats('openai/gpt-5-nano'),
+      model: aiStats('openai/gpt-4o-mini'),
       prompt: 'What is 25 + 17? Use the calculator tool.',
       maxTokens: 100,
       tools: {
@@ -85,16 +83,14 @@ describe('Gateway Integration - Language Models', () => {
     });
 
     // Should either use the tool or provide the answer
-    const hasText = result.text.length > 0;
-    const hasTools = result.toolCalls.length > 0 || result.toolResults.length > 0;
-    expect(hasText || hasTools).toBe(true);
+    expect(result.text.length).toBeGreaterThan(0);
   }, 30000);
 });
 
 describe('Gateway Integration - Embeddings', () => {
-  testIf(hasApiKey)('should generate embeddings with Gemini', async () => {
+  testIf(hasApiKey)('should generate embeddings with OpenAI', async () => {
     const result = await embed({
-      model: aiStats.textEmbeddingModel('google/gemini-embedding-001'),
+      model: aiStats.textEmbeddingModel('openai/text-embedding-3-small'),
       value: 'Hello, world!',
     });
 
@@ -107,7 +103,7 @@ describe('Gateway Integration - Embeddings', () => {
     const { embedMany } = await import('ai');
 
     const result = await embedMany({
-      model: aiStats.textEmbeddingModel('google/gemini-embedding-001'),
+      model: aiStats.textEmbeddingModel('openai/text-embedding-3-small'),
       values: ['First text', 'Second text', 'Third text'],
     });
 
@@ -119,18 +115,46 @@ describe('Gateway Integration - Embeddings', () => {
 });
 
 describe('Gateway Integration - Image Generation', () => {
-  it.skip('should generate image with DALL-E', async () => {
-    // Disabled for release testing (model access restricted).
-  });
+  testIf(hasApiKey)('should generate image with DALL-E', async () => {
+    const { generateImage } = await import('ai');
+
+    const result = await generateImage({
+      model: aiStats.imageModel('openai/dall-e-2'),
+      prompt: 'A simple geometric shape on white background',
+      size: '256x256',
+      n: 1,
+    });
+
+    expect(result.images).toBeDefined();
+    expect(result.images.length).toBe(1);
+    expect(result.images[0].url || result.images[0].base64).toBeDefined();
+  }, 60000); // Image generation takes longer
 });
 
 describe('Gateway Integration - Audio Models', () => {
-  it.skip('should generate speech from text', async () => {
-    // Disabled for release testing (model access restricted).
-  });
+  testIf(hasApiKey)('should generate speech from text', async () => {
+    const aiModule = await import('ai');
+    if (!('speak' in aiModule)) {
+      return;
+    }
 
+    const { speak } = aiModule as typeof import('ai');
+    const result = await speak({
+      model: aiStats.speechModel('openai/tts-1'),
+      text: 'Hello world',
+      voice: 'alloy',
+      outputFormat: 'mp3',
+    });
+
+    expect(result.audio).toBeDefined();
+    expect(result.audio.length).toBeGreaterThan(0);
+    expect(result.format).toBe('mp3');
+  }, 30000);
+
+  // Transcription test requires actual audio file, so skipped by default
   it.skip('should transcribe audio to text', async () => {
-    // Disabled for release testing (model access restricted).
+    // This test requires an actual audio file
+    // Uncomment and provide audio file to test
   });
 });
 
@@ -154,5 +178,5 @@ describe('Gateway Integration - Error Handling', () => {
 // Add note if tests are skipped
 if (!hasApiKey) {
   console.log('\n⚠️  Gateway integration tests skipped (no API key found)');
-  console.log('   Set AI_STATS_API_KEY, AI_STATS_GATEWAY_API_KEY, or OPENAI_GATEWAY_API_KEY to run integration tests\n');
+  console.log('   Set AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY to run integration tests\n');
 }

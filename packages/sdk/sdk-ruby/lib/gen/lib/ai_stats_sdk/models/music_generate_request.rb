@@ -29,7 +29,7 @@ module AIStatsSdk
 
     attr_accessor :elevenlabs
 
-    attr_accessor :debug
+    attr_accessor :echo_upstream_request
 
     class EnumAttributeValidator
       attr_reader :datatype
@@ -63,7 +63,7 @@ module AIStatsSdk
         :'provider' => :'provider',
         :'suno' => :'suno',
         :'elevenlabs' => :'elevenlabs',
-        :'debug' => :'debug'
+        :'echo_upstream_request' => :'echo_upstream_request'
       }
     end
 
@@ -87,7 +87,7 @@ module AIStatsSdk
         :'provider' => :'ProviderRoutingOptions',
         :'suno' => :'MusicGenerateRequestSuno',
         :'elevenlabs' => :'MusicGenerateRequestElevenlabs',
-        :'debug' => :'DebugOptions'
+        :'echo_upstream_request' => :'Boolean'
       }
     end
 
@@ -143,8 +143,8 @@ module AIStatsSdk
         self.elevenlabs = attributes[:'elevenlabs']
       end
 
-      if attributes.key?(:'debug')
-        self.debug = attributes[:'debug']
+      if attributes.key?(:'echo_upstream_request')
+        self.echo_upstream_request = attributes[:'echo_upstream_request']
       end
     end
 
@@ -202,7 +202,7 @@ module AIStatsSdk
           provider == o.provider &&
           suno == o.suno &&
           elevenlabs == o.elevenlabs &&
-          debug == o.debug
+          echo_upstream_request == o.echo_upstream_request
     end
 
     # @see the `==` method
@@ -214,7 +214,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, prompt, duration, format, provider, suno, elevenlabs, debug].hash
+      [model, prompt, duration, format, provider, suno, elevenlabs, echo_upstream_request].hash
     end
 
     # Builds the object from hash

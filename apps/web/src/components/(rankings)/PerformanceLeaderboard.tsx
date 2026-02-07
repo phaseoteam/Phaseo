@@ -5,12 +5,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { ChevronDown } from "lucide-react";
 
 export type PerformanceLeaderboardEntry = {
 	key: string;
 	model_id: string;
 	model_name: string;
+	organisation_id?: string | null;
 	provider_id?: string | null;
 	provider_name?: string | null;
 	throughput: number;
@@ -28,6 +30,10 @@ function formatThroughput(value: number) {
 	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
 	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
 	return value.toFixed(1);
+}
+
+function getModelHref(entry: PerformanceLeaderboardEntry) {
+	return getModelDetailsHref(entry.organisation_id, entry.model_id);
 }
 
 export function PerformanceLeaderboard({
@@ -51,6 +57,7 @@ export function PerformanceLeaderboard({
 
 	const renderRow = (entry: PerformanceLeaderboardEntry, index: number, rank: number) => {
 		const providerId = entry.provider_id ?? null;
+		const modelHref = getModelHref(entry);
 		return (
 			<div
 				key={`${entry.key}-${index}`}
@@ -74,12 +81,16 @@ export function PerformanceLeaderboard({
 					</Link>
 				) : null}
 				<div className="min-w-0 flex-1">
-					<Link
-						href={`/models/${encodeURIComponent(entry.model_id)}`}
-						className="font-medium truncate block"
-					>
-						{entry.model_name}
-					</Link>
+					{modelHref ? (
+						<Link
+							href={modelHref}
+							className="font-medium truncate block"
+						>
+							{entry.model_name}
+						</Link>
+					) : (
+						<div className="font-medium truncate">{entry.model_name}</div>
+					)}
 					{entry.provider_name ? (
 						providerId ? (
 							<Link

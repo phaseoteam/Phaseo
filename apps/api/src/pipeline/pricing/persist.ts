@@ -11,6 +11,22 @@ function getStripe(): Stripe {
     return new Stripe(key, { apiVersion: "2025-06-30" as any });
 }
 
+async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): Promise<string | null> {
+    if (!customerId) return null;
+    const customer = await stripe.customers.retrieve(customerId);
+    if (typeof customer === "string") return null;
+    const invoiceDefault = customer.invoice_settings?.default_payment_method;
+    if (typeof invoiceDefault === "string") return invoiceDefault;
+    const legacyDefault = customer.default_source;
+    if (typeof legacyDefault === "string") return legacyDefault;
+    const methods = await stripe.paymentMethods.list({
+        customer: customerId,
+        type: "card",
+        limit: 1,
+    });
+    return methods.data?.[0]?.id ?? null;
+}
+
 // src/lib/gateway/pricing/persist.ts
 export async function recordUsageAndCharge(args: {
     requestId: string;
@@ -36,13 +52,32 @@ export async function recordUsageAndCharge(args: {
             // 2. Apply reverse calculation: net = gross / (1 + tier_fee_rate)
             // 3. Credit wallet with net amount (after tier-based fee deduction)
             const stripe = getStripe();
+            const minTopUpNanos = 10 * 1_000_000_000;
+            if (data.auto_top_up_amount_nanos < minTopUpNanos) {
+                console.error("[auto-recharge] Skipped: auto top-up amount below $10", {
+                    teamId: args.teamId,
+                    amount_nanos: data.auto_top_up_amount_nanos,
+                });
+                return;
+            }
             const amount_cents = Math.round(data.auto_top_up_amount_nanos / 10_000_000); // since 1 cent = 10,000,000 nanos
+            const paymentMethod =
+                data.auto_top_up_account_id ??
+                (data.stripe_customer_id
+                    ? await resolveDefaultPaymentMethod(stripe, data.stripe_customer_id)
+                    : null);
+            if (!paymentMethod) {
+                console.error("[auto-recharge] Skipped: no payment method available", {
+                    teamId: args.teamId,
+                });
+                return;
+            }
 
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount_cents,
                 currency: 'usd',
                 customer: data.stripe_customer_id,
-                payment_method: data.auto_top_up_account_id,
+                payment_method: paymentMethod,
                 off_session: true,
                 confirm: true,
                 metadata: { purpose: 'credits_topup_offsession' }

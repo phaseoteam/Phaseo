@@ -21,7 +21,7 @@ public class SmokeChat {
 
         Client client = new Client(baseUrl, HttpClient.newHttpClient(), headers);
         String payload =
-            "{\"model\":\"openai/gpt-5-nano\",\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}]}";
+            "{\"model\":\"openai/gpt-5-nano-2025-08-07\",\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}]}";
         Object response = Operations.createChatCompletion(client, null, null, null, payload);
         System.out.println(String.valueOf(response));
     }

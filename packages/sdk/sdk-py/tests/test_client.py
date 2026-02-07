@@ -1,6 +1,7 @@
-﻿import pytest
+import pytest
 
 from ai_stats import AIStats
+from gen import operations as ops
 
 
 def test_chat_completions_returns_payload(monkeypatch):
@@ -18,13 +19,13 @@ def test_chat_completions_returns_payload(monkeypatch):
         ],
     }
 
-    def fake_create_chat_completion(body):
-        model_id = body["model"] if isinstance(body, dict) else getattr(body, "model", None)
-        assert model_id == payload["model"]
+    def fake_create_chat_completion(client, body):
+        assert body["model"] == payload["model"]
         return payload
 
+    monkeypatch.setattr(ops, "createChatCompletion", fake_create_chat_completion)
+
     client = AIStats(api_key="sk_test_123", base_url="https://example.test")
-    monkeypatch.setattr(client._api, "create_chat_completion", fake_create_chat_completion)
     response = client.chat.completions.create(
         {"model": payload["model"], "messages": [{"role": "user", "content": "hi"}]}
     )
@@ -36,11 +37,12 @@ def test_chat_completions_propagates_errors(monkeypatch):
     class Boom(Exception):
         pass
 
-    def fake_create_chat_completion(body):
+    def fake_create_chat_completion(client, body):
         raise Boom("nope")
 
+    monkeypatch.setattr(ops, "createChatCompletion", fake_create_chat_completion)
+
     client = AIStats(api_key="sk_test_123", base_url="https://example.test")
-    monkeypatch.setattr(client._api, "create_chat_completion", fake_create_chat_completion)
     with pytest.raises(Boom):
         client.chat.completions.create(
             {"model": "openai/gpt-5-nano", "messages": [{"role": "user", "content": "hi"}]}

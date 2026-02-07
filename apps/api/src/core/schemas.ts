@@ -9,6 +9,19 @@ const ProviderRoutingSchema = z.object({
     order: z.array(z.string()).optional(),
     only: z.array(z.string()).optional(),
     ignore: z.array(z.string()).optional(),
+    include_alpha: z.boolean().optional(),
+    includeAlpha: z.boolean().optional(),
+}).optional();
+
+const DebugOptionsSchema = z.object({
+    enabled: z.boolean().optional(),
+    return_upstream_request: z.boolean().optional(),
+    returnUpstreamRequest: z.boolean().optional(),
+    return_upstream_response: z.boolean().optional(),
+    returnUpstreamResponse: z.boolean().optional(),
+    trace: z.boolean().optional(),
+    trace_level: z.enum(["summary", "full"]).optional(),
+    traceLevel: z.enum(["summary", "full"]).optional(),
 }).optional();
 
 // Batch schema
@@ -18,6 +31,7 @@ export const BatchSchema = z.object({
     completion_window: z.string().optional(),
     metadata: z.record(z.any()).optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type BatchRequest = z.infer<typeof BatchSchema>;
@@ -69,6 +83,7 @@ export const ResponsesSchema = z.object({
     // Gateway-only flags (not forwarded upstream)
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 }).passthrough().transform((obj) => {
     const next: any = { ...obj };
@@ -114,6 +129,7 @@ export const EmbeddingsSchema = z.object({
     embedding_options: EmbeddingOptionsSchema,
     user: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 }).refine((obj) => obj.input != null || obj.inputs != null, {
     message: "input or inputs is required",
@@ -235,6 +251,7 @@ export const ChatCompletionsSchema = z.object({
     max_output_tokens: z.number().int().positive().optional(),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     presence_penalty: z.number().min(-2).max(2).optional(),
     seed: z.number().int().min(-9223372036854776000).max(9223372036854776000).optional(),
     stream: z.boolean().optional().default(false),
@@ -345,6 +362,7 @@ export const AnthropicMessagesSchema = z.object({
     // Gateway-only flags (not forwarded upstream)
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 }).passthrough();
 
@@ -361,6 +379,7 @@ export const ImagesGenerationSchema = z.object({
     style: z.string().optional(),
     user: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
@@ -376,6 +395,7 @@ export const ImagesEditSchema = z.object({
     user: z.string().optional(),
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type ImagesEditRequest = z.infer<typeof ImagesEditSchema>;
@@ -385,9 +405,11 @@ export const ModerationsSchema = z.object({
     model: z.string().min(1),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
     input: z.union([
         z.string(),
+        z.array(z.string()),
         z.array(
             z.discriminatedUnion("type", [
                 z.object({
@@ -421,6 +443,7 @@ export const AudioSpeechSchema = z.object({
     voice: z.string().optional(),
     format: z.enum(["mp3", "wav", "ogg", "aac"]).optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type AudioSpeechRequest = z.infer<typeof AudioSpeechSchema>;
@@ -432,6 +455,7 @@ export const AudioTranscriptionSchema = z.object({
     audio_b64: z.string().optional(),
     language: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type AudioTranscriptionRequest = z.infer<typeof AudioTranscriptionSchema>;
@@ -445,6 +469,7 @@ export const AudioTranslationSchema = z.object({
     prompt: z.string().optional(),
     temperature: z.number().min(0).max(2).optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
@@ -473,6 +498,7 @@ export const VideoGenerationSchema = z.object({
     person_generation: z.string().optional(),
     output_storage_uri: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type VideoGenerationRequest = z.infer<typeof VideoGenerationSchema>;
@@ -483,6 +509,7 @@ export const OcrSchema = z.object({
     image: z.string().min(1), // URL or base64
     language: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type OcrRequest = z.infer<typeof OcrSchema>;
@@ -521,6 +548,7 @@ export const MusicGenerateSchema = z.object({
         output_format: z.string().optional(),
     }).optional(),
     echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
 });
 export type MusicGenerateRequest = z.infer<typeof MusicGenerateSchema>;
 

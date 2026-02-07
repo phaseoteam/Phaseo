@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { cacheLife, cacheTag } from "next/cache";
 import { featureOrder } from "@/lib/config/featureLabels";
 import type { MonitorModelData, MonitorModelFilters, GatewayProvider, GatewayModel } from "./types";
@@ -27,7 +27,7 @@ export async function getMonitorModels(
 	cacheLife("days");
 	cacheTag("monitor-models");
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	const { data: providerModels, error: providerModelsError } = await supabase
 		.from("data_api_provider_models")
@@ -47,9 +47,7 @@ export async function getMonitorModels(
 				params,
 				status,
 				max_input_tokens,
-				max_output_tokens,
-				effective_from,
-				effective_to
+				max_output_tokens
 			),
 			provider: data_api_providers(
 				api_provider_id,

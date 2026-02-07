@@ -8,18 +8,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { FileText, Calculator, Code, Terminal, DollarSign, Zap } from "lucide-react";
+import { FileText, Calculator, Code, Terminal, DollarSign } from "lucide-react";
 
 const tools = [
-		{
-			id: "latency-comparison",
-			title: "Latency Comparison",
-			description:
-				"Compare response times between your gateway and OpenAI API with streaming.",
-			icon: Zap,
-			href: "/tools/latency-comparison",
-			comingSoon: false,
-		},
         {
                 id: "markdown-preview",
                 title: "Markdown Previewer",

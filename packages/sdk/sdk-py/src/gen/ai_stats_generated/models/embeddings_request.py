@@ -20,7 +20,6 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -36,7 +35,6 @@ class EmbeddingsRequest(BaseModel):
     dimensions: Optional[Annotated[int, Field(strict=True, ge=1)]] = None
     embedding_options: Optional[object] = None
     user: Optional[StrictStr] = None
-    debug: Optional[DebugOptions] = None
     provider: Optional[ProviderRoutingOptions] = None
     __properties: ClassVar[List[str]] = []
 

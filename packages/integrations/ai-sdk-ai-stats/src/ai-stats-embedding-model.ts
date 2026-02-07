@@ -1,7 +1,6 @@
 import type { EmbeddingModelV3 } from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
-import { headersToRecord } from './utils/headers.js';
 
 /**
  * AI Stats Embedding Model implementation for Vercel AI SDK v6
@@ -84,11 +83,9 @@ export class AIStatsEmbeddingModel implements EmbeddingModelV3 {
     return {
       embeddings,
       usage,
-      response: {
-        headers: headersToRecord(response.headers),
-        body: data,
+      rawResponse: {
+        headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
       },
-      warnings: [],
     };
   }
 }

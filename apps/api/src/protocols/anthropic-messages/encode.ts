@@ -3,7 +3,7 @@
 // How: Maps between protocol payloads and IR structures.
 
 // Anthropic Messages Protocol - Encoder
-// Transforms IR → Anthropic Messages Response
+// Transforms IR -> Anthropic Messages Response
 
 import type { IRChatResponse, IRChoice, IRContentPart } from "@core/ir";
 
@@ -21,7 +21,13 @@ export type AnthropicMessagesResponse = {
 	role: "assistant";
 	content: AnthropicResponseContent[];
 	model: string;
-	stop_reason: "end_turn" | "max_tokens" | "stop_sequence" | "tool_use" | null;
+	stop_reason:
+		| "end_turn"
+		| "max_tokens"
+		| "stop_sequence"
+		| "tool_use"
+		| "refusal"
+		| null;
 	stop_sequence: string | null;
 	usage: {
 		cache_creation: any | null;
@@ -142,7 +148,7 @@ function mapFinishReasonToAnthropic(
 		case "tool_calls":
 			return "tool_use";
 		case "content_filter":
-			return "end_turn";
+			return "refusal";
 		case "error":
 			return null;
 		default:

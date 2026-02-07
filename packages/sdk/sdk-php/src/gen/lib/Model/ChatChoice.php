@@ -59,7 +59,6 @@ class ChatChoice implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPITypes = [
         'index' => 'int',
         'message' => '\AIStats\Sdk\Model\ChatMessage',
-        'logprobs' => 'object',
         'finish_reason' => 'string'
     ];
 
@@ -73,7 +72,6 @@ class ChatChoice implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPIFormats = [
         'index' => null,
         'message' => null,
-        'logprobs' => null,
         'finish_reason' => null
     ];
 
@@ -85,7 +83,6 @@ class ChatChoice implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static array $openAPINullables = [
         'index' => false,
         'message' => false,
-        'logprobs' => false,
         'finish_reason' => false
     ];
 
@@ -177,7 +174,6 @@ class ChatChoice implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $attributeMap = [
         'index' => 'index',
         'message' => 'message',
-        'logprobs' => 'logprobs',
         'finish_reason' => 'finish_reason'
     ];
 
@@ -189,7 +185,6 @@ class ChatChoice implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $setters = [
         'index' => 'setIndex',
         'message' => 'setMessage',
-        'logprobs' => 'setLogprobs',
         'finish_reason' => 'setFinishReason'
     ];
 
@@ -201,7 +196,6 @@ class ChatChoice implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $getters = [
         'index' => 'getIndex',
         'message' => 'getMessage',
-        'logprobs' => 'getLogprobs',
         'finish_reason' => 'getFinishReason'
     ];
 
@@ -283,7 +277,6 @@ class ChatChoice implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('index', $data ?? [], null);
         $this->setIfExists('message', $data ?? [], null);
-        $this->setIfExists('logprobs', $data ?? [], null);
         $this->setIfExists('finish_reason', $data ?? [], null);
     }
 
@@ -388,33 +381,6 @@ class ChatChoice implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable message cannot be null');
         }
         $this->container['message'] = $message;
-
-        return $this;
-    }
-
-    /**
-     * Gets logprobs
-     *
-     * @return object|null
-     */
-    public function getLogprobs()
-    {
-        return $this->container['logprobs'];
-    }
-
-    /**
-     * Sets logprobs
-     *
-     * @param object|null $logprobs logprobs
-     *
-     * @return self
-     */
-    public function setLogprobs($logprobs)
-    {
-        if (is_null($logprobs)) {
-            throw new \InvalidArgumentException('non-nullable logprobs cannot be null');
-        }
-        $this->container['logprobs'] = $logprobs;
 
         return $this;
     }

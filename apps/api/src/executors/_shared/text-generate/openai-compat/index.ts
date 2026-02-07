@@ -20,6 +20,8 @@ import { computeBill } from "@pipeline/pricing/engine";
 import { irToOpenAICompletions, openAICompletionsToIR } from "./transform-legacy";
 import { getProviderQuirks } from "./quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { sanitizeOpenAICompatRequest } from "./provider-policy";
 
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	// Use upstream start time from pipeline (set before executor is called)
@@ -38,7 +40,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	const isLegacyCompletions = route === "legacy_completions";
 	const endpoint = useResponses ? "/responses" : (isLegacyCompletions ? "/completions" : "/chat/completions");
 
-	// Transform IR → OpenAI format (Responses or Chat based on support)
+	// Transform IR -> OpenAI format (Responses or Chat based on support)
 	const requestPayload = useResponses
 		? irToOpenAIResponses(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams)
 		: (isLegacyCompletions
@@ -50,8 +52,32 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 		...requestPayload,
 		stream: true,
 	};
-	const requestBody = JSON.stringify(payload);
-	const mappedRequest = args.meta.echoUpstreamRequest ? requestBody : undefined;
+	if (!useResponses && !isLegacyCompletions) {
+		payload.stream_options = {
+			...(payload.stream_options ?? {}),
+			include_usage: true,
+		};
+	}
+	const sanitized = sanitizeOpenAICompatRequest({
+		providerId: args.providerId,
+		route,
+		model: modelForRouting,
+		request: payload,
+	});
+	const requestBody = JSON.stringify(sanitized.request);
+	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+	if (args.meta.debug?.enabled && sanitized.dropped.length > 0) {
+		console.log("[gateway-debug] provider request sanitized", {
+			provider: args.providerId,
+			route,
+			dropped: sanitized.dropped,
+		});
+	}
+	try {
+		(args.ir as any).rawRequest = sanitized.request;
+	} catch {
+		// ignore if readonly
+	}
 
 	// Execute upstream call
 	const res = await fetch(openAICompatUrl(args.providerId, endpoint), {
@@ -100,10 +126,14 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	} else {
 		// Buffer the stream and return complete response
 		const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, route, upstreamStartMs);
+		if (ir) {
+			(ir as any).rawResponse = rawResponse;
+		}
 
 		// Calculate pricing
-		if (usage) {
-			const priced = computeBill(usage, args.pricingCard);
+		const usageMeters = normalizeTextUsageForPricing(usage);
+		if (usageMeters) {
+			const priced = computeBill(usageMeters, args.pricingCard);
 			bill.cost_cents = priced.pricing.total_cents;
 			bill.currency = priced.pricing.currency;
 			bill.usage = priced;
@@ -440,7 +470,7 @@ function transformResponsesStreamToChat(
 }
 
 /**
- * State tracking for each choice when transforming Chat → Responses format
+ * State tracking for each choice when transforming Chat -> Responses format
  *
  * Responses API requires output_items with index numbers, so we track:
  * - text: Accumulated regular content
@@ -743,13 +773,14 @@ function transformChatStreamToResponses(
 					if (finalResponse) {
 						const ir = openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
 						const usage = encodeResponsesUsageFromIR(ir.usage);
-						const status = deriveResponsesStatusFromFinish(ir.choices?.[0]?.finishReason);
+						const completion = deriveResponsesCompletionFromFinish(ir.choices?.[0]?.finishReason);
 						const output = buildResponsesOutputFromState(choiceStates, args.requestId);
 						const response = {
 							id: args.requestId,
 							object: "response",
 							created_at: ir.created ?? createdAt,
-							status,
+							status: completion.status,
+							...(completion.incompleteDetails ? { incomplete_details: completion.incompleteDetails } : {}),
 							model: ir.model ?? model,
 							output,
 							usage,
@@ -812,10 +843,26 @@ function buildResponsesOutputFromState(
 	return outputItems.map((entry) => entry.item);
 }
 
-function deriveResponsesStatusFromFinish(finishReason?: string | null) {
-	if (finishReason === "error") return "failed";
-	if (finishReason === "length") return "incomplete";
-	return "completed";
+function deriveResponsesCompletionFromFinish(finishReason?: string | null): {
+	status: "completed" | "incomplete" | "failed";
+	incompleteDetails?: { reason: string };
+} {
+	if (finishReason === "error") {
+		return { status: "failed" };
+	}
+	if (finishReason === "length" || finishReason === "max_tokens") {
+		return {
+			status: "incomplete",
+			incompleteDetails: { reason: "max_output_tokens" },
+		};
+	}
+	if (finishReason === "content_filter") {
+		return {
+			status: "incomplete",
+			incompleteDetails: { reason: "content_filter" },
+		};
+	}
+	return { status: "completed" };
 }
 
 function encodeResponsesUsageFromIR(usage?: IRChatResponse["usage"]) {

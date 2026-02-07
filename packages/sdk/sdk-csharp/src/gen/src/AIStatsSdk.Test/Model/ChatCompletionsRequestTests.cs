@@ -126,15 +126,6 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'Debug'
-        /// </summary>
-        [Fact]
-        public void DebugTest()
-        {
-            // TODO unit test for the property 'Debug'
-        }
-
-        /// <summary>
         /// Test the property 'PresencePenalty'
         /// </summary>
         [Fact]
@@ -249,15 +240,6 @@ namespace AIStatsSdk.Test.Model
         public void ResponseFormatTest()
         {
             // TODO unit test for the property 'ResponseFormat'
-        }
-
-        /// <summary>
-        /// Test the property 'Modalities'
-        /// </summary>
-        [Fact]
-        public void ModalitiesTest()
-        {
-            // TODO unit test for the property 'Modalities'
         }
 
         /// <summary>

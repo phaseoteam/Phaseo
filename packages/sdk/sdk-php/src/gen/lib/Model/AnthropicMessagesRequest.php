@@ -67,11 +67,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tools' => '\AIStats\Sdk\Model\AnthropicTool[]',
         'tool_choice' => '\AIStats\Sdk\Model\ChatCompletionsRequestToolChoice',
         'stream' => 'bool',
-        'stop_sequences' => 'string[]',
-        'modalities' => 'string[]',
         'metadata' => 'array<string,string>',
-        'meta' => 'bool',
-        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -93,11 +89,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tools' => null,
         'tool_choice' => null,
         'stream' => null,
-        'stop_sequences' => null,
-        'modalities' => null,
         'metadata' => null,
-        'meta' => null,
-        'debug' => null,
         'provider' => null
     ];
 
@@ -117,11 +109,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tools' => false,
         'tool_choice' => false,
         'stream' => false,
-        'stop_sequences' => false,
-        'modalities' => false,
         'metadata' => false,
-        'meta' => false,
-        'debug' => false,
         'provider' => false
     ];
 
@@ -221,11 +209,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tools' => 'tools',
         'tool_choice' => 'tool_choice',
         'stream' => 'stream',
-        'stop_sequences' => 'stop_sequences',
-        'modalities' => 'modalities',
         'metadata' => 'metadata',
-        'meta' => 'meta',
-        'debug' => 'debug',
         'provider' => 'provider'
     ];
 
@@ -245,11 +229,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tools' => 'setTools',
         'tool_choice' => 'setToolChoice',
         'stream' => 'setStream',
-        'stop_sequences' => 'setStopSequences',
-        'modalities' => 'setModalities',
         'metadata' => 'setMetadata',
-        'meta' => 'setMeta',
-        'debug' => 'setDebug',
         'provider' => 'setProvider'
     ];
 
@@ -269,11 +249,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tools' => 'getTools',
         'tool_choice' => 'getToolChoice',
         'stream' => 'getStream',
-        'stop_sequences' => 'getStopSequences',
-        'modalities' => 'getModalities',
         'metadata' => 'getMetadata',
-        'meta' => 'getMeta',
-        'debug' => 'getDebug',
         'provider' => 'getProvider'
     ];
 
@@ -318,25 +294,6 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         return self::$openAPIModelName;
     }
 
-    public const MODALITIES_TEXT = 'text';
-    public const MODALITIES_IMAGE = 'image';
-    public const MODALITIES_AUDIO = 'audio';
-    public const MODALITIES_VIDEO = 'video';
-
-    /**
-     * Gets allowable values of the enum
-     *
-     * @return string[]
-     */
-    public function getModalitiesAllowableValues()
-    {
-        return [
-            self::MODALITIES_TEXT,
-            self::MODALITIES_IMAGE,
-            self::MODALITIES_AUDIO,
-            self::MODALITIES_VIDEO,
-        ];
-    }
 
     /**
      * Associative array for storing property values
@@ -363,11 +320,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         $this->setIfExists('tools', $data ?? [], null);
         $this->setIfExists('tool_choice', $data ?? [], null);
         $this->setIfExists('stream', $data ?? [], null);
-        $this->setIfExists('stop_sequences', $data ?? [], null);
-        $this->setIfExists('modalities', $data ?? [], null);
         $this->setIfExists('metadata', $data ?? [], null);
-        $this->setIfExists('meta', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -408,15 +361,12 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
             $invalidProperties[] = "invalid value for 'messages', number of items must be greater than or equal to 1.";
         }
 
-        if ($this->container['max_tokens'] === null) {
-            $invalidProperties[] = "'max_tokens' can't be null";
-        }
-        if (($this->container['max_tokens'] < 1)) {
+        if (!is_null($this->container['max_tokens']) && ($this->container['max_tokens'] < 1)) {
             $invalidProperties[] = "invalid value for 'max_tokens', must be bigger than or equal to 1.";
         }
 
-        if (!is_null($this->container['temperature']) && ($this->container['temperature'] > 1)) {
-            $invalidProperties[] = "invalid value for 'temperature', must be smaller than or equal to 1.";
+        if (!is_null($this->container['temperature']) && ($this->container['temperature'] > 2)) {
+            $invalidProperties[] = "invalid value for 'temperature', must be smaller than or equal to 2.";
         }
 
         if (!is_null($this->container['temperature']) && ($this->container['temperature'] < 0)) {
@@ -539,7 +489,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
     /**
      * Gets max_tokens
      *
-     * @return int
+     * @return int|null
      */
     public function getMaxTokens()
     {
@@ -549,7 +499,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
     /**
      * Sets max_tokens
      *
-     * @param int $max_tokens max_tokens
+     * @param int|null $max_tokens max_tokens
      *
      * @return self
      */
@@ -591,8 +541,8 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
             throw new \InvalidArgumentException('non-nullable temperature cannot be null');
         }
 
-        if (($temperature > 1)) {
-            throw new \InvalidArgumentException('invalid value for $temperature when calling AnthropicMessagesRequest., must be smaller than or equal to 1.');
+        if (($temperature > 2)) {
+            throw new \InvalidArgumentException('invalid value for $temperature when calling AnthropicMessagesRequest., must be smaller than or equal to 2.');
         }
         if (($temperature < 0)) {
             throw new \InvalidArgumentException('invalid value for $temperature when calling AnthropicMessagesRequest., must be bigger than or equal to 0.');
@@ -752,69 +702,6 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
     }
 
     /**
-     * Gets stop_sequences
-     *
-     * @return string[]|null
-     */
-    public function getStopSequences()
-    {
-        return $this->container['stop_sequences'];
-    }
-
-    /**
-     * Sets stop_sequences
-     *
-     * @param string[]|null $stop_sequences stop_sequences
-     *
-     * @return self
-     */
-    public function setStopSequences($stop_sequences)
-    {
-        if (is_null($stop_sequences)) {
-            throw new \InvalidArgumentException('non-nullable stop_sequences cannot be null');
-        }
-        $this->container['stop_sequences'] = $stop_sequences;
-
-        return $this;
-    }
-
-    /**
-     * Gets modalities
-     *
-     * @return string[]|null
-     */
-    public function getModalities()
-    {
-        return $this->container['modalities'];
-    }
-
-    /**
-     * Sets modalities
-     *
-     * @param string[]|null $modalities modalities
-     *
-     * @return self
-     */
-    public function setModalities($modalities)
-    {
-        if (is_null($modalities)) {
-            throw new \InvalidArgumentException('non-nullable modalities cannot be null');
-        }
-        $allowedValues = $this->getModalitiesAllowableValues();
-        if (array_diff($modalities, $allowedValues)) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    "Invalid value for 'modalities', must be one of '%s'",
-                    implode("', '", $allowedValues)
-                )
-            );
-        }
-        $this->container['modalities'] = $modalities;
-
-        return $this;
-    }
-
-    /**
      * Gets metadata
      *
      * @return array<string,string>|null
@@ -837,60 +724,6 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
             throw new \InvalidArgumentException('non-nullable metadata cannot be null');
         }
         $this->container['metadata'] = $metadata;
-
-        return $this;
-    }
-
-    /**
-     * Gets meta
-     *
-     * @return bool|null
-     */
-    public function getMeta()
-    {
-        return $this->container['meta'];
-    }
-
-    /**
-     * Sets meta
-     *
-     * @param bool|null $meta meta
-     *
-     * @return self
-     */
-    public function setMeta($meta)
-    {
-        if (is_null($meta)) {
-            throw new \InvalidArgumentException('non-nullable meta cannot be null');
-        }
-        $this->container['meta'] = $meta;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugOptions|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
 
         return $this;
     }

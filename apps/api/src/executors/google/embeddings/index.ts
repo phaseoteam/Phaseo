@@ -142,29 +142,36 @@ function mapGoogleToIr(json: any, model: string, usageOverride?: Record<string, 
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IREmbeddingsRequest;
-	const keyInfo = resolveProviderKey({ ...(args as any), forceGatewayKey: args.meta?.forceGatewayKey }, () => getBindings().GOOGLE_AI_STUDIO_API_KEY);
+	const keyInfo = resolveProviderKey(args as any, () => getBindings().GOOGLE_AI_STUDIO_API_KEY);
 	const key = keyInfo.key;
 
 	const modelForUrl = args.providerModelSlug || ir.model;
 	const inputs = Array.isArray(ir.input) ? ir.input : [ir.input];
-	const isBatch = true;
+	const isBatch = Array.isArray(ir.input);
 	const googleOptions = ir.embeddingOptions?.google;
 	const outputDimensionality = googleOptions?.outputDimensionality ?? ir.dimensions;
 	const taskType = googleOptions?.taskType;
 	const title = googleOptions?.title;
 	const requestModel = `models/${modelForUrl}`;
-	const payload = {
-		requests: inputs.map((input) => ({
-			model: requestModel,
-			content: normalizeEmbeddingInput(coerceInput(input)),
+	const payload = isBatch
+		? {
+			requests: inputs.map((input) => ({
+				model: requestModel,
+				content: normalizeEmbeddingInput(coerceInput(input)),
+				...(taskType ? { taskType } : {}),
+				...(title ? { title } : {}),
+				...(typeof outputDimensionality === "number" ? { outputDimensionality } : {}),
+			})),
+		}
+		: {
+			content: normalizeEmbeddingInput(coerceInput(inputs[0])),
 			...(taskType ? { taskType } : {}),
 			...(title ? { title } : {}),
 			...(typeof outputDimensionality === "number" ? { outputDimensionality } : {}),
-		})),
-	};
-	const endpoint = ":batchEmbedContents";
+		};
+	const endpoint = isBatch ? ":batchEmbedContents" : ":embedContent";
 
-	const captureRequest = Boolean(args.meta.debug?.return_upstream_request || args.meta.debug?.trace);
+	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);
 	const mappedRequest = captureRequest ? JSON.stringify(payload) : undefined;
 
 	const res = await fetch(`${BASE_URL}/v1beta/models/${modelForUrl}${endpoint}?key=${key}`, {

@@ -107,24 +107,6 @@ class ModelTest extends TestCase
     }
 
     /**
-     * Test attribute "deprecation_date"
-     */
-    public function testPropertyDeprecationDate()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "retirement_date"
-     */
-    public function testPropertyRetirementDate()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "status"
      */
     public function testPropertyStatus()
@@ -137,24 +119,6 @@ class ModelTest extends TestCase
      * Test attribute "organisation_id"
      */
     public function testPropertyOrganisationId()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "organisation_name"
-     */
-    public function testPropertyOrganisationName()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "organisation_colour"
-     */
-    public function testPropertyOrganisationColour()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -200,33 +164,6 @@ class ModelTest extends TestCase
      * Test attribute "providers"
      */
     public function testPropertyProviders()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "supported_params"
-     */
-    public function testPropertySupportedParams()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "top_provider"
-     */
-    public function testPropertyTopProvider()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "pricing"
-     */
-    public function testPropertyPricing()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

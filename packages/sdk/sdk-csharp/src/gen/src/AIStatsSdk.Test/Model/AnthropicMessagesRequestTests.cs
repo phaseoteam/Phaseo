@@ -72,21 +72,21 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'MaxTokens'
-        /// </summary>
-        [Fact]
-        public void MaxTokensTest()
-        {
-            // TODO unit test for the property 'MaxTokens'
-        }
-
-        /// <summary>
         /// Test the property 'System'
         /// </summary>
         [Fact]
         public void SystemTest()
         {
             // TODO unit test for the property 'System'
+        }
+
+        /// <summary>
+        /// Test the property 'MaxTokens'
+        /// </summary>
+        [Fact]
+        public void MaxTokensTest()
+        {
+            // TODO unit test for the property 'MaxTokens'
         }
 
         /// <summary>
@@ -144,48 +144,12 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'StopSequences'
-        /// </summary>
-        [Fact]
-        public void StopSequencesTest()
-        {
-            // TODO unit test for the property 'StopSequences'
-        }
-
-        /// <summary>
-        /// Test the property 'Modalities'
-        /// </summary>
-        [Fact]
-        public void ModalitiesTest()
-        {
-            // TODO unit test for the property 'Modalities'
-        }
-
-        /// <summary>
         /// Test the property 'Metadata'
         /// </summary>
         [Fact]
         public void MetadataTest()
         {
             // TODO unit test for the property 'Metadata'
-        }
-
-        /// <summary>
-        /// Test the property 'Meta'
-        /// </summary>
-        [Fact]
-        public void MetaTest()
-        {
-            // TODO unit test for the property 'Meta'
-        }
-
-        /// <summary>
-        /// Test the property 'Debug'
-        /// </summary>
-        [Fact]
-        public void DebugTest()
-        {
-            // TODO unit test for the property 'Debug'
         }
 
         /// <summary>

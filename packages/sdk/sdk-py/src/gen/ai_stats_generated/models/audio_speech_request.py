@@ -19,7 +19,6 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -32,9 +31,8 @@ class AudioSpeechRequest(BaseModel):
     input: StrictStr
     voice: Optional[StrictStr] = None
     format: Optional[StrictStr] = None
-    debug: Optional[DebugOptions] = None
     provider: Optional[ProviderRoutingOptions] = None
-    __properties: ClassVar[List[str]] = ["model", "input", "voice", "format", "debug", "provider"]
+    __properties: ClassVar[List[str]] = ["model", "input", "voice", "format", "provider"]
 
     @field_validator('format')
     def format_validate_enum(cls, value):
@@ -85,9 +83,6 @@ class AudioSpeechRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of debug
-        if self.debug:
-            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of provider
         if self.provider:
             _dict['provider'] = self.provider.to_dict()
@@ -107,7 +102,6 @@ class AudioSpeechRequest(BaseModel):
             "input": obj.get("input"),
             "voice": obj.get("voice"),
             "format": obj.get("format"),
-            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj

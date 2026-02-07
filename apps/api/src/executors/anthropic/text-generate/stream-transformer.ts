@@ -179,8 +179,18 @@ export function createAnthropicToResponsesStreamTransformer(
 					}
 
 				} else if (payload.type === "content_block_stop") {
-					// Content block finished - no action needed
-					// The final structure will be built in message_stop
+					const index = payload.index;
+					const block = contentBlocks.get(index);
+					if (!block) continue;
+
+					if (block.type === "tool_use") {
+						emitEvent(controller, "response.function_call_arguments.done", {
+							item_id: block.itemId,
+							output_index: block.outputIndex,
+							name: block.name || "",
+							arguments: block.input || "",
+						});
+					}
 
 				} else if (payload.type === "message_delta") {
 					// Update usage and stop reason
@@ -230,6 +240,7 @@ export function createAnthropicToResponsesStreamTransformer(
 							}
 							outputItems.push({
 								type: "function_call",
+								id: block.itemId,
 								call_id: block.id,
 								name: block.name,
 								arguments: typeof parsedInput === "string" ? parsedInput : JSON.stringify(parsedInput),
@@ -263,6 +274,13 @@ export function createAnthropicToResponsesStreamTransformer(
 							created_at: createdAt,
 							model: model,
 							status,
+							...(status === "incomplete"
+								? {
+									incomplete_details: {
+										reason: "max_output_tokens",
+									},
+								}
+								: {}),
 							output: outputItems,
 							usage: responseUsage,
 							nativeResponseId: messageId,
@@ -275,188 +293,6 @@ export function createAnthropicToResponsesStreamTransformer(
 		flush(controller) {
 			// If there's any remaining buffer, ignore it
 			// All complete events should have been processed
-		},
-	});
-}
-
-function mapAnthropicStopReason(reason: string | null | undefined): string | null {
-	if (!reason) return null;
-	switch (reason) {
-		case "end_turn":
-		case "stop_sequence":
-		case "pause_turn":
-			return "stop";
-		case "tool_use":
-			return "tool_calls";
-		case "max_tokens":
-			return "length";
-		case "refusal":
-			return "content_filter";
-		default:
-			return "stop";
-	}
-}
-
-/**
- * Transform Anthropic Messages API streaming to OpenAI Chat Completions streaming format
- *
- * OpenAI Chat SSE:
- * - data: { id, object:"chat.completion.chunk", created, model, choices:[{delta, finish_reason}] }
- * - final frame includes usage (if available) and finish_reason
- * - data: [DONE]
- */
-export function createAnthropicToChatStreamTransformer(
-	requestId: string,
-	model: string,
-): TransformStream<Uint8Array, Uint8Array> {
-	const decoder = new TextDecoder();
-	const encoder = new TextEncoder();
-	let buf = "";
-
-	let createdAt: number = Math.floor(Date.now() / 1000);
-	let messageId: string | null = null;
-	let usage: any = null;
-	let stopReason: string | null = null;
-	let roleEmitted = false;
-
-	const toolBlocks = new Map<number, { id: string; name: string; args: string }>();
-
-	const emitChunk = (
-		controller: TransformStreamDefaultController<Uint8Array>,
-		delta: Record<string, any>,
-		finishReason?: string | null,
-		usagePayload?: any,
-	) => {
-		const chunk: any = {
-			id: requestId,
-			object: "chat.completion.chunk",
-			created: createdAt,
-			model,
-			choices: [
-				{
-					index: 0,
-					delta,
-					finish_reason: finishReason ?? null,
-				},
-			],
-		};
-		if (usagePayload) {
-			chunk.usage = usagePayload;
-		}
-		controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-	};
-
-	return new TransformStream<Uint8Array, Uint8Array>({
-		async transform(chunk, controller) {
-			buf += decoder.decode(chunk, { stream: true });
-			const frames = buf.split(/\n\n/);
-			buf = frames.pop() ?? "";
-
-			for (const raw of frames) {
-				const lines = raw.split("\n");
-				let data = "";
-				for (const line of lines) {
-					const l = line.replace(/\r$/, "");
-					if (l.startsWith("data:")) data += l.slice(5).trimStart();
-				}
-				if (!data || data === "[DONE]") continue;
-
-				let payload: any;
-				try {
-					payload = JSON.parse(data);
-				} catch {
-					continue;
-				}
-
-				if (payload.type === "message_start") {
-					const msg = payload.message;
-					messageId = msg.id;
-					createdAt = Math.floor(Date.now() / 1000);
-					usage = msg.usage ?? usage;
-					if (!roleEmitted) {
-						emitChunk(controller, { role: "assistant" });
-						roleEmitted = true;
-					}
-					continue;
-				}
-
-				if (payload.type === "content_block_start") {
-					const index = payload.index ?? 0;
-					const block = payload.content_block;
-					if (block?.type === "tool_use") {
-						const toolId = block.id || `tool_${requestId}_${index}`;
-						const name = block.name || "";
-						toolBlocks.set(index, { id: toolId, name, args: "" });
-						emitChunk(controller, {
-							tool_calls: [
-								{
-									index,
-									id: toolId,
-									type: "function",
-									function: { name, arguments: "" },
-								},
-							],
-						});
-					}
-					continue;
-				}
-
-				if (payload.type === "content_block_delta") {
-					const index = payload.index ?? 0;
-					const delta = payload.delta;
-					if (delta?.type === "text_delta") {
-						const text = typeof delta.text === "string" ? delta.text : "";
-						if (text) {
-							emitChunk(controller, { content: text });
-						}
-					} else if (delta?.type === "thinking_delta") {
-						const thinking = typeof delta.thinking === "string" ? delta.thinking : "";
-						if (thinking) {
-							emitChunk(controller, { reasoning_content: thinking });
-						}
-					} else if (delta?.type === "input_json_delta") {
-						const partial = typeof delta.partial_json === "string" ? delta.partial_json : "";
-						if (partial) {
-							const tool = toolBlocks.get(index);
-							if (tool) {
-								tool.args += partial;
-								emitChunk(controller, {
-									tool_calls: [
-										{
-											index,
-											id: tool.id,
-											type: "function",
-											function: { name: tool.name, arguments: partial },
-										},
-									],
-								});
-							}
-						}
-					}
-					continue;
-				}
-
-				if (payload.type === "message_delta") {
-					if (payload.delta?.stop_reason) stopReason = payload.delta.stop_reason;
-					if (payload.usage) {
-						usage = { ...usage, ...payload.usage };
-					}
-					continue;
-				}
-
-				if (payload.type === "message_stop") {
-					const finishReason = mapAnthropicStopReason(stopReason);
-					const usagePayload = usage
-						? {
-								prompt_tokens: usage.input_tokens || 0,
-								completion_tokens: usage.output_tokens || 0,
-								total_tokens: (usage.input_tokens || 0) + (usage.output_tokens || 0),
-						  }
-						: undefined;
-					emitChunk(controller, {}, finishReason, usagePayload);
-					controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-				}
-			}
 		},
 	});
 }

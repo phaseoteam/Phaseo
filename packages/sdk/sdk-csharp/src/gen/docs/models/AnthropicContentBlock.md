@@ -6,11 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Type** | **string** |  | [optional] 
 **Text** | **string** |  | [optional] 
-**CacheControl** | [**CacheControl**](CacheControl.md) |  | [optional] 
 **Source** | [**AnthropicContentBlockSource**](AnthropicContentBlockSource.md) |  | [optional] 
-**ImageUrl** | [**AnthropicContentBlockImageUrl**](AnthropicContentBlockImageUrl.md) |  | [optional] 
-**InputAudio** | [**AudioContentPartInputAudio**](AudioContentPartInputAudio.md) |  | [optional] 
-**VideoUrl** | **string** |  | [optional] 
 **Id** | **string** |  | [optional] 
 **Name** | **string** |  | [optional] 
 **Input** | **Object** |  | [optional] 

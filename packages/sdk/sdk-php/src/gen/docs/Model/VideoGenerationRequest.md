@@ -20,7 +20,6 @@ Name | Type | Description | Notes
 **seed** | **int** |  | [optional]
 **person_generation** | **string** |  | [optional]
 **output_storage_uri** | **string** |  | [optional]
-**debug** | [**\AIStats\Sdk\Model\DebugOptions**](DebugOptions.md) |  | [optional]
 **provider** | [**\AIStats\Sdk\Model\ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional]
 
 [[Back to Model list]](../../README.md#models) [[Back to API list]](../../README.md#endpoints) [[Back to README]](../../README.md)

@@ -1,0 +1,228 @@
+---
+title: Management API Keys
+description: Learn how to use management API keys for elevated API access and resource management
+---
+
+Management API keys are special API keys that provide elevated privileges for managing your AI Stats resources. Unlike regular API keys used for making AI requests, management API keys are designed for administrative operations like creating other keys, monitoring credits, and viewing activity data.
+
+## What Are Management API Keys?
+
+Management API keys serve as "super keys" within your team, enabling programmatic access to management endpoints that regular API keys cannot access. They are particularly useful for:
+
+- **CI/CD pipelines**: Automatically rotate and manage API keys in production
+- **Monitoring dashboards**: Build custom dashboards showing credit usage and team activity
+- **Team management**: Create and manage keys for different team members or services
+- **Audit trails**: Track all API key creation and usage activity
+
+## Security Considerations
+
+<Warning>
+Management API keys have elevated privileges and should be handled with extra care. Unlike regular API keys, a compromised management API key can create new keys and access sensitive team data.
+</Warning>
+
+### Best Practices
+
+1. **Store securely**: Use environment variables or a secrets manager
+2. **Limit scopes**: Only grant the scopes your application needs
+3. **Rotate regularly**: Periodically rotate management API keys
+4. **Use separate keys**: Create different keys for different use cases
+5. **Monitor usage**: Track activity to detect anomalies
+
+## Creating a Management API Key
+
+You can create a management API key through the dashboard or via the API.
+
+### Using the Dashboard
+
+1. Navigate to **Settings** > **Management API Keys**
+2. Click **Create New Key**
+3. Enter a descriptive name
+4. Select the required scopes (read, write, or both)
+5. Click **Create Key**
+6. **Copy and store the key immediately** - it won't be shown again
+
+### Using the API
+
+```bash
+curl -X POST https://gateway.ai-stats.com/v1/management/keys \
+  -H "Authorization: Bearer <existing-management-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "team_id": "your-team-id",
+    "name": "CI/CD Pipeline Key",
+    "scopes": "read,write",
+    "created_by": "user-id"
+  }'
+```
+
+## Available Operations
+
+### View Remaining Credits
+
+Check your team's current credit balance and recent usage:
+
+```bash
+curl https://gateway.ai-stats.com/v1/credits?team_id=your-team-id \
+  -H "Authorization: Bearer <management-api-key>"
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "credits": {
+    "remaining": 15000000000,
+    "thirty_day_usage": 250000000,
+    "thirty_day_requests": 1250
+  }
+}
+```
+
+### View Activity
+
+Get a detailed breakdown of recent API activity:
+
+```bash
+curl "https://gateway.ai-stats.com/v1/activity?team_id=your-team-id&days=30" \
+  -H "Authorization: Bearer <management-api-key>"
+```
+
+### List All Keys
+
+View all management API keys in your team:
+
+```bash
+curl "https://gateway.ai-stats.com/v1/management/keys?team_id=your-team-id" \
+  -H "Authorization: Bearer <management-api-key>"
+```
+
+### Update a Key
+
+Modify key properties like name or status:
+
+```bash
+curl -X PATCH https://gateway.ai-stats.com/v1/management/keys/key-id \
+  -H "Authorization: Bearer <management-api-key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Updated Name",
+    "status": "active"
+  }'
+```
+
+### Disable or Revoke a Key
+
+Temporarily disable a key:
+```json
+{ "status": "disabled" }
+```
+
+Permanently revoke a key:
+```json
+{ "status": "revoked" }
+```
+
+### Delete a Key
+
+Permanently remove a management API key:
+
+```bash
+curl -X DELETE https://gateway.ai-stats.com/v1/management/keys/key-id \
+  -H "Authorization: Bearer <management-api-key>"
+```
+
+## Scopes Explained
+
+Management API keys support granular permission levels:
+
+| Scope | Capabilities |
+|-------|-------------|
+| `read` | View credits, activity, and list keys |
+| `write` | Create, update, and delete keys |
+
+You can combine scopes with a comma: `"read,write"` grants full access.
+
+## Managing Keys in Production
+
+### Environment Variables
+
+Always store management API keys in environment variables:
+
+```bash
+export MANAGEMENT_API_KEY="pk_your_key_here"
+```
+
+In your application:
+```javascript
+const key = process.env.MANAGEMENT_API_KEY;
+```
+
+### CI/CD Integration Example
+
+Here's a complete example for a CI/CD pipeline:
+
+```bash
+#!/bin/bash
+# Management API key management script
+
+MANAGEMENT_API_KEY="$MANAGEMENT_API_KEY"
+TEAM_ID="$TEAM_ID"
+
+# Create a new key for this deployment
+RESPONSE=$(curl -s -X POST https://gateway.ai-stats.com/v1/management/keys \
+  -H "Authorization: Bearer $MANAGEMENT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"team_id\":\"$TEAM_ID\",\"name\":\"Deploy-$(date +%Y%m%d)\",\"scopes\":\"read,write\"}")
+
+NEW_KEY=$(echo $RESPONSE | jq -r '.key.key')
+
+# Store the new key securely
+echo "$NEW_KEY" > deployment_key.txt
+
+# ... use the key for deployment operations ...
+
+# Clean up temporary file
+rm deployment_key.txt
+```
+
+## Monitoring and Auditing
+
+### Activity Tracking
+
+The activity endpoint provides detailed logs of API usage including:
+- Request IDs for tracking
+- Provider and model information
+- Token usage breakdown
+- Cost in cents
+- Latency measurements
+- Timestamps
+
+### Key Usage Patterns
+
+Monitor these patterns to detect potential issues:
+- Unusual request volumes
+- Keys used from unexpected locations
+- Rapid key creation or deletion
+- Keys that haven't been used in a long time
+
+## Troubleshooting
+
+### "Key not found" Error
+- Verify the key ID is correct
+- Check if the key was deleted
+- Ensure the key belongs to your team
+
+### "Failed to authenticate" Error
+- Verify the Authorization header format: `Bearer <key>`
+- Check if the key has expired
+- Confirm the key status is `active`
+
+### "team_id is required" Error
+- Add the `team_id` query parameter for GET requests
+- Include `team_id` in the request body for POST/PATCH requests
+
+## Related Resources
+
+- [API Reference: Management API Keys](/api-reference/endpoint/management)
+- [API Keys Management](/developers/authentication)
+- [Authentication Guide](/developers/authentication)

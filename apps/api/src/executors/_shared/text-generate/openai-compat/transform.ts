@@ -310,7 +310,7 @@ function mapContentPart(part: IRContentPart): any {
 		};
 	}
 
-	// Fallback: unknown type → text
+	// Fallback: unknown type -> text
 	return { type: "input_text", text: String(part) };
 }
 

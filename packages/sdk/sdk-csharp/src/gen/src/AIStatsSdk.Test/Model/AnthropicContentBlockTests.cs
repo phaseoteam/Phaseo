@@ -72,48 +72,12 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'CacheControl'
-        /// </summary>
-        [Fact]
-        public void CacheControlTest()
-        {
-            // TODO unit test for the property 'CacheControl'
-        }
-
-        /// <summary>
         /// Test the property 'Source'
         /// </summary>
         [Fact]
         public void SourceTest()
         {
             // TODO unit test for the property 'Source'
-        }
-
-        /// <summary>
-        /// Test the property 'ImageUrl'
-        /// </summary>
-        [Fact]
-        public void ImageUrlTest()
-        {
-            // TODO unit test for the property 'ImageUrl'
-        }
-
-        /// <summary>
-        /// Test the property 'InputAudio'
-        /// </summary>
-        [Fact]
-        public void InputAudioTest()
-        {
-            // TODO unit test for the property 'InputAudio'
-        }
-
-        /// <summary>
-        /// Test the property 'VideoUrl'
-        /// </summary>
-        [Fact]
-        public void VideoUrlTest()
-        {
-            // TODO unit test for the property 'VideoUrl'
         }
 
         /// <summary>

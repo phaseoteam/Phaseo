@@ -36,38 +36,12 @@ namespace AIStatsSdk.Model
         /// <param name="promptTokens">promptTokens</param>
         /// <param name="completionTokens">completionTokens</param>
         /// <param name="totalTokens">totalTokens</param>
-        /// <param name="promptTokensDetails">promptTokensDetails</param>
-        /// <param name="completionTokensDetails">completionTokensDetails</param>
-        /// <param name="inputTokens">inputTokens</param>
-        /// <param name="outputTokens">outputTokens</param>
-        /// <param name="inputTokensDetails">inputTokensDetails</param>
-        /// <param name="outputTokensDetails">outputTokensDetails</param>
-        /// <param name="inputTextTokens">inputTextTokens</param>
-        /// <param name="outputTextTokens">outputTextTokens</param>
-        /// <param name="cachedReadTextTokens">cachedReadTextTokens</param>
-        /// <param name="cachedWriteTextTokens">cachedWriteTextTokens</param>
-        /// <param name="reasoningTokens">reasoningTokens</param>
-        /// <param name="pricing">pricing</param>
-        /// <param name="pricingBreakdown">pricingBreakdown</param>
         [JsonConstructor]
-        public Usage(Option<int?> promptTokens = default, Option<int?> completionTokens = default, Option<int?> totalTokens = default, Option<UsageDetails?> promptTokensDetails = default, Option<UsageDetails?> completionTokensDetails = default, Option<int?> inputTokens = default, Option<int?> outputTokens = default, Option<UsageDetails?> inputTokensDetails = default, Option<UsageDetails?> outputTokensDetails = default, Option<int?> inputTextTokens = default, Option<int?> outputTextTokens = default, Option<int?> cachedReadTextTokens = default, Option<int?> cachedWriteTextTokens = default, Option<int?> reasoningTokens = default, Option<PricingBreakdown?> pricing = default, Option<PricingBreakdown?> pricingBreakdown = default)
+        public Usage(Option<int?> promptTokens = default, Option<int?> completionTokens = default, Option<int?> totalTokens = default)
         {
             PromptTokensOption = promptTokens;
             CompletionTokensOption = completionTokens;
             TotalTokensOption = totalTokens;
-            PromptTokensDetailsOption = promptTokensDetails;
-            CompletionTokensDetailsOption = completionTokensDetails;
-            InputTokensOption = inputTokens;
-            OutputTokensOption = outputTokens;
-            InputTokensDetailsOption = inputTokensDetails;
-            OutputTokensDetailsOption = outputTokensDetails;
-            InputTextTokensOption = inputTextTokens;
-            OutputTextTokensOption = outputTextTokens;
-            CachedReadTextTokensOption = cachedReadTextTokens;
-            CachedWriteTextTokensOption = cachedWriteTextTokens;
-            ReasoningTokensOption = reasoningTokens;
-            PricingOption = pricing;
-            PricingBreakdownOption = pricingBreakdown;
             OnCreated();
         }
 
@@ -113,175 +87,6 @@ namespace AIStatsSdk.Model
         public int? TotalTokens { get { return this.TotalTokensOption; } set { this.TotalTokensOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of PromptTokensDetails
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<UsageDetails?> PromptTokensDetailsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets PromptTokensDetails
-        /// </summary>
-        [JsonPropertyName("prompt_tokens_details")]
-        public UsageDetails? PromptTokensDetails { get { return this.PromptTokensDetailsOption; } set { this.PromptTokensDetailsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of CompletionTokensDetails
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<UsageDetails?> CompletionTokensDetailsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CompletionTokensDetails
-        /// </summary>
-        [JsonPropertyName("completion_tokens_details")]
-        public UsageDetails? CompletionTokensDetails { get { return this.CompletionTokensDetailsOption; } set { this.CompletionTokensDetailsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of InputTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> InputTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets InputTokens
-        /// </summary>
-        [JsonPropertyName("input_tokens")]
-        public int? InputTokens { get { return this.InputTokensOption; } set { this.InputTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of OutputTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> OutputTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets OutputTokens
-        /// </summary>
-        [JsonPropertyName("output_tokens")]
-        public int? OutputTokens { get { return this.OutputTokensOption; } set { this.OutputTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of InputTokensDetails
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<UsageDetails?> InputTokensDetailsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets InputTokensDetails
-        /// </summary>
-        [JsonPropertyName("input_tokens_details")]
-        public UsageDetails? InputTokensDetails { get { return this.InputTokensDetailsOption; } set { this.InputTokensDetailsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of OutputTokensDetails
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<UsageDetails?> OutputTokensDetailsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets OutputTokensDetails
-        /// </summary>
-        [JsonPropertyName("output_tokens_details")]
-        public UsageDetails? OutputTokensDetails { get { return this.OutputTokensDetailsOption; } set { this.OutputTokensDetailsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of InputTextTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> InputTextTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets InputTextTokens
-        /// </summary>
-        [JsonPropertyName("input_text_tokens")]
-        public int? InputTextTokens { get { return this.InputTextTokensOption; } set { this.InputTextTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of OutputTextTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> OutputTextTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets OutputTextTokens
-        /// </summary>
-        [JsonPropertyName("output_text_tokens")]
-        public int? OutputTextTokens { get { return this.OutputTextTokensOption; } set { this.OutputTextTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of CachedReadTextTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> CachedReadTextTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CachedReadTextTokens
-        /// </summary>
-        [JsonPropertyName("cached_read_text_tokens")]
-        public int? CachedReadTextTokens { get { return this.CachedReadTextTokensOption; } set { this.CachedReadTextTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of CachedWriteTextTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> CachedWriteTextTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CachedWriteTextTokens
-        /// </summary>
-        [JsonPropertyName("cached_write_text_tokens")]
-        public int? CachedWriteTextTokens { get { return this.CachedWriteTextTokensOption; } set { this.CachedWriteTextTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of ReasoningTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> ReasoningTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ReasoningTokens
-        /// </summary>
-        [JsonPropertyName("reasoning_tokens")]
-        public int? ReasoningTokens { get { return this.ReasoningTokensOption; } set { this.ReasoningTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Pricing
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<PricingBreakdown?> PricingOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Pricing
-        /// </summary>
-        [JsonPropertyName("pricing")]
-        public PricingBreakdown? Pricing { get { return this.PricingOption; } set { this.PricingOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of PricingBreakdown
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<PricingBreakdown?> PricingBreakdownOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets PricingBreakdown
-        /// </summary>
-        [JsonPropertyName("pricing_breakdown")]
-        public PricingBreakdown? PricingBreakdown { get { return this.PricingBreakdownOption; } set { this.PricingBreakdownOption = new(value); } }
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -292,19 +97,6 @@ namespace AIStatsSdk.Model
             sb.Append("  PromptTokens: ").Append(PromptTokens).Append("\n");
             sb.Append("  CompletionTokens: ").Append(CompletionTokens).Append("\n");
             sb.Append("  TotalTokens: ").Append(TotalTokens).Append("\n");
-            sb.Append("  PromptTokensDetails: ").Append(PromptTokensDetails).Append("\n");
-            sb.Append("  CompletionTokensDetails: ").Append(CompletionTokensDetails).Append("\n");
-            sb.Append("  InputTokens: ").Append(InputTokens).Append("\n");
-            sb.Append("  OutputTokens: ").Append(OutputTokens).Append("\n");
-            sb.Append("  InputTokensDetails: ").Append(InputTokensDetails).Append("\n");
-            sb.Append("  OutputTokensDetails: ").Append(OutputTokensDetails).Append("\n");
-            sb.Append("  InputTextTokens: ").Append(InputTextTokens).Append("\n");
-            sb.Append("  OutputTextTokens: ").Append(OutputTextTokens).Append("\n");
-            sb.Append("  CachedReadTextTokens: ").Append(CachedReadTextTokens).Append("\n");
-            sb.Append("  CachedWriteTextTokens: ").Append(CachedWriteTextTokens).Append("\n");
-            sb.Append("  ReasoningTokens: ").Append(ReasoningTokens).Append("\n");
-            sb.Append("  Pricing: ").Append(Pricing).Append("\n");
-            sb.Append("  PricingBreakdown: ").Append(PricingBreakdown).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -345,19 +137,6 @@ namespace AIStatsSdk.Model
             Option<int?> promptTokens = default;
             Option<int?> completionTokens = default;
             Option<int?> totalTokens = default;
-            Option<UsageDetails?> promptTokensDetails = default;
-            Option<UsageDetails?> completionTokensDetails = default;
-            Option<int?> inputTokens = default;
-            Option<int?> outputTokens = default;
-            Option<UsageDetails?> inputTokensDetails = default;
-            Option<UsageDetails?> outputTokensDetails = default;
-            Option<int?> inputTextTokens = default;
-            Option<int?> outputTextTokens = default;
-            Option<int?> cachedReadTextTokens = default;
-            Option<int?> cachedWriteTextTokens = default;
-            Option<int?> reasoningTokens = default;
-            Option<PricingBreakdown?> pricing = default;
-            Option<PricingBreakdown?> pricingBreakdown = default;
 
             while (utf8JsonReader.Read())
             {
@@ -383,45 +162,6 @@ namespace AIStatsSdk.Model
                         case "total_tokens":
                             totalTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
                             break;
-                        case "prompt_tokens_details":
-                            promptTokensDetails = new Option<UsageDetails?>(JsonSerializer.Deserialize<UsageDetails>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "completion_tokens_details":
-                            completionTokensDetails = new Option<UsageDetails?>(JsonSerializer.Deserialize<UsageDetails>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "input_tokens":
-                            inputTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "output_tokens":
-                            outputTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "input_tokens_details":
-                            inputTokensDetails = new Option<UsageDetails?>(JsonSerializer.Deserialize<UsageDetails>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "output_tokens_details":
-                            outputTokensDetails = new Option<UsageDetails?>(JsonSerializer.Deserialize<UsageDetails>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "input_text_tokens":
-                            inputTextTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "output_text_tokens":
-                            outputTextTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "cached_read_text_tokens":
-                            cachedReadTextTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "cached_write_text_tokens":
-                            cachedWriteTextTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "reasoning_tokens":
-                            reasoningTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "pricing":
-                            pricing = new Option<PricingBreakdown?>(JsonSerializer.Deserialize<PricingBreakdown>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "pricing_breakdown":
-                            pricingBreakdown = new Option<PricingBreakdown?>(JsonSerializer.Deserialize<PricingBreakdown>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         default:
                             break;
                     }
@@ -437,46 +177,7 @@ namespace AIStatsSdk.Model
             if (totalTokens.IsSet && totalTokens.Value == null)
                 throw new ArgumentNullException(nameof(totalTokens), "Property is not nullable for class Usage.");
 
-            if (promptTokensDetails.IsSet && promptTokensDetails.Value == null)
-                throw new ArgumentNullException(nameof(promptTokensDetails), "Property is not nullable for class Usage.");
-
-            if (completionTokensDetails.IsSet && completionTokensDetails.Value == null)
-                throw new ArgumentNullException(nameof(completionTokensDetails), "Property is not nullable for class Usage.");
-
-            if (inputTokens.IsSet && inputTokens.Value == null)
-                throw new ArgumentNullException(nameof(inputTokens), "Property is not nullable for class Usage.");
-
-            if (outputTokens.IsSet && outputTokens.Value == null)
-                throw new ArgumentNullException(nameof(outputTokens), "Property is not nullable for class Usage.");
-
-            if (inputTokensDetails.IsSet && inputTokensDetails.Value == null)
-                throw new ArgumentNullException(nameof(inputTokensDetails), "Property is not nullable for class Usage.");
-
-            if (outputTokensDetails.IsSet && outputTokensDetails.Value == null)
-                throw new ArgumentNullException(nameof(outputTokensDetails), "Property is not nullable for class Usage.");
-
-            if (inputTextTokens.IsSet && inputTextTokens.Value == null)
-                throw new ArgumentNullException(nameof(inputTextTokens), "Property is not nullable for class Usage.");
-
-            if (outputTextTokens.IsSet && outputTextTokens.Value == null)
-                throw new ArgumentNullException(nameof(outputTextTokens), "Property is not nullable for class Usage.");
-
-            if (cachedReadTextTokens.IsSet && cachedReadTextTokens.Value == null)
-                throw new ArgumentNullException(nameof(cachedReadTextTokens), "Property is not nullable for class Usage.");
-
-            if (cachedWriteTextTokens.IsSet && cachedWriteTextTokens.Value == null)
-                throw new ArgumentNullException(nameof(cachedWriteTextTokens), "Property is not nullable for class Usage.");
-
-            if (reasoningTokens.IsSet && reasoningTokens.Value == null)
-                throw new ArgumentNullException(nameof(reasoningTokens), "Property is not nullable for class Usage.");
-
-            if (pricing.IsSet && pricing.Value == null)
-                throw new ArgumentNullException(nameof(pricing), "Property is not nullable for class Usage.");
-
-            if (pricingBreakdown.IsSet && pricingBreakdown.Value == null)
-                throw new ArgumentNullException(nameof(pricingBreakdown), "Property is not nullable for class Usage.");
-
-            return new Usage(promptTokens, completionTokens, totalTokens, promptTokensDetails, completionTokensDetails, inputTokens, outputTokens, inputTokensDetails, outputTokensDetails, inputTextTokens, outputTextTokens, cachedReadTextTokens, cachedWriteTextTokens, reasoningTokens, pricing, pricingBreakdown);
+            return new Usage(promptTokens, completionTokens, totalTokens);
         }
 
         /// <summary>
@@ -503,24 +204,6 @@ namespace AIStatsSdk.Model
         /// <exception cref="NotImplementedException"></exception>
         public void WriteProperties(Utf8JsonWriter writer, Usage usage, JsonSerializerOptions jsonSerializerOptions)
         {
-            if (usage.PromptTokensDetailsOption.IsSet && usage.PromptTokensDetails == null)
-                throw new ArgumentNullException(nameof(usage.PromptTokensDetails), "Property is required for class Usage.");
-
-            if (usage.CompletionTokensDetailsOption.IsSet && usage.CompletionTokensDetails == null)
-                throw new ArgumentNullException(nameof(usage.CompletionTokensDetails), "Property is required for class Usage.");
-
-            if (usage.InputTokensDetailsOption.IsSet && usage.InputTokensDetails == null)
-                throw new ArgumentNullException(nameof(usage.InputTokensDetails), "Property is required for class Usage.");
-
-            if (usage.OutputTokensDetailsOption.IsSet && usage.OutputTokensDetails == null)
-                throw new ArgumentNullException(nameof(usage.OutputTokensDetails), "Property is required for class Usage.");
-
-            if (usage.PricingOption.IsSet && usage.Pricing == null)
-                throw new ArgumentNullException(nameof(usage.Pricing), "Property is required for class Usage.");
-
-            if (usage.PricingBreakdownOption.IsSet && usage.PricingBreakdown == null)
-                throw new ArgumentNullException(nameof(usage.PricingBreakdown), "Property is required for class Usage.");
-
             if (usage.PromptTokensOption.IsSet)
                 writer.WriteNumber("prompt_tokens", usage.PromptTokensOption.Value!.Value);
 
@@ -529,58 +212,6 @@ namespace AIStatsSdk.Model
 
             if (usage.TotalTokensOption.IsSet)
                 writer.WriteNumber("total_tokens", usage.TotalTokensOption.Value!.Value);
-
-            if (usage.PromptTokensDetailsOption.IsSet)
-            {
-                writer.WritePropertyName("prompt_tokens_details");
-                JsonSerializer.Serialize(writer, usage.PromptTokensDetails, jsonSerializerOptions);
-            }
-            if (usage.CompletionTokensDetailsOption.IsSet)
-            {
-                writer.WritePropertyName("completion_tokens_details");
-                JsonSerializer.Serialize(writer, usage.CompletionTokensDetails, jsonSerializerOptions);
-            }
-            if (usage.InputTokensOption.IsSet)
-                writer.WriteNumber("input_tokens", usage.InputTokensOption.Value!.Value);
-
-            if (usage.OutputTokensOption.IsSet)
-                writer.WriteNumber("output_tokens", usage.OutputTokensOption.Value!.Value);
-
-            if (usage.InputTokensDetailsOption.IsSet)
-            {
-                writer.WritePropertyName("input_tokens_details");
-                JsonSerializer.Serialize(writer, usage.InputTokensDetails, jsonSerializerOptions);
-            }
-            if (usage.OutputTokensDetailsOption.IsSet)
-            {
-                writer.WritePropertyName("output_tokens_details");
-                JsonSerializer.Serialize(writer, usage.OutputTokensDetails, jsonSerializerOptions);
-            }
-            if (usage.InputTextTokensOption.IsSet)
-                writer.WriteNumber("input_text_tokens", usage.InputTextTokensOption.Value!.Value);
-
-            if (usage.OutputTextTokensOption.IsSet)
-                writer.WriteNumber("output_text_tokens", usage.OutputTextTokensOption.Value!.Value);
-
-            if (usage.CachedReadTextTokensOption.IsSet)
-                writer.WriteNumber("cached_read_text_tokens", usage.CachedReadTextTokensOption.Value!.Value);
-
-            if (usage.CachedWriteTextTokensOption.IsSet)
-                writer.WriteNumber("cached_write_text_tokens", usage.CachedWriteTextTokensOption.Value!.Value);
-
-            if (usage.ReasoningTokensOption.IsSet)
-                writer.WriteNumber("reasoning_tokens", usage.ReasoningTokensOption.Value!.Value);
-
-            if (usage.PricingOption.IsSet)
-            {
-                writer.WritePropertyName("pricing");
-                JsonSerializer.Serialize(writer, usage.Pricing, jsonSerializerOptions);
-            }
-            if (usage.PricingBreakdownOption.IsSet)
-            {
-                writer.WritePropertyName("pricing_breakdown");
-                JsonSerializer.Serialize(writer, usage.PricingBreakdown, jsonSerializerOptions);
-            }
         }
     }
 }

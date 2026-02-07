@@ -14,7 +14,7 @@ require 'date'
 require 'time'
 
 module AIStatsSdk
-  # Provider routing preferences for gateway selection. Global routing policy is configured in the dashboard and applied before request-level overrides.
+  # Provider routing preferences for gateway selection.
   class ProviderRoutingOptions < ApiModelBase
     attr_accessor :order
 

@@ -24,18 +24,14 @@ type AnthropicMessagesRequest struct {
 	Model string `json:"model"`
 	System *AnthropicMessagesRequestSystem `json:"system,omitempty"`
 	Messages []AnthropicMessage `json:"messages"`
-	MaxTokens int32 `json:"max_tokens"`
+	MaxTokens *int32 `json:"max_tokens,omitempty"`
 	Temperature *float32 `json:"temperature,omitempty"`
 	TopP *float32 `json:"top_p,omitempty"`
 	TopK *int32 `json:"top_k,omitempty"`
 	Tools []AnthropicTool `json:"tools,omitempty"`
 	ToolChoice *ChatCompletionsRequestToolChoice `json:"tool_choice,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
-	StopSequences []string `json:"stop_sequences,omitempty"`
-	Modalities []string `json:"modalities,omitempty"`
 	Metadata *map[string]string `json:"metadata,omitempty"`
-	Meta *bool `json:"meta,omitempty"`
-	Debug *DebugOptions `json:"debug,omitempty"`
 	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
 
@@ -45,11 +41,10 @@ type _AnthropicMessagesRequest AnthropicMessagesRequest
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAnthropicMessagesRequest(model string, messages []AnthropicMessage, maxTokens int32) *AnthropicMessagesRequest {
+func NewAnthropicMessagesRequest(model string, messages []AnthropicMessage) *AnthropicMessagesRequest {
 	this := AnthropicMessagesRequest{}
 	this.Model = model
 	this.Messages = messages
-	this.MaxTokens = maxTokens
 	return &this
 }
 
@@ -141,28 +136,36 @@ func (o *AnthropicMessagesRequest) SetMessages(v []AnthropicMessage) {
 	o.Messages = v
 }
 
-// GetMaxTokens returns the MaxTokens field value
+// GetMaxTokens returns the MaxTokens field value if set, zero value otherwise.
 func (o *AnthropicMessagesRequest) GetMaxTokens() int32 {
-	if o == nil {
+	if o == nil || IsNil(o.MaxTokens) {
 		var ret int32
 		return ret
 	}
-
-	return o.MaxTokens
+	return *o.MaxTokens
 }
 
-// GetMaxTokensOk returns a tuple with the MaxTokens field value
+// GetMaxTokensOk returns a tuple with the MaxTokens field value if set, nil otherwise
 // and a boolean to check if the value has been set.
 func (o *AnthropicMessagesRequest) GetMaxTokensOk() (*int32, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.MaxTokens) {
 		return nil, false
 	}
-	return &o.MaxTokens, true
+	return o.MaxTokens, true
 }
 
-// SetMaxTokens sets field value
+// HasMaxTokens returns a boolean if a field has been set.
+func (o *AnthropicMessagesRequest) HasMaxTokens() bool {
+	if o != nil && !IsNil(o.MaxTokens) {
+		return true
+	}
+
+	return false
+}
+
+// SetMaxTokens gets a reference to the given int32 and assigns it to the MaxTokens field.
 func (o *AnthropicMessagesRequest) SetMaxTokens(v int32) {
-	o.MaxTokens = v
+	o.MaxTokens = &v
 }
 
 // GetTemperature returns the Temperature field value if set, zero value otherwise.
@@ -357,70 +360,6 @@ func (o *AnthropicMessagesRequest) SetStream(v bool) {
 	o.Stream = &v
 }
 
-// GetStopSequences returns the StopSequences field value if set, zero value otherwise.
-func (o *AnthropicMessagesRequest) GetStopSequences() []string {
-	if o == nil || IsNil(o.StopSequences) {
-		var ret []string
-		return ret
-	}
-	return o.StopSequences
-}
-
-// GetStopSequencesOk returns a tuple with the StopSequences field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicMessagesRequest) GetStopSequencesOk() ([]string, bool) {
-	if o == nil || IsNil(o.StopSequences) {
-		return nil, false
-	}
-	return o.StopSequences, true
-}
-
-// HasStopSequences returns a boolean if a field has been set.
-func (o *AnthropicMessagesRequest) HasStopSequences() bool {
-	if o != nil && !IsNil(o.StopSequences) {
-		return true
-	}
-
-	return false
-}
-
-// SetStopSequences gets a reference to the given []string and assigns it to the StopSequences field.
-func (o *AnthropicMessagesRequest) SetStopSequences(v []string) {
-	o.StopSequences = v
-}
-
-// GetModalities returns the Modalities field value if set, zero value otherwise.
-func (o *AnthropicMessagesRequest) GetModalities() []string {
-	if o == nil || IsNil(o.Modalities) {
-		var ret []string
-		return ret
-	}
-	return o.Modalities
-}
-
-// GetModalitiesOk returns a tuple with the Modalities field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicMessagesRequest) GetModalitiesOk() ([]string, bool) {
-	if o == nil || IsNil(o.Modalities) {
-		return nil, false
-	}
-	return o.Modalities, true
-}
-
-// HasModalities returns a boolean if a field has been set.
-func (o *AnthropicMessagesRequest) HasModalities() bool {
-	if o != nil && !IsNil(o.Modalities) {
-		return true
-	}
-
-	return false
-}
-
-// SetModalities gets a reference to the given []string and assigns it to the Modalities field.
-func (o *AnthropicMessagesRequest) SetModalities(v []string) {
-	o.Modalities = v
-}
-
 // GetMetadata returns the Metadata field value if set, zero value otherwise.
 func (o *AnthropicMessagesRequest) GetMetadata() map[string]string {
 	if o == nil || IsNil(o.Metadata) {
@@ -451,70 +390,6 @@ func (o *AnthropicMessagesRequest) HasMetadata() bool {
 // SetMetadata gets a reference to the given map[string]string and assigns it to the Metadata field.
 func (o *AnthropicMessagesRequest) SetMetadata(v map[string]string) {
 	o.Metadata = &v
-}
-
-// GetMeta returns the Meta field value if set, zero value otherwise.
-func (o *AnthropicMessagesRequest) GetMeta() bool {
-	if o == nil || IsNil(o.Meta) {
-		var ret bool
-		return ret
-	}
-	return *o.Meta
-}
-
-// GetMetaOk returns a tuple with the Meta field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicMessagesRequest) GetMetaOk() (*bool, bool) {
-	if o == nil || IsNil(o.Meta) {
-		return nil, false
-	}
-	return o.Meta, true
-}
-
-// HasMeta returns a boolean if a field has been set.
-func (o *AnthropicMessagesRequest) HasMeta() bool {
-	if o != nil && !IsNil(o.Meta) {
-		return true
-	}
-
-	return false
-}
-
-// SetMeta gets a reference to the given bool and assigns it to the Meta field.
-func (o *AnthropicMessagesRequest) SetMeta(v bool) {
-	o.Meta = &v
-}
-
-// GetDebug returns the Debug field value if set, zero value otherwise.
-func (o *AnthropicMessagesRequest) GetDebug() DebugOptions {
-	if o == nil || IsNil(o.Debug) {
-		var ret DebugOptions
-		return ret
-	}
-	return *o.Debug
-}
-
-// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicMessagesRequest) GetDebugOk() (*DebugOptions, bool) {
-	if o == nil || IsNil(o.Debug) {
-		return nil, false
-	}
-	return o.Debug, true
-}
-
-// HasDebug returns a boolean if a field has been set.
-func (o *AnthropicMessagesRequest) HasDebug() bool {
-	if o != nil && !IsNil(o.Debug) {
-		return true
-	}
-
-	return false
-}
-
-// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
-func (o *AnthropicMessagesRequest) SetDebug(v DebugOptions) {
-	o.Debug = &v
 }
 
 // GetProvider returns the Provider field value if set, zero value otherwise.
@@ -564,7 +439,9 @@ func (o AnthropicMessagesRequest) ToMap() (map[string]interface{}, error) {
 		toSerialize["system"] = o.System
 	}
 	toSerialize["messages"] = o.Messages
-	toSerialize["max_tokens"] = o.MaxTokens
+	if !IsNil(o.MaxTokens) {
+		toSerialize["max_tokens"] = o.MaxTokens
+	}
 	if !IsNil(o.Temperature) {
 		toSerialize["temperature"] = o.Temperature
 	}
@@ -583,20 +460,8 @@ func (o AnthropicMessagesRequest) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Stream) {
 		toSerialize["stream"] = o.Stream
 	}
-	if !IsNil(o.StopSequences) {
-		toSerialize["stop_sequences"] = o.StopSequences
-	}
-	if !IsNil(o.Modalities) {
-		toSerialize["modalities"] = o.Modalities
-	}
 	if !IsNil(o.Metadata) {
 		toSerialize["metadata"] = o.Metadata
-	}
-	if !IsNil(o.Meta) {
-		toSerialize["meta"] = o.Meta
-	}
-	if !IsNil(o.Debug) {
-		toSerialize["debug"] = o.Debug
 	}
 	if !IsNil(o.Provider) {
 		toSerialize["provider"] = o.Provider
@@ -611,7 +476,6 @@ func (o *AnthropicMessagesRequest) UnmarshalJSON(data []byte) (err error) {
 	requiredProperties := []string{
 		"model",
 		"messages",
-		"max_tokens",
 	}
 
 	allProperties := make(map[string]interface{})

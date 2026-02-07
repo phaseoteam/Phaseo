@@ -11,8 +11,8 @@ interface PackageConfig {
     changelogPath: string;
 }
 
-// ⚠️ Adjust these paths to match your repo structure.
-// I’ve filled in the obvious ones; add/remove as needed.
+// [WARN] Adjust these paths to match your repo structure.
+// I've filled in the obvious ones; add/remove as needed.
 // NOTE: Temporarily excluding SDK packages from GitHub releases (keeping NPM publishing)
 const PACKAGES: PackageConfig[] = [
     // SDK packages temporarily disabled for GitHub releases
@@ -108,7 +108,7 @@ function getPreviousVersion(pkg: PackageConfig): string | null {
         });
         return getVersionFromManifest(content, pkg.manifestType);
     } catch {
-        // No previous commit or file – treat as first release
+        // No previous commit or file - treat as first release
         return null;
     }
 }
@@ -143,7 +143,7 @@ function extractChangelogSection(changelogPath: string, version: string): string
 
     const sectionLines = lines.slice(start, end);
 
-    // Drop the "## x.y.z" heading – the GH release title already includes the version
+    // Drop the "## x.y.z" heading - the GH release title already includes the version
     if (sectionLines[0]?.startsWith("##")) {
         sectionLines.shift();
     }

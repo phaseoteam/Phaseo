@@ -79,6 +79,8 @@ function getYearPagination(
 	years: number[];
 	activeYear: number | null;
 	paginatedModels: ModelCard[];
+	hasUpcoming: boolean;
+	hasUnknown: boolean;
 } {
 	const yearSet = new Set<number>();
 	for (const model of models) {
@@ -92,14 +94,16 @@ function getYearPagination(
 	const unknownModels = models.filter(
 		(model) => !model.release_date && !isRumoured(model.status),
 	);
+	const hasUpcoming = upcomingModels.length > 0;
+	const hasUnknown = unknownModels.length > 0;
 
 	const years = Array.from(yearSet).sort((a, b) => b - a);
 	const defaultYear: number | null = years.length > 0 ? years[0] : null;
 
 	let activeYear: number | null = defaultYear;
-	if (yearParam === UPCOMING_TAB_VALUE) {
+	if (yearParam === UPCOMING_TAB_VALUE && hasUpcoming) {
 		activeYear = UPCOMING_TAB_VALUE;
-	} else if (yearParam === UNKNOWN_TAB_VALUE) {
+	} else if (yearParam === UNKNOWN_TAB_VALUE && hasUnknown) {
 		activeYear = UNKNOWN_TAB_VALUE;
 	} else if (yearParam && years.includes(yearParam)) {
 		activeYear = yearParam;
@@ -116,7 +120,13 @@ function getYearPagination(
 							(model) => getModelYear(model) === activeYear,
 						);
 
-	return { years, activeYear, paginatedModels };
+	return {
+		years,
+		activeYear,
+		paginatedModels,
+		hasUpcoming,
+		hasUnknown,
+	};
 }
 
 async function ModelsPageContent({ searchParams }: ModelsPageProps) {
@@ -124,7 +134,7 @@ async function ModelsPageContent({ searchParams }: ModelsPageProps) {
 	const includeHidden = await resolveIncludeHidden();
 	const filteredModelsFromDb = await getModelsFiltered({ search: q, includeHidden });
 	const filteredModels = filterAndSortModels(filteredModelsFromDb, q);
-	const { years, activeYear, paginatedModels } = getYearPagination(
+	const { years, activeYear, paginatedModels, hasUpcoming, hasUnknown } = getYearPagination(
 		filteredModels,
 		year ?? 0,
 	);
@@ -134,6 +144,8 @@ async function ModelsPageContent({ searchParams }: ModelsPageProps) {
 			models={paginatedModels}
 			years={years}
 			activeYear={activeYear}
+			hasUpcoming={hasUpcoming}
+			hasUnknown={hasUnknown}
 		/>
 	);
 }

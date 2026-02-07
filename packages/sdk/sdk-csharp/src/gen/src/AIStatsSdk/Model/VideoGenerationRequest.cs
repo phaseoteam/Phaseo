@@ -49,10 +49,9 @@ namespace AIStatsSdk.Model
         /// <param name="seed">seed</param>
         /// <param name="personGeneration">personGeneration</param>
         /// <param name="outputStorageUri">outputStorageUri</param>
-        /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public VideoGenerationRequest(string model, string prompt, Option<VideoGenerationRequestSeconds?> seconds = default, Option<string?> size = default, Option<string?> inputReference = default, Option<string?> inputReferenceMimeType = default, Option<int?> duration = default, Option<int?> durationSeconds = default, Option<string?> ratio = default, Option<string?> aspectRatio = default, Option<string?> resolution = default, Option<string?> negativePrompt = default, Option<int?> sampleCount = default, Option<int?> seed = default, Option<string?> personGeneration = default, Option<string?> outputStorageUri = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
+        public VideoGenerationRequest(string model, string prompt, Option<VideoGenerationRequestSeconds?> seconds = default, Option<string?> size = default, Option<string?> inputReference = default, Option<string?> inputReferenceMimeType = default, Option<int?> duration = default, Option<int?> durationSeconds = default, Option<string?> ratio = default, Option<string?> aspectRatio = default, Option<string?> resolution = default, Option<string?> negativePrompt = default, Option<int?> sampleCount = default, Option<int?> seed = default, Option<string?> personGeneration = default, Option<string?> outputStorageUri = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Prompt = prompt;
@@ -70,7 +69,6 @@ namespace AIStatsSdk.Model
             SeedOption = seed;
             PersonGenerationOption = personGeneration;
             OutputStorageUriOption = outputStorageUri;
-            DebugOption = debug;
             ProviderOption = provider;
             OnCreated();
         }
@@ -272,19 +270,6 @@ namespace AIStatsSdk.Model
         public string? OutputStorageUri { get { return this.OutputStorageUriOption; } set { this.OutputStorageUriOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugOptions?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Provider
         /// </summary>
         [JsonIgnore]
@@ -321,7 +306,6 @@ namespace AIStatsSdk.Model
             sb.Append("  Seed: ").Append(Seed).Append("\n");
             sb.Append("  PersonGeneration: ").Append(PersonGeneration).Append("\n");
             sb.Append("  OutputStorageUri: ").Append(OutputStorageUri).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -388,7 +372,6 @@ namespace AIStatsSdk.Model
             Option<int?> seed = default;
             Option<string?> personGeneration = default;
             Option<string?> outputStorageUri = default;
-            Option<DebugOptions?> debug = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -454,9 +437,6 @@ namespace AIStatsSdk.Model
                         case "output_storage_uri":
                             outputStorageUri = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "debug":
-                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
@@ -520,13 +500,10 @@ namespace AIStatsSdk.Model
             if (outputStorageUri.IsSet && outputStorageUri.Value == null)
                 throw new ArgumentNullException(nameof(outputStorageUri), "Property is not nullable for class VideoGenerationRequest.");
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class VideoGenerationRequest.");
-
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class VideoGenerationRequest.");
 
-            return new VideoGenerationRequest(model.Value!, prompt.Value!, seconds, size, inputReference, inputReferenceMimeType, duration, durationSeconds, ratio, aspectRatio, resolution, negativePrompt, sampleCount, seed, personGeneration, outputStorageUri, debug, provider);
+            return new VideoGenerationRequest(model.Value!, prompt.Value!, seconds, size, inputReference, inputReferenceMimeType, duration, durationSeconds, ratio, aspectRatio, resolution, negativePrompt, sampleCount, seed, personGeneration, outputStorageUri, provider);
         }
 
         /// <summary>
@@ -589,9 +566,6 @@ namespace AIStatsSdk.Model
             if (videoGenerationRequest.OutputStorageUriOption.IsSet && videoGenerationRequest.OutputStorageUri == null)
                 throw new ArgumentNullException(nameof(videoGenerationRequest.OutputStorageUri), "Property is required for class VideoGenerationRequest.");
 
-            if (videoGenerationRequest.DebugOption.IsSet && videoGenerationRequest.Debug == null)
-                throw new ArgumentNullException(nameof(videoGenerationRequest.Debug), "Property is required for class VideoGenerationRequest.");
-
             if (videoGenerationRequest.ProviderOption.IsSet && videoGenerationRequest.Provider == null)
                 throw new ArgumentNullException(nameof(videoGenerationRequest.Provider), "Property is required for class VideoGenerationRequest.");
 
@@ -643,11 +617,6 @@ namespace AIStatsSdk.Model
             if (videoGenerationRequest.OutputStorageUriOption.IsSet)
                 writer.WriteString("output_storage_uri", videoGenerationRequest.OutputStorageUri);
 
-            if (videoGenerationRequest.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, videoGenerationRequest.Debug, jsonSerializerOptions);
-            }
             if (videoGenerationRequest.ProviderOption.IsSet)
             {
                 writer.WritePropertyName("provider");

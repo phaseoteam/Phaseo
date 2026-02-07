@@ -14,11 +14,3 @@ const responsesHandler = makeEndpointHandler({ endpoint: "responses", schema: Re
 export const responsesRoutes = new Hono<Env>();
 
 responsesRoutes.post("/", withRuntime(responsesHandler));
-
-
-
-
-
-
-
-

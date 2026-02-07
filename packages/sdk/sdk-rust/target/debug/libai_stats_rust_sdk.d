@@ -1,0 +1,1 @@
+Z:\ai-stats-public\packages\sdk\sdk-rust\target\debug\libai_stats_rust_sdk.rlib: Z:\ai-stats-public\packages\sdk\sdk-rust\src\gen\client.rs Z:\ai-stats-public\packages\sdk\sdk-rust\src\gen\lib.rs Z:\ai-stats-public\packages\sdk\sdk-rust\src\gen\models.rs Z:\ai-stats-public\packages\sdk\sdk-rust\src\gen\operations.rs Z:\ai-stats-public\packages\sdk\sdk-rust\src\lib.rs

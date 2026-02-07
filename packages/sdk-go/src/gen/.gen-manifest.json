@@ -1,9 +1,0 @@
-{
-  "files": [
-    "client.go",
-    "doc.go",
-    "models.go",
-    "operations.go"
-  ],
-  "generatedAt": "2026-01-21T17:08:48.227Z"
-}

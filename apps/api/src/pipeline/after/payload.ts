@@ -292,6 +292,7 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
     const inputTokens = shaped.input_tokens ?? shaped.input_text_tokens ?? shaped.prompt_tokens ?? 0;
     const outputTokens = shaped.output_tokens ?? shaped.output_text_tokens ?? shaped.completion_tokens ?? 0;
     const totalTokens = shaped.total_tokens ?? inputTokens + outputTokens;
+    const embeddingTokens = shaped.embedding_tokens ?? shaped.input_tokens ?? shaped.input_text_tokens;
 
     const inputDetails = shaped.input_tokens_details ?? shaped.input_details ?? {};
     const outputDetails = shaped.output_tokens_details ?? shaped.completion_tokens_details ?? {};
@@ -325,6 +326,9 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
         output_tokens: outputTokens,
         total_tokens: totalTokens,
     };
+    if (ctx?.endpoint === "embeddings" && embeddingTokens != null) {
+        out.embedding_tokens = embeddingTokens;
+    }
 
     if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
     if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
@@ -626,14 +630,27 @@ export function formatClientPayload(args: {
     }
 
     if (ctx.endpoint === "moderations") {
-        const { provider, requestId, meta: _m, usage: _u, id: payloadId, ...rest } = payload ?? {};
-        const resolvedId = requestId ?? ctx.requestId ?? payloadId ?? payload?.nativeResponseId ?? null;
+        const {
+            provider,
+            requestId,
+            meta: _m,
+            usage: _u,
+            id: payloadId,
+            nativeResponseId: payloadNativeResponseId,
+            nativeId: payloadNativeId,
+            ...rest
+        } = payload ?? {};
+        const resolvedId = payloadId ?? requestId ?? ctx.requestId ?? null;
+        const nativeResponseId = payloadNativeResponseId ?? payloadNativeId ?? null;
         const body: any = {
             object: "moderation",
             id: resolvedId,
             ...rest,
             ...(usage ? { usage } : {}),
         };
+        if (nativeResponseId != null) {
+            body.nativeResponseId = nativeResponseId;
+        }
         if (meta) body.meta = meta;
         return body;
     }

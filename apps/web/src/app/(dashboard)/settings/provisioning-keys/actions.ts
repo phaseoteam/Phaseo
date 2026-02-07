@@ -73,11 +73,11 @@ export async function createProvisioningKeyAction(
 		.maybeSingle();
 
 	if (error) {
-		console.error("Failed to create provisioning key:", error);
-		throw new Error(`Failed to create provisioning key: ${error.message}`);
+		console.error("Failed to create management API key:", error);
+		throw new Error(`Failed to create management API key: ${error.message}`);
 	}
 
-	revalidatePath("/settings/provisioning-keys");
+	revalidatePath("/settings/management-api-keys");
 
 	return {
 		id: data?.id,
@@ -120,11 +120,11 @@ export async function updateProvisioningKeyAction(
 		.eq("id", id);
 
 	if (error) {
-		console.error("Failed to update provisioning key:", error);
-		throw new Error(`Failed to update provisioning key: ${error.message}`);
+		console.error("Failed to update management API key:", error);
+		throw new Error(`Failed to update management API key: ${error.message}`);
 	}
 
-	revalidatePath("/settings/provisioning-keys");
+	revalidatePath("/settings/management-api-keys");
 
 	return { success: true };
 }
@@ -160,13 +160,13 @@ export async function updateProvisioningKeyLimitsAction(
 		.eq("id", id);
 
 	if (error) {
-		console.error("Failed to update provisioning key limits:", error);
+		console.error("Failed to update management API key limits:", error);
 		throw new Error(
-			`Failed to update provisioning key limits: ${error.message}`
+			`Failed to update management API key limits: ${error.message}`
 		);
 	}
 
-	revalidatePath("/settings/provisioning-keys");
+	revalidatePath("/settings/management-api-keys");
 
 	return { success: true };
 }
@@ -206,11 +206,11 @@ export async function deleteProvisioningKeyAction(
 		.eq("id", id);
 
 	if (error) {
-		console.error("Failed to delete provisioning key:", error);
-		throw new Error(`Failed to delete provisioning key: ${error.message}`);
+		console.error("Failed to delete management API key:", error);
+		throw new Error(`Failed to delete management API key: ${error.message}`);
 	}
 
-	revalidatePath("/settings/provisioning-keys");
+	revalidatePath("/settings/management-api-keys");
 
 	return { success: true };
 }
@@ -229,8 +229,8 @@ export async function getProvisioningKeyById(id: string) {
 		.maybeSingle();
 
 	if (error) {
-		console.error("Failed to fetch provisioning key:", error);
-		throw new Error(`Failed to fetch provisioning key: ${error.message}`);
+		console.error("Failed to fetch management API key:", error);
+		throw new Error(`Failed to fetch management API key: ${error.message}`);
 	}
 
 	return data;
@@ -250,8 +250,8 @@ export async function listProvisioningKeysByTeam(teamId: string) {
 		.order("created_at", { ascending: false });
 
 	if (error) {
-		console.error("Failed to list provisioning keys:", error);
-		throw new Error(`Failed to list provisioning keys: ${error.message}`);
+		console.error("Failed to list management API keys:", error);
+		throw new Error(`Failed to list management API keys: ${error.message}`);
 	}
 
 	return data;

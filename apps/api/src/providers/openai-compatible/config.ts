@@ -366,8 +366,9 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         providerId: "x-ai",
         baseUrl: "https://api.x.ai",
         pathPrefix: "/v1",
-        apiKeyEnv: "XAI_API_KEY",
+        apiKeyEnv: "X_AI_API_KEY",
         baseUrlEnv: "XAI_BASE_URL",
+        supportsResponses: true,
     },
     cloudflare: {
         providerId: "cloudflare",
@@ -545,4 +546,3 @@ export function supportsOpenAICompatResponses(providerId: string, model?: string
     if (typeof config.supportsResponses === "boolean") return config.supportsResponses;
     return resolveOpenAICompatRoute(providerId, model) === "responses";
 }
-

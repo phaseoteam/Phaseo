@@ -18,8 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
-from ai_stats_generated.models.cache_control import CacheControl
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -29,8 +28,7 @@ class TextContentPart(BaseModel):
     """ # noqa: E501
     type: StrictStr
     text: StrictStr
-    cache_control: Optional[CacheControl] = None
-    __properties: ClassVar[List[str]] = ["type", "text", "cache_control"]
+    __properties: ClassVar[List[str]] = ["type", "text"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
@@ -78,9 +76,6 @@ class TextContentPart(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of cache_control
-        if self.cache_control:
-            _dict['cache_control'] = self.cache_control.to_dict()
         return _dict
 
     @classmethod
@@ -94,8 +89,7 @@ class TextContentPart(BaseModel):
 
         _obj = cls.model_validate({
             "type": obj.get("type"),
-            "text": obj.get("text"),
-            "cache_control": CacheControl.from_dict(obj["cache_control"]) if obj.get("cache_control") is not None else None
+            "text": obj.get("text")
         })
         return _obj
 

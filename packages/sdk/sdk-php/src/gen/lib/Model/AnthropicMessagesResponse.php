@@ -64,9 +64,7 @@ class AnthropicMessagesResponse implements ModelInterface, ArrayAccess, \JsonSer
         'content' => '\AIStats\Sdk\Model\AnthropicContentBlock[]',
         'stop_reason' => 'string',
         'stop_sequence' => 'string',
-        'usage' => '\AIStats\Sdk\Model\AnthropicUsage',
-        'meta' => 'object',
-        'debug' => '\AIStats\Sdk\Model\DebugResponse'
+        'usage' => '\AIStats\Sdk\Model\AnthropicUsage'
     ];
 
     /**
@@ -84,9 +82,7 @@ class AnthropicMessagesResponse implements ModelInterface, ArrayAccess, \JsonSer
         'content' => null,
         'stop_reason' => null,
         'stop_sequence' => null,
-        'usage' => null,
-        'meta' => null,
-        'debug' => null
+        'usage' => null
     ];
 
     /**
@@ -102,9 +98,7 @@ class AnthropicMessagesResponse implements ModelInterface, ArrayAccess, \JsonSer
         'content' => false,
         'stop_reason' => false,
         'stop_sequence' => false,
-        'usage' => false,
-        'meta' => false,
-        'debug' => false
+        'usage' => false
     ];
 
     /**
@@ -200,9 +194,7 @@ class AnthropicMessagesResponse implements ModelInterface, ArrayAccess, \JsonSer
         'content' => 'content',
         'stop_reason' => 'stop_reason',
         'stop_sequence' => 'stop_sequence',
-        'usage' => 'usage',
-        'meta' => 'meta',
-        'debug' => 'debug'
+        'usage' => 'usage'
     ];
 
     /**
@@ -218,9 +210,7 @@ class AnthropicMessagesResponse implements ModelInterface, ArrayAccess, \JsonSer
         'content' => 'setContent',
         'stop_reason' => 'setStopReason',
         'stop_sequence' => 'setStopSequence',
-        'usage' => 'setUsage',
-        'meta' => 'setMeta',
-        'debug' => 'setDebug'
+        'usage' => 'setUsage'
     ];
 
     /**
@@ -236,9 +226,7 @@ class AnthropicMessagesResponse implements ModelInterface, ArrayAccess, \JsonSer
         'content' => 'getContent',
         'stop_reason' => 'getStopReason',
         'stop_sequence' => 'getStopSequence',
-        'usage' => 'getUsage',
-        'meta' => 'getMeta',
-        'debug' => 'getDebug'
+        'usage' => 'getUsage'
     ];
 
     /**
@@ -319,8 +307,6 @@ class AnthropicMessagesResponse implements ModelInterface, ArrayAccess, \JsonSer
         $this->setIfExists('stop_reason', $data ?? [], null);
         $this->setIfExists('stop_sequence', $data ?? [], null);
         $this->setIfExists('usage', $data ?? [], null);
-        $this->setIfExists('meta', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
     }
 
     /**
@@ -596,60 +582,6 @@ class AnthropicMessagesResponse implements ModelInterface, ArrayAccess, \JsonSer
             throw new \InvalidArgumentException('non-nullable usage cannot be null');
         }
         $this->container['usage'] = $usage;
-
-        return $this;
-    }
-
-    /**
-     * Gets meta
-     *
-     * @return object|null
-     */
-    public function getMeta()
-    {
-        return $this->container['meta'];
-    }
-
-    /**
-     * Sets meta
-     *
-     * @param object|null $meta meta
-     *
-     * @return self
-     */
-    public function setMeta($meta)
-    {
-        if (is_null($meta)) {
-            throw new \InvalidArgumentException('non-nullable meta cannot be null');
-        }
-        $this->container['meta'] = $meta;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugResponse|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugResponse|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
 
         return $this;
     }

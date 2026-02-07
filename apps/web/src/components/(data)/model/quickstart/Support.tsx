@@ -118,12 +118,12 @@ export default function Support() {
 	const supportDescription =
 		"This is a direct line of contact to me, and I will reply as soon as I can!";
 	const supportItem: Item = {
-		key: "status",
-		title: "Contact Support (Fastest)",
+		key: "contact",
+		title: "Contact Support",
+		href: "/contact",
 		description: supportDescription,
 		icon: MessageSquare,
 		badge: "Fastest",
-		href: "/contact",
 	};
 	const otherItems: Item[] = [
 		{

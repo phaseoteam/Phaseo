@@ -98,15 +98,6 @@ class ChatChoiceTest extends TestCase
     }
 
     /**
-     * Test attribute "logprobs"
-     */
-    public function testPropertyLogprobs()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "finish_reason"
      */
     public function testPropertyFinishReason()

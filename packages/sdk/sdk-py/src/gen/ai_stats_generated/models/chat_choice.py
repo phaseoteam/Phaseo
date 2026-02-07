@@ -29,9 +29,8 @@ class ChatChoice(BaseModel):
     """ # noqa: E501
     index: Optional[StrictInt] = None
     message: Optional[ChatMessage] = None
-    logprobs: Optional[Dict[str, Any]] = None
     finish_reason: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["index", "message", "logprobs", "finish_reason"]
+    __properties: ClassVar[List[str]] = ["index", "message", "finish_reason"]
 
     @field_validator('finish_reason')
     def finish_reason_validate_enum(cls, value):
@@ -99,7 +98,6 @@ class ChatChoice(BaseModel):
         _obj = cls.model_validate({
             "index": obj.get("index"),
             "message": ChatMessage.from_dict(obj["message"]) if obj.get("message") is not None else None,
-            "logprobs": obj.get("logprobs"),
             "finish_reason": obj.get("finish_reason")
         })
         return _obj

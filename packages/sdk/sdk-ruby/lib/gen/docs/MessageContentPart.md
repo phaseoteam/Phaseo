@@ -16,8 +16,6 @@ AIStatsSdk::MessageContentPart.openapi_one_of
 # [
 #   :'AudioContentPart',
 #   :'ImageContentPart',
-#   :'InputImageContentPart',
-#   :'InputTextContentPart',
 #   :'TextContentPart',
 #   :'ToolCallContentPart',
 #   :'VideoContentPart'
@@ -50,8 +48,6 @@ AIStatsSdk::MessageContentPart.build(data_that_doesnt_match)
 
 - `AudioContentPart`
 - `ImageContentPart`
-- `InputImageContentPart`
-- `InputTextContentPart`
 - `TextContentPart`
 - `ToolCallContentPart`
 - `VideoContentPart`

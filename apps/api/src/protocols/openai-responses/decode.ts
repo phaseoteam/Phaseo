@@ -3,19 +3,18 @@
 // How: Maps between protocol payloads and IR structures.
 
 // OpenAI Responses Protocol - Decoder
-// Transforms OpenAI Responses Request → IR
+// Transforms OpenAI Responses Request -> IR
 
 import type {
 	IRChatRequest,
 	IRMessage,
 	IRContentPart,
-	IRToolCall,
-	IRToolResult,
 	IRTool,
 	IRReasoning,
 } from "@core/ir";
 import type { ResponsesRequest } from "@core/schemas";
 import { decodeOpenAIChatRequest } from "../openai-chat/decode";
+import { normalizeOpenAIContent } from "../shared/normalizeContent";
 
 /**
  * Decode OpenAI Responses request to IR format
@@ -30,32 +29,51 @@ import { decodeOpenAIChatRequest } from "../openai-chat/decode";
 export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatRequest {
 	const messages: IRMessage[] = [];
 	const input = (req as any).input_items ?? req.input;
+	const pendingUserParts: IRContentPart[] = [];
 
 	// Handle instructions as system message
 	if (req.instructions) {
 		messages.push({
 			role: "system",
-			content: [{ type: "text", text: req.instructions }],
+			content: normalizeOpenAIContent(req.instructions),
 		});
 	}
 
 	// Process input
+	const flushPendingUserParts = () => {
+		if (pendingUserParts.length > 0) {
+			messages.push({
+				role: "user",
+				content: [...pendingUserParts],
+			});
+			pendingUserParts.length = 0;
+		}
+	};
+
 	if (input) {
 		// Simple string input = user message
 		if (typeof input === "string") {
 			messages.push({
 				role: "user",
-				content: [{ type: "text", text: input }],
+				content: normalizeOpenAIContent(input),
 			});
 		}
 		// Array of input items
 		else if (Array.isArray(input)) {
 			for (const item of input) {
+				// Input parts (Responses API)
+				if (item?.type === "input_text" || item?.type === "input_image" || item?.type === "input_audio" || item?.type === "input_video") {
+					const parts = normalizeOpenAIContent([item]);
+					if (parts.length > 0) {
+						pendingUserParts.push(...parts);
+					}
+					continue;
+				}
+
 				// Message item
 				if (item.type === "message" || (!item.type && item.role && "content" in item)) {
-					const content = Array.isArray(item.content)
-						? normalizeOpenAIResponsesContent(item.content)
-						: [{ type: "text" as const, text: String(item.content) }];
+					flushPendingUserParts();
+					const content = normalizeOpenAIContent(item.content ?? "");
 
 					if (item.role === "user" || item.role === "system" || item.role === "developer") {
 						messages.push({
@@ -66,15 +84,36 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 						messages.push({
 							role: "assistant",
 							content,
+							toolCalls: Array.isArray(item.tool_calls)
+								? item.tool_calls.map((tc: any) => ({
+									id: tc.id,
+									name: tc.function?.name || tc.name,
+									arguments: tc.function?.arguments || tc.arguments || "{}",
+								}))
+								: undefined,
+						});
+					} else if (item.role === "tool" && item.tool_call_id) {
+						messages.push({
+							role: "tool",
+							toolResults: [
+								{
+									toolCallId: item.tool_call_id,
+									content: typeof item.content === "string"
+										? item.content
+										: JSON.stringify(item.content),
+								},
+							],
 						});
 					}
 				}
 				// Fallback: accept Chat Completions-style requests sent to /responses
 				else if (Array.isArray((req as any).messages)) {
+					flushPendingUserParts();
 					return decodeOpenAIChatRequest(req as any);
 				}
 				// Function call item (assistant tool call)
 				else if (item.type === "function_call") {
+					flushPendingUserParts();
 					// Find or create assistant message for this tool call
 					let lastAssistant = messages[messages.length - 1];
 					if (!lastAssistant || lastAssistant.role !== "assistant") {
@@ -98,18 +137,25 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 				}
 				// Function call output (tool result)
 				else if (item.type === "function_call_output") {
+					flushPendingUserParts();
 					// Create tool result message
 					messages.push({
 						role: "tool",
 						toolResults: [
 							{
 								toolCallId: item.call_id,
-								content: item.output || "",
+								content: typeof item.output === "string"
+									? item.output
+									: item.output == null
+										? ""
+										: JSON.stringify(item.output),
 							},
 						],
 					});
 				}
 			}
+
+			flushPendingUserParts();
 		}
 	}
 
@@ -126,9 +172,16 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		if (typeof req.tool_choice === "string") {
 			if (req.tool_choice === "auto") toolChoice = "auto";
 			else if (req.tool_choice === "required" || req.tool_choice === "any") toolChoice = "required";
-			else if (req.tool_choice === "none") toolChoice = undefined;
-		} else if (typeof req.tool_choice === "object" && req.tool_choice.name) {
-			toolChoice = { name: req.tool_choice.name };
+			else if (req.tool_choice === "none") toolChoice = "none";
+		} else if (typeof req.tool_choice === "object") {
+			if ((req.tool_choice as any).name) {
+				toolChoice = { name: (req.tool_choice as any).name };
+			} else if (
+				(req.tool_choice as any).type === "function" &&
+				(req.tool_choice as any).function?.name
+			) {
+				toolChoice = { name: (req.tool_choice as any).function.name };
+			}
 		}
 	}
 
@@ -149,9 +202,11 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		stream: req.stream ?? false,
 
 		// Generation parameters
-		maxTokens: req.max_output_tokens,
+		maxTokens: (req as any).max_output_tokens ?? (req as any).max_tokens,
 		temperature: req.temperature,
 		topP: req.top_p,
+		topK: (req as any).top_k,
+		seed: (req as any).seed,
 
 		// Tool calling
 		tools,
@@ -162,10 +217,16 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		// Reasoning
 		reasoning,
 
+		// Response format
+		responseFormat: normalizeResponsesFormat((req as any).response_format ?? (req as any).text?.format),
+
 		// Advanced parameters
 		frequencyPenalty: (req as any).frequency_penalty,
 		presencePenalty: (req as any).presence_penalty,
+		logitBias: (req as any).logit_bias,
+		logprobs: (req as any).logprobs,
 		topLogprobs: (req as any).top_logprobs,
+		stop: (req as any).stop,
 		metadata: req.metadata,
 		background: (req as any).background,
 		serviceTier: (req as any).service_tier,
@@ -175,58 +236,36 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	};
 }
 
-/**
- * Normalize OpenAI Responses content to IR content parts
- */
-function normalizeOpenAIResponsesContent(content: any): IRContentPart[] {
-	if (typeof content === "string") {
-		return [{ type: "text", text: content }];
+function normalizeResponsesFormat(format: any): IRChatRequest["responseFormat"] {
+	if (!format) return undefined;
+
+	if (typeof format === "string") {
+		if (format === "json_object" || format === "json") {
+			return { type: "json_object" };
+		}
+		return { type: "text" };
 	}
 
-	if (Array.isArray(content)) {
-		return content.map((part: any) => {
-			if (part.type === "input_text") {
-				return { type: "text", text: part.text };
-			}
+	if (typeof format === "object") {
+		if (format.type === "json_object" || format.type === "json") {
+			return {
+				type: "json_object",
+				schema: format.schema,
+			};
+		}
 
-			if (part.type === "text") {
-				return { type: "text", text: part.text };
-			}
+		if (format.type === "json_schema") {
+			return {
+				type: "json_schema",
+				schema: format.schema || format.json_schema?.schema,
+				name: format.name || format.json_schema?.name,
+				strict: format.strict || format.json_schema?.strict,
+			};
+		}
 
-			if (part.type === "input_image") {
-				const url = part.image_url || part.url || part.image_url?.url;
-				return {
-					type: "image",
-					source: typeof url === "string" && url.startsWith("data:") ? "data" : "url",
-					data: url || "",
-					detail: part.image_detail || part.detail,
-				};
-			}
-
-			if (part.type === "image_url") {
-				return {
-					type: "image",
-					source: "url" as const,
-					data: part.image_url?.url || "",
-					detail: part.image_url?.detail,
-				};
-			}
-
-			if (part.type === "input_audio") {
-				return {
-					type: "audio",
-					source: "data" as const,
-					data: part.input_audio?.data || "",
-					format: part.input_audio?.format,
-				};
-			}
-
-			// Fallback: treat as text
-			return { type: "text", text: String(part) };
-		});
+		return { type: "text" };
 	}
 
-	// Fallback: treat as text
-	return [{ type: "text", text: String(content) }];
+	return undefined;
 }
 

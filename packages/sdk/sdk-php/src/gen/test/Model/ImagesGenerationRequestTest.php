@@ -152,15 +152,6 @@ class ImagesGenerationRequestTest extends TestCase
     }
 
     /**
-     * Test attribute "debug"
-     */
-    public function testPropertyDebug()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "provider"
      */
     public function testPropertyProvider()

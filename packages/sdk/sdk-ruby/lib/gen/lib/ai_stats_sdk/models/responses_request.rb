@@ -19,8 +19,6 @@ module AIStatsSdk
 
     attr_accessor :input
 
-    attr_accessor :messages
-
     attr_accessor :input_items
 
     attr_accessor :conversation
@@ -33,11 +31,7 @@ module AIStatsSdk
 
     attr_accessor :max_tool_calls
 
-    attr_accessor :max_tools_calls
-
     attr_accessor :metadata
-
-    attr_accessor :debug
 
     attr_accessor :parallel_tool_calls
 
@@ -48,8 +42,6 @@ module AIStatsSdk
     attr_accessor :prompt_cache_key
 
     attr_accessor :prompt_cache_retention
-
-    attr_accessor :modalities
 
     attr_accessor :reasoning
 
@@ -81,53 +73,29 @@ module AIStatsSdk
 
     attr_accessor :user
 
+    attr_accessor :usage
+
     attr_accessor :meta
 
     attr_accessor :provider
-
-    class EnumAttributeValidator
-      attr_reader :datatype
-      attr_reader :allowable_values
-
-      def initialize(datatype, allowable_values)
-        @allowable_values = allowable_values.map do |value|
-          case datatype.to_s
-          when /Integer/i
-            value.to_i
-          when /Float/i
-            value.to_f
-          else
-            value
-          end
-        end
-      end
-
-      def valid?(value)
-        !value || allowable_values.include?(value)
-      end
-    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'model' => :'model',
         :'input' => :'input',
-        :'messages' => :'messages',
         :'input_items' => :'input_items',
         :'conversation' => :'conversation',
         :'include' => :'include',
         :'instructions' => :'instructions',
         :'max_output_tokens' => :'max_output_tokens',
         :'max_tool_calls' => :'max_tool_calls',
-        :'max_tools_calls' => :'max_tools_calls',
         :'metadata' => :'metadata',
-        :'debug' => :'debug',
         :'parallel_tool_calls' => :'parallel_tool_calls',
         :'previous_response_id' => :'previous_response_id',
         :'prompt' => :'prompt',
         :'prompt_cache_key' => :'prompt_cache_key',
         :'prompt_cache_retention' => :'prompt_cache_retention',
-        :'modalities' => :'modalities',
         :'reasoning' => :'reasoning',
         :'safety_identifier' => :'safety_identifier',
         :'service_tier' => :'service_tier',
@@ -143,6 +111,7 @@ module AIStatsSdk
         :'truncation' => :'truncation',
         :'background' => :'background',
         :'user' => :'user',
+        :'usage' => :'usage',
         :'meta' => :'meta',
         :'provider' => :'provider'
       }
@@ -162,23 +131,19 @@ module AIStatsSdk
     def self.openapi_types
       {
         :'model' => :'String',
-        :'input' => :'ResponsesRequestInput',
-        :'messages' => :'Array<ChatMessage>',
-        :'input_items' => :'Array<ResponsesInputItem>',
+        :'input' => :'Object',
+        :'input_items' => :'Array<Object>',
         :'conversation' => :'ChatCompletionsRequestToolChoice',
         :'include' => :'Array<String>',
         :'instructions' => :'String',
         :'max_output_tokens' => :'Integer',
         :'max_tool_calls' => :'Integer',
-        :'max_tools_calls' => :'Integer',
         :'metadata' => :'Hash<String, String>',
-        :'debug' => :'DebugOptions',
         :'parallel_tool_calls' => :'Boolean',
         :'previous_response_id' => :'String',
         :'prompt' => :'ResponsesRequestPrompt',
         :'prompt_cache_key' => :'String',
         :'prompt_cache_retention' => :'String',
-        :'modalities' => :'Array<String>',
         :'reasoning' => :'ResponsesRequestReasoning',
         :'safety_identifier' => :'String',
         :'service_tier' => :'String',
@@ -194,6 +159,7 @@ module AIStatsSdk
         :'truncation' => :'String',
         :'background' => :'Boolean',
         :'user' => :'String',
+        :'usage' => :'Boolean',
         :'meta' => :'Boolean',
         :'provider' => :'ProviderRoutingOptions'
       }
@@ -231,12 +197,6 @@ module AIStatsSdk
         self.input = attributes[:'input']
       end
 
-      if attributes.key?(:'messages')
-        if (value = attributes[:'messages']).is_a?(Array)
-          self.messages = value
-        end
-      end
-
       if attributes.key?(:'input_items')
         if (value = attributes[:'input_items']).is_a?(Array)
           self.input_items = value
@@ -265,18 +225,10 @@ module AIStatsSdk
         self.max_tool_calls = attributes[:'max_tool_calls']
       end
 
-      if attributes.key?(:'max_tools_calls')
-        self.max_tools_calls = attributes[:'max_tools_calls']
-      end
-
       if attributes.key?(:'metadata')
         if (value = attributes[:'metadata']).is_a?(Hash)
           self.metadata = value
         end
-      end
-
-      if attributes.key?(:'debug')
-        self.debug = attributes[:'debug']
       end
 
       if attributes.key?(:'parallel_tool_calls')
@@ -297,12 +249,6 @@ module AIStatsSdk
 
       if attributes.key?(:'prompt_cache_retention')
         self.prompt_cache_retention = attributes[:'prompt_cache_retention']
-      end
-
-      if attributes.key?(:'modalities')
-        if (value = attributes[:'modalities']).is_a?(Array)
-          self.modalities = value
-        end
       end
 
       if attributes.key?(:'reasoning')
@@ -367,6 +313,10 @@ module AIStatsSdk
         self.user = attributes[:'user']
       end
 
+      if attributes.key?(:'usage')
+        self.usage = attributes[:'usage']
+      end
+
       if attributes.key?(:'meta')
         self.meta = attributes[:'meta']
       end
@@ -385,20 +335,12 @@ module AIStatsSdk
         invalid_properties.push('invalid value for "model", model cannot be nil.')
       end
 
-      if !@messages.nil? && @messages.length < 1
-        invalid_properties.push('invalid value for "messages", number of items must be greater than or equal to 1.')
-      end
-
       if !@max_output_tokens.nil? && @max_output_tokens < 1
         invalid_properties.push('invalid value for "max_output_tokens", must be greater than or equal to 1.')
       end
 
       if !@max_tool_calls.nil? && @max_tool_calls < 0
         invalid_properties.push('invalid value for "max_tool_calls", must be greater than or equal to 0.')
-      end
-
-      if !@max_tools_calls.nil? && @max_tools_calls < 0
-        invalid_properties.push('invalid value for "max_tools_calls", must be greater than or equal to 0.')
       end
 
       if !@temperature.nil? && @temperature > 2
@@ -433,10 +375,8 @@ module AIStatsSdk
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @model.nil?
-      return false if !@messages.nil? && @messages.length < 1
       return false if !@max_output_tokens.nil? && @max_output_tokens < 1
       return false if !@max_tool_calls.nil? && @max_tool_calls < 0
-      return false if !@max_tools_calls.nil? && @max_tools_calls < 0
       return false if !@temperature.nil? && @temperature > 2
       return false if !@temperature.nil? && @temperature < 0
       return false if !@top_logprobs.nil? && @top_logprobs > 20
@@ -454,20 +394,6 @@ module AIStatsSdk
       end
 
       @model = model
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] messages Value to be assigned
-    def messages=(messages)
-      if messages.nil?
-        fail ArgumentError, 'messages cannot be nil'
-      end
-
-      if messages.length < 1
-        fail ArgumentError, 'invalid value for "messages", number of items must be greater than or equal to 1.'
-      end
-
-      @messages = messages
     end
 
     # Custom attribute writer method with validation
@@ -496,20 +422,6 @@ module AIStatsSdk
       end
 
       @max_tool_calls = max_tool_calls
-    end
-
-    # Custom attribute writer method with validation
-    # @param [Object] max_tools_calls Value to be assigned
-    def max_tools_calls=(max_tools_calls)
-      if max_tools_calls.nil?
-        fail ArgumentError, 'max_tools_calls cannot be nil'
-      end
-
-      if max_tools_calls < 0
-        fail ArgumentError, 'invalid value for "max_tools_calls", must be greater than or equal to 0.'
-      end
-
-      @max_tools_calls = max_tools_calls
     end
 
     # Custom attribute writer method with validation
@@ -573,22 +485,18 @@ module AIStatsSdk
       self.class == o.class &&
           model == o.model &&
           input == o.input &&
-          messages == o.messages &&
           input_items == o.input_items &&
           conversation == o.conversation &&
           include == o.include &&
           instructions == o.instructions &&
           max_output_tokens == o.max_output_tokens &&
           max_tool_calls == o.max_tool_calls &&
-          max_tools_calls == o.max_tools_calls &&
           metadata == o.metadata &&
-          debug == o.debug &&
           parallel_tool_calls == o.parallel_tool_calls &&
           previous_response_id == o.previous_response_id &&
           prompt == o.prompt &&
           prompt_cache_key == o.prompt_cache_key &&
           prompt_cache_retention == o.prompt_cache_retention &&
-          modalities == o.modalities &&
           reasoning == o.reasoning &&
           safety_identifier == o.safety_identifier &&
           service_tier == o.service_tier &&
@@ -604,6 +512,7 @@ module AIStatsSdk
           truncation == o.truncation &&
           background == o.background &&
           user == o.user &&
+          usage == o.usage &&
           meta == o.meta &&
           provider == o.provider
     end
@@ -617,7 +526,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, input, messages, input_items, conversation, include, instructions, max_output_tokens, max_tool_calls, max_tools_calls, metadata, debug, parallel_tool_calls, previous_response_id, prompt, prompt_cache_key, prompt_cache_retention, modalities, reasoning, safety_identifier, service_tier, store, stream, stream_options, temperature, text, tool_choice, tools, top_logprobs, top_p, truncation, background, user, meta, provider].hash
+      [model, input, input_items, conversation, include, instructions, max_output_tokens, max_tool_calls, metadata, parallel_tool_calls, previous_response_id, prompt, prompt_cache_key, prompt_cache_retention, reasoning, safety_identifier, service_tier, store, stream, stream_options, temperature, text, tool_choice, tools, top_logprobs, top_p, truncation, background, user, usage, meta, provider].hash
     end
 
     # Builds the object from hash

@@ -289,5 +289,24 @@
     "effective_from": "2024-03-04T00:00:00",
     "effective_to": "2026-01-05T00:00:00",
     "capabilities": []
+  },
+  {
+    "api_model_id": "anthropic/claude-sonnet-5",
+    "provider_api_model_id": "anthropic:anthropic/claude-sonnet-5",
+    "provider_model_slug": "claude-sonnet-5-20260203",
+    "internal_model_id": "anthropic/claude-sonnet-5-2026-02-04",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": "2026-02-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

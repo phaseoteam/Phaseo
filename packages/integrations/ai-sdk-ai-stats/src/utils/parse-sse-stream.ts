@@ -9,9 +9,7 @@
  * [DONE]
  * ```
  */
-export function parseSSEStream(
-  response: Response
-): ReadableStream<{ event?: string; data: any }> {
+export function parseSSEStream(response: Response): ReadableStream<any> {
   if (!response.body) {
     throw new Error('Response body is null');
   }
@@ -22,7 +20,6 @@ export function parseSSEStream(
   return new ReadableStream({
     async start(controller) {
       let buffer = '';
-      let currentEvent: string | undefined;
 
       try {
         while (true) {
@@ -55,19 +52,13 @@ export function parseSSEStream(
               return;
             }
 
-            // Parse event: prefix
-            if (trimmed.startsWith('event: ')) {
-              currentEvent = trimmed.slice(7).trim() || undefined;
-              continue;
-            }
-
             // Parse data: prefix
             if (trimmed.startsWith('data: ')) {
               const jsonStr = trimmed.slice(6); // Remove 'data: ' prefix
 
               try {
                 const data = JSON.parse(jsonStr);
-                controller.enqueue({ event: currentEvent, data });
+                controller.enqueue(data);
               } catch (error) {
                 // Ignore malformed JSON chunks
                 console.warn('Failed to parse SSE chunk:', jsonStr, error);
@@ -80,14 +71,12 @@ export function parseSSEStream(
         if (buffer.trim()) {
           const trimmed = buffer.trim();
 
-          if (trimmed.startsWith('event: ')) {
-            currentEvent = trimmed.slice(7).trim() || undefined;
-          } else if (trimmed.startsWith('data: ')) {
+          if (trimmed.startsWith('data: ')) {
             const jsonStr = trimmed.slice(6);
 
             try {
               const data = JSON.parse(jsonStr);
-              controller.enqueue({ event: currentEvent, data });
+              controller.enqueue(data);
             } catch (error) {
               console.warn('Failed to parse final SSE chunk:', jsonStr, error);
             }

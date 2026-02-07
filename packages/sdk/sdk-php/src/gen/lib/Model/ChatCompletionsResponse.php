@@ -58,18 +58,11 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
       */
     protected static $openAPITypes = [
         'id' => 'string',
-        'native_response_id' => 'string',
         'object' => 'string',
         'created' => 'int',
         'model' => 'string',
         'choices' => '\AIStats\Sdk\Model\ChatChoice[]',
-        'usage' => '\AIStats\Sdk\Model\Usage',
-        'service_tier' => 'string',
-        'system_fingerprint' => 'string',
-        'meta' => 'object',
-        'debug' => '\AIStats\Sdk\Model\DebugResponse',
-        'upstream_request' => '\AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest',
-        'upstream_response' => '\AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest'
+        'usage' => '\AIStats\Sdk\Model\Usage'
     ];
 
     /**
@@ -81,18 +74,11 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
       */
     protected static $openAPIFormats = [
         'id' => null,
-        'native_response_id' => null,
         'object' => null,
         'created' => null,
         'model' => null,
         'choices' => null,
-        'usage' => null,
-        'service_tier' => null,
-        'system_fingerprint' => null,
-        'meta' => null,
-        'debug' => null,
-        'upstream_request' => null,
-        'upstream_response' => null
+        'usage' => null
     ];
 
     /**
@@ -102,18 +88,11 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
       */
     protected static array $openAPINullables = [
         'id' => false,
-        'native_response_id' => false,
         'object' => false,
         'created' => false,
         'model' => false,
         'choices' => false,
-        'usage' => false,
-        'service_tier' => false,
-        'system_fingerprint' => false,
-        'meta' => false,
-        'debug' => false,
-        'upstream_request' => false,
-        'upstream_response' => false
+        'usage' => false
     ];
 
     /**
@@ -203,18 +182,11 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
      */
     protected static $attributeMap = [
         'id' => 'id',
-        'native_response_id' => 'nativeResponseId',
         'object' => 'object',
         'created' => 'created',
         'model' => 'model',
         'choices' => 'choices',
-        'usage' => 'usage',
-        'service_tier' => 'service_tier',
-        'system_fingerprint' => 'system_fingerprint',
-        'meta' => 'meta',
-        'debug' => 'debug',
-        'upstream_request' => 'upstream_request',
-        'upstream_response' => 'upstream_response'
+        'usage' => 'usage'
     ];
 
     /**
@@ -224,18 +196,11 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
      */
     protected static $setters = [
         'id' => 'setId',
-        'native_response_id' => 'setNativeResponseId',
         'object' => 'setObject',
         'created' => 'setCreated',
         'model' => 'setModel',
         'choices' => 'setChoices',
-        'usage' => 'setUsage',
-        'service_tier' => 'setServiceTier',
-        'system_fingerprint' => 'setSystemFingerprint',
-        'meta' => 'setMeta',
-        'debug' => 'setDebug',
-        'upstream_request' => 'setUpstreamRequest',
-        'upstream_response' => 'setUpstreamResponse'
+        'usage' => 'setUsage'
     ];
 
     /**
@@ -245,18 +210,11 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
      */
     protected static $getters = [
         'id' => 'getId',
-        'native_response_id' => 'getNativeResponseId',
         'object' => 'getObject',
         'created' => 'getCreated',
         'model' => 'getModel',
         'choices' => 'getChoices',
-        'usage' => 'getUsage',
-        'service_tier' => 'getServiceTier',
-        'system_fingerprint' => 'getSystemFingerprint',
-        'meta' => 'getMeta',
-        'debug' => 'getDebug',
-        'upstream_request' => 'getUpstreamRequest',
-        'upstream_response' => 'getUpstreamResponse'
+        'usage' => 'getUsage'
     ];
 
     /**
@@ -317,18 +275,11 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
     public function __construct(?array $data = null)
     {
         $this->setIfExists('id', $data ?? [], null);
-        $this->setIfExists('native_response_id', $data ?? [], null);
         $this->setIfExists('object', $data ?? [], null);
         $this->setIfExists('created', $data ?? [], null);
         $this->setIfExists('model', $data ?? [], null);
         $this->setIfExists('choices', $data ?? [], null);
         $this->setIfExists('usage', $data ?? [], null);
-        $this->setIfExists('service_tier', $data ?? [], null);
-        $this->setIfExists('system_fingerprint', $data ?? [], null);
-        $this->setIfExists('meta', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
-        $this->setIfExists('upstream_request', $data ?? [], null);
-        $this->setIfExists('upstream_response', $data ?? [], null);
     }
 
     /**
@@ -396,33 +347,6 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
             throw new \InvalidArgumentException('non-nullable id cannot be null');
         }
         $this->container['id'] = $id;
-
-        return $this;
-    }
-
-    /**
-     * Gets native_response_id
-     *
-     * @return string|null
-     */
-    public function getNativeResponseId()
-    {
-        return $this->container['native_response_id'];
-    }
-
-    /**
-     * Sets native_response_id
-     *
-     * @param string|null $native_response_id native_response_id
-     *
-     * @return self
-     */
-    public function setNativeResponseId($native_response_id)
-    {
-        if (is_null($native_response_id)) {
-            throw new \InvalidArgumentException('non-nullable native_response_id cannot be null');
-        }
-        $this->container['native_response_id'] = $native_response_id;
 
         return $this;
     }
@@ -558,168 +482,6 @@ class ChatCompletionsResponse implements ModelInterface, ArrayAccess, \JsonSeria
             throw new \InvalidArgumentException('non-nullable usage cannot be null');
         }
         $this->container['usage'] = $usage;
-
-        return $this;
-    }
-
-    /**
-     * Gets service_tier
-     *
-     * @return string|null
-     */
-    public function getServiceTier()
-    {
-        return $this->container['service_tier'];
-    }
-
-    /**
-     * Sets service_tier
-     *
-     * @param string|null $service_tier service_tier
-     *
-     * @return self
-     */
-    public function setServiceTier($service_tier)
-    {
-        if (is_null($service_tier)) {
-            throw new \InvalidArgumentException('non-nullable service_tier cannot be null');
-        }
-        $this->container['service_tier'] = $service_tier;
-
-        return $this;
-    }
-
-    /**
-     * Gets system_fingerprint
-     *
-     * @return string|null
-     */
-    public function getSystemFingerprint()
-    {
-        return $this->container['system_fingerprint'];
-    }
-
-    /**
-     * Sets system_fingerprint
-     *
-     * @param string|null $system_fingerprint system_fingerprint
-     *
-     * @return self
-     */
-    public function setSystemFingerprint($system_fingerprint)
-    {
-        if (is_null($system_fingerprint)) {
-            throw new \InvalidArgumentException('non-nullable system_fingerprint cannot be null');
-        }
-        $this->container['system_fingerprint'] = $system_fingerprint;
-
-        return $this;
-    }
-
-    /**
-     * Gets meta
-     *
-     * @return object|null
-     */
-    public function getMeta()
-    {
-        return $this->container['meta'];
-    }
-
-    /**
-     * Sets meta
-     *
-     * @param object|null $meta meta
-     *
-     * @return self
-     */
-    public function setMeta($meta)
-    {
-        if (is_null($meta)) {
-            throw new \InvalidArgumentException('non-nullable meta cannot be null');
-        }
-        $this->container['meta'] = $meta;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugResponse|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugResponse|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
-
-        return $this;
-    }
-
-    /**
-     * Gets upstream_request
-     *
-     * @return \AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest|null
-     */
-    public function getUpstreamRequest()
-    {
-        return $this->container['upstream_request'];
-    }
-
-    /**
-     * Sets upstream_request
-     *
-     * @param \AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest|null $upstream_request upstream_request
-     *
-     * @return self
-     */
-    public function setUpstreamRequest($upstream_request)
-    {
-        if (is_null($upstream_request)) {
-            throw new \InvalidArgumentException('non-nullable upstream_request cannot be null');
-        }
-        $this->container['upstream_request'] = $upstream_request;
-
-        return $this;
-    }
-
-    /**
-     * Gets upstream_response
-     *
-     * @return \AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest|null
-     */
-    public function getUpstreamResponse()
-    {
-        return $this->container['upstream_response'];
-    }
-
-    /**
-     * Sets upstream_response
-     *
-     * @param \AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest|null $upstream_response upstream_response
-     *
-     * @return self
-     */
-    public function setUpstreamResponse($upstream_response)
-    {
-        if (is_null($upstream_response)) {
-            throw new \InvalidArgumentException('non-nullable upstream_response cannot be null');
-        }
-        $this->container['upstream_response'] = $upstream_response;
 
         return $this;
     }

@@ -72,15 +72,6 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'Messages'
-        /// </summary>
-        [Fact]
-        public void MessagesTest()
-        {
-            // TODO unit test for the property 'Messages'
-        }
-
-        /// <summary>
         /// Test the property 'InputItems'
         /// </summary>
         [Fact]
@@ -135,30 +126,12 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'MaxToolsCalls'
-        /// </summary>
-        [Fact]
-        public void MaxToolsCallsTest()
-        {
-            // TODO unit test for the property 'MaxToolsCalls'
-        }
-
-        /// <summary>
         /// Test the property 'Metadata'
         /// </summary>
         [Fact]
         public void MetadataTest()
         {
             // TODO unit test for the property 'Metadata'
-        }
-
-        /// <summary>
-        /// Test the property 'Debug'
-        /// </summary>
-        [Fact]
-        public void DebugTest()
-        {
-            // TODO unit test for the property 'Debug'
         }
 
         /// <summary>
@@ -204,15 +177,6 @@ namespace AIStatsSdk.Test.Model
         public void PromptCacheRetentionTest()
         {
             // TODO unit test for the property 'PromptCacheRetention'
-        }
-
-        /// <summary>
-        /// Test the property 'Modalities'
-        /// </summary>
-        [Fact]
-        public void ModalitiesTest()
-        {
-            // TODO unit test for the property 'Modalities'
         }
 
         /// <summary>
@@ -348,6 +312,15 @@ namespace AIStatsSdk.Test.Model
         public void UserTest()
         {
             // TODO unit test for the property 'User'
+        }
+
+        /// <summary>
+        /// Test the property 'Usage'
+        /// </summary>
+        [Fact]
+        public void UsageTest()
+        {
+            // TODO unit test for the property 'Usage'
         }
 
         /// <summary>

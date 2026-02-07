@@ -22,23 +22,19 @@ var _ MappedNullable = &ResponsesRequest{}
 // ResponsesRequest struct for ResponsesRequest
 type ResponsesRequest struct {
 	Model string `json:"model"`
-	Input *ResponsesRequestInput `json:"input,omitempty"`
-	Messages []ChatMessage `json:"messages,omitempty"`
-	InputItems []ResponsesInputItem `json:"input_items,omitempty"`
+	Input map[string]interface{} `json:"input,omitempty"`
+	InputItems []map[string]interface{} `json:"input_items,omitempty"`
 	Conversation *ChatCompletionsRequestToolChoice `json:"conversation,omitempty"`
 	Include []string `json:"include,omitempty"`
 	Instructions *string `json:"instructions,omitempty"`
 	MaxOutputTokens *int32 `json:"max_output_tokens,omitempty"`
 	MaxToolCalls *int32 `json:"max_tool_calls,omitempty"`
-	MaxToolsCalls *int32 `json:"max_tools_calls,omitempty"`
 	Metadata *map[string]string `json:"metadata,omitempty"`
-	Debug *DebugOptions `json:"debug,omitempty"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
 	Prompt *ResponsesRequestPrompt `json:"prompt,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
-	Modalities []string `json:"modalities,omitempty"`
 	Reasoning *ResponsesRequestReasoning `json:"reasoning,omitempty"`
 	SafetyIdentifier *string `json:"safety_identifier,omitempty"`
 	ServiceTier *string `json:"service_tier,omitempty"`
@@ -54,6 +50,7 @@ type ResponsesRequest struct {
 	Truncation *string `json:"truncation,omitempty"`
 	Background *bool `json:"background,omitempty"`
 	User *string `json:"user,omitempty"`
+	Usage *bool `json:"usage,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
@@ -103,19 +100,19 @@ func (o *ResponsesRequest) SetModel(v string) {
 }
 
 // GetInput returns the Input field value if set, zero value otherwise.
-func (o *ResponsesRequest) GetInput() ResponsesRequestInput {
+func (o *ResponsesRequest) GetInput() map[string]interface{} {
 	if o == nil || IsNil(o.Input) {
-		var ret ResponsesRequestInput
+		var ret map[string]interface{}
 		return ret
 	}
-	return *o.Input
+	return o.Input
 }
 
 // GetInputOk returns a tuple with the Input field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *ResponsesRequest) GetInputOk() (*ResponsesRequestInput, bool) {
+func (o *ResponsesRequest) GetInputOk() (map[string]interface{}, bool) {
 	if o == nil || IsNil(o.Input) {
-		return nil, false
+		return map[string]interface{}{}, false
 	}
 	return o.Input, true
 }
@@ -129,47 +126,15 @@ func (o *ResponsesRequest) HasInput() bool {
 	return false
 }
 
-// SetInput gets a reference to the given ResponsesRequestInput and assigns it to the Input field.
-func (o *ResponsesRequest) SetInput(v ResponsesRequestInput) {
-	o.Input = &v
-}
-
-// GetMessages returns the Messages field value if set, zero value otherwise.
-func (o *ResponsesRequest) GetMessages() []ChatMessage {
-	if o == nil || IsNil(o.Messages) {
-		var ret []ChatMessage
-		return ret
-	}
-	return o.Messages
-}
-
-// GetMessagesOk returns a tuple with the Messages field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ResponsesRequest) GetMessagesOk() ([]ChatMessage, bool) {
-	if o == nil || IsNil(o.Messages) {
-		return nil, false
-	}
-	return o.Messages, true
-}
-
-// HasMessages returns a boolean if a field has been set.
-func (o *ResponsesRequest) HasMessages() bool {
-	if o != nil && !IsNil(o.Messages) {
-		return true
-	}
-
-	return false
-}
-
-// SetMessages gets a reference to the given []ChatMessage and assigns it to the Messages field.
-func (o *ResponsesRequest) SetMessages(v []ChatMessage) {
-	o.Messages = v
+// SetInput gets a reference to the given map[string]interface{} and assigns it to the Input field.
+func (o *ResponsesRequest) SetInput(v map[string]interface{}) {
+	o.Input = v
 }
 
 // GetInputItems returns the InputItems field value if set, zero value otherwise.
-func (o *ResponsesRequest) GetInputItems() []ResponsesInputItem {
+func (o *ResponsesRequest) GetInputItems() []map[string]interface{} {
 	if o == nil || IsNil(o.InputItems) {
-		var ret []ResponsesInputItem
+		var ret []map[string]interface{}
 		return ret
 	}
 	return o.InputItems
@@ -177,7 +142,7 @@ func (o *ResponsesRequest) GetInputItems() []ResponsesInputItem {
 
 // GetInputItemsOk returns a tuple with the InputItems field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *ResponsesRequest) GetInputItemsOk() ([]ResponsesInputItem, bool) {
+func (o *ResponsesRequest) GetInputItemsOk() ([]map[string]interface{}, bool) {
 	if o == nil || IsNil(o.InputItems) {
 		return nil, false
 	}
@@ -193,8 +158,8 @@ func (o *ResponsesRequest) HasInputItems() bool {
 	return false
 }
 
-// SetInputItems gets a reference to the given []ResponsesInputItem and assigns it to the InputItems field.
-func (o *ResponsesRequest) SetInputItems(v []ResponsesInputItem) {
+// SetInputItems gets a reference to the given []map[string]interface{} and assigns it to the InputItems field.
+func (o *ResponsesRequest) SetInputItems(v []map[string]interface{}) {
 	o.InputItems = v
 }
 
@@ -358,38 +323,6 @@ func (o *ResponsesRequest) SetMaxToolCalls(v int32) {
 	o.MaxToolCalls = &v
 }
 
-// GetMaxToolsCalls returns the MaxToolsCalls field value if set, zero value otherwise.
-func (o *ResponsesRequest) GetMaxToolsCalls() int32 {
-	if o == nil || IsNil(o.MaxToolsCalls) {
-		var ret int32
-		return ret
-	}
-	return *o.MaxToolsCalls
-}
-
-// GetMaxToolsCallsOk returns a tuple with the MaxToolsCalls field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ResponsesRequest) GetMaxToolsCallsOk() (*int32, bool) {
-	if o == nil || IsNil(o.MaxToolsCalls) {
-		return nil, false
-	}
-	return o.MaxToolsCalls, true
-}
-
-// HasMaxToolsCalls returns a boolean if a field has been set.
-func (o *ResponsesRequest) HasMaxToolsCalls() bool {
-	if o != nil && !IsNil(o.MaxToolsCalls) {
-		return true
-	}
-
-	return false
-}
-
-// SetMaxToolsCalls gets a reference to the given int32 and assigns it to the MaxToolsCalls field.
-func (o *ResponsesRequest) SetMaxToolsCalls(v int32) {
-	o.MaxToolsCalls = &v
-}
-
 // GetMetadata returns the Metadata field value if set, zero value otherwise.
 func (o *ResponsesRequest) GetMetadata() map[string]string {
 	if o == nil || IsNil(o.Metadata) {
@@ -420,38 +353,6 @@ func (o *ResponsesRequest) HasMetadata() bool {
 // SetMetadata gets a reference to the given map[string]string and assigns it to the Metadata field.
 func (o *ResponsesRequest) SetMetadata(v map[string]string) {
 	o.Metadata = &v
-}
-
-// GetDebug returns the Debug field value if set, zero value otherwise.
-func (o *ResponsesRequest) GetDebug() DebugOptions {
-	if o == nil || IsNil(o.Debug) {
-		var ret DebugOptions
-		return ret
-	}
-	return *o.Debug
-}
-
-// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ResponsesRequest) GetDebugOk() (*DebugOptions, bool) {
-	if o == nil || IsNil(o.Debug) {
-		return nil, false
-	}
-	return o.Debug, true
-}
-
-// HasDebug returns a boolean if a field has been set.
-func (o *ResponsesRequest) HasDebug() bool {
-	if o != nil && !IsNil(o.Debug) {
-		return true
-	}
-
-	return false
-}
-
-// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
-func (o *ResponsesRequest) SetDebug(v DebugOptions) {
-	o.Debug = &v
 }
 
 // GetParallelToolCalls returns the ParallelToolCalls field value if set, zero value otherwise.
@@ -612,38 +513,6 @@ func (o *ResponsesRequest) HasPromptCacheRetention() bool {
 // SetPromptCacheRetention gets a reference to the given string and assigns it to the PromptCacheRetention field.
 func (o *ResponsesRequest) SetPromptCacheRetention(v string) {
 	o.PromptCacheRetention = &v
-}
-
-// GetModalities returns the Modalities field value if set, zero value otherwise.
-func (o *ResponsesRequest) GetModalities() []string {
-	if o == nil || IsNil(o.Modalities) {
-		var ret []string
-		return ret
-	}
-	return o.Modalities
-}
-
-// GetModalitiesOk returns a tuple with the Modalities field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ResponsesRequest) GetModalitiesOk() ([]string, bool) {
-	if o == nil || IsNil(o.Modalities) {
-		return nil, false
-	}
-	return o.Modalities, true
-}
-
-// HasModalities returns a boolean if a field has been set.
-func (o *ResponsesRequest) HasModalities() bool {
-	if o != nil && !IsNil(o.Modalities) {
-		return true
-	}
-
-	return false
-}
-
-// SetModalities gets a reference to the given []string and assigns it to the Modalities field.
-func (o *ResponsesRequest) SetModalities(v []string) {
-	o.Modalities = v
 }
 
 // GetReasoning returns the Reasoning field value if set, zero value otherwise.
@@ -1126,6 +995,38 @@ func (o *ResponsesRequest) SetUser(v string) {
 	o.User = &v
 }
 
+// GetUsage returns the Usage field value if set, zero value otherwise.
+func (o *ResponsesRequest) GetUsage() bool {
+	if o == nil || IsNil(o.Usage) {
+		var ret bool
+		return ret
+	}
+	return *o.Usage
+}
+
+// GetUsageOk returns a tuple with the Usage field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ResponsesRequest) GetUsageOk() (*bool, bool) {
+	if o == nil || IsNil(o.Usage) {
+		return nil, false
+	}
+	return o.Usage, true
+}
+
+// HasUsage returns a boolean if a field has been set.
+func (o *ResponsesRequest) HasUsage() bool {
+	if o != nil && !IsNil(o.Usage) {
+		return true
+	}
+
+	return false
+}
+
+// SetUsage gets a reference to the given bool and assigns it to the Usage field.
+func (o *ResponsesRequest) SetUsage(v bool) {
+	o.Usage = &v
+}
+
 // GetMeta returns the Meta field value if set, zero value otherwise.
 func (o *ResponsesRequest) GetMeta() bool {
 	if o == nil || IsNil(o.Meta) {
@@ -1204,9 +1105,6 @@ func (o ResponsesRequest) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Input) {
 		toSerialize["input"] = o.Input
 	}
-	if !IsNil(o.Messages) {
-		toSerialize["messages"] = o.Messages
-	}
 	if !IsNil(o.InputItems) {
 		toSerialize["input_items"] = o.InputItems
 	}
@@ -1225,14 +1123,8 @@ func (o ResponsesRequest) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.MaxToolCalls) {
 		toSerialize["max_tool_calls"] = o.MaxToolCalls
 	}
-	if !IsNil(o.MaxToolsCalls) {
-		toSerialize["max_tools_calls"] = o.MaxToolsCalls
-	}
 	if !IsNil(o.Metadata) {
 		toSerialize["metadata"] = o.Metadata
-	}
-	if !IsNil(o.Debug) {
-		toSerialize["debug"] = o.Debug
 	}
 	if !IsNil(o.ParallelToolCalls) {
 		toSerialize["parallel_tool_calls"] = o.ParallelToolCalls
@@ -1248,9 +1140,6 @@ func (o ResponsesRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.PromptCacheRetention) {
 		toSerialize["prompt_cache_retention"] = o.PromptCacheRetention
-	}
-	if !IsNil(o.Modalities) {
-		toSerialize["modalities"] = o.Modalities
 	}
 	if !IsNil(o.Reasoning) {
 		toSerialize["reasoning"] = o.Reasoning
@@ -1296,6 +1185,9 @@ func (o ResponsesRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.User) {
 		toSerialize["user"] = o.User
+	}
+	if !IsNil(o.Usage) {
+		toSerialize["usage"] = o.Usage
 	}
 	if !IsNil(o.Meta) {
 		toSerialize["meta"] = o.Meta

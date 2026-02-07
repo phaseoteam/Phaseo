@@ -9,6 +9,7 @@ import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { computeBill } from "@pipeline/pricing/engine";
 import { azureDeployment, azureHeaders, azureUrl, resolveAzureConfig, resolveAzureKey } from "@providers/azure/config";
+import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
 	return cherryPickIRParams(ir, args.capabilityParams);
@@ -22,9 +23,16 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const url = azureUrl(`openai/deployments/${deployment}/chat/completions`, config.apiVersion, config.baseUrl);
 
 	const requestPayload = irToOpenAIChat(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams);
-	const payload = { ...requestPayload, stream: true };
+	const payload = {
+		...requestPayload,
+		stream: true,
+		stream_options: {
+			...(requestPayload.stream_options ?? {}),
+			include_usage: true,
+		},
+	};
 	const requestBody = JSON.stringify(payload);
-	const mappedRequest = args.meta.echoUpstreamRequest ? requestBody : undefined;
+	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
 
 	const res = await fetch(url, {
 		method: "POST",
@@ -72,8 +80,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(res, args, "chat", upstreamStartMs);
-	if (usage) {
-		const priced = computeBill(usage, args.pricingCard);
+	const usageMeters = normalizeTextUsageForPricing(usage);
+	if (usageMeters) {
+		const priced = computeBill(usageMeters, args.pricingCard);
 		bill.cost_cents = priced.pricing.total_cents;
 		bill.currency = priced.pricing.currency;
 		bill.usage = priced;

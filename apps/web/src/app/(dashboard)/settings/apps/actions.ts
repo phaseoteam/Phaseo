@@ -4,11 +4,37 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 
+const PROTECTED_APP_TITLES = new Set([
+	"ai stats chat",
+	"ai stats playground",
+]);
+const PROTECTED_APP_KEY_PREFIXES = [
+	"ai-stats-chat",
+	"aistats-chat",
+	"ai-stats-playground",
+	"aistats-playground",
+];
+
+function isProtectedApp(title: string | null, appKey: string | null) {
+	const normalizedTitle = title?.trim().toLowerCase();
+	if (normalizedTitle && PROTECTED_APP_TITLES.has(normalizedTitle)) {
+		return true;
+	}
+	const normalizedKey = appKey?.trim().toLowerCase();
+	return Boolean(
+		normalizedKey &&
+			PROTECTED_APP_KEY_PREFIXES.some((prefix) =>
+				normalizedKey.startsWith(prefix)
+			)
+	);
+}
+
 type UpdateAppInput = {
 	title?: string;
 	url?: string | null;
 	image_url?: string | null;
 	is_public?: boolean;
+	is_active?: boolean;
 };
 
 export async function updateAppAction(appId: string, updates: UpdateAppInput) {
@@ -24,6 +50,24 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 
 	if (userError || !user) {
 		throw new Error("Unauthorized");
+	}
+
+	const { data: existingApp, error: existingAppError } = await supabase
+		.from("api_apps")
+		.select("id, title, app_key")
+		.eq("id", appId)
+		.maybeSingle();
+
+	if (existingAppError) {
+		throw new Error(existingAppError.message ?? "Failed to load app");
+	}
+
+	if (!existingApp) {
+		throw new Error("App not found");
+	}
+
+	if (isProtectedApp(existingApp.title, existingApp.app_key)) {
+		throw new Error("This app is managed by AI Stats and cannot be edited");
 	}
 
 	const updateObj: Record<string, unknown> = {};
@@ -56,6 +100,10 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 
 	if (typeof updates.is_public === "boolean") {
 		updateObj.is_public = updates.is_public;
+	}
+
+	if (typeof updates.is_active === "boolean") {
+		updateObj.is_active = updates.is_active;
 	}
 
 	if (Object.keys(updateObj).length === 0) {
@@ -100,7 +148,7 @@ export async function mergeAppsAction(
 
 	const { data: apps, error: appError } = await supabase
 		.from("api_apps")
-		.select("id, team_id, title")
+		.select("id, team_id, title, app_key")
 		.in("id", [sourceAppId, targetAppId]);
 
 	if (appError || !apps || apps.length !== 2) {
@@ -110,6 +158,10 @@ export async function mergeAppsAction(
 	const teamId = apps[0].team_id;
 	if (!apps.every((app) => app.team_id === teamId)) {
 		throw new Error("Apps must belong to the same team");
+	}
+
+	if (apps.some((app) => isProtectedApp(app.title, app.app_key))) {
+		throw new Error("AI Stats managed apps cannot be merged");
 	}
 
 	const admin = createAdminClient();

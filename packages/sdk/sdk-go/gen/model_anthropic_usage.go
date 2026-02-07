@@ -21,11 +21,6 @@ var _ MappedNullable = &AnthropicUsage{}
 type AnthropicUsage struct {
 	InputTokens *int32 `json:"input_tokens,omitempty"`
 	OutputTokens *int32 `json:"output_tokens,omitempty"`
-	CacheCreation map[string]interface{} `json:"cache_creation,omitempty"`
-	CacheCreationInputTokens *int32 `json:"cache_creation_input_tokens,omitempty"`
-	CacheReadInputTokens *int32 `json:"cache_read_input_tokens,omitempty"`
-	ServerToolUse *bool `json:"server_tool_use,omitempty"`
-	ServiceTier *string `json:"service_tier,omitempty"`
 }
 
 // NewAnthropicUsage instantiates a new AnthropicUsage object
@@ -109,166 +104,6 @@ func (o *AnthropicUsage) SetOutputTokens(v int32) {
 	o.OutputTokens = &v
 }
 
-// GetCacheCreation returns the CacheCreation field value if set, zero value otherwise.
-func (o *AnthropicUsage) GetCacheCreation() map[string]interface{} {
-	if o == nil || IsNil(o.CacheCreation) {
-		var ret map[string]interface{}
-		return ret
-	}
-	return o.CacheCreation
-}
-
-// GetCacheCreationOk returns a tuple with the CacheCreation field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicUsage) GetCacheCreationOk() (map[string]interface{}, bool) {
-	if o == nil || IsNil(o.CacheCreation) {
-		return map[string]interface{}{}, false
-	}
-	return o.CacheCreation, true
-}
-
-// HasCacheCreation returns a boolean if a field has been set.
-func (o *AnthropicUsage) HasCacheCreation() bool {
-	if o != nil && !IsNil(o.CacheCreation) {
-		return true
-	}
-
-	return false
-}
-
-// SetCacheCreation gets a reference to the given map[string]interface{} and assigns it to the CacheCreation field.
-func (o *AnthropicUsage) SetCacheCreation(v map[string]interface{}) {
-	o.CacheCreation = v
-}
-
-// GetCacheCreationInputTokens returns the CacheCreationInputTokens field value if set, zero value otherwise.
-func (o *AnthropicUsage) GetCacheCreationInputTokens() int32 {
-	if o == nil || IsNil(o.CacheCreationInputTokens) {
-		var ret int32
-		return ret
-	}
-	return *o.CacheCreationInputTokens
-}
-
-// GetCacheCreationInputTokensOk returns a tuple with the CacheCreationInputTokens field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicUsage) GetCacheCreationInputTokensOk() (*int32, bool) {
-	if o == nil || IsNil(o.CacheCreationInputTokens) {
-		return nil, false
-	}
-	return o.CacheCreationInputTokens, true
-}
-
-// HasCacheCreationInputTokens returns a boolean if a field has been set.
-func (o *AnthropicUsage) HasCacheCreationInputTokens() bool {
-	if o != nil && !IsNil(o.CacheCreationInputTokens) {
-		return true
-	}
-
-	return false
-}
-
-// SetCacheCreationInputTokens gets a reference to the given int32 and assigns it to the CacheCreationInputTokens field.
-func (o *AnthropicUsage) SetCacheCreationInputTokens(v int32) {
-	o.CacheCreationInputTokens = &v
-}
-
-// GetCacheReadInputTokens returns the CacheReadInputTokens field value if set, zero value otherwise.
-func (o *AnthropicUsage) GetCacheReadInputTokens() int32 {
-	if o == nil || IsNil(o.CacheReadInputTokens) {
-		var ret int32
-		return ret
-	}
-	return *o.CacheReadInputTokens
-}
-
-// GetCacheReadInputTokensOk returns a tuple with the CacheReadInputTokens field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicUsage) GetCacheReadInputTokensOk() (*int32, bool) {
-	if o == nil || IsNil(o.CacheReadInputTokens) {
-		return nil, false
-	}
-	return o.CacheReadInputTokens, true
-}
-
-// HasCacheReadInputTokens returns a boolean if a field has been set.
-func (o *AnthropicUsage) HasCacheReadInputTokens() bool {
-	if o != nil && !IsNil(o.CacheReadInputTokens) {
-		return true
-	}
-
-	return false
-}
-
-// SetCacheReadInputTokens gets a reference to the given int32 and assigns it to the CacheReadInputTokens field.
-func (o *AnthropicUsage) SetCacheReadInputTokens(v int32) {
-	o.CacheReadInputTokens = &v
-}
-
-// GetServerToolUse returns the ServerToolUse field value if set, zero value otherwise.
-func (o *AnthropicUsage) GetServerToolUse() bool {
-	if o == nil || IsNil(o.ServerToolUse) {
-		var ret bool
-		return ret
-	}
-	return *o.ServerToolUse
-}
-
-// GetServerToolUseOk returns a tuple with the ServerToolUse field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicUsage) GetServerToolUseOk() (*bool, bool) {
-	if o == nil || IsNil(o.ServerToolUse) {
-		return nil, false
-	}
-	return o.ServerToolUse, true
-}
-
-// HasServerToolUse returns a boolean if a field has been set.
-func (o *AnthropicUsage) HasServerToolUse() bool {
-	if o != nil && !IsNil(o.ServerToolUse) {
-		return true
-	}
-
-	return false
-}
-
-// SetServerToolUse gets a reference to the given bool and assigns it to the ServerToolUse field.
-func (o *AnthropicUsage) SetServerToolUse(v bool) {
-	o.ServerToolUse = &v
-}
-
-// GetServiceTier returns the ServiceTier field value if set, zero value otherwise.
-func (o *AnthropicUsage) GetServiceTier() string {
-	if o == nil || IsNil(o.ServiceTier) {
-		var ret string
-		return ret
-	}
-	return *o.ServiceTier
-}
-
-// GetServiceTierOk returns a tuple with the ServiceTier field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicUsage) GetServiceTierOk() (*string, bool) {
-	if o == nil || IsNil(o.ServiceTier) {
-		return nil, false
-	}
-	return o.ServiceTier, true
-}
-
-// HasServiceTier returns a boolean if a field has been set.
-func (o *AnthropicUsage) HasServiceTier() bool {
-	if o != nil && !IsNil(o.ServiceTier) {
-		return true
-	}
-
-	return false
-}
-
-// SetServiceTier gets a reference to the given string and assigns it to the ServiceTier field.
-func (o *AnthropicUsage) SetServiceTier(v string) {
-	o.ServiceTier = &v
-}
-
 func (o AnthropicUsage) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -284,21 +119,6 @@ func (o AnthropicUsage) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.OutputTokens) {
 		toSerialize["output_tokens"] = o.OutputTokens
-	}
-	if !IsNil(o.CacheCreation) {
-		toSerialize["cache_creation"] = o.CacheCreation
-	}
-	if !IsNil(o.CacheCreationInputTokens) {
-		toSerialize["cache_creation_input_tokens"] = o.CacheCreationInputTokens
-	}
-	if !IsNil(o.CacheReadInputTokens) {
-		toSerialize["cache_read_input_tokens"] = o.CacheReadInputTokens
-	}
-	if !IsNil(o.ServerToolUse) {
-		toSerialize["server_tool_use"] = o.ServerToolUse
-	}
-	if !IsNil(o.ServiceTier) {
-		toSerialize["service_tier"] = o.ServiceTier
 	}
 	return toSerialize, nil
 }

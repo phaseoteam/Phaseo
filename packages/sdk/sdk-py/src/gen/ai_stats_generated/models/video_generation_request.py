@@ -20,7 +20,6 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from ai_stats_generated.models.video_generation_request_seconds import VideoGenerationRequestSeconds
 from typing import Optional, Set
@@ -46,9 +45,8 @@ class VideoGenerationRequest(BaseModel):
     seed: Optional[StrictInt] = None
     person_generation: Optional[StrictStr] = None
     output_storage_uri: Optional[StrictStr] = None
-    debug: Optional[DebugOptions] = None
     provider: Optional[ProviderRoutingOptions] = None
-    __properties: ClassVar[List[str]] = ["model", "prompt", "seconds", "size", "input_reference", "input_reference_mime_type", "duration", "duration_seconds", "ratio", "aspect_ratio", "resolution", "negative_prompt", "sample_count", "seed", "person_generation", "output_storage_uri", "debug", "provider"]
+    __properties: ClassVar[List[str]] = ["model", "prompt", "seconds", "size", "input_reference", "input_reference_mime_type", "duration", "duration_seconds", "ratio", "aspect_ratio", "resolution", "negative_prompt", "sample_count", "seed", "person_generation", "output_storage_uri", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -92,9 +90,6 @@ class VideoGenerationRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of seconds
         if self.seconds:
             _dict['seconds'] = self.seconds.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of debug
-        if self.debug:
-            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of provider
         if self.provider:
             _dict['provider'] = self.provider.to_dict()
@@ -126,7 +121,6 @@ class VideoGenerationRequest(BaseModel):
             "seed": obj.get("seed"),
             "person_generation": obj.get("person_generation"),
             "output_storage_uri": obj.get("output_storage_uri"),
-            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj

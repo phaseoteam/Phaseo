@@ -7,25 +7,21 @@ Name | Type | Description | Notes
 **Model** | **string** |  | 
 **System** | Pointer to [**AnthropicMessagesRequestSystem**](AnthropicMessagesRequestSystem.md) |  | [optional] 
 **Messages** | [**[]AnthropicMessage**](AnthropicMessage.md) |  | 
-**MaxTokens** | **int32** |  | 
+**MaxTokens** | Pointer to **int32** |  | [optional] 
 **Temperature** | Pointer to **float32** |  | [optional] 
 **TopP** | Pointer to **float32** |  | [optional] 
 **TopK** | Pointer to **int32** |  | [optional] 
 **Tools** | Pointer to [**[]AnthropicTool**](AnthropicTool.md) |  | [optional] 
 **ToolChoice** | Pointer to [**ChatCompletionsRequestToolChoice**](ChatCompletionsRequestToolChoice.md) |  | [optional] 
 **Stream** | Pointer to **bool** |  | [optional] 
-**StopSequences** | Pointer to **[]string** |  | [optional] 
-**Modalities** | Pointer to **[]string** |  | [optional] 
 **Metadata** | Pointer to **map[string]string** |  | [optional] 
-**Meta** | Pointer to **bool** |  | [optional] 
-**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 ## Methods
 
 ### NewAnthropicMessagesRequest
 
-`func NewAnthropicMessagesRequest(model string, messages []AnthropicMessage, maxTokens int32, ) *AnthropicMessagesRequest`
+`func NewAnthropicMessagesRequest(model string, messages []AnthropicMessage, ) *AnthropicMessagesRequest`
 
 NewAnthropicMessagesRequest instantiates a new AnthropicMessagesRequest object
 This constructor will assign default values to properties that have it defined,
@@ -124,6 +120,11 @@ and a boolean to check if the value has been set.
 
 SetMaxTokens sets MaxTokens field to given value.
 
+### HasMaxTokens
+
+`func (o *AnthropicMessagesRequest) HasMaxTokens() bool`
+
+HasMaxTokens returns a boolean if a field has been set.
 
 ### GetTemperature
 
@@ -275,56 +276,6 @@ SetStream sets Stream field to given value.
 
 HasStream returns a boolean if a field has been set.
 
-### GetStopSequences
-
-`func (o *AnthropicMessagesRequest) GetStopSequences() []string`
-
-GetStopSequences returns the StopSequences field if non-nil, zero value otherwise.
-
-### GetStopSequencesOk
-
-`func (o *AnthropicMessagesRequest) GetStopSequencesOk() (*[]string, bool)`
-
-GetStopSequencesOk returns a tuple with the StopSequences field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetStopSequences
-
-`func (o *AnthropicMessagesRequest) SetStopSequences(v []string)`
-
-SetStopSequences sets StopSequences field to given value.
-
-### HasStopSequences
-
-`func (o *AnthropicMessagesRequest) HasStopSequences() bool`
-
-HasStopSequences returns a boolean if a field has been set.
-
-### GetModalities
-
-`func (o *AnthropicMessagesRequest) GetModalities() []string`
-
-GetModalities returns the Modalities field if non-nil, zero value otherwise.
-
-### GetModalitiesOk
-
-`func (o *AnthropicMessagesRequest) GetModalitiesOk() (*[]string, bool)`
-
-GetModalitiesOk returns a tuple with the Modalities field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetModalities
-
-`func (o *AnthropicMessagesRequest) SetModalities(v []string)`
-
-SetModalities sets Modalities field to given value.
-
-### HasModalities
-
-`func (o *AnthropicMessagesRequest) HasModalities() bool`
-
-HasModalities returns a boolean if a field has been set.
-
 ### GetMetadata
 
 `func (o *AnthropicMessagesRequest) GetMetadata() map[string]string`
@@ -349,56 +300,6 @@ SetMetadata sets Metadata field to given value.
 `func (o *AnthropicMessagesRequest) HasMetadata() bool`
 
 HasMetadata returns a boolean if a field has been set.
-
-### GetMeta
-
-`func (o *AnthropicMessagesRequest) GetMeta() bool`
-
-GetMeta returns the Meta field if non-nil, zero value otherwise.
-
-### GetMetaOk
-
-`func (o *AnthropicMessagesRequest) GetMetaOk() (*bool, bool)`
-
-GetMetaOk returns a tuple with the Meta field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetMeta
-
-`func (o *AnthropicMessagesRequest) SetMeta(v bool)`
-
-SetMeta sets Meta field to given value.
-
-### HasMeta
-
-`func (o *AnthropicMessagesRequest) HasMeta() bool`
-
-HasMeta returns a boolean if a field has been set.
-
-### GetDebug
-
-`func (o *AnthropicMessagesRequest) GetDebug() DebugOptions`
-
-GetDebug returns the Debug field if non-nil, zero value otherwise.
-
-### GetDebugOk
-
-`func (o *AnthropicMessagesRequest) GetDebugOk() (*DebugOptions, bool)`
-
-GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetDebug
-
-`func (o *AnthropicMessagesRequest) SetDebug(v DebugOptions)`
-
-SetDebug sets Debug field to given value.
-
-### HasDebug
-
-`func (o *AnthropicMessagesRequest) HasDebug() bool`
-
-HasDebug returns a boolean if a field has been set.
 
 ### GetProvider
 

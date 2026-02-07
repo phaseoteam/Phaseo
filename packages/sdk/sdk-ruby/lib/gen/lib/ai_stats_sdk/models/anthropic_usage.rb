@@ -19,26 +19,11 @@ module AIStatsSdk
 
     attr_accessor :output_tokens
 
-    attr_accessor :cache_creation
-
-    attr_accessor :cache_creation_input_tokens
-
-    attr_accessor :cache_read_input_tokens
-
-    attr_accessor :server_tool_use
-
-    attr_accessor :service_tier
-
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'input_tokens' => :'input_tokens',
-        :'output_tokens' => :'output_tokens',
-        :'cache_creation' => :'cache_creation',
-        :'cache_creation_input_tokens' => :'cache_creation_input_tokens',
-        :'cache_read_input_tokens' => :'cache_read_input_tokens',
-        :'server_tool_use' => :'server_tool_use',
-        :'service_tier' => :'service_tier'
+        :'output_tokens' => :'output_tokens'
       }
     end
 
@@ -56,12 +41,7 @@ module AIStatsSdk
     def self.openapi_types
       {
         :'input_tokens' => :'Integer',
-        :'output_tokens' => :'Integer',
-        :'cache_creation' => :'Object',
-        :'cache_creation_input_tokens' => :'Integer',
-        :'cache_read_input_tokens' => :'Integer',
-        :'server_tool_use' => :'Boolean',
-        :'service_tier' => :'String'
+        :'output_tokens' => :'Integer'
       }
     end
 
@@ -94,26 +74,6 @@ module AIStatsSdk
       if attributes.key?(:'output_tokens')
         self.output_tokens = attributes[:'output_tokens']
       end
-
-      if attributes.key?(:'cache_creation')
-        self.cache_creation = attributes[:'cache_creation']
-      end
-
-      if attributes.key?(:'cache_creation_input_tokens')
-        self.cache_creation_input_tokens = attributes[:'cache_creation_input_tokens']
-      end
-
-      if attributes.key?(:'cache_read_input_tokens')
-        self.cache_read_input_tokens = attributes[:'cache_read_input_tokens']
-      end
-
-      if attributes.key?(:'server_tool_use')
-        self.server_tool_use = attributes[:'server_tool_use']
-      end
-
-      if attributes.key?(:'service_tier')
-        self.service_tier = attributes[:'service_tier']
-      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -137,12 +97,7 @@ module AIStatsSdk
       return true if self.equal?(o)
       self.class == o.class &&
           input_tokens == o.input_tokens &&
-          output_tokens == o.output_tokens &&
-          cache_creation == o.cache_creation &&
-          cache_creation_input_tokens == o.cache_creation_input_tokens &&
-          cache_read_input_tokens == o.cache_read_input_tokens &&
-          server_tool_use == o.server_tool_use &&
-          service_tier == o.service_tier
+          output_tokens == o.output_tokens
     end
 
     # @see the `==` method
@@ -154,7 +109,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [input_tokens, output_tokens, cache_creation, cache_creation_input_tokens, cache_read_input_tokens, server_tool_use, service_tier].hash
+      [input_tokens, output_tokens].hash
     end
 
     # Builds the object from hash

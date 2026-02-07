@@ -104,10 +104,13 @@ export type PresetData = {
  */
 export type GatewayProviderSnapshot = {
     providerId: string;
+    providerStatus?: "active" | "beta" | "alpha" | "not_ready" | null;
     supportsEndpoint: boolean;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
     providerModelSlug: string | null;
+    inputModalities?: string[] | null;
+    outputModalities?: string[] | null;
     capabilityParams?: Record<string, any>;
     maxInputTokens?: number | null;
     maxOutputTokens?: number | null;
@@ -135,6 +138,12 @@ export type TeamEnrichment = {
     spend_30d_usd: number;
     requests_1h: number;
     requests_24h: number;
+};
+
+export type TeamSettings = {
+    routingMode: string | null;
+    byokFallbackEnabled: boolean | null;
+    betaChannelEnabled: boolean | null;
 };
 
 /**
@@ -168,6 +177,7 @@ export type GatewayContextData = {
     pricing: Record<string, PriceCard>;
     teamEnrichment?: TeamEnrichment | null;
     keyEnrichment?: KeyEnrichment | null;
+    teamSettings?: TeamSettings | null;
 };
 
 /**
@@ -176,11 +186,14 @@ export type GatewayContextData = {
  */
 export type ProviderCandidate = {
     providerId: string;
+    providerStatus?: "active" | "beta" | "alpha" | "not_ready" | null;
     adapter: ProviderAdapter;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
     pricingCard: PriceCard | null;
     providerModelSlug: string | null;
+    inputModalities?: string[] | null;
+    outputModalities?: string[] | null;
     capabilityParams?: Record<string, any>;
     maxInputTokens?: number | null;
     maxOutputTokens?: number | null;
@@ -223,6 +236,8 @@ export type PipelineContext = {
     // Enrichment data for observability (wide events)
     teamEnrichment?: TeamEnrichment | null;
     keyEnrichment?: KeyEnrichment | null;
+    teamSettings?: TeamSettings | null;
+    routingMode?: string | null;
     keyId?: string | null;
 };
 

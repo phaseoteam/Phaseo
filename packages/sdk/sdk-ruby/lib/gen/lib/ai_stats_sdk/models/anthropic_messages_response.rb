@@ -31,10 +31,6 @@ module AIStatsSdk
 
     attr_accessor :usage
 
-    attr_accessor :meta
-
-    attr_accessor :debug
-
     class EnumAttributeValidator
       attr_reader :datatype
       attr_reader :allowable_values
@@ -67,9 +63,7 @@ module AIStatsSdk
         :'content' => :'content',
         :'stop_reason' => :'stop_reason',
         :'stop_sequence' => :'stop_sequence',
-        :'usage' => :'usage',
-        :'meta' => :'meta',
-        :'debug' => :'debug'
+        :'usage' => :'usage'
       }
     end
 
@@ -93,9 +87,7 @@ module AIStatsSdk
         :'content' => :'Array<AnthropicContentBlock>',
         :'stop_reason' => :'String',
         :'stop_sequence' => :'String',
-        :'usage' => :'AnthropicUsage',
-        :'meta' => :'Object',
-        :'debug' => :'DebugResponse'
+        :'usage' => :'AnthropicUsage'
       }
     end
 
@@ -154,14 +146,6 @@ module AIStatsSdk
       if attributes.key?(:'usage')
         self.usage = attributes[:'usage']
       end
-
-      if attributes.key?(:'meta')
-        self.meta = attributes[:'meta']
-      end
-
-      if attributes.key?(:'debug')
-        self.debug = attributes[:'debug']
-      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -203,9 +187,7 @@ module AIStatsSdk
           content == o.content &&
           stop_reason == o.stop_reason &&
           stop_sequence == o.stop_sequence &&
-          usage == o.usage &&
-          meta == o.meta &&
-          debug == o.debug
+          usage == o.usage
     end
 
     # @see the `==` method
@@ -217,7 +199,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [id, type, role, model, content, stop_reason, stop_sequence, usage, meta, debug].hash
+      [id, type, role, model, content, stop_reason, stop_sequence, usage].hash
     end
 
     # Builds the object from hash

@@ -36,40 +36,26 @@ namespace AIStatsSdk.Model
         /// <param name="modelId">modelId</param>
         /// <param name="name">name</param>
         /// <param name="releaseDate">releaseDate</param>
-        /// <param name="deprecationDate">deprecationDate</param>
-        /// <param name="retirementDate">retirementDate</param>
         /// <param name="status">status</param>
         /// <param name="organisationId">organisationId</param>
-        /// <param name="organisationName">organisationName</param>
-        /// <param name="organisationColour">organisationColour</param>
         /// <param name="aliases">aliases</param>
         /// <param name="endpoints">endpoints</param>
         /// <param name="inputTypes">inputTypes</param>
         /// <param name="outputTypes">outputTypes</param>
         /// <param name="providers">providers</param>
-        /// <param name="supportedParams">supportedParams</param>
-        /// <param name="topProvider">topProvider</param>
-        /// <param name="pricing">pricing</param>
         [JsonConstructor]
-        public Model(Option<string?> modelId = default, Option<string?> name = default, Option<string?> releaseDate = default, Option<string?> deprecationDate = default, Option<string?> retirementDate = default, Option<string?> status = default, Option<string?> organisationId = default, Option<string?> organisationName = default, Option<string?> organisationColour = default, Option<List<string>?> aliases = default, Option<List<string>?> endpoints = default, Option<List<string>?> inputTypes = default, Option<List<string>?> outputTypes = default, Option<List<ModelProvidersInner>?> providers = default, Option<List<string>?> supportedParams = default, Option<string?> topProvider = default, Option<ModelPricing?> pricing = default)
+        public Model(Option<string?> modelId = default, Option<string?> name = default, Option<string?> releaseDate = default, Option<string?> status = default, Option<string?> organisationId = default, Option<List<string>?> aliases = default, Option<List<string>?> endpoints = default, Option<List<string>?> inputTypes = default, Option<List<string>?> outputTypes = default, Option<List<ModelProvidersInner>?> providers = default)
         {
             ModelIdOption = modelId;
             NameOption = name;
             ReleaseDateOption = releaseDate;
-            DeprecationDateOption = deprecationDate;
-            RetirementDateOption = retirementDate;
             StatusOption = status;
             OrganisationIdOption = organisationId;
-            OrganisationNameOption = organisationName;
-            OrganisationColourOption = organisationColour;
             AliasesOption = aliases;
             EndpointsOption = endpoints;
             InputTypesOption = inputTypes;
             OutputTypesOption = outputTypes;
             ProvidersOption = providers;
-            SupportedParamsOption = supportedParams;
-            TopProviderOption = topProvider;
-            PricingOption = pricing;
             OnCreated();
         }
 
@@ -115,32 +101,6 @@ namespace AIStatsSdk.Model
         public string? ReleaseDate { get { return this.ReleaseDateOption; } set { this.ReleaseDateOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of DeprecationDate
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> DeprecationDateOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets DeprecationDate
-        /// </summary>
-        [JsonPropertyName("deprecation_date")]
-        public string? DeprecationDate { get { return this.DeprecationDateOption; } set { this.DeprecationDateOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of RetirementDate
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> RetirementDateOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets RetirementDate
-        /// </summary>
-        [JsonPropertyName("retirement_date")]
-        public string? RetirementDate { get { return this.RetirementDateOption; } set { this.RetirementDateOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Status
         /// </summary>
         [JsonIgnore]
@@ -165,32 +125,6 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonPropertyName("organisation_id")]
         public string? OrganisationId { get { return this.OrganisationIdOption; } set { this.OrganisationIdOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of OrganisationName
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> OrganisationNameOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets OrganisationName
-        /// </summary>
-        [JsonPropertyName("organisation_name")]
-        public string? OrganisationName { get { return this.OrganisationNameOption; } set { this.OrganisationNameOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of OrganisationColour
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> OrganisationColourOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets OrganisationColour
-        /// </summary>
-        [JsonPropertyName("organisation_colour")]
-        public string? OrganisationColour { get { return this.OrganisationColourOption; } set { this.OrganisationColourOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Aliases
@@ -258,45 +192,6 @@ namespace AIStatsSdk.Model
         public List<ModelProvidersInner>? Providers { get { return this.ProvidersOption; } set { this.ProvidersOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of SupportedParams
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<string>?> SupportedParamsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets SupportedParams
-        /// </summary>
-        [JsonPropertyName("supported_params")]
-        public List<string>? SupportedParams { get { return this.SupportedParamsOption; } set { this.SupportedParamsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of TopProvider
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> TopProviderOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets TopProvider
-        /// </summary>
-        [JsonPropertyName("top_provider")]
-        public string? TopProvider { get { return this.TopProviderOption; } set { this.TopProviderOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Pricing
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<ModelPricing?> PricingOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Pricing
-        /// </summary>
-        [JsonPropertyName("pricing")]
-        public ModelPricing? Pricing { get { return this.PricingOption; } set { this.PricingOption = new(value); } }
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -307,20 +202,13 @@ namespace AIStatsSdk.Model
             sb.Append("  ModelId: ").Append(ModelId).Append("\n");
             sb.Append("  Name: ").Append(Name).Append("\n");
             sb.Append("  ReleaseDate: ").Append(ReleaseDate).Append("\n");
-            sb.Append("  DeprecationDate: ").Append(DeprecationDate).Append("\n");
-            sb.Append("  RetirementDate: ").Append(RetirementDate).Append("\n");
             sb.Append("  Status: ").Append(Status).Append("\n");
             sb.Append("  OrganisationId: ").Append(OrganisationId).Append("\n");
-            sb.Append("  OrganisationName: ").Append(OrganisationName).Append("\n");
-            sb.Append("  OrganisationColour: ").Append(OrganisationColour).Append("\n");
             sb.Append("  Aliases: ").Append(Aliases).Append("\n");
             sb.Append("  Endpoints: ").Append(Endpoints).Append("\n");
             sb.Append("  InputTypes: ").Append(InputTypes).Append("\n");
             sb.Append("  OutputTypes: ").Append(OutputTypes).Append("\n");
             sb.Append("  Providers: ").Append(Providers).Append("\n");
-            sb.Append("  SupportedParams: ").Append(SupportedParams).Append("\n");
-            sb.Append("  TopProvider: ").Append(TopProvider).Append("\n");
-            sb.Append("  Pricing: ").Append(Pricing).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -361,20 +249,13 @@ namespace AIStatsSdk.Model
             Option<string?> modelId = default;
             Option<string?> name = default;
             Option<string?> releaseDate = default;
-            Option<string?> deprecationDate = default;
-            Option<string?> retirementDate = default;
             Option<string?> status = default;
             Option<string?> organisationId = default;
-            Option<string?> organisationName = default;
-            Option<string?> organisationColour = default;
             Option<List<string>?> aliases = default;
             Option<List<string>?> endpoints = default;
             Option<List<string>?> inputTypes = default;
             Option<List<string>?> outputTypes = default;
             Option<List<ModelProvidersInner>?> providers = default;
-            Option<List<string>?> supportedParams = default;
-            Option<string?> topProvider = default;
-            Option<ModelPricing?> pricing = default;
 
             while (utf8JsonReader.Read())
             {
@@ -395,28 +276,16 @@ namespace AIStatsSdk.Model
                             modelId = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "name":
-                            name = new Option<string?>(utf8JsonReader.GetString());
+                            name = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "release_date":
-                            releaseDate = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "deprecation_date":
-                            deprecationDate = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "retirement_date":
-                            retirementDate = new Option<string?>(utf8JsonReader.GetString());
+                            releaseDate = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "status":
-                            status = new Option<string?>(utf8JsonReader.GetString());
+                            status = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "organisation_id":
-                            organisationId = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "organisation_name":
-                            organisationName = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "organisation_colour":
-                            organisationColour = new Option<string?>(utf8JsonReader.GetString());
+                            organisationId = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "aliases":
                             aliases = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
@@ -433,15 +302,6 @@ namespace AIStatsSdk.Model
                         case "providers":
                             providers = new Option<List<ModelProvidersInner>?>(JsonSerializer.Deserialize<List<ModelProvidersInner>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
-                        case "supported_params":
-                            supportedParams = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "top_provider":
-                            topProvider = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "pricing":
-                            pricing = new Option<ModelPricing?>(JsonSerializer.Deserialize<ModelPricing>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         default:
                             break;
                     }
@@ -450,6 +310,18 @@ namespace AIStatsSdk.Model
 
             if (modelId.IsSet && modelId.Value == null)
                 throw new ArgumentNullException(nameof(modelId), "Property is not nullable for class Model.");
+
+            if (name.IsSet && name.Value == null)
+                throw new ArgumentNullException(nameof(name), "Property is not nullable for class Model.");
+
+            if (releaseDate.IsSet && releaseDate.Value == null)
+                throw new ArgumentNullException(nameof(releaseDate), "Property is not nullable for class Model.");
+
+            if (status.IsSet && status.Value == null)
+                throw new ArgumentNullException(nameof(status), "Property is not nullable for class Model.");
+
+            if (organisationId.IsSet && organisationId.Value == null)
+                throw new ArgumentNullException(nameof(organisationId), "Property is not nullable for class Model.");
 
             if (aliases.IsSet && aliases.Value == null)
                 throw new ArgumentNullException(nameof(aliases), "Property is not nullable for class Model.");
@@ -466,13 +338,7 @@ namespace AIStatsSdk.Model
             if (providers.IsSet && providers.Value == null)
                 throw new ArgumentNullException(nameof(providers), "Property is not nullable for class Model.");
 
-            if (supportedParams.IsSet && supportedParams.Value == null)
-                throw new ArgumentNullException(nameof(supportedParams), "Property is not nullable for class Model.");
-
-            if (pricing.IsSet && pricing.Value == null)
-                throw new ArgumentNullException(nameof(pricing), "Property is not nullable for class Model.");
-
-            return new Model(modelId, name, releaseDate, deprecationDate, retirementDate, status, organisationId, organisationName, organisationColour, aliases, endpoints, inputTypes, outputTypes, providers, supportedParams, topProvider, pricing);
+            return new Model(modelId, name, releaseDate, status, organisationId, aliases, endpoints, inputTypes, outputTypes, providers);
         }
 
         /// <summary>
@@ -502,6 +368,18 @@ namespace AIStatsSdk.Model
             if (model.ModelIdOption.IsSet && model.ModelId == null)
                 throw new ArgumentNullException(nameof(model.ModelId), "Property is required for class Model.");
 
+            if (model.NameOption.IsSet && model.Name == null)
+                throw new ArgumentNullException(nameof(model.Name), "Property is required for class Model.");
+
+            if (model.ReleaseDateOption.IsSet && model.ReleaseDate == null)
+                throw new ArgumentNullException(nameof(model.ReleaseDate), "Property is required for class Model.");
+
+            if (model.StatusOption.IsSet && model.Status == null)
+                throw new ArgumentNullException(nameof(model.Status), "Property is required for class Model.");
+
+            if (model.OrganisationIdOption.IsSet && model.OrganisationId == null)
+                throw new ArgumentNullException(nameof(model.OrganisationId), "Property is required for class Model.");
+
             if (model.AliasesOption.IsSet && model.Aliases == null)
                 throw new ArgumentNullException(nameof(model.Aliases), "Property is required for class Model.");
 
@@ -517,62 +395,20 @@ namespace AIStatsSdk.Model
             if (model.ProvidersOption.IsSet && model.Providers == null)
                 throw new ArgumentNullException(nameof(model.Providers), "Property is required for class Model.");
 
-            if (model.SupportedParamsOption.IsSet && model.SupportedParams == null)
-                throw new ArgumentNullException(nameof(model.SupportedParams), "Property is required for class Model.");
-
-            if (model.PricingOption.IsSet && model.Pricing == null)
-                throw new ArgumentNullException(nameof(model.Pricing), "Property is required for class Model.");
-
             if (model.ModelIdOption.IsSet)
                 writer.WriteString("model_id", model.ModelId);
 
             if (model.NameOption.IsSet)
-                if (model.NameOption.Value != null)
-                    writer.WriteString("name", model.Name);
-                else
-                    writer.WriteNull("name");
+                writer.WriteString("name", model.Name);
 
             if (model.ReleaseDateOption.IsSet)
-                if (model.ReleaseDateOption.Value != null)
-                    writer.WriteString("release_date", model.ReleaseDate);
-                else
-                    writer.WriteNull("release_date");
-
-            if (model.DeprecationDateOption.IsSet)
-                if (model.DeprecationDateOption.Value != null)
-                    writer.WriteString("deprecation_date", model.DeprecationDate);
-                else
-                    writer.WriteNull("deprecation_date");
-
-            if (model.RetirementDateOption.IsSet)
-                if (model.RetirementDateOption.Value != null)
-                    writer.WriteString("retirement_date", model.RetirementDate);
-                else
-                    writer.WriteNull("retirement_date");
+                writer.WriteString("release_date", model.ReleaseDate);
 
             if (model.StatusOption.IsSet)
-                if (model.StatusOption.Value != null)
-                    writer.WriteString("status", model.Status);
-                else
-                    writer.WriteNull("status");
+                writer.WriteString("status", model.Status);
 
             if (model.OrganisationIdOption.IsSet)
-                if (model.OrganisationIdOption.Value != null)
-                    writer.WriteString("organisation_id", model.OrganisationId);
-                else
-                    writer.WriteNull("organisation_id");
-
-            if (model.OrganisationNameOption.IsSet)
-                if (model.OrganisationNameOption.Value != null)
-                    writer.WriteString("organisation_name", model.OrganisationName);
-                else
-                    writer.WriteNull("organisation_name");
-
-            if (model.OrganisationColourOption.IsSet)
-                if (model.OrganisationColourOption.Value != null)
-                    writer.WriteString("organisation_colour", model.OrganisationColour);
-                else
-                    writer.WriteNull("organisation_colour");
+                writer.WriteString("organisation_id", model.OrganisationId);
 
             if (model.AliasesOption.IsSet)
             {
@@ -598,22 +434,6 @@ namespace AIStatsSdk.Model
             {
                 writer.WritePropertyName("providers");
                 JsonSerializer.Serialize(writer, model.Providers, jsonSerializerOptions);
-            }
-            if (model.SupportedParamsOption.IsSet)
-            {
-                writer.WritePropertyName("supported_params");
-                JsonSerializer.Serialize(writer, model.SupportedParams, jsonSerializerOptions);
-            }
-            if (model.TopProviderOption.IsSet)
-                if (model.TopProviderOption.Value != null)
-                    writer.WriteString("top_provider", model.TopProvider);
-                else
-                    writer.WriteNull("top_provider");
-
-            if (model.PricingOption.IsSet)
-            {
-                writer.WritePropertyName("pricing");
-                JsonSerializer.Serialize(writer, model.Pricing, jsonSerializerOptions);
             }
         }
     }

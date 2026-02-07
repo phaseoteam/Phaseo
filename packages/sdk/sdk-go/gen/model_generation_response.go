@@ -34,16 +34,13 @@ type GenerationResponse struct {
 	ErrorMessage NullableString `json:"error_message,omitempty"`
 	LatencyMs *float32 `json:"latency_ms,omitempty"`
 	GenerationMs *float32 `json:"generation_ms,omitempty"`
-	Usage *Usage `json:"usage,omitempty"`
+	Usage NullableGenerationResponseUsage `json:"usage,omitempty"`
 	CostNanos *float32 `json:"cost_nanos,omitempty"`
 	Currency *string `json:"currency,omitempty"`
 	PricingLines []map[string]interface{} `json:"pricing_lines,omitempty"`
 	KeyId *string `json:"key_id,omitempty"`
 	Throughput NullableFloat32 `json:"throughput,omitempty"`
-	AdditionalProperties map[string]interface{}
 }
-
-type _GenerationResponse GenerationResponse
 
 // NewGenerationResponse instantiates a new GenerationResponse object
 // This constructor will assign default values to properties that have it defined,
@@ -582,36 +579,46 @@ func (o *GenerationResponse) SetGenerationMs(v float32) {
 	o.GenerationMs = &v
 }
 
-// GetUsage returns the Usage field value if set, zero value otherwise.
-func (o *GenerationResponse) GetUsage() Usage {
-	if o == nil || IsNil(o.Usage) {
-		var ret Usage
+// GetUsage returns the Usage field value if set, zero value otherwise (both if not set or set to explicit null).
+func (o *GenerationResponse) GetUsage() GenerationResponseUsage {
+	if o == nil || IsNil(o.Usage.Get()) {
+		var ret GenerationResponseUsage
 		return ret
 	}
-	return *o.Usage
+	return *o.Usage.Get()
 }
 
 // GetUsageOk returns a tuple with the Usage field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *GenerationResponse) GetUsageOk() (*Usage, bool) {
-	if o == nil || IsNil(o.Usage) {
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *GenerationResponse) GetUsageOk() (*GenerationResponseUsage, bool) {
+	if o == nil {
 		return nil, false
 	}
-	return o.Usage, true
+	return o.Usage.Get(), o.Usage.IsSet()
 }
 
 // HasUsage returns a boolean if a field has been set.
 func (o *GenerationResponse) HasUsage() bool {
-	if o != nil && !IsNil(o.Usage) {
+	if o != nil && o.Usage.IsSet() {
 		return true
 	}
 
 	return false
 }
 
-// SetUsage gets a reference to the given Usage and assigns it to the Usage field.
-func (o *GenerationResponse) SetUsage(v Usage) {
-	o.Usage = &v
+// SetUsage gets a reference to the given NullableGenerationResponseUsage and assigns it to the Usage field.
+func (o *GenerationResponse) SetUsage(v GenerationResponseUsage) {
+	o.Usage.Set(&v)
+}
+// SetUsageNil sets the value for Usage to be an explicit nil
+func (o *GenerationResponse) SetUsageNil() {
+	o.Usage.Set(nil)
+}
+
+// UnsetUsage ensures that no value is present for Usage, not even an explicit nil
+func (o *GenerationResponse) UnsetUsage() {
+	o.Usage.Unset()
 }
 
 // GetCostNanos returns the CostNanos field value if set, zero value otherwise.
@@ -839,8 +846,8 @@ func (o GenerationResponse) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.GenerationMs) {
 		toSerialize["generation_ms"] = o.GenerationMs
 	}
-	if !IsNil(o.Usage) {
-		toSerialize["usage"] = o.Usage
+	if o.Usage.IsSet() {
+		toSerialize["usage"] = o.Usage.Get()
 	}
 	if !IsNil(o.CostNanos) {
 		toSerialize["cost_nanos"] = o.CostNanos
@@ -857,53 +864,7 @@ func (o GenerationResponse) ToMap() (map[string]interface{}, error) {
 	if o.Throughput.IsSet() {
 		toSerialize["throughput"] = o.Throughput.Get()
 	}
-
-	for key, value := range o.AdditionalProperties {
-		toSerialize[key] = value
-	}
-
 	return toSerialize, nil
-}
-
-func (o *GenerationResponse) UnmarshalJSON(data []byte) (err error) {
-	varGenerationResponse := _GenerationResponse{}
-
-	err = json.Unmarshal(data, &varGenerationResponse)
-
-	if err != nil {
-		return err
-	}
-
-	*o = GenerationResponse(varGenerationResponse)
-
-	additionalProperties := make(map[string]interface{})
-
-	if err = json.Unmarshal(data, &additionalProperties); err == nil {
-		delete(additionalProperties, "request_id")
-		delete(additionalProperties, "team_id")
-		delete(additionalProperties, "app_id")
-		delete(additionalProperties, "endpoint")
-		delete(additionalProperties, "model_id")
-		delete(additionalProperties, "provider")
-		delete(additionalProperties, "native_response_id")
-		delete(additionalProperties, "stream")
-		delete(additionalProperties, "byok")
-		delete(additionalProperties, "status_code")
-		delete(additionalProperties, "success")
-		delete(additionalProperties, "error_code")
-		delete(additionalProperties, "error_message")
-		delete(additionalProperties, "latency_ms")
-		delete(additionalProperties, "generation_ms")
-		delete(additionalProperties, "usage")
-		delete(additionalProperties, "cost_nanos")
-		delete(additionalProperties, "currency")
-		delete(additionalProperties, "pricing_lines")
-		delete(additionalProperties, "key_id")
-		delete(additionalProperties, "throughput")
-		o.AdditionalProperties = additionalProperties
-	}
-
-	return err
 }
 
 type NullableGenerationResponse struct {

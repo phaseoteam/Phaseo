@@ -7,7 +7,7 @@
  * import { generateText } from 'ai';
  *
  * const result = await generateText({
- *   model: aiStats('openai/gpt-5-nano'),
+ *   model: aiStats('openai/gpt-4o'),
  *   prompt: 'Hello, world!',
  * });
  * ```
@@ -23,7 +23,7 @@
  * });
  *
  * const { textStream } = await streamText({
- *   model: aiStats('openai/gpt-5-nano'),
+ *   model: aiStats('anthropic/claude-3-5-sonnet'),
  *   prompt: 'Write a poem',
  * });
  * ```
@@ -55,7 +55,7 @@ import { createAIStats } from './ai-stats-provider.js';
  * import { generateText } from 'ai';
  *
  * const result = await generateText({
- *   model: aiStats('openai/gpt-5-nano'),
+ *   model: aiStats('openai/gpt-4o'),
  *   prompt: 'Hello!',
  * });
  * ```

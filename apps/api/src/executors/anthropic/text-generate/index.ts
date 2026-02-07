@@ -7,10 +7,13 @@
 // CRITICAL FIX: Properly extracts tool_use blocks from responses!
 
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
-import type { IRChatRequest, IRChatResponse, IRChoice, IRUsage, IRToolCall } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRChoice, IRToolCall } from "@core/ir";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { computeBill } from "@pipeline/pricing/engine";
+import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
+import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 
 /**
  * Executes IR requests using Anthropic Messages API
@@ -41,7 +44,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         stream: true,
                 };
                 const requestPayloadJson = JSON.stringify(requestBody);
-                const mappedRequest = args.meta.echoUpstreamRequest ? requestPayloadJson : undefined;
+                const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestPayloadJson : undefined;
 
                 // Execute upstream call
                 const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -76,10 +79,26 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 
                 // Handle streaming vs non-streaming
                 if (args.ir.stream) {
-                        // Return stream directly
+                        if (!res.body) {
+                                throw new Error("anthropic_stream_missing_body");
+                        }
+
+                        const model = args.providerModelSlug || args.ir.model;
+                        const responsesStream = res.body.pipeThrough(
+                                createAnthropicToResponsesStreamTransformer(args.requestId, model),
+                        );
+                        const normalized = resolveStreamForProtocol(
+                                new Response(responsesStream, {
+                                        status: res.status,
+                                        headers: res.headers,
+                                }),
+                                args,
+                                "responses",
+                        );
+
                         return {
                                 kind: "stream",
-                                stream: res.body!,
+                                stream: normalized,
                                 usageFinalizer: createUsageFinalizer(res, args),
                                 bill,
                                 upstream: res,
@@ -95,9 +114,9 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         const ir = anthropicMessagesToIR(message, args.requestId, args.ir.model, args.providerId);
 
 			// Calculate pricing
-			if (ir.usage) {
-				const usage = anthropicUsageToGeneric(ir.usage);
-				const priced = computeBill(usage, args.pricingCard);
+			const usageMeters = normalizeTextUsageForPricing(ir.usage);
+			if (usageMeters) {
+				const priced = computeBill(usageMeters, args.pricingCard);
 				bill.cost_cents = priced.pricing.total_cents;
 				bill.currency = priced.pricing.currency;
 				bill.usage = priced;
@@ -247,10 +266,14 @@ function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens?: numb
 	if (ir.stop) request.stop_sequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
 	if (ir.metadata) request.metadata = ir.metadata;
 	if (ir.reasoning) {
+		const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number"
+			? ir.reasoning.maxTokens
+			: maxTokens;
 		if (ir.reasoning.enabled === false) {
 			request.thinking = { type: "disabled" };
-		} else if (typeof ir.reasoning.maxTokens === "number") {
-			request.thinking = { type: "enabled", budget_tokens: ir.reasoning.maxTokens };
+		} else if (reasoningMaxTokens > 0) {
+			// Mirror max_tokens into Anthropic thinking budget when reasoning is enabled.
+			request.thinking = { type: "enabled", budget_tokens: reasoningMaxTokens };
 		} else if (ir.reasoning.enabled === true) {
 			request.thinking = { type: "enabled" };
 		}
@@ -357,19 +380,6 @@ function anthropicMessagesToIR(
 				totalTokens: (json.usage.input_tokens || 0) + (json.usage.output_tokens || 0),
 			}
 			: undefined,
-	};
-}
-
-/**
- * Convert Anthropic usage to generic format for pricing
- */
-function anthropicUsageToGeneric(usage: IRUsage): any {
-	return {
-		input_tokens: usage.inputTokens,
-		output_tokens: usage.outputTokens,
-		total_tokens: usage.totalTokens,
-		input_text_tokens: usage.inputTokens,
-		output_text_tokens: usage.outputTokens,
 	};
 }
 

@@ -20,22 +20,15 @@ var _ MappedNullable = &Model{}
 // Model struct for Model
 type Model struct {
 	ModelId *string `json:"model_id,omitempty"`
-	Name NullableString `json:"name,omitempty"`
-	ReleaseDate NullableString `json:"release_date,omitempty"`
-	DeprecationDate NullableString `json:"deprecation_date,omitempty"`
-	RetirementDate NullableString `json:"retirement_date,omitempty"`
-	Status NullableString `json:"status,omitempty"`
-	OrganisationId NullableString `json:"organisation_id,omitempty"`
-	OrganisationName NullableString `json:"organisation_name,omitempty"`
-	OrganisationColour NullableString `json:"organisation_colour,omitempty"`
+	Name *string `json:"name,omitempty"`
+	ReleaseDate *string `json:"release_date,omitempty"`
+	Status *string `json:"status,omitempty"`
+	OrganisationId *string `json:"organisation_id,omitempty"`
 	Aliases []string `json:"aliases,omitempty"`
 	Endpoints []string `json:"endpoints,omitempty"`
 	InputTypes []string `json:"input_types,omitempty"`
 	OutputTypes []string `json:"output_types,omitempty"`
 	Providers []ModelProvidersInner `json:"providers,omitempty"`
-	SupportedParams []string `json:"supported_params,omitempty"`
-	TopProvider NullableString `json:"top_provider,omitempty"`
-	Pricing *ModelPricing `json:"pricing,omitempty"`
 }
 
 // NewModel instantiates a new Model object
@@ -87,340 +80,132 @@ func (o *Model) SetModelId(v string) {
 	o.ModelId = &v
 }
 
-// GetName returns the Name field value if set, zero value otherwise (both if not set or set to explicit null).
+// GetName returns the Name field value if set, zero value otherwise.
 func (o *Model) GetName() string {
-	if o == nil || IsNil(o.Name.Get()) {
+	if o == nil || IsNil(o.Name) {
 		var ret string
 		return ret
 	}
-	return *o.Name.Get()
+	return *o.Name
 }
 
 // GetNameOk returns a tuple with the Name field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
 func (o *Model) GetNameOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.Name) {
 		return nil, false
 	}
-	return o.Name.Get(), o.Name.IsSet()
+	return o.Name, true
 }
 
 // HasName returns a boolean if a field has been set.
 func (o *Model) HasName() bool {
-	if o != nil && o.Name.IsSet() {
+	if o != nil && !IsNil(o.Name) {
 		return true
 	}
 
 	return false
 }
 
-// SetName gets a reference to the given NullableString and assigns it to the Name field.
+// SetName gets a reference to the given string and assigns it to the Name field.
 func (o *Model) SetName(v string) {
-	o.Name.Set(&v)
-}
-// SetNameNil sets the value for Name to be an explicit nil
-func (o *Model) SetNameNil() {
-	o.Name.Set(nil)
+	o.Name = &v
 }
 
-// UnsetName ensures that no value is present for Name, not even an explicit nil
-func (o *Model) UnsetName() {
-	o.Name.Unset()
-}
-
-// GetReleaseDate returns the ReleaseDate field value if set, zero value otherwise (both if not set or set to explicit null).
+// GetReleaseDate returns the ReleaseDate field value if set, zero value otherwise.
 func (o *Model) GetReleaseDate() string {
-	if o == nil || IsNil(o.ReleaseDate.Get()) {
+	if o == nil || IsNil(o.ReleaseDate) {
 		var ret string
 		return ret
 	}
-	return *o.ReleaseDate.Get()
+	return *o.ReleaseDate
 }
 
 // GetReleaseDateOk returns a tuple with the ReleaseDate field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
 func (o *Model) GetReleaseDateOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.ReleaseDate) {
 		return nil, false
 	}
-	return o.ReleaseDate.Get(), o.ReleaseDate.IsSet()
+	return o.ReleaseDate, true
 }
 
 // HasReleaseDate returns a boolean if a field has been set.
 func (o *Model) HasReleaseDate() bool {
-	if o != nil && o.ReleaseDate.IsSet() {
+	if o != nil && !IsNil(o.ReleaseDate) {
 		return true
 	}
 
 	return false
 }
 
-// SetReleaseDate gets a reference to the given NullableString and assigns it to the ReleaseDate field.
+// SetReleaseDate gets a reference to the given string and assigns it to the ReleaseDate field.
 func (o *Model) SetReleaseDate(v string) {
-	o.ReleaseDate.Set(&v)
-}
-// SetReleaseDateNil sets the value for ReleaseDate to be an explicit nil
-func (o *Model) SetReleaseDateNil() {
-	o.ReleaseDate.Set(nil)
+	o.ReleaseDate = &v
 }
 
-// UnsetReleaseDate ensures that no value is present for ReleaseDate, not even an explicit nil
-func (o *Model) UnsetReleaseDate() {
-	o.ReleaseDate.Unset()
-}
-
-// GetDeprecationDate returns the DeprecationDate field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *Model) GetDeprecationDate() string {
-	if o == nil || IsNil(o.DeprecationDate.Get()) {
-		var ret string
-		return ret
-	}
-	return *o.DeprecationDate.Get()
-}
-
-// GetDeprecationDateOk returns a tuple with the DeprecationDate field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model) GetDeprecationDateOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return o.DeprecationDate.Get(), o.DeprecationDate.IsSet()
-}
-
-// HasDeprecationDate returns a boolean if a field has been set.
-func (o *Model) HasDeprecationDate() bool {
-	if o != nil && o.DeprecationDate.IsSet() {
-		return true
-	}
-
-	return false
-}
-
-// SetDeprecationDate gets a reference to the given NullableString and assigns it to the DeprecationDate field.
-func (o *Model) SetDeprecationDate(v string) {
-	o.DeprecationDate.Set(&v)
-}
-// SetDeprecationDateNil sets the value for DeprecationDate to be an explicit nil
-func (o *Model) SetDeprecationDateNil() {
-	o.DeprecationDate.Set(nil)
-}
-
-// UnsetDeprecationDate ensures that no value is present for DeprecationDate, not even an explicit nil
-func (o *Model) UnsetDeprecationDate() {
-	o.DeprecationDate.Unset()
-}
-
-// GetRetirementDate returns the RetirementDate field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *Model) GetRetirementDate() string {
-	if o == nil || IsNil(o.RetirementDate.Get()) {
-		var ret string
-		return ret
-	}
-	return *o.RetirementDate.Get()
-}
-
-// GetRetirementDateOk returns a tuple with the RetirementDate field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model) GetRetirementDateOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return o.RetirementDate.Get(), o.RetirementDate.IsSet()
-}
-
-// HasRetirementDate returns a boolean if a field has been set.
-func (o *Model) HasRetirementDate() bool {
-	if o != nil && o.RetirementDate.IsSet() {
-		return true
-	}
-
-	return false
-}
-
-// SetRetirementDate gets a reference to the given NullableString and assigns it to the RetirementDate field.
-func (o *Model) SetRetirementDate(v string) {
-	o.RetirementDate.Set(&v)
-}
-// SetRetirementDateNil sets the value for RetirementDate to be an explicit nil
-func (o *Model) SetRetirementDateNil() {
-	o.RetirementDate.Set(nil)
-}
-
-// UnsetRetirementDate ensures that no value is present for RetirementDate, not even an explicit nil
-func (o *Model) UnsetRetirementDate() {
-	o.RetirementDate.Unset()
-}
-
-// GetStatus returns the Status field value if set, zero value otherwise (both if not set or set to explicit null).
+// GetStatus returns the Status field value if set, zero value otherwise.
 func (o *Model) GetStatus() string {
-	if o == nil || IsNil(o.Status.Get()) {
+	if o == nil || IsNil(o.Status) {
 		var ret string
 		return ret
 	}
-	return *o.Status.Get()
+	return *o.Status
 }
 
 // GetStatusOk returns a tuple with the Status field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
 func (o *Model) GetStatusOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.Status) {
 		return nil, false
 	}
-	return o.Status.Get(), o.Status.IsSet()
+	return o.Status, true
 }
 
 // HasStatus returns a boolean if a field has been set.
 func (o *Model) HasStatus() bool {
-	if o != nil && o.Status.IsSet() {
+	if o != nil && !IsNil(o.Status) {
 		return true
 	}
 
 	return false
 }
 
-// SetStatus gets a reference to the given NullableString and assigns it to the Status field.
+// SetStatus gets a reference to the given string and assigns it to the Status field.
 func (o *Model) SetStatus(v string) {
-	o.Status.Set(&v)
-}
-// SetStatusNil sets the value for Status to be an explicit nil
-func (o *Model) SetStatusNil() {
-	o.Status.Set(nil)
+	o.Status = &v
 }
 
-// UnsetStatus ensures that no value is present for Status, not even an explicit nil
-func (o *Model) UnsetStatus() {
-	o.Status.Unset()
-}
-
-// GetOrganisationId returns the OrganisationId field value if set, zero value otherwise (both if not set or set to explicit null).
+// GetOrganisationId returns the OrganisationId field value if set, zero value otherwise.
 func (o *Model) GetOrganisationId() string {
-	if o == nil || IsNil(o.OrganisationId.Get()) {
+	if o == nil || IsNil(o.OrganisationId) {
 		var ret string
 		return ret
 	}
-	return *o.OrganisationId.Get()
+	return *o.OrganisationId
 }
 
 // GetOrganisationIdOk returns a tuple with the OrganisationId field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
 func (o *Model) GetOrganisationIdOk() (*string, bool) {
-	if o == nil {
+	if o == nil || IsNil(o.OrganisationId) {
 		return nil, false
 	}
-	return o.OrganisationId.Get(), o.OrganisationId.IsSet()
+	return o.OrganisationId, true
 }
 
 // HasOrganisationId returns a boolean if a field has been set.
 func (o *Model) HasOrganisationId() bool {
-	if o != nil && o.OrganisationId.IsSet() {
+	if o != nil && !IsNil(o.OrganisationId) {
 		return true
 	}
 
 	return false
 }
 
-// SetOrganisationId gets a reference to the given NullableString and assigns it to the OrganisationId field.
+// SetOrganisationId gets a reference to the given string and assigns it to the OrganisationId field.
 func (o *Model) SetOrganisationId(v string) {
-	o.OrganisationId.Set(&v)
-}
-// SetOrganisationIdNil sets the value for OrganisationId to be an explicit nil
-func (o *Model) SetOrganisationIdNil() {
-	o.OrganisationId.Set(nil)
-}
-
-// UnsetOrganisationId ensures that no value is present for OrganisationId, not even an explicit nil
-func (o *Model) UnsetOrganisationId() {
-	o.OrganisationId.Unset()
-}
-
-// GetOrganisationName returns the OrganisationName field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *Model) GetOrganisationName() string {
-	if o == nil || IsNil(o.OrganisationName.Get()) {
-		var ret string
-		return ret
-	}
-	return *o.OrganisationName.Get()
-}
-
-// GetOrganisationNameOk returns a tuple with the OrganisationName field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model) GetOrganisationNameOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return o.OrganisationName.Get(), o.OrganisationName.IsSet()
-}
-
-// HasOrganisationName returns a boolean if a field has been set.
-func (o *Model) HasOrganisationName() bool {
-	if o != nil && o.OrganisationName.IsSet() {
-		return true
-	}
-
-	return false
-}
-
-// SetOrganisationName gets a reference to the given NullableString and assigns it to the OrganisationName field.
-func (o *Model) SetOrganisationName(v string) {
-	o.OrganisationName.Set(&v)
-}
-// SetOrganisationNameNil sets the value for OrganisationName to be an explicit nil
-func (o *Model) SetOrganisationNameNil() {
-	o.OrganisationName.Set(nil)
-}
-
-// UnsetOrganisationName ensures that no value is present for OrganisationName, not even an explicit nil
-func (o *Model) UnsetOrganisationName() {
-	o.OrganisationName.Unset()
-}
-
-// GetOrganisationColour returns the OrganisationColour field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *Model) GetOrganisationColour() string {
-	if o == nil || IsNil(o.OrganisationColour.Get()) {
-		var ret string
-		return ret
-	}
-	return *o.OrganisationColour.Get()
-}
-
-// GetOrganisationColourOk returns a tuple with the OrganisationColour field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model) GetOrganisationColourOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return o.OrganisationColour.Get(), o.OrganisationColour.IsSet()
-}
-
-// HasOrganisationColour returns a boolean if a field has been set.
-func (o *Model) HasOrganisationColour() bool {
-	if o != nil && o.OrganisationColour.IsSet() {
-		return true
-	}
-
-	return false
-}
-
-// SetOrganisationColour gets a reference to the given NullableString and assigns it to the OrganisationColour field.
-func (o *Model) SetOrganisationColour(v string) {
-	o.OrganisationColour.Set(&v)
-}
-// SetOrganisationColourNil sets the value for OrganisationColour to be an explicit nil
-func (o *Model) SetOrganisationColourNil() {
-	o.OrganisationColour.Set(nil)
-}
-
-// UnsetOrganisationColour ensures that no value is present for OrganisationColour, not even an explicit nil
-func (o *Model) UnsetOrganisationColour() {
-	o.OrganisationColour.Unset()
+	o.OrganisationId = &v
 }
 
 // GetAliases returns the Aliases field value if set, zero value otherwise.
@@ -583,112 +368,6 @@ func (o *Model) SetProviders(v []ModelProvidersInner) {
 	o.Providers = v
 }
 
-// GetSupportedParams returns the SupportedParams field value if set, zero value otherwise.
-func (o *Model) GetSupportedParams() []string {
-	if o == nil || IsNil(o.SupportedParams) {
-		var ret []string
-		return ret
-	}
-	return o.SupportedParams
-}
-
-// GetSupportedParamsOk returns a tuple with the SupportedParams field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *Model) GetSupportedParamsOk() ([]string, bool) {
-	if o == nil || IsNil(o.SupportedParams) {
-		return nil, false
-	}
-	return o.SupportedParams, true
-}
-
-// HasSupportedParams returns a boolean if a field has been set.
-func (o *Model) HasSupportedParams() bool {
-	if o != nil && !IsNil(o.SupportedParams) {
-		return true
-	}
-
-	return false
-}
-
-// SetSupportedParams gets a reference to the given []string and assigns it to the SupportedParams field.
-func (o *Model) SetSupportedParams(v []string) {
-	o.SupportedParams = v
-}
-
-// GetTopProvider returns the TopProvider field value if set, zero value otherwise (both if not set or set to explicit null).
-func (o *Model) GetTopProvider() string {
-	if o == nil || IsNil(o.TopProvider.Get()) {
-		var ret string
-		return ret
-	}
-	return *o.TopProvider.Get()
-}
-
-// GetTopProviderOk returns a tuple with the TopProvider field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-// NOTE: If the value is an explicit nil, `nil, true` will be returned
-func (o *Model) GetTopProviderOk() (*string, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return o.TopProvider.Get(), o.TopProvider.IsSet()
-}
-
-// HasTopProvider returns a boolean if a field has been set.
-func (o *Model) HasTopProvider() bool {
-	if o != nil && o.TopProvider.IsSet() {
-		return true
-	}
-
-	return false
-}
-
-// SetTopProvider gets a reference to the given NullableString and assigns it to the TopProvider field.
-func (o *Model) SetTopProvider(v string) {
-	o.TopProvider.Set(&v)
-}
-// SetTopProviderNil sets the value for TopProvider to be an explicit nil
-func (o *Model) SetTopProviderNil() {
-	o.TopProvider.Set(nil)
-}
-
-// UnsetTopProvider ensures that no value is present for TopProvider, not even an explicit nil
-func (o *Model) UnsetTopProvider() {
-	o.TopProvider.Unset()
-}
-
-// GetPricing returns the Pricing field value if set, zero value otherwise.
-func (o *Model) GetPricing() ModelPricing {
-	if o == nil || IsNil(o.Pricing) {
-		var ret ModelPricing
-		return ret
-	}
-	return *o.Pricing
-}
-
-// GetPricingOk returns a tuple with the Pricing field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *Model) GetPricingOk() (*ModelPricing, bool) {
-	if o == nil || IsNil(o.Pricing) {
-		return nil, false
-	}
-	return o.Pricing, true
-}
-
-// HasPricing returns a boolean if a field has been set.
-func (o *Model) HasPricing() bool {
-	if o != nil && !IsNil(o.Pricing) {
-		return true
-	}
-
-	return false
-}
-
-// SetPricing gets a reference to the given ModelPricing and assigns it to the Pricing field.
-func (o *Model) SetPricing(v ModelPricing) {
-	o.Pricing = &v
-}
-
 func (o Model) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -702,29 +381,17 @@ func (o Model) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ModelId) {
 		toSerialize["model_id"] = o.ModelId
 	}
-	if o.Name.IsSet() {
-		toSerialize["name"] = o.Name.Get()
+	if !IsNil(o.Name) {
+		toSerialize["name"] = o.Name
 	}
-	if o.ReleaseDate.IsSet() {
-		toSerialize["release_date"] = o.ReleaseDate.Get()
+	if !IsNil(o.ReleaseDate) {
+		toSerialize["release_date"] = o.ReleaseDate
 	}
-	if o.DeprecationDate.IsSet() {
-		toSerialize["deprecation_date"] = o.DeprecationDate.Get()
+	if !IsNil(o.Status) {
+		toSerialize["status"] = o.Status
 	}
-	if o.RetirementDate.IsSet() {
-		toSerialize["retirement_date"] = o.RetirementDate.Get()
-	}
-	if o.Status.IsSet() {
-		toSerialize["status"] = o.Status.Get()
-	}
-	if o.OrganisationId.IsSet() {
-		toSerialize["organisation_id"] = o.OrganisationId.Get()
-	}
-	if o.OrganisationName.IsSet() {
-		toSerialize["organisation_name"] = o.OrganisationName.Get()
-	}
-	if o.OrganisationColour.IsSet() {
-		toSerialize["organisation_colour"] = o.OrganisationColour.Get()
+	if !IsNil(o.OrganisationId) {
+		toSerialize["organisation_id"] = o.OrganisationId
 	}
 	if !IsNil(o.Aliases) {
 		toSerialize["aliases"] = o.Aliases
@@ -740,15 +407,6 @@ func (o Model) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Providers) {
 		toSerialize["providers"] = o.Providers
-	}
-	if !IsNil(o.SupportedParams) {
-		toSerialize["supported_params"] = o.SupportedParams
-	}
-	if o.TopProvider.IsSet() {
-		toSerialize["top_provider"] = o.TopProvider.Get()
-	}
-	if !IsNil(o.Pricing) {
-		toSerialize["pricing"] = o.Pricing
 	}
 	return toSerialize, nil
 }

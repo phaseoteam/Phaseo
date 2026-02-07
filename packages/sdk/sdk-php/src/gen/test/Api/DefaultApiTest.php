@@ -360,12 +360,12 @@ class DefaultApiTest extends TestCase
     }
 
     /**
-     * Test case for health
+     * Test case for healthz
      *
      * Health check.
      *
      */
-    public function testHealth()
+    public function testHealthz()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

@@ -15,7 +15,6 @@ import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndCharge } from "../pricing/persist";
 import { shapeUsageForClient } from "../usage";
-import { emitGatewayRequestEvent } from "@observability/events";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 
@@ -99,7 +98,7 @@ async function handleNonStreamResponse(
         ctx.body,
         tier
     ));
-    if (ctx.meta?.debug) {
+    if (ctx.meta?.debug?.enabled) {
         console.log("[gateway][pricing] non-stream priced usage", {
             requestId: ctx.requestId,
             endpoint: ctx.endpoint,
@@ -158,20 +157,6 @@ async function handleNonStreamResponse(
             nativeResponseId ?? null
         )
     );
-    await emitGatewayRequestEvent({
-        ctx,
-        result,
-        statusCode: result.upstream.status,
-        success: true,
-        finishReason,
-        usage: shapedUsageFinal,
-        pricing: {
-            total_cents: totalCents,
-            total_nanos: totalNanos,
-            currency,
-        },
-    });
-
     // Record usage and charge wallet
     await ctx.timer.span("after_record_usage_charge", async () => {
         try {
@@ -203,7 +188,7 @@ async function handleNonStreamResponse(
         includeMeta,
     });
 
-    if (ctx.meta?.debug) {
+    if (ctx.meta?.debug?.enabled) {
         void logDebugEvent("response.pipeline", {
             requestId: ctx.requestId,
             endpoint: ctx.endpoint,

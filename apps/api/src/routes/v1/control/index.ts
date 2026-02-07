@@ -15,7 +15,7 @@ import { organisationsRoutes } from "./organisations";
 import { providersRoutes } from "./providers";
 import { creditsRoutes } from "./credits";
 import { activityRoutes } from "./credits";
-import { provisioningRoutes } from "./provisioning";
+import { managementRoutes, provisioningRoutes } from "./provisioning";
 import { keysRoutes } from "./keys";
 import oauthClientsRoutes from "./oauth-clients";
 
@@ -31,6 +31,7 @@ controlRouter.route("/analytics", analyticsRoutes);
 controlRouter.route("/pricing", pricingRoutes);
 controlRouter.route("/credits", creditsRoutes);
 controlRouter.route("/activity", activityRoutes);
+controlRouter.route("/management", managementRoutes);
 controlRouter.route("/provisioning", provisioningRoutes);
 controlRouter.route("/keys", keysRoutes);
 controlRouter.route("/oauth-clients", oauthClientsRoutes);

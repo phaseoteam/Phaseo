@@ -25,15 +25,11 @@ function normalizeModalities(values?: string[] | null): Set<Modality> {
 }
 
 function collectInputModalities(messages: IRMessage[]): Set<Modality> {
-	const required = new Set<Modality>();
+	const required = new Set<Modality>(["text"]);
 	for (const message of messages) {
 		if (!("content" in message)) continue;
 		for (const part of message.content) {
 			switch ((part as IRContentPart).type) {
-				case "text":
-				case "reasoning_text":
-					required.add("text");
-					break;
 				case "image":
 					required.add("image");
 					break;

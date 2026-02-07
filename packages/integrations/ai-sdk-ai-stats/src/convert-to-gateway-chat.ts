@@ -41,7 +41,7 @@ export function convertToGatewayChatRequest(
               type: 'function',
               function: {
                 name: toolCall.toolName,
-                arguments: JSON.stringify(toolCall.input),
+                arguments: JSON.stringify(toolCall.args),
               },
             }));
         }
@@ -50,13 +50,11 @@ export function convertToGatewayChatRequest(
 
       case 'tool':
         // Map tool results to gateway format
-        return message.content
-          .filter((part) => part.type === 'tool-result')
-          .map((toolResult) => ({
-            role: 'tool',
-            tool_call_id: toolResult.toolCallId,
-            content: serializeToolResult(toolResult.output),
-          }));
+        return message.content.map((toolResult) => ({
+          role: 'tool',
+          tool_call_id: toolResult.toolCallId,
+          content: JSON.stringify(toolResult.result),
+        }));
     }
   }).flat(); // Flatten because tool messages can expand to multiple messages
 
@@ -150,7 +148,7 @@ function convertContent(content: any): string | any[] {
 
   // Otherwise, return as array of content parts
   return content
-    .filter((part) => part.type !== 'tool-call' && part.type !== 'tool-result') // Tool parts handled separately
+    .filter((part) => part.type !== 'tool-call') // Filter out tool calls (handled separately)
     .map((part) => {
       switch (part.type) {
         case 'text':
@@ -182,7 +180,12 @@ function convertContent(content: any): string | any[] {
           }
 
         case 'file':
-          return mapFilePart(part);
+          // Files are not directly supported by the gateway chat API
+          // Return as text reference
+          return {
+            type: 'text',
+            text: `[File: ${part.mimeType}]`,
+          };
 
         default:
           return {
@@ -191,57 +194,6 @@ function convertContent(content: any): string | any[] {
           };
       }
     });
-}
-
-function serializeToolResult(output: any): string {
-  if (!output || typeof output !== 'object') {
-    return JSON.stringify(output ?? '');
-  }
-  switch (output.type) {
-    case 'text':
-      return output.value ?? '';
-    case 'json':
-      return JSON.stringify(output.value ?? {});
-    case 'execution-denied':
-      return output.reason ? `Execution denied: ${output.reason}` : 'Execution denied';
-    case 'error-text':
-      return output.value ?? '';
-    default:
-      return JSON.stringify(output);
-  }
-}
-
-function mapFilePart(part: any) {
-  const mediaType: string | undefined = part.mediaType ?? part.mimeType;
-  const data = part.data ?? part.image;
-
-  if (mediaType && mediaType.startsWith('image/')) {
-    if (data instanceof URL) {
-      return {
-        type: 'image_url',
-        image_url: {
-          url: data.toString(),
-        },
-      };
-    }
-    const base64 = data instanceof Uint8Array
-      ? Buffer.from(data).toString('base64')
-      : data?.toString('base64');
-    if (base64) {
-      return {
-        type: 'image_url',
-        image_url: {
-          url: `data:${mediaType};base64,${base64}`,
-        },
-      };
-    }
-  }
-
-  // Fallback to a text reference when we can't map the file
-  return {
-    type: 'text',
-    text: mediaType ? `[File: ${mediaType}]` : '[File]',
-  };
 }
 
 /**

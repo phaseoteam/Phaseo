@@ -5,23 +5,19 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **model** | **string** |  |
-**input** | [**\AIStats\Sdk\Model\ResponsesRequestInput**](ResponsesRequestInput.md) |  | [optional]
-**messages** | [**\AIStats\Sdk\Model\ChatMessage[]**](ChatMessage.md) |  | [optional]
-**input_items** | [**\AIStats\Sdk\Model\ResponsesInputItem[]**](ResponsesInputItem.md) |  | [optional]
+**input** | **object** |  | [optional]
+**input_items** | **object[]** |  | [optional]
 **conversation** | [**\AIStats\Sdk\Model\ChatCompletionsRequestToolChoice**](ChatCompletionsRequestToolChoice.md) |  | [optional]
 **include** | **string[]** |  | [optional]
 **instructions** | **string** |  | [optional]
 **max_output_tokens** | **int** |  | [optional]
 **max_tool_calls** | **int** |  | [optional]
-**max_tools_calls** | **int** |  | [optional]
 **metadata** | **array<string,string>** |  | [optional]
-**debug** | [**\AIStats\Sdk\Model\DebugOptions**](DebugOptions.md) |  | [optional]
 **parallel_tool_calls** | **bool** |  | [optional]
 **previous_response_id** | **string** |  | [optional]
 **prompt** | [**\AIStats\Sdk\Model\ResponsesRequestPrompt**](ResponsesRequestPrompt.md) |  | [optional]
 **prompt_cache_key** | **string** |  | [optional]
 **prompt_cache_retention** | **string** |  | [optional]
-**modalities** | **string[]** |  | [optional]
 **reasoning** | [**\AIStats\Sdk\Model\ResponsesRequestReasoning**](ResponsesRequestReasoning.md) |  | [optional]
 **safety_identifier** | **string** |  | [optional]
 **service_tier** | **string** |  | [optional]
@@ -37,6 +33,7 @@ Name | Type | Description | Notes
 **truncation** | **string** |  | [optional]
 **background** | **bool** |  | [optional]
 **user** | **string** |  | [optional]
+**usage** | **bool** |  | [optional]
 **meta** | **bool** |  | [optional]
 **provider** | [**\AIStats\Sdk\Model\ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional]
 

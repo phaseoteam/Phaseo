@@ -19,73 +19,17 @@ module AIStatsSdk
 
     attr_accessor :object
 
-    attr_accessor :created_at
-
-    attr_accessor :status
-
-    attr_accessor :completed_at
-
-    attr_accessor :error
-
-    attr_accessor :incomplete_details
-
-    attr_accessor :instructions
-
-    attr_accessor :max_output_tokens
-
-    attr_accessor :max_tool_calls
+    attr_accessor :created
 
     attr_accessor :model
 
-    attr_accessor :output
+    attr_accessor :content
 
-    attr_accessor :parallel_tool_calls
+    attr_accessor :role
 
-    attr_accessor :previous_response_id
+    attr_accessor :stop_reason
 
-    attr_accessor :reasoning
-
-    attr_accessor :frequency_penalty
-
-    attr_accessor :presence_penalty
-
-    attr_accessor :store
-
-    attr_accessor :temperature
-
-    attr_accessor :text
-
-    attr_accessor :tool_choice
-
-    attr_accessor :tools
-
-    attr_accessor :top_logprobs
-
-    attr_accessor :top_p
-
-    attr_accessor :truncation
-
-    attr_accessor :user
-
-    attr_accessor :background
-
-    attr_accessor :service_tier
-
-    attr_accessor :safety_identifier
-
-    attr_accessor :prompt_cache_key
-
-    attr_accessor :metadata
-
-    attr_accessor :native_response_id
-
-    attr_accessor :meta
-
-    attr_accessor :debug
-
-    attr_accessor :upstream_request
-
-    attr_accessor :upstream_response
+    attr_accessor :type
 
     attr_accessor :usage
 
@@ -94,40 +38,12 @@ module AIStatsSdk
       {
         :'id' => :'id',
         :'object' => :'object',
-        :'created_at' => :'created_at',
-        :'status' => :'status',
-        :'completed_at' => :'completed_at',
-        :'error' => :'error',
-        :'incomplete_details' => :'incomplete_details',
-        :'instructions' => :'instructions',
-        :'max_output_tokens' => :'max_output_tokens',
-        :'max_tool_calls' => :'max_tool_calls',
+        :'created' => :'created',
         :'model' => :'model',
-        :'output' => :'output',
-        :'parallel_tool_calls' => :'parallel_tool_calls',
-        :'previous_response_id' => :'previous_response_id',
-        :'reasoning' => :'reasoning',
-        :'frequency_penalty' => :'frequency_penalty',
-        :'presence_penalty' => :'presence_penalty',
-        :'store' => :'store',
-        :'temperature' => :'temperature',
-        :'text' => :'text',
-        :'tool_choice' => :'tool_choice',
-        :'tools' => :'tools',
-        :'top_logprobs' => :'top_logprobs',
-        :'top_p' => :'top_p',
-        :'truncation' => :'truncation',
-        :'user' => :'user',
-        :'background' => :'background',
-        :'service_tier' => :'service_tier',
-        :'safety_identifier' => :'safety_identifier',
-        :'prompt_cache_key' => :'prompt_cache_key',
-        :'metadata' => :'metadata',
-        :'native_response_id' => :'nativeResponseId',
-        :'meta' => :'meta',
-        :'debug' => :'debug',
-        :'upstream_request' => :'upstream_request',
-        :'upstream_response' => :'upstream_response',
+        :'content' => :'content',
+        :'role' => :'role',
+        :'stop_reason' => :'stop_reason',
+        :'type' => :'type',
         :'usage' => :'usage'
       }
     end
@@ -147,40 +63,12 @@ module AIStatsSdk
       {
         :'id' => :'String',
         :'object' => :'String',
-        :'created_at' => :'Integer',
-        :'status' => :'String',
-        :'completed_at' => :'Integer',
-        :'error' => :'Object',
-        :'incomplete_details' => :'Object',
-        :'instructions' => :'String',
-        :'max_output_tokens' => :'Integer',
-        :'max_tool_calls' => :'Integer',
+        :'created' => :'Integer',
         :'model' => :'String',
-        :'output' => :'Array<ResponsesOutputItem>',
-        :'parallel_tool_calls' => :'Boolean',
-        :'previous_response_id' => :'String',
-        :'reasoning' => :'ResponsesResponseReasoning',
-        :'frequency_penalty' => :'Float',
-        :'presence_penalty' => :'Float',
-        :'store' => :'Boolean',
-        :'temperature' => :'Float',
-        :'text' => :'Object',
-        :'tool_choice' => :'ChatCompletionsRequestToolChoice',
-        :'tools' => :'Array<Object>',
-        :'top_logprobs' => :'Integer',
-        :'top_p' => :'Float',
-        :'truncation' => :'String',
-        :'user' => :'String',
-        :'background' => :'Boolean',
-        :'service_tier' => :'String',
-        :'safety_identifier' => :'String',
-        :'prompt_cache_key' => :'String',
-        :'metadata' => :'Object',
-        :'native_response_id' => :'String',
-        :'meta' => :'Object',
-        :'debug' => :'DebugResponse',
-        :'upstream_request' => :'ChatCompletionsResponseUpstreamRequest',
-        :'upstream_response' => :'ChatCompletionsResponseUpstreamRequest',
+        :'content' => :'Array<Object>',
+        :'role' => :'String',
+        :'stop_reason' => :'String',
+        :'type' => :'String',
         :'usage' => :'Usage'
       }
     end
@@ -188,25 +76,6 @@ module AIStatsSdk
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'completed_at',
-        :'error',
-        :'incomplete_details',
-        :'instructions',
-        :'max_output_tokens',
-        :'max_tool_calls',
-        :'previous_response_id',
-        :'frequency_penalty',
-        :'presence_penalty',
-        :'store',
-        :'temperature',
-        :'text',
-        :'top_logprobs',
-        :'top_p',
-        :'user',
-        :'background',
-        :'service_tier',
-        :'safety_identifier',
-        :'prompt_cache_key',
       ])
     end
 
@@ -234,144 +103,30 @@ module AIStatsSdk
         self.object = attributes[:'object']
       end
 
-      if attributes.key?(:'created_at')
-        self.created_at = attributes[:'created_at']
-      end
-
-      if attributes.key?(:'status')
-        self.status = attributes[:'status']
-      end
-
-      if attributes.key?(:'completed_at')
-        self.completed_at = attributes[:'completed_at']
-      end
-
-      if attributes.key?(:'error')
-        self.error = attributes[:'error']
-      end
-
-      if attributes.key?(:'incomplete_details')
-        self.incomplete_details = attributes[:'incomplete_details']
-      end
-
-      if attributes.key?(:'instructions')
-        self.instructions = attributes[:'instructions']
-      end
-
-      if attributes.key?(:'max_output_tokens')
-        self.max_output_tokens = attributes[:'max_output_tokens']
-      end
-
-      if attributes.key?(:'max_tool_calls')
-        self.max_tool_calls = attributes[:'max_tool_calls']
+      if attributes.key?(:'created')
+        self.created = attributes[:'created']
       end
 
       if attributes.key?(:'model')
         self.model = attributes[:'model']
       end
 
-      if attributes.key?(:'output')
-        if (value = attributes[:'output']).is_a?(Array)
-          self.output = value
+      if attributes.key?(:'content')
+        if (value = attributes[:'content']).is_a?(Array)
+          self.content = value
         end
       end
 
-      if attributes.key?(:'parallel_tool_calls')
-        self.parallel_tool_calls = attributes[:'parallel_tool_calls']
+      if attributes.key?(:'role')
+        self.role = attributes[:'role']
       end
 
-      if attributes.key?(:'previous_response_id')
-        self.previous_response_id = attributes[:'previous_response_id']
+      if attributes.key?(:'stop_reason')
+        self.stop_reason = attributes[:'stop_reason']
       end
 
-      if attributes.key?(:'reasoning')
-        self.reasoning = attributes[:'reasoning']
-      end
-
-      if attributes.key?(:'frequency_penalty')
-        self.frequency_penalty = attributes[:'frequency_penalty']
-      end
-
-      if attributes.key?(:'presence_penalty')
-        self.presence_penalty = attributes[:'presence_penalty']
-      end
-
-      if attributes.key?(:'store')
-        self.store = attributes[:'store']
-      end
-
-      if attributes.key?(:'temperature')
-        self.temperature = attributes[:'temperature']
-      end
-
-      if attributes.key?(:'text')
-        self.text = attributes[:'text']
-      end
-
-      if attributes.key?(:'tool_choice')
-        self.tool_choice = attributes[:'tool_choice']
-      end
-
-      if attributes.key?(:'tools')
-        if (value = attributes[:'tools']).is_a?(Array)
-          self.tools = value
-        end
-      end
-
-      if attributes.key?(:'top_logprobs')
-        self.top_logprobs = attributes[:'top_logprobs']
-      end
-
-      if attributes.key?(:'top_p')
-        self.top_p = attributes[:'top_p']
-      end
-
-      if attributes.key?(:'truncation')
-        self.truncation = attributes[:'truncation']
-      end
-
-      if attributes.key?(:'user')
-        self.user = attributes[:'user']
-      end
-
-      if attributes.key?(:'background')
-        self.background = attributes[:'background']
-      end
-
-      if attributes.key?(:'service_tier')
-        self.service_tier = attributes[:'service_tier']
-      end
-
-      if attributes.key?(:'safety_identifier')
-        self.safety_identifier = attributes[:'safety_identifier']
-      end
-
-      if attributes.key?(:'prompt_cache_key')
-        self.prompt_cache_key = attributes[:'prompt_cache_key']
-      end
-
-      if attributes.key?(:'metadata')
-        self.metadata = attributes[:'metadata']
-      end
-
-      if attributes.key?(:'native_response_id')
-        self.native_response_id = attributes[:'native_response_id']
-      end
-
-      if attributes.key?(:'meta')
-        self.meta = attributes[:'meta']
-      end
-
-      if attributes.key?(:'debug')
-        self.debug = attributes[:'debug']
-      end
-
-      if attributes.key?(:'upstream_request')
-        self.upstream_request = attributes[:'upstream_request']
-      end
-
-      if attributes.key?(:'upstream_response')
-        self.upstream_response = attributes[:'upstream_response']
+      if attributes.key?(:'type')
+        self.type = attributes[:'type']
       end
 
       if attributes.key?(:'usage')
@@ -401,40 +156,12 @@ module AIStatsSdk
       self.class == o.class &&
           id == o.id &&
           object == o.object &&
-          created_at == o.created_at &&
-          status == o.status &&
-          completed_at == o.completed_at &&
-          error == o.error &&
-          incomplete_details == o.incomplete_details &&
-          instructions == o.instructions &&
-          max_output_tokens == o.max_output_tokens &&
-          max_tool_calls == o.max_tool_calls &&
+          created == o.created &&
           model == o.model &&
-          output == o.output &&
-          parallel_tool_calls == o.parallel_tool_calls &&
-          previous_response_id == o.previous_response_id &&
-          reasoning == o.reasoning &&
-          frequency_penalty == o.frequency_penalty &&
-          presence_penalty == o.presence_penalty &&
-          store == o.store &&
-          temperature == o.temperature &&
-          text == o.text &&
-          tool_choice == o.tool_choice &&
-          tools == o.tools &&
-          top_logprobs == o.top_logprobs &&
-          top_p == o.top_p &&
-          truncation == o.truncation &&
-          user == o.user &&
-          background == o.background &&
-          service_tier == o.service_tier &&
-          safety_identifier == o.safety_identifier &&
-          prompt_cache_key == o.prompt_cache_key &&
-          metadata == o.metadata &&
-          native_response_id == o.native_response_id &&
-          meta == o.meta &&
-          debug == o.debug &&
-          upstream_request == o.upstream_request &&
-          upstream_response == o.upstream_response &&
+          content == o.content &&
+          role == o.role &&
+          stop_reason == o.stop_reason &&
+          type == o.type &&
           usage == o.usage
     end
 
@@ -447,7 +174,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [id, object, created_at, status, completed_at, error, incomplete_details, instructions, max_output_tokens, max_tool_calls, model, output, parallel_tool_calls, previous_response_id, reasoning, frequency_penalty, presence_penalty, store, temperature, text, tool_choice, tools, top_logprobs, top_p, truncation, user, background, service_tier, safety_identifier, prompt_cache_key, metadata, native_response_id, meta, debug, upstream_request, upstream_response, usage].hash
+      [id, object, created, model, content, role, stop_reason, type, usage].hash
     end
 
     # Builds the object from hash

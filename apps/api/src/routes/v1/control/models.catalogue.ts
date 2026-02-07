@@ -131,9 +131,7 @@ const PRICING_METERS = [
     "cached_write_text_tokens",
 ];
 
-const TEXT_ENDPOINTS = new Set<Endpoint>(["responses", "chat.completions", "messages"]);
-const TEXT_METER_PREFERENCE = ["input_text_tokens", "output_text_tokens"];
-const IN_BATCH_SIZE = 100;
+const TOP_PROVIDER_METERS = ["input_text_tokens", "output_text_tokens"];
 
 function toStringArray(value: unknown): string[] {
     if (Array.isArray(value)) {
@@ -234,9 +232,7 @@ function comparePerUnit(candidate: PricingRuleRow, current?: PricingMeterSummary
     const price = parseNumeric(candidate.price_per_unit);
     if (price === null || unitSize <= 0) return current ?? null;
     const perUnit = price / unitSize;
-    const currentPrice = current ? parseNumeric(current.price_per_unit) : null;
-    const currentUnitSize = current?.unit_size ?? 1;
-    const currentPerUnit = currentPrice !== null && currentUnitSize > 0 ? currentPrice / currentUnitSize : null;
+    const currentPerUnit = current ? parseNumeric(current.price_per_unit) ?? 0 / (current.unit_size || 1) : null;
     if (current && currentPerUnit !== null && currentPerUnit <= perUnit) {
         return current;
     }
@@ -257,40 +253,13 @@ function initPricingSummary(): PricingSummary {
     return { pricing_plan: "standard", meters };
 }
 
-function sharedMeters(providerMeters: Map<string, Map<string, number>>): string[] {
-    const providers = Array.from(providerMeters.values());
-    if (!providers.length) return [];
-    const [first, ...rest] = providers;
-    const shared = new Set(first.keys());
-    for (const next of rest) {
-        for (const key of Array.from(shared)) {
-            if (!next.has(key)) shared.delete(key);
-        }
-    }
-    return Array.from(shared);
-}
-
-function selectPricingMeters(endpoints: Endpoint[], providerMeters: Map<string, Map<string, number>>): string[] {
-    const shared = sharedMeters(providerMeters);
-    if (!shared.length) return [];
-    if (endpoints.some((endpoint) => TEXT_ENDPOINTS.has(endpoint))) {
-        const hasTextMeters = providerMeters.size > 0 &&
-            Array.from(providerMeters.values()).every((meters) =>
-                TEXT_METER_PREFERENCE.every((meter) => meters.has(meter))
-            );
-        if (hasTextMeters) return TEXT_METER_PREFERENCE;
-    }
-    return shared;
-}
-
-function getTopProvider(providerMeters: Map<string, Map<string, number>>, meters: string[]): string | null {
-    if (!meters.length) return null;
+function getTopProvider(providerMeters: Map<string, Map<string, number>>): string | null {
     let best: { provider: string; cost: number } | null = null;
-    for (const [providerId, providerMeterMap] of providerMeters) {
+    for (const [providerId, meters] of providerMeters) {
         let total = 0;
         let hasAny = false;
-        for (const meter of meters) {
-            const price = providerMeterMap.get(meter);
+        for (const meter of TOP_PROVIDER_METERS) {
+            const price = meters.get(meter);
             if (price === undefined) continue;
             total += price;
             hasAny = true;
@@ -301,24 +270,6 @@ function getTopProvider(providerMeters: Map<string, Map<string, number>>, meters
         }
     }
     return best?.provider ?? null;
-}
-
-async function fetchInBatches<T>(
-    values: string[],
-    fetcher: (chunk: string[]) => Promise<{ data: T[] | null; error: { message?: string } | null }>,
-    errorMessage: string
-): Promise<T[]> {
-    if (!values.length) return [];
-    const results: T[] = [];
-    for (let i = 0; i < values.length; i += IN_BATCH_SIZE) {
-        const chunk = values.slice(i, i + IN_BATCH_SIZE);
-        const { data, error } = await fetcher(chunk);
-        if (error) {
-            throw new Error(error.message || errorMessage);
-        }
-        if (data?.length) results.push(...data);
-    }
-    return results;
 }
 
 export async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
@@ -379,47 +330,42 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         return [];
     }
 
-    const providerRows = await fetchInBatches<ProviderModelRow>(
-        modelIds,
-        (chunk) =>
-            supabase
-                .from("data_api_provider_models")
-                .select(
-                    "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
-                )
-                .in("internal_model_id", chunk),
-        "Failed to load provider models"
-    );
+    const { data: providerRows, error: providerError } = await supabase
+        .from("data_api_provider_models")
+        .select(
+            "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
+        )
+        .in("internal_model_id", modelIds);
+
+    if (providerError) {
+        throw new Error(providerError.message || "Failed to load provider models");
+    }
 
     const providerModelIds = (providerRows ?? [])
         .map((row) => row.provider_api_model_id)
         .filter((id): id is string => Boolean(id));
-    const capabilityRows = await fetchInBatches<CapabilityRow>(
-        providerModelIds,
-        (chunk) =>
-            supabase
-                .from("data_api_provider_model_capabilities")
-                .select("provider_api_model_id, capability_id, params")
-                .eq("status", "active")
-                .in("provider_api_model_id", chunk),
-        "Failed to load provider capabilities"
-    );
+    const { data: capabilityRows, error: capabilityError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id, capability_id, params, effective_from, effective_to")
+        .eq("status", "active")
+        .in("provider_api_model_id", providerModelIds);
+    if (capabilityError) {
+        throw new Error(capabilityError.message || "Failed to load provider capabilities");
+    }
 
     const aliasMap = new Map<string, string[]>();
     const apiModelIds = Array.from(
         new Set((providerRows ?? []).map((row) => row.api_model_id).filter(Boolean))
     );
     if (apiModelIds.length) {
-        const aliases = await fetchInBatches<{ alias_slug?: string | null; api_model_id?: string | null }>(
-            apiModelIds,
-            (chunk) =>
-                supabase
-                    .from("data_api_model_aliases")
-                    .select("alias_slug, api_model_id")
-                    .eq("is_enabled", true)
-                    .in("api_model_id", chunk),
-            "Failed to load model aliases"
-        );
+        const { data: aliases, error: aliasError } = await supabase
+            .from("data_api_model_aliases")
+            .select("alias_slug, api_model_id")
+            .eq("is_enabled", true)
+            .in("api_model_id", apiModelIds);
+        if (aliasError) {
+            throw new Error(aliasError.message || "Failed to load model aliases");
+        }
         const aliasByApiModel = new Map<string, string[]>();
         for (const alias of aliases ?? []) {
             if (!alias?.api_model_id || !alias?.alias_slug) continue;
@@ -445,15 +391,11 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const now = new Date();
     const providersByModel = new Map<string, ProviderModelRow[]>();
     const providerIdSet = new Set<string>();
-    const providerByApiModelId = new Map<string, ProviderModelRow>();
     for (const row of providerRows ?? []) {
         if (!row?.internal_model_id || !row?.provider_id) continue;
+        providerIdSet.add(row.provider_id);
         if (!row.is_active_gateway) continue;
         if (!withinEffectiveWindow(row.effective_from, row.effective_to, now)) continue;
-        if (row.provider_api_model_id) {
-            providerByApiModelId.set(row.provider_api_model_id, row as ProviderModelRow);
-        }
-        providerIdSet.add(row.provider_id);
         const existing = providersByModel.get(row.internal_model_id) ?? [];
         existing.push(row as ProviderModelRow);
         providersByModel.set(row.internal_model_id, existing);
@@ -470,15 +412,13 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
     const providerMap = new Map<string, ProviderDetails>();
     if (providerIdSet.size) {
-        const providerDetails = await fetchInBatches<ProviderDetails>(
-            Array.from(providerIdSet),
-            (chunk) =>
-                supabase
-                    .from("data_api_providers")
-                    .select("api_provider_id, api_provider_name, link, country_code")
-                    .in("api_provider_id", chunk),
-            "Failed to load provider metadata"
-        );
+        const { data: providerDetails, error: providerDetailsError } = await supabase
+            .from("data_api_providers")
+            .select("api_provider_id, api_provider_name, link, country_code")
+            .in("api_provider_id", Array.from(providerIdSet));
+        if (providerDetailsError) {
+            throw new Error(providerDetailsError.message || "Failed to load provider metadata");
+        }
         for (const provider of providerDetails ?? []) {
             if (!provider?.api_provider_id) continue;
             providerMap.set(provider.api_provider_id, {
@@ -509,7 +449,9 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const comboMap = new Map<string, { model_id: string | null; provider_id: string }>();
     for (const cap of capabilityRows ?? []) {
         if (!cap?.provider_api_model_id || !cap?.capability_id) continue;
-        const providerModel = providerByApiModelId.get(cap.provider_api_model_id);
+        const providerModel = (providerRows ?? []).find(
+            (row) => row.provider_api_model_id === cap.provider_api_model_id
+        );
         if (!providerModel?.provider_id || !providerModel.api_model_id) continue;
         const comboKey = `${providerModel.provider_id}:${providerModel.api_model_id}:${cap.capability_id}`;
         comboMap.set(comboKey, {
@@ -648,9 +590,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         ).sort((a, b) => a.localeCompare(b));
 
         const pricing = pricingByModel.get(modelId) ?? initPricingSummary();
-        const providerMeters = providerMeterByModel.get(modelId) ?? new Map();
-        const pricingMeters = selectPricingMeters(endpoints, providerMeters);
-        const topProvider = getTopProvider(providerMeters, pricingMeters);
+        const topProvider = getTopProvider(providerMeterByModel.get(modelId) ?? new Map());
 
         const model: CatalogueModel = {
             model_id: info.model_id,

@@ -72,15 +72,6 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'Logprobs'
-        /// </summary>
-        [Fact]
-        public void LogprobsTest()
-        {
-            // TODO unit test for the property 'Logprobs'
-        }
-
-        /// <summary>
         /// Test the property 'FinishReason'
         /// </summary>
         [Fact]

@@ -58,9 +58,6 @@ function toStringValue(value: unknown, fallback: string): string {
 }
 
 function toOptionalString(value: unknown): string | null {
-	if (value instanceof Date && !Number.isNaN(value.getTime())) {
-		return value.toISOString();
-	}
 	return typeof value === "string" && value.trim().length > 0
 		? value.trim()
 		: null;
@@ -299,12 +296,3 @@ export async function getHelpArticleParams(): Promise<
 		}))
 	);
 }
-
-export async function getHelpRoutePaths(): Promise<string[]> {
-	const categories = await getHelpCategories();
-	return categories.flatMap((category) => [
-		`/help/${category.slug}`,
-		...category.articles.map((article) => `/help/${category.slug}/${article.slug}`),
-	]);
-}
-

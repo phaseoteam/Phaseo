@@ -73,7 +73,7 @@ describe AIStatsSdk::MusicGenerateRequest do
     end
   end
 
-  describe 'test attribute "debug"' do
+  describe 'test attribute "echo_upstream_request"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

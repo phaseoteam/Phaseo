@@ -1,9 +1,0 @@
-{
-	"name": "@ai-stats/py-sdk",
-	"version": "0.2.1-alpha.0",
-	"private": true,
-	"scripts": {
-		"build": "python -m build --sdist --wheel --outdir dist",
-		"smoke:chat": "dotenv -e .env.local -- python tests/smoke_chat.py"
-	}
-}

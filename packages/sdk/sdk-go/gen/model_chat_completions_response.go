@@ -20,18 +20,11 @@ var _ MappedNullable = &ChatCompletionsResponse{}
 // ChatCompletionsResponse struct for ChatCompletionsResponse
 type ChatCompletionsResponse struct {
 	Id *string `json:"id,omitempty"`
-	NativeResponseId *string `json:"nativeResponseId,omitempty"`
 	Object *string `json:"object,omitempty"`
 	Created *int32 `json:"created,omitempty"`
 	Model *string `json:"model,omitempty"`
 	Choices []ChatChoice `json:"choices,omitempty"`
 	Usage *Usage `json:"usage,omitempty"`
-	ServiceTier *string `json:"service_tier,omitempty"`
-	SystemFingerprint *string `json:"system_fingerprint,omitempty"`
-	Meta map[string]interface{} `json:"meta,omitempty"`
-	Debug *DebugResponse `json:"debug,omitempty"`
-	UpstreamRequest *ChatCompletionsResponseUpstreamRequest `json:"upstream_request,omitempty"`
-	UpstreamResponse *ChatCompletionsResponseUpstreamRequest `json:"upstream_response,omitempty"`
 }
 
 // NewChatCompletionsResponse instantiates a new ChatCompletionsResponse object
@@ -81,38 +74,6 @@ func (o *ChatCompletionsResponse) HasId() bool {
 // SetId gets a reference to the given string and assigns it to the Id field.
 func (o *ChatCompletionsResponse) SetId(v string) {
 	o.Id = &v
-}
-
-// GetNativeResponseId returns the NativeResponseId field value if set, zero value otherwise.
-func (o *ChatCompletionsResponse) GetNativeResponseId() string {
-	if o == nil || IsNil(o.NativeResponseId) {
-		var ret string
-		return ret
-	}
-	return *o.NativeResponseId
-}
-
-// GetNativeResponseIdOk returns a tuple with the NativeResponseId field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsResponse) GetNativeResponseIdOk() (*string, bool) {
-	if o == nil || IsNil(o.NativeResponseId) {
-		return nil, false
-	}
-	return o.NativeResponseId, true
-}
-
-// HasNativeResponseId returns a boolean if a field has been set.
-func (o *ChatCompletionsResponse) HasNativeResponseId() bool {
-	if o != nil && !IsNil(o.NativeResponseId) {
-		return true
-	}
-
-	return false
-}
-
-// SetNativeResponseId gets a reference to the given string and assigns it to the NativeResponseId field.
-func (o *ChatCompletionsResponse) SetNativeResponseId(v string) {
-	o.NativeResponseId = &v
 }
 
 // GetObject returns the Object field value if set, zero value otherwise.
@@ -275,198 +236,6 @@ func (o *ChatCompletionsResponse) SetUsage(v Usage) {
 	o.Usage = &v
 }
 
-// GetServiceTier returns the ServiceTier field value if set, zero value otherwise.
-func (o *ChatCompletionsResponse) GetServiceTier() string {
-	if o == nil || IsNil(o.ServiceTier) {
-		var ret string
-		return ret
-	}
-	return *o.ServiceTier
-}
-
-// GetServiceTierOk returns a tuple with the ServiceTier field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsResponse) GetServiceTierOk() (*string, bool) {
-	if o == nil || IsNil(o.ServiceTier) {
-		return nil, false
-	}
-	return o.ServiceTier, true
-}
-
-// HasServiceTier returns a boolean if a field has been set.
-func (o *ChatCompletionsResponse) HasServiceTier() bool {
-	if o != nil && !IsNil(o.ServiceTier) {
-		return true
-	}
-
-	return false
-}
-
-// SetServiceTier gets a reference to the given string and assigns it to the ServiceTier field.
-func (o *ChatCompletionsResponse) SetServiceTier(v string) {
-	o.ServiceTier = &v
-}
-
-// GetSystemFingerprint returns the SystemFingerprint field value if set, zero value otherwise.
-func (o *ChatCompletionsResponse) GetSystemFingerprint() string {
-	if o == nil || IsNil(o.SystemFingerprint) {
-		var ret string
-		return ret
-	}
-	return *o.SystemFingerprint
-}
-
-// GetSystemFingerprintOk returns a tuple with the SystemFingerprint field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsResponse) GetSystemFingerprintOk() (*string, bool) {
-	if o == nil || IsNil(o.SystemFingerprint) {
-		return nil, false
-	}
-	return o.SystemFingerprint, true
-}
-
-// HasSystemFingerprint returns a boolean if a field has been set.
-func (o *ChatCompletionsResponse) HasSystemFingerprint() bool {
-	if o != nil && !IsNil(o.SystemFingerprint) {
-		return true
-	}
-
-	return false
-}
-
-// SetSystemFingerprint gets a reference to the given string and assigns it to the SystemFingerprint field.
-func (o *ChatCompletionsResponse) SetSystemFingerprint(v string) {
-	o.SystemFingerprint = &v
-}
-
-// GetMeta returns the Meta field value if set, zero value otherwise.
-func (o *ChatCompletionsResponse) GetMeta() map[string]interface{} {
-	if o == nil || IsNil(o.Meta) {
-		var ret map[string]interface{}
-		return ret
-	}
-	return o.Meta
-}
-
-// GetMetaOk returns a tuple with the Meta field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsResponse) GetMetaOk() (map[string]interface{}, bool) {
-	if o == nil || IsNil(o.Meta) {
-		return map[string]interface{}{}, false
-	}
-	return o.Meta, true
-}
-
-// HasMeta returns a boolean if a field has been set.
-func (o *ChatCompletionsResponse) HasMeta() bool {
-	if o != nil && !IsNil(o.Meta) {
-		return true
-	}
-
-	return false
-}
-
-// SetMeta gets a reference to the given map[string]interface{} and assigns it to the Meta field.
-func (o *ChatCompletionsResponse) SetMeta(v map[string]interface{}) {
-	o.Meta = v
-}
-
-// GetDebug returns the Debug field value if set, zero value otherwise.
-func (o *ChatCompletionsResponse) GetDebug() DebugResponse {
-	if o == nil || IsNil(o.Debug) {
-		var ret DebugResponse
-		return ret
-	}
-	return *o.Debug
-}
-
-// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsResponse) GetDebugOk() (*DebugResponse, bool) {
-	if o == nil || IsNil(o.Debug) {
-		return nil, false
-	}
-	return o.Debug, true
-}
-
-// HasDebug returns a boolean if a field has been set.
-func (o *ChatCompletionsResponse) HasDebug() bool {
-	if o != nil && !IsNil(o.Debug) {
-		return true
-	}
-
-	return false
-}
-
-// SetDebug gets a reference to the given DebugResponse and assigns it to the Debug field.
-func (o *ChatCompletionsResponse) SetDebug(v DebugResponse) {
-	o.Debug = &v
-}
-
-// GetUpstreamRequest returns the UpstreamRequest field value if set, zero value otherwise.
-func (o *ChatCompletionsResponse) GetUpstreamRequest() ChatCompletionsResponseUpstreamRequest {
-	if o == nil || IsNil(o.UpstreamRequest) {
-		var ret ChatCompletionsResponseUpstreamRequest
-		return ret
-	}
-	return *o.UpstreamRequest
-}
-
-// GetUpstreamRequestOk returns a tuple with the UpstreamRequest field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsResponse) GetUpstreamRequestOk() (*ChatCompletionsResponseUpstreamRequest, bool) {
-	if o == nil || IsNil(o.UpstreamRequest) {
-		return nil, false
-	}
-	return o.UpstreamRequest, true
-}
-
-// HasUpstreamRequest returns a boolean if a field has been set.
-func (o *ChatCompletionsResponse) HasUpstreamRequest() bool {
-	if o != nil && !IsNil(o.UpstreamRequest) {
-		return true
-	}
-
-	return false
-}
-
-// SetUpstreamRequest gets a reference to the given ChatCompletionsResponseUpstreamRequest and assigns it to the UpstreamRequest field.
-func (o *ChatCompletionsResponse) SetUpstreamRequest(v ChatCompletionsResponseUpstreamRequest) {
-	o.UpstreamRequest = &v
-}
-
-// GetUpstreamResponse returns the UpstreamResponse field value if set, zero value otherwise.
-func (o *ChatCompletionsResponse) GetUpstreamResponse() ChatCompletionsResponseUpstreamRequest {
-	if o == nil || IsNil(o.UpstreamResponse) {
-		var ret ChatCompletionsResponseUpstreamRequest
-		return ret
-	}
-	return *o.UpstreamResponse
-}
-
-// GetUpstreamResponseOk returns a tuple with the UpstreamResponse field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsResponse) GetUpstreamResponseOk() (*ChatCompletionsResponseUpstreamRequest, bool) {
-	if o == nil || IsNil(o.UpstreamResponse) {
-		return nil, false
-	}
-	return o.UpstreamResponse, true
-}
-
-// HasUpstreamResponse returns a boolean if a field has been set.
-func (o *ChatCompletionsResponse) HasUpstreamResponse() bool {
-	if o != nil && !IsNil(o.UpstreamResponse) {
-		return true
-	}
-
-	return false
-}
-
-// SetUpstreamResponse gets a reference to the given ChatCompletionsResponseUpstreamRequest and assigns it to the UpstreamResponse field.
-func (o *ChatCompletionsResponse) SetUpstreamResponse(v ChatCompletionsResponseUpstreamRequest) {
-	o.UpstreamResponse = &v
-}
-
 func (o ChatCompletionsResponse) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -479,9 +248,6 @@ func (o ChatCompletionsResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	if !IsNil(o.Id) {
 		toSerialize["id"] = o.Id
-	}
-	if !IsNil(o.NativeResponseId) {
-		toSerialize["nativeResponseId"] = o.NativeResponseId
 	}
 	if !IsNil(o.Object) {
 		toSerialize["object"] = o.Object
@@ -497,24 +263,6 @@ func (o ChatCompletionsResponse) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Usage) {
 		toSerialize["usage"] = o.Usage
-	}
-	if !IsNil(o.ServiceTier) {
-		toSerialize["service_tier"] = o.ServiceTier
-	}
-	if !IsNil(o.SystemFingerprint) {
-		toSerialize["system_fingerprint"] = o.SystemFingerprint
-	}
-	if !IsNil(o.Meta) {
-		toSerialize["meta"] = o.Meta
-	}
-	if !IsNil(o.Debug) {
-		toSerialize["debug"] = o.Debug
-	}
-	if !IsNil(o.UpstreamRequest) {
-		toSerialize["upstream_request"] = o.UpstreamRequest
-	}
-	if !IsNil(o.UpstreamResponse) {
-		toSerialize["upstream_response"] = o.UpstreamResponse
 	}
 	return toSerialize, nil
 }

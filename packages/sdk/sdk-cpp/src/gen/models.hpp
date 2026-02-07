@@ -18,33 +18,14 @@ struct ActivityEntry {
 };
 
 struct AnthropicContentBlock {
-	std::map<std::string, std::any> cache_control;
 	std::string content;
 	std::string id;
-	std::any image_url;
 	std::map<std::string, std::any> input;
-	std::map<std::string, std::any> input_audio;
 	std::string name;
 	std::map<std::string, std::any> source;
 	std::string text;
 	std::string tool_use_id;
 	std::any type;
-	std::string video_url;
-};
-
-struct AnthropicContentBlockDeltaEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-struct AnthropicContentBlockStartEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-struct AnthropicContentBlockStopEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
 };
 
 struct AnthropicMessage {
@@ -52,21 +33,12 @@ struct AnthropicMessage {
 	std::any role;
 };
 
-struct AnthropicMessageDeltaEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
 struct AnthropicMessagesRequest {
-	std::map<std::string, std::any> debug;
-	int max_tokens;
+	std::optional<int> max_tokens;
 	std::vector<std::map<std::string, std::any>> messages;
-	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
-	std::vector<std::any> modalities;
 	std::string model;
 	std::map<std::string, std::any> provider;
-	std::vector<std::string> stop_sequences;
 	std::optional<bool> stream;
 	std::any system;
 	std::optional<double> temperature;
@@ -78,27 +50,13 @@ struct AnthropicMessagesRequest {
 
 struct AnthropicMessagesResponse {
 	std::vector<std::map<std::string, std::any>> content;
-	std::map<std::string, std::any> debug;
 	std::string id;
-	std::map<std::string, std::any> meta;
 	std::string model;
 	std::any role;
 	std::string stop_reason;
 	std::string stop_sequence;
 	std::string type;
 	std::map<std::string, std::any> usage;
-};
-
-using AnthropicMessagesStreamEvent = std::any;
-
-struct AnthropicMessageStartEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-struct AnthropicMessageStopEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
 };
 
 struct AnthropicTool {
@@ -108,13 +66,8 @@ struct AnthropicTool {
 };
 
 struct AnthropicUsage {
-	std::map<std::string, std::any> cache_creation;
-	std::optional<int> cache_creation_input_tokens;
-	std::optional<int> cache_read_input_tokens;
 	std::optional<int> input_tokens;
 	std::optional<int> output_tokens;
-	std::optional<bool> server_tool_use;
-	std::string service_tier;
 };
 
 struct AudioContentPart {
@@ -123,7 +76,6 @@ struct AudioContentPart {
 };
 
 struct AudioSpeechRequest {
-	std::map<std::string, std::any> debug;
 	std::any format;
 	std::string input;
 	std::string model;
@@ -134,7 +86,6 @@ struct AudioSpeechRequest {
 struct AudioTranscriptionRequest {
 	std::string audio_b64;
 	std::string audio_url;
-	std::map<std::string, std::any> debug;
 	std::string language;
 	std::string model;
 	std::map<std::string, std::any> provider;
@@ -147,7 +98,6 @@ struct AudioTranscriptionResponse {
 struct AudioTranslationRequest {
 	std::string audio_b64;
 	std::string audio_url;
-	std::map<std::string, std::any> debug;
 	std::string language;
 	std::string model;
 	std::string prompt;
@@ -161,7 +111,6 @@ struct AudioTranslationResponse {
 
 struct BatchRequest {
 	std::string completion_window;
-	std::map<std::string, std::any> debug;
 	std::string endpoint;
 	std::string input_file_id;
 	std::map<std::string, std::any> metadata;
@@ -199,21 +148,13 @@ struct BatchResponse {
 
 using BenchmarkId = std::any;
 
-struct CacheControl {
-	std::map<std::string, std::any> cache;
-	std::any ttl;
-	std::any type;
-};
-
 struct ChatChoice {
 	std::any finish_reason;
 	std::optional<int> index;
-	std::map<std::string, std::any> logprobs;
 	std::map<std::string, std::any> message;
 };
 
 struct ChatCompletionsRequest {
-	std::map<std::string, std::any> debug;
 	std::optional<double> frequency_penalty;
 	std::map<std::string, std::any> logit_bias;
 	std::optional<bool> logprobs;
@@ -221,7 +162,6 @@ struct ChatCompletionsRequest {
 	std::optional<int> max_tool_calls;
 	std::vector<std::map<std::string, std::any>> messages;
 	std::optional<bool> meta;
-	std::vector<std::any> modalities;
 	std::string model;
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
@@ -245,74 +185,18 @@ struct ChatCompletionsRequest {
 struct ChatCompletionsResponse {
 	std::vector<std::map<std::string, std::any>> choices;
 	std::optional<int> created;
-	std::map<std::string, std::any> debug;
 	std::string id;
-	std::map<std::string, std::any> meta;
 	std::string model;
-	std::string nativeResponseId;
 	std::string object;
-	std::string service_tier;
-	std::string system_fingerprint;
-	std::any upstream_request;
-	std::any upstream_response;
 	std::map<std::string, std::any> usage;
-};
-
-struct ChatCompletionsStreamChoice {
-	std::map<std::string, std::any> delta;
-	std::string finish_reason;
-	std::optional<int> index;
-	std::map<std::string, std::any> logprobs;
-};
-
-struct ChatCompletionsStreamChunk {
-	std::vector<std::map<std::string, std::any>> choices;
-	std::optional<int> created;
-	std::string id;
-	std::map<std::string, std::any> meta;
-	std::string model;
-	std::string nativeResponseId;
-	std::any object;
-	std::string service_tier;
-	std::string system_fingerprint;
-	std::map<std::string, std::any> usage;
-};
-
-struct ChatCompletionsStreamDelta {
-	std::string content;
-	std::string reasoning_content;
-	std::string role;
-	std::vector<std::map<std::string, std::any>> tool_calls;
-};
-
-struct ChatCompletionsStreamEvent {
-	std::map<std::string, std::any> data;
-	std::optional<std::string> event;
 };
 
 struct ChatMessage {
 	std::any content;
 	std::string name;
-	std::string reasoning_content;
 	std::any role;
 	std::string tool_call_id;
 	std::vector<std::map<std::string, std::any>> tool_calls;
-};
-
-struct DebugOptions {
-	std::optional<bool> enabled;
-	std::optional<bool> return_upstream_request;
-	std::optional<bool> return_upstream_response;
-	std::optional<bool> trace;
-	std::any trace_level;
-};
-
-struct DebugResponse {
-	std::optional<bool> enabled;
-	std::optional<bool> return_upstream_request;
-	std::optional<bool> return_upstream_response;
-	std::vector<std::map<std::string, std::any>> trace;
-	std::any trace_level;
 };
 
 struct Embedding {
@@ -373,7 +257,7 @@ struct GenerationResponse {
 	std::optional<bool> success;
 	std::string team_id;
 	std::optional<double> throughput;
-	std::map<std::string, std::any> usage;
+	std::optional<std::map<std::string, std::any>> usage;
 };
 
 struct Image {
@@ -393,7 +277,6 @@ struct ImageModerationInput {
 };
 
 struct ImagesEditRequest {
-	std::map<std::string, std::any> debug;
 	std::string image;
 	std::string mask;
 	std::optional<bool> meta;
@@ -412,7 +295,6 @@ struct ImagesEditResponse {
 };
 
 struct ImagesGenerationRequest {
-	std::map<std::string, std::any> debug;
 	std::string model;
 	std::optional<int> n;
 	std::string prompt;
@@ -429,17 +311,6 @@ struct ImagesGenerationResponse {
 	std::vector<std::map<std::string, std::any>> data;
 };
 
-struct InputImageContentPart {
-	std::any image_url;
-	std::any type;
-};
-
-struct InputTextContentPart {
-	std::map<std::string, std::any> cache_control;
-	std::string text;
-	std::any type;
-};
-
 struct ListFilesResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	std::string object;
@@ -449,32 +320,18 @@ using MessageContentPart = std::any;
 
 struct Model {
 	std::vector<std::string> aliases;
-	std::optional<std::string> deprecation_date;
 	std::vector<std::string> endpoints;
 	std::vector<std::string> input_types;
 	std::string model_id;
-	std::optional<std::string> name;
-	std::optional<std::string> organisation_colour;
-	std::optional<std::string> organisation_id;
-	std::optional<std::string> organisation_name;
+	std::string name;
+	std::string organisation_id;
 	std::vector<std::string> output_types;
-	std::map<std::string, std::any> pricing;
 	std::vector<std::map<std::string, std::any>> providers;
-	std::optional<std::string> release_date;
-	std::optional<std::string> retirement_date;
-	std::optional<std::string> status;
-	std::vector<std::string> supported_params;
-	std::optional<std::string> top_provider;
+	std::string release_date;
+	std::string status;
 };
 
 using ModelId = std::any;
-
-struct ModelPricing {
-	std::map<std::string, std::any> meters;
-	std::string pricing_plan;
-};
-
-using ModelPricingMeter = std::any;
 
 struct ModerationCategories {
 	std::optional<bool> harassment;
@@ -511,7 +368,6 @@ struct ModerationResult {
 };
 
 struct ModerationsRequest {
-	std::map<std::string, std::any> debug;
 	std::any input;
 	std::optional<bool> meta;
 	std::string model;
@@ -525,8 +381,8 @@ struct ModerationsResponse {
 };
 
 struct MusicGenerateRequest {
-	std::map<std::string, std::any> debug;
 	std::optional<int> duration;
+	std::optional<bool> echo_upstream_request;
 	std::map<std::string, std::any> elevenlabs;
 	std::any format;
 	std::string model;
@@ -539,7 +395,7 @@ struct MusicGenerateResponse {
 };
 
 struct OcrRequest {
-	std::map<std::string, std::any> debug;
+	std::optional<bool> echo_upstream_request;
 	std::string image;
 	std::string language;
 	std::string model;
@@ -552,14 +408,6 @@ struct OcrResponse {
 using OrganisationId = std::any;
 
 using OrganisationIdList = std::any;
-
-struct PricingBreakdown {
-	std::string currency;
-	std::vector<std::map<std::string, std::any>> lines;
-	std::optional<int> total_cents;
-	std::optional<int> total_nanos;
-	std::string total_usd_str;
-};
 
 struct Provider {
 	std::string api_provider_id;
@@ -610,91 +458,20 @@ struct ProvisioningKeyWithValue {
 
 struct ReasoningConfig {
 	std::any effort;
-	std::optional<bool> enabled;
-	std::optional<int> max_tokens;
 	std::any summary;
-};
-
-struct ResponsesFunctionCallItem {
-	std::string arguments;
-	std::string call_id;
-	std::string name;
-	std::any type;
-};
-
-struct ResponsesFunctionCallOutputItem {
-	std::string call_id;
-	std::string output;
-	std::any type;
-};
-
-struct ResponsesInputAudioItem {
-	std::map<std::string, std::any> input_audio;
-	std::any type;
-};
-
-struct ResponsesInputImageItem {
-	std::any detail;
-	std::any image_url;
-	std::any type;
-};
-
-using ResponsesInputItem = std::any;
-
-struct ResponsesInputTextItem {
-	std::map<std::string, std::any> cache_control;
-	std::string text;
-	std::any type;
-};
-
-struct ResponsesInputVideoItem {
-	std::any type;
-	std::string video_url;
-};
-
-struct ResponsesMessageItem {
-	std::any content;
-	std::any role;
-	std::string tool_call_id;
-	std::vector<std::map<std::string, std::any>> tool_calls;
-	std::any type;
-};
-
-struct ResponsesOutputContent {
-	std::vector<std::map<std::string, std::any>> annotations;
-	std::string b64_json;
-	std::map<std::string, std::any> image_url;
-	std::string mime_type;
-	std::string text;
-	std::any type;
-};
-
-struct ResponsesOutputItem {
-	std::string arguments;
-	std::string call_id;
-	std::vector<std::map<std::string, std::any>> content;
-	std::string id;
-	std::string name;
-	std::string role;
-	std::string status;
-	std::string type;
 };
 
 struct ResponsesRequest {
 	std::optional<bool> background;
 	std::any conversation;
-	std::map<std::string, std::any> debug;
 	std::vector<std::string> include;
-	std::any input;
-	std::vector<std::any> input_items;
+	std::map<std::string, std::any> input;
+	std::vector<std::map<std::string, std::any>> input_items;
 	std::string instructions;
 	std::optional<int> max_output_tokens;
 	std::optional<int> max_tool_calls;
-	std::optional<int> max_tools_calls;
-	std::vector<std::map<std::string, std::any>> messages;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
-	std::vector<std::any> modalities;
 	std::string model;
 	std::optional<bool> parallel_tool_calls;
 	std::string previous_response_id;
@@ -715,88 +492,23 @@ struct ResponsesRequest {
 	std::optional<int> top_logprobs;
 	std::optional<double> top_p;
 	std::string truncation;
+	std::optional<bool> usage;
 	std::string user;
 };
 
 struct ResponsesResponse {
-	std::optional<bool> background;
-	std::optional<int> completed_at;
-	std::optional<int> created_at;
-	std::map<std::string, std::any> debug;
-	std::optional<std::map<std::string, std::any>> error;
-	std::optional<double> frequency_penalty;
+	std::vector<std::map<std::string, std::any>> content;
+	std::optional<int> created;
 	std::string id;
-	std::optional<std::map<std::string, std::any>> incomplete_details;
-	std::optional<std::string> instructions;
-	std::optional<int> max_output_tokens;
-	std::optional<int> max_tool_calls;
-	std::map<std::string, std::any> meta;
-	std::map<std::string, std::any> metadata;
 	std::string model;
-	std::string nativeResponseId;
 	std::string object;
-	std::vector<std::map<std::string, std::any>> output;
-	std::optional<bool> parallel_tool_calls;
-	std::optional<double> presence_penalty;
-	std::optional<std::string> previous_response_id;
-	std::optional<std::string> prompt_cache_key;
-	std::map<std::string, std::any> reasoning;
-	std::optional<std::string> safety_identifier;
-	std::optional<std::string> service_tier;
-	std::string status;
-	std::optional<bool> store;
-	std::optional<double> temperature;
-	std::optional<std::map<std::string, std::any>> text;
-	std::any tool_choice;
-	std::vector<std::map<std::string, std::any>> tools;
-	std::optional<int> top_logprobs;
-	std::optional<double> top_p;
-	std::string truncation;
-	std::any upstream_request;
-	std::any upstream_response;
+	std::string role;
+	std::string stop_reason;
+	std::string type;
 	std::map<std::string, std::any> usage;
-	std::optional<std::string> user;
-};
-
-struct ResponsesStreamCompletedEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-struct ResponsesStreamCreatedEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-struct ResponsesStreamErrorEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-using ResponsesStreamEvent = std::any;
-
-struct ResponsesStreamFunctionCallArgumentsDeltaEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-struct ResponsesStreamFunctionCallArgumentsDoneEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-struct ResponsesStreamOutputTextDeltaEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
-};
-
-struct ResponsesStreamReasoningTextDeltaEvent {
-	std::map<std::string, std::any> data;
-	std::any event;
 };
 
 struct TextContentPart {
-	std::map<std::string, std::any> cache_control;
 	std::string text;
 	std::any type;
 };
@@ -819,33 +531,9 @@ struct ToolCallContentPart {
 };
 
 struct Usage {
-	std::optional<int> cached_read_text_tokens;
-	std::optional<int> cached_write_text_tokens;
 	std::optional<int> completion_tokens;
-	std::map<std::string, std::any> completion_tokens_details;
-	std::optional<int> input_text_tokens;
-	std::optional<int> input_tokens;
-	std::map<std::string, std::any> input_tokens_details;
-	std::optional<int> output_text_tokens;
-	std::optional<int> output_tokens;
-	std::map<std::string, std::any> output_tokens_details;
-	std::map<std::string, std::any> pricing;
-	std::map<std::string, std::any> pricing_breakdown;
 	std::optional<int> prompt_tokens;
-	std::map<std::string, std::any> prompt_tokens_details;
-	std::optional<int> reasoning_tokens;
 	std::optional<int> total_tokens;
-};
-
-struct UsageDetails {
-	std::optional<int> cached_tokens;
-	std::optional<int> input_audio;
-	std::optional<int> input_images;
-	std::optional<int> input_videos;
-	std::optional<int> output_audio;
-	std::optional<int> output_images;
-	std::optional<int> output_videos;
-	std::optional<int> reasoning_tokens;
 };
 
 struct VideoContentPart {
@@ -861,7 +549,6 @@ struct VideoDeleteResponse {
 
 struct VideoGenerationRequest {
 	std::string aspect_ratio;
-	std::map<std::string, std::any> debug;
 	std::optional<int> duration;
 	std::optional<int> duration_seconds;
 	std::string input_reference;

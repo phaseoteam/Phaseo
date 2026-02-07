@@ -65,7 +65,6 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'response_format' => 'string',
         'style' => 'string',
         'user' => 'string',
-        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -85,7 +84,6 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'response_format' => null,
         'style' => null,
         'user' => null,
-        'debug' => null,
         'provider' => null
     ];
 
@@ -103,7 +101,6 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'response_format' => false,
         'style' => false,
         'user' => false,
-        'debug' => false,
         'provider' => false
     ];
 
@@ -201,7 +198,6 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'response_format' => 'response_format',
         'style' => 'style',
         'user' => 'user',
-        'debug' => 'debug',
         'provider' => 'provider'
     ];
 
@@ -219,7 +215,6 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'response_format' => 'setResponseFormat',
         'style' => 'setStyle',
         'user' => 'setUser',
-        'debug' => 'setDebug',
         'provider' => 'setProvider'
     ];
 
@@ -237,7 +232,6 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         'response_format' => 'getResponseFormat',
         'style' => 'getStyle',
         'user' => 'getUser',
-        'debug' => 'getDebug',
         'provider' => 'getProvider'
     ];
 
@@ -306,7 +300,6 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
         $this->setIfExists('response_format', $data ?? [], null);
         $this->setIfExists('style', $data ?? [], null);
         $this->setIfExists('user', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -586,33 +579,6 @@ class ImagesGenerationRequest implements ModelInterface, ArrayAccess, \JsonSeria
             throw new \InvalidArgumentException('non-nullable user cannot be null');
         }
         $this->container['user'] = $user;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugOptions|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
 
         return $this;
     }

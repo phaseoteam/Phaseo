@@ -6,7 +6,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Role** | **string** |  | 
 **Content** | Pointer to [**ChatMessageContent**](ChatMessageContent.md) |  | [optional] 
-**ReasoningContent** | Pointer to **string** |  | [optional] 
 **Name** | Pointer to **string** |  | [optional] 
 **ToolCalls** | Pointer to [**[]ToolCall**](ToolCall.md) |  | [optional] 
 **ToolCallId** | Pointer to **string** |  | [optional] 
@@ -74,31 +73,6 @@ SetContent sets Content field to given value.
 `func (o *ChatMessage) HasContent() bool`
 
 HasContent returns a boolean if a field has been set.
-
-### GetReasoningContent
-
-`func (o *ChatMessage) GetReasoningContent() string`
-
-GetReasoningContent returns the ReasoningContent field if non-nil, zero value otherwise.
-
-### GetReasoningContentOk
-
-`func (o *ChatMessage) GetReasoningContentOk() (*string, bool)`
-
-GetReasoningContentOk returns a tuple with the ReasoningContent field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetReasoningContent
-
-`func (o *ChatMessage) SetReasoningContent(v string)`
-
-SetReasoningContent sets ReasoningContent field to given value.
-
-### HasReasoningContent
-
-`func (o *ChatMessage) HasReasoningContent() bool`
-
-HasReasoningContent returns a boolean if a field has been set.
 
 ### GetName
 

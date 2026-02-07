@@ -17,7 +17,7 @@ import (
 // checks if the ProviderRoutingOptions type satisfies the MappedNullable interface at compile time
 var _ MappedNullable = &ProviderRoutingOptions{}
 
-// ProviderRoutingOptions Provider routing preferences for gateway selection. Global routing policy is configured in the dashboard and applied before request-level overrides.
+// ProviderRoutingOptions Provider routing preferences for gateway selection.
 type ProviderRoutingOptions struct {
 	Order []string `json:"order,omitempty"`
 	Only []string `json:"only,omitempty"`

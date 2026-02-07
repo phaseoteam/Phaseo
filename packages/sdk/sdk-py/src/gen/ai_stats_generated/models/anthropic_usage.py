@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,12 +28,7 @@ class AnthropicUsage(BaseModel):
     """ # noqa: E501
     input_tokens: Optional[StrictInt] = None
     output_tokens: Optional[StrictInt] = None
-    cache_creation: Optional[Dict[str, Any]] = None
-    cache_creation_input_tokens: Optional[StrictInt] = None
-    cache_read_input_tokens: Optional[StrictInt] = None
-    server_tool_use: Optional[StrictBool] = None
-    service_tier: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["input_tokens", "output_tokens", "cache_creation", "cache_creation_input_tokens", "cache_read_input_tokens", "server_tool_use", "service_tier"]
+    __properties: ClassVar[List[str]] = ["input_tokens", "output_tokens"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -87,12 +82,7 @@ class AnthropicUsage(BaseModel):
 
         _obj = cls.model_validate({
             "input_tokens": obj.get("input_tokens"),
-            "output_tokens": obj.get("output_tokens"),
-            "cache_creation": obj.get("cache_creation"),
-            "cache_creation_input_tokens": obj.get("cache_creation_input_tokens"),
-            "cache_read_input_tokens": obj.get("cache_read_input_tokens"),
-            "server_tool_use": obj.get("server_tool_use"),
-            "service_tier": obj.get("service_tier")
+            "output_tokens": obj.get("output_tokens")
         })
         return _obj
 

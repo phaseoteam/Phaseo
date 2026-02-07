@@ -1,0 +1,200 @@
+import type { LanguageModelV1Prompt, LanguageModelV1CallOptions } from '@ai-sdk/provider';
+import type { AIStatsModelSettings } from './ai-stats-settings.js';
+import { prepareTools } from './utils/prepare-tools.js';
+
+/**
+ * Converts AI SDK prompt format to AI Stats Gateway /chat/completions format
+ */
+export function convertToGatewayChatRequest(
+  prompt: LanguageModelV1Prompt,
+  modelId: string,
+  settings: AIStatsModelSettings,
+  options: LanguageModelV1CallOptions
+): any {
+  // Convert messages - prompt is an array of messages
+  const messages = prompt.map((message) => {
+    switch (message.role) {
+      case 'system':
+        return {
+          role: 'system',
+          content: convertContent(message.content),
+        };
+
+      case 'user':
+        return {
+          role: 'user',
+          content: convertContent(message.content),
+        };
+
+      case 'assistant':
+        const assistantMessage: any = {
+          role: 'assistant',
+          content: convertContent(message.content),
+        };
+
+        // Add tool calls if present
+        if (message.content.some((part) => part.type === 'tool-call')) {
+          assistantMessage.tool_calls = message.content
+            .filter((part): part is Extract<typeof part, { type: 'tool-call' }> => part.type === 'tool-call')
+            .map((toolCall) => ({
+              id: toolCall.toolCallId,
+              type: 'function',
+              function: {
+                name: toolCall.toolName,
+                arguments: JSON.stringify(toolCall.args),
+              },
+            }));
+        }
+
+        return assistantMessage;
+
+      case 'tool':
+        // Map tool results to gateway format
+        return message.content.map((toolResult) => ({
+          role: 'tool',
+          tool_call_id: toolResult.toolCallId,
+          content: JSON.stringify(toolResult.result),
+        }));
+    }
+  }).flat(); // Flatten because tool messages can expand to multiple messages
+
+  // Prepare request body
+  const body: any = {
+    model: modelId,
+    messages,
+  };
+
+  // Add generation parameters from options
+  if (options.temperature !== undefined) {
+    body.temperature = options.temperature;
+  }
+  if (options.maxTokens !== undefined) {
+    body.max_tokens = options.maxTokens;
+  }
+  if (options.topP !== undefined) {
+    body.top_p = options.topP;
+  }
+  if (options.topK !== undefined) {
+    body.top_k = options.topK;
+  }
+  if (options.frequencyPenalty !== undefined) {
+    body.frequency_penalty = options.frequencyPenalty;
+  }
+  if (options.presencePenalty !== undefined) {
+    body.presence_penalty = options.presencePenalty;
+  }
+  if (options.seed !== undefined) {
+    body.seed = options.seed;
+  }
+
+  // Add settings parameters
+  if (settings.user !== undefined) {
+    body.user = settings.user;
+  }
+
+  // Add tools if present in mode
+  if (options.mode.type === 'regular' && options.mode.tools && options.mode.tools.length > 0) {
+    body.tools = prepareTools(options.mode.tools);
+
+    // Add tool choice
+    if (options.mode.toolChoice) {
+      body.tool_choice = convertToolChoice(options.mode.toolChoice);
+    }
+  } else if (options.mode.type === 'object-tool') {
+    // For object-tool mode, convert the tool to tools array
+    body.tools = prepareTools([options.mode.tool]);
+    body.tool_choice = {
+      type: 'function',
+      function: { name: options.mode.tool.name }
+    };
+  }
+
+  // Add response format for structured output modes
+  if (options.mode.type === 'object-json') {
+    body.response_format = { type: 'json_object' };
+  }
+
+  return body;
+}
+
+/**
+ * Converts AI SDK content parts to gateway format
+ */
+function convertContent(content: any): string | any[] {
+  // Handle string content
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  // Handle array of content parts
+  if (!Array.isArray(content)) {
+    return '';
+  }
+
+  // If only text content, return as string
+  const textParts = content.filter((part: any) => part.type === 'text');
+  const hasOnlyText = textParts.length === content.length;
+
+  if (hasOnlyText && textParts.length === 1) {
+    return textParts[0].text;
+  }
+
+  // Otherwise, return as array of content parts
+  return content
+    .filter((part) => part.type !== 'tool-call') // Filter out tool calls (handled separately)
+    .map((part) => {
+      switch (part.type) {
+        case 'text':
+          return {
+            type: 'text',
+            text: part.text,
+          };
+
+        case 'image':
+          if (part.image instanceof URL) {
+            return {
+              type: 'image_url',
+              image_url: {
+                url: part.image.toString(),
+              },
+            };
+          } else {
+            // Base64 or Buffer
+            const base64 = part.image instanceof Uint8Array
+              ? Buffer.from(part.image).toString('base64')
+              : part.image.toString('base64');
+
+            return {
+              type: 'image_url',
+              image_url: {
+                url: `data:${part.mimeType ?? 'image/jpeg'};base64,${base64}`,
+              },
+            };
+          }
+
+        case 'file':
+          // Files are not directly supported by the gateway chat API
+          // Return as text reference
+          return {
+            type: 'text',
+            text: `[File: ${part.mimeType}]`,
+          };
+
+        default:
+          return {
+            type: 'text',
+            text: '',
+          };
+      }
+    });
+}
+
+/**
+ * Converts AI SDK tool choice to gateway format
+ */
+function convertToolChoice(toolChoice: any): any {
+  if (!toolChoice) {
+    return undefined;
+  }
+
+  switch (toolChoice.type) {

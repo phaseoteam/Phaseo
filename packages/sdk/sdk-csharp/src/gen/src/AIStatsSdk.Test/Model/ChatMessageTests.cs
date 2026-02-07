@@ -72,15 +72,6 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'ReasoningContent'
-        /// </summary>
-        [Fact]
-        public void ReasoningContentTest()
-        {
-            // TODO unit test for the property 'ReasoningContent'
-        }
-
-        /// <summary>
         /// Test the property 'Name'
         /// </summary>
         [Fact]

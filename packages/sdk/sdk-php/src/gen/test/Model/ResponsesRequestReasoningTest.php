@@ -96,22 +96,4 @@ class ResponsesRequestReasoningTest extends TestCase
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
-
-    /**
-     * Test attribute "enabled"
-     */
-    public function testPropertyEnabled()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "max_tokens"
-     */
-    public function testPropertyMaxTokens()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
 }

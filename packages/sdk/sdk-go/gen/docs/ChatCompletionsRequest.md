@@ -12,7 +12,6 @@ Name | Type | Description | Notes
 **LogitBias** | Pointer to **map[string]float32** |  | [optional] 
 **MaxOutputTokens** | Pointer to **int32** |  | [optional] 
 **Meta** | Pointer to **bool** |  | [optional] [default to false]
-**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **PresencePenalty** | Pointer to **float32** |  | [optional] 
 **Seed** | Pointer to **int32** |  | [optional] 
 **Stream** | Pointer to **bool** |  | [optional] [default to false]
@@ -26,7 +25,6 @@ Name | Type | Description | Notes
 **TopLogprobs** | Pointer to **int32** |  | [optional] 
 **TopP** | Pointer to **float32** |  | [optional] 
 **ResponseFormat** | Pointer to [**ChatCompletionsRequestResponseFormat**](ChatCompletionsRequestResponseFormat.md) |  | [optional] 
-**Modalities** | Pointer to **[]string** |  | [optional] 
 **Usage** | Pointer to **bool** |  | [optional] 
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 **UserId** | Pointer to **string** |  | [optional] 
@@ -240,31 +238,6 @@ SetMeta sets Meta field to given value.
 `func (o *ChatCompletionsRequest) HasMeta() bool`
 
 HasMeta returns a boolean if a field has been set.
-
-### GetDebug
-
-`func (o *ChatCompletionsRequest) GetDebug() DebugOptions`
-
-GetDebug returns the Debug field if non-nil, zero value otherwise.
-
-### GetDebugOk
-
-`func (o *ChatCompletionsRequest) GetDebugOk() (*DebugOptions, bool)`
-
-GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetDebug
-
-`func (o *ChatCompletionsRequest) SetDebug(v DebugOptions)`
-
-SetDebug sets Debug field to given value.
-
-### HasDebug
-
-`func (o *ChatCompletionsRequest) HasDebug() bool`
-
-HasDebug returns a boolean if a field has been set.
 
 ### GetPresencePenalty
 
@@ -590,31 +563,6 @@ SetResponseFormat sets ResponseFormat field to given value.
 `func (o *ChatCompletionsRequest) HasResponseFormat() bool`
 
 HasResponseFormat returns a boolean if a field has been set.
-
-### GetModalities
-
-`func (o *ChatCompletionsRequest) GetModalities() []string`
-
-GetModalities returns the Modalities field if non-nil, zero value otherwise.
-
-### GetModalitiesOk
-
-`func (o *ChatCompletionsRequest) GetModalitiesOk() (*[]string, bool)`
-
-GetModalitiesOk returns a tuple with the Modalities field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetModalities
-
-`func (o *ChatCompletionsRequest) SetModalities(v []string)`
-
-SetModalities sets Modalities field to given value.
-
-### HasModalities
-
-`func (o *ChatCompletionsRequest) HasModalities() bool`
-
-HasModalities returns a boolean if a field has been set.
 
 ### GetUsage
 

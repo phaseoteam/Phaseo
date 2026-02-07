@@ -21,8 +21,6 @@ module AIStatsSdk
         [
           :'AudioContentPart',
           :'ImageContentPart',
-          :'InputImageContentPart',
-          :'InputTextContentPart',
           :'TextContentPart',
           :'ToolCallContentPart',
           :'VideoContentPart'

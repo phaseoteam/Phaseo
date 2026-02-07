@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	sdk "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
+	sdk "packages/sdk/sdk-go"
 )
 
 func main() {
@@ -15,13 +15,9 @@ func main() {
 	}
 
 	client := sdk.New(apiKey, "https://api.phaseo.app/v1")
-	resp, err := client.GetModels(context.Background(), nil)
+	resp, _, err := client.GetModels(context.Background(), nil)
 	if err != nil {
 		panic(err)
 	}
-	if list, ok := resp["models"].([]any); ok {
-		fmt.Println("models:", list)
-	} else {
-		fmt.Println("models:", resp)
-	}
+	fmt.Println("models:", resp.Models)
 }

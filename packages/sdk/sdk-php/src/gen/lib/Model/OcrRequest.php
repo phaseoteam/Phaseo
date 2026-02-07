@@ -60,7 +60,7 @@ class OcrRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'model' => 'string',
         'image' => 'string',
         'language' => 'string',
-        'debug' => '\AIStats\Sdk\Model\DebugOptions',
+        'echo_upstream_request' => 'bool',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -75,7 +75,7 @@ class OcrRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'model' => null,
         'image' => null,
         'language' => null,
-        'debug' => null,
+        'echo_upstream_request' => null,
         'provider' => null
     ];
 
@@ -88,7 +88,7 @@ class OcrRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'model' => false,
         'image' => false,
         'language' => false,
-        'debug' => false,
+        'echo_upstream_request' => false,
         'provider' => false
     ];
 
@@ -181,7 +181,7 @@ class OcrRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'model' => 'model',
         'image' => 'image',
         'language' => 'language',
-        'debug' => 'debug',
+        'echo_upstream_request' => 'echo_upstream_request',
         'provider' => 'provider'
     ];
 
@@ -194,7 +194,7 @@ class OcrRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'model' => 'setModel',
         'image' => 'setImage',
         'language' => 'setLanguage',
-        'debug' => 'setDebug',
+        'echo_upstream_request' => 'setEchoUpstreamRequest',
         'provider' => 'setProvider'
     ];
 
@@ -207,7 +207,7 @@ class OcrRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'model' => 'getModel',
         'image' => 'getImage',
         'language' => 'getLanguage',
-        'debug' => 'getDebug',
+        'echo_upstream_request' => 'getEchoUpstreamRequest',
         'provider' => 'getProvider'
     ];
 
@@ -271,7 +271,7 @@ class OcrRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('model', $data ?? [], null);
         $this->setIfExists('image', $data ?? [], null);
         $this->setIfExists('language', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
+        $this->setIfExists('echo_upstream_request', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -405,28 +405,28 @@ class OcrRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     }
 
     /**
-     * Gets debug
+     * Gets echo_upstream_request
      *
-     * @return \AIStats\Sdk\Model\DebugOptions|null
+     * @return bool|null
      */
-    public function getDebug()
+    public function getEchoUpstreamRequest()
     {
-        return $this->container['debug'];
+        return $this->container['echo_upstream_request'];
     }
 
     /**
-     * Sets debug
+     * Sets echo_upstream_request
      *
-     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
+     * @param bool|null $echo_upstream_request echo_upstream_request
      *
      * @return self
      */
-    public function setDebug($debug)
+    public function setEchoUpstreamRequest($echo_upstream_request)
     {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
+        if (is_null($echo_upstream_request)) {
+            throw new \InvalidArgumentException('non-nullable echo_upstream_request cannot be null');
         }
-        $this->container['debug'] = $debug;
+        $this->container['echo_upstream_request'] = $echo_upstream_request;
 
         return $this;
     }

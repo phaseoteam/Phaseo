@@ -11,6 +11,7 @@ import { extractModel, formatZodErrors, buildProviderCandidates } from "./utils"
 import { fetchGatewayContext } from "./context";
 import { generatePublicId } from "./genId";
 import { isDebugAllowed } from "../debug";
+import type { DebugOptions } from "@core/types";
 import { authenticate, type AuthFailure } from "./auth";
 import { readAttributionHeaders } from "../after/attribution";
 
@@ -179,12 +180,12 @@ export function makeMeta(input: {
     stream: boolean;
     req: Request;
     returnMeta?: boolean;
-    echoUpstreamRequest?: boolean;
+    debug?: DebugOptions;
     providerCapabilitiesBeta?: boolean;
 }): RequestMeta {
     const { referer, appTitle } = readAttributionHeaders(input.req);
-    const debugHeader = input.req.headers.get("x-gateway-debug");
-    const debugEnabled = normalizeReturnFlag(debugHeader) && isDebugAllowed();
+    const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-ai-stats-debug");
+    const debugEnabled = (normalizeReturnFlag(debugHeader) || Boolean(input.debug?.enabled)) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
     const cfRay = input.req.headers.get("cf-ray");
     const edge = getEdgeMeta(input.req);
@@ -205,14 +206,19 @@ export function makeMeta(input: {
     } catch {
         // ignore global debug flag errors
     }
+    const debug: DebugOptions | undefined = input.debug || debugEnabled
+        ? { ...input.debug, enabled: debugEnabled }
+        : undefined;
     return {
         apiKeyId: input.apiKeyId,
         apiKeyRef: input.apiKeyRef,
         apiKeyKid: input.apiKeyKid,
         requestId: input.requestId,
         stream: input.stream,
-        debug: debugEnabled,
-        echoUpstreamRequest: input.echoUpstreamRequest ?? false,
+        debug,
+        echoUpstreamRequest: Boolean(debug?.return_upstream_request),
+        returnUpstreamRequest: Boolean(debug?.return_upstream_request),
+        returnUpstreamResponse: Boolean(debug?.return_upstream_response),
         startedAtMs: Date.now(),
         keySource: "gateway",
         byokKeyId: null,

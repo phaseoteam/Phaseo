@@ -1032,6 +1032,11 @@ function ChatPlaygroundContent({
 			const base = normalizeBaseUrl(baseUrl);
 			const input = payloadMessages
 				.filter((message) => message.role !== "system")
+				.filter(
+					(message) =>
+						typeof message.content !== "string" ||
+						message.content.trim().length > 0,
+				)
 				.map((message) => ({
 					role: message.role,
 					content: message.content,
@@ -2036,13 +2041,13 @@ function ChatPlaygroundContent({
 					presetPrompt={queryPrompt}
 					onSend={handleSend}
 					onEditMessage={handleEditMessage}
-					onRetryAssistant={handleRetryAssistant}
-					onBranchAssistant={handleBranchAssistant}
-					onSelectVariant={handleSelectVariant}
-					orgNameById={orgNameById}
-					isAuthenticated={isAuthenticated}
-					hasApiKey={hasApiKey}
-					accentColor={personalization.accentColor}
+						onRetryAssistant={handleRetryAssistant}
+						onBranchAssistant={handleBranchAssistant}
+						onSelectVariant={handleSelectVariant}
+						orgNameById={orgNameById}
+						isAuthenticated={isAuthenticated}
+						hasApiKey={hasApiKey}
+						accentColor={personalization.accentColor}
 					selectedOrgId={selectedOrgId}
 					selectedModelId={activeThread?.modelId ?? ""}
 					selectedModelLabel={selectedModelLabel}

@@ -124,6 +124,19 @@ function isContextLike(value: unknown): value is GatewayContextData {
     return Boolean(ctx.teamId && ctx.key && ctx.keyLimit && ctx.credit && ctx.providers);
 }
 
+function normalizeProviderStatus(
+    value: unknown
+): "active" | "beta" | "alpha" | "not_ready" {
+    const status = String(value ?? "").trim().toLowerCase();
+    if (status === "active") return "active";
+    if (status === "beta") return "beta";
+    if (status === "alpha") return "alpha";
+    if (status === "notready" || status === "not_ready" || status === "not ready") {
+        return "not_ready";
+    }
+    return "active";
+}
+
 export async function fetchGatewayContext(args: {
     teamId: string;
     model: string;
@@ -178,6 +191,74 @@ export async function fetchGatewayContext(args: {
         throw e;
     }
 
+    // Enrich with team settings + provider rollout statuses.
+    parsed.teamSettings = {
+        routingMode: null,
+        byokFallbackEnabled: null,
+        betaChannelEnabled: false,
+    };
+
+    try {
+        const providerIds = Array.from(
+            new Set(
+                (parsed.providers ?? [])
+                    .map((provider) => provider.providerId)
+                    .filter((id): id is string => Boolean(id))
+            )
+        );
+
+        const providerStatusQuery = providerIds.length
+            ? supabase
+                  .from("data_api_providers")
+                  .select("api_provider_id,status")
+                  .in("api_provider_id", providerIds)
+            : Promise.resolve({ data: [], error: null } as any);
+
+        const [settingsResult, providerStatusResult] = await Promise.all([
+            supabase
+                .from("team_settings")
+                .select("routing_mode,byok_fallback_enabled,beta_channel_enabled")
+                .eq("team_id", args.teamId)
+                .maybeSingle(),
+            providerStatusQuery,
+        ]);
+
+        if (!settingsResult?.error) {
+            parsed.teamSettings = {
+                routingMode: settingsResult.data?.routing_mode ?? null,
+                byokFallbackEnabled:
+                    settingsResult.data?.byok_fallback_enabled ?? null,
+                betaChannelEnabled:
+                    settingsResult.data?.beta_channel_enabled ?? false,
+            };
+        }
+
+        if (!providerStatusResult?.error) {
+            const statusByProvider = new Map<string, string>();
+            for (const row of providerStatusResult.data ?? []) {
+                if (!row?.api_provider_id) continue;
+                statusByProvider.set(
+                    row.api_provider_id,
+                    normalizeProviderStatus(row.status),
+                );
+            }
+
+            parsed.providers = (parsed.providers ?? []).map((provider) => ({
+                ...provider,
+                providerStatus: normalizeProviderStatus(
+                    statusByProvider.get(provider.providerId),
+                ),
+            }));
+        } else {
+            parsed.providers = (parsed.providers ?? []).map((provider) => ({
+                ...provider,
+                providerStatus: "active",
+            }));
+        }
+    } catch {
+        // Keep defaults if enrichment fails, never block request path.
+    }
+
     // Compute adaptive TTL based on data characteristics
     if (!args.disableCache) {
         try {
@@ -204,8 +285,8 @@ export async function fetchGatewayContext(args: {
                     bucketPressureScore(buckets?.monthly)
                 );
 
-                // Low pressure → cache longer (providers/pricing don't change often)
-                // High pressure → cache shorter (limits need frequent updates)
+                // Low pressure -> cache longer (providers/pricing don't change often)
+                // High pressure -> cache shorter (limits need frequent updates)
                 if (maxPressure < 0.3) {
                     ttl = Math.min(STATIC_TTL_MIN, dynamicTtl * 3);
                 } else {

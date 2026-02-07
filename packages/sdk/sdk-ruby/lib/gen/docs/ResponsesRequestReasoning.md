@@ -6,8 +6,6 @@
 | ---- | ---- | ----------- | ----- |
 | **effort** | **String** |  | [optional] |
 | **summary** | **String** |  | [optional] |
-| **enabled** | **Boolean** |  | [optional] |
-| **max_tokens** | **Integer** |  | [optional] |
 
 ## Example
 
@@ -16,9 +14,7 @@ require 'ai_stats_sdk'
 
 instance = AIStatsSdk::ResponsesRequestReasoning.new(
   effort: null,
-  summary: null,
-  enabled: null,
-  max_tokens: null
+  summary: null
 )
 ```
 

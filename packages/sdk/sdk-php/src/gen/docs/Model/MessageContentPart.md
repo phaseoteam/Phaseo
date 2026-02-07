@@ -6,8 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **string** |  |
 **text** | **string** |  |
-**cache_control** | [**\AIStats\Sdk\Model\CacheControl**](CacheControl.md) |  | [optional]
-**image_url** | [**\AIStats\Sdk\Model\InputImageContentPartImageUrl**](InputImageContentPartImageUrl.md) |  |
+**image_url** | [**\AIStats\Sdk\Model\ImageContentPartImageUrl**](ImageContentPartImageUrl.md) |  |
 **input_audio** | [**\AIStats\Sdk\Model\AudioContentPartInputAudio**](AudioContentPartInputAudio.md) |  |
 **video_url** | **string** |  |
 **id** | **string** |  |

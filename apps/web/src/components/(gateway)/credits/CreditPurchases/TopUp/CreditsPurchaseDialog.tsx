@@ -53,9 +53,9 @@ export default function CreditsPurchaseDialog({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	// CONFIG
-	// Allow freeform typing. Require a minimum of $0.50 and a maximum of $1,000,000
+	// Allow freeform typing. Require a minimum of $10 and a maximum of $1,000,000
 	// before enabling the pay button.
-	const MIN = 0.5;
+	const MIN = 10;
 	const MAX = 1000000;
 	const STEP = 0.01;
 	const FEE_RATE = tierInfo?.current?.feePct
@@ -73,7 +73,7 @@ export default function CreditsPurchaseDialog({
 	// Use a string for the raw input so the user can freely delete/enter
 	// characters (empty string, partial decimals, etc.). Parse it into a
 	// number when needed for validation and calculations.
-	const [rawAmount, setRawAmount] = useState<string>("5");
+	const [rawAmount, setRawAmount] = useState<string>("25");
 	const parsed = useMemo(() => {
 		const n = parseFloat(rawAmount as any);
 		return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
@@ -115,20 +115,20 @@ export default function CreditsPurchaseDialog({
 	const creditsDisplay = inputEmpty
 		? formatUSD(0)
 		: numericOutOfBounds
-		? "—"
+		? "--"
 		: formatUSD(parsed);
 	const feeDisplay = inputEmpty
 		? formatUSD(0)
 		: numericOutOfBounds
-		? "—"
+		? "--"
 		: formatUSD(fee);
 	const totalDisplay = inputEmpty
 		? formatUSD(0)
 		: numericOutOfBounds
-		? "—"
+		? "--"
 		: formatUSD(total);
 
-	const quickPicks = [5, 10, 25, 50];
+	const quickPicks = [10, 25, 50, 100];
 
 	// Default selection: only auto-select the Stripe default payment method.
 	// Do not auto-select the first saved method when there's no default.
@@ -266,7 +266,7 @@ export default function CreditsPurchaseDialog({
 				setIsLoading(false);
 				return; // don't fall through
 			}
-			// If we got here, user chose "new" or no saved PM available → go to Checkout:
+			// If we got here, user chose "new" or no saved PM available -> go to Checkout:
 			const response = await fetch("/api/checkout/create", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -322,7 +322,7 @@ export default function CreditsPurchaseDialog({
 						onChange={setSelectedPm}
 					/>
 
-					{/* 2. Pay mode — simplified: default is Save & Pay; show a small tucked-away One-off switch */}
+					{/* 2. Pay mode -- simplified: default is Save & Pay; show a small tucked-away One-off switch */}
 					{((stripeInfo?.paymentMethods?.length ?? 0) === 0 &&
 						!stripeInfo?.hasPaymentMethod) ||
 					selectedPm === "new" ? (
@@ -353,7 +353,7 @@ export default function CreditsPurchaseDialog({
 								<p className="text-xs text-zinc-600">
 									{mode === "pay_and_save"
 										? "Your card will be saved for faster top-ups next time."
-										: "We’ll process a one-off payment for this top-up only."}
+										: "We'll process a one-off payment for this top-up only."}
 								</p>
 							</section>
 						</>
@@ -431,7 +431,7 @@ export default function CreditsPurchaseDialog({
 						{/* Validation messages */}
 						{!Number.isNaN(parsed) && parsed < MIN ? (
 							<div className="text-sm text-red-600">
-								Must buy a minimum of $0.5 of credits
+								Must buy a minimum of $10 of credits
 							</div>
 						) : !Number.isNaN(parsed) && parsed > MAX ? (
 							<div className="text-sm text-red-600">
@@ -514,7 +514,7 @@ export default function CreditsPurchaseDialog({
 								{isLoading ? (
 									<span className="inline-flex items-center gap-2">
 										<Spinner className="h-4 w-4" />
-										Processing…
+										Processing...
 									</span>
 								) : selectedPm && selectedPm !== "new" ? (
 									(() => {
@@ -524,8 +524,8 @@ export default function CreditsPurchaseDialog({
 										const brand =
 											sel?.card?.brand ?? "Card";
 										const last4 =
-											sel?.card?.last4 ?? "••••";
-										return `Pay with ${brand} ••••${last4}`;
+											sel?.card?.last4 ?? "****";
+										return `Pay with ${brand} ****${last4}`;
 									})()
 								) : mode === "oneoff" ? (
 									"Continue to checkout"

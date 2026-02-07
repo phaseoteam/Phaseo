@@ -11,8 +11,6 @@ import {
 } from "@/components/ui/card";
 import { getHelpCategories } from "@/lib/content/helpCenter";
 
-export const dynamic = "force-static";
-
 export const metadata: Metadata = {
 	title: "Help Center",
 	description:

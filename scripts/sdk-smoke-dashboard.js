@@ -1,15 +1,15 @@
 const { spawnSync } = require("node:child_process");
 
 const entries = [
-	{ label: "ts", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-ts", "smoke:chat"] },
-	{ label: "py", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-py", "smoke:chat"] },
-	{ label: "go", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-go", "smoke:chat"] },
-	{ label: "ruby", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-ruby", "smoke:chat"] },
-	{ label: "php", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-php", "smoke:chat"] },
-	{ label: "csharp", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-csharp", "smoke:chat"] },
-	{ label: "java", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-java", "smoke:chat"] },
-	{ label: "rust", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-rust", "smoke:chat"] },
-	{ label: "cpp", command: "bun", args: ["run", "--cwd", "packages/sdk/sdk-cpp", "smoke:chat"] }
+	{ label: "ts", command: "pnpm", args: ["--dir", "packages/sdk/sdk-ts", "run", "smoke:chat"] },
+	{ label: "py", command: "pnpm", args: ["--dir", "packages/sdk/sdk-py", "run", "smoke:chat"] },
+	{ label: "go", command: "pnpm", args: ["--dir", "packages/sdk/sdk-go", "run", "smoke:chat"] },
+	{ label: "ruby", command: "pnpm", args: ["--dir", "packages/sdk/sdk-ruby", "run", "smoke:chat"] },
+	{ label: "php", command: "pnpm", args: ["--dir", "packages/sdk/sdk-php", "run", "smoke:chat"] },
+	{ label: "csharp", command: "pnpm", args: ["--dir", "packages/sdk/sdk-csharp", "run", "smoke:chat"] },
+	{ label: "java", command: "pnpm", args: ["--dir", "packages/sdk/sdk-java", "run", "smoke:chat"] },
+	{ label: "rust", command: "pnpm", args: ["--dir", "packages/sdk/sdk-rust", "run", "smoke:chat"] },
+	{ label: "cpp", command: "pnpm", args: ["--dir", "packages/sdk/sdk-cpp", "run", "smoke:chat"] }
 ];
 
 const results = [];

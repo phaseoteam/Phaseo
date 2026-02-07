@@ -65,7 +65,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => 'array<string,float>',
         'max_output_tokens' => 'int',
         'meta' => 'bool',
-        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'presence_penalty' => 'float',
         'seed' => 'int',
         'stream' => 'bool',
@@ -79,7 +78,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_logprobs' => 'int',
         'top_p' => 'float',
         'response_format' => '\AIStats\Sdk\Model\ChatCompletionsRequestResponseFormat',
-        'modalities' => 'string[]',
         'usage' => 'bool',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions',
         'user_id' => 'string',
@@ -102,7 +100,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => null,
         'max_output_tokens' => null,
         'meta' => null,
-        'debug' => null,
         'presence_penalty' => null,
         'seed' => null,
         'stream' => null,
@@ -116,7 +113,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_logprobs' => null,
         'top_p' => null,
         'response_format' => null,
-        'modalities' => null,
         'usage' => null,
         'provider' => null,
         'user_id' => null,
@@ -137,7 +133,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => false,
         'max_output_tokens' => false,
         'meta' => false,
-        'debug' => false,
         'presence_penalty' => false,
         'seed' => false,
         'stream' => false,
@@ -151,7 +146,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_logprobs' => false,
         'top_p' => false,
         'response_format' => false,
-        'modalities' => false,
         'usage' => false,
         'provider' => false,
         'user_id' => false,
@@ -252,7 +246,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => 'logit_bias',
         'max_output_tokens' => 'max_output_tokens',
         'meta' => 'meta',
-        'debug' => 'debug',
         'presence_penalty' => 'presence_penalty',
         'seed' => 'seed',
         'stream' => 'stream',
@@ -266,7 +259,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_logprobs' => 'top_logprobs',
         'top_p' => 'top_p',
         'response_format' => 'response_format',
-        'modalities' => 'modalities',
         'usage' => 'usage',
         'provider' => 'provider',
         'user_id' => 'user_id',
@@ -287,7 +279,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => 'setLogitBias',
         'max_output_tokens' => 'setMaxOutputTokens',
         'meta' => 'setMeta',
-        'debug' => 'setDebug',
         'presence_penalty' => 'setPresencePenalty',
         'seed' => 'setSeed',
         'stream' => 'setStream',
@@ -301,7 +292,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_logprobs' => 'setTopLogprobs',
         'top_p' => 'setTopP',
         'response_format' => 'setResponseFormat',
-        'modalities' => 'setModalities',
         'usage' => 'setUsage',
         'provider' => 'setProvider',
         'user_id' => 'setUserId',
@@ -322,7 +312,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => 'getLogitBias',
         'max_output_tokens' => 'getMaxOutputTokens',
         'meta' => 'getMeta',
-        'debug' => 'getDebug',
         'presence_penalty' => 'getPresencePenalty',
         'seed' => 'getSeed',
         'stream' => 'getStream',
@@ -336,7 +325,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'top_logprobs' => 'getTopLogprobs',
         'top_p' => 'getTopP',
         'response_format' => 'getResponseFormat',
-        'modalities' => 'getModalities',
         'usage' => 'getUsage',
         'provider' => 'getProvider',
         'user_id' => 'getUserId',
@@ -384,28 +372,9 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         return self::$openAPIModelName;
     }
 
-    public const MODALITIES_TEXT = 'text';
-    public const MODALITIES_IMAGE = 'image';
-    public const MODALITIES_AUDIO = 'audio';
-    public const MODALITIES_VIDEO = 'video';
     public const SERVICE_TIER_FLEX = 'flex';
     public const SERVICE_TIER_STANDARD = 'standard';
     public const SERVICE_TIER_PRIORITY = 'priority';
-
-    /**
-     * Gets allowable values of the enum
-     *
-     * @return string[]
-     */
-    public function getModalitiesAllowableValues()
-    {
-        return [
-            self::MODALITIES_TEXT,
-            self::MODALITIES_IMAGE,
-            self::MODALITIES_AUDIO,
-            self::MODALITIES_VIDEO,
-        ];
-    }
 
     /**
      * Gets allowable values of the enum
@@ -444,7 +413,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         $this->setIfExists('logit_bias', $data ?? [], null);
         $this->setIfExists('max_output_tokens', $data ?? [], null);
         $this->setIfExists('meta', $data ?? [], false);
-        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('presence_penalty', $data ?? [], null);
         $this->setIfExists('seed', $data ?? [], null);
         $this->setIfExists('stream', $data ?? [], false);
@@ -458,7 +426,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         $this->setIfExists('top_logprobs', $data ?? [], null);
         $this->setIfExists('top_p', $data ?? [], null);
         $this->setIfExists('response_format', $data ?? [], null);
-        $this->setIfExists('modalities', $data ?? [], null);
         $this->setIfExists('usage', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
         $this->setIfExists('user_id', $data ?? [], null);
@@ -816,33 +783,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
             throw new \InvalidArgumentException('non-nullable meta cannot be null');
         }
         $this->container['meta'] = $meta;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugOptions|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
 
         return $this;
     }
@@ -1244,42 +1184,6 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
             throw new \InvalidArgumentException('non-nullable response_format cannot be null');
         }
         $this->container['response_format'] = $response_format;
-
-        return $this;
-    }
-
-    /**
-     * Gets modalities
-     *
-     * @return string[]|null
-     */
-    public function getModalities()
-    {
-        return $this->container['modalities'];
-    }
-
-    /**
-     * Sets modalities
-     *
-     * @param string[]|null $modalities modalities
-     *
-     * @return self
-     */
-    public function setModalities($modalities)
-    {
-        if (is_null($modalities)) {
-            throw new \InvalidArgumentException('non-nullable modalities cannot be null');
-        }
-        $allowedValues = $this->getModalitiesAllowableValues();
-        if (array_diff($modalities, $allowedValues)) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    "Invalid value for 'modalities', must be one of '%s'",
-                    implode("', '", $allowedValues)
-                )
-            );
-        }
-        $this->container['modalities'] = $modalities;
 
         return $this;
     }

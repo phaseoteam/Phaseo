@@ -33,8 +33,8 @@ function formatTokens(value: number) {
 function formatPercent(value: number) {
 	if (!Number.isFinite(value)) return "--";
 	if (value === 0) return "0%";
-	const precision = value < 1 ? 1 : value < 10 ? 1 : 0;
-	return `${value.toFixed(precision)}%`;
+	if (value < 1) return "<1%";
+	return `${Math.round(value)}%`;
 }
 
 export function MarketShareLeaderboard({
@@ -71,8 +71,8 @@ export function MarketShareLeaderboard({
 							entry.href ? (
 								<Link
 									href={entry.href}
-									aria-label={entry.name}
 									className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+									aria-label={entry.name}
 								>
 									<div className="relative h-5 w-5">
 										<Logo
@@ -98,16 +98,11 @@ export function MarketShareLeaderboard({
 						) : null}
 						<div className="min-w-0 flex-1">
 							{entry.href ? (
-								<Link
-									href={entry.href}
-									className="font-medium truncate block"
-								>
+								<Link href={entry.href} className="font-medium truncate block">
 									{entry.name}
 								</Link>
 							) : (
-								<div className="font-medium truncate">
-									{entry.name}
-								</div>
+								<div className="font-medium truncate">{entry.name}</div>
 							)}
 						</div>
 						<div className="text-right">
@@ -129,52 +124,47 @@ export function MarketShareLeaderboard({
 									animationDelay: `${index * 20}ms`,
 								}}
 							>
-							<div className="w-6 text-xs text-muted-foreground">
-								#{index + maxCollapsed + 1}
-							</div>
-							{entry.logo_id ? (
-								entry.href ? (
-									<Link
-										href={entry.href}
-										aria-label={entry.name}
-										className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
-									>
-										<div className="relative h-5 w-5">
-											<Logo
-												id={entry.logo_id}
-												alt={entry.name}
-												className="object-contain"
-												fill
-											/>
+								<div className="w-6 text-xs text-muted-foreground">
+									#{index + maxCollapsed + 1}
+								</div>
+								{entry.logo_id ? (
+									entry.href ? (
+										<Link
+											href={entry.href}
+											className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+											aria-label={entry.name}
+										>
+											<div className="relative h-5 w-5">
+												<Logo
+													id={entry.logo_id}
+													alt={entry.name}
+													className="object-contain"
+													fill
+												/>
+											</div>
+										</Link>
+									) : (
+										<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
+											<div className="relative h-5 w-5">
+												<Logo
+													id={entry.logo_id}
+													alt={entry.name}
+													className="object-contain"
+													fill
+												/>
+											</div>
 										</div>
-									</Link>
-								) : (
-									<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
-										<div className="relative h-5 w-5">
-											<Logo
-												id={entry.logo_id}
-												alt={entry.name}
-												className="object-contain"
-												fill
-											/>
-										</div>
-									</div>
-								)
-							) : null}
-							<div className="min-w-0 flex-1">
-								{entry.href ? (
-									<Link
-										href={entry.href}
-										className="font-medium truncate block"
-									>
-										{entry.name}
-									</Link>
-								) : (
-									<div className="font-medium truncate">
-										{entry.name}
-									</div>
-								)}
-							</div>
+									)
+								) : null}
+								<div className="min-w-0 flex-1">
+									{entry.href ? (
+										<Link href={entry.href} className="font-medium truncate block">
+											{entry.name}
+										</Link>
+									) : (
+										<div className="font-medium truncate">{entry.name}</div>
+									)}
+								</div>
 								<div className="text-right">
 									<div className="font-mono text-sm">
 										{formatPercent(entry.share_pct)}

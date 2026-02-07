@@ -40,10 +40,9 @@ namespace AIStatsSdk.Model
         /// <param name="dimensions">dimensions</param>
         /// <param name="embeddingOptions">embeddingOptions</param>
         /// <param name="user">user</param>
-        /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public EmbeddingsRequest(Option<string?> model = default, Option<OneOfstringarray?> input = default, Option<OneOfstringarray?> inputs = default, Option<string?> encodingFormat = default, Option<int?> dimensions = default, Option<Object?> embeddingOptions = default, Option<string?> user = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
+        public EmbeddingsRequest(Option<string?> model = default, Option<OneOfstringarray?> input = default, Option<OneOfstringarray?> inputs = default, Option<string?> encodingFormat = default, Option<int?> dimensions = default, Option<Object?> embeddingOptions = default, Option<string?> user = default, Option<ProviderRoutingOptions?> provider = default)
         {
             ModelOption = model;
             InputOption = input;
@@ -52,7 +51,6 @@ namespace AIStatsSdk.Model
             DimensionsOption = dimensions;
             EmbeddingOptionsOption = embeddingOptions;
             UserOption = user;
-            DebugOption = debug;
             ProviderOption = provider;
             OnCreated();
         }
@@ -152,19 +150,6 @@ namespace AIStatsSdk.Model
         public string? User { get { return this.UserOption; } set { this.UserOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugOptions?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Provider
         /// </summary>
         [JsonIgnore]
@@ -192,7 +177,6 @@ namespace AIStatsSdk.Model
             sb.Append("  Dimensions: ").Append(Dimensions).Append("\n");
             sb.Append("  EmbeddingOptions: ").Append(EmbeddingOptions).Append("\n");
             sb.Append("  User: ").Append(User).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -244,7 +228,6 @@ namespace AIStatsSdk.Model
             Option<int?> dimensions = default;
             Option<Object?> embeddingOptions = default;
             Option<string?> user = default;
-            Option<DebugOptions?> debug = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -283,9 +266,6 @@ namespace AIStatsSdk.Model
                         case "user":
                             user = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "debug":
-                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
@@ -310,13 +290,10 @@ namespace AIStatsSdk.Model
             if (user.IsSet && user.Value == null)
                 throw new ArgumentNullException(nameof(user), "Property is not nullable for class EmbeddingsRequest.");
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class EmbeddingsRequest.");
-
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class EmbeddingsRequest.");
 
-            return new EmbeddingsRequest(model, input, inputs, encodingFormat, dimensions, embeddingOptions, user, debug, provider);
+            return new EmbeddingsRequest(model, input, inputs, encodingFormat, dimensions, embeddingOptions, user, provider);
         }
 
         /// <summary>
@@ -355,9 +332,6 @@ namespace AIStatsSdk.Model
             if (embeddingsRequest.UserOption.IsSet && embeddingsRequest.User == null)
                 throw new ArgumentNullException(nameof(embeddingsRequest.User), "Property is required for class EmbeddingsRequest.");
 
-            if (embeddingsRequest.DebugOption.IsSet && embeddingsRequest.Debug == null)
-                throw new ArgumentNullException(nameof(embeddingsRequest.Debug), "Property is required for class EmbeddingsRequest.");
-
             if (embeddingsRequest.ProviderOption.IsSet && embeddingsRequest.Provider == null)
                 throw new ArgumentNullException(nameof(embeddingsRequest.Provider), "Property is required for class EmbeddingsRequest.");
 
@@ -394,11 +368,6 @@ namespace AIStatsSdk.Model
             if (embeddingsRequest.UserOption.IsSet)
                 writer.WriteString("user", embeddingsRequest.User);
 
-            if (embeddingsRequest.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, embeddingsRequest.Debug, jsonSerializerOptions);
-            }
             if (embeddingsRequest.ProviderOption.IsSet)
             {
                 writer.WritePropertyName("provider");

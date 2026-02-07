@@ -1,4 +1,4 @@
-﻿import { readFileSync } from "fs";
+import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { AIStats } from "../src/index.js";
@@ -35,13 +35,13 @@ const response =
 		? await client.responses.create(payload)
 		: await client.chat.completions.create(payload);
 
-console.log("âœ… Test passed!");
+console.log("[PASS] Test passed!");
 console.log(`ðŸ“Š Response:`);
 console.log(JSON.stringify(response, null, 2));
 
 // Validate response structure
 if ("choices" in response && (!response.choices || response.choices.length === 0)) {
-	throw new Error("âŒ No choices in response");
+	throw new Error("[FAIL] No choices in response");
 }
 
 if (
@@ -50,8 +50,8 @@ if (
 	!("content" in response) &&
 	!("output" in response)
 ) {
-	throw new Error("âŒ Response missing choices, content, or output");
+	throw new Error("[FAIL] Response missing choices, content, or output");
 }
 
-console.log(`\nâœ¨ Model used: ${manifest.testModel}`);
-console.log(`âœ¨ Test type: ${operationKey}`);
+console.log(`\n[DONE] Model used: ${manifest.testModel}`);
+console.log(`[DONE] Test type: ${operationKey}`);

@@ -28,7 +28,7 @@ All URIs are relative to *https://api.phaseo.app/v1*
 | [**GetProvisioningKey**](DefaultApi.md#getprovisioningkey) | **GET** /provisioning/keys/{id} | Get provisioning key |
 | [**GetVideo**](DefaultApi.md#getvideo) | **GET** /videos/{video_id} | Get video status |
 | [**GetVideoContent**](DefaultApi.md#getvideocontent) | **GET** /videos/{video_id}/content | Get video content |
-| [**Health**](DefaultApi.md#health) | **GET** /health | Health check |
+| [**Healthz**](DefaultApi.md#healthz) | **GET** /healthz | Health check |
 | [**ListFiles**](DefaultApi.md#listfiles) | **GET** /files | List files |
 | [**ListModels**](DefaultApi.md#listmodels) | **GET** /models | List models |
 | [**ListProviders**](DefaultApi.md#listproviders) | **GET** /providers | List providers |
@@ -137,7 +137,7 @@ Creates a completion for the chat message.
 ### HTTP request headers
 
  - **Content-Type**: application/json
- - **Accept**: application/json, text/event-stream
+ - **Accept**: application/json
 
 
 ### HTTP response details
@@ -221,7 +221,7 @@ Creates an image given a prompt.
 
 <a id="createimageedit"></a>
 # **CreateImageEdit**
-> ImagesEditResponse CreateImageEdit (string model, string image, string prompt, string mask = null, string size = null, int n = null, string user = null, bool meta = null, bool usage = null, DebugOptions debug = null, ProviderRoutingOptions provider = null)
+> ImagesEditResponse CreateImageEdit (string model, string image, string prompt, string mask = null, string size = null, int n = null, string user = null, bool meta = null, bool usage = null, ProviderRoutingOptions provider = null)
 
 Create image edit
 
@@ -241,7 +241,6 @@ Creates an edited or extended image given an original image and a prompt.
 | **user** | **string** |  | [optional]  |
 | **meta** | **bool** |  | [optional]  |
 | **usage** | **bool** |  | [optional]  |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional]  |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional]  |
 
 ### Return type
@@ -401,7 +400,7 @@ Creates a response using the Responses API.
 ### HTTP request headers
 
  - **Content-Type**: application/json
- - **Accept**: application/json, text/event-stream
+ - **Accept**: application/json
 
 
 ### HTTP response details
@@ -449,7 +448,7 @@ Generates audio from the input text.
 
 <a id="createtranscription"></a>
 # **CreateTranscription**
-> AudioTranscriptionResponse CreateTranscription (string model, string audioUrl = null, string audioB64 = null, string language = null, DebugOptions debug = null, ProviderRoutingOptions provider = null)
+> AudioTranscriptionResponse CreateTranscription (string model, string audioUrl = null, string audioB64 = null, string language = null, ProviderRoutingOptions provider = null)
 
 Create transcription
 
@@ -464,7 +463,6 @@ Transcribes audio into the input language.
 | **audioUrl** | **string** |  | [optional]  |
 | **audioB64** | **string** |  | [optional]  |
 | **language** | **string** |  | [optional]  |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional]  |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional]  |
 
 ### Return type
@@ -490,7 +488,7 @@ Transcribes audio into the input language.
 
 <a id="createtranslation"></a>
 # **CreateTranslation**
-> AudioTranslationResponse CreateTranslation (string model, string audioUrl = null, string audioB64 = null, string language = null, string prompt = null, decimal temperature = null, DebugOptions debug = null, ProviderRoutingOptions provider = null)
+> AudioTranslationResponse CreateTranslation (string model, string audioUrl = null, string audioB64 = null, string language = null, string prompt = null, decimal temperature = null, ProviderRoutingOptions provider = null)
 
 Create translation
 
@@ -507,7 +505,6 @@ Translates audio into English.
 | **language** | **string** |  | [optional]  |
 | **prompt** | **string** |  | [optional]  |
 | **temperature** | **decimal** |  | [optional]  |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional]  |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional]  |
 
 ### Return type
@@ -940,9 +937,9 @@ Downloads the rendered video content.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
-<a id="health"></a>
-# **Health**
-> Health200Response Health ()
+<a id="healthz"></a>
+# **Healthz**
+> Healthz200Response Healthz ()
 
 Health check
 
@@ -953,7 +950,7 @@ Returns the health status of the API.
 This endpoint does not need any parameter.
 ### Return type
 
-[**Health200Response**](Health200Response.md)
+[**Healthz200Response**](Healthz200Response.md)
 
 ### Authorization
 

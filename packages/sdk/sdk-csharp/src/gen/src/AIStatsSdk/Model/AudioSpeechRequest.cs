@@ -37,16 +37,14 @@ namespace AIStatsSdk.Model
         /// <param name="input">input</param>
         /// <param name="voice">voice</param>
         /// <param name="format">format</param>
-        /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public AudioSpeechRequest(string model, string input, Option<string?> voice = default, Option<FormatEnum?> format = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
+        public AudioSpeechRequest(string model, string input, Option<string?> voice = default, Option<FormatEnum?> format = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Input = input;
             VoiceOption = voice;
             FormatOption = format;
-            DebugOption = debug;
             ProviderOption = provider;
             OnCreated();
         }
@@ -186,19 +184,6 @@ namespace AIStatsSdk.Model
         public string? Voice { get { return this.VoiceOption; } set { this.VoiceOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugOptions?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Provider
         /// </summary>
         [JsonIgnore]
@@ -223,7 +208,6 @@ namespace AIStatsSdk.Model
             sb.Append("  Input: ").Append(Input).Append("\n");
             sb.Append("  Voice: ").Append(Voice).Append("\n");
             sb.Append("  Format: ").Append(Format).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -266,7 +250,6 @@ namespace AIStatsSdk.Model
             Option<string?> input = default;
             Option<string?> voice = default;
             Option<AudioSpeechRequest.FormatEnum?> format = default;
-            Option<DebugOptions?> debug = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -298,9 +281,6 @@ namespace AIStatsSdk.Model
                             if (formatRawValue != null)
                                 format = new Option<AudioSpeechRequest.FormatEnum?>(AudioSpeechRequest.FormatEnumFromStringOrDefault(formatRawValue));
                             break;
-                        case "debug":
-                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
@@ -328,13 +308,10 @@ namespace AIStatsSdk.Model
             if (format.IsSet && format.Value == null)
                 throw new ArgumentNullException(nameof(format), "Property is not nullable for class AudioSpeechRequest.");
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class AudioSpeechRequest.");
-
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class AudioSpeechRequest.");
 
-            return new AudioSpeechRequest(model.Value!, input.Value!, voice, format, debug, provider);
+            return new AudioSpeechRequest(model.Value!, input.Value!, voice, format, provider);
         }
 
         /// <summary>
@@ -370,9 +347,6 @@ namespace AIStatsSdk.Model
             if (audioSpeechRequest.VoiceOption.IsSet && audioSpeechRequest.Voice == null)
                 throw new ArgumentNullException(nameof(audioSpeechRequest.Voice), "Property is required for class AudioSpeechRequest.");
 
-            if (audioSpeechRequest.DebugOption.IsSet && audioSpeechRequest.Debug == null)
-                throw new ArgumentNullException(nameof(audioSpeechRequest.Debug), "Property is required for class AudioSpeechRequest.");
-
             if (audioSpeechRequest.ProviderOption.IsSet && audioSpeechRequest.Provider == null)
                 throw new ArgumentNullException(nameof(audioSpeechRequest.Provider), "Property is required for class AudioSpeechRequest.");
 
@@ -385,11 +359,6 @@ namespace AIStatsSdk.Model
 
             var formatRawValue = AudioSpeechRequest.FormatEnumToJsonValue(audioSpeechRequest.FormatOption.Value!.Value);
             writer.WriteString("format", formatRawValue);
-            if (audioSpeechRequest.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, audioSpeechRequest.Debug, jsonSerializerOptions);
-            }
             if (audioSpeechRequest.ProviderOption.IsSet)
             {
                 writer.WritePropertyName("provider");

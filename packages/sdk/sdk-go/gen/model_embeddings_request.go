@@ -27,7 +27,6 @@ type EmbeddingsRequest struct {
 	Dimensions *int32
 	EmbeddingOptions *map[string]interface{}
 	User *string
-	Debug *DebugOptions
 	Provider *ProviderRoutingOptions
 }
 
@@ -292,38 +291,6 @@ func (o *EmbeddingsRequest) SetUser(v string) {
 	o.User = &v
 }
 
-// GetDebug returns the Debug field value if set, zero value otherwise.
-func (o *EmbeddingsRequest) GetDebug() DebugOptions {
-	if o == nil || IsNil(o.Debug) {
-		var ret DebugOptions
-		return ret
-	}
-	return *o.Debug
-}
-
-// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *EmbeddingsRequest) GetDebugOk() (*DebugOptions, bool) {
-	if o == nil || IsNil(o.Debug) {
-		return nil, false
-	}
-	return o.Debug, true
-}
-
-// HasDebug returns a boolean if a field has been set.
-func (o *EmbeddingsRequest) HasDebug() bool {
-	if o != nil && !IsNil(o.Debug) {
-		return true
-	}
-
-	return false
-}
-
-// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
-func (o *EmbeddingsRequest) SetDebug(v DebugOptions) {
-	o.Debug = &v
-}
-
 // GetProvider returns the Provider field value if set, zero value otherwise.
 func (o *EmbeddingsRequest) GetProvider() ProviderRoutingOptions {
 	if o == nil || IsNil(o.Provider) {
@@ -386,9 +353,6 @@ func (o EmbeddingsRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.User) {
 		toSerialize["user"] = o.User
-	}
-	if !IsNil(o.Debug) {
-		toSerialize["debug"] = o.Debug
 	}
 	if !IsNil(o.Provider) {
 		toSerialize["provider"] = o.Provider

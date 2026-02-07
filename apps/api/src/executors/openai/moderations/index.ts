@@ -27,7 +27,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		model: args.providerModelSlug || ir.model,
 	};
 
-	const captureRequest = Boolean(args.meta.debug?.return_upstream_request || args.meta.debug?.trace);
+	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);
 	const mappedRequest = captureRequest ? JSON.stringify(requestBody) : undefined;
 
 	const res = await fetch(openAICompatUrl(args.providerId, "/moderations"), {
@@ -39,7 +39,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const json = await res.clone().json().catch(() => null);
 	const results = Array.isArray(json?.results) ? json.results.map(mapOpenAIResult) : [];
 	const responseIr: IRModerationsResponse = {
-		id: json?.id ?? undefined,
+		id: args.requestId,
+		nativeId: json?.id ?? undefined,
 		model: json?.model ?? ir.model,
 		results,
 		usage: json?.usage

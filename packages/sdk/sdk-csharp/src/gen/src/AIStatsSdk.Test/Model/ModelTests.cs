@@ -81,24 +81,6 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'DeprecationDate'
-        /// </summary>
-        [Fact]
-        public void DeprecationDateTest()
-        {
-            // TODO unit test for the property 'DeprecationDate'
-        }
-
-        /// <summary>
-        /// Test the property 'RetirementDate'
-        /// </summary>
-        [Fact]
-        public void RetirementDateTest()
-        {
-            // TODO unit test for the property 'RetirementDate'
-        }
-
-        /// <summary>
         /// Test the property 'Status'
         /// </summary>
         [Fact]
@@ -114,24 +96,6 @@ namespace AIStatsSdk.Test.Model
         public void OrganisationIdTest()
         {
             // TODO unit test for the property 'OrganisationId'
-        }
-
-        /// <summary>
-        /// Test the property 'OrganisationName'
-        /// </summary>
-        [Fact]
-        public void OrganisationNameTest()
-        {
-            // TODO unit test for the property 'OrganisationName'
-        }
-
-        /// <summary>
-        /// Test the property 'OrganisationColour'
-        /// </summary>
-        [Fact]
-        public void OrganisationColourTest()
-        {
-            // TODO unit test for the property 'OrganisationColour'
         }
 
         /// <summary>
@@ -177,33 +141,6 @@ namespace AIStatsSdk.Test.Model
         public void ProvidersTest()
         {
             // TODO unit test for the property 'Providers'
-        }
-
-        /// <summary>
-        /// Test the property 'SupportedParams'
-        /// </summary>
-        [Fact]
-        public void SupportedParamsTest()
-        {
-            // TODO unit test for the property 'SupportedParams'
-        }
-
-        /// <summary>
-        /// Test the property 'TopProvider'
-        /// </summary>
-        [Fact]
-        public void TopProviderTest()
-        {
-            // TODO unit test for the property 'TopProvider'
-        }
-
-        /// <summary>
-        /// Test the property 'Pricing'
-        /// </summary>
-        [Fact]
-        public void PricingTest()
-        {
-            // TODO unit test for the property 'Pricing'
         }
     }
 }

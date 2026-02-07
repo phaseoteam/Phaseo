@@ -1,0 +1,200 @@
+package aistats
+
+// This is a lightweight facade over the generated Go SDK.
+// Generate the client with: `pnpm oapi:gen`
+
+import (
+	"context"
+
+	gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+)
+
+// Client provides a thin, typed facade over the generated SDK.
+type Client struct {
+	base       *gen.Client
+	Chat       ChatClient
+	Responses  ResponsesClient
+	Messages   MessagesClient
+	Images     ImagesClient
+	Audio      AudioClient
+	Moderations ModerationsClient
+	Batches    BatchesClient
+	Files      FilesClient
+	Models     ModelsClient
+}
+
+// New creates a new API client targeting the given base URL with a bearer token.
+func New(apiKey string, baseURL string) *Client {
+	base := gen.NewClient(baseURL)
+	base.Headers["Authorization"] = "Bearer " + apiKey
+	client := &Client{base: base}
+	client.Chat = ChatClient{base: base, Completions: ChatCompletionsClient{base: base}}
+	client.Responses = ResponsesClient{base: base}
+	client.Messages = MessagesClient{base: base}
+	client.Images = ImagesClient{base: base}
+	client.Audio = AudioClient{
+		Speech:         AudioSpeechClient{base: base},
+		Transcriptions: AudioTranscriptionsClient{base: base},
+		Translations:   AudioTranslationsClient{base: base},
+	}
+	client.Moderations = ModerationsClient{base: base}
+	client.Batches = BatchesClient{base: base}
+	client.Files = FilesClient{base: base}
+	client.Models = ModelsClient{base: base}
+	return client
+}
+
+// GetModels retrieves the model catalogue with optional filters.
+func (c *Client) GetModels(ctx context.Context, params map[string]string) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.ListModels(c.base, nil, params, nil, nil)
+}
+
+// GenerateText calls /chat/completions.
+func (c *Client) GenerateText(ctx context.Context, req gen.ChatCompletionsRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateChatCompletion(c.base, nil, nil, nil, req)
+}
+
+// GenerateResponse calls /responses.
+func (c *Client) GenerateResponse(ctx context.Context, req gen.ResponsesRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateResponse(c.base, nil, nil, nil, req)
+}
+
+// CreateBatch creates a batch job.
+func (c *Client) CreateBatch(ctx context.Context, req gen.BatchRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateBatch(c.base, nil, nil, nil, req)
+}
+
+// GetBatch retrieves a batch job by id.
+func (c *Client) GetBatch(ctx context.Context, batchID string) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.RetrieveBatch(c.base, map[string]string{"batch_id": batchID}, nil, nil, nil)
+}
+
+// GenerateImage calls /images/generations.
+func (c *Client) GenerateImage(ctx context.Context, req gen.ImagesGenerationRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateImage(c.base, nil, nil, nil, req)
+}
+
+// GenerateImageEdit calls /images/edits.
+func (c *Client) GenerateImageEdit(ctx context.Context, req gen.ImagesEditRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateImageEdit(c.base, nil, nil, nil, req)
+}
+
+// GenerateEmbedding calls /embeddings.
+func (c *Client) GenerateEmbedding(ctx context.Context, req gen.EmbeddingsRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateEmbedding(c.base, nil, nil, nil, req)
+}
+
+// GenerateModeration calls /moderations.
+func (c *Client) GenerateModeration(ctx context.Context, req gen.ModerationsRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateModeration(c.base, nil, nil, nil, req)
+}
+
+// GenerateSpeech calls /audio/speech.
+func (c *Client) GenerateSpeech(ctx context.Context, req gen.AudioSpeechRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateSpeech(c.base, nil, nil, nil, req)
+}
+
+// GenerateTranscription calls /audio/transcriptions.
+func (c *Client) GenerateTranscription(ctx context.Context, req gen.AudioTranscriptionRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateTranscription(c.base, nil, nil, nil, req)
+}
+
+// GenerateTranslation calls /audio/translations.
+func (c *Client) GenerateTranslation(ctx context.Context, req gen.AudioTranslationRequest) (map[string]interface{}, error) {
+	_ = ctx
+	return gen.CreateTranslation(c.base, nil, nil, nil, req)
+}
+
+type ChatClient struct {
+	base        *gen.Client
+	Completions ChatCompletionsClient
+}
+
+type ChatCompletionsClient struct {
+	base *gen.Client
+}
+
+func (c ChatCompletionsClient) Create(body any) (map[string]interface{}, error) {
+	return gen.CreateChatCompletion(c.base, nil, nil, nil, body)
+}
+
+type ResponsesClient struct {
+	base *gen.Client
+}
+
+func (c ResponsesClient) Create(body any) (map[string]interface{}, error) {
+	return gen.CreateResponse(c.base, nil, nil, nil, body)
+}
+
+type MessagesClient struct {
+	base *gen.Client
+}
+
+func (c MessagesClient) Create(body any) (map[string]interface{}, error) {
+	return gen.CreateAnthropicMessage(c.base, nil, nil, nil, body)
+}
+
+type ImagesClient struct {
+	base *gen.Client
+}
+
+func (c ImagesClient) Generate(body any) (map[string]interface{}, error) {
+	return gen.CreateImage(c.base, nil, nil, nil, body)
+}
+
+func (c ImagesClient) Edit(body any) (map[string]interface{}, error) {
+	return gen.CreateImageEdit(c.base, nil, nil, nil, body)
+}
+
+type AudioClient struct {
+	Speech         AudioSpeechClient
+	Transcriptions AudioTranscriptionsClient
+	Translations   AudioTranslationsClient
+}
+
+type AudioSpeechClient struct {
+	base *gen.Client
+}
+
+func (c AudioSpeechClient) Create(body any) (map[string]interface{}, error) {
+	return gen.CreateSpeech(c.base, nil, nil, nil, body)
+}
+
+type AudioTranscriptionsClient struct {
+	base *gen.Client
+}
+
+func (c AudioTranscriptionsClient) Create(body any) (map[string]interface{}, error) {
+	return gen.CreateTranscription(c.base, nil, nil, nil, body)
+}
+
+type AudioTranslationsClient struct {
+	base *gen.Client
+}
+
+func (c AudioTranslationsClient) Create(body any) (map[string]interface{}, error) {
+	return gen.CreateTranslation(c.base, nil, nil, nil, body)
+}
+
+type ModerationsClient struct {
+	base *gen.Client
+}
+
+func (c ModerationsClient) Create(body any) (map[string]interface{}, error) {
+	return gen.CreateModeration(c.base, nil, nil, nil, body)
+}
+
+type BatchesClient struct {
+	base *gen.Client
+}

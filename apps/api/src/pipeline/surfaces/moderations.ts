@@ -18,6 +18,7 @@ export async function runModerationsPipeline(args: PipelineRunnerArgs): Promise<
 
 		timing.timer.mark("ir_decode");
 		const ir = decodeOpenAIModerationsRequest(pre.ctx.body);
+		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
 
 		timing.timer.mark("execute_start");

@@ -39,13 +39,7 @@ impl Transport for HttpTransport {
 
 #[test]
 fn smoke_chat() {
-    let api_key = match std::env::var("AI_STATS_API_KEY") {
-        Ok(value) => value,
-        Err(_) => {
-            eprintln!("skipping smoke_chat: AI_STATS_API_KEY not set");
-            return;
-        }
-    };
+    let api_key = std::env::var("AI_STATS_API_KEY").expect("AI_STATS_API_KEY is required");
     let base_url = std::env::var("AI_STATS_BASE_URL")
         .unwrap_or_else(|_| "https://api.phaseo.app/v1".to_string());
 
@@ -56,7 +50,7 @@ fn smoke_chat() {
         .insert("Authorization".to_string(), format!("Bearer {}", api_key));
 
     let payload = serde_json::json!({
-        "model": "openai/gpt-5-nano",
+        "model": "openai/gpt-5-nano-2025-08-07",
         "messages": [{ "role": "user", "content": "Hi" }]
     });
     let response = operations::createChatCompletion(&client, &HashMap::new(), Some(&payload.to_string()))

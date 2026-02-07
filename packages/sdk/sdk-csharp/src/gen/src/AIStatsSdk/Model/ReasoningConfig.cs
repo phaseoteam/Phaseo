@@ -35,15 +35,11 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="effort">effort (default to EffortEnum.Medium)</param>
         /// <param name="summary">summary (default to SummaryEnum.Auto)</param>
-        /// <param name="enabled">enabled</param>
-        /// <param name="maxTokens">maxTokens</param>
         [JsonConstructor]
-        public ReasoningConfig(Option<EffortEnum?> effort = default, Option<SummaryEnum?> summary = default, Option<bool?> enabled = default, Option<int?> maxTokens = default)
+        public ReasoningConfig(Option<EffortEnum?> effort = default, Option<SummaryEnum?> summary = default)
         {
             EffortOption = effort;
             SummaryOption = summary;
-            EnabledOption = enabled;
-            MaxTokensOption = maxTokens;
             OnCreated();
         }
 
@@ -278,32 +274,6 @@ namespace AIStatsSdk.Model
         public SummaryEnum? Summary { get { return this.SummaryOption; } set { this.SummaryOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Enabled
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<bool?> EnabledOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Enabled
-        /// </summary>
-        [JsonPropertyName("enabled")]
-        public bool? Enabled { get { return this.EnabledOption; } set { this.EnabledOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of MaxTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> MaxTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets MaxTokens
-        /// </summary>
-        [JsonPropertyName("max_tokens")]
-        public int? MaxTokens { get { return this.MaxTokensOption; } set { this.MaxTokensOption = new(value); } }
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -313,8 +283,6 @@ namespace AIStatsSdk.Model
             sb.Append("class ReasoningConfig {\n");
             sb.Append("  Effort: ").Append(Effort).Append("\n");
             sb.Append("  Summary: ").Append(Summary).Append("\n");
-            sb.Append("  Enabled: ").Append(Enabled).Append("\n");
-            sb.Append("  MaxTokens: ").Append(MaxTokens).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -326,12 +294,6 @@ namespace AIStatsSdk.Model
         /// <returns>Validation Result</returns>
         IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
         {
-            // MaxTokens (int) minimum
-            if (this.MaxTokensOption.IsSet && this.MaxTokensOption.Value < (int)0)
-            {
-                yield return new ValidationResult("Invalid value for MaxTokens, must be a value greater than or equal to 0.", new [] { "MaxTokens" });
-            }
-
             yield break;
         }
     }
@@ -360,8 +322,6 @@ namespace AIStatsSdk.Model
 
             Option<ReasoningConfig.EffortEnum?> effort = default;
             Option<ReasoningConfig.SummaryEnum?> summary = default;
-            Option<bool?> enabled = default;
-            Option<int?> maxTokens = default;
 
             while (utf8JsonReader.Read())
             {
@@ -388,12 +348,6 @@ namespace AIStatsSdk.Model
                             if (summaryRawValue != null)
                                 summary = new Option<ReasoningConfig.SummaryEnum?>(ReasoningConfig.SummaryEnumFromStringOrDefault(summaryRawValue));
                             break;
-                        case "enabled":
-                            enabled = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
-                            break;
-                        case "max_tokens":
-                            maxTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
                         default:
                             break;
                     }
@@ -406,13 +360,7 @@ namespace AIStatsSdk.Model
             if (summary.IsSet && summary.Value == null)
                 throw new ArgumentNullException(nameof(summary), "Property is not nullable for class ReasoningConfig.");
 
-            if (enabled.IsSet && enabled.Value == null)
-                throw new ArgumentNullException(nameof(enabled), "Property is not nullable for class ReasoningConfig.");
-
-            if (maxTokens.IsSet && maxTokens.Value == null)
-                throw new ArgumentNullException(nameof(maxTokens), "Property is not nullable for class ReasoningConfig.");
-
-            return new ReasoningConfig(effort, summary, enabled, maxTokens);
+            return new ReasoningConfig(effort, summary);
         }
 
         /// <summary>
@@ -443,11 +391,6 @@ namespace AIStatsSdk.Model
             writer.WriteString("effort", effortRawValue);
             var summaryRawValue = ReasoningConfig.SummaryEnumToJsonValue(reasoningConfig.SummaryOption.Value!.Value);
             writer.WriteString("summary", summaryRawValue);
-            if (reasoningConfig.EnabledOption.IsSet)
-                writer.WriteBoolean("enabled", reasoningConfig.EnabledOption.Value!.Value);
-
-            if (reasoningConfig.MaxTokensOption.IsSet)
-                writer.WriteNumber("max_tokens", reasoningConfig.MaxTokensOption.Value!.Value);
         }
     }
 }

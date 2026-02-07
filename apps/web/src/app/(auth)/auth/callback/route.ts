@@ -32,7 +32,7 @@ async function ensureStripeCustomerAndWallet(
     let stripeCustomerId: string | undefined;
 
     try {
-        // Search by metadata.team_id (requires Stripe search; it’s on by default for most accounts)
+        // Search by metadata.team_id (requires Stripe search; it's on by default for most accounts)
         const search = await stripe.customers.search({
             query: `metadata['team_id']:'${teamId}'`,
             limit: 1,
@@ -41,7 +41,7 @@ async function ensureStripeCustomerAndWallet(
             stripeCustomerId = search.data[0].id;
         }
     } catch {
-        // ignore if search isn't available; we’ll create if needed
+        // ignore if search isn't available; we'll create if needed
     }
 
     if (!stripeCustomerId && email) {
@@ -57,7 +57,7 @@ async function ensureStripeCustomerAndWallet(
         }
     }
 
-    // 3) Create a customer only if we still don’t have one
+    // 3) Create a customer only if we still don't have one
     if (!stripeCustomerId) {
         const customer = await stripe.customers.create({
             email: email || undefined,
@@ -67,7 +67,7 @@ async function ensureStripeCustomerAndWallet(
         stripeCustomerId = customer.id;
     }
 
-    // 4) Upsert wallet (won’t duplicate thanks to unique(team_id))
+    // 4) Upsert wallet (won't duplicate thanks to unique(team_id))
     await supabaseAdmin
         .from('wallets')
         .upsert({ team_id: teamId, stripe_customer_id: stripeCustomerId }, {

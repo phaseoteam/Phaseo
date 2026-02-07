@@ -100,7 +100,7 @@ export default function CreateProvisioningKeyDialog({
 					className="flex items-center bg-amber-600 hover:bg-amber-700"
 				>
 					<Plus className="h-4 w-4" />
-					Create Provisioning Key
+					Create Management API Key
 				</Button>
 			</DialogTrigger>
 
@@ -108,10 +108,10 @@ export default function CreateProvisioningKeyDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						Create Provisioning Key
+						Create Management API Key
 					</DialogTitle>
 					<DialogDescription>
-						Create a new provisioning key with elevated permissions.
+						Create a new management API key with elevated permissions.
 					</DialogDescription>
 					<DialogDescription className="mt-2 text-sm text-red-600">
 						This key will be shown only <strong>once</strong> and grants
@@ -158,7 +158,7 @@ export default function CreateProvisioningKeyDialog({
 						<Input
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							placeholder="Key name (e.g. production provisioning)"
+							placeholder="Key name (e.g. production management)"
 						/>
 						<DialogFooter>
 							<DialogClose asChild>
@@ -193,7 +193,7 @@ export default function CreateProvisioningKeyDialog({
 								variant="outline"
 								onCopy={() => onCopy()}
 								className="mr-2"
-								aria-label="Copy provisioning key"
+								aria-label="Copy management API key"
 							/>
 							<DialogClose asChild>
 								<Button onClick={onClose}>Done</Button>

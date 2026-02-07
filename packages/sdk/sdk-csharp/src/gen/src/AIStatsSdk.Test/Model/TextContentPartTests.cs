@@ -70,14 +70,5 @@ namespace AIStatsSdk.Test.Model
         {
             // TODO unit test for the property 'Text'
         }
-
-        /// <summary>
-        /// Test the property 'CacheControl'
-        /// </summary>
-        [Fact]
-        public void CacheControlTest()
-        {
-            // TODO unit test for the property 'CacheControl'
-        }
     }
 }

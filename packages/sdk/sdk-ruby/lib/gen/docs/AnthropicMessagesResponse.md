@@ -12,8 +12,6 @@
 | **stop_reason** | **String** |  | [optional] |
 | **stop_sequence** | **String** |  | [optional] |
 | **usage** | [**AnthropicUsage**](AnthropicUsage.md) |  | [optional] |
-| **meta** | **Object** |  | [optional] |
-| **debug** | [**DebugResponse**](DebugResponse.md) |  | [optional] |
 
 ## Example
 
@@ -28,9 +26,7 @@ instance = AIStatsSdk::AnthropicMessagesResponse.new(
   content: null,
   stop_reason: null,
   stop_sequence: null,
-  usage: null,
-  meta: null,
-  debug: null
+  usage: null
 )
 ```
 

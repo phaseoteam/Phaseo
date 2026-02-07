@@ -90,6 +90,7 @@ export async function loadProviders(
             description: j.description ?? null,
             link: j.link ?? null,
             country_code: j.country_code ?? null,
+            colour: j.colour ?? j.color ?? null,
         };
         providerIds.add(row.api_provider_id);
         if (change.status !== "unchanged") {

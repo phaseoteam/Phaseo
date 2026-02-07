@@ -35,6 +35,7 @@ export async function handleStreamResponse(
     const upstreamStatus = result.upstream.status;
     // Cache native ID from first chunk to avoid checking every frame
     let cachedNativeId: string | undefined;
+    let cachedFinishReason: string | null = null;
     if (ctx.meta?.debug) {
         void logDebugEvent("stream.start", {
             requestId: ctx.requestId,
@@ -184,7 +185,10 @@ export async function handleStreamResponse(
         },
         onFinalSnapshot: (snapshot: any) => {
             const payload = snapshot?.response ?? snapshot;
-            const finishReason = extractFinishReason(payload);
+            const finishReason = normalizeFinishReason(
+                extractFinishReason(payload),
+                result.provider
+            );
             if (finishReason) {
                 cachedFinishReason = finishReason;
                 result.bill.finish_reason = finishReason;
@@ -309,7 +313,7 @@ export async function handleStreamResponse(
                     0,
                     0,
                     result.bill.currency ?? card?.currency ?? "USD",
-                    null,
+                    cachedFinishReason,
                     upstreamStatus,
                     result.bill.upstream_id ?? null
                 );
@@ -318,7 +322,7 @@ export async function handleStreamResponse(
                     result,
                     statusCode: upstreamStatus,
                     success: true,
-                    finishReason: null,
+                    finishReason: cachedFinishReason,
                     usage: null,
                     pricing: {
                         total_cents: 0,
@@ -351,6 +355,7 @@ export async function handleStreamResponse(
             result.bill.cost_cents = totalCents;
             result.bill.currency = currency;
             result.bill.usage = pricedUsage;
+            result.bill.finish_reason = cachedFinishReason ?? result.bill.finish_reason;
 
             await handleSuccessAudit(
                 ctx,
@@ -360,7 +365,7 @@ export async function handleStreamResponse(
                 totalCents,
                 totalNanos,
                 currency,
-                null,
+                cachedFinishReason,
                 upstreamStatus,
                 result.bill.upstream_id ?? null
             );
@@ -369,7 +374,7 @@ export async function handleStreamResponse(
                 result,
                 statusCode: upstreamStatus,
                 success: true,
-                finishReason: null,
+                finishReason: cachedFinishReason,
                 usage: pricedUsage,
                 pricing: {
                     total_cents: totalCents,

@@ -23,7 +23,6 @@ var _ MappedNullable = &TextContentPart{}
 type TextContentPart struct {
 	Type string `json:"type"`
 	Text string `json:"text"`
-	CacheControl *CacheControl `json:"cache_control,omitempty"`
 }
 
 type _TextContentPart TextContentPart
@@ -95,38 +94,6 @@ func (o *TextContentPart) SetText(v string) {
 	o.Text = v
 }
 
-// GetCacheControl returns the CacheControl field value if set, zero value otherwise.
-func (o *TextContentPart) GetCacheControl() CacheControl {
-	if o == nil || IsNil(o.CacheControl) {
-		var ret CacheControl
-		return ret
-	}
-	return *o.CacheControl
-}
-
-// GetCacheControlOk returns a tuple with the CacheControl field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *TextContentPart) GetCacheControlOk() (*CacheControl, bool) {
-	if o == nil || IsNil(o.CacheControl) {
-		return nil, false
-	}
-	return o.CacheControl, true
-}
-
-// HasCacheControl returns a boolean if a field has been set.
-func (o *TextContentPart) HasCacheControl() bool {
-	if o != nil && !IsNil(o.CacheControl) {
-		return true
-	}
-
-	return false
-}
-
-// SetCacheControl gets a reference to the given CacheControl and assigns it to the CacheControl field.
-func (o *TextContentPart) SetCacheControl(v CacheControl) {
-	o.CacheControl = &v
-}
-
 func (o TextContentPart) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -139,9 +106,6 @@ func (o TextContentPart) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["type"] = o.Type
 	toSerialize["text"] = o.Text
-	if !IsNil(o.CacheControl) {
-		toSerialize["cache_control"] = o.CacheControl
-	}
 	return toSerialize, nil
 }
 

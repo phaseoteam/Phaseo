@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from ai_stats_generated.models.usage import Usage
+from ai_stats_generated.models.generation_response_usage import GenerationResponseUsage
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -42,13 +42,12 @@ class GenerationResponse(BaseModel):
     error_message: Optional[StrictStr] = None
     latency_ms: Optional[Union[StrictFloat, StrictInt]] = None
     generation_ms: Optional[Union[StrictFloat, StrictInt]] = None
-    usage: Optional[Usage] = None
+    usage: Optional[GenerationResponseUsage] = None
     cost_nanos: Optional[Union[StrictFloat, StrictInt]] = None
     currency: Optional[StrictStr] = None
     pricing_lines: Optional[List[Dict[str, Any]]] = None
     key_id: Optional[StrictStr] = None
     throughput: Optional[Union[StrictFloat, StrictInt]] = None
-    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["request_id", "team_id", "app_id", "endpoint", "model_id", "provider", "native_response_id", "stream", "byok", "status_code", "success", "error_code", "error_message", "latency_ms", "generation_ms", "usage", "cost_nanos", "currency", "pricing_lines", "key_id", "throughput"]
 
     model_config = ConfigDict(
@@ -81,10 +80,8 @@ class GenerationResponse(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
-        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
-            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -95,11 +92,6 @@ class GenerationResponse(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of usage
         if self.usage:
             _dict['usage'] = self.usage.to_dict()
-        # puts key-value pairs in additional_properties in the top level
-        if self.additional_properties is not None:
-            for _key, _value in self.additional_properties.items():
-                _dict[_key] = _value
-
         # set to None if app_id (nullable) is None
         # and model_fields_set contains the field
         if self.app_id is None and "app_id" in self.model_fields_set:
@@ -119,6 +111,11 @@ class GenerationResponse(BaseModel):
         # and model_fields_set contains the field
         if self.error_message is None and "error_message" in self.model_fields_set:
             _dict['error_message'] = None
+
+        # set to None if usage (nullable) is None
+        # and model_fields_set contains the field
+        if self.usage is None and "usage" in self.model_fields_set:
+            _dict['usage'] = None
 
         # set to None if throughput (nullable) is None
         # and model_fields_set contains the field
@@ -152,18 +149,13 @@ class GenerationResponse(BaseModel):
             "error_message": obj.get("error_message"),
             "latency_ms": obj.get("latency_ms"),
             "generation_ms": obj.get("generation_ms"),
-            "usage": Usage.from_dict(obj["usage"]) if obj.get("usage") is not None else None,
+            "usage": GenerationResponseUsage.from_dict(obj["usage"]) if obj.get("usage") is not None else None,
             "cost_nanos": obj.get("cost_nanos"),
             "currency": obj.get("currency"),
             "pricing_lines": obj.get("pricing_lines"),
             "key_id": obj.get("key_id"),
             "throughput": obj.get("throughput")
         })
-        # store additional fields in additional_properties
-        for _key in obj.keys():
-            if _key not in cls.__properties:
-                _obj.additional_properties[_key] = obj.get(_key)
-
         return _obj
 
 

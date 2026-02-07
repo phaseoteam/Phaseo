@@ -96,49 +96,4 @@ class AnthropicUsageTest extends TestCase
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
-
-    /**
-     * Test attribute "cache_creation"
-     */
-    public function testPropertyCacheCreation()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "cache_creation_input_tokens"
-     */
-    public function testPropertyCacheCreationInputTokens()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "cache_read_input_tokens"
-     */
-    public function testPropertyCacheReadInputTokens()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "server_tool_use"
-     */
-    public function testPropertyServerToolUse()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "service_tier"
-     */
-    public function testPropertyServiceTier()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
 }

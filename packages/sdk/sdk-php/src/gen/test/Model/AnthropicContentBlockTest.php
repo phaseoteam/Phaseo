@@ -98,45 +98,9 @@ class AnthropicContentBlockTest extends TestCase
     }
 
     /**
-     * Test attribute "cache_control"
-     */
-    public function testPropertyCacheControl()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "source"
      */
     public function testPropertySource()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "image_url"
-     */
-    public function testPropertyImageUrl()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "input_audio"
-     */
-    public function testPropertyInputAudio()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "video_url"
-     */
-    public function testPropertyVideoUrl()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

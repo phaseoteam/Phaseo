@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
         // 1) One-off payment (do NOT save card)
         if (kind === "oneoff") {
-            if (!amount_pence || amount_pence < 50) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+            if (!amount_pence || amount_pence < 1000) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
 
             const session = await stripe.checkout.sessions.create({
                 mode: "payment",
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
         // 2) One-off but ALSO save for future (charge now + store card)
         if (kind === "pay_and_save") {
-            if (!amount_pence || amount_pence < 50) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+            if (!amount_pence || amount_pence < 1000) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
 
             const session = await stripe.checkout.sessions.create({
                 mode: "payment",

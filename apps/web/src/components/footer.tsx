@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ThemeSelector, ThemeToggle } from "@/components/theme-toggle";
+import { ThemeSelector } from "@/components/theme-toggle";
 import {
 	FilePlus,
 	Book,
@@ -10,9 +10,11 @@ import {
 	ShieldCheck,
 	Database,
 	Activity,
+	DollarSign,
+	Handshake,
+	LifeBuoy,
 } from "lucide-react";
 import LastUpdated from "@/components/last-updated";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { withUTM } from "@/lib/utm";
 import { Logo } from "./Logo";
@@ -46,216 +48,283 @@ const externalLinks = {
 
 export default function Footer() {
 	return (
-		<footer className="w-full border-t border-border mt-auto bg-white dark:bg-zinc-950 px-4">
-			<div className="container mx-auto py-4 text-xs text-muted-foreground flex flex-col gap-4">
-				<div className="w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
-					{/* Mobile grid with icon and text for all actions */}
-					<div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:hidden mb-4">
-						{/* --- Social --- */}
-						<div className="col-span-2 md:col-span-3 font-semibold text-sm">
-							Social
+		<footer className="w-full border-t border-border mt-auto bg-white dark:bg-zinc-950">
+			<div className="container mx-auto px-4 py-4 text-xs text-muted-foreground flex flex-col gap-4">
+				<div className="w-full grid grid-cols-1 gap-6 lg:grid-cols-4 lg:justify-items-center">
+					{/* Mobile: compact two-column layout using desktop-like slim buttons */}
+					<div className="grid grid-cols-2 gap-x-4 gap-y-5 lg:hidden">
+						<div className="flex flex-col items-start gap-2">
+							<span className="pl-2 text-sm font-semibold">
+								Social
+							</span>
+							<div className="flex w-full flex-col gap-1">
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href={externalLinks.discord}
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="Discord"
+									>
+										<Logo
+											id="discord"
+											alt="Discord"
+											width={16}
+											height={16}
+											className="h-4 w-4"
+										/>
+										<span className="text-xs">Discord</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href={externalLinks.github}
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="GitHub"
+									>
+										<Logo
+											id="github"
+											alt="GitHub"
+											width={16}
+											height={16}
+											className="h-4 w-4"
+										/>
+										<span className="text-xs">GitHub</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href={externalLinks.insta}
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="Instagram"
+									>
+										<Logo
+											id="instagram"
+											alt="Instagram"
+											width={16}
+											height={16}
+											className="h-4 w-4"
+										/>
+										<span className="text-xs">Instagram</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href={externalLinks.reddit}
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="Reddit"
+									>
+										<Logo
+											id="reddit"
+											alt="Reddit"
+											width={16}
+											height={16}
+											className="h-4 w-4"
+										/>
+										<span className="text-xs">Reddit</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href={externalLinks.x}
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="X"
+									>
+										<Logo
+											id="x"
+											alt="X"
+											width={16}
+											height={16}
+											className="h-4 w-4"
+										/>
+										<span className="text-xs">X</span>
+									</Link>
+								</Button>
+							</div>
 						</div>
-						{/* Social: Discord */}
-						<Link
-							href={externalLinks.discord}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="Discord"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors gap-2"
-						>
-							<Logo
-								id="discord"
-								alt="Discord"
-								width={20}
-								height={20}
-								className="h-5 w-5"
-							/>
-							<span className="text-xs">Discord</span>
-						</Link>
-						{/* Social: GitHub */}
-						<Link
-							href={externalLinks.github}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="GitHub"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors gap-2"
-						>
-							<Logo
-								id="github"
-								alt="GitHub"
-								width={20}
-								height={20}
-								className="h-5 w-5"
-							/>
-							<span className="text-xs">GitHub</span>
-						</Link>
-						{/* Social: Instagram */}
-						<Link
-							href={externalLinks.insta}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="Instagram"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors gap-2"
-						>
-							<Logo
-								id="instagram"
-								alt="Instagram"
-								width={20}
-								height={20}
-								className="h-5 w-5"
-							/>
-							<span className="text-xs">Instagram</span>
-						</Link>
-						{/* Social: Reddit */}
-						<Link
-							href={externalLinks.reddit}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="Reddit"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors gap-2"
-						>
-							<Logo
-								id="reddit"
-								alt="Reddit"
-								width={20}
-								height={20}
-								className="h-5 w-5"
-							/>
-							<span className="text-xs">Reddit</span>
-						</Link>
-						{/* Social: X */}
-						<Link
-							href={externalLinks.x}
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="X"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors gap-2"
-						>
-							<Logo
-								id="x"
-								alt="X"
-								width={20}
-								height={20}
-								className="h-5 w-5"
-							/>
-							<span className="text-xs">X</span>
-						</Link>
 
-						<Separator className="col-span-2 md:col-span-3" />
-
-						{/* --- Explore --- */}
-						<div className="col-span-2 md:col-span-3 font-semibold text-sm">
-							Explore
+						<div className="flex flex-col items-start gap-2">
+							<span className="pl-2 text-sm font-semibold">
+								Explore
+							</span>
+							<div className="flex w-full flex-col gap-1">
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href="https://docs.ai-stats.phaseo.app"
+										aria-label="Documentation"
+									>
+										<Book className="h-4 w-4" />
+										<span className="text-xs">Docs</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link href="/roadmap" aria-label="Roadmap">
+										<Milestone className="h-4 w-4" />
+										<span className="text-xs">Roadmap</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link href="/tools" aria-label="Tools">
+										<Hammer className="h-4 w-4" />
+										<span className="text-xs">Tools</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href="/tools/pricing-calculator"
+										aria-label="Pricing Calculator"
+									>
+										<DollarSign className="h-4 w-4" />
+										<span className="text-xs">Pricing</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href="/works-with"
+										aria-label="Works With AI Stats"
+									>
+										<Handshake className="h-4 w-4" />
+										<span className="text-xs">Works With</span>
+									</Link>
+								</Button>
+							</div>
 						</div>
-						{/* Docs - mobile */}
-						<Link
-							href="https://docs.ai-stats.phaseo.app"
-							aria-label="Documentation"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<Book className="h-5 w-5" />
-							<span className="text-xs">Docs</span>
-						</Link>
-						{/* Roadmap - mobile */}
-						<Link
-							href="/roadmap"
-							aria-label="Roadmap"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<Milestone className="h-5 w-5" />
-							<span className="text-xs">Roadmap</span>
-						</Link>
-						{/* Tools - mobile */}
-						<Link
-							href="/tools"
-							aria-label="Tools"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<Hammer className="h-5 w-5" />
-							<span className="text-xs">Tools</span>
-						</Link>
-						{/* Wrapped - mobile */}
-						{/*
-						<Link
-							href="/wrapped"
-							aria-label="Wrapped"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<Gift className="h-5 w-5" />
-							<span className="text-xs">Wrapped</span>
-						</Link>
-						*/}
 
-						<Separator className="col-span-2 md:col-span-3" />
-
-						{/* --- Actions --- */}
-						<div className="col-span-2 md:col-span-3 font-semibold text-sm">
-							More
+						<div className="flex flex-col items-start gap-2">
+							<span className="pl-2 text-sm font-semibold">
+								More
+							</span>
+							<div className="flex w-full flex-col gap-1">
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link href="/contribute" aria-label="Contribute">
+										<FilePlus className="h-4 w-4" />
+										<span className="text-xs">Contribute</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href="/monitor"
+										aria-label="Database Monitor"
+									>
+										<Database className="h-4 w-4" />
+										<span className="text-xs">DB Monitor</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href="https://ai-stats-status.stpg.dev/"
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="Status"
+									>
+										<Activity className="h-4 w-4" />
+										<span className="text-xs">Status</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link href="/contact" aria-label="Contact">
+										<LifeBuoy className="h-4 w-4" />
+										<span className="text-xs">Contact</span>
+									</Link>
+								</Button>
+								<ThemeSelector className="h-8 w-full justify-start px-3" />
+							</div>
 						</div>
-						{/* Contribute */}
-						<Link
-							href="/contribute"
-							aria-label="Contribute"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover=g-zinc-900 transition-colors gap-2"
-						>
-							<FilePlus className="h-5 w-5" />
-							<span className="text-xs">Contribute</span>
-						</Link>
-						{/* Database Monitor */}
-						<Link
-							href="/monitor"
-							aria-label="Database Monitor"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<Database className="h-5 w-5" />
-							<span className="text-xs">DB Monitor</span>
-						</Link>
-						{/* Status */}
-						<Link
-							href="https://ai-stats-status.stpg.dev/"
-							target="_blank"
-							rel="noopener noreferrer"
-							aria-label="Status"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<Activity className="h-5 w-5" />
-							<span className="text-xs">Status</span>
-						</Link>
 
-						<Separator className="col-span-2 md:col-span-3" />
-
-						{/* --- Legal --- */}
-						<div className="col-span-2 md:col-span-3 font-semibold text-sm">
-							Legal
-						</div>
-						<Link
-							href="/terms"
-							aria-label="Terms of Service"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<FileText className="h-5 w-5" />
-							<span className="text-xs">Terms</span>
-						</Link>
-						<Link
-							href="/privacy"
-							aria-label="Privacy Policy"
-							className="flex items-center justify-center h-12 rounded-lg border border-border bg-white dark:bg-zinc-950 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors gap-2"
-						>
-							<ShieldCheck className="h-5 w-5" />
-							<span className="text-xs">Privacy</span>
-						</Link>
-
-						<Separator className="col-span-2 md:col-span-3" />
-
-						{/* Theme */}
-						<div className="col-span-2 md:col-span-3 flex items-center justify-center">
-							<ThemeToggle />
+						<div className="flex flex-col items-start gap-2">
+							<span className="pl-2 text-sm font-semibold">
+								Legal
+							</span>
+							<div className="flex w-full flex-col gap-1">
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link href="/terms" aria-label="Terms of Service">
+										<FileText className="h-4 w-4" />
+										<span className="text-xs">Terms</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href="/privacy"
+										aria-label="Privacy Policy"
+									>
+										<ShieldCheck className="h-4 w-4" />
+										<span className="text-xs">Privacy</span>
+									</Link>
+								</Button>
+							</div>
 						</div>
 					</div>
 
 					{/* --- Desktop: Social --- */}
 					<div className="hidden lg:flex flex-col items-start gap-2">
-						<span className="font-semibold text-sm pl-2">
+						<span className="pl-2 text-sm font-semibold">
 							Social
 						</span>
 						<div className="flex flex-col gap-1">
@@ -370,7 +439,7 @@ export default function Footer() {
 					{/* --- Desktop: Explore (Docs + Roadmap + Wrapped) --- */}
 					{/* <div className="hidden sm:flex flex-col items-center justify-center"> */}
 					<div className="hidden lg:flex flex-col items-start gap-2">
-						<span className="font-semibold text-sm pl-2">
+						<span className="pl-2 text-sm font-semibold">
 							Explore
 						</span>
 						<div className="flex flex-col gap-1">
@@ -407,12 +476,38 @@ export default function Footer() {
 									<span className="text-xs">Tools</span>
 								</Link>
 							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
+								<Link
+									href="/tools/pricing-calculator"
+									aria-label="Pricing Calculator"
+								>
+									<DollarSign className="h-4 w-4" />
+									<span className="text-xs">Pricing</span>
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
+								<Link
+									href="/works-with"
+									aria-label="Works With AI Stats"
+								>
+									<Handshake className="h-4 w-4" />
+									<span className="text-xs">Works With</span>
+								</Link>
+							</Button>
 						</div>
 					</div>
 
 					{/* --- Desktop: Actions (Contribute, Sources, Theme) --- */}
 					<div className="hidden lg:flex flex-col items-start gap-2">
-						<span className="font-semibold text-sm pl-2">More</span>
+						<span className="pl-2 text-sm font-semibold">More</span>
 						<div className="flex flex-col gap-1">
 							{/* Contribute */}
 							<Button
@@ -461,6 +556,16 @@ export default function Footer() {
 									<span className="text-xs">Status</span>
 								</Link>
 							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
+								<Link href="/contact" aria-label="Contact">
+									<LifeBuoy className="h-4 w-4" />
+									<span className="text-xs">Contact</span>
+								</Link>
+							</Button>
 
 							{/* Theme */}
 							<ThemeSelector />
@@ -468,7 +573,7 @@ export default function Footer() {
 					</div>
 					{/* --- Desktop: Legal --- */}
 					<div className="hidden lg:flex flex-col items-start gap-2">
-						<span className="font-semibold text-sm pl-2">
+						<span className="pl-2 text-sm font-semibold">
 							Legal
 						</span>
 						<div className="flex flex-col gap-1">

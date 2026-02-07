@@ -17,7 +17,7 @@ export function client() {
 export function logWrite(table: string, op: string, payload: unknown, extra?: Record<string, any>) {
     if (!DRY_RUN) return;
     const one = JSON.stringify(payload, null, 2);
-    console.log(`🔎 DRY-RUN ${op} -> ${table}`);
+    console.log(`ðŸ”Ž DRY-RUN ${op} -> ${table}`);
     console.log(one);
     if (extra) console.log("  extra:", extra);
 }

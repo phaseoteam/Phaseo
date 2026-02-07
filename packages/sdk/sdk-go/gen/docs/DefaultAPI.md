@@ -28,7 +28,7 @@ Method | HTTP request | Description
 [**GetProvisioningKey**](DefaultAPI.md#GetProvisioningKey) | **Get** /provisioning/keys/{id} | Get provisioning key
 [**GetVideo**](DefaultAPI.md#GetVideo) | **Get** /videos/{video_id} | Get video status
 [**GetVideoContent**](DefaultAPI.md#GetVideoContent) | **Get** /videos/{video_id}/content | Get video content
-[**Health**](DefaultAPI.md#Health) | **Get** /health | Health check
+[**Healthz**](DefaultAPI.md#Healthz) | **Get** /healthz | Health check
 [**ListFiles**](DefaultAPI.md#ListFiles) | **Get** /files | List files
 [**ListModels**](DefaultAPI.md#ListModels) | **Get** /models | List models
 [**ListProviders**](DefaultAPI.md#ListProviders) | **Get** /providers | List providers
@@ -62,7 +62,7 @@ import (
 )
 
 func main() {
-	anthropicMessagesRequest := *openapiclient.NewAnthropicMessagesRequest("Model_example", []openapiclient.AnthropicMessage{*openapiclient.NewAnthropicMessage("Role_example", openapiclient.AnthropicMessage_content{ArrayOfAnthropicContentBlock: new([]AnthropicContentBlock)})}, int32(123)) // AnthropicMessagesRequest | 
+	anthropicMessagesRequest := *openapiclient.NewAnthropicMessagesRequest("Model_example", []openapiclient.AnthropicMessage{*openapiclient.NewAnthropicMessage("Role_example", openapiclient.AnthropicMessage_content{ArrayOfAnthropicContentBlock: new([]AnthropicContentBlock)})}) // AnthropicMessagesRequest | 
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
@@ -232,7 +232,7 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: application/json, text/event-stream
+- **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
@@ -373,7 +373,7 @@ Name | Type | Description  | Notes
 
 ## CreateImageEdit
 
-> ImagesEditResponse CreateImageEdit(ctx).Model(model).Image(image).Prompt(prompt).Mask(mask).Size(size).N(n).User(user).Meta(meta).Usage(usage).Debug(debug).Provider(provider).Execute()
+> ImagesEditResponse CreateImageEdit(ctx).Model(model).Image(image).Prompt(prompt).Mask(mask).Size(size).N(n).User(user).Meta(meta).Usage(usage).Provider(provider).Execute()
 
 Create image edit
 
@@ -401,12 +401,11 @@ func main() {
 	user := "user_example" // string |  (optional)
 	meta := true // bool |  (optional)
 	usage := true // bool |  (optional)
-	debug := *openapiclient.NewDebugOptions() // DebugOptions |  (optional)
 	provider := *openapiclient.NewProviderRoutingOptions() // ProviderRoutingOptions |  (optional)
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.DefaultAPI.CreateImageEdit(context.Background()).Model(model).Image(image).Prompt(prompt).Mask(mask).Size(size).N(n).User(user).Meta(meta).Usage(usage).Debug(debug).Provider(provider).Execute()
+	resp, r, err := apiClient.DefaultAPI.CreateImageEdit(context.Background()).Model(model).Image(image).Prompt(prompt).Mask(mask).Size(size).N(n).User(user).Meta(meta).Usage(usage).Provider(provider).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `DefaultAPI.CreateImageEdit``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -436,7 +435,6 @@ Name | Type | Description  | Notes
  **user** | **string** |  | 
  **meta** | **bool** |  | 
  **usage** | **bool** |  | 
- **debug** | [**DebugOptions**](DebugOptions.md) |  | 
  **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | 
 
 ### Return type
@@ -714,7 +712,7 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: application/json, text/event-stream
+- **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)
@@ -789,7 +787,7 @@ Name | Type | Description  | Notes
 
 ## CreateTranscription
 
-> AudioTranscriptionResponse CreateTranscription(ctx).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Debug(debug).Provider(provider).Execute()
+> AudioTranscriptionResponse CreateTranscription(ctx).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Provider(provider).Execute()
 
 Create transcription
 
@@ -812,12 +810,11 @@ func main() {
 	audioUrl := "audioUrl_example" // string |  (optional)
 	audioB64 := "audioB64_example" // string |  (optional)
 	language := "language_example" // string |  (optional)
-	debug := *openapiclient.NewDebugOptions() // DebugOptions |  (optional)
 	provider := *openapiclient.NewProviderRoutingOptions() // ProviderRoutingOptions |  (optional)
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.DefaultAPI.CreateTranscription(context.Background()).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Debug(debug).Provider(provider).Execute()
+	resp, r, err := apiClient.DefaultAPI.CreateTranscription(context.Background()).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Provider(provider).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `DefaultAPI.CreateTranscription``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -842,7 +839,6 @@ Name | Type | Description  | Notes
  **audioUrl** | **string** |  | 
  **audioB64** | **string** |  | 
  **language** | **string** |  | 
- **debug** | [**DebugOptions**](DebugOptions.md) |  | 
  **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | 
 
 ### Return type
@@ -865,7 +861,7 @@ Name | Type | Description  | Notes
 
 ## CreateTranslation
 
-> AudioTranslationResponse CreateTranslation(ctx).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Prompt(prompt).Temperature(temperature).Debug(debug).Provider(provider).Execute()
+> AudioTranslationResponse CreateTranslation(ctx).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Prompt(prompt).Temperature(temperature).Provider(provider).Execute()
 
 Create translation
 
@@ -890,12 +886,11 @@ func main() {
 	language := "language_example" // string |  (optional)
 	prompt := "prompt_example" // string |  (optional)
 	temperature := float32(8.14) // float32 |  (optional)
-	debug := *openapiclient.NewDebugOptions() // DebugOptions |  (optional)
 	provider := *openapiclient.NewProviderRoutingOptions() // ProviderRoutingOptions |  (optional)
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.DefaultAPI.CreateTranslation(context.Background()).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Prompt(prompt).Temperature(temperature).Debug(debug).Provider(provider).Execute()
+	resp, r, err := apiClient.DefaultAPI.CreateTranslation(context.Background()).Model(model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Prompt(prompt).Temperature(temperature).Provider(provider).Execute()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when calling `DefaultAPI.CreateTranslation``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -922,7 +917,6 @@ Name | Type | Description  | Notes
  **language** | **string** |  | 
  **prompt** | **string** |  | 
  **temperature** | **float32** |  | 
- **debug** | [**DebugOptions**](DebugOptions.md) |  | 
  **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | 
 
 ### Return type
@@ -1695,9 +1689,9 @@ Name | Type | Description  | Notes
 [[Back to README]](../README.md)
 
 
-## Health
+## Healthz
 
-> Health200Response Health(ctx).Execute()
+> Healthz200Response Healthz(ctx).Execute()
 
 Health check
 
@@ -1719,13 +1713,13 @@ func main() {
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
-	resp, r, err := apiClient.DefaultAPI.Health(context.Background()).Execute()
+	resp, r, err := apiClient.DefaultAPI.Healthz(context.Background()).Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when calling `DefaultAPI.Health``: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error when calling `DefaultAPI.Healthz``: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
 	}
-	// response from `Health`: Health200Response
-	fmt.Fprintf(os.Stdout, "Response from `DefaultAPI.Health`: %v\n", resp)
+	// response from `Healthz`: Healthz200Response
+	fmt.Fprintf(os.Stdout, "Response from `DefaultAPI.Healthz`: %v\n", resp)
 }
 ```
 
@@ -1735,12 +1729,12 @@ This endpoint does not need any parameter.
 
 ### Other Parameters
 
-Other parameters are passed through a pointer to a apiHealthRequest struct via the builder pattern
+Other parameters are passed through a pointer to a apiHealthzRequest struct via the builder pattern
 
 
 ### Return type
 
-[**Health200Response**](Health200Response.md)
+[**Healthz200Response**](Healthz200Response.md)
 
 ### Authorization
 

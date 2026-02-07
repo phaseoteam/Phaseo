@@ -126,8 +126,8 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object health(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/health";
+	public static Object healthz(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/healthz";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 

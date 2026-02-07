@@ -37,7 +37,6 @@ type VideoGenerationRequest struct {
 	Seed *int32 `json:"seed,omitempty"`
 	PersonGeneration *string `json:"person_generation,omitempty"`
 	OutputStorageUri *string `json:"output_storage_uri,omitempty"`
-	Debug *DebugOptions `json:"debug,omitempty"`
 	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
 
@@ -558,38 +557,6 @@ func (o *VideoGenerationRequest) SetOutputStorageUri(v string) {
 	o.OutputStorageUri = &v
 }
 
-// GetDebug returns the Debug field value if set, zero value otherwise.
-func (o *VideoGenerationRequest) GetDebug() DebugOptions {
-	if o == nil || IsNil(o.Debug) {
-		var ret DebugOptions
-		return ret
-	}
-	return *o.Debug
-}
-
-// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *VideoGenerationRequest) GetDebugOk() (*DebugOptions, bool) {
-	if o == nil || IsNil(o.Debug) {
-		return nil, false
-	}
-	return o.Debug, true
-}
-
-// HasDebug returns a boolean if a field has been set.
-func (o *VideoGenerationRequest) HasDebug() bool {
-	if o != nil && !IsNil(o.Debug) {
-		return true
-	}
-
-	return false
-}
-
-// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
-func (o *VideoGenerationRequest) SetDebug(v DebugOptions) {
-	o.Debug = &v
-}
-
 // GetProvider returns the Provider field value if set, zero value otherwise.
 func (o *VideoGenerationRequest) GetProvider() ProviderRoutingOptions {
 	if o == nil || IsNil(o.Provider) {
@@ -675,9 +642,6 @@ func (o VideoGenerationRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.OutputStorageUri) {
 		toSerialize["output_storage_uri"] = o.OutputStorageUri
-	}
-	if !IsNil(o.Debug) {
-		toSerialize["debug"] = o.Debug
 	}
 	if !IsNil(o.Provider) {
 		toSerialize["provider"] = o.Provider

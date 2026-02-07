@@ -19,8 +19,6 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictInt
 from typing import Any, ClassVar, Dict, List, Optional
-from ai_stats_generated.models.pricing_breakdown import PricingBreakdown
-from ai_stats_generated.models.usage_details import UsageDetails
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -31,20 +29,7 @@ class Usage(BaseModel):
     prompt_tokens: Optional[StrictInt] = None
     completion_tokens: Optional[StrictInt] = None
     total_tokens: Optional[StrictInt] = None
-    prompt_tokens_details: Optional[UsageDetails] = None
-    completion_tokens_details: Optional[UsageDetails] = None
-    input_tokens: Optional[StrictInt] = None
-    output_tokens: Optional[StrictInt] = None
-    input_tokens_details: Optional[UsageDetails] = None
-    output_tokens_details: Optional[UsageDetails] = None
-    input_text_tokens: Optional[StrictInt] = None
-    output_text_tokens: Optional[StrictInt] = None
-    cached_read_text_tokens: Optional[StrictInt] = None
-    cached_write_text_tokens: Optional[StrictInt] = None
-    reasoning_tokens: Optional[StrictInt] = None
-    pricing: Optional[PricingBreakdown] = None
-    pricing_breakdown: Optional[PricingBreakdown] = None
-    __properties: ClassVar[List[str]] = ["prompt_tokens", "completion_tokens", "total_tokens", "prompt_tokens_details", "completion_tokens_details", "input_tokens", "output_tokens", "input_tokens_details", "output_tokens_details", "input_text_tokens", "output_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens", "reasoning_tokens", "pricing", "pricing_breakdown"]
+    __properties: ClassVar[List[str]] = ["prompt_tokens", "completion_tokens", "total_tokens"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -85,24 +70,6 @@ class Usage(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of prompt_tokens_details
-        if self.prompt_tokens_details:
-            _dict['prompt_tokens_details'] = self.prompt_tokens_details.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of completion_tokens_details
-        if self.completion_tokens_details:
-            _dict['completion_tokens_details'] = self.completion_tokens_details.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of input_tokens_details
-        if self.input_tokens_details:
-            _dict['input_tokens_details'] = self.input_tokens_details.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of output_tokens_details
-        if self.output_tokens_details:
-            _dict['output_tokens_details'] = self.output_tokens_details.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of pricing
-        if self.pricing:
-            _dict['pricing'] = self.pricing.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of pricing_breakdown
-        if self.pricing_breakdown:
-            _dict['pricing_breakdown'] = self.pricing_breakdown.to_dict()
         return _dict
 
     @classmethod
@@ -117,20 +84,7 @@ class Usage(BaseModel):
         _obj = cls.model_validate({
             "prompt_tokens": obj.get("prompt_tokens"),
             "completion_tokens": obj.get("completion_tokens"),
-            "total_tokens": obj.get("total_tokens"),
-            "prompt_tokens_details": UsageDetails.from_dict(obj["prompt_tokens_details"]) if obj.get("prompt_tokens_details") is not None else None,
-            "completion_tokens_details": UsageDetails.from_dict(obj["completion_tokens_details"]) if obj.get("completion_tokens_details") is not None else None,
-            "input_tokens": obj.get("input_tokens"),
-            "output_tokens": obj.get("output_tokens"),
-            "input_tokens_details": UsageDetails.from_dict(obj["input_tokens_details"]) if obj.get("input_tokens_details") is not None else None,
-            "output_tokens_details": UsageDetails.from_dict(obj["output_tokens_details"]) if obj.get("output_tokens_details") is not None else None,
-            "input_text_tokens": obj.get("input_text_tokens"),
-            "output_text_tokens": obj.get("output_text_tokens"),
-            "cached_read_text_tokens": obj.get("cached_read_text_tokens"),
-            "cached_write_text_tokens": obj.get("cached_write_text_tokens"),
-            "reasoning_tokens": obj.get("reasoning_tokens"),
-            "pricing": PricingBreakdown.from_dict(obj["pricing"]) if obj.get("pricing") is not None else None,
-            "pricing_breakdown": PricingBreakdown.from_dict(obj["pricing_breakdown"]) if obj.get("pricing_breakdown") is not None else None
+            "total_tokens": obj.get("total_tokens")
         })
         return _obj
 

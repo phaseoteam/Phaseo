@@ -21,7 +21,6 @@ var _ MappedNullable = &ChatChoice{}
 type ChatChoice struct {
 	Index *int32 `json:"index,omitempty"`
 	Message *ChatMessage `json:"message,omitempty"`
-	Logprobs map[string]interface{} `json:"logprobs,omitempty"`
 	FinishReason *string `json:"finish_reason,omitempty"`
 }
 
@@ -106,38 +105,6 @@ func (o *ChatChoice) SetMessage(v ChatMessage) {
 	o.Message = &v
 }
 
-// GetLogprobs returns the Logprobs field value if set, zero value otherwise.
-func (o *ChatChoice) GetLogprobs() map[string]interface{} {
-	if o == nil || IsNil(o.Logprobs) {
-		var ret map[string]interface{}
-		return ret
-	}
-	return o.Logprobs
-}
-
-// GetLogprobsOk returns a tuple with the Logprobs field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatChoice) GetLogprobsOk() (map[string]interface{}, bool) {
-	if o == nil || IsNil(o.Logprobs) {
-		return map[string]interface{}{}, false
-	}
-	return o.Logprobs, true
-}
-
-// HasLogprobs returns a boolean if a field has been set.
-func (o *ChatChoice) HasLogprobs() bool {
-	if o != nil && !IsNil(o.Logprobs) {
-		return true
-	}
-
-	return false
-}
-
-// SetLogprobs gets a reference to the given map[string]interface{} and assigns it to the Logprobs field.
-func (o *ChatChoice) SetLogprobs(v map[string]interface{}) {
-	o.Logprobs = v
-}
-
 // GetFinishReason returns the FinishReason field value if set, zero value otherwise.
 func (o *ChatChoice) GetFinishReason() string {
 	if o == nil || IsNil(o.FinishReason) {
@@ -185,9 +152,6 @@ func (o ChatChoice) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Message) {
 		toSerialize["message"] = o.Message
-	}
-	if !IsNil(o.Logprobs) {
-		toSerialize["logprobs"] = o.Logprobs
 	}
 	if !IsNil(o.FinishReason) {
 		toSerialize["finish_reason"] = o.FinishReason

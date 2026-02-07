@@ -80,7 +80,7 @@ export default function ProvisioningKeyLimitsItem({ k }: any) {
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						Provisioning Key Limits
+						Management API Key Limits
 					</DialogTitle>
 					<DialogDescription>
 						Set request limits for this elevated-privilege key.

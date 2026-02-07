@@ -171,10 +171,10 @@ function getVideoContent(Client $client, ?array $path = null, ?array $query = nu
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function health(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function healthz(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/health";
+	$resolvedPath = "/healthz";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

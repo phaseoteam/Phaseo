@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
  * ProviderRoutingOptionsTest Class Doc Comment
  *
  * @category    Class
- * @description Provider routing preferences for gateway selection. Global routing policy is configured in the dashboard and applied before request-level overrides.
+ * @description Provider routing preferences for gateway selection.
  * @package     AIStats\Sdk
  * @author      OpenAPI Generator team
  * @link        https://openapi-generator.tech

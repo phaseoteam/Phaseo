@@ -12,7 +12,6 @@
 | **logit_bias** | **Hash&lt;String, Float&gt;** |  | [optional] |
 | **max_output_tokens** | **Integer** |  | [optional] |
 | **meta** | **Boolean** |  | [optional][default to false] |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **presence_penalty** | **Float** |  | [optional] |
 | **seed** | **Integer** |  | [optional] |
 | **stream** | **Boolean** |  | [optional][default to false] |
@@ -26,7 +25,6 @@
 | **top_logprobs** | **Integer** |  | [optional] |
 | **top_p** | **Float** |  | [optional] |
 | **response_format** | [**ChatCompletionsRequestResponseFormat**](ChatCompletionsRequestResponseFormat.md) |  | [optional] |
-| **modalities** | **Array&lt;String&gt;** |  | [optional] |
 | **usage** | **Boolean** |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 | **user_id** | **String** |  | [optional] |
@@ -46,7 +44,6 @@ instance = AIStatsSdk::ChatCompletionsRequest.new(
   logit_bias: null,
   max_output_tokens: null,
   meta: null,
-  debug: null,
   presence_penalty: null,
   seed: null,
   stream: null,
@@ -60,7 +57,6 @@ instance = AIStatsSdk::ChatCompletionsRequest.new(
   top_logprobs: null,
   top_p: null,
   response_format: null,
-  modalities: null,
   usage: null,
   provider: null,
   user_id: null,

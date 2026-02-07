@@ -112,7 +112,7 @@ module AIStatsSdk
         :'error_message' => :'String',
         :'latency_ms' => :'Float',
         :'generation_ms' => :'Float',
-        :'usage' => :'Usage',
+        :'usage' => :'GenerationResponseUsage',
         :'cost_nanos' => :'Float',
         :'currency' => :'String',
         :'pricing_lines' => :'Array<Object>',
@@ -128,6 +128,7 @@ module AIStatsSdk
         :'native_response_id',
         :'error_code',
         :'error_message',
+        :'usage',
         :'throughput'
       ])
     end

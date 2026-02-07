@@ -25,7 +25,7 @@ export default function SettingsLayout({
 			>
 				<SettingsSidebar />
 			</Sidebar>
-			<SidebarInset className="bg-white dark:bg-zinc-950 min-h-dvh">
+			<SidebarInset className="bg-white dark:bg-zinc-950 min-h-0">
 				<div className="container mx-auto flex w-full flex-1 flex-col gap-4 px-2 py-4">
 					<SettingsSidebarTrigger />
 					<div className="flex-1 w-full p-3">

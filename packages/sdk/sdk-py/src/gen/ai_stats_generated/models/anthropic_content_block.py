@@ -19,10 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from ai_stats_generated.models.anthropic_content_block_image_url import AnthropicContentBlockImageUrl
 from ai_stats_generated.models.anthropic_content_block_source import AnthropicContentBlockSource
-from ai_stats_generated.models.audio_content_part_input_audio import AudioContentPartInputAudio
-from ai_stats_generated.models.cache_control import CacheControl
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -32,17 +29,13 @@ class AnthropicContentBlock(BaseModel):
     """ # noqa: E501
     type: Optional[StrictStr] = None
     text: Optional[StrictStr] = None
-    cache_control: Optional[CacheControl] = None
     source: Optional[AnthropicContentBlockSource] = None
-    image_url: Optional[AnthropicContentBlockImageUrl] = None
-    input_audio: Optional[AudioContentPartInputAudio] = None
-    video_url: Optional[StrictStr] = None
     id: Optional[StrictStr] = None
     name: Optional[StrictStr] = None
     input: Optional[Dict[str, Any]] = None
     tool_use_id: Optional[StrictStr] = None
     content: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["type", "text", "cache_control", "source", "image_url", "input_audio", "video_url", "id", "name", "input", "tool_use_id", "content"]
+    __properties: ClassVar[List[str]] = ["type", "text", "source", "id", "name", "input", "tool_use_id", "content"]
 
     @field_validator('type')
     def type_validate_enum(cls, value):
@@ -50,8 +43,8 @@ class AnthropicContentBlock(BaseModel):
         if value is None:
             return value
 
-        if value not in set(['text', 'input_text', 'image', 'input_image', 'input_audio', 'input_video', 'tool_use', 'tool_result']):
-            raise ValueError("must be one of enum values ('text', 'input_text', 'image', 'input_image', 'input_audio', 'input_video', 'tool_use', 'tool_result')")
+        if value not in set(['text', 'image', 'tool_use', 'tool_result']):
+            raise ValueError("must be one of enum values ('text', 'image', 'tool_use', 'tool_result')")
         return value
 
     model_config = ConfigDict(
@@ -93,18 +86,9 @@ class AnthropicContentBlock(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of cache_control
-        if self.cache_control:
-            _dict['cache_control'] = self.cache_control.to_dict()
         # override the default output from pydantic by calling `to_dict()` of source
         if self.source:
             _dict['source'] = self.source.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of image_url
-        if self.image_url:
-            _dict['image_url'] = self.image_url.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of input_audio
-        if self.input_audio:
-            _dict['input_audio'] = self.input_audio.to_dict()
         return _dict
 
     @classmethod
@@ -119,11 +103,7 @@ class AnthropicContentBlock(BaseModel):
         _obj = cls.model_validate({
             "type": obj.get("type"),
             "text": obj.get("text"),
-            "cache_control": CacheControl.from_dict(obj["cache_control"]) if obj.get("cache_control") is not None else None,
             "source": AnthropicContentBlockSource.from_dict(obj["source"]) if obj.get("source") is not None else None,
-            "image_url": AnthropicContentBlockImageUrl.from_dict(obj["image_url"]) if obj.get("image_url") is not None else None,
-            "input_audio": AudioContentPartInputAudio.from_dict(obj["input_audio"]) if obj.get("input_audio") is not None else None,
-            "video_url": obj.get("video_url"),
             "id": obj.get("id"),
             "name": obj.get("name"),
             "input": obj.get("input"),

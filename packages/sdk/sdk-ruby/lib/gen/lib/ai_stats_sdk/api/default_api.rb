@@ -187,7 +187,7 @@ module AIStatsSdk
       # header parameters
       header_params = opts[:header_params] || {}
       # HTTP header 'Accept' (if needed)
-      header_params['Accept'] = @api_client.select_header_accept(['application/json', 'text/event-stream']) unless header_params['Accept']
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
       # HTTP header 'Content-Type'
       content_type = @api_client.select_header_content_type(['application/json'])
       if !content_type.nil?
@@ -367,7 +367,6 @@ module AIStatsSdk
     # @option opts [String] :user 
     # @option opts [Boolean] :meta 
     # @option opts [Boolean] :usage 
-    # @option opts [DebugOptions] :debug 
     # @option opts [ProviderRoutingOptions] :provider 
     # @return [ImagesEditResponse]
     def create_image_edit(model, image, prompt, opts = {})
@@ -387,7 +386,6 @@ module AIStatsSdk
     # @option opts [String] :user 
     # @option opts [Boolean] :meta 
     # @option opts [Boolean] :usage 
-    # @option opts [DebugOptions] :debug 
     # @option opts [ProviderRoutingOptions] :provider 
     # @return [Array<(ImagesEditResponse, Integer, Hash)>] ImagesEditResponse data, response status code and response headers
     def create_image_edit_with_http_info(model, image, prompt, opts = {})
@@ -441,7 +439,6 @@ module AIStatsSdk
       form_params['user'] = opts[:'user'] if !opts[:'user'].nil?
       form_params['meta'] = opts[:'meta'] if !opts[:'meta'].nil?
       form_params['usage'] = opts[:'usage'] if !opts[:'usage'].nil?
-      form_params['debug'] = opts[:'debug'] if !opts[:'debug'].nil?
       form_params['provider'] = opts[:'provider'] if !opts[:'provider'].nil?
 
       # http body (model)
@@ -706,7 +703,7 @@ module AIStatsSdk
       # header parameters
       header_params = opts[:header_params] || {}
       # HTTP header 'Accept' (if needed)
-      header_params['Accept'] = @api_client.select_header_accept(['application/json', 'text/event-stream']) unless header_params['Accept']
+      header_params['Accept'] = @api_client.select_header_accept(['application/json']) unless header_params['Accept']
       # HTTP header 'Content-Type'
       content_type = @api_client.select_header_content_type(['application/json'])
       if !content_type.nil?
@@ -817,7 +814,6 @@ module AIStatsSdk
     # @option opts [String] :audio_url 
     # @option opts [String] :audio_b64 
     # @option opts [String] :language 
-    # @option opts [DebugOptions] :debug 
     # @option opts [ProviderRoutingOptions] :provider 
     # @return [AudioTranscriptionResponse]
     def create_transcription(model, opts = {})
@@ -832,7 +828,6 @@ module AIStatsSdk
     # @option opts [String] :audio_url 
     # @option opts [String] :audio_b64 
     # @option opts [String] :language 
-    # @option opts [DebugOptions] :debug 
     # @option opts [ProviderRoutingOptions] :provider 
     # @return [Array<(AudioTranscriptionResponse, Integer, Hash)>] AudioTranscriptionResponse data, response status code and response headers
     def create_transcription_with_http_info(model, opts = {})
@@ -865,7 +860,6 @@ module AIStatsSdk
       form_params['audio_url'] = opts[:'audio_url'] if !opts[:'audio_url'].nil?
       form_params['audio_b64'] = opts[:'audio_b64'] if !opts[:'audio_b64'].nil?
       form_params['language'] = opts[:'language'] if !opts[:'language'].nil?
-      form_params['debug'] = opts[:'debug'] if !opts[:'debug'].nil?
       form_params['provider'] = opts[:'provider'] if !opts[:'provider'].nil?
 
       # http body (model)
@@ -903,7 +897,6 @@ module AIStatsSdk
     # @option opts [String] :language 
     # @option opts [String] :prompt 
     # @option opts [Float] :temperature 
-    # @option opts [DebugOptions] :debug 
     # @option opts [ProviderRoutingOptions] :provider 
     # @return [AudioTranslationResponse]
     def create_translation(model, opts = {})
@@ -920,7 +913,6 @@ module AIStatsSdk
     # @option opts [String] :language 
     # @option opts [String] :prompt 
     # @option opts [Float] :temperature 
-    # @option opts [DebugOptions] :debug 
     # @option opts [ProviderRoutingOptions] :provider 
     # @return [Array<(AudioTranslationResponse, Integer, Hash)>] AudioTranslationResponse data, response status code and response headers
     def create_translation_with_http_info(model, opts = {})
@@ -963,7 +955,6 @@ module AIStatsSdk
       form_params['language'] = opts[:'language'] if !opts[:'language'].nil?
       form_params['prompt'] = opts[:'prompt'] if !opts[:'prompt'].nil?
       form_params['temperature'] = opts[:'temperature'] if !opts[:'temperature'].nil?
-      form_params['debug'] = opts[:'debug'] if !opts[:'debug'].nil?
       form_params['provider'] = opts[:'provider'] if !opts[:'provider'].nil?
 
       # http body (model)
@@ -1735,22 +1726,22 @@ module AIStatsSdk
     # Health check
     # Returns the health status of the API.
     # @param [Hash] opts the optional parameters
-    # @return [Health200Response]
-    def health(opts = {})
-      data, _status_code, _headers = health_with_http_info(opts)
+    # @return [Healthz200Response]
+    def healthz(opts = {})
+      data, _status_code, _headers = healthz_with_http_info(opts)
       data
     end
 
     # Health check
     # Returns the health status of the API.
     # @param [Hash] opts the optional parameters
-    # @return [Array<(Health200Response, Integer, Hash)>] Health200Response data, response status code and response headers
-    def health_with_http_info(opts = {})
+    # @return [Array<(Healthz200Response, Integer, Hash)>] Healthz200Response data, response status code and response headers
+    def healthz_with_http_info(opts = {})
       if @api_client.config.debugging
-        @api_client.config.logger.debug 'Calling API: DefaultApi.health ...'
+        @api_client.config.logger.debug 'Calling API: DefaultApi.healthz ...'
       end
       # resource path
-      local_var_path = '/health'
+      local_var_path = '/healthz'
 
       # query parameters
       query_params = opts[:query_params] || {}
@@ -1767,13 +1758,13 @@ module AIStatsSdk
       post_body = opts[:debug_body]
 
       # return_type
-      return_type = opts[:debug_return_type] || 'Health200Response'
+      return_type = opts[:debug_return_type] || 'Healthz200Response'
 
       # auth_names
       auth_names = opts[:debug_auth_names] || ['BearerAuth']
 
       new_options = opts.merge(
-        :operation => :"DefaultApi.health",
+        :operation => :"DefaultApi.healthz",
         :header_params => header_params,
         :query_params => query_params,
         :form_params => form_params,
@@ -1784,7 +1775,7 @@ module AIStatsSdk
 
       data, status_code, headers = @api_client.call_api(:GET, local_var_path, new_options)
       if @api_client.config.debugging
-        @api_client.config.logger.debug "API called: DefaultApi#health\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
+        @api_client.config.logger.debug "API called: DefaultApi#healthz\nData: #{data.inspect}\nStatus code: #{status_code}\nHeaders: #{headers}"
       end
       return data, status_code, headers
     end

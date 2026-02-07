@@ -98,15 +98,6 @@ class MessageContentPartTest extends TestCase
     }
 
     /**
-     * Test attribute "cache_control"
-     */
-    public function testPropertyCacheControl()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "image_url"
      */
     public function testPropertyImageUrl()

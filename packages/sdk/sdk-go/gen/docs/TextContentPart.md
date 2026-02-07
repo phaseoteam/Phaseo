@@ -6,7 +6,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Type** | **string** |  | 
 **Text** | **string** |  | 
-**CacheControl** | Pointer to [**CacheControl**](CacheControl.md) |  | [optional] 
 
 ## Methods
 
@@ -66,31 +65,6 @@ and a boolean to check if the value has been set.
 
 SetText sets Text field to given value.
 
-
-### GetCacheControl
-
-`func (o *TextContentPart) GetCacheControl() CacheControl`
-
-GetCacheControl returns the CacheControl field if non-nil, zero value otherwise.
-
-### GetCacheControlOk
-
-`func (o *TextContentPart) GetCacheControlOk() (*CacheControl, bool)`
-
-GetCacheControlOk returns a tuple with the CacheControl field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetCacheControl
-
-`func (o *TextContentPart) SetCacheControl(v CacheControl)`
-
-SetCacheControl sets CacheControl field to given value.
-
-### HasCacheControl
-
-`func (o *TextContentPart) HasCacheControl() bool`
-
-HasCacheControl returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

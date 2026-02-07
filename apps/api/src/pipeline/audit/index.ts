@@ -234,7 +234,7 @@ export async function auditSuccess(args: {
     }
 }
 
-/** FAILURE AUDIT — single function with discriminated union */
+/** FAILURE AUDIT -- single function with discriminated union */
 type AuditFailureBefore = {
     stage: "before";
     requestId: string;

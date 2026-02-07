@@ -1,0 +1,9 @@
+{
+  "files": [
+    "__init__.py",
+    "client.py",
+    "models.py",
+    "operations.py"
+  ],
+  "generatedAt": "2026-02-06T16:07:55.300Z"
+}

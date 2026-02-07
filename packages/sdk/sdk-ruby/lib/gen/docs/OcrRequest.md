@@ -7,7 +7,7 @@
 | **model** | **String** |  |  |
 | **image** | **String** |  |  |
 | **language** | **String** |  | [optional] |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
+| **echo_upstream_request** | **Boolean** |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
@@ -19,7 +19,7 @@ instance = AIStatsSdk::OcrRequest.new(
   model: null,
   image: null,
   language: null,
-  debug: null,
+  echo_upstream_request: null,
   provider: null
 )
 ```

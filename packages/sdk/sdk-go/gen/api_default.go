@@ -309,7 +309,7 @@ func (a *DefaultAPIService) CreateChatCompletionExecute(r ApiCreateChatCompletio
 	}
 
 	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/json", "text/event-stream"}
+	localVarHTTPHeaderAccepts := []string{"application/json"}
 
 	// set Accept header
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
@@ -587,7 +587,6 @@ type ApiCreateImageEditRequest struct {
 	user *string
 	meta *bool
 	usage *bool
-	debug *DebugOptions
 	provider *ProviderRoutingOptions
 }
 
@@ -633,11 +632,6 @@ func (r ApiCreateImageEditRequest) Meta(meta bool) ApiCreateImageEditRequest {
 
 func (r ApiCreateImageEditRequest) Usage(usage bool) ApiCreateImageEditRequest {
 	r.usage = &usage
-	return r
-}
-
-func (r ApiCreateImageEditRequest) Debug(debug DebugOptions) ApiCreateImageEditRequest {
-	r.debug = &debug
 	return r
 }
 
@@ -732,13 +726,6 @@ func (a *DefaultAPIService) CreateImageEditExecute(r ApiCreateImageEditRequest) 
 	}
 	if r.usage != nil {
 		parameterAddToHeaderOrQuery(localVarFormParams, "usage", r.usage, "", "")
-	}
-	if r.debug != nil {
-		paramJson, err := parameterToJson(*r.debug)
-		if err != nil {
-			return localVarReturnValue, nil, err
-		}
-		localVarFormParams.Add("debug", paramJson)
 	}
 	if r.provider != nil {
 		paramJson, err := parameterToJson(*r.provider)
@@ -1199,7 +1186,7 @@ func (a *DefaultAPIService) CreateResponseExecute(r ApiCreateResponseRequest) (*
 	}
 
 	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/json", "text/event-stream"}
+	localVarHTTPHeaderAccepts := []string{"application/json"}
 
 	// set Accept header
 	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
@@ -1362,7 +1349,6 @@ type ApiCreateTranscriptionRequest struct {
 	audioUrl *string
 	audioB64 *string
 	language *string
-	debug *DebugOptions
 	provider *ProviderRoutingOptions
 }
 
@@ -1383,11 +1369,6 @@ func (r ApiCreateTranscriptionRequest) AudioB64(audioB64 string) ApiCreateTransc
 
 func (r ApiCreateTranscriptionRequest) Language(language string) ApiCreateTranscriptionRequest {
 	r.language = &language
-	return r
-}
-
-func (r ApiCreateTranscriptionRequest) Debug(debug DebugOptions) ApiCreateTranscriptionRequest {
-	r.debug = &debug
 	return r
 }
 
@@ -1466,13 +1447,6 @@ func (a *DefaultAPIService) CreateTranscriptionExecute(r ApiCreateTranscriptionR
 	if r.language != nil {
 		parameterAddToHeaderOrQuery(localVarFormParams, "language", r.language, "", "")
 	}
-	if r.debug != nil {
-		paramJson, err := parameterToJson(*r.debug)
-		if err != nil {
-			return localVarReturnValue, nil, err
-		}
-		localVarFormParams.Add("debug", paramJson)
-	}
 	if r.provider != nil {
 		paramJson, err := parameterToJson(*r.provider)
 		if err != nil {
@@ -1526,7 +1500,6 @@ type ApiCreateTranslationRequest struct {
 	language *string
 	prompt *string
 	temperature *float32
-	debug *DebugOptions
 	provider *ProviderRoutingOptions
 }
 
@@ -1557,11 +1530,6 @@ func (r ApiCreateTranslationRequest) Prompt(prompt string) ApiCreateTranslationR
 
 func (r ApiCreateTranslationRequest) Temperature(temperature float32) ApiCreateTranslationRequest {
 	r.temperature = &temperature
-	return r
-}
-
-func (r ApiCreateTranslationRequest) Debug(debug DebugOptions) ApiCreateTranslationRequest {
-	r.debug = &debug
 	return r
 }
 
@@ -1645,13 +1613,6 @@ func (a *DefaultAPIService) CreateTranslationExecute(r ApiCreateTranslationReque
 	}
 	if r.temperature != nil {
 		parameterAddToHeaderOrQuery(localVarFormParams, "temperature", r.temperature, "", "")
-	}
-	if r.debug != nil {
-		paramJson, err := parameterToJson(*r.debug)
-		if err != nil {
-			return localVarReturnValue, nil, err
-		}
-		localVarFormParams.Add("debug", paramJson)
 	}
 	if r.provider != nil {
 		paramJson, err := parameterToJson(*r.provider)
@@ -3019,46 +2980,46 @@ func (a *DefaultAPIService) GetVideoContentExecute(r ApiGetVideoContentRequest) 
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiHealthRequest struct {
+type ApiHealthzRequest struct {
 	ctx context.Context
 	ApiService *DefaultAPIService
 }
 
-func (r ApiHealthRequest) Execute() (*Health200Response, *http.Response, error) {
-	return r.ApiService.HealthExecute(r)
+func (r ApiHealthzRequest) Execute() (*Healthz200Response, *http.Response, error) {
+	return r.ApiService.HealthzExecute(r)
 }
 
 /*
-Health Health check
+Healthz Health check
 
 Returns the health status of the API.
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiHealthRequest
+ @return ApiHealthzRequest
 */
-func (a *DefaultAPIService) Health(ctx context.Context) ApiHealthRequest {
-	return ApiHealthRequest{
+func (a *DefaultAPIService) Healthz(ctx context.Context) ApiHealthzRequest {
+	return ApiHealthzRequest{
 		ApiService: a,
 		ctx: ctx,
 	}
 }
 
 // Execute executes the request
-//  @return Health200Response
-func (a *DefaultAPIService) HealthExecute(r ApiHealthRequest) (*Health200Response, *http.Response, error) {
+//  @return Healthz200Response
+func (a *DefaultAPIService) HealthzExecute(r ApiHealthzRequest) (*Healthz200Response, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *Health200Response
+		localVarReturnValue  *Healthz200Response
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DefaultAPIService.Health")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "DefaultAPIService.Healthz")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/health"
+	localVarPath := localBasePath + "/healthz"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}

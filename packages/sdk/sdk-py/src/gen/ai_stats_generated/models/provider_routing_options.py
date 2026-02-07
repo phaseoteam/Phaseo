@@ -24,7 +24,7 @@ from typing_extensions import Self
 
 class ProviderRoutingOptions(BaseModel):
     """
-    Provider routing preferences for gateway selection. Global routing policy is configured in the dashboard and applied before request-level overrides.
+    Provider routing preferences for gateway selection.
     """ # noqa: E501
     order: Optional[List[StrictStr]] = None
     only: Optional[List[StrictStr]] = None

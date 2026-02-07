@@ -39,12 +39,6 @@ describe AIStatsSdk::ResponsesRequest do
     end
   end
 
-  describe 'test attribute "messages"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
   describe 'test attribute "input_items"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
@@ -81,19 +75,7 @@ describe AIStatsSdk::ResponsesRequest do
     end
   end
 
-  describe 'test attribute "max_tools_calls"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
   describe 'test attribute "metadata"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  describe 'test attribute "debug"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -126,16 +108,6 @@ describe AIStatsSdk::ResponsesRequest do
   describe 'test attribute "prompt_cache_retention"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  describe 'test attribute "modalities"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-      # validator = Petstore::EnumTest::EnumAttributeValidator.new('Array<String>', ["text", "image", "audio", "video"])
-      # validator.allowable_values.each do |value|
-      #   expect { instance.modalities = value }.not_to raise_error
-      # end
     end
   end
 
@@ -224,6 +196,12 @@ describe AIStatsSdk::ResponsesRequest do
   end
 
   describe 'test attribute "user"' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  describe 'test attribute "usage"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

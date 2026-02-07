@@ -12,7 +12,6 @@
 | **response_format** | **String** |  | [optional] |
 | **style** | **String** |  | [optional] |
 | **user** | **String** |  | [optional] |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
@@ -29,7 +28,6 @@ instance = AIStatsSdk::ImagesGenerationRequest.new(
   response_format: null,
   style: null,
   user: null,
-  debug: null,
   provider: null
 )
 ```

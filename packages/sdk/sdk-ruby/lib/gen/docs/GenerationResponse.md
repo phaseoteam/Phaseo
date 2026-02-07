@@ -19,7 +19,7 @@
 | **error_message** | **String** |  | [optional] |
 | **latency_ms** | **Float** |  | [optional] |
 | **generation_ms** | **Float** |  | [optional] |
-| **usage** | [**Usage**](Usage.md) |  | [optional] |
+| **usage** | [**GenerationResponseUsage**](GenerationResponseUsage.md) |  | [optional] |
 | **cost_nanos** | **Float** |  | [optional] |
 | **currency** | **String** |  | [optional] |
 | **pricing_lines** | **Array&lt;Object&gt;** |  | [optional] |

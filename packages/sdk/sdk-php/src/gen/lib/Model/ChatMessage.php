@@ -59,7 +59,6 @@ class ChatMessage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPITypes = [
         'role' => 'string',
         'content' => '\AIStats\Sdk\Model\ChatMessageContent',
-        'reasoning_content' => 'string',
         'name' => 'string',
         'tool_calls' => '\AIStats\Sdk\Model\ToolCall[]',
         'tool_call_id' => 'string'
@@ -75,7 +74,6 @@ class ChatMessage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPIFormats = [
         'role' => null,
         'content' => null,
-        'reasoning_content' => null,
         'name' => null,
         'tool_calls' => null,
         'tool_call_id' => null
@@ -89,7 +87,6 @@ class ChatMessage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static array $openAPINullables = [
         'role' => false,
         'content' => false,
-        'reasoning_content' => false,
         'name' => false,
         'tool_calls' => false,
         'tool_call_id' => false
@@ -183,7 +180,6 @@ class ChatMessage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $attributeMap = [
         'role' => 'role',
         'content' => 'content',
-        'reasoning_content' => 'reasoning_content',
         'name' => 'name',
         'tool_calls' => 'tool_calls',
         'tool_call_id' => 'tool_call_id'
@@ -197,7 +193,6 @@ class ChatMessage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $setters = [
         'role' => 'setRole',
         'content' => 'setContent',
-        'reasoning_content' => 'setReasoningContent',
         'name' => 'setName',
         'tool_calls' => 'setToolCalls',
         'tool_call_id' => 'setToolCallId'
@@ -211,7 +206,6 @@ class ChatMessage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $getters = [
         'role' => 'getRole',
         'content' => 'getContent',
-        'reasoning_content' => 'getReasoningContent',
         'name' => 'getName',
         'tool_calls' => 'getToolCalls',
         'tool_call_id' => 'getToolCallId'
@@ -295,7 +289,6 @@ class ChatMessage implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('role', $data ?? [], null);
         $this->setIfExists('content', $data ?? [], null);
-        $this->setIfExists('reasoning_content', $data ?? [], null);
         $this->setIfExists('name', $data ?? [], null);
         $this->setIfExists('tool_calls', $data ?? [], null);
         $this->setIfExists('tool_call_id', $data ?? [], null);
@@ -418,33 +411,6 @@ class ChatMessage implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable content cannot be null');
         }
         $this->container['content'] = $content;
-
-        return $this;
-    }
-
-    /**
-     * Gets reasoning_content
-     *
-     * @return string|null
-     */
-    public function getReasoningContent()
-    {
-        return $this->container['reasoning_content'];
-    }
-
-    /**
-     * Sets reasoning_content
-     *
-     * @param string|null $reasoning_content reasoning_content
-     *
-     * @return self
-     */
-    public function setReasoningContent($reasoning_content)
-    {
-        if (is_null($reasoning_content)) {
-            throw new \InvalidArgumentException('non-nullable reasoning_content cannot be null');
-        }
-        $this->container['reasoning_content'] = $reasoning_content;
 
         return $this;
     }

@@ -70,23 +70,5 @@ namespace AIStatsSdk.Test.Model
         {
             // TODO unit test for the property 'Summary'
         }
-
-        /// <summary>
-        /// Test the property 'Enabled'
-        /// </summary>
-        [Fact]
-        public void EnabledTest()
-        {
-            // TODO unit test for the property 'Enabled'
-        }
-
-        /// <summary>
-        /// Test the property 'MaxTokens'
-        /// </summary>
-        [Fact]
-        public void MaxTokensTest()
-        {
-            // TODO unit test for the property 'MaxTokens'
-        }
     }
 }

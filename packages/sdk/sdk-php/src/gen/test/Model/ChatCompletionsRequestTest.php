@@ -152,15 +152,6 @@ class ChatCompletionsRequestTest extends TestCase
     }
 
     /**
-     * Test attribute "debug"
-     */
-    public function testPropertyDebug()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "presence_penalty"
      */
     public function testPropertyPresencePenalty()
@@ -272,15 +263,6 @@ class ChatCompletionsRequestTest extends TestCase
      * Test attribute "response_format"
      */
     public function testPropertyResponseFormat()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "modalities"
-     */
-    public function testPropertyModalities()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

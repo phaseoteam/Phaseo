@@ -30,7 +30,7 @@ All URIs are relative to https://api.phaseo.app/v1, except if the operation defi
 | [**getProvisioningKey()**](DefaultApi.md#getProvisioningKey) | **GET** /provisioning/keys/{id} | Get provisioning key |
 | [**getVideo()**](DefaultApi.md#getVideo) | **GET** /videos/{video_id} | Get video status |
 | [**getVideoContent()**](DefaultApi.md#getVideoContent) | **GET** /videos/{video_id}/content | Get video content |
-| [**health()**](DefaultApi.md#health) | **GET** /health | Health check |
+| [**healthz()**](DefaultApi.md#healthz) | **GET** /healthz | Health check |
 | [**listFiles()**](DefaultApi.md#listFiles) | **GET** /files | List files |
 | [**listModels()**](DefaultApi.md#listModels) | **GET** /models | List models |
 | [**listProviders()**](DefaultApi.md#listProviders) | **GET** /providers | List providers |
@@ -216,7 +216,7 @@ try {
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: `application/json`, `text/event-stream`
+- **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -345,7 +345,7 @@ try {
 ## `createImageEdit()`
 
 ```php
-createImageEdit($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $debug, $provider): \AIStats\Sdk\Model\ImagesEditResponse
+createImageEdit($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider): \AIStats\Sdk\Model\ImagesEditResponse
 ```
 
 Create image edit
@@ -378,11 +378,10 @@ $n = 56; // int
 $user = 'user_example'; // string
 $meta = True; // bool
 $usage = True; // bool
-$debug = new \AIStats\Sdk\Model\DebugOptions(); // \AIStats\Sdk\Model\DebugOptions
 $provider = new \AIStats\Sdk\Model\ProviderRoutingOptions(); // \AIStats\Sdk\Model\ProviderRoutingOptions
 
 try {
-    $result = $apiInstance->createImageEdit($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $debug, $provider);
+    $result = $apiInstance->createImageEdit($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider);
     print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->createImageEdit: ', $e->getMessage(), PHP_EOL;
@@ -402,7 +401,6 @@ try {
 | **user** | **string**|  | [optional] |
 | **meta** | **bool**|  | [optional] |
 | **usage** | **bool**|  | [optional] |
-| **debug** | [**\AIStats\Sdk\Model\DebugOptions**](../Model/DebugOptions.md)|  | [optional] |
 | **provider** | [**\AIStats\Sdk\Model\ProviderRoutingOptions**](../Model/ProviderRoutingOptions.md)|  | [optional] |
 
 ### Return type
@@ -656,7 +654,7 @@ try {
 ### HTTP request headers
 
 - **Content-Type**: `application/json`
-- **Accept**: `application/json`, `text/event-stream`
+- **Accept**: `application/json`
 
 [[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
 [[Back to Model list]](../../README.md#models)
@@ -725,7 +723,7 @@ try {
 ## `createTranscription()`
 
 ```php
-createTranscription($model, $audio_url, $audio_b64, $language, $debug, $provider): \AIStats\Sdk\Model\AudioTranscriptionResponse
+createTranscription($model, $audio_url, $audio_b64, $language, $provider): \AIStats\Sdk\Model\AudioTranscriptionResponse
 ```
 
 Create transcription
@@ -753,11 +751,10 @@ $model = 'model_example'; // string
 $audio_url = 'audio_url_example'; // string
 $audio_b64 = 'audio_b64_example'; // string
 $language = 'language_example'; // string
-$debug = new \AIStats\Sdk\Model\DebugOptions(); // \AIStats\Sdk\Model\DebugOptions
 $provider = new \AIStats\Sdk\Model\ProviderRoutingOptions(); // \AIStats\Sdk\Model\ProviderRoutingOptions
 
 try {
-    $result = $apiInstance->createTranscription($model, $audio_url, $audio_b64, $language, $debug, $provider);
+    $result = $apiInstance->createTranscription($model, $audio_url, $audio_b64, $language, $provider);
     print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->createTranscription: ', $e->getMessage(), PHP_EOL;
@@ -772,7 +769,6 @@ try {
 | **audio_url** | **string**|  | [optional] |
 | **audio_b64** | **string**|  | [optional] |
 | **language** | **string**|  | [optional] |
-| **debug** | [**\AIStats\Sdk\Model\DebugOptions**](../Model/DebugOptions.md)|  | [optional] |
 | **provider** | [**\AIStats\Sdk\Model\ProviderRoutingOptions**](../Model/ProviderRoutingOptions.md)|  | [optional] |
 
 ### Return type
@@ -795,7 +791,7 @@ try {
 ## `createTranslation()`
 
 ```php
-createTranslation($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $debug, $provider): \AIStats\Sdk\Model\AudioTranslationResponse
+createTranslation($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider): \AIStats\Sdk\Model\AudioTranslationResponse
 ```
 
 Create translation
@@ -825,11 +821,10 @@ $audio_b64 = 'audio_b64_example'; // string
 $language = 'language_example'; // string
 $prompt = 'prompt_example'; // string
 $temperature = 3.4; // float
-$debug = new \AIStats\Sdk\Model\DebugOptions(); // \AIStats\Sdk\Model\DebugOptions
 $provider = new \AIStats\Sdk\Model\ProviderRoutingOptions(); // \AIStats\Sdk\Model\ProviderRoutingOptions
 
 try {
-    $result = $apiInstance->createTranslation($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $debug, $provider);
+    $result = $apiInstance->createTranslation($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider);
     print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->createTranslation: ', $e->getMessage(), PHP_EOL;
@@ -846,7 +841,6 @@ try {
 | **language** | **string**|  | [optional] |
 | **prompt** | **string**|  | [optional] |
 | **temperature** | **float**|  | [optional] |
-| **debug** | [**\AIStats\Sdk\Model\DebugOptions**](../Model/DebugOptions.md)|  | [optional] |
 | **provider** | [**\AIStats\Sdk\Model\ProviderRoutingOptions**](../Model/ProviderRoutingOptions.md)|  | [optional] |
 
 ### Return type
@@ -1532,10 +1526,10 @@ try {
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
-## `health()`
+## `healthz()`
 
 ```php
-health(): \AIStats\Sdk\Model\Health200Response
+healthz(): \AIStats\Sdk\Model\Healthz200Response
 ```
 
 Health check
@@ -1561,10 +1555,10 @@ $apiInstance = new AIStats\Sdk\Api\DefaultApi(
 );
 
 try {
-    $result = $apiInstance->health();
+    $result = $apiInstance->healthz();
     print_r($result);
 } catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->health: ', $e->getMessage(), PHP_EOL;
+    echo 'Exception when calling DefaultApi->healthz: ', $e->getMessage(), PHP_EOL;
 }
 ```
 
@@ -1574,7 +1568,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**\AIStats\Sdk\Model\Health200Response**](../Model/Health200Response.md)
+[**\AIStats\Sdk\Model\Healthz200Response**](../Model/Healthz200Response.md)
 
 ### Authorization
 

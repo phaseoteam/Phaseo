@@ -12,7 +12,6 @@ Name | Type | Description | Notes
 **ResponseFormat** | Pointer to **string** |  | [optional] 
 **Style** | Pointer to **string** |  | [optional] 
 **User** | Pointer to **string** |  | [optional] 
-**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 ## Methods
@@ -223,31 +222,6 @@ SetUser sets User field to given value.
 `func (o *ImagesGenerationRequest) HasUser() bool`
 
 HasUser returns a boolean if a field has been set.
-
-### GetDebug
-
-`func (o *ImagesGenerationRequest) GetDebug() DebugOptions`
-
-GetDebug returns the Debug field if non-nil, zero value otherwise.
-
-### GetDebugOk
-
-`func (o *ImagesGenerationRequest) GetDebugOk() (*DebugOptions, bool)`
-
-GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetDebug
-
-`func (o *ImagesGenerationRequest) SetDebug(v DebugOptions)`
-
-SetDebug sets Debug field to given value.
-
-### HasDebug
-
-`func (o *ImagesGenerationRequest) HasDebug() bool`
-
-HasDebug returns a boolean if a field has been set.
 
 ### GetProvider
 

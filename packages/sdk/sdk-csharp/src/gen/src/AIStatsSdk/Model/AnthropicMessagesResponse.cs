@@ -41,10 +41,8 @@ namespace AIStatsSdk.Model
         /// <param name="stopReason">stopReason</param>
         /// <param name="stopSequence">stopSequence</param>
         /// <param name="usage">usage</param>
-        /// <param name="meta">meta</param>
-        /// <param name="debug">debug</param>
         [JsonConstructor]
-        public AnthropicMessagesResponse(Option<string?> id = default, Option<string?> type = default, Option<RoleEnum?> role = default, Option<string?> model = default, Option<List<AnthropicContentBlock>?> content = default, Option<string?> stopReason = default, Option<string?> stopSequence = default, Option<AnthropicUsage?> usage = default, Option<Object?> meta = default, Option<DebugResponse?> debug = default)
+        public AnthropicMessagesResponse(Option<string?> id = default, Option<string?> type = default, Option<RoleEnum?> role = default, Option<string?> model = default, Option<List<AnthropicContentBlock>?> content = default, Option<string?> stopReason = default, Option<string?> stopSequence = default, Option<AnthropicUsage?> usage = default)
         {
             IdOption = id;
             TypeOption = type;
@@ -54,8 +52,6 @@ namespace AIStatsSdk.Model
             StopReasonOption = stopReason;
             StopSequenceOption = stopSequence;
             UsageOption = usage;
-            MetaOption = meta;
-            DebugOption = debug;
             OnCreated();
         }
 
@@ -218,32 +214,6 @@ namespace AIStatsSdk.Model
         public AnthropicUsage? Usage { get { return this.UsageOption; } set { this.UsageOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Meta
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> MetaOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Meta
-        /// </summary>
-        [JsonPropertyName("meta")]
-        public Object? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugResponse?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugResponse? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -259,8 +229,6 @@ namespace AIStatsSdk.Model
             sb.Append("  StopReason: ").Append(StopReason).Append("\n");
             sb.Append("  StopSequence: ").Append(StopSequence).Append("\n");
             sb.Append("  Usage: ").Append(Usage).Append("\n");
-            sb.Append("  Meta: ").Append(Meta).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -306,8 +274,6 @@ namespace AIStatsSdk.Model
             Option<string?> stopReason = default;
             Option<string?> stopSequence = default;
             Option<AnthropicUsage?> usage = default;
-            Option<Object?> meta = default;
-            Option<DebugResponse?> debug = default;
 
             while (utf8JsonReader.Read())
             {
@@ -350,12 +316,6 @@ namespace AIStatsSdk.Model
                         case "usage":
                             usage = new Option<AnthropicUsage?>(JsonSerializer.Deserialize<AnthropicUsage>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
-                        case "meta":
-                            meta = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "debug":
-                            debug = new Option<DebugResponse?>(JsonSerializer.Deserialize<DebugResponse>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         default:
                             break;
                     }
@@ -386,13 +346,7 @@ namespace AIStatsSdk.Model
             if (usage.IsSet && usage.Value == null)
                 throw new ArgumentNullException(nameof(usage), "Property is not nullable for class AnthropicMessagesResponse.");
 
-            if (meta.IsSet && meta.Value == null)
-                throw new ArgumentNullException(nameof(meta), "Property is not nullable for class AnthropicMessagesResponse.");
-
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class AnthropicMessagesResponse.");
-
-            return new AnthropicMessagesResponse(id, type, role, model, content, stopReason, stopSequence, usage, meta, debug);
+            return new AnthropicMessagesResponse(id, type, role, model, content, stopReason, stopSequence, usage);
         }
 
         /// <summary>
@@ -440,12 +394,6 @@ namespace AIStatsSdk.Model
             if (anthropicMessagesResponse.UsageOption.IsSet && anthropicMessagesResponse.Usage == null)
                 throw new ArgumentNullException(nameof(anthropicMessagesResponse.Usage), "Property is required for class AnthropicMessagesResponse.");
 
-            if (anthropicMessagesResponse.MetaOption.IsSet && anthropicMessagesResponse.Meta == null)
-                throw new ArgumentNullException(nameof(anthropicMessagesResponse.Meta), "Property is required for class AnthropicMessagesResponse.");
-
-            if (anthropicMessagesResponse.DebugOption.IsSet && anthropicMessagesResponse.Debug == null)
-                throw new ArgumentNullException(nameof(anthropicMessagesResponse.Debug), "Property is required for class AnthropicMessagesResponse.");
-
             if (anthropicMessagesResponse.IdOption.IsSet)
                 writer.WriteString("id", anthropicMessagesResponse.Id);
 
@@ -472,16 +420,6 @@ namespace AIStatsSdk.Model
             {
                 writer.WritePropertyName("usage");
                 JsonSerializer.Serialize(writer, anthropicMessagesResponse.Usage, jsonSerializerOptions);
-            }
-            if (anthropicMessagesResponse.MetaOption.IsSet)
-            {
-                writer.WritePropertyName("meta");
-                JsonSerializer.Serialize(writer, anthropicMessagesResponse.Meta, jsonSerializerOptions);
-            }
-            if (anthropicMessagesResponse.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, anthropicMessagesResponse.Debug, jsonSerializerOptions);
             }
         }
     }

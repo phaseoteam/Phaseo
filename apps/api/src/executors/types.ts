@@ -3,13 +3,21 @@
 // Why: Keeps executor interfaces consistent across providers and capabilities.
 // How: Exposes typed shapes consumed by the execute pipeline and provider adapters.
 
-import type { IRChatRequest, IRChatResponse } from "@core/ir";
+import type {
+	IRChatRequest,
+	IRChatResponse,
+	IREmbeddingsRequest,
+	IREmbeddingsResponse,
+	IRModerationsRequest,
+	IRModerationsResponse,
+} from "@core/ir";
 import type { ByokKeyMeta } from "@pipeline/before/types";
 import type { Endpoint } from "@core/types";
+import type { DebugOptions } from "@core/types";
 import type { Protocol } from "@protocols/detect";
 
 export type ExecutorExecuteArgs = {
-	ir: IRChatRequest;
+	ir: IRChatRequest | IREmbeddingsRequest | IRModerationsRequest;
 
 	requestId: string;
 	teamId: string;
@@ -27,10 +35,13 @@ export type ExecutorExecuteArgs = {
 	pricingCard: any;
 
 	meta: {
-		debug?: boolean;
+		debug?: DebugOptions;
 		returnMeta?: boolean;
 		echoUpstreamRequest?: boolean;
+		returnUpstreamRequest?: boolean;
+		returnUpstreamResponse?: boolean;
 		upstreamStartMs?: number; // Timestamp when upstream request started
+		forceGatewayKey?: boolean;
 	};
 };
 
@@ -44,7 +55,7 @@ export type Bill = {
 
 export type ExecutorCompletedResult = {
 	kind: "completed";
-	ir?: IRChatResponse;
+	ir?: IRChatResponse | IREmbeddingsResponse | IRModerationsResponse;
 	bill: Bill;
 	upstream: Response;
 	keySource: "gateway" | "byok";

@@ -20,8 +20,6 @@ import (
 type MessageContentPart struct {
 	AudioContentPart *AudioContentPart
 	ImageContentPart *ImageContentPart
-	InputImageContentPart *InputImageContentPart
-	InputTextContentPart *InputTextContentPart
 	TextContentPart *TextContentPart
 	ToolCallContentPart *ToolCallContentPart
 	VideoContentPart *VideoContentPart
@@ -38,20 +36,6 @@ func AudioContentPartAsMessageContentPart(v *AudioContentPart) MessageContentPar
 func ImageContentPartAsMessageContentPart(v *ImageContentPart) MessageContentPart {
 	return MessageContentPart{
 		ImageContentPart: v,
-	}
-}
-
-// InputImageContentPartAsMessageContentPart is a convenience function that returns InputImageContentPart wrapped in MessageContentPart
-func InputImageContentPartAsMessageContentPart(v *InputImageContentPart) MessageContentPart {
-	return MessageContentPart{
-		InputImageContentPart: v,
-	}
-}
-
-// InputTextContentPartAsMessageContentPart is a convenience function that returns InputTextContentPart wrapped in MessageContentPart
-func InputTextContentPartAsMessageContentPart(v *InputTextContentPart) MessageContentPart {
-	return MessageContentPart{
-		InputTextContentPart: v,
 	}
 }
 
@@ -115,40 +99,6 @@ func (dst *MessageContentPart) UnmarshalJSON(data []byte) error {
 		dst.ImageContentPart = nil
 	}
 
-	// try to unmarshal data into InputImageContentPart
-	err = newStrictDecoder(data).Decode(&dst.InputImageContentPart)
-	if err == nil {
-		jsonInputImageContentPart, _ := json.Marshal(dst.InputImageContentPart)
-		if string(jsonInputImageContentPart) == "{}" { // empty struct
-			dst.InputImageContentPart = nil
-		} else {
-			if err = validator.Validate(dst.InputImageContentPart); err != nil {
-				dst.InputImageContentPart = nil
-			} else {
-				match++
-			}
-		}
-	} else {
-		dst.InputImageContentPart = nil
-	}
-
-	// try to unmarshal data into InputTextContentPart
-	err = newStrictDecoder(data).Decode(&dst.InputTextContentPart)
-	if err == nil {
-		jsonInputTextContentPart, _ := json.Marshal(dst.InputTextContentPart)
-		if string(jsonInputTextContentPart) == "{}" { // empty struct
-			dst.InputTextContentPart = nil
-		} else {
-			if err = validator.Validate(dst.InputTextContentPart); err != nil {
-				dst.InputTextContentPart = nil
-			} else {
-				match++
-			}
-		}
-	} else {
-		dst.InputTextContentPart = nil
-	}
-
 	// try to unmarshal data into TextContentPart
 	err = newStrictDecoder(data).Decode(&dst.TextContentPart)
 	if err == nil {
@@ -204,8 +154,6 @@ func (dst *MessageContentPart) UnmarshalJSON(data []byte) error {
 		// reset to nil
 		dst.AudioContentPart = nil
 		dst.ImageContentPart = nil
-		dst.InputImageContentPart = nil
-		dst.InputTextContentPart = nil
 		dst.TextContentPart = nil
 		dst.ToolCallContentPart = nil
 		dst.VideoContentPart = nil
@@ -226,14 +174,6 @@ func (src MessageContentPart) MarshalJSON() ([]byte, error) {
 
 	if src.ImageContentPart != nil {
 		return json.Marshal(&src.ImageContentPart)
-	}
-
-	if src.InputImageContentPart != nil {
-		return json.Marshal(&src.InputImageContentPart)
-	}
-
-	if src.InputTextContentPart != nil {
-		return json.Marshal(&src.InputTextContentPart)
 	}
 
 	if src.TextContentPart != nil {
@@ -264,14 +204,6 @@ func (obj *MessageContentPart) GetActualInstance() (interface{}) {
 		return obj.ImageContentPart
 	}
 
-	if obj.InputImageContentPart != nil {
-		return obj.InputImageContentPart
-	}
-
-	if obj.InputTextContentPart != nil {
-		return obj.InputTextContentPart
-	}
-
 	if obj.TextContentPart != nil {
 		return obj.TextContentPart
 	}
@@ -296,14 +228,6 @@ func (obj MessageContentPart) GetActualInstanceValue() (interface{}) {
 
 	if obj.ImageContentPart != nil {
 		return *obj.ImageContentPart
-	}
-
-	if obj.InputImageContentPart != nil {
-		return *obj.InputImageContentPart
-	}
-
-	if obj.InputTextContentPart != nil {
-		return *obj.InputTextContentPart
 	}
 
 	if obj.TextContentPart != nil {

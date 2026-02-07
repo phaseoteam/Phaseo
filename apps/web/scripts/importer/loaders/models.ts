@@ -71,7 +71,7 @@ export async function loadModels(
     const familyExists = new Set(families.map(f => `${f.organisation_id}::${f.family_id}`));
 
     const orgDirs = await listDirs(DIR_MODELS);
-    const models: ModelJSON[] = [];
+    const modelRows: ModelRow[] = [];
     const modelIds = new Set<string>();
     const changedModels = new Set<string>();
     const timelineHints = new Set<string>();
@@ -81,8 +81,17 @@ export async function loadModels(
         for (const md of modelDirs) {
             const fp = join(md, "model.json");
             const { data: modelJson, hash } = await readJsonWithHash<ModelJSON>(fp);
+            const row: ModelRow = {
+                model_id: modelJson.model_id,
+                name: modelJson.name,
+                announcement_date: modelJson.announced_date ?? null,
+                release_date: modelJson.release_date ?? null,
+                deprecation_date: modelJson.deprecation_date ?? null,
+                retirement_date: modelJson.retirement_date ?? null,
+                previous_model_id: modelJson.previous_model_id ?? null,
+            };
+            modelRows.push(row);
             if (modelId && modelJson.model_id !== modelId) {
-                models.push(modelJson);
                 continue;
             }
             const change = tracker.track(fp, hash, {
@@ -91,7 +100,6 @@ export async function loadModels(
                 previous_model_id: modelJson.previous_model_id ?? null,
             } as ModelFileMeta);
 
-            models.push(modelJson);
             modelIds.add(modelJson.model_id);
 
             if (change.status !== "unchanged") {
@@ -113,7 +121,7 @@ export async function loadModels(
 
     deletedParents.forEach(p => timelineHints.add(p));
 
-    if (modelId && !models.some(m => m.model_id === modelId)) {
+    if (modelId && !modelRows.some(m => m.model_id === modelId)) {
         throw new Error(`Model '${modelId}' not found in ${DIR_MODELS}`);
     }
 
@@ -121,80 +129,88 @@ export async function loadModels(
     if (!hasChanges) return;
 
     // ---------- 2) Build lineage maps (JSON-only) ----------
-    const byId = new Map<string, ModelJSON>(models.map(m => [m.model_id, m]));
+    const byId = new Map<string, ModelRow>(modelRows.map(m => [m.model_id, m]));
     const children: Record<string, string[]> = {};
-    for (const m of models) {
+    for (const m of modelRows) {
         const p = m.previous_model_id || undefined;
         if (p) (children[p] ??= []).push(m.model_id);
     }
 
-    const jsonToModelRow = (m: ModelJSON): ModelRow => ({
-        model_id: m.model_id,
-        name: m.name,
-        announcement_date: m.announced_date ?? null,
-        release_date: m.release_date ?? null,
-        deprecation_date: m.deprecation_date ?? null,
-        retirement_date: m.retirement_date ?? null,
-        previous_model_id: m.previous_model_id ?? null,
-    });
-
-    const pastOf = (m: ModelJSON): ModelRow[] => {
+    const pastOf = (m: ModelRow): ModelRow[] => {
         const acc: ModelRow[] = [];
+        const seen = new Set<string>();
         let cur = m.previous_model_id ? byId.get(m.previous_model_id) : undefined;
-        while (cur) {
-            acc.push(jsonToModelRow(cur));
+        while (cur && !seen.has(cur.model_id)) {
+            seen.add(cur.model_id);
+            acc.push(cur);
             cur = cur.previous_model_id ? byId.get(cur.previous_model_id) : undefined;
         }
         return acc;
     };
 
-    const futureOf = (m: ModelJSON): ModelRow[] => {
+    const futureOf = (m: ModelRow): ModelRow[] => {
         const acc: ModelRow[] = [];
+        const seen = new Set<string>();
         const q = [...(children[m.model_id] || [])];
         while (q.length) {
             const id = q.shift()!;
+            if (seen.has(id)) continue;
+            seen.add(id);
             const child = byId.get(id);
             if (!child) continue;
-            acc.push(jsonToModelRow(child));
+            acc.push(child);
             if (children[id]) q.push(...children[id]);
         }
         return acc;
     };
 
     // ---------- 3) UPSERT core models ----------
-    const coreRows = models.filter(m => changedModels.has(m.model_id)).map(m => ({
-        name: m.name,
-        organisation_id: m.organisation_id,
-        status: m.status ?? null,
-        announcement_date: m.announced_date ?? null,
-        release_date: m.release_date ?? null,
-        deprecation_date: m.deprecation_date ?? null,
-        retirement_date: m.retirement_date ?? null,
-        license: m.license ?? null,
-        input_types: m.input_types ?? null,
-        output_types: m.output_types ?? null,
-        model_id: m.model_id,
-        previous_model_id: m.previous_model_id && m.previous_model_id !== "-" ? m.previous_model_id : null,
-        // only set family_id if that (org, family) exists in JSON families - otherwise NULL to satisfy FK
-        family_id:
-            m.family_id && familyExists.has(`${m.organisation_id}::${m.family_id}`) ? m.family_id : null,
-        timeline: {}, // to be filled below
-    }));
-
-    if (isDryRun()) {
-        for (const r of coreRows) logWrite("public.data_models", "UPSERT", r, { onConflict: "model_id" });
-    } else {
-        for (const group of chunk(coreRows, 500)) {
-            assertOk(
-                await supa.from("data_models").upsert(group, { onConflict: "model_id" }),
-                "upsert data_models"
-            );
+    const flushCoreRows = async (rows: Array<Record<string, any>>) => {
+        if (!rows.length) return;
+        if (isDryRun()) {
+            for (const r of rows) logWrite("public.data_models", "UPSERT", r, { onConflict: "model_id" });
+            return;
         }
-    }
+        assertOk(
+            await supa.from("data_models").upsert(rows, { onConflict: "model_id" }),
+            "upsert data_models"
+        );
+    };
+
+    const coreRows: Array<Record<string, any>> = [];
 
     // ---------- 4) UPSERT children + targeted prune (no reads) ----------
-    for (const m of models) {
-        if (!changedModels.has(m.model_id)) continue;
+    for (const orgPath of orgDirs) {
+        const modelDirs = await listDirs(orgPath);
+        for (const md of modelDirs) {
+            const fp = join(md, "model.json");
+            const m = await readJson<ModelJSON>(fp);
+            if (modelId && m.model_id !== modelId) continue;
+            if (!changedModels.has(m.model_id)) continue;
+
+            coreRows.push({
+                name: m.name,
+                organisation_id: m.organisation_id,
+                status: m.status ?? null,
+                announcement_date: m.announced_date ?? null,
+                release_date: m.release_date ?? null,
+                deprecation_date: m.deprecation_date ?? null,
+                retirement_date: m.retirement_date ?? null,
+                license: m.license ?? null,
+                input_types: m.input_types ?? null,
+                output_types: m.output_types ?? null,
+                model_id: m.model_id,
+                previous_model_id: m.previous_model_id && m.previous_model_id !== "-" ? m.previous_model_id : null,
+                // only set family_id if that (org, family) exists in JSON families - otherwise NULL to satisfy FK
+                family_id:
+                    m.family_id && familyExists.has(`${m.organisation_id}::${m.family_id}`) ? m.family_id : null,
+                timeline: {}, // to be filled below
+            });
+
+            if (coreRows.length >= 500) {
+                await flushCoreRows(coreRows.splice(0, coreRows.length));
+            }
+
         const model_id = m.model_id;
 
         // LINKS (dedupe by platform to avoid upsert conflicts)
@@ -225,7 +241,7 @@ export async function loadModels(
                     "prune data_model_links"
                 );
             } else {
-                // No links in source → delete all existing for this model
+                // No links in source -> delete all existing for this model
                 assertOk(await supa.from("data_model_links").delete().eq("model_id", model_id), "prune all links");
             }
         }
@@ -311,7 +327,7 @@ export async function loadModels(
                 logWrite("public.data_benchmark_results", "UPSERT", r, { onConflict: "result_key" });
         } else {
             // if (benchRows.length) {
-            // UPSERT by unique result_key — avoids "affect row a second time"
+            // UPSERT by unique result_key -- avoids "affect row a second time"
             assertOk(
                 await supa.from("data_benchmark_results").upsert(benchRows, { onConflict: "result_key" }),
                 "upsert data_benchmark_results"
@@ -328,14 +344,17 @@ export async function loadModels(
                 "prune data_benchmark_results"
             );
             // } else {
-            //     // No benchmarks in source → delete all for this model
+            //     // No benchmarks in source -> delete all for this model
             //     assertOk(await supa.from("data_benchmark_results").delete().eq("model_id", model_id), "prune all benchmarks");
             // }
         }
     }
+    }
+
+    await flushCoreRows(coreRows);
 
     // ---------- 5) Build timeline JSON with YOUR buildTimeline ----------
-    // (Providers optional—left empty here; wire from JSON later if you want.)
+    // (Providers optional--left empty here; wire from JSON later if you want.)
     const timelineTargets = new Set<string>([
         ...changedModels,
         ...timelineHints,
@@ -364,7 +383,7 @@ export async function loadModels(
     for (const id of timelineTargets) {
         const m = byId.get(id);
         if (!m) continue;
-        const self = jsonToModelRow(m);
+        const self = m;
         const past = pastOf(m);
         const future = futureOf(m);
         const providers: ProviderEvent[] = []; // supply if/when you add provider JSON

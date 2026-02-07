@@ -35,14 +35,12 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="index">index</param>
         /// <param name="message">message</param>
-        /// <param name="logprobs">logprobs</param>
         /// <param name="finishReason">finishReason</param>
         [JsonConstructor]
-        public ChatChoice(Option<int?> index = default, Option<ChatMessage?> message = default, Option<Object?> logprobs = default, Option<FinishReasonEnum?> finishReason = default)
+        public ChatChoice(Option<int?> index = default, Option<ChatMessage?> message = default, Option<FinishReasonEnum?> finishReason = default)
         {
             IndexOption = index;
             MessageOption = message;
-            LogprobsOption = logprobs;
             FinishReasonOption = finishReason;
             OnCreated();
         }
@@ -183,19 +181,6 @@ namespace AIStatsSdk.Model
         public ChatMessage? Message { get { return this.MessageOption; } set { this.MessageOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Logprobs
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> LogprobsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Logprobs
-        /// </summary>
-        [JsonPropertyName("logprobs")]
-        public Object? Logprobs { get { return this.LogprobsOption; } set { this.LogprobsOption = new(value); } }
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -205,7 +190,6 @@ namespace AIStatsSdk.Model
             sb.Append("class ChatChoice {\n");
             sb.Append("  Index: ").Append(Index).Append("\n");
             sb.Append("  Message: ").Append(Message).Append("\n");
-            sb.Append("  Logprobs: ").Append(Logprobs).Append("\n");
             sb.Append("  FinishReason: ").Append(FinishReason).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -246,7 +230,6 @@ namespace AIStatsSdk.Model
 
             Option<int?> index = default;
             Option<ChatMessage?> message = default;
-            Option<Object?> logprobs = default;
             Option<ChatChoice.FinishReasonEnum?> finishReason = default;
 
             while (utf8JsonReader.Read())
@@ -270,9 +253,6 @@ namespace AIStatsSdk.Model
                         case "message":
                             message = new Option<ChatMessage?>(JsonSerializer.Deserialize<ChatMessage>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
-                        case "logprobs":
-                            logprobs = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         case "finish_reason":
                             string? finishReasonRawValue = utf8JsonReader.GetString();
                             if (finishReasonRawValue != null)
@@ -290,13 +270,10 @@ namespace AIStatsSdk.Model
             if (message.IsSet && message.Value == null)
                 throw new ArgumentNullException(nameof(message), "Property is not nullable for class ChatChoice.");
 
-            if (logprobs.IsSet && logprobs.Value == null)
-                throw new ArgumentNullException(nameof(logprobs), "Property is not nullable for class ChatChoice.");
-
             if (finishReason.IsSet && finishReason.Value == null)
                 throw new ArgumentNullException(nameof(finishReason), "Property is not nullable for class ChatChoice.");
 
-            return new ChatChoice(index, message, logprobs, finishReason);
+            return new ChatChoice(index, message, finishReason);
         }
 
         /// <summary>
@@ -326,9 +303,6 @@ namespace AIStatsSdk.Model
             if (chatChoice.MessageOption.IsSet && chatChoice.Message == null)
                 throw new ArgumentNullException(nameof(chatChoice.Message), "Property is required for class ChatChoice.");
 
-            if (chatChoice.LogprobsOption.IsSet && chatChoice.Logprobs == null)
-                throw new ArgumentNullException(nameof(chatChoice.Logprobs), "Property is required for class ChatChoice.");
-
             if (chatChoice.IndexOption.IsSet)
                 writer.WriteNumber("index", chatChoice.IndexOption.Value!.Value);
 
@@ -336,11 +310,6 @@ namespace AIStatsSdk.Model
             {
                 writer.WritePropertyName("message");
                 JsonSerializer.Serialize(writer, chatChoice.Message, jsonSerializerOptions);
-            }
-            if (chatChoice.LogprobsOption.IsSet)
-            {
-                writer.WritePropertyName("logprobs");
-                JsonSerializer.Serialize(writer, chatChoice.Logprobs, jsonSerializerOptions);
             }
             var finishReasonRawValue = ChatChoice.FinishReasonEnumToJsonValue(chatChoice.FinishReasonOption.Value!.Value);
             writer.WriteString("finish_reason", finishReasonRawValue);

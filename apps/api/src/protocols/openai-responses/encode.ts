@@ -3,7 +3,7 @@
 // How: Maps between protocol payloads and IR structures.
 
 // OpenAI Responses Protocol - Encoder
-// Transforms IR → OpenAI Responses Response
+// Transforms IR -> OpenAI Responses Response
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
 
@@ -79,7 +79,7 @@ export function encodeOpenAIResponsesResponse(
 			const content: any[] = [];
 			if (textParts.length > 0) {
 				for (const text of textParts) {
-					content.push({ type: "text", text });
+					content.push({ type: "output_text", text, annotations: [] });
 				}
 			}
 			if (imageParts.length > 0) {

@@ -35,26 +35,18 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="type">type</param>
         /// <param name="text">text</param>
-        /// <param name="cacheControl">cacheControl</param>
         /// <param name="source">source</param>
-        /// <param name="imageUrl">imageUrl</param>
-        /// <param name="inputAudio">inputAudio</param>
-        /// <param name="videoUrl">videoUrl</param>
         /// <param name="id">id</param>
         /// <param name="name">name</param>
         /// <param name="input">input</param>
         /// <param name="toolUseId">toolUseId</param>
         /// <param name="content">content</param>
         [JsonConstructor]
-        public AnthropicContentBlock(Option<TypeEnum?> type = default, Option<string?> text = default, Option<CacheControl?> cacheControl = default, Option<AnthropicContentBlockSource?> source = default, Option<AnthropicContentBlockImageUrl?> imageUrl = default, Option<AudioContentPartInputAudio?> inputAudio = default, Option<string?> videoUrl = default, Option<string?> id = default, Option<string?> name = default, Option<Object?> input = default, Option<string?> toolUseId = default, Option<string?> content = default)
+        public AnthropicContentBlock(Option<TypeEnum?> type = default, Option<string?> text = default, Option<AnthropicContentBlockSource?> source = default, Option<string?> id = default, Option<string?> name = default, Option<Object?> input = default, Option<string?> toolUseId = default, Option<string?> content = default)
         {
             TypeOption = type;
             TextOption = text;
-            CacheControlOption = cacheControl;
             SourceOption = source;
-            ImageUrlOption = imageUrl;
-            InputAudioOption = inputAudio;
-            VideoUrlOption = videoUrl;
             IdOption = id;
             NameOption = name;
             InputOption = input;
@@ -76,39 +68,19 @@ namespace AIStatsSdk.Model
             Text = 1,
 
             /// <summary>
-            /// Enum InputText for value: input_text
-            /// </summary>
-            InputText = 2,
-
-            /// <summary>
             /// Enum Image for value: image
             /// </summary>
-            Image = 3,
-
-            /// <summary>
-            /// Enum InputImage for value: input_image
-            /// </summary>
-            InputImage = 4,
-
-            /// <summary>
-            /// Enum InputAudio for value: input_audio
-            /// </summary>
-            InputAudio = 5,
-
-            /// <summary>
-            /// Enum InputVideo for value: input_video
-            /// </summary>
-            InputVideo = 6,
+            Image = 2,
 
             /// <summary>
             /// Enum ToolUse for value: tool_use
             /// </summary>
-            ToolUse = 7,
+            ToolUse = 3,
 
             /// <summary>
             /// Enum ToolResult for value: tool_result
             /// </summary>
-            ToolResult = 8
+            ToolResult = 4
         }
 
         /// <summary>
@@ -122,20 +94,8 @@ namespace AIStatsSdk.Model
             if (value.Equals("text"))
                 return TypeEnum.Text;
 
-            if (value.Equals("input_text"))
-                return TypeEnum.InputText;
-
             if (value.Equals("image"))
                 return TypeEnum.Image;
-
-            if (value.Equals("input_image"))
-                return TypeEnum.InputImage;
-
-            if (value.Equals("input_audio"))
-                return TypeEnum.InputAudio;
-
-            if (value.Equals("input_video"))
-                return TypeEnum.InputVideo;
 
             if (value.Equals("tool_use"))
                 return TypeEnum.ToolUse;
@@ -156,20 +116,8 @@ namespace AIStatsSdk.Model
             if (value.Equals("text"))
                 return TypeEnum.Text;
 
-            if (value.Equals("input_text"))
-                return TypeEnum.InputText;
-
             if (value.Equals("image"))
                 return TypeEnum.Image;
-
-            if (value.Equals("input_image"))
-                return TypeEnum.InputImage;
-
-            if (value.Equals("input_audio"))
-                return TypeEnum.InputAudio;
-
-            if (value.Equals("input_video"))
-                return TypeEnum.InputVideo;
 
             if (value.Equals("tool_use"))
                 return TypeEnum.ToolUse;
@@ -191,20 +139,8 @@ namespace AIStatsSdk.Model
             if (value == TypeEnum.Text)
                 return "text";
 
-            if (value == TypeEnum.InputText)
-                return "input_text";
-
             if (value == TypeEnum.Image)
                 return "image";
-
-            if (value == TypeEnum.InputImage)
-                return "input_image";
-
-            if (value == TypeEnum.InputAudio)
-                return "input_audio";
-
-            if (value == TypeEnum.InputVideo)
-                return "input_video";
 
             if (value == TypeEnum.ToolUse)
                 return "tool_use";
@@ -242,19 +178,6 @@ namespace AIStatsSdk.Model
         public string? Text { get { return this.TextOption; } set { this.TextOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of CacheControl
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<CacheControl?> CacheControlOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CacheControl
-        /// </summary>
-        [JsonPropertyName("cache_control")]
-        public CacheControl? CacheControl { get { return this.CacheControlOption; } set { this.CacheControlOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Source
         /// </summary>
         [JsonIgnore]
@@ -266,45 +189,6 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonPropertyName("source")]
         public AnthropicContentBlockSource? Source { get { return this.SourceOption; } set { this.SourceOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of ImageUrl
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<AnthropicContentBlockImageUrl?> ImageUrlOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ImageUrl
-        /// </summary>
-        [JsonPropertyName("image_url")]
-        public AnthropicContentBlockImageUrl? ImageUrl { get { return this.ImageUrlOption; } set { this.ImageUrlOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of InputAudio
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<AudioContentPartInputAudio?> InputAudioOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets InputAudio
-        /// </summary>
-        [JsonPropertyName("input_audio")]
-        public AudioContentPartInputAudio? InputAudio { get { return this.InputAudioOption; } set { this.InputAudioOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of VideoUrl
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> VideoUrlOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets VideoUrl
-        /// </summary>
-        [JsonPropertyName("video_url")]
-        public string? VideoUrl { get { return this.VideoUrlOption; } set { this.VideoUrlOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Id
@@ -381,11 +265,7 @@ namespace AIStatsSdk.Model
             sb.Append("class AnthropicContentBlock {\n");
             sb.Append("  Type: ").Append(Type).Append("\n");
             sb.Append("  Text: ").Append(Text).Append("\n");
-            sb.Append("  CacheControl: ").Append(CacheControl).Append("\n");
             sb.Append("  Source: ").Append(Source).Append("\n");
-            sb.Append("  ImageUrl: ").Append(ImageUrl).Append("\n");
-            sb.Append("  InputAudio: ").Append(InputAudio).Append("\n");
-            sb.Append("  VideoUrl: ").Append(VideoUrl).Append("\n");
             sb.Append("  Id: ").Append(Id).Append("\n");
             sb.Append("  Name: ").Append(Name).Append("\n");
             sb.Append("  Input: ").Append(Input).Append("\n");
@@ -430,11 +310,7 @@ namespace AIStatsSdk.Model
 
             Option<AnthropicContentBlock.TypeEnum?> type = default;
             Option<string?> text = default;
-            Option<CacheControl?> cacheControl = default;
             Option<AnthropicContentBlockSource?> source = default;
-            Option<AnthropicContentBlockImageUrl?> imageUrl = default;
-            Option<AudioContentPartInputAudio?> inputAudio = default;
-            Option<string?> videoUrl = default;
             Option<string?> id = default;
             Option<string?> name = default;
             Option<Object?> input = default;
@@ -464,20 +340,8 @@ namespace AIStatsSdk.Model
                         case "text":
                             text = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "cache_control":
-                            cacheControl = new Option<CacheControl?>(JsonSerializer.Deserialize<CacheControl>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         case "source":
                             source = new Option<AnthropicContentBlockSource?>(JsonSerializer.Deserialize<AnthropicContentBlockSource>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "image_url":
-                            imageUrl = new Option<AnthropicContentBlockImageUrl?>(JsonSerializer.Deserialize<AnthropicContentBlockImageUrl>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "input_audio":
-                            inputAudio = new Option<AudioContentPartInputAudio?>(JsonSerializer.Deserialize<AudioContentPartInputAudio>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "video_url":
-                            videoUrl = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "id":
                             id = new Option<string?>(utf8JsonReader.GetString()!);
@@ -506,20 +370,8 @@ namespace AIStatsSdk.Model
             if (text.IsSet && text.Value == null)
                 throw new ArgumentNullException(nameof(text), "Property is not nullable for class AnthropicContentBlock.");
 
-            if (cacheControl.IsSet && cacheControl.Value == null)
-                throw new ArgumentNullException(nameof(cacheControl), "Property is not nullable for class AnthropicContentBlock.");
-
             if (source.IsSet && source.Value == null)
                 throw new ArgumentNullException(nameof(source), "Property is not nullable for class AnthropicContentBlock.");
-
-            if (imageUrl.IsSet && imageUrl.Value == null)
-                throw new ArgumentNullException(nameof(imageUrl), "Property is not nullable for class AnthropicContentBlock.");
-
-            if (inputAudio.IsSet && inputAudio.Value == null)
-                throw new ArgumentNullException(nameof(inputAudio), "Property is not nullable for class AnthropicContentBlock.");
-
-            if (videoUrl.IsSet && videoUrl.Value == null)
-                throw new ArgumentNullException(nameof(videoUrl), "Property is not nullable for class AnthropicContentBlock.");
 
             if (id.IsSet && id.Value == null)
                 throw new ArgumentNullException(nameof(id), "Property is not nullable for class AnthropicContentBlock.");
@@ -536,7 +388,7 @@ namespace AIStatsSdk.Model
             if (content.IsSet && content.Value == null)
                 throw new ArgumentNullException(nameof(content), "Property is not nullable for class AnthropicContentBlock.");
 
-            return new AnthropicContentBlock(type, text, cacheControl, source, imageUrl, inputAudio, videoUrl, id, name, input, toolUseId, content);
+            return new AnthropicContentBlock(type, text, source, id, name, input, toolUseId, content);
         }
 
         /// <summary>
@@ -566,20 +418,8 @@ namespace AIStatsSdk.Model
             if (anthropicContentBlock.TextOption.IsSet && anthropicContentBlock.Text == null)
                 throw new ArgumentNullException(nameof(anthropicContentBlock.Text), "Property is required for class AnthropicContentBlock.");
 
-            if (anthropicContentBlock.CacheControlOption.IsSet && anthropicContentBlock.CacheControl == null)
-                throw new ArgumentNullException(nameof(anthropicContentBlock.CacheControl), "Property is required for class AnthropicContentBlock.");
-
             if (anthropicContentBlock.SourceOption.IsSet && anthropicContentBlock.Source == null)
                 throw new ArgumentNullException(nameof(anthropicContentBlock.Source), "Property is required for class AnthropicContentBlock.");
-
-            if (anthropicContentBlock.ImageUrlOption.IsSet && anthropicContentBlock.ImageUrl == null)
-                throw new ArgumentNullException(nameof(anthropicContentBlock.ImageUrl), "Property is required for class AnthropicContentBlock.");
-
-            if (anthropicContentBlock.InputAudioOption.IsSet && anthropicContentBlock.InputAudio == null)
-                throw new ArgumentNullException(nameof(anthropicContentBlock.InputAudio), "Property is required for class AnthropicContentBlock.");
-
-            if (anthropicContentBlock.VideoUrlOption.IsSet && anthropicContentBlock.VideoUrl == null)
-                throw new ArgumentNullException(nameof(anthropicContentBlock.VideoUrl), "Property is required for class AnthropicContentBlock.");
 
             if (anthropicContentBlock.IdOption.IsSet && anthropicContentBlock.Id == null)
                 throw new ArgumentNullException(nameof(anthropicContentBlock.Id), "Property is required for class AnthropicContentBlock.");
@@ -601,29 +441,11 @@ namespace AIStatsSdk.Model
             if (anthropicContentBlock.TextOption.IsSet)
                 writer.WriteString("text", anthropicContentBlock.Text);
 
-            if (anthropicContentBlock.CacheControlOption.IsSet)
-            {
-                writer.WritePropertyName("cache_control");
-                JsonSerializer.Serialize(writer, anthropicContentBlock.CacheControl, jsonSerializerOptions);
-            }
             if (anthropicContentBlock.SourceOption.IsSet)
             {
                 writer.WritePropertyName("source");
                 JsonSerializer.Serialize(writer, anthropicContentBlock.Source, jsonSerializerOptions);
             }
-            if (anthropicContentBlock.ImageUrlOption.IsSet)
-            {
-                writer.WritePropertyName("image_url");
-                JsonSerializer.Serialize(writer, anthropicContentBlock.ImageUrl, jsonSerializerOptions);
-            }
-            if (anthropicContentBlock.InputAudioOption.IsSet)
-            {
-                writer.WritePropertyName("input_audio");
-                JsonSerializer.Serialize(writer, anthropicContentBlock.InputAudio, jsonSerializerOptions);
-            }
-            if (anthropicContentBlock.VideoUrlOption.IsSet)
-                writer.WriteString("video_url", anthropicContentBlock.VideoUrl);
-
             if (anthropicContentBlock.IdOption.IsSet)
                 writer.WriteString("id", anthropicContentBlock.Id);
 

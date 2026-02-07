@@ -34,10 +34,11 @@ BEGIN
 
   RETURN QUERY
   WITH top_models AS (
-    SELECT COALESCE(gr.model_id, 'Unknown') as model_id
+    SELECT gr.model_id
     FROM public.gateway_requests gr
     WHERE gr.created_at >= v_since
-    GROUP BY COALESCE(gr.model_id, 'Unknown')
+      AND gr.model_id IS NOT NULL
+    GROUP BY gr.model_id
     HAVING COUNT(*) >= 100 -- Privacy threshold
     ORDER BY COUNT(*) DESC
     LIMIT p_top_n
@@ -46,14 +47,14 @@ BEGIN
     SELECT
       time_bucket(v_bucket_interval, gr.created_at) as time_bucket,
       CASE
-        WHEN COALESCE(gr.model_id, 'Unknown') IN (SELECT model_id FROM top_models)
-          THEN COALESCE(gr.model_id, 'Unknown')
+        WHEN gr.model_id IN (SELECT model_id FROM top_models) THEN gr.model_id
         ELSE 'Other'
       END as model_group,
       COUNT(*) as req_count,
       SUM(COALESCE((gr.usage->>'total_tokens')::bigint, 0)) as tok_count
     FROM public.gateway_requests gr
     WHERE gr.created_at >= v_since
+      AND gr.model_id IS NOT NULL
     GROUP BY time_bucket, model_group
   )
   SELECT

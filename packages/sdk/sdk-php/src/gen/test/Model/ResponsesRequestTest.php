@@ -98,15 +98,6 @@ class ResponsesRequestTest extends TestCase
     }
 
     /**
-     * Test attribute "messages"
-     */
-    public function testPropertyMessages()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "input_items"
      */
     public function testPropertyInputItems()
@@ -161,27 +152,9 @@ class ResponsesRequestTest extends TestCase
     }
 
     /**
-     * Test attribute "max_tools_calls"
-     */
-    public function testPropertyMaxToolsCalls()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "metadata"
      */
     public function testPropertyMetadata()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "debug"
-     */
-    public function testPropertyDebug()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -227,15 +200,6 @@ class ResponsesRequestTest extends TestCase
      * Test attribute "prompt_cache_retention"
      */
     public function testPropertyPromptCacheRetention()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "modalities"
-     */
-    public function testPropertyModalities()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -371,6 +335,15 @@ class ResponsesRequestTest extends TestCase
      * Test attribute "user"
      */
     public function testPropertyUser()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test attribute "usage"
+     */
+    public function testPropertyUsage()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

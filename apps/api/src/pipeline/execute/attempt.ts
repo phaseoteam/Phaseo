@@ -68,9 +68,6 @@ export async function attemptProvider(
         ...ctx.meta,
         stream: ctx.meta.stream,
     } as ProviderExecuteArgs["meta"];
-    if (ctx.meta?.debug === true) {
-        (meta as any).debug = true;
-    }
 
     await onCallStart(ctx.endpoint, adapter.name, baseModel);
 
@@ -213,7 +210,7 @@ export async function attemptProvider(
         const debugEnabled =
             (typeof process !== "undefined" &&
                 process.env?.GATEWAY_DEBUG_ERRORS === "1") ||
-            ctx.meta?.debug === true;
+            Boolean(ctx.meta?.debug?.enabled);
         attemptErrors.push({
             provider: adapter.name,
             endpoint: ctx.endpoint,

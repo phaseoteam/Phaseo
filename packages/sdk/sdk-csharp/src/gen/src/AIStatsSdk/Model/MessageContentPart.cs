@@ -43,30 +43,10 @@ namespace AIStatsSdk.Model
         /// <summary>
         /// Initializes a new instance of the <see cref="MessageContentPart" /> class.
         /// </summary>
-        /// <param name="inputTextContentPart"></param>
-        public MessageContentPart(InputTextContentPart inputTextContentPart)
-        {
-            InputTextContentPart = inputTextContentPart;
-            OnCreated();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MessageContentPart" /> class.
-        /// </summary>
         /// <param name="imageContentPart"></param>
         public MessageContentPart(ImageContentPart imageContentPart)
         {
             ImageContentPart = imageContentPart;
-            OnCreated();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MessageContentPart" /> class.
-        /// </summary>
-        /// <param name="inputImageContentPart"></param>
-        public MessageContentPart(InputImageContentPart inputImageContentPart)
-        {
-            InputImageContentPart = inputImageContentPart;
             OnCreated();
         }
 
@@ -108,19 +88,9 @@ namespace AIStatsSdk.Model
         public TextContentPart? TextContentPart { get; set; }
 
         /// <summary>
-        /// Gets or Sets InputTextContentPart
-        /// </summary>
-        public InputTextContentPart? InputTextContentPart { get; set; }
-
-        /// <summary>
         /// Gets or Sets ImageContentPart
         /// </summary>
         public ImageContentPart? ImageContentPart { get; set; }
-
-        /// <summary>
-        /// Gets or Sets InputImageContentPart
-        /// </summary>
-        public InputImageContentPart? InputImageContentPart { get; set; }
 
         /// <summary>
         /// Gets or Sets AudioContentPart
@@ -183,9 +153,7 @@ namespace AIStatsSdk.Model
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
             TextContentPart? textContentPart = default;
-            InputTextContentPart? inputTextContentPart = default;
             ImageContentPart? imageContentPart = default;
-            InputImageContentPart? inputImageContentPart = default;
             AudioContentPart? audioContentPart = default;
             VideoContentPart? videoContentPart = default;
             ToolCallContentPart? toolCallContentPart = default;
@@ -204,14 +172,8 @@ namespace AIStatsSdk.Model
                     Utf8JsonReader utf8JsonReaderTextContentPart = utf8JsonReader;
                     ClientUtils.TryDeserialize<TextContentPart?>(ref utf8JsonReaderTextContentPart, jsonSerializerOptions, out textContentPart);
 
-                    Utf8JsonReader utf8JsonReaderInputTextContentPart = utf8JsonReader;
-                    ClientUtils.TryDeserialize<InputTextContentPart?>(ref utf8JsonReaderInputTextContentPart, jsonSerializerOptions, out inputTextContentPart);
-
                     Utf8JsonReader utf8JsonReaderImageContentPart = utf8JsonReader;
                     ClientUtils.TryDeserialize<ImageContentPart?>(ref utf8JsonReaderImageContentPart, jsonSerializerOptions, out imageContentPart);
-
-                    Utf8JsonReader utf8JsonReaderInputImageContentPart = utf8JsonReader;
-                    ClientUtils.TryDeserialize<InputImageContentPart?>(ref utf8JsonReaderInputImageContentPart, jsonSerializerOptions, out inputImageContentPart);
 
                     Utf8JsonReader utf8JsonReaderAudioContentPart = utf8JsonReader;
                     ClientUtils.TryDeserialize<AudioContentPart?>(ref utf8JsonReaderAudioContentPart, jsonSerializerOptions, out audioContentPart);
@@ -248,14 +210,8 @@ namespace AIStatsSdk.Model
             if (textContentPart != null)
                 return new MessageContentPart(textContentPart);
 
-            if (inputTextContentPart != null)
-                return new MessageContentPart(inputTextContentPart);
-
             if (imageContentPart != null)
                 return new MessageContentPart(imageContentPart);
-
-            if (inputImageContentPart != null)
-                return new MessageContentPart(inputImageContentPart);
 
             if (audioContentPart != null)
                 return new MessageContentPart(audioContentPart);

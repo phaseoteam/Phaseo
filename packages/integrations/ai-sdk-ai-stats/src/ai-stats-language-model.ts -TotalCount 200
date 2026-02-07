@@ -1,0 +1,200 @@
+import type {
+  LanguageModelV1,
+  LanguageModelV1CallOptions,
+  LanguageModelV1CallWarning,
+  LanguageModelV1FinishReason,
+  LanguageModelV1StreamPart,
+} from '@ai-sdk/provider';
+import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
+import { convertToGatewayChatRequest } from './convert-to-gateway-chat.js';
+import { mapGatewayResponse } from './map-gateway-response.js';
+import { parseSSEStream } from './utils/parse-sse-stream.js';
+import { mapGatewayFinishReason } from './map-gateway-finish-reason.js';
+import { createAIStatsErrorHandler } from './utils/error-handler.js';
+
+/**
+ * AI Stats Language Model implementation for Vercel AI SDK v3
+ */
+export class AIStatsLanguageModel implements LanguageModelV1 {
+  readonly specificationVersion = 'v1' as const;
+  readonly provider = 'ai-stats' as const;
+  readonly modelId: string;
+  readonly supportedUrls = {};
+  readonly defaultObjectGenerationMode = 'json' as const;
+
+  private readonly config: AIStatsConfig;
+  private readonly settings: AIStatsModelSettings;
+
+  constructor(
+    modelId: string,
+    config: AIStatsConfig,
+    settings: AIStatsModelSettings = {}
+  ) {
+    this.modelId = modelId;
+    this.config = config;
+    this.settings = settings;
+  }
+
+  /**
+   * Generate a non-streaming response
+   */
+  async doGenerate(options: LanguageModelV1CallOptions) {
+    const { prompt, abortSignal } = options;
+
+    // Convert AI SDK prompt to gateway format
+    const gatewayRequest = convertToGatewayChatRequest(
+      prompt,
+      this.modelId,
+      this.settings,
+      options
+    );
+
+    // Make the API request
+    const url = `${this.config.baseURL}/chat/completions`;
+    const fetchImpl = this.config.fetch ?? fetch;
+
+    const response = await fetchImpl(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.config.apiKey}`,
+        ...this.config.headers,
+      },
+      body: JSON.stringify({
+        ...gatewayRequest,
+        stream: false,
+      }),
+      signal: abortSignal,
+    });
+
+    // Handle errors
+    if (!response.ok) {
+      const errorHandler = createAIStatsErrorHandler();
+      throw (await errorHandler({ url, requestBodyValues: gatewayRequest, response })).value;
+    }
+
+    // Parse and map response
+    const data = await response.json();
+    const mapped = mapGatewayResponse(data, options, gatewayRequest);
+
+    return mapped;
+  }
+
+  /**
+   * Generate a streaming response
+   */
+  async doStream(options: LanguageModelV1CallOptions) {
+    const { prompt, abortSignal } = options;
+
+    // Convert AI SDK prompt to gateway format
+    const gatewayRequest = convertToGatewayChatRequest(
+      prompt,
+      this.modelId,
+      this.settings,
+      options
+    );
+
+    // Make the API request
+    const url = `${this.config.baseURL}/chat/completions`;
+    const fetchImpl = this.config.fetch ?? fetch;
+
+    const response = await fetchImpl(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.config.apiKey}`,
+        ...this.config.headers,
+      },
+      body: JSON.stringify({
+        ...gatewayRequest,
+        stream: true,
+        stream_options: { include_usage: true },
+      }),
+      signal: abortSignal,
+    });
+
+    // Handle errors
+    if (!response.ok) {
+      const errorHandler = createAIStatsErrorHandler();
+      throw (await errorHandler({ url, requestBodyValues: gatewayRequest, response })).value;
+    }
+
+    // Parse SSE stream and emit AI SDK events
+    const warnings: LanguageModelV1CallWarning[] = [];
+    let finishReason: LanguageModelV1FinishReason = 'unknown';
+    let usage: { promptTokens: number; completionTokens: number } = {
+      promptTokens: 0,
+      completionTokens: 0,
+    };
+
+    const toolCalls: Array<{
+      toolCallId: string;
+      toolName: string;
+      args: string;
+    }> = [];
+
+    const requestBodyJson = JSON.stringify({
+      ...gatewayRequest,
+      stream: true,
+      stream_options: { include_usage: true },
+    });
+
+    return {
+      stream: parseSSEStream(response).pipeThrough(
+        new TransformStream<any, LanguageModelV1StreamPart>({
+          transform(chunk, controller) {
+            // Handle stream chunk
+            if (chunk.choices && chunk.choices.length > 0) {
+              const choice = chunk.choices[0];
+              const delta = choice.delta;
+
+              // Emit text deltas
+              if (delta?.content) {
+                controller.enqueue({
+                  type: 'text-delta',
+                  textDelta: delta.content,
+                });
+              }
+
+              // Emit tool call deltas
+              if (delta?.tool_calls) {
+                for (const toolCall of delta.tool_calls) {
+                  const index = toolCall.index ?? 0;
+
+                  // Initialize tool call if first chunk
+                  if (toolCall.id) {
+                    toolCalls[index] = {
+                      toolCallId: toolCall.id,
+                      toolName: toolCall.function?.name ?? '',
+                      args: '',
+                    };
+
+                    controller.enqueue({
+                      type: 'tool-call-delta',
+                      toolCallType: 'function',
+                      toolCallId: toolCall.id,
+                      toolName: toolCall.function?.name ?? '',
+                      argsTextDelta: '',
+                    });
+                  }
+
+                  // Append arguments
+                  if (toolCall.function?.arguments) {
+                    const args = toolCall.function.arguments;
+                    if (toolCalls[index]) {
+                      toolCalls[index].args += args;
+                    }
+
+                    controller.enqueue({
+                      type: 'tool-call-delta',
+                      toolCallType: 'function',
+                      toolCallId: toolCalls[index]?.toolCallId ?? '',
+                      toolName: toolCalls[index]?.toolName ?? '',
+                      argsTextDelta: args,
+                    });
+                  }
+                }
+              }
+
+              // Handle finish reason
+              if (choice.finish_reason) {

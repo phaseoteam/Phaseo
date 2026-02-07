@@ -35,21 +35,11 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="inputTokens">inputTokens</param>
         /// <param name="outputTokens">outputTokens</param>
-        /// <param name="cacheCreation">cacheCreation</param>
-        /// <param name="cacheCreationInputTokens">cacheCreationInputTokens</param>
-        /// <param name="cacheReadInputTokens">cacheReadInputTokens</param>
-        /// <param name="serverToolUse">serverToolUse</param>
-        /// <param name="serviceTier">serviceTier</param>
         [JsonConstructor]
-        public AnthropicUsage(Option<int?> inputTokens = default, Option<int?> outputTokens = default, Option<Object?> cacheCreation = default, Option<int?> cacheCreationInputTokens = default, Option<int?> cacheReadInputTokens = default, Option<bool?> serverToolUse = default, Option<string?> serviceTier = default)
+        public AnthropicUsage(Option<int?> inputTokens = default, Option<int?> outputTokens = default)
         {
             InputTokensOption = inputTokens;
             OutputTokensOption = outputTokens;
-            CacheCreationOption = cacheCreation;
-            CacheCreationInputTokensOption = cacheCreationInputTokens;
-            CacheReadInputTokensOption = cacheReadInputTokens;
-            ServerToolUseOption = serverToolUse;
-            ServiceTierOption = serviceTier;
             OnCreated();
         }
 
@@ -82,71 +72,6 @@ namespace AIStatsSdk.Model
         public int? OutputTokens { get { return this.OutputTokensOption; } set { this.OutputTokensOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of CacheCreation
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> CacheCreationOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CacheCreation
-        /// </summary>
-        [JsonPropertyName("cache_creation")]
-        public Object? CacheCreation { get { return this.CacheCreationOption; } set { this.CacheCreationOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of CacheCreationInputTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> CacheCreationInputTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CacheCreationInputTokens
-        /// </summary>
-        [JsonPropertyName("cache_creation_input_tokens")]
-        public int? CacheCreationInputTokens { get { return this.CacheCreationInputTokensOption; } set { this.CacheCreationInputTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of CacheReadInputTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> CacheReadInputTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CacheReadInputTokens
-        /// </summary>
-        [JsonPropertyName("cache_read_input_tokens")]
-        public int? CacheReadInputTokens { get { return this.CacheReadInputTokensOption; } set { this.CacheReadInputTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of ServerToolUse
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<bool?> ServerToolUseOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ServerToolUse
-        /// </summary>
-        [JsonPropertyName("server_tool_use")]
-        public bool? ServerToolUse { get { return this.ServerToolUseOption; } set { this.ServerToolUseOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of ServiceTier
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> ServiceTierOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ServiceTier
-        /// </summary>
-        [JsonPropertyName("service_tier")]
-        public string? ServiceTier { get { return this.ServiceTierOption; } set { this.ServiceTierOption = new(value); } }
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -156,11 +81,6 @@ namespace AIStatsSdk.Model
             sb.Append("class AnthropicUsage {\n");
             sb.Append("  InputTokens: ").Append(InputTokens).Append("\n");
             sb.Append("  OutputTokens: ").Append(OutputTokens).Append("\n");
-            sb.Append("  CacheCreation: ").Append(CacheCreation).Append("\n");
-            sb.Append("  CacheCreationInputTokens: ").Append(CacheCreationInputTokens).Append("\n");
-            sb.Append("  CacheReadInputTokens: ").Append(CacheReadInputTokens).Append("\n");
-            sb.Append("  ServerToolUse: ").Append(ServerToolUse).Append("\n");
-            sb.Append("  ServiceTier: ").Append(ServiceTier).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -200,11 +120,6 @@ namespace AIStatsSdk.Model
 
             Option<int?> inputTokens = default;
             Option<int?> outputTokens = default;
-            Option<Object?> cacheCreation = default;
-            Option<int?> cacheCreationInputTokens = default;
-            Option<int?> cacheReadInputTokens = default;
-            Option<bool?> serverToolUse = default;
-            Option<string?> serviceTier = default;
 
             while (utf8JsonReader.Read())
             {
@@ -227,21 +142,6 @@ namespace AIStatsSdk.Model
                         case "output_tokens":
                             outputTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
                             break;
-                        case "cache_creation":
-                            cacheCreation = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "cache_creation_input_tokens":
-                            cacheCreationInputTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "cache_read_input_tokens":
-                            cacheReadInputTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "server_tool_use":
-                            serverToolUse = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
-                            break;
-                        case "service_tier":
-                            serviceTier = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
                         default:
                             break;
                     }
@@ -254,22 +154,7 @@ namespace AIStatsSdk.Model
             if (outputTokens.IsSet && outputTokens.Value == null)
                 throw new ArgumentNullException(nameof(outputTokens), "Property is not nullable for class AnthropicUsage.");
 
-            if (cacheCreation.IsSet && cacheCreation.Value == null)
-                throw new ArgumentNullException(nameof(cacheCreation), "Property is not nullable for class AnthropicUsage.");
-
-            if (cacheCreationInputTokens.IsSet && cacheCreationInputTokens.Value == null)
-                throw new ArgumentNullException(nameof(cacheCreationInputTokens), "Property is not nullable for class AnthropicUsage.");
-
-            if (cacheReadInputTokens.IsSet && cacheReadInputTokens.Value == null)
-                throw new ArgumentNullException(nameof(cacheReadInputTokens), "Property is not nullable for class AnthropicUsage.");
-
-            if (serverToolUse.IsSet && serverToolUse.Value == null)
-                throw new ArgumentNullException(nameof(serverToolUse), "Property is not nullable for class AnthropicUsage.");
-
-            if (serviceTier.IsSet && serviceTier.Value == null)
-                throw new ArgumentNullException(nameof(serviceTier), "Property is not nullable for class AnthropicUsage.");
-
-            return new AnthropicUsage(inputTokens, outputTokens, cacheCreation, cacheCreationInputTokens, cacheReadInputTokens, serverToolUse, serviceTier);
+            return new AnthropicUsage(inputTokens, outputTokens);
         }
 
         /// <summary>
@@ -296,34 +181,11 @@ namespace AIStatsSdk.Model
         /// <exception cref="NotImplementedException"></exception>
         public void WriteProperties(Utf8JsonWriter writer, AnthropicUsage anthropicUsage, JsonSerializerOptions jsonSerializerOptions)
         {
-            if (anthropicUsage.CacheCreationOption.IsSet && anthropicUsage.CacheCreation == null)
-                throw new ArgumentNullException(nameof(anthropicUsage.CacheCreation), "Property is required for class AnthropicUsage.");
-
-            if (anthropicUsage.ServiceTierOption.IsSet && anthropicUsage.ServiceTier == null)
-                throw new ArgumentNullException(nameof(anthropicUsage.ServiceTier), "Property is required for class AnthropicUsage.");
-
             if (anthropicUsage.InputTokensOption.IsSet)
                 writer.WriteNumber("input_tokens", anthropicUsage.InputTokensOption.Value!.Value);
 
             if (anthropicUsage.OutputTokensOption.IsSet)
                 writer.WriteNumber("output_tokens", anthropicUsage.OutputTokensOption.Value!.Value);
-
-            if (anthropicUsage.CacheCreationOption.IsSet)
-            {
-                writer.WritePropertyName("cache_creation");
-                JsonSerializer.Serialize(writer, anthropicUsage.CacheCreation, jsonSerializerOptions);
-            }
-            if (anthropicUsage.CacheCreationInputTokensOption.IsSet)
-                writer.WriteNumber("cache_creation_input_tokens", anthropicUsage.CacheCreationInputTokensOption.Value!.Value);
-
-            if (anthropicUsage.CacheReadInputTokensOption.IsSet)
-                writer.WriteNumber("cache_read_input_tokens", anthropicUsage.CacheReadInputTokensOption.Value!.Value);
-
-            if (anthropicUsage.ServerToolUseOption.IsSet)
-                writer.WriteBoolean("server_tool_use", anthropicUsage.ServerToolUseOption.Value!.Value);
-
-            if (anthropicUsage.ServiceTierOption.IsSet)
-                writer.WriteString("service_tier", anthropicUsage.ServiceTier);
         }
     }
 }

@@ -124,8 +124,8 @@ inline Response GetVideoContent(Client& client, const std::map<std::string, std:
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response Health(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/health";
+inline Response Healthz(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/healthz";
 	return client.request("GET", resolved_path, body);
 }
 

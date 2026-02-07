@@ -13,6 +13,7 @@ import { Timer } from "../telemetry/timer";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { validateCapabilities } from "./capabilityValidation";
 import { isDebugAllowed } from "../debug";
+import { isProviderCapabilityEnabled, normalizeCapability } from "@/executors";
 
 /**
  * BEFORE STAGE
@@ -42,7 +43,12 @@ export async function beforeRequest(
         rawBody?.beta_capabilities ??
         rawBody?.provider_capabilities_beta
     );
-    const debugEnabled = normalizeReturnFlag(req.headers.get("x-gateway-debug")) && isDebugAllowed();
+    const debugHeaderEnabled = normalizeReturnFlag(
+        req.headers.get("x-gateway-debug") ??
+        req.headers.get("x-ai-stats-debug")
+    ) && isDebugAllowed();
+    const debugBodyRaw = rawBody?.debug ?? null;
+    const debugEnabled = debugHeaderEnabled || normalizeReturnFlag(debugBodyRaw?.enabled);
 
     // 3) Zod (route schema: shape depends on request path)
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, teamId, requestId));
@@ -126,21 +132,48 @@ export async function beforeRequest(
     );
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
     const filteredProviders = capabilityValidation.providers;
+    const normalizedCapability = normalizeCapability(capability);
+    const enabledProviders = filteredProviders.filter((provider) =>
+        isProviderCapabilityEnabled(provider.providerId, normalizedCapability)
+    );
+    if (!enabledProviders.length) {
+        return {
+            ok: false,
+            response: err("unsupported_model_or_endpoint", {
+                model: resolvedModel || model,
+                endpoint,
+                request_id: requestId,
+                team_id: teamId,
+            }),
+        };
+    }
 
     // console.log(`[DEBUG] beforeRequest: resolvedModel: ${resolvedModel}, original model: ${model}`);
 
     // 6) Meta + final ctx
     const returnMeta = normalizeReturnFlag(body?.meta ?? rawBody?.meta);
-    const echoUpstreamRequest = normalizeReturnFlag(
+    const debugBody = (body?.debug ?? rawBody?.debug) ?? null;
+    const returnUpstreamRequest = normalizeReturnFlag(
+        debugBody?.return_upstream_request ??
+        debugBody?.returnUpstreamRequest ??
         body?.echo_upstream_request ??
-        body?.echoUpstreamRequest ??
-        body?.echo_upstream_body ??
-        body?.echoUpstreamBody ??
-        rawBody?.echo_upstream_request ??
-        rawBody?.echoUpstreamRequest ??
-        rawBody?.echo_upstream_body ??
-        rawBody?.echoUpstreamBody
+        rawBody?.echo_upstream_request
     );
+    const returnUpstreamResponse = normalizeReturnFlag(
+        debugBody?.return_upstream_response ??
+        debugBody?.returnUpstreamResponse
+    );
+    const debugTrace = normalizeReturnFlag(debugBody?.trace);
+    const traceLevel = (debugBody?.trace_level ?? debugBody?.traceLevel) as "summary" | "full" | undefined;
+    const debug = (debugEnabled || returnUpstreamRequest || returnUpstreamResponse || debugTrace)
+        ? {
+            enabled: debugEnabled,
+            return_upstream_request: returnUpstreamRequest,
+            return_upstream_response: returnUpstreamResponse,
+            trace: debugTrace,
+            trace_level: traceLevel ?? (debugTrace ? "full" : undefined),
+        }
+        : undefined;
     const meta: RequestMeta = makeMeta({
         apiKeyId,
         apiKeyRef,
@@ -149,7 +182,7 @@ export async function beforeRequest(
         stream,
         req,
         returnMeta,
-        echoUpstreamRequest,
+        debug,
         providerCapabilitiesBeta: betaCapabilities,
     });
     const requestPath = (() => {
@@ -171,7 +204,7 @@ export async function beforeRequest(
         teamId,
         stream,
         requestPath: requestPath ?? undefined,
-        providers: filteredProviders,
+        providers: enabledProviders,
         providerCapabilitiesBeta: betaCapabilities,
         pricing: context.pricing,
         gating: {
@@ -184,6 +217,8 @@ export async function beforeRequest(
         // Enrichment data for observability (wide events)
         teamEnrichment: context.teamEnrichment ?? null,
         keyEnrichment: context.keyEnrichment ?? null,
+        teamSettings: context.teamSettings ?? null,
+        routingMode: context.teamSettings?.routingMode ?? null,
         keyId: apiKeyId ?? null,
     };
 

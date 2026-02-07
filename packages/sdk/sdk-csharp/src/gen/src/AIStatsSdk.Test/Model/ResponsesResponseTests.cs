@@ -72,75 +72,12 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'CreatedAt'
+        /// Test the property 'Created'
         /// </summary>
         [Fact]
-        public void CreatedAtTest()
+        public void CreatedTest()
         {
-            // TODO unit test for the property 'CreatedAt'
-        }
-
-        /// <summary>
-        /// Test the property 'Status'
-        /// </summary>
-        [Fact]
-        public void StatusTest()
-        {
-            // TODO unit test for the property 'Status'
-        }
-
-        /// <summary>
-        /// Test the property 'CompletedAt'
-        /// </summary>
-        [Fact]
-        public void CompletedAtTest()
-        {
-            // TODO unit test for the property 'CompletedAt'
-        }
-
-        /// <summary>
-        /// Test the property 'Error'
-        /// </summary>
-        [Fact]
-        public void ErrorTest()
-        {
-            // TODO unit test for the property 'Error'
-        }
-
-        /// <summary>
-        /// Test the property 'IncompleteDetails'
-        /// </summary>
-        [Fact]
-        public void IncompleteDetailsTest()
-        {
-            // TODO unit test for the property 'IncompleteDetails'
-        }
-
-        /// <summary>
-        /// Test the property 'Instructions'
-        /// </summary>
-        [Fact]
-        public void InstructionsTest()
-        {
-            // TODO unit test for the property 'Instructions'
-        }
-
-        /// <summary>
-        /// Test the property 'MaxOutputTokens'
-        /// </summary>
-        [Fact]
-        public void MaxOutputTokensTest()
-        {
-            // TODO unit test for the property 'MaxOutputTokens'
-        }
-
-        /// <summary>
-        /// Test the property 'MaxToolCalls'
-        /// </summary>
-        [Fact]
-        public void MaxToolCallsTest()
-        {
-            // TODO unit test for the property 'MaxToolCalls'
+            // TODO unit test for the property 'Created'
         }
 
         /// <summary>
@@ -153,228 +90,39 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'Output'
+        /// Test the property 'Content'
         /// </summary>
         [Fact]
-        public void OutputTest()
+        public void ContentTest()
         {
-            // TODO unit test for the property 'Output'
+            // TODO unit test for the property 'Content'
         }
 
         /// <summary>
-        /// Test the property 'ParallelToolCalls'
+        /// Test the property 'Role'
         /// </summary>
         [Fact]
-        public void ParallelToolCallsTest()
+        public void RoleTest()
         {
-            // TODO unit test for the property 'ParallelToolCalls'
+            // TODO unit test for the property 'Role'
         }
 
         /// <summary>
-        /// Test the property 'PreviousResponseId'
+        /// Test the property 'StopReason'
         /// </summary>
         [Fact]
-        public void PreviousResponseIdTest()
+        public void StopReasonTest()
         {
-            // TODO unit test for the property 'PreviousResponseId'
+            // TODO unit test for the property 'StopReason'
         }
 
         /// <summary>
-        /// Test the property 'Reasoning'
+        /// Test the property 'Type'
         /// </summary>
         [Fact]
-        public void ReasoningTest()
+        public void TypeTest()
         {
-            // TODO unit test for the property 'Reasoning'
-        }
-
-        /// <summary>
-        /// Test the property 'FrequencyPenalty'
-        /// </summary>
-        [Fact]
-        public void FrequencyPenaltyTest()
-        {
-            // TODO unit test for the property 'FrequencyPenalty'
-        }
-
-        /// <summary>
-        /// Test the property 'PresencePenalty'
-        /// </summary>
-        [Fact]
-        public void PresencePenaltyTest()
-        {
-            // TODO unit test for the property 'PresencePenalty'
-        }
-
-        /// <summary>
-        /// Test the property 'Store'
-        /// </summary>
-        [Fact]
-        public void StoreTest()
-        {
-            // TODO unit test for the property 'Store'
-        }
-
-        /// <summary>
-        /// Test the property 'Temperature'
-        /// </summary>
-        [Fact]
-        public void TemperatureTest()
-        {
-            // TODO unit test for the property 'Temperature'
-        }
-
-        /// <summary>
-        /// Test the property 'Text'
-        /// </summary>
-        [Fact]
-        public void TextTest()
-        {
-            // TODO unit test for the property 'Text'
-        }
-
-        /// <summary>
-        /// Test the property 'ToolChoice'
-        /// </summary>
-        [Fact]
-        public void ToolChoiceTest()
-        {
-            // TODO unit test for the property 'ToolChoice'
-        }
-
-        /// <summary>
-        /// Test the property 'Tools'
-        /// </summary>
-        [Fact]
-        public void ToolsTest()
-        {
-            // TODO unit test for the property 'Tools'
-        }
-
-        /// <summary>
-        /// Test the property 'TopLogprobs'
-        /// </summary>
-        [Fact]
-        public void TopLogprobsTest()
-        {
-            // TODO unit test for the property 'TopLogprobs'
-        }
-
-        /// <summary>
-        /// Test the property 'TopP'
-        /// </summary>
-        [Fact]
-        public void TopPTest()
-        {
-            // TODO unit test for the property 'TopP'
-        }
-
-        /// <summary>
-        /// Test the property 'Truncation'
-        /// </summary>
-        [Fact]
-        public void TruncationTest()
-        {
-            // TODO unit test for the property 'Truncation'
-        }
-
-        /// <summary>
-        /// Test the property 'User'
-        /// </summary>
-        [Fact]
-        public void UserTest()
-        {
-            // TODO unit test for the property 'User'
-        }
-
-        /// <summary>
-        /// Test the property 'Background'
-        /// </summary>
-        [Fact]
-        public void BackgroundTest()
-        {
-            // TODO unit test for the property 'Background'
-        }
-
-        /// <summary>
-        /// Test the property 'ServiceTier'
-        /// </summary>
-        [Fact]
-        public void ServiceTierTest()
-        {
-            // TODO unit test for the property 'ServiceTier'
-        }
-
-        /// <summary>
-        /// Test the property 'SafetyIdentifier'
-        /// </summary>
-        [Fact]
-        public void SafetyIdentifierTest()
-        {
-            // TODO unit test for the property 'SafetyIdentifier'
-        }
-
-        /// <summary>
-        /// Test the property 'PromptCacheKey'
-        /// </summary>
-        [Fact]
-        public void PromptCacheKeyTest()
-        {
-            // TODO unit test for the property 'PromptCacheKey'
-        }
-
-        /// <summary>
-        /// Test the property 'Metadata'
-        /// </summary>
-        [Fact]
-        public void MetadataTest()
-        {
-            // TODO unit test for the property 'Metadata'
-        }
-
-        /// <summary>
-        /// Test the property 'NativeResponseId'
-        /// </summary>
-        [Fact]
-        public void NativeResponseIdTest()
-        {
-            // TODO unit test for the property 'NativeResponseId'
-        }
-
-        /// <summary>
-        /// Test the property 'Meta'
-        /// </summary>
-        [Fact]
-        public void MetaTest()
-        {
-            // TODO unit test for the property 'Meta'
-        }
-
-        /// <summary>
-        /// Test the property 'Debug'
-        /// </summary>
-        [Fact]
-        public void DebugTest()
-        {
-            // TODO unit test for the property 'Debug'
-        }
-
-        /// <summary>
-        /// Test the property 'UpstreamRequest'
-        /// </summary>
-        [Fact]
-        public void UpstreamRequestTest()
-        {
-            // TODO unit test for the property 'UpstreamRequest'
-        }
-
-        /// <summary>
-        /// Test the property 'UpstreamResponse'
-        /// </summary>
-        [Fact]
-        public void UpstreamResponseTest()
-        {
-            // TODO unit test for the property 'UpstreamResponse'
+            // TODO unit test for the property 'Type'
         }
 
         /// <summary>

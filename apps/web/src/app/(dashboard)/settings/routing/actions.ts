@@ -6,86 +6,41 @@ import { revalidatePath } from "next/cache";
 
 export type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 
-async function requireTeamAccess() {
-    const supabase = await createClient();
-    const teamId = await getTeamIdFromCookie();
-    if (!teamId) {
-        throw new Error("Missing team id");
-    }
-    const {
-        data: { user },
-        error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
-        throw new Error("Unauthorized");
-    }
+type UpdateRoutingSettingsInput = {
+	mode: RoutingMode;
+	betaChannelEnabled?: boolean;
+};
 
-    const { data: membership, error: membershipError } = await supabase
-        .from("team_members")
-        .select("team_id")
-        .eq("team_id", teamId)
-        .eq("user_id", user.id)
-        .maybeSingle();
+export async function updateRoutingSettings({
+	mode,
+	betaChannelEnabled,
+}: UpdateRoutingSettingsInput) {
+	const supabase = await createClient();
+	const teamId = await getTeamIdFromCookie();
+	if (!teamId) {
+		throw new Error("Missing team id");
+	}
 
-    if (membershipError) {
-        throw membershipError;
-    }
-    if (!membership) {
-        throw new Error("Unauthorized");
-    }
+	const payload = {
+		team_id: teamId,
+		routing_mode: mode,
+		...(typeof betaChannelEnabled === "boolean"
+			? { beta_channel_enabled: betaChannelEnabled }
+			: {}),
+		updated_at: new Date().toISOString(),
+	};
 
-    return { supabase, teamId };
-}
+	const { error } = await supabase
+		.from("team_settings")
+		.upsert(payload, { onConflict: "team_id" });
 
-async function upsertTeamSettings(
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    teamId: string,
-    payload: Record<string, any>
-) {
-    const { data: existing, error: fetchError } = await supabase
-        .from("team_settings")
-        .select("team_id")
-        .eq("team_id", teamId)
-        .maybeSingle();
+	if (error) {
+		throw error;
+	}
 
-    if (fetchError) {
-        throw fetchError;
-    }
-
-    const { error } = existing
-        ? await supabase
-                .from("team_settings")
-                .update(payload)
-                .eq("team_id", teamId)
-        : await supabase.from("team_settings").insert(payload);
-
-    if (error) {
-        throw error;
-    }
+	revalidatePath("/settings/routing");
 }
 
 export async function updateRoutingMode(mode: RoutingMode) {
-    const { supabase, teamId } = await requireTeamAccess();
-
-    const payload = {
-        team_id: teamId,
-        routing_mode: mode,
-        updated_at: new Date().toISOString(),
-    };
-
-    await upsertTeamSettings(supabase, teamId, payload);
-    revalidatePath("/settings/routing");
-}
-
-export async function updateBetaChannelEnabled(enabled: boolean) {
-    const { supabase, teamId } = await requireTeamAccess();
-
-    const payload = {
-        team_id: teamId,
-        beta_channel_enabled: enabled,
-        updated_at: new Date().toISOString(),
-    };
-
-    await upsertTeamSettings(supabase, teamId, payload);
-    revalidatePath("/settings/routing");
+	return updateRoutingSettings({ mode });
 }

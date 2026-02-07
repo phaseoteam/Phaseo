@@ -40,7 +40,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 		expect(response.output[0]).toEqual({
 			type: "message",
 			role: "assistant",
-			content: [{ type: "text", text: "Hello! How can I help?" }],
+			content: [{ type: "output_text", text: "Hello! How can I help?", annotations: [] }],
 		});
 		expect(response.usage).toEqual({
 			prompt_tokens: 10,
@@ -197,7 +197,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 		expect(response.output[1].type).toBe("message");
 		if (response.output[1].type === "message") {
 			expect(response.output[1].content).toEqual([
-				{ type: "text", text: "The answer is 42." },
+				{ type: "output_text", text: "The answer is 42.", annotations: [] },
 			]);
 		}
 	});
@@ -287,7 +287,7 @@ describe("encodeOpenAIResponsesResponse", () => {
 		expect(response.output).toHaveLength(1);
 		expect(response.output[0].type).toBe("message");
 		if (response.output[0].type === "message") {
-			expect(response.output[0].content).toEqual([{ type: "text", text: "" }]);
+			expect(response.output[0].content).toEqual([{ type: "output_text", text: "", annotations: [] }]);
 		}
 	});
 

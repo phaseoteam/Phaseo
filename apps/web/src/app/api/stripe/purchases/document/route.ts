@@ -5,6 +5,9 @@ import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const TOP_UP_KINDS = new Set(["top_up", "top_up_one_off", "auto_top_up"]);
+type ChargeWithInvoice = Stripe.Charge & {
+    invoice?: string | Stripe.Invoice | null;
+};
 
 function parsePaymentIntentId(body: any): string | null {
     const raw = body?.paymentIntentId ?? body?.payment_intent_id ?? null;
@@ -70,16 +73,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Customer mismatch" }, { status: 403 });
         }
 
-        const invoiceRef = (
-            charge as Stripe.Charge & {
-                invoice?: string | Stripe.Invoice | null;
-            }
-        ).invoice;
-        if (invoiceRef) {
-            const invoice =
-                typeof invoiceRef === "string"
-                    ? await stripe.invoices.retrieve(invoiceRef)
-                    : invoiceRef;
+        const invoice = (charge as ChargeWithInvoice).invoice;
+        if (invoice && typeof invoice !== "string") {
             const invoiceUrl = invoice.hosted_invoice_url ?? invoice.invoice_pdf ?? null;
             if (invoiceUrl) {
                 return NextResponse.json({

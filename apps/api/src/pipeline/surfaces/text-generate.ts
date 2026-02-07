@@ -25,6 +25,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		// Decode protocol -> IR
 		timing.timer.mark("ir_decode");
 		const ir: IRChatRequest = decodeProtocol(protocol, pre.ctx.body);
+		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
 
 		// Execute with IR

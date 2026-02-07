@@ -147,9 +147,9 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.health(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.healthz(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/health"
+        resolved_path = "/healthz"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

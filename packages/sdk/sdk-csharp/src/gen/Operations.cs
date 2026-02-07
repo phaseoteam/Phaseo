@@ -294,7 +294,7 @@ public static class Operations
 		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> HealthAsync(
+	public static Task<Dictionary<string, object>?> HealthzAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -302,7 +302,7 @@ public static class Operations
 		object? body = null
 	)
 	{
-		var resolvedPath = "/health";
+		var resolvedPath = "/healthz";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 

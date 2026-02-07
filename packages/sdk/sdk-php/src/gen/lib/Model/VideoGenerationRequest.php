@@ -73,7 +73,6 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'seed' => 'int',
         'person_generation' => 'string',
         'output_storage_uri' => 'string',
-        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -101,7 +100,6 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'seed' => null,
         'person_generation' => null,
         'output_storage_uri' => null,
-        'debug' => null,
         'provider' => null
     ];
 
@@ -127,7 +125,6 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'seed' => false,
         'person_generation' => false,
         'output_storage_uri' => false,
-        'debug' => false,
         'provider' => false
     ];
 
@@ -233,7 +230,6 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'seed' => 'seed',
         'person_generation' => 'person_generation',
         'output_storage_uri' => 'output_storage_uri',
-        'debug' => 'debug',
         'provider' => 'provider'
     ];
 
@@ -259,7 +255,6 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'seed' => 'setSeed',
         'person_generation' => 'setPersonGeneration',
         'output_storage_uri' => 'setOutputStorageUri',
-        'debug' => 'setDebug',
         'provider' => 'setProvider'
     ];
 
@@ -285,7 +280,6 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'seed' => 'getSeed',
         'person_generation' => 'getPersonGeneration',
         'output_storage_uri' => 'getOutputStorageUri',
-        'debug' => 'getDebug',
         'provider' => 'getProvider'
     ];
 
@@ -362,7 +356,6 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
         $this->setIfExists('seed', $data ?? [], null);
         $this->setIfExists('person_generation', $data ?? [], null);
         $this->setIfExists('output_storage_uri', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -858,33 +851,6 @@ class VideoGenerationRequest implements ModelInterface, ArrayAccess, \JsonSerial
             throw new \InvalidArgumentException('non-nullable output_storage_uri cannot be null');
         }
         $this->container['output_storage_uri'] = $output_storage_uri;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugOptions|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
 
         return $this;
     }

@@ -58,12 +58,7 @@ class AnthropicUsage implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static $openAPITypes = [
         'input_tokens' => 'int',
-        'output_tokens' => 'int',
-        'cache_creation' => 'object',
-        'cache_creation_input_tokens' => 'int',
-        'cache_read_input_tokens' => 'int',
-        'server_tool_use' => 'bool',
-        'service_tier' => 'string'
+        'output_tokens' => 'int'
     ];
 
     /**
@@ -75,12 +70,7 @@ class AnthropicUsage implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static $openAPIFormats = [
         'input_tokens' => null,
-        'output_tokens' => null,
-        'cache_creation' => null,
-        'cache_creation_input_tokens' => null,
-        'cache_read_input_tokens' => null,
-        'server_tool_use' => null,
-        'service_tier' => null
+        'output_tokens' => null
     ];
 
     /**
@@ -90,12 +80,7 @@ class AnthropicUsage implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static array $openAPINullables = [
         'input_tokens' => false,
-        'output_tokens' => false,
-        'cache_creation' => false,
-        'cache_creation_input_tokens' => false,
-        'cache_read_input_tokens' => false,
-        'server_tool_use' => false,
-        'service_tier' => false
+        'output_tokens' => false
     ];
 
     /**
@@ -185,12 +170,7 @@ class AnthropicUsage implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $attributeMap = [
         'input_tokens' => 'input_tokens',
-        'output_tokens' => 'output_tokens',
-        'cache_creation' => 'cache_creation',
-        'cache_creation_input_tokens' => 'cache_creation_input_tokens',
-        'cache_read_input_tokens' => 'cache_read_input_tokens',
-        'server_tool_use' => 'server_tool_use',
-        'service_tier' => 'service_tier'
+        'output_tokens' => 'output_tokens'
     ];
 
     /**
@@ -200,12 +180,7 @@ class AnthropicUsage implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $setters = [
         'input_tokens' => 'setInputTokens',
-        'output_tokens' => 'setOutputTokens',
-        'cache_creation' => 'setCacheCreation',
-        'cache_creation_input_tokens' => 'setCacheCreationInputTokens',
-        'cache_read_input_tokens' => 'setCacheReadInputTokens',
-        'server_tool_use' => 'setServerToolUse',
-        'service_tier' => 'setServiceTier'
+        'output_tokens' => 'setOutputTokens'
     ];
 
     /**
@@ -215,12 +190,7 @@ class AnthropicUsage implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $getters = [
         'input_tokens' => 'getInputTokens',
-        'output_tokens' => 'getOutputTokens',
-        'cache_creation' => 'getCacheCreation',
-        'cache_creation_input_tokens' => 'getCacheCreationInputTokens',
-        'cache_read_input_tokens' => 'getCacheReadInputTokens',
-        'server_tool_use' => 'getServerToolUse',
-        'service_tier' => 'getServiceTier'
+        'output_tokens' => 'getOutputTokens'
     ];
 
     /**
@@ -282,11 +252,6 @@ class AnthropicUsage implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('input_tokens', $data ?? [], null);
         $this->setIfExists('output_tokens', $data ?? [], null);
-        $this->setIfExists('cache_creation', $data ?? [], null);
-        $this->setIfExists('cache_creation_input_tokens', $data ?? [], null);
-        $this->setIfExists('cache_read_input_tokens', $data ?? [], null);
-        $this->setIfExists('server_tool_use', $data ?? [], null);
-        $this->setIfExists('service_tier', $data ?? [], null);
     }
 
     /**
@@ -381,141 +346,6 @@ class AnthropicUsage implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable output_tokens cannot be null');
         }
         $this->container['output_tokens'] = $output_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets cache_creation
-     *
-     * @return object|null
-     */
-    public function getCacheCreation()
-    {
-        return $this->container['cache_creation'];
-    }
-
-    /**
-     * Sets cache_creation
-     *
-     * @param object|null $cache_creation cache_creation
-     *
-     * @return self
-     */
-    public function setCacheCreation($cache_creation)
-    {
-        if (is_null($cache_creation)) {
-            throw new \InvalidArgumentException('non-nullable cache_creation cannot be null');
-        }
-        $this->container['cache_creation'] = $cache_creation;
-
-        return $this;
-    }
-
-    /**
-     * Gets cache_creation_input_tokens
-     *
-     * @return int|null
-     */
-    public function getCacheCreationInputTokens()
-    {
-        return $this->container['cache_creation_input_tokens'];
-    }
-
-    /**
-     * Sets cache_creation_input_tokens
-     *
-     * @param int|null $cache_creation_input_tokens cache_creation_input_tokens
-     *
-     * @return self
-     */
-    public function setCacheCreationInputTokens($cache_creation_input_tokens)
-    {
-        if (is_null($cache_creation_input_tokens)) {
-            throw new \InvalidArgumentException('non-nullable cache_creation_input_tokens cannot be null');
-        }
-        $this->container['cache_creation_input_tokens'] = $cache_creation_input_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets cache_read_input_tokens
-     *
-     * @return int|null
-     */
-    public function getCacheReadInputTokens()
-    {
-        return $this->container['cache_read_input_tokens'];
-    }
-
-    /**
-     * Sets cache_read_input_tokens
-     *
-     * @param int|null $cache_read_input_tokens cache_read_input_tokens
-     *
-     * @return self
-     */
-    public function setCacheReadInputTokens($cache_read_input_tokens)
-    {
-        if (is_null($cache_read_input_tokens)) {
-            throw new \InvalidArgumentException('non-nullable cache_read_input_tokens cannot be null');
-        }
-        $this->container['cache_read_input_tokens'] = $cache_read_input_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets server_tool_use
-     *
-     * @return bool|null
-     */
-    public function getServerToolUse()
-    {
-        return $this->container['server_tool_use'];
-    }
-
-    /**
-     * Sets server_tool_use
-     *
-     * @param bool|null $server_tool_use server_tool_use
-     *
-     * @return self
-     */
-    public function setServerToolUse($server_tool_use)
-    {
-        if (is_null($server_tool_use)) {
-            throw new \InvalidArgumentException('non-nullable server_tool_use cannot be null');
-        }
-        $this->container['server_tool_use'] = $server_tool_use;
-
-        return $this;
-    }
-
-    /**
-     * Gets service_tier
-     *
-     * @return string|null
-     */
-    public function getServiceTier()
-    {
-        return $this->container['service_tier'];
-    }
-
-    /**
-     * Sets service_tier
-     *
-     * @param string|null $service_tier service_tier
-     *
-     * @return self
-     */
-    public function setServiceTier($service_tier)
-    {
-        if (is_null($service_tier)) {
-            throw new \InvalidArgumentException('non-nullable service_tier cannot be null');
-        }
-        $this->container['service_tier'] = $service_tier;
 
         return $this;
     }

@@ -2,12 +2,10 @@ import { generateText, streamText, embed } from "ai";
 import { createAIStats } from "../src/index.js";
 
 const apiKey =
-	process.env.AI_STATS_API_KEY ||
-	process.env.OPENAI_GATEWAY_API_KEY ||
-	process.env.AI_STATS_GATEWAY_API_KEY;
+	process.env.AI_STATS_API_KEY || process.env.OPENAI_GATEWAY_API_KEY;
 if (!apiKey) {
 	throw new Error(
-		"Missing AI_STATS_API_KEY, OPENAI_GATEWAY_API_KEY, or AI_STATS_GATEWAY_API_KEY in the environment."
+		"Missing AI_STATS_API_KEY or OPENAI_GATEWAY_API_KEY in the environment."
 	);
 }
 

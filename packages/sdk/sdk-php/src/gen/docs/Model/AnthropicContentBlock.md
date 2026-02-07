@@ -6,11 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **string** |  | [optional]
 **text** | **string** |  | [optional]
-**cache_control** | [**\AIStats\Sdk\Model\CacheControl**](CacheControl.md) |  | [optional]
 **source** | [**\AIStats\Sdk\Model\AnthropicContentBlockSource**](AnthropicContentBlockSource.md) |  | [optional]
-**image_url** | [**\AIStats\Sdk\Model\AnthropicContentBlockImageUrl**](AnthropicContentBlockImageUrl.md) |  | [optional]
-**input_audio** | [**\AIStats\Sdk\Model\AudioContentPartInputAudio**](AudioContentPartInputAudio.md) |  | [optional]
-**video_url** | **string** |  | [optional]
 **id** | **string** |  | [optional]
 **name** | **string** |  | [optional]
 **input** | **object** |  | [optional]

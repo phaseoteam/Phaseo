@@ -5,23 +5,19 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Model** | **string** |  | 
-**Input** | Pointer to [**ResponsesRequestInput**](ResponsesRequestInput.md) |  | [optional] 
-**Messages** | Pointer to [**[]ChatMessage**](ChatMessage.md) |  | [optional] 
-**InputItems** | Pointer to [**[]ResponsesInputItem**](ResponsesInputItem.md) |  | [optional] 
+**Input** | Pointer to **map[string]interface{}** |  | [optional] 
+**InputItems** | Pointer to **[]map[string]interface{}** |  | [optional] 
 **Conversation** | Pointer to [**ChatCompletionsRequestToolChoice**](ChatCompletionsRequestToolChoice.md) |  | [optional] 
 **Include** | Pointer to **[]string** |  | [optional] 
 **Instructions** | Pointer to **string** |  | [optional] 
 **MaxOutputTokens** | Pointer to **int32** |  | [optional] 
 **MaxToolCalls** | Pointer to **int32** |  | [optional] 
-**MaxToolsCalls** | Pointer to **int32** |  | [optional] 
 **Metadata** | Pointer to **map[string]string** |  | [optional] 
-**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **ParallelToolCalls** | Pointer to **bool** |  | [optional] 
 **PreviousResponseId** | Pointer to **string** |  | [optional] 
 **Prompt** | Pointer to [**ResponsesRequestPrompt**](ResponsesRequestPrompt.md) |  | [optional] 
 **PromptCacheKey** | Pointer to **string** |  | [optional] 
 **PromptCacheRetention** | Pointer to **string** |  | [optional] 
-**Modalities** | Pointer to **[]string** |  | [optional] 
 **Reasoning** | Pointer to [**ResponsesRequestReasoning**](ResponsesRequestReasoning.md) |  | [optional] 
 **SafetyIdentifier** | Pointer to **string** |  | [optional] 
 **ServiceTier** | Pointer to **string** |  | [optional] 
@@ -37,6 +33,7 @@ Name | Type | Description | Notes
 **Truncation** | Pointer to **string** |  | [optional] 
 **Background** | Pointer to **bool** |  | [optional] 
 **User** | Pointer to **string** |  | [optional] 
+**Usage** | Pointer to **bool** |  | [optional] 
 **Meta** | Pointer to **bool** |  | [optional] 
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
@@ -81,20 +78,20 @@ SetModel sets Model field to given value.
 
 ### GetInput
 
-`func (o *ResponsesRequest) GetInput() ResponsesRequestInput`
+`func (o *ResponsesRequest) GetInput() map[string]interface{}`
 
 GetInput returns the Input field if non-nil, zero value otherwise.
 
 ### GetInputOk
 
-`func (o *ResponsesRequest) GetInputOk() (*ResponsesRequestInput, bool)`
+`func (o *ResponsesRequest) GetInputOk() (*map[string]interface{}, bool)`
 
 GetInputOk returns a tuple with the Input field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetInput
 
-`func (o *ResponsesRequest) SetInput(v ResponsesRequestInput)`
+`func (o *ResponsesRequest) SetInput(v map[string]interface{})`
 
 SetInput sets Input field to given value.
 
@@ -104,47 +101,22 @@ SetInput sets Input field to given value.
 
 HasInput returns a boolean if a field has been set.
 
-### GetMessages
-
-`func (o *ResponsesRequest) GetMessages() []ChatMessage`
-
-GetMessages returns the Messages field if non-nil, zero value otherwise.
-
-### GetMessagesOk
-
-`func (o *ResponsesRequest) GetMessagesOk() (*[]ChatMessage, bool)`
-
-GetMessagesOk returns a tuple with the Messages field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetMessages
-
-`func (o *ResponsesRequest) SetMessages(v []ChatMessage)`
-
-SetMessages sets Messages field to given value.
-
-### HasMessages
-
-`func (o *ResponsesRequest) HasMessages() bool`
-
-HasMessages returns a boolean if a field has been set.
-
 ### GetInputItems
 
-`func (o *ResponsesRequest) GetInputItems() []ResponsesInputItem`
+`func (o *ResponsesRequest) GetInputItems() []map[string]interface{}`
 
 GetInputItems returns the InputItems field if non-nil, zero value otherwise.
 
 ### GetInputItemsOk
 
-`func (o *ResponsesRequest) GetInputItemsOk() (*[]ResponsesInputItem, bool)`
+`func (o *ResponsesRequest) GetInputItemsOk() (*[]map[string]interface{}, bool)`
 
 GetInputItemsOk returns a tuple with the InputItems field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetInputItems
 
-`func (o *ResponsesRequest) SetInputItems(v []ResponsesInputItem)`
+`func (o *ResponsesRequest) SetInputItems(v []map[string]interface{})`
 
 SetInputItems sets InputItems field to given value.
 
@@ -279,31 +251,6 @@ SetMaxToolCalls sets MaxToolCalls field to given value.
 
 HasMaxToolCalls returns a boolean if a field has been set.
 
-### GetMaxToolsCalls
-
-`func (o *ResponsesRequest) GetMaxToolsCalls() int32`
-
-GetMaxToolsCalls returns the MaxToolsCalls field if non-nil, zero value otherwise.
-
-### GetMaxToolsCallsOk
-
-`func (o *ResponsesRequest) GetMaxToolsCallsOk() (*int32, bool)`
-
-GetMaxToolsCallsOk returns a tuple with the MaxToolsCalls field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetMaxToolsCalls
-
-`func (o *ResponsesRequest) SetMaxToolsCalls(v int32)`
-
-SetMaxToolsCalls sets MaxToolsCalls field to given value.
-
-### HasMaxToolsCalls
-
-`func (o *ResponsesRequest) HasMaxToolsCalls() bool`
-
-HasMaxToolsCalls returns a boolean if a field has been set.
-
 ### GetMetadata
 
 `func (o *ResponsesRequest) GetMetadata() map[string]string`
@@ -328,31 +275,6 @@ SetMetadata sets Metadata field to given value.
 `func (o *ResponsesRequest) HasMetadata() bool`
 
 HasMetadata returns a boolean if a field has been set.
-
-### GetDebug
-
-`func (o *ResponsesRequest) GetDebug() DebugOptions`
-
-GetDebug returns the Debug field if non-nil, zero value otherwise.
-
-### GetDebugOk
-
-`func (o *ResponsesRequest) GetDebugOk() (*DebugOptions, bool)`
-
-GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetDebug
-
-`func (o *ResponsesRequest) SetDebug(v DebugOptions)`
-
-SetDebug sets Debug field to given value.
-
-### HasDebug
-
-`func (o *ResponsesRequest) HasDebug() bool`
-
-HasDebug returns a boolean if a field has been set.
 
 ### GetParallelToolCalls
 
@@ -478,31 +400,6 @@ SetPromptCacheRetention sets PromptCacheRetention field to given value.
 `func (o *ResponsesRequest) HasPromptCacheRetention() bool`
 
 HasPromptCacheRetention returns a boolean if a field has been set.
-
-### GetModalities
-
-`func (o *ResponsesRequest) GetModalities() []string`
-
-GetModalities returns the Modalities field if non-nil, zero value otherwise.
-
-### GetModalitiesOk
-
-`func (o *ResponsesRequest) GetModalitiesOk() (*[]string, bool)`
-
-GetModalitiesOk returns a tuple with the Modalities field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetModalities
-
-`func (o *ResponsesRequest) SetModalities(v []string)`
-
-SetModalities sets Modalities field to given value.
-
-### HasModalities
-
-`func (o *ResponsesRequest) HasModalities() bool`
-
-HasModalities returns a boolean if a field has been set.
 
 ### GetReasoning
 
@@ -878,6 +775,31 @@ SetUser sets User field to given value.
 `func (o *ResponsesRequest) HasUser() bool`
 
 HasUser returns a boolean if a field has been set.
+
+### GetUsage
+
+`func (o *ResponsesRequest) GetUsage() bool`
+
+GetUsage returns the Usage field if non-nil, zero value otherwise.
+
+### GetUsageOk
+
+`func (o *ResponsesRequest) GetUsageOk() (*bool, bool)`
+
+GetUsageOk returns a tuple with the Usage field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetUsage
+
+`func (o *ResponsesRequest) SetUsage(v bool)`
+
+SetUsage sets Usage field to given value.
+
+### HasUsage
+
+`func (o *ResponsesRequest) HasUsage() bool`
+
+HasUsage returns a boolean if a field has been set.
 
 ### GetMeta
 

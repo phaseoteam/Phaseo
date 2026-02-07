@@ -87,6 +87,7 @@ function mapFinishReason(reason: string | undefined): any {
 		case "stop":
 			return "stop";
 		case "length":
+		case "max_tokens":
 			return "length";
 		case "content_filter":
 			return "content_filter";

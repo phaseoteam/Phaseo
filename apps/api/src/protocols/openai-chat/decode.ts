@@ -3,18 +3,18 @@
 // How: Maps between protocol payloads and IR structures.
 
 // OpenAI Chat Completions Protocol - Decoder
-// Transforms OpenAI Chat Completions Request → IR
+// Transforms OpenAI Chat Completions Request -> IR
 
 import type { ChatCompletionsRequest } from "@core/schemas";
 import type {
 	IRChatRequest,
 	IRMessage,
-	IRContentPart,
 	IRToolCall,
 	IRToolResult,
 	IRTool,
 	IRToolChoice,
 } from "@core/ir";
+import { normalizeOpenAIContent } from "../shared/normalizeContent";
 
 /**
  * Decode OpenAI Chat Completions request to IR format
@@ -36,7 +36,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 	if (req.system) {
 		messages.push({
 			role: "system",
-			content: [{ type: "text", text: req.system }],
+			content: normalizeOpenAIContent(req.system),
 		});
 	}
 
@@ -48,12 +48,12 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		if (normalizedRole === "system" || normalizedRole === "user") {
 			messages.push({
 				role: normalizedRole,
-				content: normalizeContent(msg.content),
+				content: normalizeOpenAIContent(msg.content),
 			});
 		} else if (normalizedRole === "assistant") {
 			messages.push({
 				role: "assistant",
-				content: normalizeContent(msg.content || ""),
+				content: normalizeOpenAIContent(msg.content || ""),
 				toolCalls: msg.tool_calls?.map(decodeToolCall),
 			});
 		} else if (normalizedRole === "tool") {
@@ -130,54 +130,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
  * Normalize content to IRContentPart[]
  * Handles both string and array content
  */
-function normalizeContent(content: string | any[]): IRContentPart[] {
-	if (typeof content === "string") {
-		return [{ type: "text", text: content }];
-	}
-
-	if (Array.isArray(content)) {
-		return content.map((part) => {
-			if (part.type === "text") {
-				return { type: "text", text: part.text };
-			}
-
-			if (part.type === "image_url") {
-				const url = part.image_url?.url || part.image_url;
-				const isDataUrl = url.startsWith("data:");
-				const data = isDataUrl ? url.split(",")[1] ?? "" : url;
-				return {
-					type: "image",
-					source: isDataUrl ? "data" : "url",
-					data,
-					detail: part.image_url?.detail,
-				} as IRContentPart;
-			}
-
-			if (part.type === "input_audio") {
-				return {
-					type: "audio",
-					source: "data",
-					data: part.input_audio?.data || part.data,
-					format: part.input_audio?.format || part.format,
-				} as IRContentPart;
-			}
-
-			if (part.type === "input_video") {
-				return {
-					type: "video",
-					source: "url",
-					url: part.video_url || part.url,
-				} as IRContentPart;
-			}
-
-			// Fallback: treat unknown types as text
-			return { type: "text", text: String(part) };
-		});
-	}
-
-	// Fallback: empty content
-	return [];
-}
+// normalizeOpenAIContent moved to shared helper for consistent IR conversion
 
 /**
  * Decode tool call from OpenAI format to IR

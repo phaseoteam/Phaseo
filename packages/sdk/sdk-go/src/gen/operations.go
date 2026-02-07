@@ -362,8 +362,8 @@ func GetVideoContent(client *Client, path map[string]string, query map[string]st
 	return out, nil
 }
 
-func Health(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/health"
+func Healthz(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/healthz"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}

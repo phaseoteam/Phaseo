@@ -1,0 +1,20 @@
+use std::collections::HashMap;
+use crate::client::{Client, Response, Transport};
+
+pub fn no_query() -> HashMap<String, String> {
+	HashMap::new()
+}
+
+pub fn createAnthropicMessage<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/messages");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createBatch<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batches");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createChatCompletion<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/chat/completions");
+	client.request("POST", &resolved_path, body)

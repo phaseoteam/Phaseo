@@ -124,23 +124,5 @@ namespace AIStatsSdk.Test.Model
         {
             // TODO unit test for the property 'Usage'
         }
-
-        /// <summary>
-        /// Test the property 'Meta'
-        /// </summary>
-        [Fact]
-        public void MetaTest()
-        {
-            // TODO unit test for the property 'Meta'
-        }
-
-        /// <summary>
-        /// Test the property 'Debug'
-        /// </summary>
-        [Fact]
-        public void DebugTest()
-        {
-            // TODO unit test for the property 'Debug'
-        }
     }
 }

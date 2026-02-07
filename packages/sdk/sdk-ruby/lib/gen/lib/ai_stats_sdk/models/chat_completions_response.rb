@@ -17,8 +17,6 @@ module AIStatsSdk
   class ChatCompletionsResponse < ApiModelBase
     attr_accessor :id
 
-    attr_accessor :native_response_id
-
     attr_accessor :object
 
     attr_accessor :created
@@ -29,34 +27,15 @@ module AIStatsSdk
 
     attr_accessor :usage
 
-    attr_accessor :service_tier
-
-    attr_accessor :system_fingerprint
-
-    attr_accessor :meta
-
-    attr_accessor :debug
-
-    attr_accessor :upstream_request
-
-    attr_accessor :upstream_response
-
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'id' => :'id',
-        :'native_response_id' => :'nativeResponseId',
         :'object' => :'object',
         :'created' => :'created',
         :'model' => :'model',
         :'choices' => :'choices',
-        :'usage' => :'usage',
-        :'service_tier' => :'service_tier',
-        :'system_fingerprint' => :'system_fingerprint',
-        :'meta' => :'meta',
-        :'debug' => :'debug',
-        :'upstream_request' => :'upstream_request',
-        :'upstream_response' => :'upstream_response'
+        :'usage' => :'usage'
       }
     end
 
@@ -74,18 +53,11 @@ module AIStatsSdk
     def self.openapi_types
       {
         :'id' => :'String',
-        :'native_response_id' => :'String',
         :'object' => :'String',
         :'created' => :'Integer',
         :'model' => :'String',
         :'choices' => :'Array<ChatChoice>',
-        :'usage' => :'Usage',
-        :'service_tier' => :'String',
-        :'system_fingerprint' => :'String',
-        :'meta' => :'Object',
-        :'debug' => :'DebugResponse',
-        :'upstream_request' => :'ChatCompletionsResponseUpstreamRequest',
-        :'upstream_response' => :'ChatCompletionsResponseUpstreamRequest'
+        :'usage' => :'Usage'
       }
     end
 
@@ -115,10 +87,6 @@ module AIStatsSdk
         self.id = attributes[:'id']
       end
 
-      if attributes.key?(:'native_response_id')
-        self.native_response_id = attributes[:'native_response_id']
-      end
-
       if attributes.key?(:'object')
         self.object = attributes[:'object']
       end
@@ -139,30 +107,6 @@ module AIStatsSdk
 
       if attributes.key?(:'usage')
         self.usage = attributes[:'usage']
-      end
-
-      if attributes.key?(:'service_tier')
-        self.service_tier = attributes[:'service_tier']
-      end
-
-      if attributes.key?(:'system_fingerprint')
-        self.system_fingerprint = attributes[:'system_fingerprint']
-      end
-
-      if attributes.key?(:'meta')
-        self.meta = attributes[:'meta']
-      end
-
-      if attributes.key?(:'debug')
-        self.debug = attributes[:'debug']
-      end
-
-      if attributes.key?(:'upstream_request')
-        self.upstream_request = attributes[:'upstream_request']
-      end
-
-      if attributes.key?(:'upstream_response')
-        self.upstream_response = attributes[:'upstream_response']
       end
     end
 
@@ -187,18 +131,11 @@ module AIStatsSdk
       return true if self.equal?(o)
       self.class == o.class &&
           id == o.id &&
-          native_response_id == o.native_response_id &&
           object == o.object &&
           created == o.created &&
           model == o.model &&
           choices == o.choices &&
-          usage == o.usage &&
-          service_tier == o.service_tier &&
-          system_fingerprint == o.system_fingerprint &&
-          meta == o.meta &&
-          debug == o.debug &&
-          upstream_request == o.upstream_request &&
-          upstream_response == o.upstream_response
+          usage == o.usage
     end
 
     # @see the `==` method
@@ -210,7 +147,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [id, native_response_id, object, created, model, choices, usage, service_tier, system_fingerprint, meta, debug, upstream_request, upstream_response].hash
+      [id, object, created, model, choices, usage].hash
     end
 
     # Builds the object from hash

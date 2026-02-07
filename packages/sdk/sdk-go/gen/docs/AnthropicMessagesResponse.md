@@ -12,8 +12,6 @@ Name | Type | Description | Notes
 **StopReason** | Pointer to **string** |  | [optional] 
 **StopSequence** | Pointer to **string** |  | [optional] 
 **Usage** | Pointer to [**AnthropicUsage**](AnthropicUsage.md) |  | [optional] 
-**Meta** | Pointer to **map[string]interface{}** |  | [optional] 
-**Debug** | Pointer to [**DebugResponse**](DebugResponse.md) |  | [optional] 
 
 ## Methods
 
@@ -233,56 +231,6 @@ SetUsage sets Usage field to given value.
 `func (o *AnthropicMessagesResponse) HasUsage() bool`
 
 HasUsage returns a boolean if a field has been set.
-
-### GetMeta
-
-`func (o *AnthropicMessagesResponse) GetMeta() map[string]interface{}`
-
-GetMeta returns the Meta field if non-nil, zero value otherwise.
-
-### GetMetaOk
-
-`func (o *AnthropicMessagesResponse) GetMetaOk() (*map[string]interface{}, bool)`
-
-GetMetaOk returns a tuple with the Meta field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetMeta
-
-`func (o *AnthropicMessagesResponse) SetMeta(v map[string]interface{})`
-
-SetMeta sets Meta field to given value.
-
-### HasMeta
-
-`func (o *AnthropicMessagesResponse) HasMeta() bool`
-
-HasMeta returns a boolean if a field has been set.
-
-### GetDebug
-
-`func (o *AnthropicMessagesResponse) GetDebug() DebugResponse`
-
-GetDebug returns the Debug field if non-nil, zero value otherwise.
-
-### GetDebugOk
-
-`func (o *AnthropicMessagesResponse) GetDebugOk() (*DebugResponse, bool)`
-
-GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetDebug
-
-`func (o *AnthropicMessagesResponse) SetDebug(v DebugResponse)`
-
-SetDebug sets Debug field to given value.
-
-### HasDebug
-
-`func (o *AnthropicMessagesResponse) HasDebug() bool`
-
-HasDebug returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

@@ -1,0 +1,23 @@
+---
+title: "Management API Keys API"
+badge: "Beta"
+openapi: "GET /management/keys"
+description: "Manage management API keys for elevated API access to your AI Stats resources."
+---
+
+Management API keys provide elevated privileges for programmatic management of your AI Stats resources. Use management API keys to list, manage, and delete keys for your team.
+
+## Authentication
+
+All endpoints require a management API key in the Authorization header:
+
+```http
+Authorization: Bearer <your-management-api-key>
+```
+
+## Related Resources
+
+- [Get Credits](../credits.mdx)
+- [Get Activity](../activity.mdx)
+- [Management API Keys Guide](../../../developers/management-api-keys.mdx)
+- [Authentication](../../../developers/authentication.mdx)

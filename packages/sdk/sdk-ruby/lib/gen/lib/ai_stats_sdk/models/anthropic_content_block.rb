@@ -19,15 +19,7 @@ module AIStatsSdk
 
     attr_accessor :text
 
-    attr_accessor :cache_control
-
     attr_accessor :source
-
-    attr_accessor :image_url
-
-    attr_accessor :input_audio
-
-    attr_accessor :video_url
 
     attr_accessor :id
 
@@ -66,11 +58,7 @@ module AIStatsSdk
       {
         :'type' => :'type',
         :'text' => :'text',
-        :'cache_control' => :'cache_control',
         :'source' => :'source',
-        :'image_url' => :'image_url',
-        :'input_audio' => :'input_audio',
-        :'video_url' => :'video_url',
         :'id' => :'id',
         :'name' => :'name',
         :'input' => :'input',
@@ -94,11 +82,7 @@ module AIStatsSdk
       {
         :'type' => :'String',
         :'text' => :'String',
-        :'cache_control' => :'CacheControl',
         :'source' => :'AnthropicContentBlockSource',
-        :'image_url' => :'AnthropicContentBlockImageUrl',
-        :'input_audio' => :'AudioContentPartInputAudio',
-        :'video_url' => :'String',
         :'id' => :'String',
         :'name' => :'String',
         :'input' => :'Object',
@@ -137,24 +121,8 @@ module AIStatsSdk
         self.text = attributes[:'text']
       end
 
-      if attributes.key?(:'cache_control')
-        self.cache_control = attributes[:'cache_control']
-      end
-
       if attributes.key?(:'source')
         self.source = attributes[:'source']
-      end
-
-      if attributes.key?(:'image_url')
-        self.image_url = attributes[:'image_url']
-      end
-
-      if attributes.key?(:'input_audio')
-        self.input_audio = attributes[:'input_audio']
-      end
-
-      if attributes.key?(:'video_url')
-        self.video_url = attributes[:'video_url']
       end
 
       if attributes.key?(:'id')
@@ -190,7 +158,7 @@ module AIStatsSdk
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
-      type_validator = EnumAttributeValidator.new('String', ["text", "input_text", "image", "input_image", "input_audio", "input_video", "tool_use", "tool_result"])
+      type_validator = EnumAttributeValidator.new('String', ["text", "image", "tool_use", "tool_result"])
       return false unless type_validator.valid?(@type)
       true
     end
@@ -198,7 +166,7 @@ module AIStatsSdk
     # Custom attribute writer method checking allowed values (enum).
     # @param [Object] type Object to be assigned
     def type=(type)
-      validator = EnumAttributeValidator.new('String', ["text", "input_text", "image", "input_image", "input_audio", "input_video", "tool_use", "tool_result"])
+      validator = EnumAttributeValidator.new('String', ["text", "image", "tool_use", "tool_result"])
       unless validator.valid?(type)
         fail ArgumentError, "invalid value for \"type\", must be one of #{validator.allowable_values}."
       end
@@ -212,11 +180,7 @@ module AIStatsSdk
       self.class == o.class &&
           type == o.type &&
           text == o.text &&
-          cache_control == o.cache_control &&
           source == o.source &&
-          image_url == o.image_url &&
-          input_audio == o.input_audio &&
-          video_url == o.video_url &&
           id == o.id &&
           name == o.name &&
           input == o.input &&
@@ -233,7 +197,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [type, text, cache_control, source, image_url, input_audio, video_url, id, name, input, tool_use_id, content].hash
+      [type, text, source, id, name, input, tool_use_id, content].hash
     end
 
     # Builds the object from hash

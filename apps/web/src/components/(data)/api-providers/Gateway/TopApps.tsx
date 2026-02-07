@@ -13,11 +13,11 @@ import {
 function getRankIcon(rank: number) {
 	switch (rank) {
 		case 1:
-			return "🥇";
+			return "ðŸ¥‡";
 		case 2:
-			return "🥈";
+			return "ðŸ¥ˆ";
 		case 3:
-			return "🥉";
+			return "ðŸ¥‰";
 		default:
 			return `#${rank}`;
 	}

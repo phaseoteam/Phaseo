@@ -19,8 +19,6 @@ module AIStatsSdk
 
     attr_accessor :message
 
-    attr_accessor :logprobs
-
     attr_accessor :finish_reason
 
     class EnumAttributeValidator
@@ -50,7 +48,6 @@ module AIStatsSdk
       {
         :'index' => :'index',
         :'message' => :'message',
-        :'logprobs' => :'logprobs',
         :'finish_reason' => :'finish_reason'
       }
     end
@@ -70,7 +67,6 @@ module AIStatsSdk
       {
         :'index' => :'Integer',
         :'message' => :'ChatMessage',
-        :'logprobs' => :'Object',
         :'finish_reason' => :'String'
       }
     end
@@ -103,10 +99,6 @@ module AIStatsSdk
 
       if attributes.key?(:'message')
         self.message = attributes[:'message']
-      end
-
-      if attributes.key?(:'logprobs')
-        self.logprobs = attributes[:'logprobs']
       end
 
       if attributes.key?(:'finish_reason')
@@ -148,7 +140,6 @@ module AIStatsSdk
       self.class == o.class &&
           index == o.index &&
           message == o.message &&
-          logprobs == o.logprobs &&
           finish_reason == o.finish_reason
     end
 
@@ -161,7 +152,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [index, message, logprobs, finish_reason].hash
+      [index, message, finish_reason].hash
     end
 
     # Builds the object from hash

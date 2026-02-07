@@ -34,23 +34,14 @@ public sealed class ActivityEntry
 
 public sealed class AnthropicContentBlock
 {
-	[JsonPropertyName("cache_control")]
-	public Dictionary<string, object>? CacheControl { get; set; }
-
 	[JsonPropertyName("content")]
 	public string? Content { get; set; }
 
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
 
-	[JsonPropertyName("image_url")]
-	public object? ImageUrl { get; set; }
-
 	[JsonPropertyName("input")]
 	public Dictionary<string, object>? Input { get; set; }
-
-	[JsonPropertyName("input_audio")]
-	public Dictionary<string, object>? InputAudio { get; set; }
 
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
@@ -67,39 +58,6 @@ public sealed class AnthropicContentBlock
 	[JsonPropertyName("type")]
 	public string? Type { get; set; }
 
-	[JsonPropertyName("video_url")]
-	public string? VideoUrl { get; set; }
-
-}
-
-public sealed class AnthropicContentBlockDeltaEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class AnthropicContentBlockStartEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class AnthropicContentBlockStopEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
 }
 
 public sealed class AnthropicMessage
@@ -112,44 +70,22 @@ public sealed class AnthropicMessage
 
 }
 
-public sealed class AnthropicMessageDeltaEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
 public sealed class AnthropicMessagesRequest
 {
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("max_tokens")]
-	public int MaxTokens { get; set; }
+	public int? MaxTokens { get; set; }
 
 	[JsonPropertyName("messages")]
 	public List<Dictionary<string, object>> Messages { get; set; }
 
-	[JsonPropertyName("meta")]
-	public bool? Meta { get; set; }
-
 	[JsonPropertyName("metadata")]
 	public Dictionary<string, object>? Metadata { get; set; }
-
-	[JsonPropertyName("modalities")]
-	public List<string>? Modalities { get; set; }
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
-
-	[JsonPropertyName("stop_sequences")]
-	public List<string>? StopSequences { get; set; }
 
 	[JsonPropertyName("stream")]
 	public bool? Stream { get; set; }
@@ -179,14 +115,8 @@ public sealed class AnthropicMessagesResponse
 	[JsonPropertyName("content")]
 	public List<Dictionary<string, object>>? Content { get; set; }
 
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
-
-	[JsonPropertyName("meta")]
-	public Dictionary<string, object>? Meta { get; set; }
 
 	[JsonPropertyName("model")]
 	public string? Model { get; set; }
@@ -208,28 +138,6 @@ public sealed class AnthropicMessagesResponse
 
 }
 
-public sealed class AnthropicMessagesStreamEvent { }
-
-public sealed class AnthropicMessageStartEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class AnthropicMessageStopEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
 public sealed class AnthropicTool
 {
 	[JsonPropertyName("description")]
@@ -245,26 +153,11 @@ public sealed class AnthropicTool
 
 public sealed class AnthropicUsage
 {
-	[JsonPropertyName("cache_creation")]
-	public Dictionary<string, object>? CacheCreation { get; set; }
-
-	[JsonPropertyName("cache_creation_input_tokens")]
-	public int? CacheCreationInputTokens { get; set; }
-
-	[JsonPropertyName("cache_read_input_tokens")]
-	public int? CacheReadInputTokens { get; set; }
-
 	[JsonPropertyName("input_tokens")]
 	public int? InputTokens { get; set; }
 
 	[JsonPropertyName("output_tokens")]
 	public int? OutputTokens { get; set; }
-
-	[JsonPropertyName("server_tool_use")]
-	public bool? ServerToolUse { get; set; }
-
-	[JsonPropertyName("service_tier")]
-	public string? ServiceTier { get; set; }
 
 }
 
@@ -280,9 +173,6 @@ public sealed class AudioContentPart
 
 public sealed class AudioSpeechRequest
 {
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("format")]
 	public string? Format { get; set; }
 
@@ -307,9 +197,6 @@ public sealed class AudioTranscriptionRequest
 
 	[JsonPropertyName("audio_url")]
 	public string? AudioUrl { get; set; }
-
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
 
 	[JsonPropertyName("language")]
 	public string? Language { get; set; }
@@ -336,9 +223,6 @@ public sealed class AudioTranslationRequest
 
 	[JsonPropertyName("audio_url")]
 	public string? AudioUrl { get; set; }
-
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
 
 	[JsonPropertyName("language")]
 	public string? Language { get; set; }
@@ -368,9 +252,6 @@ public sealed class BatchRequest
 {
 	[JsonPropertyName("completion_window")]
 	public string? CompletionWindow { get; set; }
-
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
 
 	[JsonPropertyName("endpoint")]
 	public string Endpoint { get; set; }
@@ -465,19 +346,6 @@ public sealed class BatchResponse
 
 public sealed class BenchmarkId { }
 
-public sealed class CacheControl
-{
-	[JsonPropertyName("cache")]
-	public Dictionary<string, object>? Cache { get; set; }
-
-	[JsonPropertyName("ttl")]
-	public string? Ttl { get; set; }
-
-	[JsonPropertyName("type")]
-	public string? Type { get; set; }
-
-}
-
 public sealed class ChatChoice
 {
 	[JsonPropertyName("finish_reason")]
@@ -486,9 +354,6 @@ public sealed class ChatChoice
 	[JsonPropertyName("index")]
 	public int? Index { get; set; }
 
-	[JsonPropertyName("logprobs")]
-	public Dictionary<string, object>? Logprobs { get; set; }
-
 	[JsonPropertyName("message")]
 	public Dictionary<string, object>? Message { get; set; }
 
@@ -496,9 +361,6 @@ public sealed class ChatChoice
 
 public sealed class ChatCompletionsRequest
 {
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("frequency_penalty")]
 	public double? FrequencyPenalty { get; set; }
 
@@ -519,9 +381,6 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("meta")]
 	public bool? Meta { get; set; }
-
-	[JsonPropertyName("modalities")]
-	public List<string>? Modalities { get; set; }
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
@@ -587,114 +446,17 @@ public sealed class ChatCompletionsResponse
 	[JsonPropertyName("created")]
 	public int? Created { get; set; }
 
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
-
-	[JsonPropertyName("meta")]
-	public Dictionary<string, object>? Meta { get; set; }
 
 	[JsonPropertyName("model")]
 	public string? Model { get; set; }
 
-	[JsonPropertyName("nativeResponseId")]
-	public string? NativeResponseId { get; set; }
-
 	[JsonPropertyName("object")]
 	public string? Object { get; set; }
 
-	[JsonPropertyName("service_tier")]
-	public string? ServiceTier { get; set; }
-
-	[JsonPropertyName("system_fingerprint")]
-	public string? SystemFingerprint { get; set; }
-
-	[JsonPropertyName("upstream_request")]
-	public object? UpstreamRequest { get; set; }
-
-	[JsonPropertyName("upstream_response")]
-	public object? UpstreamResponse { get; set; }
-
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
-
-}
-
-public sealed class ChatCompletionsStreamChoice
-{
-	[JsonPropertyName("delta")]
-	public Dictionary<string, object>? Delta { get; set; }
-
-	[JsonPropertyName("finish_reason")]
-	public string? FinishReason { get; set; }
-
-	[JsonPropertyName("index")]
-	public int? Index { get; set; }
-
-	[JsonPropertyName("logprobs")]
-	public Dictionary<string, object>? Logprobs { get; set; }
-
-}
-
-public sealed class ChatCompletionsStreamChunk
-{
-	[JsonPropertyName("choices")]
-	public List<Dictionary<string, object>>? Choices { get; set; }
-
-	[JsonPropertyName("created")]
-	public int? Created { get; set; }
-
-	[JsonPropertyName("id")]
-	public string? Id { get; set; }
-
-	[JsonPropertyName("meta")]
-	public Dictionary<string, object>? Meta { get; set; }
-
-	[JsonPropertyName("model")]
-	public string? Model { get; set; }
-
-	[JsonPropertyName("nativeResponseId")]
-	public string? NativeResponseId { get; set; }
-
-	[JsonPropertyName("object")]
-	public string? Object { get; set; }
-
-	[JsonPropertyName("service_tier")]
-	public string? ServiceTier { get; set; }
-
-	[JsonPropertyName("system_fingerprint")]
-	public string? SystemFingerprint { get; set; }
-
-	[JsonPropertyName("usage")]
-	public Dictionary<string, object>? Usage { get; set; }
-
-}
-
-public sealed class ChatCompletionsStreamDelta
-{
-	[JsonPropertyName("content")]
-	public string? Content { get; set; }
-
-	[JsonPropertyName("reasoning_content")]
-	public string? ReasoningContent { get; set; }
-
-	[JsonPropertyName("role")]
-	public string? Role { get; set; }
-
-	[JsonPropertyName("tool_calls")]
-	public List<Dictionary<string, object>>? ToolCalls { get; set; }
-
-}
-
-public sealed class ChatCompletionsStreamEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
 
 }
 
@@ -706,9 +468,6 @@ public sealed class ChatMessage
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
 
-	[JsonPropertyName("reasoning_content")]
-	public string? ReasoningContent { get; set; }
-
 	[JsonPropertyName("role")]
 	public string Role { get; set; }
 
@@ -717,44 +476,6 @@ public sealed class ChatMessage
 
 	[JsonPropertyName("tool_calls")]
 	public List<Dictionary<string, object>>? ToolCalls { get; set; }
-
-}
-
-public sealed class DebugOptions
-{
-	[JsonPropertyName("enabled")]
-	public bool? Enabled { get; set; }
-
-	[JsonPropertyName("return_upstream_request")]
-	public bool? ReturnUpstreamRequest { get; set; }
-
-	[JsonPropertyName("return_upstream_response")]
-	public bool? ReturnUpstreamResponse { get; set; }
-
-	[JsonPropertyName("trace")]
-	public bool? Trace { get; set; }
-
-	[JsonPropertyName("trace_level")]
-	public string? TraceLevel { get; set; }
-
-}
-
-public sealed class DebugResponse
-{
-	[JsonPropertyName("enabled")]
-	public bool? Enabled { get; set; }
-
-	[JsonPropertyName("return_upstream_request")]
-	public bool? ReturnUpstreamRequest { get; set; }
-
-	[JsonPropertyName("return_upstream_response")]
-	public bool? ReturnUpstreamResponse { get; set; }
-
-	[JsonPropertyName("trace")]
-	public List<Dictionary<string, object>>? Trace { get; set; }
-
-	[JsonPropertyName("trace_level")]
-	public string? TraceLevel { get; set; }
 
 }
 
@@ -942,9 +663,6 @@ public sealed class ImageModerationInput
 
 public sealed class ImagesEditRequest
 {
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("image")]
 	public string Image { get; set; }
 
@@ -989,9 +707,6 @@ public sealed class ImagesEditResponse
 
 public sealed class ImagesGenerationRequest
 {
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
@@ -1031,29 +746,6 @@ public sealed class ImagesGenerationResponse
 
 }
 
-public sealed class InputImageContentPart
-{
-	[JsonPropertyName("image_url")]
-	public object ImageUrl { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
-public sealed class InputTextContentPart
-{
-	[JsonPropertyName("cache_control")]
-	public Dictionary<string, object>? CacheControl { get; set; }
-
-	[JsonPropertyName("text")]
-	public string Text { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
 public sealed class ListFilesResponse
 {
 	[JsonPropertyName("data")]
@@ -1071,9 +763,6 @@ public sealed class Model
 	[JsonPropertyName("aliases")]
 	public List<string>? Aliases { get; set; }
 
-	[JsonPropertyName("deprecation_date")]
-	public string? DeprecationDate { get; set; }
-
 	[JsonPropertyName("endpoints")]
 	public List<string>? Endpoints { get; set; }
 
@@ -1086,20 +775,11 @@ public sealed class Model
 	[JsonPropertyName("name")]
 	public string? Name { get; set; }
 
-	[JsonPropertyName("organisation_colour")]
-	public string? OrganisationColour { get; set; }
-
 	[JsonPropertyName("organisation_id")]
 	public string? OrganisationId { get; set; }
 
-	[JsonPropertyName("organisation_name")]
-	public string? OrganisationName { get; set; }
-
 	[JsonPropertyName("output_types")]
 	public List<string>? OutputTypes { get; set; }
-
-	[JsonPropertyName("pricing")]
-	public Dictionary<string, object>? Pricing { get; set; }
 
 	[JsonPropertyName("providers")]
 	public List<Dictionary<string, object>>? Providers { get; set; }
@@ -1107,33 +787,12 @@ public sealed class Model
 	[JsonPropertyName("release_date")]
 	public string? ReleaseDate { get; set; }
 
-	[JsonPropertyName("retirement_date")]
-	public string? RetirementDate { get; set; }
-
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
-
-	[JsonPropertyName("supported_params")]
-	public List<string>? SupportedParams { get; set; }
-
-	[JsonPropertyName("top_provider")]
-	public string? TopProvider { get; set; }
 
 }
 
 public sealed class ModelId { }
-
-public sealed class ModelPricing
-{
-	[JsonPropertyName("meters")]
-	public Dictionary<string, object>? Meters { get; set; }
-
-	[JsonPropertyName("pricing_plan")]
-	public string? PricingPlan { get; set; }
-
-}
-
-public sealed class ModelPricingMeter { }
 
 public sealed class ModerationCategories
 {
@@ -1224,9 +883,6 @@ public sealed class ModerationResult
 
 public sealed class ModerationsRequest
 {
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("input")]
 	public object Input { get; set; }
 
@@ -1256,11 +912,11 @@ public sealed class ModerationsResponse
 
 public sealed class MusicGenerateRequest
 {
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("duration")]
 	public int? Duration { get; set; }
+
+	[JsonPropertyName("echo_upstream_request")]
+	public bool? EchoUpstreamRequest { get; set; }
 
 	[JsonPropertyName("elevenlabs")]
 	public Dictionary<string, object>? Elevenlabs { get; set; }
@@ -1288,8 +944,8 @@ public sealed class MusicGenerateResponse
 
 public sealed class OcrRequest
 {
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
+	[JsonPropertyName("echo_upstream_request")]
+	public bool? EchoUpstreamRequest { get; set; }
 
 	[JsonPropertyName("image")]
 	public string Image { get; set; }
@@ -1312,25 +968,6 @@ public sealed class OcrResponse
 public sealed class OrganisationId { }
 
 public sealed class OrganisationIdList { }
-
-public sealed class PricingBreakdown
-{
-	[JsonPropertyName("currency")]
-	public string? Currency { get; set; }
-
-	[JsonPropertyName("lines")]
-	public List<Dictionary<string, object>>? Lines { get; set; }
-
-	[JsonPropertyName("total_cents")]
-	public int? TotalCents { get; set; }
-
-	[JsonPropertyName("total_nanos")]
-	public int? TotalNanos { get; set; }
-
-	[JsonPropertyName("total_usd_str")]
-	public string? TotalUsdStr { get; set; }
-
-}
 
 public sealed class Provider
 {
@@ -1453,160 +1090,8 @@ public sealed class ReasoningConfig
 	[JsonPropertyName("effort")]
 	public string? Effort { get; set; }
 
-	[JsonPropertyName("enabled")]
-	public bool? Enabled { get; set; }
-
-	[JsonPropertyName("max_tokens")]
-	public int? MaxTokens { get; set; }
-
 	[JsonPropertyName("summary")]
 	public string? Summary { get; set; }
-
-}
-
-public sealed class ResponsesFunctionCallItem
-{
-	[JsonPropertyName("arguments")]
-	public string Arguments { get; set; }
-
-	[JsonPropertyName("call_id")]
-	public string? CallId { get; set; }
-
-	[JsonPropertyName("name")]
-	public string Name { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
-public sealed class ResponsesFunctionCallOutputItem
-{
-	[JsonPropertyName("call_id")]
-	public string CallId { get; set; }
-
-	[JsonPropertyName("output")]
-	public string Output { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
-public sealed class ResponsesInputAudioItem
-{
-	[JsonPropertyName("input_audio")]
-	public Dictionary<string, object> InputAudio { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
-public sealed class ResponsesInputImageItem
-{
-	[JsonPropertyName("detail")]
-	public string? Detail { get; set; }
-
-	[JsonPropertyName("image_url")]
-	public object ImageUrl { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
-public sealed class ResponsesInputItem { }
-
-public sealed class ResponsesInputTextItem
-{
-	[JsonPropertyName("cache_control")]
-	public Dictionary<string, object>? CacheControl { get; set; }
-
-	[JsonPropertyName("text")]
-	public string Text { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
-public sealed class ResponsesInputVideoItem
-{
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-	[JsonPropertyName("video_url")]
-	public string VideoUrl { get; set; }
-
-}
-
-public sealed class ResponsesMessageItem
-{
-	[JsonPropertyName("content")]
-	public object Content { get; set; }
-
-	[JsonPropertyName("role")]
-	public string Role { get; set; }
-
-	[JsonPropertyName("tool_call_id")]
-	public string? ToolCallId { get; set; }
-
-	[JsonPropertyName("tool_calls")]
-	public List<Dictionary<string, object>>? ToolCalls { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
-public sealed class ResponsesOutputContent
-{
-	[JsonPropertyName("annotations")]
-	public List<Dictionary<string, object>>? Annotations { get; set; }
-
-	[JsonPropertyName("b64_json")]
-	public string? B64Json { get; set; }
-
-	[JsonPropertyName("image_url")]
-	public Dictionary<string, object>? ImageUrl { get; set; }
-
-	[JsonPropertyName("mime_type")]
-	public string? MimeType { get; set; }
-
-	[JsonPropertyName("text")]
-	public string? Text { get; set; }
-
-	[JsonPropertyName("type")]
-	public string? Type { get; set; }
-
-}
-
-public sealed class ResponsesOutputItem
-{
-	[JsonPropertyName("arguments")]
-	public string? Arguments { get; set; }
-
-	[JsonPropertyName("call_id")]
-	public string? CallId { get; set; }
-
-	[JsonPropertyName("content")]
-	public List<Dictionary<string, object>>? Content { get; set; }
-
-	[JsonPropertyName("id")]
-	public string? Id { get; set; }
-
-	[JsonPropertyName("name")]
-	public string? Name { get; set; }
-
-	[JsonPropertyName("role")]
-	public string? Role { get; set; }
-
-	[JsonPropertyName("status")]
-	public string? Status { get; set; }
-
-	[JsonPropertyName("type")]
-	public string? Type { get; set; }
 
 }
 
@@ -1618,17 +1103,14 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("conversation")]
 	public object? Conversation { get; set; }
 
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
 	[JsonPropertyName("include")]
 	public List<string>? Include { get; set; }
 
 	[JsonPropertyName("input")]
-	public object? Input { get; set; }
+	public Dictionary<string, object>? Input { get; set; }
 
 	[JsonPropertyName("input_items")]
-	public List<object>? InputItems { get; set; }
+	public List<Dictionary<string, object>>? InputItems { get; set; }
 
 	[JsonPropertyName("instructions")]
 	public string? Instructions { get; set; }
@@ -1639,20 +1121,11 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("max_tool_calls")]
 	public int? MaxToolCalls { get; set; }
 
-	[JsonPropertyName("max_tools_calls")]
-	public int? MaxToolsCalls { get; set; }
-
-	[JsonPropertyName("messages")]
-	public List<Dictionary<string, object>>? Messages { get; set; }
-
 	[JsonPropertyName("meta")]
 	public bool? Meta { get; set; }
 
 	[JsonPropertyName("metadata")]
 	public Dictionary<string, object>? Metadata { get; set; }
-
-	[JsonPropertyName("modalities")]
-	public List<string>? Modalities { get; set; }
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
@@ -1714,6 +1187,9 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("truncation")]
 	public string? Truncation { get; set; }
 
+	[JsonPropertyName("usage")]
+	public bool? Usage { get; set; }
+
 	[JsonPropertyName("user")]
 	public string? User { get; set; }
 
@@ -1721,196 +1197,37 @@ public sealed class ResponsesRequest
 
 public sealed class ResponsesResponse
 {
-	[JsonPropertyName("background")]
-	public bool? Background { get; set; }
+	[JsonPropertyName("content")]
+	public List<Dictionary<string, object>>? Content { get; set; }
 
-	[JsonPropertyName("completed_at")]
-	public int? CompletedAt { get; set; }
-
-	[JsonPropertyName("created_at")]
-	public int? CreatedAt { get; set; }
-
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
-
-	[JsonPropertyName("error")]
-	public Dictionary<string, object>? Error { get; set; }
-
-	[JsonPropertyName("frequency_penalty")]
-	public double? FrequencyPenalty { get; set; }
+	[JsonPropertyName("created")]
+	public int? Created { get; set; }
 
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
 
-	[JsonPropertyName("incomplete_details")]
-	public Dictionary<string, object>? IncompleteDetails { get; set; }
-
-	[JsonPropertyName("instructions")]
-	public string? Instructions { get; set; }
-
-	[JsonPropertyName("max_output_tokens")]
-	public int? MaxOutputTokens { get; set; }
-
-	[JsonPropertyName("max_tool_calls")]
-	public int? MaxToolCalls { get; set; }
-
-	[JsonPropertyName("meta")]
-	public Dictionary<string, object>? Meta { get; set; }
-
-	[JsonPropertyName("metadata")]
-	public Dictionary<string, object>? Metadata { get; set; }
-
 	[JsonPropertyName("model")]
 	public string? Model { get; set; }
-
-	[JsonPropertyName("nativeResponseId")]
-	public string? NativeResponseId { get; set; }
 
 	[JsonPropertyName("object")]
 	public string? Object { get; set; }
 
-	[JsonPropertyName("output")]
-	public List<Dictionary<string, object>>? Output { get; set; }
+	[JsonPropertyName("role")]
+	public string? Role { get; set; }
 
-	[JsonPropertyName("parallel_tool_calls")]
-	public bool? ParallelToolCalls { get; set; }
+	[JsonPropertyName("stop_reason")]
+	public string? StopReason { get; set; }
 
-	[JsonPropertyName("presence_penalty")]
-	public double? PresencePenalty { get; set; }
-
-	[JsonPropertyName("previous_response_id")]
-	public string? PreviousResponseId { get; set; }
-
-	[JsonPropertyName("prompt_cache_key")]
-	public string? PromptCacheKey { get; set; }
-
-	[JsonPropertyName("reasoning")]
-	public Dictionary<string, object>? Reasoning { get; set; }
-
-	[JsonPropertyName("safety_identifier")]
-	public string? SafetyIdentifier { get; set; }
-
-	[JsonPropertyName("service_tier")]
-	public string? ServiceTier { get; set; }
-
-	[JsonPropertyName("status")]
-	public string? Status { get; set; }
-
-	[JsonPropertyName("store")]
-	public bool? Store { get; set; }
-
-	[JsonPropertyName("temperature")]
-	public double? Temperature { get; set; }
-
-	[JsonPropertyName("text")]
-	public Dictionary<string, object>? Text { get; set; }
-
-	[JsonPropertyName("tool_choice")]
-	public object? ToolChoice { get; set; }
-
-	[JsonPropertyName("tools")]
-	public List<Dictionary<string, object>>? Tools { get; set; }
-
-	[JsonPropertyName("top_logprobs")]
-	public int? TopLogprobs { get; set; }
-
-	[JsonPropertyName("top_p")]
-	public double? TopP { get; set; }
-
-	[JsonPropertyName("truncation")]
-	public string? Truncation { get; set; }
-
-	[JsonPropertyName("upstream_request")]
-	public object? UpstreamRequest { get; set; }
-
-	[JsonPropertyName("upstream_response")]
-	public object? UpstreamResponse { get; set; }
+	[JsonPropertyName("type")]
+	public string? Type { get; set; }
 
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
-
-	[JsonPropertyName("user")]
-	public string? User { get; set; }
-
-}
-
-public sealed class ResponsesStreamCompletedEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class ResponsesStreamCreatedEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class ResponsesStreamErrorEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class ResponsesStreamEvent { }
-
-public sealed class ResponsesStreamFunctionCallArgumentsDeltaEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class ResponsesStreamFunctionCallArgumentsDoneEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class ResponsesStreamOutputTextDeltaEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
-
-}
-
-public sealed class ResponsesStreamReasoningTextDeltaEvent
-{
-	[JsonPropertyName("data")]
-	public Dictionary<string, object>? Data { get; set; }
-
-	[JsonPropertyName("event")]
-	public string? Event { get; set; }
 
 }
 
 public sealed class TextContentPart
 {
-	[JsonPropertyName("cache_control")]
-	public Dictionary<string, object>? CacheControl { get; set; }
-
 	[JsonPropertyName("text")]
 	public string Text { get; set; }
 
@@ -1957,81 +1274,14 @@ public sealed class ToolCallContentPart
 
 public sealed class Usage
 {
-	[JsonPropertyName("cached_read_text_tokens")]
-	public int? CachedReadTextTokens { get; set; }
-
-	[JsonPropertyName("cached_write_text_tokens")]
-	public int? CachedWriteTextTokens { get; set; }
-
 	[JsonPropertyName("completion_tokens")]
 	public int? CompletionTokens { get; set; }
-
-	[JsonPropertyName("completion_tokens_details")]
-	public Dictionary<string, object>? CompletionTokensDetails { get; set; }
-
-	[JsonPropertyName("input_text_tokens")]
-	public int? InputTextTokens { get; set; }
-
-	[JsonPropertyName("input_tokens")]
-	public int? InputTokens { get; set; }
-
-	[JsonPropertyName("input_tokens_details")]
-	public Dictionary<string, object>? InputTokensDetails { get; set; }
-
-	[JsonPropertyName("output_text_tokens")]
-	public int? OutputTextTokens { get; set; }
-
-	[JsonPropertyName("output_tokens")]
-	public int? OutputTokens { get; set; }
-
-	[JsonPropertyName("output_tokens_details")]
-	public Dictionary<string, object>? OutputTokensDetails { get; set; }
-
-	[JsonPropertyName("pricing")]
-	public Dictionary<string, object>? Pricing { get; set; }
-
-	[JsonPropertyName("pricing_breakdown")]
-	public Dictionary<string, object>? PricingBreakdown { get; set; }
 
 	[JsonPropertyName("prompt_tokens")]
 	public int? PromptTokens { get; set; }
 
-	[JsonPropertyName("prompt_tokens_details")]
-	public Dictionary<string, object>? PromptTokensDetails { get; set; }
-
-	[JsonPropertyName("reasoning_tokens")]
-	public int? ReasoningTokens { get; set; }
-
 	[JsonPropertyName("total_tokens")]
 	public int? TotalTokens { get; set; }
-
-}
-
-public sealed class UsageDetails
-{
-	[JsonPropertyName("cached_tokens")]
-	public int? CachedTokens { get; set; }
-
-	[JsonPropertyName("input_audio")]
-	public int? InputAudio { get; set; }
-
-	[JsonPropertyName("input_images")]
-	public int? InputImages { get; set; }
-
-	[JsonPropertyName("input_videos")]
-	public int? InputVideos { get; set; }
-
-	[JsonPropertyName("output_audio")]
-	public int? OutputAudio { get; set; }
-
-	[JsonPropertyName("output_images")]
-	public int? OutputImages { get; set; }
-
-	[JsonPropertyName("output_videos")]
-	public int? OutputVideos { get; set; }
-
-	[JsonPropertyName("reasoning_tokens")]
-	public int? ReasoningTokens { get; set; }
 
 }
 
@@ -2062,9 +1312,6 @@ public sealed class VideoGenerationRequest
 {
 	[JsonPropertyName("aspect_ratio")]
 	public string? AspectRatio { get; set; }
-
-	[JsonPropertyName("debug")]
-	public Dictionary<string, object>? Debug { get; set; }
 
 	[JsonPropertyName("duration")]
 	public int? Duration { get; set; }

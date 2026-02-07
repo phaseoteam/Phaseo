@@ -320,11 +320,11 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test DefaultAPIService Health", func(t *testing.T) {
+	t.Run("Test DefaultAPIService Healthz", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
-		resp, httpRes, err := apiClient.DefaultAPI.Health(context.Background()).Execute()
+		resp, httpRes, err := apiClient.DefaultAPI.Healthz(context.Background()).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

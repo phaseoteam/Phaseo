@@ -107,9 +107,9 @@ class OcrRequestTest extends TestCase
     }
 
     /**
-     * Test attribute "debug"
+     * Test attribute "echo_upstream_request"
      */
-    public function testPropertyDebug()
+    public function testPropertyEchoUpstreamRequest()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

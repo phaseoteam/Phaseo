@@ -5,45 +5,14 @@ export type CreateAnthropicMessageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
-    max_tokens: number;
+    max_tokens?: number;
     messages: {
       content:
         | string
         | {
-            cache_control?: {
-              cache?: {
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
             content?: string;
             id?: string;
-            image_url?:
-              | string
-              | {
-                  url?: string;
-                };
             input?: {};
-            input_audio?: {
-              data?: string;
-              format?:
-                | "wav"
-                | "mp3"
-                | "flac"
-                | "m4a"
-                | "ogg"
-                | "pcm16"
-                | "pcm24";
-            };
             name?: string;
             source?: {
               data?: string;
@@ -53,31 +22,19 @@ export type CreateAnthropicMessageParams = {
             };
             text?: string;
             tool_use_id?: string;
-            type?:
-              | "text"
-              | "input_text"
-              | "image"
-              | "input_image"
-              | "input_audio"
-              | "input_video"
-              | "tool_use"
-              | "tool_result";
-            video_url?: string;
+            type?: "text" | "image" | "tool_use" | "tool_result";
           }[];
       role: "user" | "assistant";
     }[];
-    meta?: boolean;
     metadata?: {
       [key: string]: string;
     };
-    modalities?: "text" | "image" | "audio" | "video"[];
     model: string;
     provider?: {
       ignore?: string[];
       only?: string[];
       order?: string[];
     };
-    stop_sequences?: string[];
     stream?: boolean;
     system?: string | {}[];
     temperature?: number;
@@ -100,26 +57,9 @@ export async function createAnthropicMessage(
   args: CreateAnthropicMessageParams = {},
 ): Promise<{
   content?: {
-    cache_control?: {
-      cache?: {
-        ttl?: "5m" | "1h";
-        type?: "ehpemeral" | "ephemeral";
-      };
-      ttl?: "5m" | "1h";
-      type?: "ehpemeral" | "ephemeral";
-    };
     content?: string;
     id?: string;
-    image_url?:
-      | string
-      | {
-          url?: string;
-        };
     input?: {};
-    input_audio?: {
-      data?: string;
-      format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
-    };
     name?: string;
     source?: {
       data?: string;
@@ -129,67 +69,26 @@ export async function createAnthropicMessage(
     };
     text?: string;
     tool_use_id?: string;
-    type?:
-      | "text"
-      | "input_text"
-      | "image"
-      | "input_image"
-      | "input_audio"
-      | "input_video"
-      | "tool_use"
-      | "tool_result";
-    video_url?: string;
+    type?: "text" | "image" | "tool_use" | "tool_result";
   }[];
-  debug?: {
-    enabled?: boolean;
-    return_upstream_request?: boolean;
-    return_upstream_response?: boolean;
-    trace?: {
-      [key: string]: unknown;
-    }[];
-    trace_level?: "summary" | "full";
-  };
   id?: string;
-  meta?: {};
   model?: string;
   role?: "assistant";
   stop_reason?: string;
   stop_sequence?: string;
   type?: string;
   usage?: {
-    cache_creation?: {};
-    cache_creation_input_tokens?: number;
-    cache_read_input_tokens?: number;
     input_tokens?: number;
     output_tokens?: number;
-    server_tool_use?: boolean;
-    service_tier?: string;
   };
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/messages";
   return client.request<{
     content?: {
-      cache_control?: {
-        cache?: {
-          ttl?: "5m" | "1h";
-          type?: "ehpemeral" | "ephemeral";
-        };
-        ttl?: "5m" | "1h";
-        type?: "ehpemeral" | "ephemeral";
-      };
       content?: string;
       id?: string;
-      image_url?:
-        | string
-        | {
-            url?: string;
-          };
       input?: {};
-      input_audio?: {
-        data?: string;
-        format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
-      };
       name?: string;
       source?: {
         data?: string;
@@ -199,41 +98,17 @@ export async function createAnthropicMessage(
       };
       text?: string;
       tool_use_id?: string;
-      type?:
-        | "text"
-        | "input_text"
-        | "image"
-        | "input_image"
-        | "input_audio"
-        | "input_video"
-        | "tool_use"
-        | "tool_result";
-      video_url?: string;
+      type?: "text" | "image" | "tool_use" | "tool_result";
     }[];
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: {
-        [key: string]: unknown;
-      }[];
-      trace_level?: "summary" | "full";
-    };
     id?: string;
-    meta?: {};
     model?: string;
     role?: "assistant";
     stop_reason?: string;
     stop_sequence?: string;
     type?: string;
     usage?: {
-      cache_creation?: {};
-      cache_creation_input_tokens?: number;
-      cache_read_input_tokens?: number;
       input_tokens?: number;
       output_tokens?: number;
-      server_tool_use?: boolean;
-      service_tier?: string;
     };
   }>({
     method: "POST",
@@ -250,13 +125,6 @@ export type CreateBatchParams = {
   headers?: Record<string, never>;
   body?: {
     completion_window?: string;
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     endpoint: string;
     input_file_id: string;
     metadata?: {};
@@ -341,13 +209,6 @@ export type CreateChatCompletionParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     frequency_penalty?: number;
     logit_bias?: {
       [key: string]: number;
@@ -359,42 +220,14 @@ export type CreateChatCompletionParams = {
       content?:
         | string
         | {
-            cache_control?: {
-              cache?: {
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
             text: string;
             type: "text";
-          }
-        | {
-            cache_control?: {
-              cache?: {
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
-            text: string;
-            type: "input_text";
           }
         | {
             image_url: {
               url?: string;
             };
             type: "image_url";
-          }
-        | {
-            image_url:
-              | string
-              | {
-                  url?: string;
-                };
-            type: "input_image";
           }
         | {
             input_audio: {
@@ -423,7 +256,6 @@ export type CreateChatCompletionParams = {
             type: "tool_call";
           }[];
       name?: string;
-      reasoning_content?: string;
       role: "system" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -438,7 +270,6 @@ export type CreateChatCompletionParams = {
       }[];
     }[];
     meta?: boolean;
-    modalities?: "text" | "image" | "audio" | "video"[];
     model: string;
     parallel_tool_calls?: boolean;
     presence_penalty?: number;
@@ -449,8 +280,6 @@ export type CreateChatCompletionParams = {
     };
     reasoning?: {
       effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
-      enabled?: boolean;
-      max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
     };
     response_format?:
@@ -486,47 +315,18 @@ export async function createChatCompletion(
   choices?: {
     finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
     index?: number;
-    logprobs?: {};
     message?: {
       content?:
         | string
         | {
-            cache_control?: {
-              cache?: {
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
             text: string;
             type: "text";
-          }
-        | {
-            cache_control?: {
-              cache?: {
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
-            text: string;
-            type: "input_text";
           }
         | {
             image_url: {
               url?: string;
             };
             type: "image_url";
-          }
-        | {
-            image_url:
-              | string
-              | {
-                  url?: string;
-                };
-            type: "input_image";
           }
         | {
             input_audio: {
@@ -555,7 +355,6 @@ export async function createChatCompletion(
             type: "tool_call";
           }[];
       name?: string;
-      reasoning_content?: string;
       role: "system" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
@@ -571,92 +370,12 @@ export async function createChatCompletion(
     };
   }[];
   created?: number;
-  debug?: {
-    enabled?: boolean;
-    return_upstream_request?: boolean;
-    return_upstream_response?: boolean;
-    trace?: {
-      [key: string]: unknown;
-    }[];
-    trace_level?: "summary" | "full";
-  };
   id?: string;
-  meta?: {};
   model?: string;
-  nativeResponseId?: string;
   object?: string;
-  service_tier?: string;
-  system_fingerprint?: string;
-  upstream_request?: {} | string;
-  upstream_response?: {} | string;
   usage?: {
-    cached_read_text_tokens?: number;
-    cached_write_text_tokens?: number;
     completion_tokens?: number;
-    completion_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    input_text_tokens?: number;
-    input_tokens?: number;
-    input_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    output_text_tokens?: number;
-    output_tokens?: number;
-    output_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    pricing?: {
-      currency?: string;
-      lines?: {
-        [key: string]: unknown;
-      }[];
-      total_cents?: number;
-      total_nanos?: number;
-      total_usd_str?: string;
-    };
-    pricing_breakdown?: {
-      currency?: string;
-      lines?: {
-        [key: string]: unknown;
-      }[];
-      total_cents?: number;
-      total_nanos?: number;
-      total_usd_str?: string;
-    };
     prompt_tokens?: number;
-    prompt_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    reasoning_tokens?: number;
     total_tokens?: number;
   };
 }> {
@@ -666,47 +385,18 @@ export async function createChatCompletion(
     choices?: {
       finish_reason?: "stop" | "length" | "tool_calls" | "content_filter";
       index?: number;
-      logprobs?: {};
       message?: {
         content?:
           | string
           | {
-              cache_control?: {
-                cache?: {
-                  ttl?: "5m" | "1h";
-                  type?: "ehpemeral" | "ephemeral";
-                };
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
               text: string;
               type: "text";
-            }
-          | {
-              cache_control?: {
-                cache?: {
-                  ttl?: "5m" | "1h";
-                  type?: "ehpemeral" | "ephemeral";
-                };
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
-              text: string;
-              type: "input_text";
             }
           | {
               image_url: {
                 url?: string;
               };
               type: "image_url";
-            }
-          | {
-              image_url:
-                | string
-                | {
-                    url?: string;
-                  };
-              type: "input_image";
             }
           | {
               input_audio: {
@@ -735,7 +425,6 @@ export async function createChatCompletion(
               type: "tool_call";
             }[];
         name?: string;
-        reasoning_content?: string;
         role: "system" | "user" | "assistant" | "tool";
         tool_call_id?: string;
         tool_calls?: {
@@ -751,92 +440,12 @@ export async function createChatCompletion(
       };
     }[];
     created?: number;
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: {
-        [key: string]: unknown;
-      }[];
-      trace_level?: "summary" | "full";
-    };
     id?: string;
-    meta?: {};
     model?: string;
-    nativeResponseId?: string;
     object?: string;
-    service_tier?: string;
-    system_fingerprint?: string;
-    upstream_request?: {} | string;
-    upstream_response?: {} | string;
     usage?: {
-      cached_read_text_tokens?: number;
-      cached_write_text_tokens?: number;
       completion_tokens?: number;
-      completion_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      input_text_tokens?: number;
-      input_tokens?: number;
-      input_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      output_text_tokens?: number;
-      output_tokens?: number;
-      output_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      pricing?: {
-        currency?: string;
-        lines?: {
-          [key: string]: unknown;
-        }[];
-        total_cents?: number;
-        total_nanos?: number;
-        total_usd_str?: string;
-      };
-      pricing_breakdown?: {
-        currency?: string;
-        lines?: {
-          [key: string]: unknown;
-        }[];
-        total_cents?: number;
-        total_nanos?: number;
-        total_usd_str?: string;
-      };
       prompt_tokens?: number;
-      prompt_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      reasoning_tokens?: number;
       total_tokens?: number;
     };
   }>({
@@ -870,73 +479,8 @@ export async function createEmbedding(
   model?: string;
   object?: string;
   usage?: {
-    cached_read_text_tokens?: number;
-    cached_write_text_tokens?: number;
     completion_tokens?: number;
-    completion_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    input_text_tokens?: number;
-    input_tokens?: number;
-    input_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    output_text_tokens?: number;
-    output_tokens?: number;
-    output_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    pricing?: {
-      currency?: string;
-      lines?: {
-        [key: string]: unknown;
-      }[];
-      total_cents?: number;
-      total_nanos?: number;
-      total_usd_str?: string;
-    };
-    pricing_breakdown?: {
-      currency?: string;
-      lines?: {
-        [key: string]: unknown;
-      }[];
-      total_cents?: number;
-      total_nanos?: number;
-      total_usd_str?: string;
-    };
     prompt_tokens?: number;
-    prompt_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    reasoning_tokens?: number;
     total_tokens?: number;
   };
 }> {
@@ -951,73 +495,8 @@ export async function createEmbedding(
     model?: string;
     object?: string;
     usage?: {
-      cached_read_text_tokens?: number;
-      cached_write_text_tokens?: number;
       completion_tokens?: number;
-      completion_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      input_text_tokens?: number;
-      input_tokens?: number;
-      input_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      output_text_tokens?: number;
-      output_tokens?: number;
-      output_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      pricing?: {
-        currency?: string;
-        lines?: {
-          [key: string]: unknown;
-        }[];
-        total_cents?: number;
-        total_nanos?: number;
-        total_usd_str?: string;
-      };
-      pricing_breakdown?: {
-        currency?: string;
-        lines?: {
-          [key: string]: unknown;
-        }[];
-        total_cents?: number;
-        total_nanos?: number;
-        total_usd_str?: string;
-      };
       prompt_tokens?: number;
-      prompt_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      reasoning_tokens?: number;
       total_tokens?: number;
     };
   }>({
@@ -1034,13 +513,6 @@ export type CreateImageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     model: string;
     n?: number;
     prompt: string;
@@ -1094,13 +566,6 @@ export type CreateImageEditParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     image: string;
     mask?: string;
     meta?: boolean;
@@ -1155,13 +620,6 @@ export type CreateModerationParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     input:
       | string
       | {
@@ -1271,13 +729,7 @@ export type CreateOcrParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
+    echo_upstream_request?: boolean;
     image: string;
     language?: string;
     model: string;
@@ -1370,357 +822,16 @@ export type CreateResponseParams = {
   body?: {
     background?: boolean;
     conversation?: string | {};
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     include?: string[];
-    input?:
-      | string
-      | {
-          cache_control?: {
-            cache?: {
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
-            ttl?: "5m" | "1h";
-            type?: "ehpemeral" | "ephemeral";
-          };
-          text: string;
-          type: "input_text";
-        }
-      | {
-          detail?: "auto" | "low" | "high";
-          image_url:
-            | string
-            | {
-                url?: string;
-              };
-          type: "input_image";
-        }
-      | {
-          input_audio: {
-            data?: string;
-            format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
-          };
-          type: "input_audio";
-        }
-      | {
-          type: "input_video";
-          video_url: string;
-        }
-      | {
-          content:
-            | string
-            | {
-                cache_control?: {
-                  cache?: {
-                    ttl?: "5m" | "1h";
-                    type?: "ehpemeral" | "ephemeral";
-                  };
-                  ttl?: "5m" | "1h";
-                  type?: "ehpemeral" | "ephemeral";
-                };
-                text: string;
-                type: "text";
-              }
-            | {
-                cache_control?: {
-                  cache?: {
-                    ttl?: "5m" | "1h";
-                    type?: "ehpemeral" | "ephemeral";
-                  };
-                  ttl?: "5m" | "1h";
-                  type?: "ehpemeral" | "ephemeral";
-                };
-                text: string;
-                type: "input_text";
-              }
-            | {
-                image_url: {
-                  url?: string;
-                };
-                type: "image_url";
-              }
-            | {
-                image_url:
-                  | string
-                  | {
-                      url?: string;
-                    };
-                type: "input_image";
-              }
-            | {
-                input_audio: {
-                  data?: string;
-                  format?:
-                    | "wav"
-                    | "mp3"
-                    | "flac"
-                    | "m4a"
-                    | "ogg"
-                    | "pcm16"
-                    | "pcm24";
-                };
-                type: "input_audio";
-              }
-            | {
-                type: "input_video";
-                video_url: string;
-              }
-            | {
-                function: {
-                  arguments?: string;
-                  name?: string;
-                };
-                id: string;
-                type: "tool_call";
-              }[];
-          role: "system" | "developer" | "user" | "assistant" | "tool";
-          tool_call_id?: string;
-          tool_calls?: {
-            function: {
-              arguments?: string;
-              description?: string;
-              name?: string;
-              parameters?: {};
-            };
-            id: string;
-            type: "function";
-          }[];
-          type: "message";
-        }
-      | {
-          arguments: string;
-          call_id?: string;
-          name: string;
-          type: "function_call";
-        }
-      | {
-          call_id: string;
-          output: string;
-          type: "function_call_output";
-        }[]
-      | {};
-    input_items?:
-      | {
-          cache_control?: {
-            cache?: {
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
-            ttl?: "5m" | "1h";
-            type?: "ehpemeral" | "ephemeral";
-          };
-          text: string;
-          type: "input_text";
-        }
-      | {
-          detail?: "auto" | "low" | "high";
-          image_url:
-            | string
-            | {
-                url?: string;
-              };
-          type: "input_image";
-        }
-      | {
-          input_audio: {
-            data?: string;
-            format?: "wav" | "mp3" | "flac" | "m4a" | "ogg" | "pcm16" | "pcm24";
-          };
-          type: "input_audio";
-        }
-      | {
-          type: "input_video";
-          video_url: string;
-        }
-      | {
-          content:
-            | string
-            | {
-                cache_control?: {
-                  cache?: {
-                    ttl?: "5m" | "1h";
-                    type?: "ehpemeral" | "ephemeral";
-                  };
-                  ttl?: "5m" | "1h";
-                  type?: "ehpemeral" | "ephemeral";
-                };
-                text: string;
-                type: "text";
-              }
-            | {
-                cache_control?: {
-                  cache?: {
-                    ttl?: "5m" | "1h";
-                    type?: "ehpemeral" | "ephemeral";
-                  };
-                  ttl?: "5m" | "1h";
-                  type?: "ehpemeral" | "ephemeral";
-                };
-                text: string;
-                type: "input_text";
-              }
-            | {
-                image_url: {
-                  url?: string;
-                };
-                type: "image_url";
-              }
-            | {
-                image_url:
-                  | string
-                  | {
-                      url?: string;
-                    };
-                type: "input_image";
-              }
-            | {
-                input_audio: {
-                  data?: string;
-                  format?:
-                    | "wav"
-                    | "mp3"
-                    | "flac"
-                    | "m4a"
-                    | "ogg"
-                    | "pcm16"
-                    | "pcm24";
-                };
-                type: "input_audio";
-              }
-            | {
-                type: "input_video";
-                video_url: string;
-              }
-            | {
-                function: {
-                  arguments?: string;
-                  name?: string;
-                };
-                id: string;
-                type: "tool_call";
-              }[];
-          role: "system" | "developer" | "user" | "assistant" | "tool";
-          tool_call_id?: string;
-          tool_calls?: {
-            function: {
-              arguments?: string;
-              description?: string;
-              name?: string;
-              parameters?: {};
-            };
-            id: string;
-            type: "function";
-          }[];
-          type: "message";
-        }
-      | {
-          arguments: string;
-          call_id?: string;
-          name: string;
-          type: "function_call";
-        }
-      | {
-          call_id: string;
-          output: string;
-          type: "function_call_output";
-        }[];
+    input?: {};
+    input_items?: {}[];
     instructions?: string;
     max_output_tokens?: number;
     max_tool_calls?: number;
-    max_tools_calls?: number;
-    messages?: {
-      content?:
-        | string
-        | {
-            cache_control?: {
-              cache?: {
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
-            text: string;
-            type: "text";
-          }
-        | {
-            cache_control?: {
-              cache?: {
-                ttl?: "5m" | "1h";
-                type?: "ehpemeral" | "ephemeral";
-              };
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
-            text: string;
-            type: "input_text";
-          }
-        | {
-            image_url: {
-              url?: string;
-            };
-            type: "image_url";
-          }
-        | {
-            image_url:
-              | string
-              | {
-                  url?: string;
-                };
-            type: "input_image";
-          }
-        | {
-            input_audio: {
-              data?: string;
-              format?:
-                | "wav"
-                | "mp3"
-                | "flac"
-                | "m4a"
-                | "ogg"
-                | "pcm16"
-                | "pcm24";
-            };
-            type: "input_audio";
-          }
-        | {
-            type: "input_video";
-            video_url: string;
-          }
-        | {
-            function: {
-              arguments?: string;
-              name?: string;
-            };
-            id: string;
-            type: "tool_call";
-          }[];
-      name?: string;
-      reasoning_content?: string;
-      role: "system" | "user" | "assistant" | "tool";
-      tool_call_id?: string;
-      tool_calls?: {
-        function: {
-          arguments?: string;
-          description?: string;
-          name?: string;
-          parameters?: {};
-        };
-        id: string;
-        type: "function";
-      }[];
-    }[];
     meta?: boolean;
     metadata?: {
       [key: string]: string;
     };
-    modalities?: "text" | "image" | "audio" | "video"[];
     model: string;
     parallel_tool_calls?: boolean;
     previous_response_id?: string;
@@ -1738,8 +849,6 @@ export type CreateResponseParams = {
     };
     reasoning?: {
       effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
-      enabled?: boolean;
-      max_tokens?: number;
       summary?: string;
     };
     safety_identifier?: string;
@@ -1754,6 +863,7 @@ export type CreateResponseParams = {
     top_logprobs?: number;
     top_p?: number;
     truncation?: string;
+    usage?: boolean;
     user?: string;
   };
 };
@@ -1765,284 +875,36 @@ export async function createResponse(
   client: Client,
   args: CreateResponseParams = {},
 ): Promise<{
-  background?: boolean | null;
-  completed_at?: number | null;
-  created_at?: number;
-  debug?: {
-    enabled?: boolean;
-    return_upstream_request?: boolean;
-    return_upstream_response?: boolean;
-    trace?: {
-      [key: string]: unknown;
-    }[];
-    trace_level?: "summary" | "full";
-  };
-  error?: {} | null;
-  frequency_penalty?: number | null;
+  content?: {}[];
+  created?: number;
   id?: string;
-  incomplete_details?: {} | null;
-  instructions?: string | null;
-  max_output_tokens?: number | null;
-  max_tool_calls?: number | null;
-  meta?: {};
-  metadata?: {};
   model?: string;
-  nativeResponseId?: string;
   object?: string;
-  output?: {
-    arguments?: string;
-    call_id?: string;
-    content?: {
-      annotations?: {}[];
-      b64_json?: string;
-      image_url?: {
-        url?: string;
-      };
-      mime_type?: string;
-      text?: string;
-      type?: "output_text" | "output_image";
-      [key: string]: unknown;
-    }[];
-    id?: string;
-    name?: string;
-    role?: string;
-    status?: string;
-    type?: string;
-    [key: string]: unknown;
-  }[];
-  parallel_tool_calls?: boolean;
-  presence_penalty?: number | null;
-  previous_response_id?: string | null;
-  prompt_cache_key?: string | null;
-  reasoning?: {
-    effort?: string | null;
-    summary?: string | null;
-  };
-  safety_identifier?: string | null;
-  service_tier?: string | null;
-  status?: string;
-  store?: boolean | null;
-  temperature?: number | null;
-  text?: {} | null;
-  tool_choice?: string | {};
-  tools?: {}[];
-  top_logprobs?: number | null;
-  top_p?: number | null;
-  truncation?: string;
-  upstream_request?: {} | string;
-  upstream_response?: {} | string;
+  role?: string;
+  stop_reason?: string;
+  type?: string;
   usage?: {
-    cached_read_text_tokens?: number;
-    cached_write_text_tokens?: number;
     completion_tokens?: number;
-    completion_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    input_text_tokens?: number;
-    input_tokens?: number;
-    input_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    output_text_tokens?: number;
-    output_tokens?: number;
-    output_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    pricing?: {
-      currency?: string;
-      lines?: {
-        [key: string]: unknown;
-      }[];
-      total_cents?: number;
-      total_nanos?: number;
-      total_usd_str?: string;
-    };
-    pricing_breakdown?: {
-      currency?: string;
-      lines?: {
-        [key: string]: unknown;
-      }[];
-      total_cents?: number;
-      total_nanos?: number;
-      total_usd_str?: string;
-    };
     prompt_tokens?: number;
-    prompt_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    reasoning_tokens?: number;
     total_tokens?: number;
   };
-  user?: string | null;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/responses";
   return client.request<{
-    background?: boolean | null;
-    completed_at?: number | null;
-    created_at?: number;
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: {
-        [key: string]: unknown;
-      }[];
-      trace_level?: "summary" | "full";
-    };
-    error?: {} | null;
-    frequency_penalty?: number | null;
+    content?: {}[];
+    created?: number;
     id?: string;
-    incomplete_details?: {} | null;
-    instructions?: string | null;
-    max_output_tokens?: number | null;
-    max_tool_calls?: number | null;
-    meta?: {};
-    metadata?: {};
     model?: string;
-    nativeResponseId?: string;
     object?: string;
-    output?: {
-      arguments?: string;
-      call_id?: string;
-      content?: {
-        annotations?: {}[];
-        b64_json?: string;
-        image_url?: {
-          url?: string;
-        };
-        mime_type?: string;
-        text?: string;
-        type?: "output_text" | "output_image";
-        [key: string]: unknown;
-      }[];
-      id?: string;
-      name?: string;
-      role?: string;
-      status?: string;
-      type?: string;
-      [key: string]: unknown;
-    }[];
-    parallel_tool_calls?: boolean;
-    presence_penalty?: number | null;
-    previous_response_id?: string | null;
-    prompt_cache_key?: string | null;
-    reasoning?: {
-      effort?: string | null;
-      summary?: string | null;
-    };
-    safety_identifier?: string | null;
-    service_tier?: string | null;
-    status?: string;
-    store?: boolean | null;
-    temperature?: number | null;
-    text?: {} | null;
-    tool_choice?: string | {};
-    tools?: {}[];
-    top_logprobs?: number | null;
-    top_p?: number | null;
-    truncation?: string;
-    upstream_request?: {} | string;
-    upstream_response?: {} | string;
+    role?: string;
+    stop_reason?: string;
+    type?: string;
     usage?: {
-      cached_read_text_tokens?: number;
-      cached_write_text_tokens?: number;
       completion_tokens?: number;
-      completion_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      input_text_tokens?: number;
-      input_tokens?: number;
-      input_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      output_text_tokens?: number;
-      output_tokens?: number;
-      output_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      pricing?: {
-        currency?: string;
-        lines?: {
-          [key: string]: unknown;
-        }[];
-        total_cents?: number;
-        total_nanos?: number;
-        total_usd_str?: string;
-      };
-      pricing_breakdown?: {
-        currency?: string;
-        lines?: {
-          [key: string]: unknown;
-        }[];
-        total_cents?: number;
-        total_nanos?: number;
-        total_usd_str?: string;
-      };
       prompt_tokens?: number;
-      prompt_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      reasoning_tokens?: number;
       total_tokens?: number;
     };
-    user?: string | null;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -2057,13 +919,6 @@ export type CreateSpeechParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     format?: "mp3" | "wav" | "ogg" | "aac";
     input: string;
     model: string;
@@ -2101,13 +956,6 @@ export type CreateTranscriptionParams = {
   body?: {
     audio_b64?: string;
     audio_url?: string;
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     language?: string;
     model: string;
     provider?: {
@@ -2147,13 +995,6 @@ export type CreateTranslationParams = {
   body?: {
     audio_b64?: string;
     audio_url?: string;
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     language?: string;
     model: string;
     prompt?: string;
@@ -2194,13 +1035,6 @@ export type CreateVideoParams = {
   headers?: Record<string, never>;
   body?: {
     aspect_ratio?: string;
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     duration?: number;
     duration_seconds?: number;
     input_reference?: string;
@@ -2337,14 +1171,8 @@ export type GenerateMusicParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    debug?: {
-      enabled?: boolean;
-      return_upstream_request?: boolean;
-      return_upstream_response?: boolean;
-      trace?: boolean;
-      trace_level?: "summary" | "full";
-    };
     duration?: number;
+    echo_upstream_request?: boolean;
     elevenlabs?: {
       composition_plan?: {};
       force_instrumental?: boolean;
@@ -2589,76 +1417,10 @@ export async function getGeneration(
   team_id?: string;
   throughput?: number | null;
   usage?: {
-    cached_read_text_tokens?: number;
-    cached_write_text_tokens?: number;
     completion_tokens?: number;
-    completion_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    input_text_tokens?: number;
-    input_tokens?: number;
-    input_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    output_text_tokens?: number;
-    output_tokens?: number;
-    output_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    pricing?: {
-      currency?: string;
-      lines?: {
-        [key: string]: unknown;
-      }[];
-      total_cents?: number;
-      total_nanos?: number;
-      total_usd_str?: string;
-    };
-    pricing_breakdown?: {
-      currency?: string;
-      lines?: {
-        [key: string]: unknown;
-      }[];
-      total_cents?: number;
-      total_nanos?: number;
-      total_usd_str?: string;
-    };
     prompt_tokens?: number;
-    prompt_tokens_details?: {
-      cached_tokens?: number;
-      input_audio?: number;
-      input_images?: number;
-      input_videos?: number;
-      output_audio?: number;
-      output_images?: number;
-      output_videos?: number;
-      reasoning_tokens?: number;
-    };
-    reasoning_tokens?: number;
     total_tokens?: number;
-  };
-  [key: string]: unknown;
+  } | null;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/generation";
@@ -2684,76 +1446,10 @@ export async function getGeneration(
     team_id?: string;
     throughput?: number | null;
     usage?: {
-      cached_read_text_tokens?: number;
-      cached_write_text_tokens?: number;
       completion_tokens?: number;
-      completion_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      input_text_tokens?: number;
-      input_tokens?: number;
-      input_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      output_text_tokens?: number;
-      output_tokens?: number;
-      output_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      pricing?: {
-        currency?: string;
-        lines?: {
-          [key: string]: unknown;
-        }[];
-        total_cents?: number;
-        total_nanos?: number;
-        total_usd_str?: string;
-      };
-      pricing_breakdown?: {
-        currency?: string;
-        lines?: {
-          [key: string]: unknown;
-        }[];
-        total_cents?: number;
-        total_nanos?: number;
-        total_usd_str?: string;
-      };
       prompt_tokens?: number;
-      prompt_tokens_details?: {
-        cached_tokens?: number;
-        input_audio?: number;
-        input_images?: number;
-        input_videos?: number;
-        output_audio?: number;
-        output_images?: number;
-        output_videos?: number;
-        reasoning_tokens?: number;
-      };
-      reasoning_tokens?: number;
       total_tokens?: number;
-    };
-    [key: string]: unknown;
+    } | null;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -2894,7 +1590,7 @@ export async function getVideoContent(
   });
 }
 
-export type HealthParams = {
+export type HealthzParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -2904,14 +1600,14 @@ export type HealthParams = {
 /**
  * Returns the health status of the API.
  */
-export async function health(
+export async function healthz(
   client: Client,
-  args: HealthParams = {},
+  args: HealthzParams = {},
 ): Promise<{
   status?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/health";
+  const resolvedPath = "/healthz";
   return client.request<{
     status?: string;
   }>({
@@ -3051,127 +1747,18 @@ export async function listModels(
   limit?: number;
   models?: {
     aliases?: string[];
-    deprecation_date?: string | null;
     endpoints?: string[];
     input_types?: string[];
     model_id?: string;
-    name?: string | null;
-    organisation_colour?: string | null;
-    organisation_id?: string | null;
-    organisation_name?: string | null;
+    name?: string;
+    organisation_id?: string;
     output_types?: string[];
-    pricing?: {
-      meters?: {
-        cached_read_text_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        cached_write_text_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        input_audio_seconds?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        input_audio_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        input_image?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        input_image_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        input_text_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        input_video_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        output_audio_seconds?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        output_audio_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        output_image?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        output_image_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        output_text_tokens?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-        web_search?: {
-          currency?: string | null;
-          price_per_unit?: string;
-          provider_id?: string;
-          unit?: string;
-          unit_size?: number;
-        } | null;
-      };
-      pricing_plan?: string;
-    };
     providers?: {
       api_provider_id?: string;
       params?: string[];
     }[];
-    release_date?: string | null;
-    retirement_date?: string | null;
-    status?: string | null;
-    supported_params?: string[];
-    top_provider?: string | null;
+    release_date?: string;
+    status?: string;
   }[];
   offset?: number;
   ok?: boolean;
@@ -3183,127 +1770,18 @@ export async function listModels(
     limit?: number;
     models?: {
       aliases?: string[];
-      deprecation_date?: string | null;
       endpoints?: string[];
       input_types?: string[];
       model_id?: string;
-      name?: string | null;
-      organisation_colour?: string | null;
-      organisation_id?: string | null;
-      organisation_name?: string | null;
+      name?: string;
+      organisation_id?: string;
       output_types?: string[];
-      pricing?: {
-        meters?: {
-          cached_read_text_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          cached_write_text_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          input_audio_seconds?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          input_audio_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          input_image?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          input_image_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          input_text_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          input_video_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          output_audio_seconds?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          output_audio_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          output_image?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          output_image_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          output_text_tokens?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-          web_search?: {
-            currency?: string | null;
-            price_per_unit?: string;
-            provider_id?: string;
-            unit?: string;
-            unit_size?: number;
-          } | null;
-        };
-        pricing_plan?: string;
-      };
       providers?: {
         api_provider_id?: string;
         params?: string[];
       }[];
-      release_date?: string | null;
-      retirement_date?: string | null;
-      status?: string | null;
-      supported_params?: string[];
-      top_provider?: string | null;
+      release_date?: string;
+      status?: string;
     }[];
     offset?: number;
     ok?: boolean;

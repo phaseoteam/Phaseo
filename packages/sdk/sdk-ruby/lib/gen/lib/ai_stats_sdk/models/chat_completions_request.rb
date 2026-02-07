@@ -31,8 +31,6 @@ module AIStatsSdk
 
     attr_accessor :meta
 
-    attr_accessor :debug
-
     attr_accessor :presence_penalty
 
     attr_accessor :seed
@@ -58,8 +56,6 @@ module AIStatsSdk
     attr_accessor :top_p
 
     attr_accessor :response_format
-
-    attr_accessor :modalities
 
     attr_accessor :usage
 
@@ -102,7 +98,6 @@ module AIStatsSdk
         :'logit_bias' => :'logit_bias',
         :'max_output_tokens' => :'max_output_tokens',
         :'meta' => :'meta',
-        :'debug' => :'debug',
         :'presence_penalty' => :'presence_penalty',
         :'seed' => :'seed',
         :'stream' => :'stream',
@@ -116,7 +111,6 @@ module AIStatsSdk
         :'top_logprobs' => :'top_logprobs',
         :'top_p' => :'top_p',
         :'response_format' => :'response_format',
-        :'modalities' => :'modalities',
         :'usage' => :'usage',
         :'provider' => :'provider',
         :'user_id' => :'user_id',
@@ -145,7 +139,6 @@ module AIStatsSdk
         :'logit_bias' => :'Hash<String, Float>',
         :'max_output_tokens' => :'Integer',
         :'meta' => :'Boolean',
-        :'debug' => :'DebugOptions',
         :'presence_penalty' => :'Float',
         :'seed' => :'Integer',
         :'stream' => :'Boolean',
@@ -159,7 +152,6 @@ module AIStatsSdk
         :'top_logprobs' => :'Integer',
         :'top_p' => :'Float',
         :'response_format' => :'ChatCompletionsRequestResponseFormat',
-        :'modalities' => :'Array<String>',
         :'usage' => :'Boolean',
         :'provider' => :'ProviderRoutingOptions',
         :'user_id' => :'String',
@@ -231,10 +223,6 @@ module AIStatsSdk
         self.meta = false
       end
 
-      if attributes.key?(:'debug')
-        self.debug = attributes[:'debug']
-      end
-
       if attributes.key?(:'presence_penalty')
         self.presence_penalty = attributes[:'presence_penalty']
       end
@@ -295,12 +283,6 @@ module AIStatsSdk
 
       if attributes.key?(:'response_format')
         self.response_format = attributes[:'response_format']
-      end
-
-      if attributes.key?(:'modalities')
-        if (value = attributes[:'modalities']).is_a?(Array)
-          self.modalities = value
-        end
       end
 
       if attributes.key?(:'usage')
@@ -626,7 +608,6 @@ module AIStatsSdk
           logit_bias == o.logit_bias &&
           max_output_tokens == o.max_output_tokens &&
           meta == o.meta &&
-          debug == o.debug &&
           presence_penalty == o.presence_penalty &&
           seed == o.seed &&
           stream == o.stream &&
@@ -640,7 +621,6 @@ module AIStatsSdk
           top_logprobs == o.top_logprobs &&
           top_p == o.top_p &&
           response_format == o.response_format &&
-          modalities == o.modalities &&
           usage == o.usage &&
           provider == o.provider &&
           user_id == o.user_id &&
@@ -656,7 +636,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, system, messages, reasoning, frequency_penalty, logit_bias, max_output_tokens, meta, debug, presence_penalty, seed, stream, temperature, tools, max_tool_calls, parallel_tool_calls, tool_choice, top_k, logprobs, top_logprobs, top_p, response_format, modalities, usage, provider, user_id, service_tier].hash
+      [model, system, messages, reasoning, frequency_penalty, logit_bias, max_output_tokens, meta, presence_penalty, seed, stream, temperature, tools, max_tool_calls, parallel_tool_calls, tool_choice, top_k, logprobs, top_logprobs, top_p, response_format, usage, provider, user_id, service_tier].hash
     end
 
     # Builds the object from hash

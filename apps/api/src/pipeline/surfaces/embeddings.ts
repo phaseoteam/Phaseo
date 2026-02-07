@@ -18,6 +18,7 @@ export async function runEmbeddingsPipeline(args: PipelineRunnerArgs): Promise<R
 
 		timing.timer.mark("ir_decode");
 		const ir = decodeOpenAIEmbeddingsRequest(pre.ctx.body);
+		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
 
 		timing.timer.mark("execute_start");

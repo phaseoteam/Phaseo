@@ -19,8 +19,6 @@ module AIStatsSdk
 
     attr_accessor :content
 
-    attr_accessor :reasoning_content
-
     attr_accessor :name
 
     attr_accessor :tool_calls
@@ -54,7 +52,6 @@ module AIStatsSdk
       {
         :'role' => :'role',
         :'content' => :'content',
-        :'reasoning_content' => :'reasoning_content',
         :'name' => :'name',
         :'tool_calls' => :'tool_calls',
         :'tool_call_id' => :'tool_call_id'
@@ -76,7 +73,6 @@ module AIStatsSdk
       {
         :'role' => :'String',
         :'content' => :'ChatMessageContent',
-        :'reasoning_content' => :'String',
         :'name' => :'String',
         :'tool_calls' => :'Array<ToolCall>',
         :'tool_call_id' => :'String'
@@ -118,10 +114,6 @@ module AIStatsSdk
 
       if attributes.key?(:'content')
         self.content = attributes[:'content']
-      end
-
-      if attributes.key?(:'reasoning_content')
-        self.reasoning_content = attributes[:'reasoning_content']
       end
 
       if attributes.key?(:'name')
@@ -178,7 +170,6 @@ module AIStatsSdk
       self.class == o.class &&
           role == o.role &&
           content == o.content &&
-          reasoning_content == o.reasoning_content &&
           name == o.name &&
           tool_calls == o.tool_calls &&
           tool_call_id == o.tool_call_id
@@ -193,7 +184,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [role, content, reasoning_content, name, tool_calls, tool_call_id].hash
+      [role, content, name, tool_calls, tool_call_id].hash
     end
 
     # Builds the object from hash

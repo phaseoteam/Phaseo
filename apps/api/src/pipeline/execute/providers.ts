@@ -16,6 +16,9 @@ export async function rankProviders(
         model: ctx.model,
         teamId: ctx.teamId,
         body: ctx.body,
+        routingMode: ctx.routingMode ?? ctx.teamSettings?.routingMode ?? null,
+        betaChannelEnabled: ctx.teamSettings?.betaChannelEnabled ?? false,
+        requestId: ctx.requestId ?? null,
     });
     (ctx as any).routingSnapshot = ranked.map((entry) => ({
         provider: entry.adapter.name,

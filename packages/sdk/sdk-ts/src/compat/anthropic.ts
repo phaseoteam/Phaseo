@@ -124,13 +124,6 @@ function openAIToAnthropic(response: ChatCompletionsResponse): Message {
   const content = typeof choice?.message?.content === 'string'
     ? choice.message.content
     : '';
-  const finishReason = choice?.finish_reason ?? null;
-  const stopReasonMap: Record<string, string> = {
-    stop: "end_turn",
-    length: "max_tokens",
-    tool_calls: "tool_use",
-    content_filter: "refusal",
-  };
 
   return {
     id: response.id || 'msg_' + Date.now(),
@@ -138,7 +131,7 @@ function openAIToAnthropic(response: ChatCompletionsResponse): Message {
     role: 'assistant',
     content: [{ type: 'text', text: content }],
     model: response.model || '',
-    stop_reason: finishReason ? (stopReasonMap[finishReason] ?? finishReason) : null,
+    stop_reason: choice?.finish_reason || null,
     stop_sequence: null,
     usage: {
       input_tokens: response.usage?.prompt_tokens || 0,

@@ -29,7 +29,6 @@ type ChatCompletionsRequest struct {
 	LogitBias *map[string]float32 `json:"logit_bias,omitempty"`
 	MaxOutputTokens *int32 `json:"max_output_tokens,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
-	Debug *DebugOptions `json:"debug,omitempty"`
 	PresencePenalty *float32 `json:"presence_penalty,omitempty"`
 	Seed *int32 `json:"seed,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
@@ -43,7 +42,6 @@ type ChatCompletionsRequest struct {
 	TopLogprobs *int32 `json:"top_logprobs,omitempty"`
 	TopP *float32 `json:"top_p,omitempty"`
 	ResponseFormat *ChatCompletionsRequestResponseFormat `json:"response_format,omitempty"`
-	Modalities []string `json:"modalities,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
 	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 	UserId *string `json:"user_id,omitempty"`
@@ -333,38 +331,6 @@ func (o *ChatCompletionsRequest) HasMeta() bool {
 // SetMeta gets a reference to the given bool and assigns it to the Meta field.
 func (o *ChatCompletionsRequest) SetMeta(v bool) {
 	o.Meta = &v
-}
-
-// GetDebug returns the Debug field value if set, zero value otherwise.
-func (o *ChatCompletionsRequest) GetDebug() DebugOptions {
-	if o == nil || IsNil(o.Debug) {
-		var ret DebugOptions
-		return ret
-	}
-	return *o.Debug
-}
-
-// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsRequest) GetDebugOk() (*DebugOptions, bool) {
-	if o == nil || IsNil(o.Debug) {
-		return nil, false
-	}
-	return o.Debug, true
-}
-
-// HasDebug returns a boolean if a field has been set.
-func (o *ChatCompletionsRequest) HasDebug() bool {
-	if o != nil && !IsNil(o.Debug) {
-		return true
-	}
-
-	return false
-}
-
-// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
-func (o *ChatCompletionsRequest) SetDebug(v DebugOptions) {
-	o.Debug = &v
 }
 
 // GetPresencePenalty returns the PresencePenalty field value if set, zero value otherwise.
@@ -783,38 +749,6 @@ func (o *ChatCompletionsRequest) SetResponseFormat(v ChatCompletionsRequestRespo
 	o.ResponseFormat = &v
 }
 
-// GetModalities returns the Modalities field value if set, zero value otherwise.
-func (o *ChatCompletionsRequest) GetModalities() []string {
-	if o == nil || IsNil(o.Modalities) {
-		var ret []string
-		return ret
-	}
-	return o.Modalities
-}
-
-// GetModalitiesOk returns a tuple with the Modalities field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatCompletionsRequest) GetModalitiesOk() ([]string, bool) {
-	if o == nil || IsNil(o.Modalities) {
-		return nil, false
-	}
-	return o.Modalities, true
-}
-
-// HasModalities returns a boolean if a field has been set.
-func (o *ChatCompletionsRequest) HasModalities() bool {
-	if o != nil && !IsNil(o.Modalities) {
-		return true
-	}
-
-	return false
-}
-
-// SetModalities gets a reference to the given []string and assigns it to the Modalities field.
-func (o *ChatCompletionsRequest) SetModalities(v []string) {
-	o.Modalities = v
-}
-
 // GetUsage returns the Usage field value if set, zero value otherwise.
 func (o *ChatCompletionsRequest) GetUsage() bool {
 	if o == nil || IsNil(o.Usage) {
@@ -973,9 +907,6 @@ func (o ChatCompletionsRequest) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Meta) {
 		toSerialize["meta"] = o.Meta
 	}
-	if !IsNil(o.Debug) {
-		toSerialize["debug"] = o.Debug
-	}
 	if !IsNil(o.PresencePenalty) {
 		toSerialize["presence_penalty"] = o.PresencePenalty
 	}
@@ -1014,9 +945,6 @@ func (o ChatCompletionsRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.ResponseFormat) {
 		toSerialize["response_format"] = o.ResponseFormat
-	}
-	if !IsNil(o.Modalities) {
-		toSerialize["modalities"] = o.Modalities
 	}
 	if !IsNil(o.Usage) {
 		toSerialize["usage"] = o.Usage

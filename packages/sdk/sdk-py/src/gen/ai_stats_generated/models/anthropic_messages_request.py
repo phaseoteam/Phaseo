@@ -17,14 +17,13 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from ai_stats_generated.models.anthropic_message import AnthropicMessage
 from ai_stats_generated.models.anthropic_messages_request_system import AnthropicMessagesRequestSystem
 from ai_stats_generated.models.anthropic_tool import AnthropicTool
 from ai_stats_generated.models.chat_completions_request_tool_choice import ChatCompletionsRequestToolChoice
-from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -36,31 +35,16 @@ class AnthropicMessagesRequest(BaseModel):
     model: StrictStr
     system: Optional[AnthropicMessagesRequestSystem] = None
     messages: Annotated[List[AnthropicMessage], Field(min_length=1)]
-    max_tokens: Annotated[int, Field(strict=True, ge=1)]
-    temperature: Optional[Union[Annotated[float, Field(le=1, strict=True, ge=0)], Annotated[int, Field(le=1, strict=True, ge=0)]]] = None
+    max_tokens: Optional[Annotated[int, Field(strict=True, ge=1)]] = None
+    temperature: Optional[Union[Annotated[float, Field(le=2, strict=True, ge=0)], Annotated[int, Field(le=2, strict=True, ge=0)]]] = None
     top_p: Optional[Union[Annotated[float, Field(le=1, strict=True, ge=0)], Annotated[int, Field(le=1, strict=True, ge=0)]]] = None
     top_k: Optional[Annotated[int, Field(strict=True, ge=1)]] = None
     tools: Optional[List[AnthropicTool]] = None
     tool_choice: Optional[ChatCompletionsRequestToolChoice] = None
     stream: Optional[StrictBool] = None
-    stop_sequences: Optional[List[StrictStr]] = None
-    modalities: Optional[List[StrictStr]] = None
     metadata: Optional[Dict[str, StrictStr]] = None
-    meta: Optional[StrictBool] = None
-    debug: Optional[DebugOptions] = None
     provider: Optional[ProviderRoutingOptions] = None
-    __properties: ClassVar[List[str]] = ["model", "system", "messages", "max_tokens", "temperature", "top_p", "top_k", "tools", "tool_choice", "stream", "stop_sequences", "modalities", "metadata", "meta", "debug", "provider"]
-
-    @field_validator('modalities')
-    def modalities_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        for i in value:
-            if i not in set(['text', 'image', 'audio', 'video']):
-                raise ValueError("each list item must be one of ('text', 'image', 'audio', 'video')")
-        return value
+    __properties: ClassVar[List[str]] = ["model", "system", "messages", "max_tokens", "temperature", "top_p", "top_k", "tools", "tool_choice", "stream", "metadata", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -121,9 +105,6 @@ class AnthropicMessagesRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of tool_choice
         if self.tool_choice:
             _dict['tool_choice'] = self.tool_choice.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of debug
-        if self.debug:
-            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of provider
         if self.provider:
             _dict['provider'] = self.provider.to_dict()
@@ -149,11 +130,7 @@ class AnthropicMessagesRequest(BaseModel):
             "tools": [AnthropicTool.from_dict(_item) for _item in obj["tools"]] if obj.get("tools") is not None else None,
             "tool_choice": ChatCompletionsRequestToolChoice.from_dict(obj["tool_choice"]) if obj.get("tool_choice") is not None else None,
             "stream": obj.get("stream"),
-            "stop_sequences": obj.get("stop_sequences"),
-            "modalities": obj.get("modalities"),
             "metadata": obj.get("metadata"),
-            "meta": obj.get("meta"),
-            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj

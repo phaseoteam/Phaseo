@@ -19,8 +19,6 @@ module AIStatsSdk
 
     attr_accessor :text
 
-    attr_accessor :cache_control
-
     class EnumAttributeValidator
       attr_reader :datatype
       attr_reader :allowable_values
@@ -47,8 +45,7 @@ module AIStatsSdk
     def self.attribute_map
       {
         :'type' => :'type',
-        :'text' => :'text',
-        :'cache_control' => :'cache_control'
+        :'text' => :'text'
       }
     end
 
@@ -66,8 +63,7 @@ module AIStatsSdk
     def self.openapi_types
       {
         :'type' => :'String',
-        :'text' => :'String',
-        :'cache_control' => :'CacheControl'
+        :'text' => :'String'
       }
     end
 
@@ -103,10 +99,6 @@ module AIStatsSdk
         self.text = attributes[:'text']
       else
         self.text = nil
-      end
-
-      if attributes.key?(:'cache_control')
-        self.cache_control = attributes[:'cache_control']
       end
     end
 
@@ -163,8 +155,7 @@ module AIStatsSdk
       return true if self.equal?(o)
       self.class == o.class &&
           type == o.type &&
-          text == o.text &&
-          cache_control == o.cache_control
+          text == o.text
     end
 
     # @see the `==` method
@@ -176,7 +167,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [type, text, cache_control].hash
+      [type, text].hash
     end
 
     # Builds the object from hash

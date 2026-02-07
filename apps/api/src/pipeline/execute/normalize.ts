@@ -1,11 +1,9 @@
 // Purpose: Execute-stage parameter normalization.
-// Why: Keeps provider/protocol quirks out of executors.
-// How: Adjusts IR params per provider before the executor call.
+// Why: Applies generic protocol constraints before execution.
+// How: Adjusts IR params that are not provider-specific.
 
 import type { IRChatRequest } from "@core/ir";
 import type { Protocol } from "@protocols/detect";
-import type { ProviderCandidate } from "@pipeline/before/types";
-import { normalizeReasoningForProvider } from "@pipeline/before/reasoningNormalization";
 
 const DEFAULT_ANTHROPIC_MAX_TOKENS = 4096;
 
@@ -47,8 +45,7 @@ function normalizeMaxTokens(
 export function normalizeIRForProvider(
     ir: IRChatRequest,
     providerId: string,
-    protocol?: Protocol,
-    candidate?: ProviderCandidate
+    protocol?: Protocol
 ): IRChatRequest {
     const nextMaxTokens = normalizeMaxTokens(ir, providerId);
 
@@ -62,25 +59,17 @@ export function normalizeIRForProvider(
                 : normalizeTemperature(ir.temperature, pMax, providerMax);
     }
 
-    // Normalize reasoning parameters based on provider capabilities
-    let nextReasoning = ir.reasoning;
-    if (candidate && ir.reasoning) {
-        nextReasoning = normalizeReasoningForProvider(ir.reasoning, candidate);
-    }
-
     const needsMaxTokens = nextMaxTokens !== undefined && nextMaxTokens !== ir.maxTokens;
     const needsTemp =
         nextTemperature !== undefined &&
         (ir.temperature === undefined || Math.abs(nextTemperature - ir.temperature) > 1e-9);
-    const needsReasoning = nextReasoning !== ir.reasoning;
 
-    if (!needsMaxTokens && !needsTemp && !needsReasoning) {
+    if (!needsMaxTokens && !needsTemp) {
         return ir;
     }
 
     const next: IRChatRequest = { ...ir };
     if (needsMaxTokens) next.maxTokens = nextMaxTokens;
     if (needsTemp) next.temperature = nextTemperature;
-    if (needsReasoning) next.reasoning = nextReasoning;
     return next;
 }

@@ -40,8 +40,10 @@ export type RequestMeta = {
     edgeAsn?: number | null;
     requestId: string;
     stream?: boolean;
-    debug?: boolean;
+    debug?: DebugOptions;
     echoUpstreamRequest?: boolean;
+    returnUpstreamRequest?: boolean;
+    returnUpstreamResponse?: boolean;
     startedAtMs?: number;
     upstreamStartMs?: number;
     keySource?: "gateway" | "byok";
@@ -52,6 +54,14 @@ export type RequestMeta = {
     latency_ms?: number;          // End-to-end request time
     returnMeta?: boolean;         // Should meta block be returned to caller
     providerCapabilitiesBeta?: boolean;
+};
+
+export type DebugOptions = {
+    enabled?: boolean;
+    return_upstream_request?: boolean;
+    return_upstream_response?: boolean;
+    trace?: boolean;
+    trace_level?: "summary" | "full";
 };
 
 export type ModelId = string;

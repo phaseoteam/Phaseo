@@ -63,15 +63,6 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
-        /// Test the property 'NativeResponseId'
-        /// </summary>
-        [Fact]
-        public void NativeResponseIdTest()
-        {
-            // TODO unit test for the property 'NativeResponseId'
-        }
-
-        /// <summary>
         /// Test the property 'Object'
         /// </summary>
         [Fact]
@@ -114,60 +105,6 @@ namespace AIStatsSdk.Test.Model
         public void UsageTest()
         {
             // TODO unit test for the property 'Usage'
-        }
-
-        /// <summary>
-        /// Test the property 'ServiceTier'
-        /// </summary>
-        [Fact]
-        public void ServiceTierTest()
-        {
-            // TODO unit test for the property 'ServiceTier'
-        }
-
-        /// <summary>
-        /// Test the property 'SystemFingerprint'
-        /// </summary>
-        [Fact]
-        public void SystemFingerprintTest()
-        {
-            // TODO unit test for the property 'SystemFingerprint'
-        }
-
-        /// <summary>
-        /// Test the property 'Meta'
-        /// </summary>
-        [Fact]
-        public void MetaTest()
-        {
-            // TODO unit test for the property 'Meta'
-        }
-
-        /// <summary>
-        /// Test the property 'Debug'
-        /// </summary>
-        [Fact]
-        public void DebugTest()
-        {
-            // TODO unit test for the property 'Debug'
-        }
-
-        /// <summary>
-        /// Test the property 'UpstreamRequest'
-        /// </summary>
-        [Fact]
-        public void UpstreamRequestTest()
-        {
-            // TODO unit test for the property 'UpstreamRequest'
-        }
-
-        /// <summary>
-        /// Test the property 'UpstreamResponse'
-        /// </summary>
-        [Fact]
-        public void UpstreamResponseTest()
-        {
-            // TODO unit test for the property 'UpstreamResponse'
         }
     }
 }

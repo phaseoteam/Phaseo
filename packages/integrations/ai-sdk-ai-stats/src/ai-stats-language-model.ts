@@ -10,8 +10,6 @@ import { mapGatewayResponse } from './map-gateway-response.js';
 import { parseSSEStream } from './utils/parse-sse-stream.js';
 import { mapGatewayFinishReason } from './map-gateway-finish-reason.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
-import { mapGatewayUsage } from './map-gateway-usage.js';
-import { headersToRecord } from './utils/headers.js';
 
 /**
  * AI Stats Language Model implementation for Vercel AI SDK v6
@@ -76,8 +74,7 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
 
     // Parse and map response
     const data = await response.json();
-    const responseHeaders = headersToRecord(response.headers);
-    const mapped = mapGatewayResponse(data, options, gatewayRequest, responseHeaders);
+    const mapped = mapGatewayResponse(data, options, gatewayRequest);
 
     return mapped;
   }
@@ -123,119 +120,39 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
 
     // Parse SSE stream and emit AI SDK events
     const warnings: any[] = [];
-    let finishReason: LanguageModelV3FinishReason = mapGatewayFinishReason(undefined);
-    let rawUsage: any = undefined;
-
-    const textIds = new Map<number, { id: string; started: boolean }>();
-    const reasoningIds = new Map<number, { id: string; started: boolean }>();
-
-    const toolCalls = new Map<
-      number,
-      { id: string; toolName: string; started: boolean }
-    >();
-
-    const emitTextDelta = (
-      controller: TransformStreamDefaultController<LanguageModelV3StreamPart>,
-      index: number,
-      delta: string
-    ) => {
-      const textState =
-        textIds.get(index) ?? { id: `text-${index}`, started: false };
-      if (!textState.started) {
-        controller.enqueue({
-          type: 'text-start',
-          id: textState.id,
-        });
-        textState.started = true;
-        textIds.set(index, textState);
-      }
-      controller.enqueue({
-        type: 'text-delta',
-        id: textState.id,
-        delta,
-      });
+    let finishReason: LanguageModelV3FinishReason = 'other';
+    let usage: { promptTokens: number; completionTokens: number } = {
+      promptTokens: 0,
+      completionTokens: 0,
     };
 
-    const emitReasoningDelta = (
-      controller: TransformStreamDefaultController<LanguageModelV3StreamPart>,
-      index: number,
-      delta: string
-    ) => {
-      const reasoningState =
-        reasoningIds.get(index) ?? {
-          id: `reasoning-${index}`,
-          started: false,
-        };
-      if (!reasoningState.started) {
-        controller.enqueue({
-          type: 'reasoning-start',
-          id: reasoningState.id,
-        });
-        reasoningState.started = true;
-        reasoningIds.set(index, reasoningState);
-      }
-      controller.enqueue({
-        type: 'reasoning-delta',
-        id: reasoningState.id,
-        delta,
-      });
-    };
+    const toolCalls: Array<{
+      toolCallId: string;
+      toolName: string;
+      args: string;
+    }> = [];
 
-    const responseHeaders = headersToRecord(response.headers);
+    const requestBodyJson = JSON.stringify({
+      ...gatewayRequest,
+      stream: true,
+      stream_options: { include_usage: true },
+    });
 
     return {
       stream: parseSSEStream(response).pipeThrough(
         new TransformStream<any, LanguageModelV3StreamPart>({
-          start(controller) {
-            controller.enqueue({
-              type: 'stream-start',
-              warnings,
-            });
-          },
           transform(chunk, controller) {
-            const payload = (chunk as any)?.data ?? chunk;
-            const event = (chunk as any)?.event ?? payload?.type;
-
-            if (typeof event === 'string' && event.startsWith('response.')) {
-              const index = payload?.output_index ?? 0;
-              if (event === 'response.output_text.delta') {
-                const delta = extractTextDelta(payload?.delta);
-                if (delta) {
-                  emitTextDelta(controller, index, delta);
-                }
-              } else if (event === 'response.reasoning_text.delta') {
-                const delta = extractTextDelta(payload?.delta);
-                if (delta) {
-                  emitReasoningDelta(controller, index, delta);
-                }
-              } else if (event === 'response.completed') {
-                const completedUsage = payload?.response?.usage;
-                if (completedUsage) {
-                  rawUsage = completedUsage;
-                }
-                finishReason = mapGatewayFinishReason(
-                  payload?.response?.status === 'completed' ? 'stop' : 'error'
-                );
-              }
-              return;
-            }
-
             // Handle stream chunk
-            if (payload?.choices && payload.choices.length > 0) {
-              const choice = payload.choices[0];
+            if (chunk.choices && chunk.choices.length > 0) {
+              const choice = chunk.choices[0];
               const delta = choice.delta;
 
               // Emit text deltas
-              const contentDelta = extractTextDelta(delta?.content);
-              if (contentDelta) {
-                emitTextDelta(controller, choice.index ?? 0, contentDelta);
-              }
-
-              const reasoningDelta = extractTextDelta(
-                delta?.reasoning_content ?? delta?.reasoning_text ?? delta?.reasoning
-              );
-              if (reasoningDelta) {
-                emitReasoningDelta(controller, choice.index ?? 0, reasoningDelta);
+              if (delta?.content) {
+                controller.enqueue({
+                  type: 'text-delta',
+                  textDelta: delta.content,
+                });
               }
 
               // Emit tool call deltas
@@ -243,34 +160,36 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
                 for (const toolCall of delta.tool_calls) {
                   const index = toolCall.index ?? 0;
 
-                  const current =
-                    toolCalls.get(index) ?? {
-                      id: toolCall.id ?? `tool-${index}`,
-                      toolName: toolCall.function?.name ?? '',
-                      started: false,
-                    };
+                  // Initialize tool call if first chunk
                   if (toolCall.id) {
-                    current.id = toolCall.id;
-                  }
-                  if (toolCall.function?.name) {
-                    current.toolName = toolCall.function.name;
-                  }
+                    toolCalls[index] = {
+                      toolCallId: toolCall.id,
+                      toolName: toolCall.function?.name ?? '',
+                      args: '',
+                    };
 
-                  if (!current.started) {
                     controller.enqueue({
-                      type: 'tool-input-start',
-                      id: current.id,
-                      toolName: current.toolName,
+                      type: 'tool-call-delta',
+                      toolCallType: 'function',
+                      toolCallId: toolCall.id,
+                      toolName: toolCall.function?.name ?? '',
+                      argsTextDelta: '',
                     });
-                    current.started = true;
-                    toolCalls.set(index, current);
                   }
 
+                  // Append arguments
                   if (toolCall.function?.arguments) {
+                    const args = toolCall.function.arguments;
+                    if (toolCalls[index]) {
+                      toolCalls[index].args += args;
+                    }
+
                     controller.enqueue({
-                      type: 'tool-input-delta',
-                      id: current.id,
-                      delta: toolCall.function.arguments,
+                      type: 'tool-call-delta',
+                      toolCallType: 'function',
+                      toolCallId: toolCalls[index]?.toolCallId ?? '',
+                      toolName: toolCalls[index]?.toolName ?? '',
+                      argsTextDelta: args,
                     });
                   }
                 }
@@ -283,72 +202,36 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
             }
 
             // Handle usage in final chunk
-            if (payload?.usage) {
-              rawUsage = payload.usage;
+            if (chunk.usage) {
+              usage = {
+                promptTokens: chunk.usage.prompt_tokens ?? 0,
+                completionTokens: chunk.usage.completion_tokens ?? 0,
+              };
             }
           },
 
           flush(controller) {
-            for (const { id, started } of textIds.values()) {
-              if (started) {
-                controller.enqueue({
-                  type: 'text-end',
-                  id,
-                });
-              }
-            }
-            for (const { id, started } of reasoningIds.values()) {
-              if (started) {
-                controller.enqueue({
-                  type: 'reasoning-end',
-                  id,
-                });
-              }
-            }
-            for (const { id, started } of toolCalls.values()) {
-              if (started) {
-                controller.enqueue({
-                  type: 'tool-input-end',
-                  id,
-                });
-              }
-            }
-
             // Emit finish event
             controller.enqueue({
               type: 'finish',
               finishReason,
-              usage: mapGatewayUsage(rawUsage ?? {}),
+              usage,
+              logprobs: undefined,
             });
           },
         })
       ),
+      rawCall: {
+        rawPrompt: gatewayRequest.messages,
+        rawSettings: gatewayRequest,
+      },
+      rawResponse: {
+        headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
+      },
       request: {
-        body: gatewayRequest,
+        body: requestBodyJson,
       },
-      response: {
-        headers: responseHeaders,
-      },
+      warnings,
     };
   }
-}
-
-function extractTextDelta(content: unknown): string | undefined {
-  if (typeof content === 'string') {
-    return content;
-  }
-  if (!Array.isArray(content)) {
-    return undefined;
-  }
-
-  const textParts = content
-    .filter((part: any) => part?.type === 'text' || part?.type === 'output_text')
-    .map((part: any) => (typeof part?.text === 'string' ? part.text : ''))
-    .filter((text: string) => text.length > 0);
-
-  if (textParts.length === 0) {
-    return undefined;
-  }
-
-  return textParts.join('');
 }

@@ -6,7 +6,8 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { cn } from "@/lib/utils";
-import { ArrowDownRight, ArrowUpRight, ChevronDown, Minus, Sparkles } from "lucide-react";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
+import { ChevronDown } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -26,7 +27,6 @@ export type ModelLeaderboardEntry = {
 	organisation_name?: string | null;
 	organisation_colour?: string | null;
 	tokens: number;
-	prev_tokens?: number | null;
 	rank?: number | null;
 	prev_rank?: number | null;
 	trend?: "up" | "down" | "same" | "new";
@@ -38,8 +38,8 @@ type ModelLeaderboardProps = {
 	dataByRange: Partial<Record<LeaderboardRange, ModelLeaderboardEntry[]>>;
 	defaultRange?: LeaderboardRange;
 	showRangeControls?: boolean;
-	showHeader?: boolean;
 	title?: string;
+	subtitle?: string;
 	icon?: ReactNode;
 	maxCollapsed?: number;
 	maxExpanded?: number;
@@ -47,8 +47,8 @@ type ModelLeaderboardProps = {
 
 const RANGE_OPTIONS: Array<{ key: LeaderboardRange; label: string }> = [
 	{ key: "today", label: "Today" },
-	{ key: "week", label: "This week" },
-	{ key: "month", label: "This month" },
+	{ key: "week", label: "Last 7d" },
+	{ key: "month", label: "Last month" },
 	{ key: "trending", label: "Trending" },
 ];
 
@@ -61,39 +61,53 @@ function formatTokens(value: number) {
 }
 
 function getChangeDisplay(entry: ModelLeaderboardEntry) {
-	const prevTokens = Number(entry.prev_tokens ?? NaN);
+	const trend = entry.trend ?? "same";
+	const fallbackChange =
+		Number.isFinite(entry.prev_rank ?? NaN) &&
+		Number.isFinite(entry.rank ?? NaN)
+			? Number(entry.prev_rank) - Number(entry.rank)
+			: 0;
 	const rawValue =
 		typeof entry.change_value === "number"
 			? entry.change_value
-			: Number.isFinite(prevTokens) && prevTokens > 0
-			? ((entry.tokens - prevTokens) / prevTokens) * 100
-			: NaN;
+			: fallbackChange;
 
-	if (
-		!Number.isFinite(rawValue) &&
-		(!Number.isFinite(prevTokens) || prevTokens <= 0)
-	) {
-		return { text: "New", className: "text-indigo-500", Icon: Sparkles };
+	if (trend === "new") {
+		return { text: "New", className: "text-indigo-500" };
 	}
 
-	if (!Number.isFinite(rawValue) || Math.abs(rawValue) < 0.05) {
-		return { text: "0%", className: "text-muted-foreground", Icon: Minus };
+	if (!Number.isFinite(rawValue) || rawValue === 0) {
+		return { text: "--", className: "text-muted-foreground" };
 	}
 
-	const precision = Math.abs(rawValue) < 10 ? 1 : 0;
-	const text = `${rawValue > 0 ? "+" : ""}${rawValue.toFixed(precision)}%`;
-	if (rawValue > 0) {
-		return { text, className: "text-emerald-600", Icon: ArrowUpRight };
-	}
-	return { text, className: "text-rose-500", Icon: ArrowDownRight };
+	const label = entry.change_label ? ` ${entry.change_label}` : "";
+	const text = `${rawValue > 0 ? "+" : ""}${rawValue}${label}`;
+	const className =
+		rawValue > 0 ? "text-emerald-600" : "text-rose-500";
+
+	return { text, className };
+}
+
+function getModelHref(entry: ModelLeaderboardEntry) {
+	return getModelDetailsHref(entry.organisation_id, entry.model_id);
+}
+
+function getOrganisationHref(entry: ModelLeaderboardEntry) {
+	if (!entry.organisation_id) return null;
+	return `/organisations/${encodeURIComponent(entry.organisation_id)}`;
+}
+
+function getProviderHref(entry: ModelLeaderboardEntry) {
+	if (!entry.provider_id) return null;
+	return `/api-providers/${encodeURIComponent(entry.provider_id)}`;
 }
 
 export function ModelLeaderboard({
 	dataByRange,
 	defaultRange = "week",
 	showRangeControls = true,
-	showHeader = false,
-	title = "Leaderboard",
+	title,
+	subtitle,
 	icon,
 	maxCollapsed = 10,
 	maxExpanded = 20,
@@ -127,41 +141,25 @@ export function ModelLeaderboard({
 
 	return (
 		<div className="space-y-4">
-			{showHeader ? (
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<div className="flex items-center gap-2">
-						{icon ? (
-							<span className="text-muted-foreground">{icon}</span>
-						) : null}
-						<h3 className="text-xl font-semibold">{title}</h3>
-					</div>
-					{showRangeControls ? (
-						<Select
-							value={range}
-							onValueChange={(value) => {
-								setRange(value as LeaderboardRange);
-								setShowAll(false);
-							}}
-						>
-							<SelectTrigger className="h-8 w-[150px]">
-								<SelectValue placeholder="Range" />
-							</SelectTrigger>
-							<SelectContent>
-								{RANGE_OPTIONS.map((option) => (
-									<SelectItem
-										key={option.key}
-										value={option.key}
-										disabled={!dataByRange[option.key]?.length}
-									>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+			{showRangeControls || title ? (
+				<div
+					className={[
+						"flex items-start gap-3",
+						title ? "justify-between" : "justify-end",
+					].join(" ")}
+				>
+					{title ? (
+						<div className="space-y-0.5">
+							<div className="flex items-center gap-2">
+								{icon}
+								<h3 className="text-xl font-semibold leading-8">{title}</h3>
+							</div>
+							{subtitle ? (
+								<p className="text-sm text-muted-foreground">{subtitle}</p>
+							) : null}
+						</div>
 					) : null}
-				</div>
-			) : showRangeControls ? (
-				<div className="flex justify-end">
+					{showRangeControls ? (
 					<Select
 						value={range}
 						onValueChange={(value) => {
@@ -184,27 +182,29 @@ export function ModelLeaderboard({
 							))}
 						</SelectContent>
 					</Select>
+					) : null}
 				</div>
 			) : null}
 
 			<div className="grid gap-2 md:grid-cols-2">
 				{visibleEntries.map((entry, index) => {
 					const change = getChangeDisplay(entry);
-					const ChangeIcon = change.Icon;
 					const rankValue =
 						typeof entry.rank === "number" ? entry.rank : NaN;
 					const rankLabel =
-						range === "trending"
-							? `#${index + 1}`
-							: Number.isFinite(rankValue) &&
-							  rankValue > 0 &&
-							  rankValue < 1000
+						Number.isFinite(rankValue) &&
+						rankValue > 0 &&
+						rankValue < 1000
 							? `#${rankValue}`
 							: `#${index + 1}`;
 					const logoId =
 						entry.organisation_id ??
 						entry.provider_id ??
 						entry.model_id;
+					const modelHref = getModelHref(entry);
+					const organisationHref = getOrganisationHref(entry);
+					const providerHref = getProviderHref(entry);
+					const logoHref = organisationHref ?? providerHref ?? modelHref;
 					return (
 						<div
 							key={entry.key}
@@ -213,34 +213,54 @@ export function ModelLeaderboard({
 							<div className="w-6 text-xs text-muted-foreground">
 								{rankLabel}
 							</div>
-							<Link
-								href={`/models/${entry.model_id}`}
-								aria-label={entry.model_name}
-								className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
-							>
-								<div className="relative h-5 w-5">
-									<Logo
-										id={logoId}
-										alt={
-											entry.organisation_name ??
-											entry.model_name
-										}
-										className="object-contain"
-										fill
-									/>
-								</div>
-							</Link>
-							<div className="min-w-0 flex-1">
+							{logoHref ? (
 								<Link
-									href={`/models/${entry.model_id}`}
-									className="font-medium truncate block"
+									href={logoHref}
+									className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+									aria-label={entry.organisation_name ?? entry.model_name}
 								>
-									{entry.model_name}
+									<div className="relative h-5 w-5">
+										<Logo
+											id={logoId}
+											alt={
+												entry.organisation_name ??
+												entry.model_name
+											}
+											className="object-contain"
+											fill
+										/>
+									</div>
 								</Link>
+							) : (
+								<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
+									<div className="relative h-5 w-5">
+										<Logo
+											id={logoId}
+											alt={
+												entry.organisation_name ??
+												entry.model_name
+											}
+											className="object-contain"
+											fill
+										/>
+									</div>
+								</div>
+							)}
+							<div className="min-w-0 flex-1">
+								{modelHref ? (
+									<Link
+										href={modelHref}
+										className="font-medium truncate block"
+									>
+										{entry.model_name}
+									</Link>
+								) : (
+									<div className="font-medium truncate">{entry.model_name}</div>
+								)}
 								{entry.organisation_name ? (
-									entry.organisation_id ? (
+									organisationHref ? (
 										<Link
-											href={`/organisations/${entry.organisation_id}`}
+											href={organisationHref}
 											className="text-xs text-muted-foreground truncate block"
 										>
 											{entry.organisation_name}
@@ -256,14 +276,8 @@ export function ModelLeaderboard({
 								<div className="font-mono text-sm">
 									{formatTokens(entry.tokens)}
 								</div>
-								<div
-									className={cn(
-										"text-xs flex items-center justify-end gap-1",
-										change.className
-									)}
-								>
-									<ChangeIcon className="h-3.5 w-3.5" />
-									<span>{change.text}</span>
+								<div className={cn("text-xs", change.className)}>
+									{change.text}
 								</div>
 							</div>
 						</div>
@@ -272,23 +286,24 @@ export function ModelLeaderboard({
 				{showAll
 					? extraEntries.map((entry, index) => {
 							const change = getChangeDisplay(entry);
-							const ChangeIcon = change.Icon;
 							const rankValue =
 								typeof entry.rank === "number"
 									? entry.rank
 									: NaN;
 							const rankLabel =
-								range === "trending"
-									? `#${index + maxCollapsed + 1}`
-									: Number.isFinite(rankValue) &&
-									  rankValue > 0 &&
-									  rankValue < 1000
+								Number.isFinite(rankValue) &&
+								rankValue > 0 &&
+								rankValue < 1000
 									? `#${rankValue}`
 									: `#${index + maxCollapsed + 1}`;
 							const logoId =
 								entry.organisation_id ??
 								entry.provider_id ??
 								entry.model_id;
+							const modelHref = getModelHref(entry);
+							const organisationHref = getOrganisationHref(entry);
+							const providerHref = getProviderHref(entry);
+							const logoHref = organisationHref ?? providerHref ?? modelHref;
 							return (
 								<div
 									key={`${entry.key}-extra`}
@@ -300,34 +315,54 @@ export function ModelLeaderboard({
 									<div className="w-6 text-xs text-muted-foreground">
 										{rankLabel}
 									</div>
-									<Link
-										href={`/models/${entry.model_id}`}
-										aria-label={entry.model_name}
-										className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
-									>
-										<div className="relative h-5 w-5">
-											<Logo
-												id={logoId}
-												alt={
-													entry.organisation_name ??
-													entry.model_name
-												}
-												className="object-contain"
-												fill
-											/>
-										</div>
-									</Link>
-									<div className="min-w-0 flex-1">
+									{logoHref ? (
 										<Link
-											href={`/models/${entry.model_id}`}
-											className="font-medium truncate block"
+											href={logoHref}
+											className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+											aria-label={entry.organisation_name ?? entry.model_name}
 										>
-											{entry.model_name}
+											<div className="relative h-5 w-5">
+												<Logo
+													id={logoId}
+													alt={
+														entry.organisation_name ??
+														entry.model_name
+													}
+													className="object-contain"
+													fill
+												/>
+											</div>
 										</Link>
+									) : (
+										<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
+											<div className="relative h-5 w-5">
+												<Logo
+													id={logoId}
+													alt={
+														entry.organisation_name ??
+														entry.model_name
+													}
+													className="object-contain"
+													fill
+												/>
+											</div>
+										</div>
+									)}
+									<div className="min-w-0 flex-1">
+										{modelHref ? (
+											<Link
+												href={modelHref}
+												className="font-medium truncate block"
+											>
+												{entry.model_name}
+											</Link>
+										) : (
+											<div className="font-medium truncate">{entry.model_name}</div>
+										)}
 										{entry.organisation_name ? (
-											entry.organisation_id ? (
+											organisationHref ? (
 												<Link
-													href={`/organisations/${entry.organisation_id}`}
+													href={organisationHref}
 													className="text-xs text-muted-foreground truncate block"
 												>
 													{entry.organisation_name}
@@ -345,12 +380,11 @@ export function ModelLeaderboard({
 										</div>
 										<div
 											className={cn(
-												"text-xs flex items-center justify-end gap-1",
+												"text-xs",
 												change.className
 											)}
 										>
-											<ChangeIcon className="h-3.5 w-3.5" />
-											<span>{change.text}</span>
+											{change.text}
 										</div>
 									</div>
 								</div>
@@ -383,4 +417,3 @@ export function ModelLeaderboard({
 		</div>
 	);
 }
-

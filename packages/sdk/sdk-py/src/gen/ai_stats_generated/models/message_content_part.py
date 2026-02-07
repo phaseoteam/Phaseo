@@ -19,8 +19,6 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, f
 from typing import Any, List, Optional
 from ai_stats_generated.models.audio_content_part import AudioContentPart
 from ai_stats_generated.models.image_content_part import ImageContentPart
-from ai_stats_generated.models.input_image_content_part import InputImageContentPart
-from ai_stats_generated.models.input_text_content_part import InputTextContentPart
 from ai_stats_generated.models.text_content_part import TextContentPart
 from ai_stats_generated.models.tool_call_content_part import ToolCallContentPart
 from ai_stats_generated.models.video_content_part import VideoContentPart
@@ -28,7 +26,7 @@ from pydantic import StrictStr, Field
 from typing import Union, List, Set, Optional, Dict
 from typing_extensions import Literal, Self
 
-MESSAGECONTENTPART_ONE_OF_SCHEMAS = ["AudioContentPart", "ImageContentPart", "InputImageContentPart", "InputTextContentPart", "TextContentPart", "ToolCallContentPart", "VideoContentPart"]
+MESSAGECONTENTPART_ONE_OF_SCHEMAS = ["AudioContentPart", "ImageContentPart", "TextContentPart", "ToolCallContentPart", "VideoContentPart"]
 
 class MessageContentPart(BaseModel):
     """
@@ -36,20 +34,16 @@ class MessageContentPart(BaseModel):
     """
     # data type: TextContentPart
     oneof_schema_1_validator: Optional[TextContentPart] = None
-    # data type: InputTextContentPart
-    oneof_schema_2_validator: Optional[InputTextContentPart] = None
     # data type: ImageContentPart
-    oneof_schema_3_validator: Optional[ImageContentPart] = None
-    # data type: InputImageContentPart
-    oneof_schema_4_validator: Optional[InputImageContentPart] = None
+    oneof_schema_2_validator: Optional[ImageContentPart] = None
     # data type: AudioContentPart
-    oneof_schema_5_validator: Optional[AudioContentPart] = None
+    oneof_schema_3_validator: Optional[AudioContentPart] = None
     # data type: VideoContentPart
-    oneof_schema_6_validator: Optional[VideoContentPart] = None
+    oneof_schema_4_validator: Optional[VideoContentPart] = None
     # data type: ToolCallContentPart
-    oneof_schema_7_validator: Optional[ToolCallContentPart] = None
-    actual_instance: Optional[Union[AudioContentPart, ImageContentPart, InputImageContentPart, InputTextContentPart, TextContentPart, ToolCallContentPart, VideoContentPart]] = None
-    one_of_schemas: Set[str] = { "AudioContentPart", "ImageContentPart", "InputImageContentPart", "InputTextContentPart", "TextContentPart", "ToolCallContentPart", "VideoContentPart" }
+    oneof_schema_5_validator: Optional[ToolCallContentPart] = None
+    actual_instance: Optional[Union[AudioContentPart, ImageContentPart, TextContentPart, ToolCallContentPart, VideoContentPart]] = None
+    one_of_schemas: Set[str] = { "AudioContentPart", "ImageContentPart", "TextContentPart", "ToolCallContentPart", "VideoContentPart" }
 
     model_config = ConfigDict(
         validate_assignment=True,
@@ -77,19 +71,9 @@ class MessageContentPart(BaseModel):
             error_messages.append(f"Error! Input type `{type(v)}` is not `TextContentPart`")
         else:
             match += 1
-        # validate data type: InputTextContentPart
-        if not isinstance(v, InputTextContentPart):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `InputTextContentPart`")
-        else:
-            match += 1
         # validate data type: ImageContentPart
         if not isinstance(v, ImageContentPart):
             error_messages.append(f"Error! Input type `{type(v)}` is not `ImageContentPart`")
-        else:
-            match += 1
-        # validate data type: InputImageContentPart
-        if not isinstance(v, InputImageContentPart):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `InputImageContentPart`")
         else:
             match += 1
         # validate data type: AudioContentPart
@@ -109,10 +93,10 @@ class MessageContentPart(BaseModel):
             match += 1
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in MessageContentPart with oneOf schemas: AudioContentPart, ImageContentPart, InputImageContentPart, InputTextContentPart, TextContentPart, ToolCallContentPart, VideoContentPart. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when setting `actual_instance` in MessageContentPart with oneOf schemas: AudioContentPart, ImageContentPart, TextContentPart, ToolCallContentPart, VideoContentPart. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in MessageContentPart with oneOf schemas: AudioContentPart, ImageContentPart, InputImageContentPart, InputTextContentPart, TextContentPart, ToolCallContentPart, VideoContentPart. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting `actual_instance` in MessageContentPart with oneOf schemas: AudioContentPart, ImageContentPart, TextContentPart, ToolCallContentPart, VideoContentPart. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -133,21 +117,9 @@ class MessageContentPart(BaseModel):
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # deserialize data into InputTextContentPart
-        try:
-            instance.actual_instance = InputTextContentPart.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
         # deserialize data into ImageContentPart
         try:
             instance.actual_instance = ImageContentPart.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into InputImageContentPart
-        try:
-            instance.actual_instance = InputImageContentPart.from_json(json_str)
             match += 1
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
@@ -172,10 +144,10 @@ class MessageContentPart(BaseModel):
 
         if match > 1:
             # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into MessageContentPart with oneOf schemas: AudioContentPart, ImageContentPart, InputImageContentPart, InputTextContentPart, TextContentPart, ToolCallContentPart, VideoContentPart. Details: " + ", ".join(error_messages))
+            raise ValueError("Multiple matches found when deserializing the JSON string into MessageContentPart with oneOf schemas: AudioContentPart, ImageContentPart, TextContentPart, ToolCallContentPart, VideoContentPart. Details: " + ", ".join(error_messages))
         elif match == 0:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into MessageContentPart with oneOf schemas: AudioContentPart, ImageContentPart, InputImageContentPart, InputTextContentPart, TextContentPart, ToolCallContentPart, VideoContentPart. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into MessageContentPart with oneOf schemas: AudioContentPart, ImageContentPart, TextContentPart, ToolCallContentPart, VideoContentPart. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -189,7 +161,7 @@ class MessageContentPart(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], AudioContentPart, ImageContentPart, InputImageContentPart, InputTextContentPart, TextContentPart, ToolCallContentPart, VideoContentPart]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], AudioContentPart, ImageContentPart, TextContentPart, ToolCallContentPart, VideoContentPart]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

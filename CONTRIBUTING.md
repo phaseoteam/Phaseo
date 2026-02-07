@@ -116,7 +116,7 @@ The monorepo now uses [changesets](https://github.com/changesets/changesets) to 
     -   Run `pnpm changeset:version` to bump every affected `package.json`, emit changelog entries, and automatically sync `pyproject.toml`. The Mintlify docs site uses its own version selector, so `apps/docs/docs.json` (and its `api.version` entry) are maintained separately.
 -   Use `pnpm sdk-py:sync-version` whenever you need to resync `pyproject.toml` (for example if you roll back a change or edit the file manually) before publishing to PyPI.
 
-## dY'� Code of Conduct
+## Code of Conduct
 
 AI Stats follows the Contributor Covenant
 .

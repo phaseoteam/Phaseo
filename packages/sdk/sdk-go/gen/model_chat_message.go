@@ -23,7 +23,6 @@ var _ MappedNullable = &ChatMessage{}
 type ChatMessage struct {
 	Role string `json:"role"`
 	Content *ChatMessageContent `json:"content,omitempty"`
-	ReasoningContent *string `json:"reasoning_content,omitempty"`
 	Name *string `json:"name,omitempty"`
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 	ToolCallId *string `json:"tool_call_id,omitempty"`
@@ -103,38 +102,6 @@ func (o *ChatMessage) HasContent() bool {
 // SetContent gets a reference to the given ChatMessageContent and assigns it to the Content field.
 func (o *ChatMessage) SetContent(v ChatMessageContent) {
 	o.Content = &v
-}
-
-// GetReasoningContent returns the ReasoningContent field value if set, zero value otherwise.
-func (o *ChatMessage) GetReasoningContent() string {
-	if o == nil || IsNil(o.ReasoningContent) {
-		var ret string
-		return ret
-	}
-	return *o.ReasoningContent
-}
-
-// GetReasoningContentOk returns a tuple with the ReasoningContent field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ChatMessage) GetReasoningContentOk() (*string, bool) {
-	if o == nil || IsNil(o.ReasoningContent) {
-		return nil, false
-	}
-	return o.ReasoningContent, true
-}
-
-// HasReasoningContent returns a boolean if a field has been set.
-func (o *ChatMessage) HasReasoningContent() bool {
-	if o != nil && !IsNil(o.ReasoningContent) {
-		return true
-	}
-
-	return false
-}
-
-// SetReasoningContent gets a reference to the given string and assigns it to the ReasoningContent field.
-func (o *ChatMessage) SetReasoningContent(v string) {
-	o.ReasoningContent = &v
 }
 
 // GetName returns the Name field value if set, zero value otherwise.
@@ -246,9 +213,6 @@ func (o ChatMessage) ToMap() (map[string]interface{}, error) {
 	toSerialize["role"] = o.Role
 	if !IsNil(o.Content) {
 		toSerialize["content"] = o.Content
-	}
-	if !IsNil(o.ReasoningContent) {
-		toSerialize["reasoning_content"] = o.ReasoningContent
 	}
 	if !IsNil(o.Name) {
 		toSerialize["name"] = o.Name

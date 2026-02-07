@@ -58,8 +58,7 @@ class TextContentPart implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static $openAPITypes = [
         'type' => 'string',
-        'text' => 'string',
-        'cache_control' => '\AIStats\Sdk\Model\CacheControl'
+        'text' => 'string'
     ];
 
     /**
@@ -71,8 +70,7 @@ class TextContentPart implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static $openAPIFormats = [
         'type' => null,
-        'text' => null,
-        'cache_control' => null
+        'text' => null
     ];
 
     /**
@@ -82,8 +80,7 @@ class TextContentPart implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static array $openAPINullables = [
         'type' => false,
-        'text' => false,
-        'cache_control' => false
+        'text' => false
     ];
 
     /**
@@ -173,8 +170,7 @@ class TextContentPart implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $attributeMap = [
         'type' => 'type',
-        'text' => 'text',
-        'cache_control' => 'cache_control'
+        'text' => 'text'
     ];
 
     /**
@@ -184,8 +180,7 @@ class TextContentPart implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $setters = [
         'type' => 'setType',
-        'text' => 'setText',
-        'cache_control' => 'setCacheControl'
+        'text' => 'setText'
     ];
 
     /**
@@ -195,8 +190,7 @@ class TextContentPart implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $getters = [
         'type' => 'getType',
-        'text' => 'getText',
-        'cache_control' => 'getCacheControl'
+        'text' => 'getText'
     ];
 
     /**
@@ -271,7 +265,6 @@ class TextContentPart implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('type', $data ?? [], null);
         $this->setIfExists('text', $data ?? [], null);
-        $this->setIfExists('cache_control', $data ?? [], null);
     }
 
     /**
@@ -391,33 +384,6 @@ class TextContentPart implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable text cannot be null');
         }
         $this->container['text'] = $text;
-
-        return $this;
-    }
-
-    /**
-     * Gets cache_control
-     *
-     * @return \AIStats\Sdk\Model\CacheControl|null
-     */
-    public function getCacheControl()
-    {
-        return $this->container['cache_control'];
-    }
-
-    /**
-     * Sets cache_control
-     *
-     * @param \AIStats\Sdk\Model\CacheControl|null $cache_control cache_control
-     *
-     * @return self
-     */
-    public function setCacheControl($cache_control)
-    {
-        if (is_null($cache_control)) {
-            throw new \InvalidArgumentException('non-nullable cache_control cannot be null');
-        }
-        $this->container['cache_control'] = $cache_control;
 
         return $this;
     }

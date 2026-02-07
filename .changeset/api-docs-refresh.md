@@ -1,5 +1,5 @@
 ---
-"@ai-stats/gateway-api": major
+"@ai-stats/gateway-api": patch
 "@ai-stats/docs": patch
 ---
 

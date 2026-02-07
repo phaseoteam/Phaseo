@@ -35,137 +35,35 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="model">model</param>
         /// <param name="messages">messages</param>
-        /// <param name="maxTokens">maxTokens</param>
         /// <param name="system">system</param>
+        /// <param name="maxTokens">maxTokens</param>
         /// <param name="temperature">temperature</param>
         /// <param name="topP">topP</param>
         /// <param name="topK">topK</param>
         /// <param name="tools">tools</param>
         /// <param name="toolChoice">toolChoice</param>
         /// <param name="stream">stream</param>
-        /// <param name="stopSequences">stopSequences</param>
-        /// <param name="modalities">modalities</param>
         /// <param name="metadata">metadata</param>
-        /// <param name="meta">meta</param>
-        /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public AnthropicMessagesRequest(string model, List<AnthropicMessage> messages, int maxTokens, Option<AnthropicMessagesRequestSystem?> @system = default, Option<decimal?> temperature = default, Option<decimal?> topP = default, Option<int?> topK = default, Option<List<AnthropicTool>?> tools = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<bool?> stream = default, Option<List<string>?> stopSequences = default, Option<List<AnthropicMessagesRequest.ModalitiesEnum>?> modalities = default, Option<Dictionary<string, string>?> metadata = default, Option<bool?> meta = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
+        public AnthropicMessagesRequest(string model, List<AnthropicMessage> messages, Option<AnthropicMessagesRequestSystem?> @system = default, Option<int?> maxTokens = default, Option<decimal?> temperature = default, Option<decimal?> topP = default, Option<int?> topK = default, Option<List<AnthropicTool>?> tools = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<bool?> stream = default, Option<Dictionary<string, string>?> metadata = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Messages = messages;
-            MaxTokens = maxTokens;
             SystemOption = @system;
+            MaxTokensOption = maxTokens;
             TemperatureOption = temperature;
             TopPOption = topP;
             TopKOption = topK;
             ToolsOption = tools;
             ToolChoiceOption = toolChoice;
             StreamOption = stream;
-            StopSequencesOption = stopSequences;
-            ModalitiesOption = modalities;
             MetadataOption = metadata;
-            MetaOption = meta;
-            DebugOption = debug;
             ProviderOption = provider;
             OnCreated();
         }
 
         partial void OnCreated();
-
-        /// <summary>
-        /// Defines Modalities
-        /// </summary>
-        public enum ModalitiesEnum
-        {
-            /// <summary>
-            /// Enum Text for value: text
-            /// </summary>
-            Text = 1,
-
-            /// <summary>
-            /// Enum Image for value: image
-            /// </summary>
-            Image = 2,
-
-            /// <summary>
-            /// Enum Audio for value: audio
-            /// </summary>
-            Audio = 3,
-
-            /// <summary>
-            /// Enum Video for value: video
-            /// </summary>
-            Video = 4
-        }
-
-        /// <summary>
-        /// Returns a <see cref="ModalitiesEnum"/>
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static ModalitiesEnum ModalitiesEnumFromString(string value)
-        {
-            if (value.Equals("text"))
-                return ModalitiesEnum.Text;
-
-            if (value.Equals("image"))
-                return ModalitiesEnum.Image;
-
-            if (value.Equals("audio"))
-                return ModalitiesEnum.Audio;
-
-            if (value.Equals("video"))
-                return ModalitiesEnum.Video;
-
-            throw new NotImplementedException($"Could not convert value to type ModalitiesEnum: '{value}'");
-        }
-
-        /// <summary>
-        /// Returns a <see cref="ModalitiesEnum"/>
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static ModalitiesEnum? ModalitiesEnumFromStringOrDefault(string value)
-        {
-            if (value.Equals("text"))
-                return ModalitiesEnum.Text;
-
-            if (value.Equals("image"))
-                return ModalitiesEnum.Image;
-
-            if (value.Equals("audio"))
-                return ModalitiesEnum.Audio;
-
-            if (value.Equals("video"))
-                return ModalitiesEnum.Video;
-
-            return null;
-        }
-
-        /// <summary>
-        /// Converts the <see cref="ModalitiesEnum"/> to the json value
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static string ModalitiesEnumToJsonValue(ModalitiesEnum? value)
-        {
-            if (value == ModalitiesEnum.Text)
-                return "text";
-
-            if (value == ModalitiesEnum.Image)
-                return "image";
-
-            if (value == ModalitiesEnum.Audio)
-                return "audio";
-
-            if (value == ModalitiesEnum.Video)
-                return "video";
-
-            throw new NotImplementedException($"Value could not be handled: '{value}'");
-        }
 
         /// <summary>
         /// Gets or Sets Model
@@ -180,12 +78,6 @@ namespace AIStatsSdk.Model
         public List<AnthropicMessage> Messages { get; set; }
 
         /// <summary>
-        /// Gets or Sets MaxTokens
-        /// </summary>
-        [JsonPropertyName("max_tokens")]
-        public int MaxTokens { get; set; }
-
-        /// <summary>
         /// Used to track the state of System
         /// </summary>
         [JsonIgnore]
@@ -197,6 +89,19 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonPropertyName("system")]
         public AnthropicMessagesRequestSystem? System { get { return this.SystemOption; } set { this.SystemOption = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of MaxTokens
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<int?> MaxTokensOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets MaxTokens
+        /// </summary>
+        [JsonPropertyName("max_tokens")]
+        public int? MaxTokens { get { return this.MaxTokensOption; } set { this.MaxTokensOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Temperature
@@ -277,32 +182,6 @@ namespace AIStatsSdk.Model
         public bool? Stream { get { return this.StreamOption; } set { this.StreamOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of StopSequences
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<string>?> StopSequencesOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets StopSequences
-        /// </summary>
-        [JsonPropertyName("stop_sequences")]
-        public List<string>? StopSequences { get { return this.StopSequencesOption; } set { this.StopSequencesOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Modalities
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<AnthropicMessagesRequest.ModalitiesEnum>?> ModalitiesOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Modalities
-        /// </summary>
-        [JsonPropertyName("modalities")]
-        public List<AnthropicMessagesRequest.ModalitiesEnum>? Modalities { get { return this.ModalitiesOption; } set { this.ModalitiesOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Metadata
         /// </summary>
         [JsonIgnore]
@@ -314,32 +193,6 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonPropertyName("metadata")]
         public Dictionary<string, string>? Metadata { get { return this.MetadataOption; } set { this.MetadataOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Meta
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<bool?> MetaOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Meta
-        /// </summary>
-        [JsonPropertyName("meta")]
-        public bool? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugOptions?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Provider
@@ -364,19 +217,15 @@ namespace AIStatsSdk.Model
             sb.Append("class AnthropicMessagesRequest {\n");
             sb.Append("  Model: ").Append(Model).Append("\n");
             sb.Append("  Messages: ").Append(Messages).Append("\n");
-            sb.Append("  MaxTokens: ").Append(MaxTokens).Append("\n");
             sb.Append("  System: ").Append(System).Append("\n");
+            sb.Append("  MaxTokens: ").Append(MaxTokens).Append("\n");
             sb.Append("  Temperature: ").Append(Temperature).Append("\n");
             sb.Append("  TopP: ").Append(TopP).Append("\n");
             sb.Append("  TopK: ").Append(TopK).Append("\n");
             sb.Append("  Tools: ").Append(Tools).Append("\n");
             sb.Append("  ToolChoice: ").Append(ToolChoice).Append("\n");
             sb.Append("  Stream: ").Append(Stream).Append("\n");
-            sb.Append("  StopSequences: ").Append(StopSequences).Append("\n");
-            sb.Append("  Modalities: ").Append(Modalities).Append("\n");
             sb.Append("  Metadata: ").Append(Metadata).Append("\n");
-            sb.Append("  Meta: ").Append(Meta).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -390,15 +239,15 @@ namespace AIStatsSdk.Model
         IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
         {
             // MaxTokens (int) minimum
-            if (this.MaxTokens < (int)1)
+            if (this.MaxTokensOption.IsSet && this.MaxTokensOption.Value < (int)1)
             {
                 yield return new ValidationResult("Invalid value for MaxTokens, must be a value greater than or equal to 1.", new [] { "MaxTokens" });
             }
 
             // Temperature (decimal) maximum
-            if (this.TemperatureOption.IsSet && this.TemperatureOption.Value > (decimal)1)
+            if (this.TemperatureOption.IsSet && this.TemperatureOption.Value > (decimal)2)
             {
-                yield return new ValidationResult("Invalid value for Temperature, must be a value less than or equal to 1.", new [] { "Temperature" });
+                yield return new ValidationResult("Invalid value for Temperature, must be a value less than or equal to 2.", new [] { "Temperature" });
             }
 
             // Temperature (decimal) minimum
@@ -453,19 +302,15 @@ namespace AIStatsSdk.Model
 
             Option<string?> model = default;
             Option<List<AnthropicMessage>?> messages = default;
-            Option<int?> maxTokens = default;
             Option<AnthropicMessagesRequestSystem?> varSystem = default;
+            Option<int?> maxTokens = default;
             Option<decimal?> temperature = default;
             Option<decimal?> topP = default;
             Option<int?> topK = default;
             Option<List<AnthropicTool>?> tools = default;
             Option<ChatCompletionsRequestToolChoice?> toolChoice = default;
             Option<bool?> stream = default;
-            Option<List<string>?> stopSequences = default;
-            Option<List<AnthropicMessagesRequest.ModalitiesEnum>?> modalities = default;
             Option<Dictionary<string, string>?> metadata = default;
-            Option<bool?> meta = default;
-            Option<DebugOptions?> debug = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -489,11 +334,11 @@ namespace AIStatsSdk.Model
                         case "messages":
                             messages = new Option<List<AnthropicMessage>?>(JsonSerializer.Deserialize<List<AnthropicMessage>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
-                        case "max_tokens":
-                            maxTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
                         case "system":
                             varSystem = new Option<AnthropicMessagesRequestSystem?>(JsonSerializer.Deserialize<AnthropicMessagesRequestSystem>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
+                        case "max_tokens":
+                            maxTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
                             break;
                         case "temperature":
                             temperature = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
@@ -513,20 +358,8 @@ namespace AIStatsSdk.Model
                         case "stream":
                             stream = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
-                        case "stop_sequences":
-                            stopSequences = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "modalities":
-                            modalities = new Option<List<AnthropicMessagesRequest.ModalitiesEnum>?>(JsonSerializer.Deserialize<List<AnthropicMessagesRequest.ModalitiesEnum>>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         case "metadata":
                             metadata = new Option<Dictionary<string, string>?>(JsonSerializer.Deserialize<Dictionary<string, string>>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "meta":
-                            meta = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
-                            break;
-                        case "debug":
-                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
@@ -543,20 +376,17 @@ namespace AIStatsSdk.Model
             if (!messages.IsSet)
                 throw new ArgumentException("Property is required for class AnthropicMessagesRequest.", nameof(messages));
 
-            if (!maxTokens.IsSet)
-                throw new ArgumentException("Property is required for class AnthropicMessagesRequest.", nameof(maxTokens));
-
             if (model.IsSet && model.Value == null)
                 throw new ArgumentNullException(nameof(model), "Property is not nullable for class AnthropicMessagesRequest.");
 
             if (messages.IsSet && messages.Value == null)
                 throw new ArgumentNullException(nameof(messages), "Property is not nullable for class AnthropicMessagesRequest.");
 
-            if (maxTokens.IsSet && maxTokens.Value == null)
-                throw new ArgumentNullException(nameof(maxTokens), "Property is not nullable for class AnthropicMessagesRequest.");
-
             if (varSystem.IsSet && varSystem.Value == null)
                 throw new ArgumentNullException(nameof(varSystem), "Property is not nullable for class AnthropicMessagesRequest.");
+
+            if (maxTokens.IsSet && maxTokens.Value == null)
+                throw new ArgumentNullException(nameof(maxTokens), "Property is not nullable for class AnthropicMessagesRequest.");
 
             if (temperature.IsSet && temperature.Value == null)
                 throw new ArgumentNullException(nameof(temperature), "Property is not nullable for class AnthropicMessagesRequest.");
@@ -576,25 +406,13 @@ namespace AIStatsSdk.Model
             if (stream.IsSet && stream.Value == null)
                 throw new ArgumentNullException(nameof(stream), "Property is not nullable for class AnthropicMessagesRequest.");
 
-            if (stopSequences.IsSet && stopSequences.Value == null)
-                throw new ArgumentNullException(nameof(stopSequences), "Property is not nullable for class AnthropicMessagesRequest.");
-
-            if (modalities.IsSet && modalities.Value == null)
-                throw new ArgumentNullException(nameof(modalities), "Property is not nullable for class AnthropicMessagesRequest.");
-
             if (metadata.IsSet && metadata.Value == null)
                 throw new ArgumentNullException(nameof(metadata), "Property is not nullable for class AnthropicMessagesRequest.");
-
-            if (meta.IsSet && meta.Value == null)
-                throw new ArgumentNullException(nameof(meta), "Property is not nullable for class AnthropicMessagesRequest.");
-
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class AnthropicMessagesRequest.");
 
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class AnthropicMessagesRequest.");
 
-            return new AnthropicMessagesRequest(model.Value!, messages.Value!, maxTokens.Value!.Value!, varSystem, temperature, topP, topK, tools, toolChoice, stream, stopSequences, modalities, metadata, meta, debug, provider);
+            return new AnthropicMessagesRequest(model.Value!, messages.Value!, varSystem, maxTokens, temperature, topP, topK, tools, toolChoice, stream, metadata, provider);
         }
 
         /// <summary>
@@ -636,17 +454,8 @@ namespace AIStatsSdk.Model
             if (anthropicMessagesRequest.ToolChoiceOption.IsSet && anthropicMessagesRequest.ToolChoice == null)
                 throw new ArgumentNullException(nameof(anthropicMessagesRequest.ToolChoice), "Property is required for class AnthropicMessagesRequest.");
 
-            if (anthropicMessagesRequest.StopSequencesOption.IsSet && anthropicMessagesRequest.StopSequences == null)
-                throw new ArgumentNullException(nameof(anthropicMessagesRequest.StopSequences), "Property is required for class AnthropicMessagesRequest.");
-
-            if (anthropicMessagesRequest.ModalitiesOption.IsSet && anthropicMessagesRequest.Modalities == null)
-                throw new ArgumentNullException(nameof(anthropicMessagesRequest.Modalities), "Property is required for class AnthropicMessagesRequest.");
-
             if (anthropicMessagesRequest.MetadataOption.IsSet && anthropicMessagesRequest.Metadata == null)
                 throw new ArgumentNullException(nameof(anthropicMessagesRequest.Metadata), "Property is required for class AnthropicMessagesRequest.");
-
-            if (anthropicMessagesRequest.DebugOption.IsSet && anthropicMessagesRequest.Debug == null)
-                throw new ArgumentNullException(nameof(anthropicMessagesRequest.Debug), "Property is required for class AnthropicMessagesRequest.");
 
             if (anthropicMessagesRequest.ProviderOption.IsSet && anthropicMessagesRequest.Provider == null)
                 throw new ArgumentNullException(nameof(anthropicMessagesRequest.Provider), "Property is required for class AnthropicMessagesRequest.");
@@ -655,13 +464,14 @@ namespace AIStatsSdk.Model
 
             writer.WritePropertyName("messages");
             JsonSerializer.Serialize(writer, anthropicMessagesRequest.Messages, jsonSerializerOptions);
-            writer.WriteNumber("max_tokens", anthropicMessagesRequest.MaxTokens);
-
             if (anthropicMessagesRequest.SystemOption.IsSet)
             {
                 writer.WritePropertyName("system");
                 JsonSerializer.Serialize(writer, anthropicMessagesRequest.System, jsonSerializerOptions);
             }
+            if (anthropicMessagesRequest.MaxTokensOption.IsSet)
+                writer.WriteNumber("max_tokens", anthropicMessagesRequest.MaxTokensOption.Value!.Value);
+
             if (anthropicMessagesRequest.TemperatureOption.IsSet)
                 writer.WriteNumber("temperature", anthropicMessagesRequest.TemperatureOption.Value!.Value);
 
@@ -684,28 +494,10 @@ namespace AIStatsSdk.Model
             if (anthropicMessagesRequest.StreamOption.IsSet)
                 writer.WriteBoolean("stream", anthropicMessagesRequest.StreamOption.Value!.Value);
 
-            if (anthropicMessagesRequest.StopSequencesOption.IsSet)
-            {
-                writer.WritePropertyName("stop_sequences");
-                JsonSerializer.Serialize(writer, anthropicMessagesRequest.StopSequences, jsonSerializerOptions);
-            }
-            if (anthropicMessagesRequest.ModalitiesOption.IsSet)
-            {
-                writer.WritePropertyName("modalities");
-                JsonSerializer.Serialize(writer, anthropicMessagesRequest.Modalities, jsonSerializerOptions);
-            }
             if (anthropicMessagesRequest.MetadataOption.IsSet)
             {
                 writer.WritePropertyName("metadata");
                 JsonSerializer.Serialize(writer, anthropicMessagesRequest.Metadata, jsonSerializerOptions);
-            }
-            if (anthropicMessagesRequest.MetaOption.IsSet)
-                writer.WriteBoolean("meta", anthropicMessagesRequest.MetaOption.Value!.Value);
-
-            if (anthropicMessagesRequest.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, anthropicMessagesRequest.Debug, jsonSerializerOptions);
             }
             if (anthropicMessagesRequest.ProviderOption.IsSet)
             {

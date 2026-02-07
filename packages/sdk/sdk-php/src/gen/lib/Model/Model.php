@@ -60,20 +60,13 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
         'model_id' => 'string',
         'name' => 'string',
         'release_date' => 'string',
-        'deprecation_date' => 'string',
-        'retirement_date' => 'string',
         'status' => 'string',
         'organisation_id' => 'string',
-        'organisation_name' => 'string',
-        'organisation_colour' => 'string',
         'aliases' => 'string[]',
         'endpoints' => 'string[]',
         'input_types' => 'string[]',
         'output_types' => 'string[]',
-        'providers' => '\AIStats\Sdk\Model\ModelProvidersInner[]',
-        'supported_params' => 'string[]',
-        'top_provider' => 'string',
-        'pricing' => '\AIStats\Sdk\Model\ModelPricing'
+        'providers' => '\AIStats\Sdk\Model\ModelProvidersInner[]'
     ];
 
     /**
@@ -87,20 +80,13 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
         'model_id' => null,
         'name' => null,
         'release_date' => null,
-        'deprecation_date' => null,
-        'retirement_date' => null,
         'status' => null,
         'organisation_id' => null,
-        'organisation_name' => null,
-        'organisation_colour' => null,
         'aliases' => null,
         'endpoints' => null,
         'input_types' => null,
         'output_types' => null,
-        'providers' => null,
-        'supported_params' => null,
-        'top_provider' => null,
-        'pricing' => null
+        'providers' => null
     ];
 
     /**
@@ -110,22 +96,15 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static array $openAPINullables = [
         'model_id' => false,
-        'name' => true,
-        'release_date' => true,
-        'deprecation_date' => true,
-        'retirement_date' => true,
-        'status' => true,
-        'organisation_id' => true,
-        'organisation_name' => true,
-        'organisation_colour' => true,
+        'name' => false,
+        'release_date' => false,
+        'status' => false,
+        'organisation_id' => false,
         'aliases' => false,
         'endpoints' => false,
         'input_types' => false,
         'output_types' => false,
-        'providers' => false,
-        'supported_params' => false,
-        'top_provider' => true,
-        'pricing' => false
+        'providers' => false
     ];
 
     /**
@@ -217,20 +196,13 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
         'model_id' => 'model_id',
         'name' => 'name',
         'release_date' => 'release_date',
-        'deprecation_date' => 'deprecation_date',
-        'retirement_date' => 'retirement_date',
         'status' => 'status',
         'organisation_id' => 'organisation_id',
-        'organisation_name' => 'organisation_name',
-        'organisation_colour' => 'organisation_colour',
         'aliases' => 'aliases',
         'endpoints' => 'endpoints',
         'input_types' => 'input_types',
         'output_types' => 'output_types',
-        'providers' => 'providers',
-        'supported_params' => 'supported_params',
-        'top_provider' => 'top_provider',
-        'pricing' => 'pricing'
+        'providers' => 'providers'
     ];
 
     /**
@@ -242,20 +214,13 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
         'model_id' => 'setModelId',
         'name' => 'setName',
         'release_date' => 'setReleaseDate',
-        'deprecation_date' => 'setDeprecationDate',
-        'retirement_date' => 'setRetirementDate',
         'status' => 'setStatus',
         'organisation_id' => 'setOrganisationId',
-        'organisation_name' => 'setOrganisationName',
-        'organisation_colour' => 'setOrganisationColour',
         'aliases' => 'setAliases',
         'endpoints' => 'setEndpoints',
         'input_types' => 'setInputTypes',
         'output_types' => 'setOutputTypes',
-        'providers' => 'setProviders',
-        'supported_params' => 'setSupportedParams',
-        'top_provider' => 'setTopProvider',
-        'pricing' => 'setPricing'
+        'providers' => 'setProviders'
     ];
 
     /**
@@ -267,20 +232,13 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
         'model_id' => 'getModelId',
         'name' => 'getName',
         'release_date' => 'getReleaseDate',
-        'deprecation_date' => 'getDeprecationDate',
-        'retirement_date' => 'getRetirementDate',
         'status' => 'getStatus',
         'organisation_id' => 'getOrganisationId',
-        'organisation_name' => 'getOrganisationName',
-        'organisation_colour' => 'getOrganisationColour',
         'aliases' => 'getAliases',
         'endpoints' => 'getEndpoints',
         'input_types' => 'getInputTypes',
         'output_types' => 'getOutputTypes',
-        'providers' => 'getProviders',
-        'supported_params' => 'getSupportedParams',
-        'top_provider' => 'getTopProvider',
-        'pricing' => 'getPricing'
+        'providers' => 'getProviders'
     ];
 
     /**
@@ -343,20 +301,13 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('model_id', $data ?? [], null);
         $this->setIfExists('name', $data ?? [], null);
         $this->setIfExists('release_date', $data ?? [], null);
-        $this->setIfExists('deprecation_date', $data ?? [], null);
-        $this->setIfExists('retirement_date', $data ?? [], null);
         $this->setIfExists('status', $data ?? [], null);
         $this->setIfExists('organisation_id', $data ?? [], null);
-        $this->setIfExists('organisation_name', $data ?? [], null);
-        $this->setIfExists('organisation_colour', $data ?? [], null);
         $this->setIfExists('aliases', $data ?? [], null);
         $this->setIfExists('endpoints', $data ?? [], null);
         $this->setIfExists('input_types', $data ?? [], null);
         $this->setIfExists('output_types', $data ?? [], null);
         $this->setIfExists('providers', $data ?? [], null);
-        $this->setIfExists('supported_params', $data ?? [], null);
-        $this->setIfExists('top_provider', $data ?? [], null);
-        $this->setIfExists('pricing', $data ?? [], null);
     }
 
     /**
@@ -448,14 +399,7 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
     public function setName($name)
     {
         if (is_null($name)) {
-            array_push($this->openAPINullablesSetToNull, 'name');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('name', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
+            throw new \InvalidArgumentException('non-nullable name cannot be null');
         }
         $this->container['name'] = $name;
 
@@ -482,84 +426,9 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
     public function setReleaseDate($release_date)
     {
         if (is_null($release_date)) {
-            array_push($this->openAPINullablesSetToNull, 'release_date');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('release_date', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
+            throw new \InvalidArgumentException('non-nullable release_date cannot be null');
         }
         $this->container['release_date'] = $release_date;
-
-        return $this;
-    }
-
-    /**
-     * Gets deprecation_date
-     *
-     * @return string|null
-     */
-    public function getDeprecationDate()
-    {
-        return $this->container['deprecation_date'];
-    }
-
-    /**
-     * Sets deprecation_date
-     *
-     * @param string|null $deprecation_date deprecation_date
-     *
-     * @return self
-     */
-    public function setDeprecationDate($deprecation_date)
-    {
-        if (is_null($deprecation_date)) {
-            array_push($this->openAPINullablesSetToNull, 'deprecation_date');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('deprecation_date', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['deprecation_date'] = $deprecation_date;
-
-        return $this;
-    }
-
-    /**
-     * Gets retirement_date
-     *
-     * @return string|null
-     */
-    public function getRetirementDate()
-    {
-        return $this->container['retirement_date'];
-    }
-
-    /**
-     * Sets retirement_date
-     *
-     * @param string|null $retirement_date retirement_date
-     *
-     * @return self
-     */
-    public function setRetirementDate($retirement_date)
-    {
-        if (is_null($retirement_date)) {
-            array_push($this->openAPINullablesSetToNull, 'retirement_date');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('retirement_date', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['retirement_date'] = $retirement_date;
 
         return $this;
     }
@@ -584,14 +453,7 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
     public function setStatus($status)
     {
         if (is_null($status)) {
-            array_push($this->openAPINullablesSetToNull, 'status');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('status', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
+            throw new \InvalidArgumentException('non-nullable status cannot be null');
         }
         $this->container['status'] = $status;
 
@@ -618,84 +480,9 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
     public function setOrganisationId($organisation_id)
     {
         if (is_null($organisation_id)) {
-            array_push($this->openAPINullablesSetToNull, 'organisation_id');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('organisation_id', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
+            throw new \InvalidArgumentException('non-nullable organisation_id cannot be null');
         }
         $this->container['organisation_id'] = $organisation_id;
-
-        return $this;
-    }
-
-    /**
-     * Gets organisation_name
-     *
-     * @return string|null
-     */
-    public function getOrganisationName()
-    {
-        return $this->container['organisation_name'];
-    }
-
-    /**
-     * Sets organisation_name
-     *
-     * @param string|null $organisation_name organisation_name
-     *
-     * @return self
-     */
-    public function setOrganisationName($organisation_name)
-    {
-        if (is_null($organisation_name)) {
-            array_push($this->openAPINullablesSetToNull, 'organisation_name');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('organisation_name', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['organisation_name'] = $organisation_name;
-
-        return $this;
-    }
-
-    /**
-     * Gets organisation_colour
-     *
-     * @return string|null
-     */
-    public function getOrganisationColour()
-    {
-        return $this->container['organisation_colour'];
-    }
-
-    /**
-     * Sets organisation_colour
-     *
-     * @param string|null $organisation_colour organisation_colour
-     *
-     * @return self
-     */
-    public function setOrganisationColour($organisation_colour)
-    {
-        if (is_null($organisation_colour)) {
-            array_push($this->openAPINullablesSetToNull, 'organisation_colour');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('organisation_colour', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['organisation_colour'] = $organisation_colour;
 
         return $this;
     }
@@ -831,94 +618,6 @@ class Model implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable providers cannot be null');
         }
         $this->container['providers'] = $providers;
-
-        return $this;
-    }
-
-    /**
-     * Gets supported_params
-     *
-     * @return string[]|null
-     */
-    public function getSupportedParams()
-    {
-        return $this->container['supported_params'];
-    }
-
-    /**
-     * Sets supported_params
-     *
-     * @param string[]|null $supported_params supported_params
-     *
-     * @return self
-     */
-    public function setSupportedParams($supported_params)
-    {
-        if (is_null($supported_params)) {
-            throw new \InvalidArgumentException('non-nullable supported_params cannot be null');
-        }
-        $this->container['supported_params'] = $supported_params;
-
-        return $this;
-    }
-
-    /**
-     * Gets top_provider
-     *
-     * @return string|null
-     */
-    public function getTopProvider()
-    {
-        return $this->container['top_provider'];
-    }
-
-    /**
-     * Sets top_provider
-     *
-     * @param string|null $top_provider top_provider
-     *
-     * @return self
-     */
-    public function setTopProvider($top_provider)
-    {
-        if (is_null($top_provider)) {
-            array_push($this->openAPINullablesSetToNull, 'top_provider');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('top_provider', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['top_provider'] = $top_provider;
-
-        return $this;
-    }
-
-    /**
-     * Gets pricing
-     *
-     * @return \AIStats\Sdk\Model\ModelPricing|null
-     */
-    public function getPricing()
-    {
-        return $this->container['pricing'];
-    }
-
-    /**
-     * Sets pricing
-     *
-     * @param \AIStats\Sdk\Model\ModelPricing|null $pricing pricing
-     *
-     * @return self
-     */
-    public function setPricing($pricing)
-    {
-        if (is_null($pricing)) {
-            throw new \InvalidArgumentException('non-nullable pricing cannot be null');
-        }
-        $this->container['pricing'] = $pricing;
 
         return $this;
     }

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * Parallel Test Runner for AI Stats Project
  * Tests all SDKs, AI SDK, and Devtools in parallel
@@ -31,7 +31,7 @@ const testConfigs = [
     {
         name: 'AI SDK (ai-sdk-ai-stats)',
         path: 'packages/integrations/ai-sdk-ai-stats',
-        command: 'bun',
+        command: 'pnpm',
         args: ['run', 'test'],
         timeout: 60000,
     },
@@ -40,14 +40,14 @@ const testConfigs = [
     {
         name: 'Devtools Core',
         path: 'packages/devtools/devtools-core',
-        command: 'bun',
+        command: 'pnpm',
         args: ['run', 'test'],
         timeout: 60000,
     },
     {
         name: 'Devtools Viewer',
         path: 'packages/devtools/devtools-viewer',
-        command: 'bun',
+        command: 'pnpm',
         args: ['run', 'test'],
         timeout: 60000,
     },
@@ -56,7 +56,7 @@ const testConfigs = [
     {
         name: 'SDK TypeScript',
         path: 'packages/sdk/sdk-ts',
-        command: 'bun',
+        command: 'pnpm',
         args: ['run', 'smoke:responses'],
         timeout: 30000,
     },
@@ -88,7 +88,7 @@ const testConfigs = [
     {
         name: 'SDK C++',
         path: 'packages/sdk/sdk-cpp',
-        command: 'bun',
+        command: 'pnpm',
         args: ['run', 'smoke:chat'],
         timeout: 60000,
         skipIfNoCommand: true,
@@ -109,7 +109,7 @@ const testConfigs = [
     {
         name: 'SDK C#',
         path: 'packages/sdk/sdk-csharp',
-        command: 'bun',
+        command: 'pnpm',
         args: ['run', 'smoke:responses'],
         timeout: 60000,
         skipIfNoCommand: true,
@@ -277,17 +277,15 @@ function printTable(results) {
     const maxNameLength = Math.max(...results.map(r => r.name.length), 20);
     const maxReasonLength = Math.max(...results.map(r => r.reason.length), 30);
 
-    const header = `┌${'─'.repeat(maxNameLength + 2)}┬────────┬──────────┬${'─'.repeat(maxReasonLength + 2)}┐`;
-    const separator = `├${'─'.repeat(maxNameLength + 2)}┼────────┼──────────┼${'─'.repeat(maxReasonLength + 2)}┤`;
-    const footer = `└${'─'.repeat(maxNameLength + 2)}┴────────┴──────────┴${'─'.repeat(maxReasonLength + 2)}┘`;
+    const header = `+${'-'.repeat(maxNameLength + 2)}+${'-'.repeat(8)}+${'-'.repeat(10)}+${'-'.repeat(maxReasonLength + 2)}+`;
 
     console.log('\n' + colors.bright + colors.blue + header + colors.reset);
     console.log(
         colors.bright +
-        `│ ${'Test'.padEnd(maxNameLength)} │ Status │ Duration │ ${'Reason'.padEnd(maxReasonLength)} │` +
+        `| ${'Test'.padEnd(maxNameLength)} | Status | Duration | ${'Reason'.padEnd(maxReasonLength)} |` +
         colors.reset
     );
-    console.log(colors.blue + separator + colors.reset);
+    console.log(colors.blue + header + colors.reset);
 
     for (const result of results) {
         const statusColor =
@@ -302,11 +300,11 @@ function printTable(results) {
         const reason = result.reason.padEnd(maxReasonLength);
 
         console.log(
-            `│ ${name} │ ${statusColor}${status}${colors.reset} │ ${duration} │ ${colors.dim}${reason}${colors.reset} │`
+            `| ${name} | ${statusColor}${status}${colors.reset} | ${duration} | ${colors.dim}${reason}${colors.reset} |`
         );
     }
 
-    console.log(colors.blue + footer + colors.reset);
+    console.log(colors.blue + header + colors.reset);
 }
 
 // Print summary
@@ -319,16 +317,16 @@ function printSummary(results) {
     const total = results.length;
     const totalDuration = results.reduce((sum, r) => sum + r.duration, 0);
 
-    console.log('\n' + colors.bright + colors.cyan + '═'.repeat(60) + colors.reset);
+    console.log('\n' + colors.bright + colors.cyan + '='.repeat(60) + colors.reset);
     console.log(colors.bright + 'SUMMARY' + colors.reset);
-    console.log(colors.cyan + '═'.repeat(60) + colors.reset);
-    console.log(`${colors.green}✓ Passed:${colors.reset}  ${passed}/${total}`);
-    console.log(`${colors.red}✗ Failed:${colors.reset}  ${failed}/${total}`);
-    console.log(`${colors.yellow}○ Skipped:${colors.reset} ${skipped}/${total}`);
-    if (errors > 0) console.log(`${colors.red}⚠ Errors:${colors.reset}  ${errors}/${total}`);
-    if (timeouts > 0) console.log(`${colors.yellow}⏱ Timeouts:${colors.reset} ${timeouts}/${total}`);
-    console.log(`${colors.blue}⏱ Total time:${colors.reset} ${formatDuration(totalDuration)}`);
-    console.log(colors.cyan + '═'.repeat(60) + colors.reset + '\n');
+    console.log(colors.cyan + '='.repeat(60) + colors.reset);
+    console.log(`${colors.green}[OK] Passed:${colors.reset}  ${passed}/${total}`);
+    console.log(`${colors.red}[FAIL] Failed:${colors.reset}  ${failed}/${total}`);
+    console.log(`${colors.yellow}[SKIP] Skipped:${colors.reset} ${skipped}/${total}`);
+    if (errors > 0) console.log(`${colors.red}[ERROR] Errors:${colors.reset}  ${errors}/${total}`);
+    if (timeouts > 0) console.log(`${colors.yellow}[TIMEOUT] Timeouts:${colors.reset} ${timeouts}/${total}`);
+    console.log(`${colors.blue}[TIME] Total time:${colors.reset} ${formatDuration(totalDuration)}`);
+    console.log(colors.cyan + '='.repeat(60) + colors.reset + '\n');
 
     return failed === 0 && errors === 0 && timeouts === 0;
 }
@@ -336,10 +334,10 @@ function printSummary(results) {
 // Main function
 async function main() {
     console.log(colors.bright + colors.blue);
-    console.log('╔══════════════════════════════════════════════════════════╗');
-    console.log('║     AI Stats Parallel Test Runner                       ║');
-    console.log('║     Testing All SDKs, AI SDK, and Devtools              ║');
-    console.log('╚══════════════════════════════════════════════════════════╝');
+    console.log('============================================================');
+    console.log('     AI Stats Parallel Test Runner');
+    console.log('     Testing All SDKs, AI SDK, and Devtools');
+    console.log('============================================================');
     console.log(colors.reset);
 
     console.log(`\n${colors.cyan}Running ${effectiveConfigs.length} test suites in parallel...${colors.reset}\n`);
@@ -361,7 +359,7 @@ async function main() {
     const failedTests = results.filter(r => r.status === 'FAIL' || r.status === 'ERROR');
     if (failedTests.length > 0) {
         console.log(colors.red + colors.bright + '\nFailed Tests Details:' + colors.reset);
-        console.log(colors.red + '─'.repeat(60) + colors.reset);
+        console.log(colors.red + '-'.repeat(60) + colors.reset);
         for (const test of failedTests) {
             console.log(`\n${colors.bright}${test.name}:${colors.reset}`);
             console.log(colors.dim + test.output.slice(-500) + colors.reset); // Last 500 chars
@@ -376,3 +374,4 @@ main().catch((error) => {
     console.error(colors.red + 'Fatal error:' + colors.reset, error);
     process.exit(1);
 });
+

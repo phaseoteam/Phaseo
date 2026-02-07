@@ -30,7 +30,6 @@ from ai_stats_generated.models.chat_completions_request import ChatCompletionsRe
 from ai_stats_generated.models.chat_completions_response import ChatCompletionsResponse
 from ai_stats_generated.models.create_provisioning_key201_response import CreateProvisioningKey201Response
 from ai_stats_generated.models.create_provisioning_key_request import CreateProvisioningKeyRequest
-from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.delete_provisioning_key200_response import DeleteProvisioningKey200Response
 from ai_stats_generated.models.embeddings_request import EmbeddingsRequest
 from ai_stats_generated.models.embeddings_response import EmbeddingsResponse
@@ -41,7 +40,7 @@ from ai_stats_generated.models.get_analytics200_response import GetAnalytics200R
 from ai_stats_generated.models.get_analytics_request import GetAnalyticsRequest
 from ai_stats_generated.models.get_credits200_response import GetCredits200Response
 from ai_stats_generated.models.get_provisioning_key200_response import GetProvisioningKey200Response
-from ai_stats_generated.models.health200_response import Health200Response
+from ai_stats_generated.models.healthz200_response import Healthz200Response
 from ai_stats_generated.models.images_edit_response import ImagesEditResponse
 from ai_stats_generated.models.images_generation_request import ImagesGenerationRequest
 from ai_stats_generated.models.images_generation_response import ImagesGenerationResponse
@@ -863,8 +862,7 @@ class DefaultApi:
         if 'Accept' not in _header_params:
             _header_params['Accept'] = self.api_client.select_header_accept(
                 [
-                    'application/json', 
-                    'text/event-stream'
+                    'application/json'
                 ]
             )
 
@@ -1465,7 +1463,6 @@ class DefaultApi:
         user: Optional[StrictStr] = None,
         meta: Optional[StrictBool] = None,
         usage: Optional[StrictBool] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -1502,8 +1499,6 @@ class DefaultApi:
         :type meta: bool
         :param usage:
         :type usage: bool
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -1538,7 +1533,6 @@ class DefaultApi:
             user=user,
             meta=meta,
             usage=usage,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -1572,7 +1566,6 @@ class DefaultApi:
         user: Optional[StrictStr] = None,
         meta: Optional[StrictBool] = None,
         usage: Optional[StrictBool] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -1609,8 +1602,6 @@ class DefaultApi:
         :type meta: bool
         :param usage:
         :type usage: bool
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -1645,7 +1636,6 @@ class DefaultApi:
             user=user,
             meta=meta,
             usage=usage,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -1679,7 +1669,6 @@ class DefaultApi:
         user: Optional[StrictStr] = None,
         meta: Optional[StrictBool] = None,
         usage: Optional[StrictBool] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -1716,8 +1705,6 @@ class DefaultApi:
         :type meta: bool
         :param usage:
         :type usage: bool
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -1752,7 +1739,6 @@ class DefaultApi:
             user=user,
             meta=meta,
             usage=usage,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -1781,7 +1767,6 @@ class DefaultApi:
         user,
         meta,
         usage,
-        debug,
         provider,
         _request_auth,
         _content_type,
@@ -1825,8 +1810,6 @@ class DefaultApi:
             _form_params.append(('meta', meta))
         if usage is not None:
             _form_params.append(('usage', usage))
-        if debug is not None:
-            _form_params.append(('debug', debug))
         if provider is not None:
             _form_params.append(('provider', provider))
         # process the body parameter
@@ -2938,8 +2921,7 @@ class DefaultApi:
         if 'Accept' not in _header_params:
             _header_params['Accept'] = self.api_client.select_header_accept(
                 [
-                    'application/json', 
-                    'text/event-stream'
+                    'application/json'
                 ]
             )
 
@@ -3261,7 +3243,6 @@ class DefaultApi:
         audio_url: Optional[StrictStr] = None,
         audio_b64: Optional[StrictStr] = None,
         language: Optional[StrictStr] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -3288,8 +3269,6 @@ class DefaultApi:
         :type audio_b64: str
         :param language:
         :type language: str
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -3319,7 +3298,6 @@ class DefaultApi:
             audio_url=audio_url,
             audio_b64=audio_b64,
             language=language,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -3348,7 +3326,6 @@ class DefaultApi:
         audio_url: Optional[StrictStr] = None,
         audio_b64: Optional[StrictStr] = None,
         language: Optional[StrictStr] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -3375,8 +3352,6 @@ class DefaultApi:
         :type audio_b64: str
         :param language:
         :type language: str
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -3406,7 +3381,6 @@ class DefaultApi:
             audio_url=audio_url,
             audio_b64=audio_b64,
             language=language,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -3435,7 +3409,6 @@ class DefaultApi:
         audio_url: Optional[StrictStr] = None,
         audio_b64: Optional[StrictStr] = None,
         language: Optional[StrictStr] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -3462,8 +3435,6 @@ class DefaultApi:
         :type audio_b64: str
         :param language:
         :type language: str
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -3493,7 +3464,6 @@ class DefaultApi:
             audio_url=audio_url,
             audio_b64=audio_b64,
             language=language,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -3517,7 +3487,6 @@ class DefaultApi:
         audio_url,
         audio_b64,
         language,
-        debug,
         provider,
         _request_auth,
         _content_type,
@@ -3551,8 +3520,6 @@ class DefaultApi:
             _form_params.append(('audio_b64', audio_b64))
         if language is not None:
             _form_params.append(('language', language))
-        if debug is not None:
-            _form_params.append(('debug', debug))
         if provider is not None:
             _form_params.append(('provider', provider))
         # process the body parameter
@@ -3612,7 +3579,6 @@ class DefaultApi:
         language: Optional[StrictStr] = None,
         prompt: Optional[StrictStr] = None,
         temperature: Optional[Union[Annotated[float, Field(le=2, strict=True, ge=0)], Annotated[int, Field(le=2, strict=True, ge=0)]]] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -3643,8 +3609,6 @@ class DefaultApi:
         :type prompt: str
         :param temperature:
         :type temperature: float
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -3676,7 +3640,6 @@ class DefaultApi:
             language=language,
             prompt=prompt,
             temperature=temperature,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -3707,7 +3670,6 @@ class DefaultApi:
         language: Optional[StrictStr] = None,
         prompt: Optional[StrictStr] = None,
         temperature: Optional[Union[Annotated[float, Field(le=2, strict=True, ge=0)], Annotated[int, Field(le=2, strict=True, ge=0)]]] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -3738,8 +3700,6 @@ class DefaultApi:
         :type prompt: str
         :param temperature:
         :type temperature: float
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -3771,7 +3731,6 @@ class DefaultApi:
             language=language,
             prompt=prompt,
             temperature=temperature,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -3802,7 +3761,6 @@ class DefaultApi:
         language: Optional[StrictStr] = None,
         prompt: Optional[StrictStr] = None,
         temperature: Optional[Union[Annotated[float, Field(le=2, strict=True, ge=0)], Annotated[int, Field(le=2, strict=True, ge=0)]]] = None,
-        debug: Optional[DebugOptions] = None,
         provider: Optional[ProviderRoutingOptions] = None,
         _request_timeout: Union[
             None,
@@ -3833,8 +3791,6 @@ class DefaultApi:
         :type prompt: str
         :param temperature:
         :type temperature: float
-        :param debug:
-        :type debug: DebugOptions
         :param provider:
         :type provider: ProviderRoutingOptions
         :param _request_timeout: timeout setting for this request. If one
@@ -3866,7 +3822,6 @@ class DefaultApi:
             language=language,
             prompt=prompt,
             temperature=temperature,
-            debug=debug,
             provider=provider,
             _request_auth=_request_auth,
             _content_type=_content_type,
@@ -3892,7 +3847,6 @@ class DefaultApi:
         language,
         prompt,
         temperature,
-        debug,
         provider,
         _request_auth,
         _content_type,
@@ -3930,8 +3884,6 @@ class DefaultApi:
             _form_params.append(('prompt', prompt))
         if temperature is not None:
             _form_params.append(('temperature', temperature))
-        if debug is not None:
-            _form_params.append(('debug', debug))
         if provider is not None:
             _form_params.append(('provider', provider))
         # process the body parameter
@@ -6980,7 +6932,7 @@ class DefaultApi:
 
 
     @validate_call
-    def health(
+    def healthz(
         self,
         _request_timeout: Union[
             None,
@@ -6994,7 +6946,7 @@ class DefaultApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> Health200Response:
+    ) -> Healthz200Response:
         """Health check
 
         Returns the health status of the API.
@@ -7021,7 +6973,7 @@ class DefaultApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._health_serialize(
+        _param = self._healthz_serialize(
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -7029,7 +6981,7 @@ class DefaultApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "Health200Response",
+            '200': "Healthz200Response",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -7043,7 +6995,7 @@ class DefaultApi:
 
 
     @validate_call
-    def health_with_http_info(
+    def healthz_with_http_info(
         self,
         _request_timeout: Union[
             None,
@@ -7057,7 +7009,7 @@ class DefaultApi:
         _content_type: Optional[StrictStr] = None,
         _headers: Optional[Dict[StrictStr, Any]] = None,
         _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
-    ) -> ApiResponse[Health200Response]:
+    ) -> ApiResponse[Healthz200Response]:
         """Health check
 
         Returns the health status of the API.
@@ -7084,7 +7036,7 @@ class DefaultApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._health_serialize(
+        _param = self._healthz_serialize(
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -7092,7 +7044,7 @@ class DefaultApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "Health200Response",
+            '200': "Healthz200Response",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -7106,7 +7058,7 @@ class DefaultApi:
 
 
     @validate_call
-    def health_without_preload_content(
+    def healthz_without_preload_content(
         self,
         _request_timeout: Union[
             None,
@@ -7147,7 +7099,7 @@ class DefaultApi:
         :return: Returns the result object.
         """ # noqa: E501
 
-        _param = self._health_serialize(
+        _param = self._healthz_serialize(
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -7155,7 +7107,7 @@ class DefaultApi:
         )
 
         _response_types_map: Dict[str, Optional[str]] = {
-            '200': "Health200Response",
+            '200': "Healthz200Response",
         }
         response_data = self.api_client.call_api(
             *_param,
@@ -7164,7 +7116,7 @@ class DefaultApi:
         return response_data.response
 
 
-    def _health_serialize(
+    def _healthz_serialize(
         self,
         _request_auth,
         _content_type,
@@ -7209,7 +7161,7 @@ class DefaultApi:
 
         return self.api_client.param_serialize(
             method='GET',
-            resource_path='/health',
+            resource_path='/healthz',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

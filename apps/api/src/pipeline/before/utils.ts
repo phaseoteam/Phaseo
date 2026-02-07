@@ -34,11 +34,14 @@ export function buildProviderCandidates(ctx: GatewayContextData): ProviderCandid
             if (!adapter) return null;
             return {
                 providerId: p.providerId,
+                providerStatus: p.providerStatus ?? "not_ready",
                 adapter,
                 baseWeight: p.baseWeight > 0 ? p.baseWeight : 1,
                 byokMeta: p.byokMeta,
                 pricingCard: ctx.pricing[p.providerId] ?? null,
                 providerModelSlug: p.providerModelSlug,
+                inputModalities: p.inputModalities ?? null,
+                outputModalities: p.outputModalities ?? null,
                 capabilityParams: p.capabilityParams ?? {},
                 maxInputTokens: p.maxInputTokens ?? null,
                 maxOutputTokens: p.maxOutputTokens ?? null,

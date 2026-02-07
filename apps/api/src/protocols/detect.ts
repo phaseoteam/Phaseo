@@ -18,6 +18,7 @@ export type Protocol =
 	| "openai.chat.completions"
 	| "openai.responses"
 	| "openai.embeddings"
+	| "openai.moderations"
 	| "anthropic.messages";
 
 /**
@@ -44,6 +45,8 @@ export function detectProtocol(endpoint: Endpoint, requestPath?: string): Protoc
 
 		case "embeddings":
 			return "openai.embeddings";
+		case "moderations":
+			return "openai.moderations";
 
 		case "chat.completions":
 			return "openai.chat.completions";
@@ -67,6 +70,8 @@ export function getProtocolPath(protocol: Protocol): string {
 			return "/v1/responses";
 		case "openai.embeddings":
 			return "/v1/embeddings";
+		case "openai.moderations":
+			return "/v1/moderations";
 		case "anthropic.messages":
 			return "/v1/messages";
 	}
@@ -86,7 +91,7 @@ export function protocolSupportsFeature(
 
 		case "streaming":
 			// All protocols support streaming
-			return protocol !== "openai.embeddings";
+			return protocol !== "openai.embeddings" && protocol !== "openai.moderations";
 
 		case "reasoning":
 			// OpenAI Responses API has native reasoning support
@@ -114,6 +119,8 @@ export function getProtocolDisplayName(protocol: Protocol): string {
 			return "OpenAI Responses";
 		case "openai.embeddings":
 			return "OpenAI Embeddings";
+		case "openai.moderations":
+			return "OpenAI Moderations";
 		case "anthropic.messages":
 			return "Anthropic Messages";
 	}

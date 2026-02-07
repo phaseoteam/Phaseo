@@ -166,11 +166,10 @@ namespace AIStatsSdk.Api
         /// <param name="user"> (optional)</param>
         /// <param name="meta"> (optional)</param>
         /// <param name="usage"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateImageEditApiResponse"/>&gt;</returns>
-        Task<ICreateImageEditApiResponse> CreateImageEditAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateImageEditApiResponse> CreateImageEditAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create image edit
@@ -187,11 +186,10 @@ namespace AIStatsSdk.Api
         /// <param name="user"> (optional)</param>
         /// <param name="meta"> (optional)</param>
         /// <param name="usage"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateImageEditApiResponse"/>?&gt;</returns>
-        Task<ICreateImageEditApiResponse?> CreateImageEditOrDefaultAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateImageEditApiResponse?> CreateImageEditOrDefaultAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create moderation
@@ -319,11 +317,10 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"> (optional)</param>
         /// <param name="audioB64"> (optional)</param>
         /// <param name="language"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranscriptionApiResponse"/>&gt;</returns>
-        Task<ICreateTranscriptionApiResponse> CreateTranscriptionAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateTranscriptionApiResponse> CreateTranscriptionAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create transcription
@@ -335,11 +332,10 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"> (optional)</param>
         /// <param name="audioB64"> (optional)</param>
         /// <param name="language"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranscriptionApiResponse"/>?&gt;</returns>
-        Task<ICreateTranscriptionApiResponse?> CreateTranscriptionOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateTranscriptionApiResponse?> CreateTranscriptionOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create translation
@@ -354,11 +350,10 @@ namespace AIStatsSdk.Api
         /// <param name="language"> (optional)</param>
         /// <param name="prompt"> (optional)</param>
         /// <param name="temperature"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranslationApiResponse"/>&gt;</returns>
-        Task<ICreateTranslationApiResponse> CreateTranslationAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateTranslationApiResponse> CreateTranslationAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create translation
@@ -372,11 +367,10 @@ namespace AIStatsSdk.Api
         /// <param name="language"> (optional)</param>
         /// <param name="prompt"> (optional)</param>
         /// <param name="temperature"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranslationApiResponse"/>?&gt;</returns>
-        Task<ICreateTranslationApiResponse?> CreateTranslationOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
+        Task<ICreateTranslationApiResponse?> CreateTranslationOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create video
@@ -645,8 +639,8 @@ namespace AIStatsSdk.Api
         /// </remarks>
         /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="IHealthApiResponse"/>&gt;</returns>
-        Task<IHealthApiResponse> HealthAsync(System.Threading.CancellationToken cancellationToken = default);
+        /// <returns><see cref="Task"/>&lt;<see cref="IHealthzApiResponse"/>&gt;</returns>
+        Task<IHealthzApiResponse> HealthzAsync(System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Health check
@@ -655,8 +649,8 @@ namespace AIStatsSdk.Api
         /// Returns the health status of the API.
         /// </remarks>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="IHealthApiResponse"/>?&gt;</returns>
-        Task<IHealthApiResponse?> HealthOrDefaultAsync(System.Threading.CancellationToken cancellationToken = default);
+        /// <returns><see cref="Task"/>&lt;<see cref="IHealthzApiResponse"/>?&gt;</returns>
+        Task<IHealthzApiResponse?> HealthzOrDefaultAsync(System.Threading.CancellationToken cancellationToken = default);
 
         /// <summary>
         /// List files
@@ -1245,9 +1239,9 @@ namespace AIStatsSdk.Api
     }
 
     /// <summary>
-    /// The <see cref="IHealthApiResponse"/>
+    /// The <see cref="IHealthzApiResponse"/>
     /// </summary>
-    public interface IHealthApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.Health200Response?>
+    public interface IHealthzApiResponse : AIStatsSdk.Client.IApiResponse, IOk<AIStatsSdk.Model.Healthz200Response?>
     {
         /// <summary>
         /// Returns true if the response is 200 Ok
@@ -1894,21 +1888,21 @@ namespace AIStatsSdk.Api
         /// <summary>
         /// The event raised after the server response
         /// </summary>
-        public event EventHandler<ApiResponseEventArgs>? OnHealth;
+        public event EventHandler<ApiResponseEventArgs>? OnHealthz;
 
         /// <summary>
         /// The event raised after an error querying the server
         /// </summary>
-        public event EventHandler<ExceptionEventArgs>? OnErrorHealth;
+        public event EventHandler<ExceptionEventArgs>? OnErrorHealthz;
 
-        internal void ExecuteOnHealth(DefaultApi.HealthApiResponse apiResponse)
+        internal void ExecuteOnHealthz(DefaultApi.HealthzApiResponse apiResponse)
         {
-            OnHealth?.Invoke(this, new ApiResponseEventArgs(apiResponse));
+            OnHealthz?.Invoke(this, new ApiResponseEventArgs(apiResponse));
         }
 
-        internal void ExecuteOnErrorHealth(Exception exception)
+        internal void ExecuteOnErrorHealthz(Exception exception)
         {
-            OnErrorHealth?.Invoke(this, new ExceptionEventArgs(exception));
+            OnErrorHealthz?.Invoke(this, new ExceptionEventArgs(exception));
         }
 
         /// <summary>
@@ -2796,8 +2790,7 @@ namespace AIStatsSdk.Api
                         httpRequestMessageLocalVar.Content.Headers.ContentType = new MediaTypeHeaderValue(contentTypeLocalVar);
 
                     string[] acceptLocalVars = new string[] {
-                        "application/json",
-                        "text/event-stream"
+                        "application/json"
                     };
 
                     string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
@@ -3453,7 +3446,7 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
-        partial void FormatCreateImageEdit(ref string model, ref string image, ref string prompt, ref Option<string> mask, ref Option<string> size, ref Option<int> n, ref Option<string> user, ref Option<bool> meta, ref Option<bool> usage, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void FormatCreateImageEdit(ref string model, ref string image, ref string prompt, ref Option<string> mask, ref Option<string> size, ref Option<int> n, ref Option<string> user, ref Option<bool> meta, ref Option<bool> usage, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Validates the request parameters
@@ -3464,10 +3457,9 @@ namespace AIStatsSdk.Api
         /// <param name="mask"></param>
         /// <param name="size"></param>
         /// <param name="user"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
         /// <returns></returns>
-        private void ValidateCreateImageEdit(string model, string image, string prompt, Option<string> mask, Option<string> size, Option<string> user, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void ValidateCreateImageEdit(string model, string image, string prompt, Option<string> mask, Option<string> size, Option<string> user, Option<ProviderRoutingOptions> provider)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -3487,9 +3479,6 @@ namespace AIStatsSdk.Api
             if (user.IsSet && user.Value == null)
                 throw new ArgumentNullException(nameof(user));
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug));
-
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider));
         }
@@ -3507,12 +3496,11 @@ namespace AIStatsSdk.Api
         /// <param name="user"></param>
         /// <param name="meta"></param>
         /// <param name="usage"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        private void AfterCreateImageEditDefaultImplementation(ICreateImageEditApiResponse apiResponseLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void AfterCreateImageEditDefaultImplementation(ICreateImageEditApiResponse apiResponseLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLog = false;
-            AfterCreateImageEdit(ref suppressDefaultLog, apiResponseLocalVar, model, image, prompt, mask, size, n, user, meta, usage, debug, provider);
+            AfterCreateImageEdit(ref suppressDefaultLog, apiResponseLocalVar, model, image, prompt, mask, size, n, user, meta, usage, provider);
             if (!suppressDefaultLog)
                 Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
         }
@@ -3531,9 +3519,8 @@ namespace AIStatsSdk.Api
         /// <param name="user"></param>
         /// <param name="meta"></param>
         /// <param name="usage"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        partial void AfterCreateImageEdit(ref bool suppressDefaultLog, ICreateImageEditApiResponse apiResponseLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void AfterCreateImageEdit(ref bool suppressDefaultLog, ICreateImageEditApiResponse apiResponseLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -3550,12 +3537,11 @@ namespace AIStatsSdk.Api
         /// <param name="user"></param>
         /// <param name="meta"></param>
         /// <param name="usage"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        private void OnErrorCreateImageEditDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void OnErrorCreateImageEditDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLogLocalVar = false;
-            OnErrorCreateImageEdit(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, image, prompt, mask, size, n, user, meta, usage, debug, provider);
+            OnErrorCreateImageEdit(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, image, prompt, mask, size, n, user, meta, usage, provider);
             if (!suppressDefaultLogLocalVar)
                 Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
         }
@@ -3576,9 +3562,8 @@ namespace AIStatsSdk.Api
         /// <param name="user"></param>
         /// <param name="meta"></param>
         /// <param name="usage"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        partial void OnErrorCreateImageEdit(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void OnErrorCreateImageEdit(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, string image, string prompt, Option<string> mask, Option<string> size, Option<int> n, Option<string> user, Option<bool> meta, Option<bool> usage, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Create image edit Creates an edited or extended image given an original image and a prompt.
@@ -3592,15 +3577,14 @@ namespace AIStatsSdk.Api
         /// <param name="user"> (optional)</param>
         /// <param name="meta"> (optional)</param>
         /// <param name="usage"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateImageEditApiResponse"/>&gt;</returns>
-        public async Task<ICreateImageEditApiResponse?> CreateImageEditOrDefaultAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateImageEditApiResponse?> CreateImageEditOrDefaultAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                return await CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, debug, provider, cancellationToken).ConfigureAwait(false);
+                return await CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, provider, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -3621,19 +3605,18 @@ namespace AIStatsSdk.Api
         /// <param name="user"> (optional)</param>
         /// <param name="meta"> (optional)</param>
         /// <param name="usage"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateImageEditApiResponse"/>&gt;</returns>
-        public async Task<ICreateImageEditApiResponse> CreateImageEditAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateImageEditApiResponse> CreateImageEditAsync(string model, string image, string prompt, Option<string> mask = default, Option<string> size = default, Option<int> n = default, Option<string> user = default, Option<bool> meta = default, Option<bool> usage = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             UriBuilder uriBuilderLocalVar = new UriBuilder();
 
             try
             {
-                ValidateCreateImageEdit(model, image, prompt, mask, size, user, debug, provider);
+                ValidateCreateImageEdit(model, image, prompt, mask, size, user, provider);
 
-                FormatCreateImageEdit(ref model, ref image, ref prompt, ref mask, ref size, ref n, ref user, ref meta, ref usage, debug, provider);
+                FormatCreateImageEdit(ref model, ref image, ref prompt, ref mask, ref size, ref n, ref user, ref meta, ref usage, provider);
 
                 using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
                 {
@@ -3675,9 +3658,6 @@ namespace AIStatsSdk.Api
 
                     if (usage.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("usage", ClientUtils.ParameterToString(usage.Value)));
-
-                    if (debug.IsSet)
-                        formParameterLocalVars.Add(new KeyValuePair<string?, string?>("debug", ClientUtils.ParameterToString(debug.Value)));
 
                     if (provider.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("provider", ClientUtils.ParameterToString(provider.Value)));
@@ -3727,7 +3707,7 @@ namespace AIStatsSdk.Api
                             }
                         }
 
-                        AfterCreateImageEditDefaultImplementation(apiResponseLocalVar, model, image, prompt, mask, size, n, user, meta, usage, debug, provider);
+                        AfterCreateImageEditDefaultImplementation(apiResponseLocalVar, model, image, prompt, mask, size, n, user, meta, usage, provider);
 
                         Events.ExecuteOnCreateImageEdit(apiResponseLocalVar);
 
@@ -3741,7 +3721,7 @@ namespace AIStatsSdk.Api
             }
             catch(Exception e)
             {
-                OnErrorCreateImageEditDefaultImplementation(e, "/images/edits", uriBuilderLocalVar.Path, model, image, prompt, mask, size, n, user, meta, usage, debug, provider);
+                OnErrorCreateImageEditDefaultImplementation(e, "/images/edits", uriBuilderLocalVar.Path, model, image, prompt, mask, size, n, user, meta, usage, provider);
                 Events.ExecuteOnErrorCreateImageEdit(e);
                 throw;
             }
@@ -4837,8 +4817,7 @@ namespace AIStatsSdk.Api
                         httpRequestMessageLocalVar.Content.Headers.ContentType = new MediaTypeHeaderValue(contentTypeLocalVar);
 
                     string[] acceptLocalVars = new string[] {
-                        "application/json",
-                        "text/event-stream"
+                        "application/json"
                     };
 
                     string? acceptLocalVar = ClientUtils.SelectHeaderAccept(acceptLocalVars);
@@ -5250,7 +5229,7 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
-        partial void FormatCreateTranscription(ref string model, ref Option<string> audioUrl, ref Option<string> audioB64, ref Option<string> language, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void FormatCreateTranscription(ref string model, ref Option<string> audioUrl, ref Option<string> audioB64, ref Option<string> language, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Validates the request parameters
@@ -5259,10 +5238,9 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
         /// <returns></returns>
-        private void ValidateCreateTranscription(string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void ValidateCreateTranscription(string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -5276,9 +5254,6 @@ namespace AIStatsSdk.Api
             if (language.IsSet && language.Value == null)
                 throw new ArgumentNullException(nameof(language));
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug));
-
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider));
         }
@@ -5291,12 +5266,11 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        private void AfterCreateTranscriptionDefaultImplementation(ICreateTranscriptionApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void AfterCreateTranscriptionDefaultImplementation(ICreateTranscriptionApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLog = false;
-            AfterCreateTranscription(ref suppressDefaultLog, apiResponseLocalVar, model, audioUrl, audioB64, language, debug, provider);
+            AfterCreateTranscription(ref suppressDefaultLog, apiResponseLocalVar, model, audioUrl, audioB64, language, provider);
             if (!suppressDefaultLog)
                 Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
         }
@@ -5310,9 +5284,8 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        partial void AfterCreateTranscription(ref bool suppressDefaultLog, ICreateTranscriptionApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void AfterCreateTranscription(ref bool suppressDefaultLog, ICreateTranscriptionApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -5324,12 +5297,11 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        private void OnErrorCreateTranscriptionDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void OnErrorCreateTranscriptionDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLogLocalVar = false;
-            OnErrorCreateTranscription(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, audioUrl, audioB64, language, debug, provider);
+            OnErrorCreateTranscription(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, audioUrl, audioB64, language, provider);
             if (!suppressDefaultLogLocalVar)
                 Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
         }
@@ -5345,9 +5317,8 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"></param>
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        partial void OnErrorCreateTranscription(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void OnErrorCreateTranscription(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Create transcription Transcribes audio into the input language.
@@ -5356,15 +5327,14 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"> (optional)</param>
         /// <param name="audioB64"> (optional)</param>
         /// <param name="language"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranscriptionApiResponse"/>&gt;</returns>
-        public async Task<ICreateTranscriptionApiResponse?> CreateTranscriptionOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateTranscriptionApiResponse?> CreateTranscriptionOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                return await CreateTranscriptionAsync(model, audioUrl, audioB64, language, debug, provider, cancellationToken).ConfigureAwait(false);
+                return await CreateTranscriptionAsync(model, audioUrl, audioB64, language, provider, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -5380,19 +5350,18 @@ namespace AIStatsSdk.Api
         /// <param name="audioUrl"> (optional)</param>
         /// <param name="audioB64"> (optional)</param>
         /// <param name="language"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranscriptionApiResponse"/>&gt;</returns>
-        public async Task<ICreateTranscriptionApiResponse> CreateTranscriptionAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateTranscriptionApiResponse> CreateTranscriptionAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             UriBuilder uriBuilderLocalVar = new UriBuilder();
 
             try
             {
-                ValidateCreateTranscription(model, audioUrl, audioB64, language, debug, provider);
+                ValidateCreateTranscription(model, audioUrl, audioB64, language, provider);
 
-                FormatCreateTranscription(ref model, ref audioUrl, ref audioB64, ref language, debug, provider);
+                FormatCreateTranscription(ref model, ref audioUrl, ref audioB64, ref language, provider);
 
                 using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
                 {
@@ -5421,9 +5390,6 @@ namespace AIStatsSdk.Api
 
                     if (language.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("language", ClientUtils.ParameterToString(language.Value)));
-
-                    if (debug.IsSet)
-                        formParameterLocalVars.Add(new KeyValuePair<string?, string?>("debug", ClientUtils.ParameterToString(debug.Value)));
 
                     if (provider.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("provider", ClientUtils.ParameterToString(provider.Value)));
@@ -5473,7 +5439,7 @@ namespace AIStatsSdk.Api
                             }
                         }
 
-                        AfterCreateTranscriptionDefaultImplementation(apiResponseLocalVar, model, audioUrl, audioB64, language, debug, provider);
+                        AfterCreateTranscriptionDefaultImplementation(apiResponseLocalVar, model, audioUrl, audioB64, language, provider);
 
                         Events.ExecuteOnCreateTranscription(apiResponseLocalVar);
 
@@ -5487,7 +5453,7 @@ namespace AIStatsSdk.Api
             }
             catch(Exception e)
             {
-                OnErrorCreateTranscriptionDefaultImplementation(e, "/audio/transcriptions", uriBuilderLocalVar.Path, model, audioUrl, audioB64, language, debug, provider);
+                OnErrorCreateTranscriptionDefaultImplementation(e, "/audio/transcriptions", uriBuilderLocalVar.Path, model, audioUrl, audioB64, language, provider);
                 Events.ExecuteOnErrorCreateTranscription(e);
                 throw;
             }
@@ -5586,7 +5552,7 @@ namespace AIStatsSdk.Api
             partial void OnDeserializationError(ref bool suppressDefaultLog, Exception exception, HttpStatusCode httpStatusCode);
         }
 
-        partial void FormatCreateTranslation(ref string model, ref Option<string> audioUrl, ref Option<string> audioB64, ref Option<string> language, ref Option<string> prompt, ref Option<decimal> temperature, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void FormatCreateTranslation(ref string model, ref Option<string> audioUrl, ref Option<string> audioB64, ref Option<string> language, ref Option<string> prompt, ref Option<decimal> temperature, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Validates the request parameters
@@ -5596,10 +5562,9 @@ namespace AIStatsSdk.Api
         /// <param name="audioB64"></param>
         /// <param name="language"></param>
         /// <param name="prompt"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
         /// <returns></returns>
-        private void ValidateCreateTranslation(string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void ValidateCreateTranslation(string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<ProviderRoutingOptions> provider)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -5616,9 +5581,6 @@ namespace AIStatsSdk.Api
             if (prompt.IsSet && prompt.Value == null)
                 throw new ArgumentNullException(nameof(prompt));
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug));
-
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider));
         }
@@ -5633,12 +5595,11 @@ namespace AIStatsSdk.Api
         /// <param name="language"></param>
         /// <param name="prompt"></param>
         /// <param name="temperature"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        private void AfterCreateTranslationDefaultImplementation(ICreateTranslationApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void AfterCreateTranslationDefaultImplementation(ICreateTranslationApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLog = false;
-            AfterCreateTranslation(ref suppressDefaultLog, apiResponseLocalVar, model, audioUrl, audioB64, language, prompt, temperature, debug, provider);
+            AfterCreateTranslation(ref suppressDefaultLog, apiResponseLocalVar, model, audioUrl, audioB64, language, prompt, temperature, provider);
             if (!suppressDefaultLog)
                 Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
         }
@@ -5654,9 +5615,8 @@ namespace AIStatsSdk.Api
         /// <param name="language"></param>
         /// <param name="prompt"></param>
         /// <param name="temperature"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        partial void AfterCreateTranslation(ref bool suppressDefaultLog, ICreateTranslationApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void AfterCreateTranslation(ref bool suppressDefaultLog, ICreateTranslationApiResponse apiResponseLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -5670,12 +5630,11 @@ namespace AIStatsSdk.Api
         /// <param name="language"></param>
         /// <param name="prompt"></param>
         /// <param name="temperature"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        private void OnErrorCreateTranslationDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider)
+        private void OnErrorCreateTranslationDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<ProviderRoutingOptions> provider)
         {
             bool suppressDefaultLogLocalVar = false;
-            OnErrorCreateTranslation(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, audioUrl, audioB64, language, prompt, temperature, debug, provider);
+            OnErrorCreateTranslation(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar, model, audioUrl, audioB64, language, prompt, temperature, provider);
             if (!suppressDefaultLogLocalVar)
                 Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
         }
@@ -5693,9 +5652,8 @@ namespace AIStatsSdk.Api
         /// <param name="language"></param>
         /// <param name="prompt"></param>
         /// <param name="temperature"></param>
-        /// <param name="debug"></param>
         /// <param name="provider"></param>
-        partial void OnErrorCreateTranslation(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<DebugOptions> debug, Option<ProviderRoutingOptions> provider);
+        partial void OnErrorCreateTranslation(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string model, Option<string> audioUrl, Option<string> audioB64, Option<string> language, Option<string> prompt, Option<decimal> temperature, Option<ProviderRoutingOptions> provider);
 
         /// <summary>
         /// Create translation Translates audio into English.
@@ -5706,15 +5664,14 @@ namespace AIStatsSdk.Api
         /// <param name="language"> (optional)</param>
         /// <param name="prompt"> (optional)</param>
         /// <param name="temperature"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranslationApiResponse"/>&gt;</returns>
-        public async Task<ICreateTranslationApiResponse?> CreateTranslationOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateTranslationApiResponse?> CreateTranslationOrDefaultAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                return await CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, debug, provider, cancellationToken).ConfigureAwait(false);
+                return await CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, provider, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -5732,19 +5689,18 @@ namespace AIStatsSdk.Api
         /// <param name="language"> (optional)</param>
         /// <param name="prompt"> (optional)</param>
         /// <param name="temperature"> (optional)</param>
-        /// <param name="debug"> (optional)</param>
         /// <param name="provider"> (optional)</param>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
         /// <returns><see cref="Task"/>&lt;<see cref="ICreateTranslationApiResponse"/>&gt;</returns>
-        public async Task<ICreateTranslationApiResponse> CreateTranslationAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<DebugOptions> debug = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
+        public async Task<ICreateTranslationApiResponse> CreateTranslationAsync(string model, Option<string> audioUrl = default, Option<string> audioB64 = default, Option<string> language = default, Option<string> prompt = default, Option<decimal> temperature = default, Option<ProviderRoutingOptions> provider = default, System.Threading.CancellationToken cancellationToken = default)
         {
             UriBuilder uriBuilderLocalVar = new UriBuilder();
 
             try
             {
-                ValidateCreateTranslation(model, audioUrl, audioB64, language, prompt, debug, provider);
+                ValidateCreateTranslation(model, audioUrl, audioB64, language, prompt, provider);
 
-                FormatCreateTranslation(ref model, ref audioUrl, ref audioB64, ref language, ref prompt, ref temperature, debug, provider);
+                FormatCreateTranslation(ref model, ref audioUrl, ref audioB64, ref language, ref prompt, ref temperature, provider);
 
                 using (HttpRequestMessage httpRequestMessageLocalVar = new HttpRequestMessage())
                 {
@@ -5779,9 +5735,6 @@ namespace AIStatsSdk.Api
 
                     if (temperature.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("temperature", ClientUtils.ParameterToString(temperature.Value)));
-
-                    if (debug.IsSet)
-                        formParameterLocalVars.Add(new KeyValuePair<string?, string?>("debug", ClientUtils.ParameterToString(debug.Value)));
 
                     if (provider.IsSet)
                         formParameterLocalVars.Add(new KeyValuePair<string?, string?>("provider", ClientUtils.ParameterToString(provider.Value)));
@@ -5831,7 +5784,7 @@ namespace AIStatsSdk.Api
                             }
                         }
 
-                        AfterCreateTranslationDefaultImplementation(apiResponseLocalVar, model, audioUrl, audioB64, language, prompt, temperature, debug, provider);
+                        AfterCreateTranslationDefaultImplementation(apiResponseLocalVar, model, audioUrl, audioB64, language, prompt, temperature, provider);
 
                         Events.ExecuteOnCreateTranslation(apiResponseLocalVar);
 
@@ -5845,7 +5798,7 @@ namespace AIStatsSdk.Api
             }
             catch(Exception e)
             {
-                OnErrorCreateTranslationDefaultImplementation(e, "/audio/translations", uriBuilderLocalVar.Path, model, audioUrl, audioB64, language, prompt, temperature, debug, provider);
+                OnErrorCreateTranslationDefaultImplementation(e, "/audio/translations", uriBuilderLocalVar.Path, model, audioUrl, audioB64, language, prompt, temperature, provider);
                 Events.ExecuteOnErrorCreateTranslation(e);
                 throw;
             }
@@ -9197,10 +9150,10 @@ namespace AIStatsSdk.Api
         /// Processes the server response
         /// </summary>
         /// <param name="apiResponseLocalVar"></param>
-        private void AfterHealthDefaultImplementation(IHealthApiResponse apiResponseLocalVar)
+        private void AfterHealthzDefaultImplementation(IHealthzApiResponse apiResponseLocalVar)
         {
             bool suppressDefaultLog = false;
-            AfterHealth(ref suppressDefaultLog, apiResponseLocalVar);
+            AfterHealthz(ref suppressDefaultLog, apiResponseLocalVar);
             if (!suppressDefaultLog)
                 Logger.LogInformation("{0,-9} | {1} | {3}", (apiResponseLocalVar.DownloadedAt - apiResponseLocalVar.RequestedAt).TotalSeconds, apiResponseLocalVar.StatusCode, apiResponseLocalVar.Path);
         }
@@ -9210,7 +9163,7 @@ namespace AIStatsSdk.Api
         /// </summary>
         /// <param name="suppressDefaultLog"></param>
         /// <param name="apiResponseLocalVar"></param>
-        partial void AfterHealth(ref bool suppressDefaultLog, IHealthApiResponse apiResponseLocalVar);
+        partial void AfterHealthz(ref bool suppressDefaultLog, IHealthzApiResponse apiResponseLocalVar);
 
         /// <summary>
         /// Logs exceptions that occur while retrieving the server response
@@ -9218,10 +9171,10 @@ namespace AIStatsSdk.Api
         /// <param name="exceptionLocalVar"></param>
         /// <param name="pathFormatLocalVar"></param>
         /// <param name="pathLocalVar"></param>
-        private void OnErrorHealthDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar)
+        private void OnErrorHealthzDefaultImplementation(Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar)
         {
             bool suppressDefaultLogLocalVar = false;
-            OnErrorHealth(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar);
+            OnErrorHealthz(ref suppressDefaultLogLocalVar, exceptionLocalVar, pathFormatLocalVar, pathLocalVar);
             if (!suppressDefaultLogLocalVar)
                 Logger.LogError(exceptionLocalVar, "An error occurred while sending the request to the server.");
         }
@@ -9233,18 +9186,18 @@ namespace AIStatsSdk.Api
         /// <param name="exceptionLocalVar"></param>
         /// <param name="pathFormatLocalVar"></param>
         /// <param name="pathLocalVar"></param>
-        partial void OnErrorHealth(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar);
+        partial void OnErrorHealthz(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar);
 
         /// <summary>
         /// Health check Returns the health status of the API.
         /// </summary>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="IHealthApiResponse"/>&gt;</returns>
-        public async Task<IHealthApiResponse?> HealthOrDefaultAsync(System.Threading.CancellationToken cancellationToken = default)
+        /// <returns><see cref="Task"/>&lt;<see cref="IHealthzApiResponse"/>&gt;</returns>
+        public async Task<IHealthzApiResponse?> HealthzOrDefaultAsync(System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                return await HealthAsync(cancellationToken).ConfigureAwait(false);
+                return await HealthzAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -9257,8 +9210,8 @@ namespace AIStatsSdk.Api
         /// </summary>
         /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         /// <param name="cancellationToken">Cancellation Token to cancel the request.</param>
-        /// <returns><see cref="Task"/>&lt;<see cref="IHealthApiResponse"/>&gt;</returns>
-        public async Task<IHealthApiResponse> HealthAsync(System.Threading.CancellationToken cancellationToken = default)
+        /// <returns><see cref="Task"/>&lt;<see cref="IHealthzApiResponse"/>&gt;</returns>
+        public async Task<IHealthzApiResponse> HealthzAsync(System.Threading.CancellationToken cancellationToken = default)
         {
             UriBuilder uriBuilderLocalVar = new UriBuilder();
 
@@ -9270,8 +9223,8 @@ namespace AIStatsSdk.Api
                     uriBuilderLocalVar.Port = HttpClient.BaseAddress.Port;
                     uriBuilderLocalVar.Scheme = HttpClient.BaseAddress.Scheme;
                     uriBuilderLocalVar.Path = HttpClient.BaseAddress.AbsolutePath == "/"
-                        ? "/health"
-                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/health");
+                        ? "/healthz"
+                        : string.Concat(HttpClient.BaseAddress.AbsolutePath, "/healthz");
 
                     List<TokenBase> tokenBaseLocalVars = new List<TokenBase>();
                     httpRequestMessageLocalVar.RequestUri = uriBuilderLocalVar.Uri;
@@ -9297,21 +9250,21 @@ namespace AIStatsSdk.Api
 
                     using (HttpResponseMessage httpResponseMessageLocalVar = await HttpClient.SendAsync(httpRequestMessageLocalVar, cancellationToken).ConfigureAwait(false))
                     {
-                        ILogger<HealthApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<HealthApiResponse>();
-                        HealthApiResponse apiResponseLocalVar;
+                        ILogger<HealthzApiResponse> apiResponseLoggerLocalVar = LoggerFactory.CreateLogger<HealthzApiResponse>();
+                        HealthzApiResponse apiResponseLocalVar;
 
                         switch ((int)httpResponseMessageLocalVar.StatusCode) {
                             default: {
                                 string responseContentLocalVar = await httpResponseMessageLocalVar.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/health", requestedAtLocalVar, _jsonSerializerOptions);
+                                apiResponseLocalVar = new(apiResponseLoggerLocalVar, httpRequestMessageLocalVar, httpResponseMessageLocalVar, responseContentLocalVar, "/healthz", requestedAtLocalVar, _jsonSerializerOptions);
 
                                 break;
                             }
                         }
 
-                        AfterHealthDefaultImplementation(apiResponseLocalVar);
+                        AfterHealthzDefaultImplementation(apiResponseLocalVar);
 
-                        Events.ExecuteOnHealth(apiResponseLocalVar);
+                        Events.ExecuteOnHealthz(apiResponseLocalVar);
 
                         if (apiResponseLocalVar.StatusCode == (HttpStatusCode) 429)
                             foreach(TokenBase tokenBaseLocalVar in tokenBaseLocalVars)
@@ -9323,24 +9276,24 @@ namespace AIStatsSdk.Api
             }
             catch(Exception e)
             {
-                OnErrorHealthDefaultImplementation(e, "/health", uriBuilderLocalVar.Path);
-                Events.ExecuteOnErrorHealth(e);
+                OnErrorHealthzDefaultImplementation(e, "/healthz", uriBuilderLocalVar.Path);
+                Events.ExecuteOnErrorHealthz(e);
                 throw;
             }
         }
 
         /// <summary>
-        /// The <see cref="HealthApiResponse"/>
+        /// The <see cref="HealthzApiResponse"/>
         /// </summary>
-        public partial class HealthApiResponse : AIStatsSdk.Client.ApiResponse, IHealthApiResponse
+        public partial class HealthzApiResponse : AIStatsSdk.Client.ApiResponse, IHealthzApiResponse
         {
             /// <summary>
             /// The logger
             /// </summary>
-            public ILogger<HealthApiResponse> Logger { get; }
+            public ILogger<HealthzApiResponse> Logger { get; }
 
             /// <summary>
-            /// The <see cref="HealthApiResponse"/>
+            /// The <see cref="HealthzApiResponse"/>
             /// </summary>
             /// <param name="logger"></param>
             /// <param name="httpRequestMessage"></param>
@@ -9349,14 +9302,14 @@ namespace AIStatsSdk.Api
             /// <param name="path"></param>
             /// <param name="requestedAt"></param>
             /// <param name="jsonSerializerOptions"></param>
-            public HealthApiResponse(ILogger<HealthApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
+            public HealthzApiResponse(ILogger<HealthzApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, string rawContent, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, rawContent, path, requestedAt, jsonSerializerOptions)
             {
                 Logger = logger;
                 OnCreated(httpRequestMessage, httpResponseMessage);
             }
 
             /// <summary>
-            /// The <see cref="HealthApiResponse"/>
+            /// The <see cref="HealthzApiResponse"/>
             /// </summary>
             /// <param name="logger"></param>
             /// <param name="httpRequestMessage"></param>
@@ -9365,7 +9318,7 @@ namespace AIStatsSdk.Api
             /// <param name="path"></param>
             /// <param name="requestedAt"></param>
             /// <param name="jsonSerializerOptions"></param>
-            public HealthApiResponse(ILogger<HealthApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
+            public HealthzApiResponse(ILogger<HealthzApiResponse> logger, System.Net.Http.HttpRequestMessage httpRequestMessage, System.Net.Http.HttpResponseMessage httpResponseMessage, System.IO.Stream contentStream, string path, DateTime requestedAt, System.Text.Json.JsonSerializerOptions jsonSerializerOptions) : base(httpRequestMessage, httpResponseMessage, contentStream, path, requestedAt, jsonSerializerOptions)
             {
                 Logger = logger;
                 OnCreated(httpRequestMessage, httpResponseMessage);
@@ -9383,11 +9336,11 @@ namespace AIStatsSdk.Api
             /// Deserializes the response if the response is 200 Ok
             /// </summary>
             /// <returns></returns>
-            public AIStatsSdk.Model.Health200Response? Ok()
+            public AIStatsSdk.Model.Healthz200Response? Ok()
             {
                 // This logic may be modified with the AsModel.mustache template
                 return IsOk
-                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.Health200Response>(RawContent, _jsonSerializerOptions)
+                    ? System.Text.Json.JsonSerializer.Deserialize<AIStatsSdk.Model.Healthz200Response>(RawContent, _jsonSerializerOptions)
                     : null;
             }
 
@@ -9396,7 +9349,7 @@ namespace AIStatsSdk.Api
             /// </summary>
             /// <param name="result"></param>
             /// <returns></returns>
-            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.Health200Response? result)
+            public bool TryOk([NotNullWhen(true)]out AIStatsSdk.Model.Healthz200Response? result)
             {
                 result = null;
 

@@ -35,80 +35,24 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="id">id</param>
         /// <param name="object">object</param>
-        /// <param name="createdAt">createdAt</param>
-        /// <param name="status">status</param>
-        /// <param name="completedAt">completedAt</param>
-        /// <param name="error">error</param>
-        /// <param name="incompleteDetails">incompleteDetails</param>
-        /// <param name="instructions">instructions</param>
-        /// <param name="maxOutputTokens">maxOutputTokens</param>
-        /// <param name="maxToolCalls">maxToolCalls</param>
+        /// <param name="created">created</param>
         /// <param name="model">model</param>
-        /// <param name="output">output</param>
-        /// <param name="parallelToolCalls">parallelToolCalls</param>
-        /// <param name="previousResponseId">previousResponseId</param>
-        /// <param name="reasoning">reasoning</param>
-        /// <param name="frequencyPenalty">frequencyPenalty</param>
-        /// <param name="presencePenalty">presencePenalty</param>
-        /// <param name="store">store</param>
-        /// <param name="temperature">temperature</param>
-        /// <param name="text">text</param>
-        /// <param name="toolChoice">toolChoice</param>
-        /// <param name="tools">tools</param>
-        /// <param name="topLogprobs">topLogprobs</param>
-        /// <param name="topP">topP</param>
-        /// <param name="truncation">truncation</param>
-        /// <param name="user">user</param>
-        /// <param name="background">background</param>
-        /// <param name="serviceTier">serviceTier</param>
-        /// <param name="safetyIdentifier">safetyIdentifier</param>
-        /// <param name="promptCacheKey">promptCacheKey</param>
-        /// <param name="metadata">metadata</param>
-        /// <param name="nativeResponseId">nativeResponseId</param>
-        /// <param name="meta">meta</param>
-        /// <param name="debug">debug</param>
-        /// <param name="upstreamRequest">upstreamRequest</param>
-        /// <param name="upstreamResponse">upstreamResponse</param>
+        /// <param name="content">content</param>
+        /// <param name="role">role</param>
+        /// <param name="stopReason">stopReason</param>
+        /// <param name="type">type</param>
         /// <param name="usage">usage</param>
         [JsonConstructor]
-        public ResponsesResponse(Option<string?> id = default, Option<string?> @object = default, Option<int?> createdAt = default, Option<string?> status = default, Option<int?> completedAt = default, Option<Object?> error = default, Option<Object?> incompleteDetails = default, Option<string?> instructions = default, Option<int?> maxOutputTokens = default, Option<int?> maxToolCalls = default, Option<string?> model = default, Option<List<ResponsesOutputItem>?> output = default, Option<bool?> parallelToolCalls = default, Option<string?> previousResponseId = default, Option<ResponsesResponseReasoning?> reasoning = default, Option<decimal?> frequencyPenalty = default, Option<decimal?> presencePenalty = default, Option<bool?> store = default, Option<decimal?> temperature = default, Option<Object?> text = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<List<Object>?> tools = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<string?> truncation = default, Option<string?> user = default, Option<bool?> background = default, Option<string?> serviceTier = default, Option<string?> safetyIdentifier = default, Option<string?> promptCacheKey = default, Option<Object?> metadata = default, Option<string?> nativeResponseId = default, Option<Object?> meta = default, Option<DebugResponse?> debug = default, Option<ChatCompletionsResponseUpstreamRequest?> upstreamRequest = default, Option<ChatCompletionsResponseUpstreamRequest?> upstreamResponse = default, Option<Usage?> usage = default)
+        public ResponsesResponse(Option<string?> id = default, Option<string?> @object = default, Option<int?> created = default, Option<string?> model = default, Option<List<Object>?> content = default, Option<string?> role = default, Option<string?> stopReason = default, Option<string?> type = default, Option<Usage?> usage = default)
         {
             IdOption = id;
             ObjectOption = @object;
-            CreatedAtOption = createdAt;
-            StatusOption = status;
-            CompletedAtOption = completedAt;
-            ErrorOption = error;
-            IncompleteDetailsOption = incompleteDetails;
-            InstructionsOption = instructions;
-            MaxOutputTokensOption = maxOutputTokens;
-            MaxToolCallsOption = maxToolCalls;
+            CreatedOption = created;
             ModelOption = model;
-            OutputOption = output;
-            ParallelToolCallsOption = parallelToolCalls;
-            PreviousResponseIdOption = previousResponseId;
-            ReasoningOption = reasoning;
-            FrequencyPenaltyOption = frequencyPenalty;
-            PresencePenaltyOption = presencePenalty;
-            StoreOption = store;
-            TemperatureOption = temperature;
-            TextOption = text;
-            ToolChoiceOption = toolChoice;
-            ToolsOption = tools;
-            TopLogprobsOption = topLogprobs;
-            TopPOption = topP;
-            TruncationOption = truncation;
-            UserOption = user;
-            BackgroundOption = background;
-            ServiceTierOption = serviceTier;
-            SafetyIdentifierOption = safetyIdentifier;
-            PromptCacheKeyOption = promptCacheKey;
-            MetadataOption = metadata;
-            NativeResponseIdOption = nativeResponseId;
-            MetaOption = meta;
-            DebugOption = debug;
-            UpstreamRequestOption = upstreamRequest;
-            UpstreamResponseOption = upstreamResponse;
+            ContentOption = content;
+            RoleOption = role;
+            StopReasonOption = stopReason;
+            TypeOption = type;
             UsageOption = usage;
             OnCreated();
         }
@@ -142,108 +86,17 @@ namespace AIStatsSdk.Model
         public string? Object { get { return this.ObjectOption; } set { this.ObjectOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of CreatedAt
+        /// Used to track the state of Created
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> CreatedAtOption { get; private set; }
+        public Option<int?> CreatedOption { get; private set; }
 
         /// <summary>
-        /// Gets or Sets CreatedAt
+        /// Gets or Sets Created
         /// </summary>
-        [JsonPropertyName("created_at")]
-        public int? CreatedAt { get { return this.CreatedAtOption; } set { this.CreatedAtOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Status
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> StatusOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Status
-        /// </summary>
-        [JsonPropertyName("status")]
-        public string? Status { get { return this.StatusOption; } set { this.StatusOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of CompletedAt
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> CompletedAtOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CompletedAt
-        /// </summary>
-        [JsonPropertyName("completed_at")]
-        public int? CompletedAt { get { return this.CompletedAtOption; } set { this.CompletedAtOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Error
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> ErrorOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Error
-        /// </summary>
-        [JsonPropertyName("error")]
-        public Object? Error { get { return this.ErrorOption; } set { this.ErrorOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of IncompleteDetails
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> IncompleteDetailsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets IncompleteDetails
-        /// </summary>
-        [JsonPropertyName("incomplete_details")]
-        public Object? IncompleteDetails { get { return this.IncompleteDetailsOption; } set { this.IncompleteDetailsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Instructions
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> InstructionsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Instructions
-        /// </summary>
-        [JsonPropertyName("instructions")]
-        public string? Instructions { get { return this.InstructionsOption; } set { this.InstructionsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of MaxOutputTokens
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> MaxOutputTokensOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets MaxOutputTokens
-        /// </summary>
-        [JsonPropertyName("max_output_tokens")]
-        public int? MaxOutputTokens { get { return this.MaxOutputTokensOption; } set { this.MaxOutputTokensOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of MaxToolCalls
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> MaxToolCallsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets MaxToolCalls
-        /// </summary>
-        [JsonPropertyName("max_tool_calls")]
-        public int? MaxToolCalls { get { return this.MaxToolCallsOption; } set { this.MaxToolCallsOption = new(value); } }
+        [JsonPropertyName("created")]
+        public int? Created { get { return this.CreatedOption; } set { this.CreatedOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Model
@@ -259,329 +112,56 @@ namespace AIStatsSdk.Model
         public string? Model { get { return this.ModelOption; } set { this.ModelOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Output
+        /// Used to track the state of Content
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<ResponsesOutputItem>?> OutputOption { get; private set; }
+        public Option<List<Object>?> ContentOption { get; private set; }
 
         /// <summary>
-        /// Gets or Sets Output
+        /// Gets or Sets Content
         /// </summary>
-        [JsonPropertyName("output")]
-        public List<ResponsesOutputItem>? Output { get { return this.OutputOption; } set { this.OutputOption = new(value); } }
+        [JsonPropertyName("content")]
+        public List<Object>? Content { get { return this.ContentOption; } set { this.ContentOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of ParallelToolCalls
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<bool?> ParallelToolCallsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ParallelToolCalls
-        /// </summary>
-        [JsonPropertyName("parallel_tool_calls")]
-        public bool? ParallelToolCalls { get { return this.ParallelToolCallsOption; } set { this.ParallelToolCallsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of PreviousResponseId
+        /// Used to track the state of Role
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> PreviousResponseIdOption { get; private set; }
+        public Option<string?> RoleOption { get; private set; }
 
         /// <summary>
-        /// Gets or Sets PreviousResponseId
+        /// Gets or Sets Role
         /// </summary>
-        [JsonPropertyName("previous_response_id")]
-        public string? PreviousResponseId { get { return this.PreviousResponseIdOption; } set { this.PreviousResponseIdOption = new(value); } }
+        [JsonPropertyName("role")]
+        public string? Role { get { return this.RoleOption; } set { this.RoleOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Reasoning
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<ResponsesResponseReasoning?> ReasoningOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Reasoning
-        /// </summary>
-        [JsonPropertyName("reasoning")]
-        public ResponsesResponseReasoning? Reasoning { get { return this.ReasoningOption; } set { this.ReasoningOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of FrequencyPenalty
+        /// Used to track the state of StopReason
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<decimal?> FrequencyPenaltyOption { get; private set; }
+        public Option<string?> StopReasonOption { get; private set; }
 
         /// <summary>
-        /// Gets or Sets FrequencyPenalty
+        /// Gets or Sets StopReason
         /// </summary>
-        [JsonPropertyName("frequency_penalty")]
-        public decimal? FrequencyPenalty { get { return this.FrequencyPenaltyOption; } set { this.FrequencyPenaltyOption = new(value); } }
+        [JsonPropertyName("stop_reason")]
+        public string? StopReason { get { return this.StopReasonOption; } set { this.StopReasonOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of PresencePenalty
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<decimal?> PresencePenaltyOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets PresencePenalty
-        /// </summary>
-        [JsonPropertyName("presence_penalty")]
-        public decimal? PresencePenalty { get { return this.PresencePenaltyOption; } set { this.PresencePenaltyOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Store
+        /// Used to track the state of Type
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<bool?> StoreOption { get; private set; }
+        public Option<string?> TypeOption { get; private set; }
 
         /// <summary>
-        /// Gets or Sets Store
+        /// Gets or Sets Type
         /// </summary>
-        [JsonPropertyName("store")]
-        public bool? Store { get { return this.StoreOption; } set { this.StoreOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Temperature
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<decimal?> TemperatureOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Temperature
-        /// </summary>
-        [JsonPropertyName("temperature")]
-        public decimal? Temperature { get { return this.TemperatureOption; } set { this.TemperatureOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Text
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> TextOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Text
-        /// </summary>
-        [JsonPropertyName("text")]
-        public Object? Text { get { return this.TextOption; } set { this.TextOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of ToolChoice
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<ChatCompletionsRequestToolChoice?> ToolChoiceOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ToolChoice
-        /// </summary>
-        [JsonPropertyName("tool_choice")]
-        public ChatCompletionsRequestToolChoice? ToolChoice { get { return this.ToolChoiceOption; } set { this.ToolChoiceOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Tools
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<Object>?> ToolsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Tools
-        /// </summary>
-        [JsonPropertyName("tools")]
-        public List<Object>? Tools { get { return this.ToolsOption; } set { this.ToolsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of TopLogprobs
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> TopLogprobsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets TopLogprobs
-        /// </summary>
-        [JsonPropertyName("top_logprobs")]
-        public int? TopLogprobs { get { return this.TopLogprobsOption; } set { this.TopLogprobsOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of TopP
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<decimal?> TopPOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets TopP
-        /// </summary>
-        [JsonPropertyName("top_p")]
-        public decimal? TopP { get { return this.TopPOption; } set { this.TopPOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Truncation
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> TruncationOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Truncation
-        /// </summary>
-        [JsonPropertyName("truncation")]
-        public string? Truncation { get { return this.TruncationOption; } set { this.TruncationOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of User
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> UserOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets User
-        /// </summary>
-        [JsonPropertyName("user")]
-        public string? User { get { return this.UserOption; } set { this.UserOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Background
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<bool?> BackgroundOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Background
-        /// </summary>
-        [JsonPropertyName("background")]
-        public bool? Background { get { return this.BackgroundOption; } set { this.BackgroundOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of ServiceTier
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> ServiceTierOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ServiceTier
-        /// </summary>
-        [JsonPropertyName("service_tier")]
-        public string? ServiceTier { get { return this.ServiceTierOption; } set { this.ServiceTierOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of SafetyIdentifier
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> SafetyIdentifierOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets SafetyIdentifier
-        /// </summary>
-        [JsonPropertyName("safety_identifier")]
-        public string? SafetyIdentifier { get { return this.SafetyIdentifierOption; } set { this.SafetyIdentifierOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of PromptCacheKey
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> PromptCacheKeyOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets PromptCacheKey
-        /// </summary>
-        [JsonPropertyName("prompt_cache_key")]
-        public string? PromptCacheKey { get { return this.PromptCacheKeyOption; } set { this.PromptCacheKeyOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Metadata
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> MetadataOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Metadata
-        /// </summary>
-        [JsonPropertyName("metadata")]
-        public Object? Metadata { get { return this.MetadataOption; } set { this.MetadataOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of NativeResponseId
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> NativeResponseIdOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets NativeResponseId
-        /// </summary>
-        [JsonPropertyName("nativeResponseId")]
-        public string? NativeResponseId { get { return this.NativeResponseIdOption; } set { this.NativeResponseIdOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Meta
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> MetaOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Meta
-        /// </summary>
-        [JsonPropertyName("meta")]
-        public Object? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugResponse?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugResponse? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of UpstreamRequest
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<ChatCompletionsResponseUpstreamRequest?> UpstreamRequestOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets UpstreamRequest
-        /// </summary>
-        [JsonPropertyName("upstream_request")]
-        public ChatCompletionsResponseUpstreamRequest? UpstreamRequest { get { return this.UpstreamRequestOption; } set { this.UpstreamRequestOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of UpstreamResponse
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<ChatCompletionsResponseUpstreamRequest?> UpstreamResponseOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets UpstreamResponse
-        /// </summary>
-        [JsonPropertyName("upstream_response")]
-        public ChatCompletionsResponseUpstreamRequest? UpstreamResponse { get { return this.UpstreamResponseOption; } set { this.UpstreamResponseOption = new(value); } }
+        [JsonPropertyName("type")]
+        public string? Type { get { return this.TypeOption; } set { this.TypeOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Usage
@@ -606,40 +186,12 @@ namespace AIStatsSdk.Model
             sb.Append("class ResponsesResponse {\n");
             sb.Append("  Id: ").Append(Id).Append("\n");
             sb.Append("  Object: ").Append(Object).Append("\n");
-            sb.Append("  CreatedAt: ").Append(CreatedAt).Append("\n");
-            sb.Append("  Status: ").Append(Status).Append("\n");
-            sb.Append("  CompletedAt: ").Append(CompletedAt).Append("\n");
-            sb.Append("  Error: ").Append(Error).Append("\n");
-            sb.Append("  IncompleteDetails: ").Append(IncompleteDetails).Append("\n");
-            sb.Append("  Instructions: ").Append(Instructions).Append("\n");
-            sb.Append("  MaxOutputTokens: ").Append(MaxOutputTokens).Append("\n");
-            sb.Append("  MaxToolCalls: ").Append(MaxToolCalls).Append("\n");
+            sb.Append("  Created: ").Append(Created).Append("\n");
             sb.Append("  Model: ").Append(Model).Append("\n");
-            sb.Append("  Output: ").Append(Output).Append("\n");
-            sb.Append("  ParallelToolCalls: ").Append(ParallelToolCalls).Append("\n");
-            sb.Append("  PreviousResponseId: ").Append(PreviousResponseId).Append("\n");
-            sb.Append("  Reasoning: ").Append(Reasoning).Append("\n");
-            sb.Append("  FrequencyPenalty: ").Append(FrequencyPenalty).Append("\n");
-            sb.Append("  PresencePenalty: ").Append(PresencePenalty).Append("\n");
-            sb.Append("  Store: ").Append(Store).Append("\n");
-            sb.Append("  Temperature: ").Append(Temperature).Append("\n");
-            sb.Append("  Text: ").Append(Text).Append("\n");
-            sb.Append("  ToolChoice: ").Append(ToolChoice).Append("\n");
-            sb.Append("  Tools: ").Append(Tools).Append("\n");
-            sb.Append("  TopLogprobs: ").Append(TopLogprobs).Append("\n");
-            sb.Append("  TopP: ").Append(TopP).Append("\n");
-            sb.Append("  Truncation: ").Append(Truncation).Append("\n");
-            sb.Append("  User: ").Append(User).Append("\n");
-            sb.Append("  Background: ").Append(Background).Append("\n");
-            sb.Append("  ServiceTier: ").Append(ServiceTier).Append("\n");
-            sb.Append("  SafetyIdentifier: ").Append(SafetyIdentifier).Append("\n");
-            sb.Append("  PromptCacheKey: ").Append(PromptCacheKey).Append("\n");
-            sb.Append("  Metadata: ").Append(Metadata).Append("\n");
-            sb.Append("  NativeResponseId: ").Append(NativeResponseId).Append("\n");
-            sb.Append("  Meta: ").Append(Meta).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
-            sb.Append("  UpstreamRequest: ").Append(UpstreamRequest).Append("\n");
-            sb.Append("  UpstreamResponse: ").Append(UpstreamResponse).Append("\n");
+            sb.Append("  Content: ").Append(Content).Append("\n");
+            sb.Append("  Role: ").Append(Role).Append("\n");
+            sb.Append("  StopReason: ").Append(StopReason).Append("\n");
+            sb.Append("  Type: ").Append(Type).Append("\n");
             sb.Append("  Usage: ").Append(Usage).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -680,40 +232,12 @@ namespace AIStatsSdk.Model
 
             Option<string?> id = default;
             Option<string?> varObject = default;
-            Option<int?> createdAt = default;
-            Option<string?> status = default;
-            Option<int?> completedAt = default;
-            Option<Object?> error = default;
-            Option<Object?> incompleteDetails = default;
-            Option<string?> instructions = default;
-            Option<int?> maxOutputTokens = default;
-            Option<int?> maxToolCalls = default;
+            Option<int?> created = default;
             Option<string?> model = default;
-            Option<List<ResponsesOutputItem>?> output = default;
-            Option<bool?> parallelToolCalls = default;
-            Option<string?> previousResponseId = default;
-            Option<ResponsesResponseReasoning?> reasoning = default;
-            Option<decimal?> frequencyPenalty = default;
-            Option<decimal?> presencePenalty = default;
-            Option<bool?> store = default;
-            Option<decimal?> temperature = default;
-            Option<Object?> text = default;
-            Option<ChatCompletionsRequestToolChoice?> toolChoice = default;
-            Option<List<Object>?> tools = default;
-            Option<int?> topLogprobs = default;
-            Option<decimal?> topP = default;
-            Option<string?> truncation = default;
-            Option<string?> user = default;
-            Option<bool?> background = default;
-            Option<string?> serviceTier = default;
-            Option<string?> safetyIdentifier = default;
-            Option<string?> promptCacheKey = default;
-            Option<Object?> metadata = default;
-            Option<string?> nativeResponseId = default;
-            Option<Object?> meta = default;
-            Option<DebugResponse?> debug = default;
-            Option<ChatCompletionsResponseUpstreamRequest?> upstreamRequest = default;
-            Option<ChatCompletionsResponseUpstreamRequest?> upstreamResponse = default;
+            Option<List<Object>?> content = default;
+            Option<string?> role = default;
+            Option<string?> stopReason = default;
+            Option<string?> type = default;
             Option<Usage?> usage = default;
 
             while (utf8JsonReader.Read())
@@ -737,107 +261,23 @@ namespace AIStatsSdk.Model
                         case "object":
                             varObject = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "created_at":
-                            createdAt = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "status":
-                            status = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
-                        case "completed_at":
-                            completedAt = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "error":
-                            error = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions));
-                            break;
-                        case "incomplete_details":
-                            incompleteDetails = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions));
-                            break;
-                        case "instructions":
-                            instructions = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "max_output_tokens":
-                            maxOutputTokens = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "max_tool_calls":
-                            maxToolCalls = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
+                        case "created":
+                            created = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
                             break;
                         case "model":
                             model = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "output":
-                            output = new Option<List<ResponsesOutputItem>?>(JsonSerializer.Deserialize<List<ResponsesOutputItem>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                        case "content":
+                            content = new Option<List<Object>?>(JsonSerializer.Deserialize<List<Object>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
-                        case "parallel_tool_calls":
-                            parallelToolCalls = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                        case "role":
+                            role = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "previous_response_id":
-                            previousResponseId = new Option<string?>(utf8JsonReader.GetString());
+                        case "stop_reason":
+                            stopReason = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "reasoning":
-                            reasoning = new Option<ResponsesResponseReasoning?>(JsonSerializer.Deserialize<ResponsesResponseReasoning>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "frequency_penalty":
-                            frequencyPenalty = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
-                            break;
-                        case "presence_penalty":
-                            presencePenalty = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
-                            break;
-                        case "store":
-                            store = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
-                            break;
-                        case "temperature":
-                            temperature = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
-                            break;
-                        case "text":
-                            text = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions));
-                            break;
-                        case "tool_choice":
-                            toolChoice = new Option<ChatCompletionsRequestToolChoice?>(JsonSerializer.Deserialize<ChatCompletionsRequestToolChoice>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "tools":
-                            tools = new Option<List<Object>?>(JsonSerializer.Deserialize<List<Object>>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "top_logprobs":
-                            topLogprobs = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
-                        case "top_p":
-                            topP = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
-                            break;
-                        case "truncation":
-                            truncation = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
-                        case "user":
-                            user = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "background":
-                            background = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
-                            break;
-                        case "service_tier":
-                            serviceTier = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "safety_identifier":
-                            safetyIdentifier = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "prompt_cache_key":
-                            promptCacheKey = new Option<string?>(utf8JsonReader.GetString());
-                            break;
-                        case "metadata":
-                            metadata = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "nativeResponseId":
-                            nativeResponseId = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
-                        case "meta":
-                            meta = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "debug":
-                            debug = new Option<DebugResponse?>(JsonSerializer.Deserialize<DebugResponse>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "upstream_request":
-                            upstreamRequest = new Option<ChatCompletionsResponseUpstreamRequest?>(JsonSerializer.Deserialize<ChatCompletionsResponseUpstreamRequest>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "upstream_response":
-                            upstreamResponse = new Option<ChatCompletionsResponseUpstreamRequest?>(JsonSerializer.Deserialize<ChatCompletionsResponseUpstreamRequest>(ref utf8JsonReader, jsonSerializerOptions)!);
+                        case "type":
+                            type = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "usage":
                             usage = new Option<Usage?>(JsonSerializer.Deserialize<Usage>(ref utf8JsonReader, jsonSerializerOptions)!);
@@ -854,55 +294,28 @@ namespace AIStatsSdk.Model
             if (varObject.IsSet && varObject.Value == null)
                 throw new ArgumentNullException(nameof(varObject), "Property is not nullable for class ResponsesResponse.");
 
-            if (createdAt.IsSet && createdAt.Value == null)
-                throw new ArgumentNullException(nameof(createdAt), "Property is not nullable for class ResponsesResponse.");
-
-            if (status.IsSet && status.Value == null)
-                throw new ArgumentNullException(nameof(status), "Property is not nullable for class ResponsesResponse.");
+            if (created.IsSet && created.Value == null)
+                throw new ArgumentNullException(nameof(created), "Property is not nullable for class ResponsesResponse.");
 
             if (model.IsSet && model.Value == null)
                 throw new ArgumentNullException(nameof(model), "Property is not nullable for class ResponsesResponse.");
 
-            if (output.IsSet && output.Value == null)
-                throw new ArgumentNullException(nameof(output), "Property is not nullable for class ResponsesResponse.");
+            if (content.IsSet && content.Value == null)
+                throw new ArgumentNullException(nameof(content), "Property is not nullable for class ResponsesResponse.");
 
-            if (parallelToolCalls.IsSet && parallelToolCalls.Value == null)
-                throw new ArgumentNullException(nameof(parallelToolCalls), "Property is not nullable for class ResponsesResponse.");
+            if (role.IsSet && role.Value == null)
+                throw new ArgumentNullException(nameof(role), "Property is not nullable for class ResponsesResponse.");
 
-            if (reasoning.IsSet && reasoning.Value == null)
-                throw new ArgumentNullException(nameof(reasoning), "Property is not nullable for class ResponsesResponse.");
+            if (stopReason.IsSet && stopReason.Value == null)
+                throw new ArgumentNullException(nameof(stopReason), "Property is not nullable for class ResponsesResponse.");
 
-            if (toolChoice.IsSet && toolChoice.Value == null)
-                throw new ArgumentNullException(nameof(toolChoice), "Property is not nullable for class ResponsesResponse.");
-
-            if (tools.IsSet && tools.Value == null)
-                throw new ArgumentNullException(nameof(tools), "Property is not nullable for class ResponsesResponse.");
-
-            if (truncation.IsSet && truncation.Value == null)
-                throw new ArgumentNullException(nameof(truncation), "Property is not nullable for class ResponsesResponse.");
-
-            if (metadata.IsSet && metadata.Value == null)
-                throw new ArgumentNullException(nameof(metadata), "Property is not nullable for class ResponsesResponse.");
-
-            if (nativeResponseId.IsSet && nativeResponseId.Value == null)
-                throw new ArgumentNullException(nameof(nativeResponseId), "Property is not nullable for class ResponsesResponse.");
-
-            if (meta.IsSet && meta.Value == null)
-                throw new ArgumentNullException(nameof(meta), "Property is not nullable for class ResponsesResponse.");
-
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class ResponsesResponse.");
-
-            if (upstreamRequest.IsSet && upstreamRequest.Value == null)
-                throw new ArgumentNullException(nameof(upstreamRequest), "Property is not nullable for class ResponsesResponse.");
-
-            if (upstreamResponse.IsSet && upstreamResponse.Value == null)
-                throw new ArgumentNullException(nameof(upstreamResponse), "Property is not nullable for class ResponsesResponse.");
+            if (type.IsSet && type.Value == null)
+                throw new ArgumentNullException(nameof(type), "Property is not nullable for class ResponsesResponse.");
 
             if (usage.IsSet && usage.Value == null)
                 throw new ArgumentNullException(nameof(usage), "Property is not nullable for class ResponsesResponse.");
 
-            return new ResponsesResponse(id, varObject, createdAt, status, completedAt, error, incompleteDetails, instructions, maxOutputTokens, maxToolCalls, model, output, parallelToolCalls, previousResponseId, reasoning, frequencyPenalty, presencePenalty, store, temperature, text, toolChoice, tools, topLogprobs, topP, truncation, user, background, serviceTier, safetyIdentifier, promptCacheKey, metadata, nativeResponseId, meta, debug, upstreamRequest, upstreamResponse, usage);
+            return new ResponsesResponse(id, varObject, created, model, content, role, stopReason, type, usage);
         }
 
         /// <summary>
@@ -935,44 +348,20 @@ namespace AIStatsSdk.Model
             if (responsesResponse.ObjectOption.IsSet && responsesResponse.Object == null)
                 throw new ArgumentNullException(nameof(responsesResponse.Object), "Property is required for class ResponsesResponse.");
 
-            if (responsesResponse.StatusOption.IsSet && responsesResponse.Status == null)
-                throw new ArgumentNullException(nameof(responsesResponse.Status), "Property is required for class ResponsesResponse.");
-
             if (responsesResponse.ModelOption.IsSet && responsesResponse.Model == null)
                 throw new ArgumentNullException(nameof(responsesResponse.Model), "Property is required for class ResponsesResponse.");
 
-            if (responsesResponse.OutputOption.IsSet && responsesResponse.Output == null)
-                throw new ArgumentNullException(nameof(responsesResponse.Output), "Property is required for class ResponsesResponse.");
+            if (responsesResponse.ContentOption.IsSet && responsesResponse.Content == null)
+                throw new ArgumentNullException(nameof(responsesResponse.Content), "Property is required for class ResponsesResponse.");
 
-            if (responsesResponse.ReasoningOption.IsSet && responsesResponse.Reasoning == null)
-                throw new ArgumentNullException(nameof(responsesResponse.Reasoning), "Property is required for class ResponsesResponse.");
+            if (responsesResponse.RoleOption.IsSet && responsesResponse.Role == null)
+                throw new ArgumentNullException(nameof(responsesResponse.Role), "Property is required for class ResponsesResponse.");
 
-            if (responsesResponse.ToolChoiceOption.IsSet && responsesResponse.ToolChoice == null)
-                throw new ArgumentNullException(nameof(responsesResponse.ToolChoice), "Property is required for class ResponsesResponse.");
+            if (responsesResponse.StopReasonOption.IsSet && responsesResponse.StopReason == null)
+                throw new ArgumentNullException(nameof(responsesResponse.StopReason), "Property is required for class ResponsesResponse.");
 
-            if (responsesResponse.ToolsOption.IsSet && responsesResponse.Tools == null)
-                throw new ArgumentNullException(nameof(responsesResponse.Tools), "Property is required for class ResponsesResponse.");
-
-            if (responsesResponse.TruncationOption.IsSet && responsesResponse.Truncation == null)
-                throw new ArgumentNullException(nameof(responsesResponse.Truncation), "Property is required for class ResponsesResponse.");
-
-            if (responsesResponse.MetadataOption.IsSet && responsesResponse.Metadata == null)
-                throw new ArgumentNullException(nameof(responsesResponse.Metadata), "Property is required for class ResponsesResponse.");
-
-            if (responsesResponse.NativeResponseIdOption.IsSet && responsesResponse.NativeResponseId == null)
-                throw new ArgumentNullException(nameof(responsesResponse.NativeResponseId), "Property is required for class ResponsesResponse.");
-
-            if (responsesResponse.MetaOption.IsSet && responsesResponse.Meta == null)
-                throw new ArgumentNullException(nameof(responsesResponse.Meta), "Property is required for class ResponsesResponse.");
-
-            if (responsesResponse.DebugOption.IsSet && responsesResponse.Debug == null)
-                throw new ArgumentNullException(nameof(responsesResponse.Debug), "Property is required for class ResponsesResponse.");
-
-            if (responsesResponse.UpstreamRequestOption.IsSet && responsesResponse.UpstreamRequest == null)
-                throw new ArgumentNullException(nameof(responsesResponse.UpstreamRequest), "Property is required for class ResponsesResponse.");
-
-            if (responsesResponse.UpstreamResponseOption.IsSet && responsesResponse.UpstreamResponse == null)
-                throw new ArgumentNullException(nameof(responsesResponse.UpstreamResponse), "Property is required for class ResponsesResponse.");
+            if (responsesResponse.TypeOption.IsSet && responsesResponse.Type == null)
+                throw new ArgumentNullException(nameof(responsesResponse.Type), "Property is required for class ResponsesResponse.");
 
             if (responsesResponse.UsageOption.IsSet && responsesResponse.Usage == null)
                 throw new ArgumentNullException(nameof(responsesResponse.Usage), "Property is required for class ResponsesResponse.");
@@ -983,189 +372,26 @@ namespace AIStatsSdk.Model
             if (responsesResponse.ObjectOption.IsSet)
                 writer.WriteString("object", responsesResponse.Object);
 
-            if (responsesResponse.CreatedAtOption.IsSet)
-                writer.WriteNumber("created_at", responsesResponse.CreatedAtOption.Value!.Value);
-
-            if (responsesResponse.StatusOption.IsSet)
-                writer.WriteString("status", responsesResponse.Status);
-
-            if (responsesResponse.CompletedAtOption.IsSet)
-                if (responsesResponse.CompletedAtOption.Value != null)
-                    writer.WriteNumber("completed_at", responsesResponse.CompletedAtOption.Value!.Value);
-                else
-                    writer.WriteNull("completed_at");
-
-            if (responsesResponse.ErrorOption.IsSet)
-                if (responsesResponse.ErrorOption.Value != null)
-                {
-                    writer.WritePropertyName("error");
-                    JsonSerializer.Serialize(writer, responsesResponse.Error, jsonSerializerOptions);
-                }
-                else
-                    writer.WriteNull("error");
-            if (responsesResponse.IncompleteDetailsOption.IsSet)
-                if (responsesResponse.IncompleteDetailsOption.Value != null)
-                {
-                    writer.WritePropertyName("incomplete_details");
-                    JsonSerializer.Serialize(writer, responsesResponse.IncompleteDetails, jsonSerializerOptions);
-                }
-                else
-                    writer.WriteNull("incomplete_details");
-            if (responsesResponse.InstructionsOption.IsSet)
-                if (responsesResponse.InstructionsOption.Value != null)
-                    writer.WriteString("instructions", responsesResponse.Instructions);
-                else
-                    writer.WriteNull("instructions");
-
-            if (responsesResponse.MaxOutputTokensOption.IsSet)
-                if (responsesResponse.MaxOutputTokensOption.Value != null)
-                    writer.WriteNumber("max_output_tokens", responsesResponse.MaxOutputTokensOption.Value!.Value);
-                else
-                    writer.WriteNull("max_output_tokens");
-
-            if (responsesResponse.MaxToolCallsOption.IsSet)
-                if (responsesResponse.MaxToolCallsOption.Value != null)
-                    writer.WriteNumber("max_tool_calls", responsesResponse.MaxToolCallsOption.Value!.Value);
-                else
-                    writer.WriteNull("max_tool_calls");
+            if (responsesResponse.CreatedOption.IsSet)
+                writer.WriteNumber("created", responsesResponse.CreatedOption.Value!.Value);
 
             if (responsesResponse.ModelOption.IsSet)
                 writer.WriteString("model", responsesResponse.Model);
 
-            if (responsesResponse.OutputOption.IsSet)
+            if (responsesResponse.ContentOption.IsSet)
             {
-                writer.WritePropertyName("output");
-                JsonSerializer.Serialize(writer, responsesResponse.Output, jsonSerializerOptions);
+                writer.WritePropertyName("content");
+                JsonSerializer.Serialize(writer, responsesResponse.Content, jsonSerializerOptions);
             }
-            if (responsesResponse.ParallelToolCallsOption.IsSet)
-                writer.WriteBoolean("parallel_tool_calls", responsesResponse.ParallelToolCallsOption.Value!.Value);
+            if (responsesResponse.RoleOption.IsSet)
+                writer.WriteString("role", responsesResponse.Role);
 
-            if (responsesResponse.PreviousResponseIdOption.IsSet)
-                if (responsesResponse.PreviousResponseIdOption.Value != null)
-                    writer.WriteString("previous_response_id", responsesResponse.PreviousResponseId);
-                else
-                    writer.WriteNull("previous_response_id");
+            if (responsesResponse.StopReasonOption.IsSet)
+                writer.WriteString("stop_reason", responsesResponse.StopReason);
 
-            if (responsesResponse.ReasoningOption.IsSet)
-            {
-                writer.WritePropertyName("reasoning");
-                JsonSerializer.Serialize(writer, responsesResponse.Reasoning, jsonSerializerOptions);
-            }
-            if (responsesResponse.FrequencyPenaltyOption.IsSet)
-                if (responsesResponse.FrequencyPenaltyOption.Value != null)
-                    writer.WriteNumber("frequency_penalty", responsesResponse.FrequencyPenaltyOption.Value!.Value);
-                else
-                    writer.WriteNull("frequency_penalty");
+            if (responsesResponse.TypeOption.IsSet)
+                writer.WriteString("type", responsesResponse.Type);
 
-            if (responsesResponse.PresencePenaltyOption.IsSet)
-                if (responsesResponse.PresencePenaltyOption.Value != null)
-                    writer.WriteNumber("presence_penalty", responsesResponse.PresencePenaltyOption.Value!.Value);
-                else
-                    writer.WriteNull("presence_penalty");
-
-            if (responsesResponse.StoreOption.IsSet)
-                if (responsesResponse.StoreOption.Value != null)
-                    writer.WriteBoolean("store", responsesResponse.StoreOption.Value!.Value);
-                else
-                    writer.WriteNull("store");
-
-            if (responsesResponse.TemperatureOption.IsSet)
-                if (responsesResponse.TemperatureOption.Value != null)
-                    writer.WriteNumber("temperature", responsesResponse.TemperatureOption.Value!.Value);
-                else
-                    writer.WriteNull("temperature");
-
-            if (responsesResponse.TextOption.IsSet)
-                if (responsesResponse.TextOption.Value != null)
-                {
-                    writer.WritePropertyName("text");
-                    JsonSerializer.Serialize(writer, responsesResponse.Text, jsonSerializerOptions);
-                }
-                else
-                    writer.WriteNull("text");
-            if (responsesResponse.ToolChoiceOption.IsSet)
-            {
-                writer.WritePropertyName("tool_choice");
-                JsonSerializer.Serialize(writer, responsesResponse.ToolChoice, jsonSerializerOptions);
-            }
-            if (responsesResponse.ToolsOption.IsSet)
-            {
-                writer.WritePropertyName("tools");
-                JsonSerializer.Serialize(writer, responsesResponse.Tools, jsonSerializerOptions);
-            }
-            if (responsesResponse.TopLogprobsOption.IsSet)
-                if (responsesResponse.TopLogprobsOption.Value != null)
-                    writer.WriteNumber("top_logprobs", responsesResponse.TopLogprobsOption.Value!.Value);
-                else
-                    writer.WriteNull("top_logprobs");
-
-            if (responsesResponse.TopPOption.IsSet)
-                if (responsesResponse.TopPOption.Value != null)
-                    writer.WriteNumber("top_p", responsesResponse.TopPOption.Value!.Value);
-                else
-                    writer.WriteNull("top_p");
-
-            if (responsesResponse.TruncationOption.IsSet)
-                writer.WriteString("truncation", responsesResponse.Truncation);
-
-            if (responsesResponse.UserOption.IsSet)
-                if (responsesResponse.UserOption.Value != null)
-                    writer.WriteString("user", responsesResponse.User);
-                else
-                    writer.WriteNull("user");
-
-            if (responsesResponse.BackgroundOption.IsSet)
-                if (responsesResponse.BackgroundOption.Value != null)
-                    writer.WriteBoolean("background", responsesResponse.BackgroundOption.Value!.Value);
-                else
-                    writer.WriteNull("background");
-
-            if (responsesResponse.ServiceTierOption.IsSet)
-                if (responsesResponse.ServiceTierOption.Value != null)
-                    writer.WriteString("service_tier", responsesResponse.ServiceTier);
-                else
-                    writer.WriteNull("service_tier");
-
-            if (responsesResponse.SafetyIdentifierOption.IsSet)
-                if (responsesResponse.SafetyIdentifierOption.Value != null)
-                    writer.WriteString("safety_identifier", responsesResponse.SafetyIdentifier);
-                else
-                    writer.WriteNull("safety_identifier");
-
-            if (responsesResponse.PromptCacheKeyOption.IsSet)
-                if (responsesResponse.PromptCacheKeyOption.Value != null)
-                    writer.WriteString("prompt_cache_key", responsesResponse.PromptCacheKey);
-                else
-                    writer.WriteNull("prompt_cache_key");
-
-            if (responsesResponse.MetadataOption.IsSet)
-            {
-                writer.WritePropertyName("metadata");
-                JsonSerializer.Serialize(writer, responsesResponse.Metadata, jsonSerializerOptions);
-            }
-            if (responsesResponse.NativeResponseIdOption.IsSet)
-                writer.WriteString("nativeResponseId", responsesResponse.NativeResponseId);
-
-            if (responsesResponse.MetaOption.IsSet)
-            {
-                writer.WritePropertyName("meta");
-                JsonSerializer.Serialize(writer, responsesResponse.Meta, jsonSerializerOptions);
-            }
-            if (responsesResponse.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, responsesResponse.Debug, jsonSerializerOptions);
-            }
-            if (responsesResponse.UpstreamRequestOption.IsSet)
-            {
-                writer.WritePropertyName("upstream_request");
-                JsonSerializer.Serialize(writer, responsesResponse.UpstreamRequest, jsonSerializerOptions);
-            }
-            if (responsesResponse.UpstreamResponseOption.IsSet)
-            {
-                writer.WritePropertyName("upstream_response");
-                JsonSerializer.Serialize(writer, responsesResponse.UpstreamResponse, jsonSerializerOptions);
-            }
             if (responsesResponse.UsageOption.IsSet)
             {
                 writer.WritePropertyName("usage");

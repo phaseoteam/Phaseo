@@ -3,7 +3,7 @@
 // How: Maps IR to OpenAI formats and normalizes streaming events.
 
 // OpenAI Chat Completions format transformations
-// Transforms IR ↔ OpenAI Chat Completions upstream format
+// Transforms IR <-> OpenAI Chat Completions upstream format
 
 import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart } from "@core/ir";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks";
@@ -283,6 +283,7 @@ function mapFinishReason(reason: string | undefined): any {
 		case "stop":
 			return "stop";
 		case "length":
+		case "max_tokens":
 			return "length";
 		case "tool_calls":
 		case "function_call":
@@ -293,4 +294,5 @@ function mapFinishReason(reason: string | undefined): any {
 			return "stop";
 	}
 }
+
 

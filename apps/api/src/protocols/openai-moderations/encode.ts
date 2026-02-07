@@ -13,7 +13,9 @@ export function encodeOpenAIModerationsResponse(ir: IRModerationsResponse): any 
 	}));
 
 	return {
+		object: "list",
 		id: ir.id ?? undefined,
+		nativeResponseId: ir.nativeId ?? undefined,
 		model: ir.model,
 		results,
 		...(ir.usage

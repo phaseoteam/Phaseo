@@ -17,11 +17,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from ai_stats_generated.models.chat_choice import ChatChoice
-from ai_stats_generated.models.chat_completions_response_upstream_request import ChatCompletionsResponseUpstreamRequest
-from ai_stats_generated.models.debug_response import DebugResponse
 from ai_stats_generated.models.usage import Usage
 from typing import Optional, Set
 from typing_extensions import Self
@@ -31,19 +29,12 @@ class ChatCompletionsResponse(BaseModel):
     ChatCompletionsResponse
     """ # noqa: E501
     id: Optional[StrictStr] = None
-    native_response_id: Optional[StrictStr] = Field(default=None, alias="nativeResponseId")
     object: Optional[StrictStr] = None
     created: Optional[StrictInt] = None
     model: Optional[StrictStr] = None
     choices: Optional[List[ChatChoice]] = None
     usage: Optional[Usage] = None
-    service_tier: Optional[StrictStr] = None
-    system_fingerprint: Optional[StrictStr] = None
-    meta: Optional[Dict[str, Any]] = None
-    debug: Optional[DebugResponse] = None
-    upstream_request: Optional[ChatCompletionsResponseUpstreamRequest] = None
-    upstream_response: Optional[ChatCompletionsResponseUpstreamRequest] = None
-    __properties: ClassVar[List[str]] = ["id", "nativeResponseId", "object", "created", "model", "choices", "usage", "service_tier", "system_fingerprint", "meta", "debug", "upstream_request", "upstream_response"]
+    __properties: ClassVar[List[str]] = ["id", "object", "created", "model", "choices", "usage"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -94,15 +85,6 @@ class ChatCompletionsResponse(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of usage
         if self.usage:
             _dict['usage'] = self.usage.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of debug
-        if self.debug:
-            _dict['debug'] = self.debug.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of upstream_request
-        if self.upstream_request:
-            _dict['upstream_request'] = self.upstream_request.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of upstream_response
-        if self.upstream_response:
-            _dict['upstream_response'] = self.upstream_response.to_dict()
         return _dict
 
     @classmethod
@@ -116,18 +98,11 @@ class ChatCompletionsResponse(BaseModel):
 
         _obj = cls.model_validate({
             "id": obj.get("id"),
-            "nativeResponseId": obj.get("nativeResponseId"),
             "object": obj.get("object"),
             "created": obj.get("created"),
             "model": obj.get("model"),
             "choices": [ChatChoice.from_dict(_item) for _item in obj["choices"]] if obj.get("choices") is not None else None,
-            "usage": Usage.from_dict(obj["usage"]) if obj.get("usage") is not None else None,
-            "service_tier": obj.get("service_tier"),
-            "system_fingerprint": obj.get("system_fingerprint"),
-            "meta": obj.get("meta"),
-            "debug": DebugResponse.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
-            "upstream_request": ChatCompletionsResponseUpstreamRequest.from_dict(obj["upstream_request"]) if obj.get("upstream_request") is not None else None,
-            "upstream_response": ChatCompletionsResponseUpstreamRequest.from_dict(obj["upstream_response"]) if obj.get("upstream_response") is not None else None
+            "usage": Usage.from_dict(obj["usage"]) if obj.get("usage") is not None else None
         })
         return _obj
 

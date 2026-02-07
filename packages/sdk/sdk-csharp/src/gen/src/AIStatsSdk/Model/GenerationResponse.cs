@@ -55,7 +55,7 @@ namespace AIStatsSdk.Model
         /// <param name="keyId">keyId</param>
         /// <param name="throughput">throughput</param>
         [JsonConstructor]
-        public GenerationResponse(Option<string?> requestId = default, Option<string?> teamId = default, Option<string?> appId = default, Option<string?> endpoint = default, Option<string?> modelId = default, Option<string?> provider = default, Option<string?> nativeResponseId = default, Option<bool?> stream = default, Option<bool?> byok = default, Option<decimal?> statusCode = default, Option<bool?> success = default, Option<string?> errorCode = default, Option<string?> errorMessage = default, Option<decimal?> latencyMs = default, Option<decimal?> generationMs = default, Option<Usage?> usage = default, Option<decimal?> costNanos = default, Option<string?> currency = default, Option<List<Object>?> pricingLines = default, Option<string?> keyId = default, Option<decimal?> throughput = default)
+        public GenerationResponse(Option<string?> requestId = default, Option<string?> teamId = default, Option<string?> appId = default, Option<string?> endpoint = default, Option<string?> modelId = default, Option<string?> provider = default, Option<string?> nativeResponseId = default, Option<bool?> stream = default, Option<bool?> byok = default, Option<decimal?> statusCode = default, Option<bool?> success = default, Option<string?> errorCode = default, Option<string?> errorMessage = default, Option<decimal?> latencyMs = default, Option<decimal?> generationMs = default, Option<GenerationResponseUsage?> usage = default, Option<decimal?> costNanos = default, Option<string?> currency = default, Option<List<Object>?> pricingLines = default, Option<string?> keyId = default, Option<decimal?> throughput = default)
         {
             RequestIdOption = requestId;
             TeamIdOption = teamId;
@@ -283,13 +283,13 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Usage?> UsageOption { get; private set; }
+        public Option<GenerationResponseUsage?> UsageOption { get; private set; }
 
         /// <summary>
         /// Gets or Sets Usage
         /// </summary>
         [JsonPropertyName("usage")]
-        public Usage? Usage { get { return this.UsageOption; } set { this.UsageOption = new(value); } }
+        public GenerationResponseUsage? Usage { get { return this.UsageOption; } set { this.UsageOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of CostNanos
@@ -357,12 +357,6 @@ namespace AIStatsSdk.Model
         public decimal? Throughput { get { return this.ThroughputOption; } set { this.ThroughputOption = new(value); } }
 
         /// <summary>
-        /// Gets or Sets additional properties
-        /// </summary>
-        [JsonExtensionData]
-        public Dictionary<string, JsonElement> AdditionalProperties { get; } = new Dictionary<string, JsonElement>();
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -391,7 +385,6 @@ namespace AIStatsSdk.Model
             sb.Append("  PricingLines: ").Append(PricingLines).Append("\n");
             sb.Append("  KeyId: ").Append(KeyId).Append("\n");
             sb.Append("  Throughput: ").Append(Throughput).Append("\n");
-            sb.Append("  AdditionalProperties: ").Append(AdditionalProperties).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -444,7 +437,7 @@ namespace AIStatsSdk.Model
             Option<string?> errorMessage = default;
             Option<decimal?> latencyMs = default;
             Option<decimal?> generationMs = default;
-            Option<Usage?> usage = default;
+            Option<GenerationResponseUsage?> usage = default;
             Option<decimal?> costNanos = default;
             Option<string?> currency = default;
             Option<List<Object>?> pricingLines = default;
@@ -512,7 +505,7 @@ namespace AIStatsSdk.Model
                             generationMs = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
                             break;
                         case "usage":
-                            usage = new Option<Usage?>(JsonSerializer.Deserialize<Usage>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            usage = new Option<GenerationResponseUsage?>(JsonSerializer.Deserialize<GenerationResponseUsage>(ref utf8JsonReader, jsonSerializerOptions));
                             break;
                         case "cost_nanos":
                             costNanos = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
@@ -568,9 +561,6 @@ namespace AIStatsSdk.Model
             if (generationMs.IsSet && generationMs.Value == null)
                 throw new ArgumentNullException(nameof(generationMs), "Property is not nullable for class GenerationResponse.");
 
-            if (usage.IsSet && usage.Value == null)
-                throw new ArgumentNullException(nameof(usage), "Property is not nullable for class GenerationResponse.");
-
             if (costNanos.IsSet && costNanos.Value == null)
                 throw new ArgumentNullException(nameof(costNanos), "Property is not nullable for class GenerationResponse.");
 
@@ -624,9 +614,6 @@ namespace AIStatsSdk.Model
 
             if (generationResponse.ProviderOption.IsSet && generationResponse.Provider == null)
                 throw new ArgumentNullException(nameof(generationResponse.Provider), "Property is required for class GenerationResponse.");
-
-            if (generationResponse.UsageOption.IsSet && generationResponse.Usage == null)
-                throw new ArgumentNullException(nameof(generationResponse.Usage), "Property is required for class GenerationResponse.");
 
             if (generationResponse.CurrencyOption.IsSet && generationResponse.Currency == null)
                 throw new ArgumentNullException(nameof(generationResponse.Currency), "Property is required for class GenerationResponse.");
@@ -695,10 +682,13 @@ namespace AIStatsSdk.Model
                 writer.WriteNumber("generation_ms", generationResponse.GenerationMsOption.Value!.Value);
 
             if (generationResponse.UsageOption.IsSet)
-            {
-                writer.WritePropertyName("usage");
-                JsonSerializer.Serialize(writer, generationResponse.Usage, jsonSerializerOptions);
-            }
+                if (generationResponse.UsageOption.Value != null)
+                {
+                    writer.WritePropertyName("usage");
+                    JsonSerializer.Serialize(writer, generationResponse.Usage, jsonSerializerOptions);
+                }
+                else
+                    writer.WriteNull("usage");
             if (generationResponse.CostNanosOption.IsSet)
                 writer.WriteNumber("cost_nanos", generationResponse.CostNanosOption.Value!.Value);
 

@@ -35,39 +35,9 @@ module AIStatsSdk
 
     attr_accessor :stream
 
-    attr_accessor :stop_sequences
-
-    attr_accessor :modalities
-
     attr_accessor :metadata
 
-    attr_accessor :meta
-
-    attr_accessor :debug
-
     attr_accessor :provider
-
-    class EnumAttributeValidator
-      attr_reader :datatype
-      attr_reader :allowable_values
-
-      def initialize(datatype, allowable_values)
-        @allowable_values = allowable_values.map do |value|
-          case datatype.to_s
-          when /Integer/i
-            value.to_i
-          when /Float/i
-            value.to_f
-          else
-            value
-          end
-        end
-      end
-
-      def valid?(value)
-        !value || allowable_values.include?(value)
-      end
-    end
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
@@ -82,11 +52,7 @@ module AIStatsSdk
         :'tools' => :'tools',
         :'tool_choice' => :'tool_choice',
         :'stream' => :'stream',
-        :'stop_sequences' => :'stop_sequences',
-        :'modalities' => :'modalities',
         :'metadata' => :'metadata',
-        :'meta' => :'meta',
-        :'debug' => :'debug',
         :'provider' => :'provider'
       }
     end
@@ -114,11 +80,7 @@ module AIStatsSdk
         :'tools' => :'Array<AnthropicTool>',
         :'tool_choice' => :'ChatCompletionsRequestToolChoice',
         :'stream' => :'Boolean',
-        :'stop_sequences' => :'Array<String>',
-        :'modalities' => :'Array<String>',
         :'metadata' => :'Hash<String, String>',
-        :'meta' => :'Boolean',
-        :'debug' => :'DebugOptions',
         :'provider' => :'ProviderRoutingOptions'
       }
     end
@@ -165,8 +127,6 @@ module AIStatsSdk
 
       if attributes.key?(:'max_tokens')
         self.max_tokens = attributes[:'max_tokens']
-      else
-        self.max_tokens = nil
       end
 
       if attributes.key?(:'temperature')
@@ -195,30 +155,10 @@ module AIStatsSdk
         self.stream = attributes[:'stream']
       end
 
-      if attributes.key?(:'stop_sequences')
-        if (value = attributes[:'stop_sequences']).is_a?(Array)
-          self.stop_sequences = value
-        end
-      end
-
-      if attributes.key?(:'modalities')
-        if (value = attributes[:'modalities']).is_a?(Array)
-          self.modalities = value
-        end
-      end
-
       if attributes.key?(:'metadata')
         if (value = attributes[:'metadata']).is_a?(Hash)
           self.metadata = value
         end
-      end
-
-      if attributes.key?(:'meta')
-        self.meta = attributes[:'meta']
-      end
-
-      if attributes.key?(:'debug')
-        self.debug = attributes[:'debug']
       end
 
       if attributes.key?(:'provider')
@@ -243,16 +183,12 @@ module AIStatsSdk
         invalid_properties.push('invalid value for "messages", number of items must be greater than or equal to 1.')
       end
 
-      if @max_tokens.nil?
-        invalid_properties.push('invalid value for "max_tokens", max_tokens cannot be nil.')
-      end
-
-      if @max_tokens < 1
+      if !@max_tokens.nil? && @max_tokens < 1
         invalid_properties.push('invalid value for "max_tokens", must be greater than or equal to 1.')
       end
 
-      if !@temperature.nil? && @temperature > 1
-        invalid_properties.push('invalid value for "temperature", must be smaller than or equal to 1.')
+      if !@temperature.nil? && @temperature > 2
+        invalid_properties.push('invalid value for "temperature", must be smaller than or equal to 2.')
       end
 
       if !@temperature.nil? && @temperature < 0
@@ -281,9 +217,8 @@ module AIStatsSdk
       return false if @model.nil?
       return false if @messages.nil?
       return false if @messages.length < 1
-      return false if @max_tokens.nil?
-      return false if @max_tokens < 1
-      return false if !@temperature.nil? && @temperature > 1
+      return false if !@max_tokens.nil? && @max_tokens < 1
+      return false if !@temperature.nil? && @temperature > 2
       return false if !@temperature.nil? && @temperature < 0
       return false if !@top_p.nil? && @top_p > 1
       return false if !@top_p.nil? && @top_p < 0
@@ -336,8 +271,8 @@ module AIStatsSdk
         fail ArgumentError, 'temperature cannot be nil'
       end
 
-      if temperature > 1
-        fail ArgumentError, 'invalid value for "temperature", must be smaller than or equal to 1.'
+      if temperature > 2
+        fail ArgumentError, 'invalid value for "temperature", must be smaller than or equal to 2.'
       end
 
       if temperature < 0
@@ -394,11 +329,7 @@ module AIStatsSdk
           tools == o.tools &&
           tool_choice == o.tool_choice &&
           stream == o.stream &&
-          stop_sequences == o.stop_sequences &&
-          modalities == o.modalities &&
           metadata == o.metadata &&
-          meta == o.meta &&
-          debug == o.debug &&
           provider == o.provider
     end
 
@@ -411,7 +342,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, system, messages, max_tokens, temperature, top_p, top_k, tools, tool_choice, stream, stop_sequences, modalities, metadata, meta, debug, provider].hash
+      [model, system, messages, max_tokens, temperature, top_p, top_k, tools, tool_choice, stream, metadata, provider].hash
     end
 
     # Builds the object from hash

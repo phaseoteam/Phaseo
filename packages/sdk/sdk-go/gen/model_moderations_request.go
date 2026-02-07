@@ -23,7 +23,6 @@ var _ MappedNullable = &ModerationsRequest{}
 type ModerationsRequest struct {
 	Model string `json:"model"`
 	Meta *bool `json:"meta,omitempty"`
-	Debug *DebugOptions `json:"debug,omitempty"`
 	Input ModerationsRequestInput `json:"input"`
 	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
@@ -109,38 +108,6 @@ func (o *ModerationsRequest) SetMeta(v bool) {
 	o.Meta = &v
 }
 
-// GetDebug returns the Debug field value if set, zero value otherwise.
-func (o *ModerationsRequest) GetDebug() DebugOptions {
-	if o == nil || IsNil(o.Debug) {
-		var ret DebugOptions
-		return ret
-	}
-	return *o.Debug
-}
-
-// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ModerationsRequest) GetDebugOk() (*DebugOptions, bool) {
-	if o == nil || IsNil(o.Debug) {
-		return nil, false
-	}
-	return o.Debug, true
-}
-
-// HasDebug returns a boolean if a field has been set.
-func (o *ModerationsRequest) HasDebug() bool {
-	if o != nil && !IsNil(o.Debug) {
-		return true
-	}
-
-	return false
-}
-
-// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
-func (o *ModerationsRequest) SetDebug(v DebugOptions) {
-	o.Debug = &v
-}
-
 // GetInput returns the Input field value
 func (o *ModerationsRequest) GetInput() ModerationsRequestInput {
 	if o == nil {
@@ -210,9 +177,6 @@ func (o ModerationsRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize["model"] = o.Model
 	if !IsNil(o.Meta) {
 		toSerialize["meta"] = o.Meta
-	}
-	if !IsNil(o.Debug) {
-		toSerialize["debug"] = o.Debug
 	}
 	toSerialize["input"] = o.Input
 	if !IsNil(o.Provider) {

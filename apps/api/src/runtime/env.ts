@@ -20,7 +20,8 @@ export type GatewayBindings = {
     GOOGLE_AI_STUDIO_API_KEY?: string;
     GOOGLE_AI_STUDIO_BASE_URL?: string;
     ANTHROPIC_API_KEY?: string;
-    XAI_API_KEY?: string;
+    X_AI_API_KEY?: string;
+    XAI_DEBUG_USAGE?: string;
     AI21_API_KEY?: string;
     AI21_BASE_URL?: string;
     ALIBABA_API_KEY?: string;
@@ -151,7 +152,8 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "GOOGLE_AI_STUDIO_BASE_URL",
     "ANTHROPIC_API_KEY",
     "KEY_PEPPER",
-    "XAI_API_KEY",
+    "X_AI_API_KEY",
+    "XAI_DEBUG_USAGE",
     "AI21_API_KEY",
     "AI21_BASE_URL",
     "ALIBABA_API_KEY",
@@ -379,5 +381,4 @@ export function getByokKey(version: number): string {
     const s = String(raw).trim().replace(/^["']|["']$/g, "");
     return s.startsWith("base64:") ? s.slice(7) : s;
 }
-
 

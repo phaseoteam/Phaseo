@@ -21,17 +21,9 @@ module AIStatsSdk
 
     attr_accessor :release_date
 
-    attr_accessor :deprecation_date
-
-    attr_accessor :retirement_date
-
     attr_accessor :status
 
     attr_accessor :organisation_id
-
-    attr_accessor :organisation_name
-
-    attr_accessor :organisation_colour
 
     attr_accessor :aliases
 
@@ -43,32 +35,19 @@ module AIStatsSdk
 
     attr_accessor :providers
 
-    attr_accessor :supported_params
-
-    attr_accessor :top_provider
-
-    attr_accessor :pricing
-
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'model_id' => :'model_id',
         :'name' => :'name',
         :'release_date' => :'release_date',
-        :'deprecation_date' => :'deprecation_date',
-        :'retirement_date' => :'retirement_date',
         :'status' => :'status',
         :'organisation_id' => :'organisation_id',
-        :'organisation_name' => :'organisation_name',
-        :'organisation_colour' => :'organisation_colour',
         :'aliases' => :'aliases',
         :'endpoints' => :'endpoints',
         :'input_types' => :'input_types',
         :'output_types' => :'output_types',
-        :'providers' => :'providers',
-        :'supported_params' => :'supported_params',
-        :'top_provider' => :'top_provider',
-        :'pricing' => :'pricing'
+        :'providers' => :'providers'
       }
     end
 
@@ -88,35 +67,19 @@ module AIStatsSdk
         :'model_id' => :'String',
         :'name' => :'String',
         :'release_date' => :'String',
-        :'deprecation_date' => :'String',
-        :'retirement_date' => :'String',
         :'status' => :'String',
         :'organisation_id' => :'String',
-        :'organisation_name' => :'String',
-        :'organisation_colour' => :'String',
         :'aliases' => :'Array<String>',
         :'endpoints' => :'Array<String>',
         :'input_types' => :'Array<String>',
         :'output_types' => :'Array<String>',
-        :'providers' => :'Array<ModelProvidersInner>',
-        :'supported_params' => :'Array<String>',
-        :'top_provider' => :'String',
-        :'pricing' => :'ModelPricing'
+        :'providers' => :'Array<ModelProvidersInner>'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
-        :'name',
-        :'release_date',
-        :'deprecation_date',
-        :'retirement_date',
-        :'status',
-        :'organisation_id',
-        :'organisation_name',
-        :'organisation_colour',
-        :'top_provider',
       ])
     end
 
@@ -148,28 +111,12 @@ module AIStatsSdk
         self.release_date = attributes[:'release_date']
       end
 
-      if attributes.key?(:'deprecation_date')
-        self.deprecation_date = attributes[:'deprecation_date']
-      end
-
-      if attributes.key?(:'retirement_date')
-        self.retirement_date = attributes[:'retirement_date']
-      end
-
       if attributes.key?(:'status')
         self.status = attributes[:'status']
       end
 
       if attributes.key?(:'organisation_id')
         self.organisation_id = attributes[:'organisation_id']
-      end
-
-      if attributes.key?(:'organisation_name')
-        self.organisation_name = attributes[:'organisation_name']
-      end
-
-      if attributes.key?(:'organisation_colour')
-        self.organisation_colour = attributes[:'organisation_colour']
       end
 
       if attributes.key?(:'aliases')
@@ -201,20 +148,6 @@ module AIStatsSdk
           self.providers = value
         end
       end
-
-      if attributes.key?(:'supported_params')
-        if (value = attributes[:'supported_params']).is_a?(Array)
-          self.supported_params = value
-        end
-      end
-
-      if attributes.key?(:'top_provider')
-        self.top_provider = attributes[:'top_provider']
-      end
-
-      if attributes.key?(:'pricing')
-        self.pricing = attributes[:'pricing']
-      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -240,20 +173,13 @@ module AIStatsSdk
           model_id == o.model_id &&
           name == o.name &&
           release_date == o.release_date &&
-          deprecation_date == o.deprecation_date &&
-          retirement_date == o.retirement_date &&
           status == o.status &&
           organisation_id == o.organisation_id &&
-          organisation_name == o.organisation_name &&
-          organisation_colour == o.organisation_colour &&
           aliases == o.aliases &&
           endpoints == o.endpoints &&
           input_types == o.input_types &&
           output_types == o.output_types &&
-          providers == o.providers &&
-          supported_params == o.supported_params &&
-          top_provider == o.top_provider &&
-          pricing == o.pricing
+          providers == o.providers
     end
 
     # @see the `==` method
@@ -265,7 +191,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model_id, name, release_date, deprecation_date, retirement_date, status, organisation_id, organisation_name, organisation_colour, aliases, endpoints, input_types, output_types, providers, supported_params, top_provider, pricing].hash
+      [model_id, name, release_date, status, organisation_id, aliases, endpoints, input_types, output_types, providers].hash
     end
 
     # Builds the object from hash

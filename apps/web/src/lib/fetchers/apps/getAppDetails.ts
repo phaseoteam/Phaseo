@@ -5,8 +5,10 @@ export type AppDetails = {
 	id: string;
 	title: string;
 	url: string | null;
+	image_url: string | null;
 	team_id: string;
 	is_active: boolean;
+	is_public: boolean;
 	last_seen: string;
 	created_at: string;
 	updated_at: string;
@@ -23,6 +25,7 @@ export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 			.from("api_apps")
 			.select("*")
 			.eq("id", appId)
+			.eq("is_public", true)
 			.single();
 
 		if (appError || !app) {

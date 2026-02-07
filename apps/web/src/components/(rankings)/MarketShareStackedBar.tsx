@@ -23,6 +23,13 @@ type SeriesStyle = Record<string, { label: string; color: string; stroke: string
 function formatBucketLabel(value: string) {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return value;
+	if (date.getHours() !== 0 || date.getMinutes() !== 0) {
+		return date.toLocaleDateString("en-US", {
+			month: "short",
+			day: "numeric",
+			hour: "numeric",
+		});
+	}
 	return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
@@ -37,8 +44,8 @@ function formatNumber(value: number) {
 function formatPercent(value: number) {
 	if (!Number.isFinite(value)) return "--";
 	if (value === 0) return "0%";
-	const precision = value < 1 ? 1 : value < 10 ? 1 : 0;
-	return `${value.toFixed(precision)}%`;
+	if (value < 1) return "<1%";
+	return `${Math.round(value)}%`;
 }
 
 function normalizeColour(value?: string | null) {
@@ -132,9 +139,7 @@ export function MarketShareStackedBar({
 				bucket: formatBucketLabel(new Date(ts).toISOString()),
 				bucketTs: ts,
 			} as Record<string, number> & { bucket: string; bucketTs: number });
-		}
-		if (!bucketTotals.has(ts)) {
-			bucketTotals.set(ts, 0);
+			bucketTotals.set(ts, bucketTotals.get(ts) ?? 0);
 		}
 	}
 
@@ -208,106 +213,101 @@ export function MarketShareStackedBar({
 	} as const;
 
 	return (
-		<div className="space-y-4">
-			<ChartContainer config={chartConfig} className="h-[360px] w-full">
-				<BarChart
-					data={chartData}
-					margin={{ top: 16, right: 12, left: 0, bottom: 32 }}
-					onMouseLeave={() => setHoveredKey(null)}
-				>
-					<CartesianGrid vertical={false} className="stroke-muted" />
-					<XAxis
-						dataKey="bucket"
-						minTickGap={24}
-						interval="preserveStartEnd"
-						tickLine={false}
-						axisLine={false}
-					/>
-					<YAxis
-						tickFormatter={(value) =>
-							normalizeToPercent
-								? formatPercent(Number(value))
-								: formatNumber(Number(value))
-						}
-						width={60}
-						tickLine={false}
-						axisLine={false}
-						domain={normalizeToPercent ? [0, 100] : undefined}
-					/>
-					<ChartTooltip
-						content={(props) => {
-							const filteredPayload =
-								props.payload
-									?.filter((item) => Number(item?.value ?? 0) > 0)
-									.sort(
-										(a, b) =>
-											Number(b?.value ?? 0) - Number(a?.value ?? 0)
-									) ?? [];
-							if (!filteredPayload.length) return null;
-							return (
-								<ChartTooltipContent
-									active={props.active}
-									payload={filteredPayload}
-									label={props.label}
-									labelFormatter={(lbl) => String(lbl)}
-									formatter={(v, name, item) => {
-										const val = Number(v ?? 0);
-										const seriesKey = String(item?.dataKey ?? name ?? "");
-										const cfg = seriesStyle[seriesKey];
-										const isActive = hoveredKey === seriesKey;
-										return (
-											<div
-												className={`flex w-full items-center justify-between rounded-md px-1.5 py-0.5 ${
-													isActive
-														? "bg-zinc-200/70 dark:bg-zinc-800/70"
-														: ""
-												}`}
-											>
-												<span className="inline-flex items-center gap-1.5">
-													<span
-														className="inline-block rounded-[2px]"
-														style={{
-															backgroundColor: cfg?.color,
-															width: 4,
-															height: 14,
-														}}
-													/>
-													<span>{cfg?.label ?? String(name ?? "")}</span>
-												</span>
-												<span className="ml-auto pl-3 font-mono">
-													{normalizeToPercent
-														? formatPercent(val)
-														: formatNumber(val)}
-												</span>
-											</div>
-										);
-									}}
-								/>
-							);
-						}}
-					/>
-					{seriesKeys.map((key, index) => {
-						const s = seriesStyle[key];
-						const active = hoveredKey ? hoveredKey === key : true;
+		<ChartContainer config={chartConfig} className="h-[360px] w-full">
+			<BarChart
+				data={chartData}
+				margin={{ top: 16, right: 12, left: 0, bottom: 32 }}
+				onMouseLeave={() => setHoveredKey(null)}
+			>
+				<CartesianGrid vertical={false} className="stroke-muted" />
+				<XAxis
+					dataKey="bucket"
+					minTickGap={24}
+					interval="preserveStartEnd"
+					tickLine={false}
+					axisLine={false}
+				/>
+				<YAxis
+					tickFormatter={(value) =>
+						normalizeToPercent
+							? formatPercent(Number(value))
+							: formatNumber(Number(value))
+					}
+					width={60}
+					tickLine={false}
+					axisLine={false}
+					domain={normalizeToPercent ? [0, 100] : undefined}
+					ticks={normalizeToPercent ? [0, 25, 50, 75, 100] : undefined}
+				/>
+				<ChartTooltip
+					content={(props) => {
+						const filteredPayload =
+							props.payload
+								?.filter((item) => Number(item?.value ?? 0) > 0)
+								.sort(
+									(a, b) => Number(b?.value ?? 0) - Number(a?.value ?? 0)
+								)
+								.slice(0, 10) ?? [];
+						if (!filteredPayload.length) return null;
 						return (
-							<Bar
-								key={key}
-								dataKey={key}
-								name={s?.label}
-								stackId="share"
-								fill={`var(--color-${key}, ${s?.color})`}
-								fillOpacity={hoveredKey ? (active ? 0.95 : 0.35) : 0.9}
-								radius={
-									index === seriesKeys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]
-								}
-								onMouseOver={() => setHoveredKey(key)}
-								onMouseOut={() => setHoveredKey(null)}
-								isAnimationActive={false}
+							<ChartTooltipContent
+								active={props.active}
+								label={props.label}
+								payload={filteredPayload}
+								labelFormatter={(lbl) => String(lbl)}
+								formatter={(v, name, item) => {
+									const val = Number(v ?? 0);
+									const seriesKey = String(item?.dataKey ?? name ?? "");
+									const cfg = seriesStyle[seriesKey];
+									const isActive = hoveredKey === seriesKey;
+									return (
+										<>
+											<span className="inline-flex items-center gap-2">
+												<span
+													className="inline-block rounded-[2px]"
+													style={{
+														backgroundColor: cfg?.color,
+														width: isActive ? 6 : 4,
+														height: 14,
+													}}
+												/>
+												<span className={isActive ? "font-medium" : ""}>
+													{cfg?.label ?? String(name ?? "")}
+												</span>
+											</span>
+											<span className="ml-auto font-mono">
+												{normalizeToPercent
+													? formatPercent(val)
+													: formatNumber(val)}
+											</span>
+										</>
+									);
+								}}
 							/>
 						);
-					})}
-				</BarChart>
-			</ChartContainer>
-		</div>
+					}}
+				/>
+				{seriesKeys.map((key, index) => {
+					const s = seriesStyle[key];
+					const active = hoveredKey ? hoveredKey === key : true;
+					return (
+						<Bar
+							key={key}
+							dataKey={key}
+							name={s?.label}
+							stackId="share"
+							fill={`var(--color-${key}, ${s?.color})`}
+							fillOpacity={hoveredKey ? (active ? 0.95 : 0.35) : 0.9}
+							radius={
+								index === seriesKeys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]
+							}
+							onMouseOver={() => setHoveredKey(key)}
+							onMouseOut={() => setHoveredKey(null)}
+							isAnimationActive={false}
+						/>
+					);
+				})}
+			</BarChart>
+		</ChartContainer>
 	);
 }

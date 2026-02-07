@@ -11,6 +11,14 @@ function asString(value: unknown): string {
 }
 
 function normalizeImageUrl(url: unknown): { source: "data" | "url"; data: string; detail?: string } | null {
+	if (typeof (url as any)?.b64_json === "string") {
+		return {
+			source: "data",
+			data: (url as any).b64_json,
+			detail: typeof (url as any)?.detail === "string" ? (url as any).detail : undefined,
+		};
+	}
+
 	const resolved = typeof url === "string"
 		? url
 		: typeof (url as any)?.url === "string"
@@ -27,26 +35,6 @@ function normalizeImageUrl(url: unknown): { source: "data" | "url"; data: string
 	return { source: isDataUrl ? "data" : "url", data, detail };
 }
 
-export function normalizeCacheControl(raw: any): { type: "ephemeral"; ttl?: "5m" | "1h" } | undefined {
-	if (!raw || typeof raw !== "object") return undefined;
-	const typeRaw = typeof raw.type === "string"
-		? raw.type
-		: typeof raw.cache?.type === "string"
-			? raw.cache.type
-			: undefined;
-	if (!typeRaw) return undefined;
-	const normalized = typeRaw.toLowerCase() === "ehpemeral" ? "ephemeral" : typeRaw.toLowerCase();
-	if (normalized !== "ephemeral") return undefined;
-	const ttlRaw = typeof raw.ttl === "string"
-		? raw.ttl
-		: typeof raw.cache?.ttl === "string"
-			? raw.cache.ttl
-			: undefined;
-	const ttlNormalized = typeof ttlRaw === "string" ? ttlRaw.toLowerCase() : undefined;
-	const ttl = ttlNormalized === "5m" || ttlNormalized === "1h" ? ttlNormalized : undefined;
-	return ttl ? { type: "ephemeral", ttl } : { type: "ephemeral" };
-}
-
 export function normalizeOpenAIContent(content: string | any[]): IRContentPart[] {
 	if (typeof content === "string") {
 		return [{ type: "text", text: content }];
@@ -58,14 +46,16 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 	}
 
 	return content.map((part) => {
-		if (part?.type === "text" || part?.type === "input_text") {
-			const cacheControl = normalizeCacheControl(part.cache_control ?? part.cacheControl ?? part.cache);
-			return cacheControl
-				? { type: "text", text: asString(part.text), cacheControl }
-				: { type: "text", text: asString(part.text) };
+		if (part?.type === "text" || part?.type === "input_text" || part?.type === "output_text") {
+			return { type: "text", text: asString(part.text) };
 		}
 
-		if (part?.type === "image_url" || part?.type === "input_image" || part?.type === "image") {
+		if (
+			part?.type === "image_url" ||
+			part?.type === "input_image" ||
+			part?.type === "output_image" ||
+			part?.type === "image"
+		) {
 			const normalized = normalizeImageUrl(part.image_url ?? part.url ?? part);
 			if (!normalized) return { type: "text", text: asString(part) };
 			return {
@@ -85,21 +75,13 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 			} as IRContentPart;
 		}
 
-	if (part?.type === "input_video") {
-		const videoUrl =
-			typeof part.video_url === "string"
-				? part.video_url
-				: typeof part.video_url?.url === "string"
-					? part.video_url.url
-					: typeof part.url === "string"
-						? part.url
-						: "";
-		return {
-			type: "video",
-			source: "url",
-			url: videoUrl,
-		} as IRContentPart;
-	}
+		if (part?.type === "input_video") {
+			return {
+				type: "video",
+				source: "url",
+				url: part.video_url || part.url,
+			} as IRContentPart;
+		}
 
 		return { type: "text", text: asString(part) };
 	});

@@ -1,5 +1,5 @@
 generatorName: typescript-fetch
-outputDir: ../../../../packages/sdk-ts/src/gen
+outputDir: ../../../../packages/sdk/sdk-ts/src/gen
 inputSpec: apps/docs/openapi/v1/openapi.yaml
 additionalProperties:
     supportsES6: true

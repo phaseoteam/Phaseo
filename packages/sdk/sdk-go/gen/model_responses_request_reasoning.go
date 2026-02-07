@@ -21,8 +21,6 @@ var _ MappedNullable = &ResponsesRequestReasoning{}
 type ResponsesRequestReasoning struct {
 	Effort *string `json:"effort,omitempty"`
 	Summary *string `json:"summary,omitempty"`
-	Enabled *bool `json:"enabled,omitempty"`
-	MaxTokens *int32 `json:"max_tokens,omitempty"`
 }
 
 // NewResponsesRequestReasoning instantiates a new ResponsesRequestReasoning object
@@ -106,70 +104,6 @@ func (o *ResponsesRequestReasoning) SetSummary(v string) {
 	o.Summary = &v
 }
 
-// GetEnabled returns the Enabled field value if set, zero value otherwise.
-func (o *ResponsesRequestReasoning) GetEnabled() bool {
-	if o == nil || IsNil(o.Enabled) {
-		var ret bool
-		return ret
-	}
-	return *o.Enabled
-}
-
-// GetEnabledOk returns a tuple with the Enabled field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ResponsesRequestReasoning) GetEnabledOk() (*bool, bool) {
-	if o == nil || IsNil(o.Enabled) {
-		return nil, false
-	}
-	return o.Enabled, true
-}
-
-// HasEnabled returns a boolean if a field has been set.
-func (o *ResponsesRequestReasoning) HasEnabled() bool {
-	if o != nil && !IsNil(o.Enabled) {
-		return true
-	}
-
-	return false
-}
-
-// SetEnabled gets a reference to the given bool and assigns it to the Enabled field.
-func (o *ResponsesRequestReasoning) SetEnabled(v bool) {
-	o.Enabled = &v
-}
-
-// GetMaxTokens returns the MaxTokens field value if set, zero value otherwise.
-func (o *ResponsesRequestReasoning) GetMaxTokens() int32 {
-	if o == nil || IsNil(o.MaxTokens) {
-		var ret int32
-		return ret
-	}
-	return *o.MaxTokens
-}
-
-// GetMaxTokensOk returns a tuple with the MaxTokens field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *ResponsesRequestReasoning) GetMaxTokensOk() (*int32, bool) {
-	if o == nil || IsNil(o.MaxTokens) {
-		return nil, false
-	}
-	return o.MaxTokens, true
-}
-
-// HasMaxTokens returns a boolean if a field has been set.
-func (o *ResponsesRequestReasoning) HasMaxTokens() bool {
-	if o != nil && !IsNil(o.MaxTokens) {
-		return true
-	}
-
-	return false
-}
-
-// SetMaxTokens gets a reference to the given int32 and assigns it to the MaxTokens field.
-func (o *ResponsesRequestReasoning) SetMaxTokens(v int32) {
-	o.MaxTokens = &v
-}
-
 func (o ResponsesRequestReasoning) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -185,12 +119,6 @@ func (o ResponsesRequestReasoning) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Summary) {
 		toSerialize["summary"] = o.Summary
-	}
-	if !IsNil(o.Enabled) {
-		toSerialize["enabled"] = o.Enabled
-	}
-	if !IsNil(o.MaxTokens) {
-		toSerialize["max_tokens"] = o.MaxTokens
 	}
 	return toSerialize, nil
 }

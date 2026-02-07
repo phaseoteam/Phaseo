@@ -19,7 +19,6 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from ai_stats_generated.models.model_pricing import ModelPricing
 from ai_stats_generated.models.model_providers_inner import ModelProvidersInner
 from typing import Optional, Set
 from typing_extensions import Self
@@ -31,21 +30,14 @@ class Model(BaseModel):
     model_id: Optional[StrictStr] = None
     name: Optional[StrictStr] = None
     release_date: Optional[StrictStr] = None
-    deprecation_date: Optional[StrictStr] = None
-    retirement_date: Optional[StrictStr] = None
     status: Optional[StrictStr] = None
     organisation_id: Optional[StrictStr] = None
-    organisation_name: Optional[StrictStr] = None
-    organisation_colour: Optional[StrictStr] = None
     aliases: Optional[List[StrictStr]] = None
     endpoints: Optional[List[StrictStr]] = None
     input_types: Optional[List[StrictStr]] = None
     output_types: Optional[List[StrictStr]] = None
     providers: Optional[List[ModelProvidersInner]] = None
-    supported_params: Optional[List[StrictStr]] = None
-    top_provider: Optional[StrictStr] = None
-    pricing: Optional[ModelPricing] = None
-    __properties: ClassVar[List[str]] = ["model_id", "name", "release_date", "deprecation_date", "retirement_date", "status", "organisation_id", "organisation_name", "organisation_colour", "aliases", "endpoints", "input_types", "output_types", "providers", "supported_params", "top_provider", "pricing"]
+    __properties: ClassVar[List[str]] = ["model_id", "name", "release_date", "status", "organisation_id", "aliases", "endpoints", "input_types", "output_types", "providers"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -93,54 +85,6 @@ class Model(BaseModel):
                 if _item_providers:
                     _items.append(_item_providers.to_dict())
             _dict['providers'] = _items
-        # override the default output from pydantic by calling `to_dict()` of pricing
-        if self.pricing:
-            _dict['pricing'] = self.pricing.to_dict()
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if release_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.release_date is None and "release_date" in self.model_fields_set:
-            _dict['release_date'] = None
-
-        # set to None if deprecation_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.deprecation_date is None and "deprecation_date" in self.model_fields_set:
-            _dict['deprecation_date'] = None
-
-        # set to None if retirement_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.retirement_date is None and "retirement_date" in self.model_fields_set:
-            _dict['retirement_date'] = None
-
-        # set to None if status (nullable) is None
-        # and model_fields_set contains the field
-        if self.status is None and "status" in self.model_fields_set:
-            _dict['status'] = None
-
-        # set to None if organisation_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.organisation_id is None and "organisation_id" in self.model_fields_set:
-            _dict['organisation_id'] = None
-
-        # set to None if organisation_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.organisation_name is None and "organisation_name" in self.model_fields_set:
-            _dict['organisation_name'] = None
-
-        # set to None if organisation_colour (nullable) is None
-        # and model_fields_set contains the field
-        if self.organisation_colour is None and "organisation_colour" in self.model_fields_set:
-            _dict['organisation_colour'] = None
-
-        # set to None if top_provider (nullable) is None
-        # and model_fields_set contains the field
-        if self.top_provider is None and "top_provider" in self.model_fields_set:
-            _dict['top_provider'] = None
-
         return _dict
 
     @classmethod
@@ -156,20 +100,13 @@ class Model(BaseModel):
             "model_id": obj.get("model_id"),
             "name": obj.get("name"),
             "release_date": obj.get("release_date"),
-            "deprecation_date": obj.get("deprecation_date"),
-            "retirement_date": obj.get("retirement_date"),
             "status": obj.get("status"),
             "organisation_id": obj.get("organisation_id"),
-            "organisation_name": obj.get("organisation_name"),
-            "organisation_colour": obj.get("organisation_colour"),
             "aliases": obj.get("aliases"),
             "endpoints": obj.get("endpoints"),
             "input_types": obj.get("input_types"),
             "output_types": obj.get("output_types"),
-            "providers": [ModelProvidersInner.from_dict(_item) for _item in obj["providers"]] if obj.get("providers") is not None else None,
-            "supported_params": obj.get("supported_params"),
-            "top_provider": obj.get("top_provider"),
-            "pricing": ModelPricing.from_dict(obj["pricing"]) if obj.get("pricing") is not None else None
+            "providers": [ModelProvidersInner.from_dict(_item) for _item in obj["providers"]] if obj.get("providers") is not None else None
         })
         return _obj
 

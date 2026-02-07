@@ -35,22 +35,18 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="model">model</param>
         /// <param name="input">input</param>
-        /// <param name="messages">messages</param>
         /// <param name="inputItems">inputItems</param>
         /// <param name="conversation">conversation</param>
         /// <param name="include">include</param>
         /// <param name="instructions">instructions</param>
         /// <param name="maxOutputTokens">maxOutputTokens</param>
         /// <param name="maxToolCalls">maxToolCalls</param>
-        /// <param name="maxToolsCalls">maxToolsCalls</param>
         /// <param name="metadata">metadata</param>
-        /// <param name="debug">debug</param>
         /// <param name="parallelToolCalls">parallelToolCalls</param>
         /// <param name="previousResponseId">previousResponseId</param>
         /// <param name="prompt">prompt</param>
         /// <param name="promptCacheKey">promptCacheKey</param>
         /// <param name="promptCacheRetention">promptCacheRetention</param>
-        /// <param name="modalities">modalities</param>
         /// <param name="reasoning">reasoning</param>
         /// <param name="safetyIdentifier">safetyIdentifier</param>
         /// <param name="serviceTier">serviceTier</param>
@@ -66,29 +62,26 @@ namespace AIStatsSdk.Model
         /// <param name="truncation">truncation</param>
         /// <param name="background">background</param>
         /// <param name="user">user</param>
+        /// <param name="usage">usage</param>
         /// <param name="meta">meta</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public ResponsesRequest(string model, Option<ResponsesRequestInput?> input = default, Option<List<ChatMessage>?> messages = default, Option<List<ResponsesInputItem>?> inputItems = default, Option<ChatCompletionsRequestToolChoice?> conversation = default, Option<List<string>?> include = default, Option<string?> instructions = default, Option<int?> maxOutputTokens = default, Option<int?> maxToolCalls = default, Option<int?> maxToolsCalls = default, Option<Dictionary<string, string>?> metadata = default, Option<DebugOptions?> debug = default, Option<bool?> parallelToolCalls = default, Option<string?> previousResponseId = default, Option<ResponsesRequestPrompt?> prompt = default, Option<string?> promptCacheKey = default, Option<string?> promptCacheRetention = default, Option<List<ResponsesRequest.ModalitiesEnum>?> modalities = default, Option<ResponsesRequestReasoning?> reasoning = default, Option<string?> safetyIdentifier = default, Option<string?> serviceTier = default, Option<bool?> store = default, Option<bool?> stream = default, Option<Object?> streamOptions = default, Option<decimal?> temperature = default, Option<Object?> text = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<List<Object>?> tools = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<string?> truncation = default, Option<bool?> background = default, Option<string?> user = default, Option<bool?> meta = default, Option<ProviderRoutingOptions?> provider = default)
+        public ResponsesRequest(string model, Option<Object?> input = default, Option<List<Object>?> inputItems = default, Option<ChatCompletionsRequestToolChoice?> conversation = default, Option<List<string>?> include = default, Option<string?> instructions = default, Option<int?> maxOutputTokens = default, Option<int?> maxToolCalls = default, Option<Dictionary<string, string>?> metadata = default, Option<bool?> parallelToolCalls = default, Option<string?> previousResponseId = default, Option<ResponsesRequestPrompt?> prompt = default, Option<string?> promptCacheKey = default, Option<string?> promptCacheRetention = default, Option<ResponsesRequestReasoning?> reasoning = default, Option<string?> safetyIdentifier = default, Option<string?> serviceTier = default, Option<bool?> store = default, Option<bool?> stream = default, Option<Object?> streamOptions = default, Option<decimal?> temperature = default, Option<Object?> text = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<List<Object>?> tools = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<string?> truncation = default, Option<bool?> background = default, Option<string?> user = default, Option<bool?> usage = default, Option<bool?> meta = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             InputOption = input;
-            MessagesOption = messages;
             InputItemsOption = inputItems;
             ConversationOption = conversation;
             IncludeOption = include;
             InstructionsOption = instructions;
             MaxOutputTokensOption = maxOutputTokens;
             MaxToolCallsOption = maxToolCalls;
-            MaxToolsCallsOption = maxToolsCalls;
             MetadataOption = metadata;
-            DebugOption = debug;
             ParallelToolCallsOption = parallelToolCalls;
             PreviousResponseIdOption = previousResponseId;
             PromptOption = prompt;
             PromptCacheKeyOption = promptCacheKey;
             PromptCacheRetentionOption = promptCacheRetention;
-            ModalitiesOption = modalities;
             ReasoningOption = reasoning;
             SafetyIdentifierOption = safetyIdentifier;
             ServiceTierOption = serviceTier;
@@ -104,106 +97,13 @@ namespace AIStatsSdk.Model
             TruncationOption = truncation;
             BackgroundOption = background;
             UserOption = user;
+            UsageOption = usage;
             MetaOption = meta;
             ProviderOption = provider;
             OnCreated();
         }
 
         partial void OnCreated();
-
-        /// <summary>
-        /// Defines Modalities
-        /// </summary>
-        public enum ModalitiesEnum
-        {
-            /// <summary>
-            /// Enum Text for value: text
-            /// </summary>
-            Text = 1,
-
-            /// <summary>
-            /// Enum Image for value: image
-            /// </summary>
-            Image = 2,
-
-            /// <summary>
-            /// Enum Audio for value: audio
-            /// </summary>
-            Audio = 3,
-
-            /// <summary>
-            /// Enum Video for value: video
-            /// </summary>
-            Video = 4
-        }
-
-        /// <summary>
-        /// Returns a <see cref="ModalitiesEnum"/>
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static ModalitiesEnum ModalitiesEnumFromString(string value)
-        {
-            if (value.Equals("text"))
-                return ModalitiesEnum.Text;
-
-            if (value.Equals("image"))
-                return ModalitiesEnum.Image;
-
-            if (value.Equals("audio"))
-                return ModalitiesEnum.Audio;
-
-            if (value.Equals("video"))
-                return ModalitiesEnum.Video;
-
-            throw new NotImplementedException($"Could not convert value to type ModalitiesEnum: '{value}'");
-        }
-
-        /// <summary>
-        /// Returns a <see cref="ModalitiesEnum"/>
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static ModalitiesEnum? ModalitiesEnumFromStringOrDefault(string value)
-        {
-            if (value.Equals("text"))
-                return ModalitiesEnum.Text;
-
-            if (value.Equals("image"))
-                return ModalitiesEnum.Image;
-
-            if (value.Equals("audio"))
-                return ModalitiesEnum.Audio;
-
-            if (value.Equals("video"))
-                return ModalitiesEnum.Video;
-
-            return null;
-        }
-
-        /// <summary>
-        /// Converts the <see cref="ModalitiesEnum"/> to the json value
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static string ModalitiesEnumToJsonValue(ModalitiesEnum? value)
-        {
-            if (value == ModalitiesEnum.Text)
-                return "text";
-
-            if (value == ModalitiesEnum.Image)
-                return "image";
-
-            if (value == ModalitiesEnum.Audio)
-                return "audio";
-
-            if (value == ModalitiesEnum.Video)
-                return "video";
-
-            throw new NotImplementedException($"Value could not be handled: '{value}'");
-        }
 
         /// <summary>
         /// Gets or Sets Model
@@ -216,39 +116,26 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<ResponsesRequestInput?> InputOption { get; private set; }
+        public Option<Object?> InputOption { get; private set; }
 
         /// <summary>
         /// Gets or Sets Input
         /// </summary>
         [JsonPropertyName("input")]
-        public ResponsesRequestInput? Input { get { return this.InputOption; } set { this.InputOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Messages
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<ChatMessage>?> MessagesOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Messages
-        /// </summary>
-        [JsonPropertyName("messages")]
-        public List<ChatMessage>? Messages { get { return this.MessagesOption; } set { this.MessagesOption = new(value); } }
+        public Object? Input { get { return this.InputOption; } set { this.InputOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of InputItems
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<ResponsesInputItem>?> InputItemsOption { get; private set; }
+        public Option<List<Object>?> InputItemsOption { get; private set; }
 
         /// <summary>
         /// Gets or Sets InputItems
         /// </summary>
         [JsonPropertyName("input_items")]
-        public List<ResponsesInputItem>? InputItems { get { return this.InputItemsOption; } set { this.InputItemsOption = new(value); } }
+        public List<Object>? InputItems { get { return this.InputItemsOption; } set { this.InputItemsOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Conversation
@@ -316,19 +203,6 @@ namespace AIStatsSdk.Model
         public int? MaxToolCalls { get { return this.MaxToolCallsOption; } set { this.MaxToolCallsOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of MaxToolsCalls
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<int?> MaxToolsCallsOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets MaxToolsCalls
-        /// </summary>
-        [JsonPropertyName("max_tools_calls")]
-        public int? MaxToolsCalls { get { return this.MaxToolsCallsOption; } set { this.MaxToolsCallsOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Metadata
         /// </summary>
         [JsonIgnore]
@@ -340,19 +214,6 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonPropertyName("metadata")]
         public Dictionary<string, string>? Metadata { get { return this.MetadataOption; } set { this.MetadataOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugOptions?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of ParallelToolCalls
@@ -418,19 +279,6 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonPropertyName("prompt_cache_retention")]
         public string? PromptCacheRetention { get { return this.PromptCacheRetentionOption; } set { this.PromptCacheRetentionOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Modalities
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<ResponsesRequest.ModalitiesEnum>?> ModalitiesOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Modalities
-        /// </summary>
-        [JsonPropertyName("modalities")]
-        public List<ResponsesRequest.ModalitiesEnum>? Modalities { get { return this.ModalitiesOption; } set { this.ModalitiesOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Reasoning
@@ -628,6 +476,19 @@ namespace AIStatsSdk.Model
         public string? User { get { return this.UserOption; } set { this.UserOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Usage
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<bool?> UsageOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Usage
+        /// </summary>
+        [JsonPropertyName("usage")]
+        public bool? Usage { get { return this.UsageOption; } set { this.UsageOption = new(value); } }
+
+        /// <summary>
         /// Used to track the state of Meta
         /// </summary>
         [JsonIgnore]
@@ -663,22 +524,18 @@ namespace AIStatsSdk.Model
             sb.Append("class ResponsesRequest {\n");
             sb.Append("  Model: ").Append(Model).Append("\n");
             sb.Append("  Input: ").Append(Input).Append("\n");
-            sb.Append("  Messages: ").Append(Messages).Append("\n");
             sb.Append("  InputItems: ").Append(InputItems).Append("\n");
             sb.Append("  Conversation: ").Append(Conversation).Append("\n");
             sb.Append("  Include: ").Append(Include).Append("\n");
             sb.Append("  Instructions: ").Append(Instructions).Append("\n");
             sb.Append("  MaxOutputTokens: ").Append(MaxOutputTokens).Append("\n");
             sb.Append("  MaxToolCalls: ").Append(MaxToolCalls).Append("\n");
-            sb.Append("  MaxToolsCalls: ").Append(MaxToolsCalls).Append("\n");
             sb.Append("  Metadata: ").Append(Metadata).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  ParallelToolCalls: ").Append(ParallelToolCalls).Append("\n");
             sb.Append("  PreviousResponseId: ").Append(PreviousResponseId).Append("\n");
             sb.Append("  Prompt: ").Append(Prompt).Append("\n");
             sb.Append("  PromptCacheKey: ").Append(PromptCacheKey).Append("\n");
             sb.Append("  PromptCacheRetention: ").Append(PromptCacheRetention).Append("\n");
-            sb.Append("  Modalities: ").Append(Modalities).Append("\n");
             sb.Append("  Reasoning: ").Append(Reasoning).Append("\n");
             sb.Append("  SafetyIdentifier: ").Append(SafetyIdentifier).Append("\n");
             sb.Append("  ServiceTier: ").Append(ServiceTier).Append("\n");
@@ -694,6 +551,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Truncation: ").Append(Truncation).Append("\n");
             sb.Append("  Background: ").Append(Background).Append("\n");
             sb.Append("  User: ").Append(User).Append("\n");
+            sb.Append("  Usage: ").Append(Usage).Append("\n");
             sb.Append("  Meta: ").Append(Meta).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
@@ -717,12 +575,6 @@ namespace AIStatsSdk.Model
             if (this.MaxToolCallsOption.IsSet && this.MaxToolCallsOption.Value < (int)0)
             {
                 yield return new ValidationResult("Invalid value for MaxToolCalls, must be a value greater than or equal to 0.", new [] { "MaxToolCalls" });
-            }
-
-            // MaxToolsCalls (int) minimum
-            if (this.MaxToolsCallsOption.IsSet && this.MaxToolsCallsOption.Value < (int)0)
-            {
-                yield return new ValidationResult("Invalid value for MaxToolsCalls, must be a value greater than or equal to 0.", new [] { "MaxToolsCalls" });
             }
 
             // Temperature (decimal) maximum
@@ -788,23 +640,19 @@ namespace AIStatsSdk.Model
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
             Option<string?> model = default;
-            Option<ResponsesRequestInput?> input = default;
-            Option<List<ChatMessage>?> messages = default;
-            Option<List<ResponsesInputItem>?> inputItems = default;
+            Option<Object?> input = default;
+            Option<List<Object>?> inputItems = default;
             Option<ChatCompletionsRequestToolChoice?> conversation = default;
             Option<List<string>?> include = default;
             Option<string?> instructions = default;
             Option<int?> maxOutputTokens = default;
             Option<int?> maxToolCalls = default;
-            Option<int?> maxToolsCalls = default;
             Option<Dictionary<string, string>?> metadata = default;
-            Option<DebugOptions?> debug = default;
             Option<bool?> parallelToolCalls = default;
             Option<string?> previousResponseId = default;
             Option<ResponsesRequestPrompt?> prompt = default;
             Option<string?> promptCacheKey = default;
             Option<string?> promptCacheRetention = default;
-            Option<List<ResponsesRequest.ModalitiesEnum>?> modalities = default;
             Option<ResponsesRequestReasoning?> reasoning = default;
             Option<string?> safetyIdentifier = default;
             Option<string?> serviceTier = default;
@@ -820,6 +668,7 @@ namespace AIStatsSdk.Model
             Option<string?> truncation = default;
             Option<bool?> background = default;
             Option<string?> user = default;
+            Option<bool?> usage = default;
             Option<bool?> meta = default;
             Option<ProviderRoutingOptions?> provider = default;
 
@@ -842,13 +691,10 @@ namespace AIStatsSdk.Model
                             model = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "input":
-                            input = new Option<ResponsesRequestInput?>(JsonSerializer.Deserialize<ResponsesRequestInput>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "messages":
-                            messages = new Option<List<ChatMessage>?>(JsonSerializer.Deserialize<List<ChatMessage>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            input = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         case "input_items":
-                            inputItems = new Option<List<ResponsesInputItem>?>(JsonSerializer.Deserialize<List<ResponsesInputItem>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            inputItems = new Option<List<Object>?>(JsonSerializer.Deserialize<List<Object>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         case "conversation":
                             conversation = new Option<ChatCompletionsRequestToolChoice?>(JsonSerializer.Deserialize<ChatCompletionsRequestToolChoice>(ref utf8JsonReader, jsonSerializerOptions)!);
@@ -865,14 +711,8 @@ namespace AIStatsSdk.Model
                         case "max_tool_calls":
                             maxToolCalls = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
                             break;
-                        case "max_tools_calls":
-                            maxToolsCalls = new Option<int?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
-                            break;
                         case "metadata":
                             metadata = new Option<Dictionary<string, string>?>(JsonSerializer.Deserialize<Dictionary<string, string>>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "debug":
-                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         case "parallel_tool_calls":
                             parallelToolCalls = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
@@ -888,9 +728,6 @@ namespace AIStatsSdk.Model
                             break;
                         case "prompt_cache_retention":
                             promptCacheRetention = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
-                        case "modalities":
-                            modalities = new Option<List<ResponsesRequest.ModalitiesEnum>?>(JsonSerializer.Deserialize<List<ResponsesRequest.ModalitiesEnum>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         case "reasoning":
                             reasoning = new Option<ResponsesRequestReasoning?>(JsonSerializer.Deserialize<ResponsesRequestReasoning>(ref utf8JsonReader, jsonSerializerOptions)!);
@@ -937,6 +774,9 @@ namespace AIStatsSdk.Model
                         case "user":
                             user = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
+                        case "usage":
+                            usage = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                            break;
                         case "meta":
                             meta = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
@@ -958,9 +798,6 @@ namespace AIStatsSdk.Model
             if (input.IsSet && input.Value == null)
                 throw new ArgumentNullException(nameof(input), "Property is not nullable for class ResponsesRequest.");
 
-            if (messages.IsSet && messages.Value == null)
-                throw new ArgumentNullException(nameof(messages), "Property is not nullable for class ResponsesRequest.");
-
             if (inputItems.IsSet && inputItems.Value == null)
                 throw new ArgumentNullException(nameof(inputItems), "Property is not nullable for class ResponsesRequest.");
 
@@ -979,14 +816,8 @@ namespace AIStatsSdk.Model
             if (maxToolCalls.IsSet && maxToolCalls.Value == null)
                 throw new ArgumentNullException(nameof(maxToolCalls), "Property is not nullable for class ResponsesRequest.");
 
-            if (maxToolsCalls.IsSet && maxToolsCalls.Value == null)
-                throw new ArgumentNullException(nameof(maxToolsCalls), "Property is not nullable for class ResponsesRequest.");
-
             if (metadata.IsSet && metadata.Value == null)
                 throw new ArgumentNullException(nameof(metadata), "Property is not nullable for class ResponsesRequest.");
-
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class ResponsesRequest.");
 
             if (parallelToolCalls.IsSet && parallelToolCalls.Value == null)
                 throw new ArgumentNullException(nameof(parallelToolCalls), "Property is not nullable for class ResponsesRequest.");
@@ -1002,9 +833,6 @@ namespace AIStatsSdk.Model
 
             if (promptCacheRetention.IsSet && promptCacheRetention.Value == null)
                 throw new ArgumentNullException(nameof(promptCacheRetention), "Property is not nullable for class ResponsesRequest.");
-
-            if (modalities.IsSet && modalities.Value == null)
-                throw new ArgumentNullException(nameof(modalities), "Property is not nullable for class ResponsesRequest.");
 
             if (reasoning.IsSet && reasoning.Value == null)
                 throw new ArgumentNullException(nameof(reasoning), "Property is not nullable for class ResponsesRequest.");
@@ -1051,13 +879,16 @@ namespace AIStatsSdk.Model
             if (user.IsSet && user.Value == null)
                 throw new ArgumentNullException(nameof(user), "Property is not nullable for class ResponsesRequest.");
 
+            if (usage.IsSet && usage.Value == null)
+                throw new ArgumentNullException(nameof(usage), "Property is not nullable for class ResponsesRequest.");
+
             if (meta.IsSet && meta.Value == null)
                 throw new ArgumentNullException(nameof(meta), "Property is not nullable for class ResponsesRequest.");
 
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class ResponsesRequest.");
 
-            return new ResponsesRequest(model.Value!, input, messages, inputItems, conversation, include, instructions, maxOutputTokens, maxToolCalls, maxToolsCalls, metadata, debug, parallelToolCalls, previousResponseId, prompt, promptCacheKey, promptCacheRetention, modalities, reasoning, safetyIdentifier, serviceTier, store, stream, streamOptions, temperature, text, toolChoice, tools, topLogprobs, topP, truncation, background, user, meta, provider);
+            return new ResponsesRequest(model.Value!, input, inputItems, conversation, include, instructions, maxOutputTokens, maxToolCalls, metadata, parallelToolCalls, previousResponseId, prompt, promptCacheKey, promptCacheRetention, reasoning, safetyIdentifier, serviceTier, store, stream, streamOptions, temperature, text, toolChoice, tools, topLogprobs, topP, truncation, background, user, usage, meta, provider);
         }
 
         /// <summary>
@@ -1090,9 +921,6 @@ namespace AIStatsSdk.Model
             if (responsesRequest.InputOption.IsSet && responsesRequest.Input == null)
                 throw new ArgumentNullException(nameof(responsesRequest.Input), "Property is required for class ResponsesRequest.");
 
-            if (responsesRequest.MessagesOption.IsSet && responsesRequest.Messages == null)
-                throw new ArgumentNullException(nameof(responsesRequest.Messages), "Property is required for class ResponsesRequest.");
-
             if (responsesRequest.InputItemsOption.IsSet && responsesRequest.InputItems == null)
                 throw new ArgumentNullException(nameof(responsesRequest.InputItems), "Property is required for class ResponsesRequest.");
 
@@ -1108,9 +936,6 @@ namespace AIStatsSdk.Model
             if (responsesRequest.MetadataOption.IsSet && responsesRequest.Metadata == null)
                 throw new ArgumentNullException(nameof(responsesRequest.Metadata), "Property is required for class ResponsesRequest.");
 
-            if (responsesRequest.DebugOption.IsSet && responsesRequest.Debug == null)
-                throw new ArgumentNullException(nameof(responsesRequest.Debug), "Property is required for class ResponsesRequest.");
-
             if (responsesRequest.PreviousResponseIdOption.IsSet && responsesRequest.PreviousResponseId == null)
                 throw new ArgumentNullException(nameof(responsesRequest.PreviousResponseId), "Property is required for class ResponsesRequest.");
 
@@ -1122,9 +947,6 @@ namespace AIStatsSdk.Model
 
             if (responsesRequest.PromptCacheRetentionOption.IsSet && responsesRequest.PromptCacheRetention == null)
                 throw new ArgumentNullException(nameof(responsesRequest.PromptCacheRetention), "Property is required for class ResponsesRequest.");
-
-            if (responsesRequest.ModalitiesOption.IsSet && responsesRequest.Modalities == null)
-                throw new ArgumentNullException(nameof(responsesRequest.Modalities), "Property is required for class ResponsesRequest.");
 
             if (responsesRequest.ReasoningOption.IsSet && responsesRequest.Reasoning == null)
                 throw new ArgumentNullException(nameof(responsesRequest.Reasoning), "Property is required for class ResponsesRequest.");
@@ -1163,11 +985,6 @@ namespace AIStatsSdk.Model
                 writer.WritePropertyName("input");
                 JsonSerializer.Serialize(writer, responsesRequest.Input, jsonSerializerOptions);
             }
-            if (responsesRequest.MessagesOption.IsSet)
-            {
-                writer.WritePropertyName("messages");
-                JsonSerializer.Serialize(writer, responsesRequest.Messages, jsonSerializerOptions);
-            }
             if (responsesRequest.InputItemsOption.IsSet)
             {
                 writer.WritePropertyName("input_items");
@@ -1192,18 +1009,10 @@ namespace AIStatsSdk.Model
             if (responsesRequest.MaxToolCallsOption.IsSet)
                 writer.WriteNumber("max_tool_calls", responsesRequest.MaxToolCallsOption.Value!.Value);
 
-            if (responsesRequest.MaxToolsCallsOption.IsSet)
-                writer.WriteNumber("max_tools_calls", responsesRequest.MaxToolsCallsOption.Value!.Value);
-
             if (responsesRequest.MetadataOption.IsSet)
             {
                 writer.WritePropertyName("metadata");
                 JsonSerializer.Serialize(writer, responsesRequest.Metadata, jsonSerializerOptions);
-            }
-            if (responsesRequest.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, responsesRequest.Debug, jsonSerializerOptions);
             }
             if (responsesRequest.ParallelToolCallsOption.IsSet)
                 writer.WriteBoolean("parallel_tool_calls", responsesRequest.ParallelToolCallsOption.Value!.Value);
@@ -1222,11 +1031,6 @@ namespace AIStatsSdk.Model
             if (responsesRequest.PromptCacheRetentionOption.IsSet)
                 writer.WriteString("prompt_cache_retention", responsesRequest.PromptCacheRetention);
 
-            if (responsesRequest.ModalitiesOption.IsSet)
-            {
-                writer.WritePropertyName("modalities");
-                JsonSerializer.Serialize(writer, responsesRequest.Modalities, jsonSerializerOptions);
-            }
             if (responsesRequest.ReasoningOption.IsSet)
             {
                 writer.WritePropertyName("reasoning");
@@ -1281,6 +1085,9 @@ namespace AIStatsSdk.Model
 
             if (responsesRequest.UserOption.IsSet)
                 writer.WriteString("user", responsesRequest.User);
+
+            if (responsesRequest.UsageOption.IsSet)
+                writer.WriteBoolean("usage", responsesRequest.UsageOption.Value!.Value);
 
             if (responsesRequest.MetaOption.IsSet)
                 writer.WriteBoolean("meta", responsesRequest.MetaOption.Value!.Value);

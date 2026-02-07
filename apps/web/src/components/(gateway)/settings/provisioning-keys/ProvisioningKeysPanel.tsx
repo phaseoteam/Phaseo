@@ -34,7 +34,7 @@ export default function ProvisioningKeysPanel({ teamsWithKeys }: any) {
 	if (!sortedTeams || sortedTeams.length === 0) {
 		return (
 			<div className="mt-6 text-sm text-muted-foreground">
-				No teams or provisioning keys to manage.
+				No teams or management API keys to manage.
 			</div>
 		);
 	}
@@ -46,7 +46,7 @@ export default function ProvisioningKeysPanel({ teamsWithKeys }: any) {
 					<div className="font-medium mb-2">{team.name}</div>
 					{!team.keys || team.keys.length === 0 ? (
 						<div className="text-sm text-muted-foreground">
-							No provisioning keys for this team.
+							No management API keys for this team.
 						</div>
 					) : (
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

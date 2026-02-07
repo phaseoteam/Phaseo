@@ -59,20 +59,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPITypes = [
         'prompt_tokens' => 'int',
         'completion_tokens' => 'int',
-        'total_tokens' => 'int',
-        'prompt_tokens_details' => '\AIStats\Sdk\Model\UsageDetails',
-        'completion_tokens_details' => '\AIStats\Sdk\Model\UsageDetails',
-        'input_tokens' => 'int',
-        'output_tokens' => 'int',
-        'input_tokens_details' => '\AIStats\Sdk\Model\UsageDetails',
-        'output_tokens_details' => '\AIStats\Sdk\Model\UsageDetails',
-        'input_text_tokens' => 'int',
-        'output_text_tokens' => 'int',
-        'cached_read_text_tokens' => 'int',
-        'cached_write_text_tokens' => 'int',
-        'reasoning_tokens' => 'int',
-        'pricing' => '\AIStats\Sdk\Model\PricingBreakdown',
-        'pricing_breakdown' => '\AIStats\Sdk\Model\PricingBreakdown'
+        'total_tokens' => 'int'
     ];
 
     /**
@@ -85,20 +72,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPIFormats = [
         'prompt_tokens' => null,
         'completion_tokens' => null,
-        'total_tokens' => null,
-        'prompt_tokens_details' => null,
-        'completion_tokens_details' => null,
-        'input_tokens' => null,
-        'output_tokens' => null,
-        'input_tokens_details' => null,
-        'output_tokens_details' => null,
-        'input_text_tokens' => null,
-        'output_text_tokens' => null,
-        'cached_read_text_tokens' => null,
-        'cached_write_text_tokens' => null,
-        'reasoning_tokens' => null,
-        'pricing' => null,
-        'pricing_breakdown' => null
+        'total_tokens' => null
     ];
 
     /**
@@ -109,20 +83,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static array $openAPINullables = [
         'prompt_tokens' => false,
         'completion_tokens' => false,
-        'total_tokens' => false,
-        'prompt_tokens_details' => false,
-        'completion_tokens_details' => false,
-        'input_tokens' => false,
-        'output_tokens' => false,
-        'input_tokens_details' => false,
-        'output_tokens_details' => false,
-        'input_text_tokens' => false,
-        'output_text_tokens' => false,
-        'cached_read_text_tokens' => false,
-        'cached_write_text_tokens' => false,
-        'reasoning_tokens' => false,
-        'pricing' => false,
-        'pricing_breakdown' => false
+        'total_tokens' => false
     ];
 
     /**
@@ -213,20 +174,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $attributeMap = [
         'prompt_tokens' => 'prompt_tokens',
         'completion_tokens' => 'completion_tokens',
-        'total_tokens' => 'total_tokens',
-        'prompt_tokens_details' => 'prompt_tokens_details',
-        'completion_tokens_details' => 'completion_tokens_details',
-        'input_tokens' => 'input_tokens',
-        'output_tokens' => 'output_tokens',
-        'input_tokens_details' => 'input_tokens_details',
-        'output_tokens_details' => 'output_tokens_details',
-        'input_text_tokens' => 'input_text_tokens',
-        'output_text_tokens' => 'output_text_tokens',
-        'cached_read_text_tokens' => 'cached_read_text_tokens',
-        'cached_write_text_tokens' => 'cached_write_text_tokens',
-        'reasoning_tokens' => 'reasoning_tokens',
-        'pricing' => 'pricing',
-        'pricing_breakdown' => 'pricing_breakdown'
+        'total_tokens' => 'total_tokens'
     ];
 
     /**
@@ -237,20 +185,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $setters = [
         'prompt_tokens' => 'setPromptTokens',
         'completion_tokens' => 'setCompletionTokens',
-        'total_tokens' => 'setTotalTokens',
-        'prompt_tokens_details' => 'setPromptTokensDetails',
-        'completion_tokens_details' => 'setCompletionTokensDetails',
-        'input_tokens' => 'setInputTokens',
-        'output_tokens' => 'setOutputTokens',
-        'input_tokens_details' => 'setInputTokensDetails',
-        'output_tokens_details' => 'setOutputTokensDetails',
-        'input_text_tokens' => 'setInputTextTokens',
-        'output_text_tokens' => 'setOutputTextTokens',
-        'cached_read_text_tokens' => 'setCachedReadTextTokens',
-        'cached_write_text_tokens' => 'setCachedWriteTextTokens',
-        'reasoning_tokens' => 'setReasoningTokens',
-        'pricing' => 'setPricing',
-        'pricing_breakdown' => 'setPricingBreakdown'
+        'total_tokens' => 'setTotalTokens'
     ];
 
     /**
@@ -261,20 +196,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $getters = [
         'prompt_tokens' => 'getPromptTokens',
         'completion_tokens' => 'getCompletionTokens',
-        'total_tokens' => 'getTotalTokens',
-        'prompt_tokens_details' => 'getPromptTokensDetails',
-        'completion_tokens_details' => 'getCompletionTokensDetails',
-        'input_tokens' => 'getInputTokens',
-        'output_tokens' => 'getOutputTokens',
-        'input_tokens_details' => 'getInputTokensDetails',
-        'output_tokens_details' => 'getOutputTokensDetails',
-        'input_text_tokens' => 'getInputTextTokens',
-        'output_text_tokens' => 'getOutputTextTokens',
-        'cached_read_text_tokens' => 'getCachedReadTextTokens',
-        'cached_write_text_tokens' => 'getCachedWriteTextTokens',
-        'reasoning_tokens' => 'getReasoningTokens',
-        'pricing' => 'getPricing',
-        'pricing_breakdown' => 'getPricingBreakdown'
+        'total_tokens' => 'getTotalTokens'
     ];
 
     /**
@@ -337,19 +259,6 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('prompt_tokens', $data ?? [], null);
         $this->setIfExists('completion_tokens', $data ?? [], null);
         $this->setIfExists('total_tokens', $data ?? [], null);
-        $this->setIfExists('prompt_tokens_details', $data ?? [], null);
-        $this->setIfExists('completion_tokens_details', $data ?? [], null);
-        $this->setIfExists('input_tokens', $data ?? [], null);
-        $this->setIfExists('output_tokens', $data ?? [], null);
-        $this->setIfExists('input_tokens_details', $data ?? [], null);
-        $this->setIfExists('output_tokens_details', $data ?? [], null);
-        $this->setIfExists('input_text_tokens', $data ?? [], null);
-        $this->setIfExists('output_text_tokens', $data ?? [], null);
-        $this->setIfExists('cached_read_text_tokens', $data ?? [], null);
-        $this->setIfExists('cached_write_text_tokens', $data ?? [], null);
-        $this->setIfExists('reasoning_tokens', $data ?? [], null);
-        $this->setIfExists('pricing', $data ?? [], null);
-        $this->setIfExists('pricing_breakdown', $data ?? [], null);
     }
 
     /**
@@ -471,357 +380,6 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable total_tokens cannot be null');
         }
         $this->container['total_tokens'] = $total_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets prompt_tokens_details
-     *
-     * @return \AIStats\Sdk\Model\UsageDetails|null
-     */
-    public function getPromptTokensDetails()
-    {
-        return $this->container['prompt_tokens_details'];
-    }
-
-    /**
-     * Sets prompt_tokens_details
-     *
-     * @param \AIStats\Sdk\Model\UsageDetails|null $prompt_tokens_details prompt_tokens_details
-     *
-     * @return self
-     */
-    public function setPromptTokensDetails($prompt_tokens_details)
-    {
-        if (is_null($prompt_tokens_details)) {
-            throw new \InvalidArgumentException('non-nullable prompt_tokens_details cannot be null');
-        }
-        $this->container['prompt_tokens_details'] = $prompt_tokens_details;
-
-        return $this;
-    }
-
-    /**
-     * Gets completion_tokens_details
-     *
-     * @return \AIStats\Sdk\Model\UsageDetails|null
-     */
-    public function getCompletionTokensDetails()
-    {
-        return $this->container['completion_tokens_details'];
-    }
-
-    /**
-     * Sets completion_tokens_details
-     *
-     * @param \AIStats\Sdk\Model\UsageDetails|null $completion_tokens_details completion_tokens_details
-     *
-     * @return self
-     */
-    public function setCompletionTokensDetails($completion_tokens_details)
-    {
-        if (is_null($completion_tokens_details)) {
-            throw new \InvalidArgumentException('non-nullable completion_tokens_details cannot be null');
-        }
-        $this->container['completion_tokens_details'] = $completion_tokens_details;
-
-        return $this;
-    }
-
-    /**
-     * Gets input_tokens
-     *
-     * @return int|null
-     */
-    public function getInputTokens()
-    {
-        return $this->container['input_tokens'];
-    }
-
-    /**
-     * Sets input_tokens
-     *
-     * @param int|null $input_tokens input_tokens
-     *
-     * @return self
-     */
-    public function setInputTokens($input_tokens)
-    {
-        if (is_null($input_tokens)) {
-            throw new \InvalidArgumentException('non-nullable input_tokens cannot be null');
-        }
-        $this->container['input_tokens'] = $input_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets output_tokens
-     *
-     * @return int|null
-     */
-    public function getOutputTokens()
-    {
-        return $this->container['output_tokens'];
-    }
-
-    /**
-     * Sets output_tokens
-     *
-     * @param int|null $output_tokens output_tokens
-     *
-     * @return self
-     */
-    public function setOutputTokens($output_tokens)
-    {
-        if (is_null($output_tokens)) {
-            throw new \InvalidArgumentException('non-nullable output_tokens cannot be null');
-        }
-        $this->container['output_tokens'] = $output_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets input_tokens_details
-     *
-     * @return \AIStats\Sdk\Model\UsageDetails|null
-     */
-    public function getInputTokensDetails()
-    {
-        return $this->container['input_tokens_details'];
-    }
-
-    /**
-     * Sets input_tokens_details
-     *
-     * @param \AIStats\Sdk\Model\UsageDetails|null $input_tokens_details input_tokens_details
-     *
-     * @return self
-     */
-    public function setInputTokensDetails($input_tokens_details)
-    {
-        if (is_null($input_tokens_details)) {
-            throw new \InvalidArgumentException('non-nullable input_tokens_details cannot be null');
-        }
-        $this->container['input_tokens_details'] = $input_tokens_details;
-
-        return $this;
-    }
-
-    /**
-     * Gets output_tokens_details
-     *
-     * @return \AIStats\Sdk\Model\UsageDetails|null
-     */
-    public function getOutputTokensDetails()
-    {
-        return $this->container['output_tokens_details'];
-    }
-
-    /**
-     * Sets output_tokens_details
-     *
-     * @param \AIStats\Sdk\Model\UsageDetails|null $output_tokens_details output_tokens_details
-     *
-     * @return self
-     */
-    public function setOutputTokensDetails($output_tokens_details)
-    {
-        if (is_null($output_tokens_details)) {
-            throw new \InvalidArgumentException('non-nullable output_tokens_details cannot be null');
-        }
-        $this->container['output_tokens_details'] = $output_tokens_details;
-
-        return $this;
-    }
-
-    /**
-     * Gets input_text_tokens
-     *
-     * @return int|null
-     */
-    public function getInputTextTokens()
-    {
-        return $this->container['input_text_tokens'];
-    }
-
-    /**
-     * Sets input_text_tokens
-     *
-     * @param int|null $input_text_tokens input_text_tokens
-     *
-     * @return self
-     */
-    public function setInputTextTokens($input_text_tokens)
-    {
-        if (is_null($input_text_tokens)) {
-            throw new \InvalidArgumentException('non-nullable input_text_tokens cannot be null');
-        }
-        $this->container['input_text_tokens'] = $input_text_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets output_text_tokens
-     *
-     * @return int|null
-     */
-    public function getOutputTextTokens()
-    {
-        return $this->container['output_text_tokens'];
-    }
-
-    /**
-     * Sets output_text_tokens
-     *
-     * @param int|null $output_text_tokens output_text_tokens
-     *
-     * @return self
-     */
-    public function setOutputTextTokens($output_text_tokens)
-    {
-        if (is_null($output_text_tokens)) {
-            throw new \InvalidArgumentException('non-nullable output_text_tokens cannot be null');
-        }
-        $this->container['output_text_tokens'] = $output_text_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets cached_read_text_tokens
-     *
-     * @return int|null
-     */
-    public function getCachedReadTextTokens()
-    {
-        return $this->container['cached_read_text_tokens'];
-    }
-
-    /**
-     * Sets cached_read_text_tokens
-     *
-     * @param int|null $cached_read_text_tokens cached_read_text_tokens
-     *
-     * @return self
-     */
-    public function setCachedReadTextTokens($cached_read_text_tokens)
-    {
-        if (is_null($cached_read_text_tokens)) {
-            throw new \InvalidArgumentException('non-nullable cached_read_text_tokens cannot be null');
-        }
-        $this->container['cached_read_text_tokens'] = $cached_read_text_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets cached_write_text_tokens
-     *
-     * @return int|null
-     */
-    public function getCachedWriteTextTokens()
-    {
-        return $this->container['cached_write_text_tokens'];
-    }
-
-    /**
-     * Sets cached_write_text_tokens
-     *
-     * @param int|null $cached_write_text_tokens cached_write_text_tokens
-     *
-     * @return self
-     */
-    public function setCachedWriteTextTokens($cached_write_text_tokens)
-    {
-        if (is_null($cached_write_text_tokens)) {
-            throw new \InvalidArgumentException('non-nullable cached_write_text_tokens cannot be null');
-        }
-        $this->container['cached_write_text_tokens'] = $cached_write_text_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets reasoning_tokens
-     *
-     * @return int|null
-     */
-    public function getReasoningTokens()
-    {
-        return $this->container['reasoning_tokens'];
-    }
-
-    /**
-     * Sets reasoning_tokens
-     *
-     * @param int|null $reasoning_tokens reasoning_tokens
-     *
-     * @return self
-     */
-    public function setReasoningTokens($reasoning_tokens)
-    {
-        if (is_null($reasoning_tokens)) {
-            throw new \InvalidArgumentException('non-nullable reasoning_tokens cannot be null');
-        }
-        $this->container['reasoning_tokens'] = $reasoning_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets pricing
-     *
-     * @return \AIStats\Sdk\Model\PricingBreakdown|null
-     */
-    public function getPricing()
-    {
-        return $this->container['pricing'];
-    }
-
-    /**
-     * Sets pricing
-     *
-     * @param \AIStats\Sdk\Model\PricingBreakdown|null $pricing pricing
-     *
-     * @return self
-     */
-    public function setPricing($pricing)
-    {
-        if (is_null($pricing)) {
-            throw new \InvalidArgumentException('non-nullable pricing cannot be null');
-        }
-        $this->container['pricing'] = $pricing;
-
-        return $this;
-    }
-
-    /**
-     * Gets pricing_breakdown
-     *
-     * @return \AIStats\Sdk\Model\PricingBreakdown|null
-     */
-    public function getPricingBreakdown()
-    {
-        return $this->container['pricing_breakdown'];
-    }
-
-    /**
-     * Sets pricing_breakdown
-     *
-     * @param \AIStats\Sdk\Model\PricingBreakdown|null $pricing_breakdown pricing_breakdown
-     *
-     * @return self
-     */
-    public function setPricingBreakdown($pricing_breakdown)
-    {
-        if (is_null($pricing_breakdown)) {
-            throw new \InvalidArgumentException('non-nullable pricing_breakdown cannot be null');
-        }
-        $this->container['pricing_breakdown'] = $pricing_breakdown;
 
         return $this;
     }

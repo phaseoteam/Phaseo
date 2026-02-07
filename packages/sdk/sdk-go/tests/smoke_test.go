@@ -28,7 +28,7 @@ func TestSmokeChat(t *testing.T) {
 		},
 	}
 
-	raw, err := client.Request("POST", "/chat/completions", nil, nil, body)
+	raw, err := client.Request("POST", "/responses", nil, nil, body)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}

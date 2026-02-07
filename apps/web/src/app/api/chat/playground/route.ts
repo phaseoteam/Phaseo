@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
     const requestBody = payload.requestBody ?? {};
     const appHeaders = payload.appHeaders ?? {};
     const debug = Boolean(payload.debug);
+    const streamRequested =
+        (requestBody as { stream?: unknown }).stream === true;
 
     if (!baseUrl || !apiKey) {
         return new Response(
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
             Authorization: `Bearer ${apiKey}`,
             ...(debug ? { "x-gateway-debug": "true" } : {}),
             ...appHeaders,
+            ...(streamRequested ? { Accept: "text/event-stream" } : {}),
         },
         body: JSON.stringify(requestBody),
     });
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
         });
     }
 
-    if (!requestBody.stream || !upstream.body) {
+    if (!streamRequested || !upstream.body) {
         const responseText = await upstream.text();
         return new Response(responseText, {
             status: upstream.status,

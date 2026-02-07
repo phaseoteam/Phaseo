@@ -1,5 +1,5 @@
 generatorName: go
-outputDir: ../../../../packages/sdk-go/gen
+outputDir: ../../../../packages/sdk/sdk-go/gen
 inputSpec: apps/docs/openapi/v1/openapi.yaml
 additionalProperties:
     packageName: ai_stats_sdk

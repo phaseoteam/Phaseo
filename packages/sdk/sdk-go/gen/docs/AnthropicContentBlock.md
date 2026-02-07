@@ -6,11 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Type** | Pointer to **string** |  | [optional] 
 **Text** | Pointer to **string** |  | [optional] 
-**CacheControl** | Pointer to [**CacheControl**](CacheControl.md) |  | [optional] 
 **Source** | Pointer to [**AnthropicContentBlockSource**](AnthropicContentBlockSource.md) |  | [optional] 
-**ImageUrl** | Pointer to [**AnthropicContentBlockImageUrl**](AnthropicContentBlockImageUrl.md) |  | [optional] 
-**InputAudio** | Pointer to [**AudioContentPartInputAudio**](AudioContentPartInputAudio.md) |  | [optional] 
-**VideoUrl** | Pointer to **string** |  | [optional] 
 **Id** | Pointer to **string** |  | [optional] 
 **Name** | Pointer to **string** |  | [optional] 
 **Input** | Pointer to **map[string]interface{}** |  | [optional] 
@@ -86,31 +82,6 @@ SetText sets Text field to given value.
 
 HasText returns a boolean if a field has been set.
 
-### GetCacheControl
-
-`func (o *AnthropicContentBlock) GetCacheControl() CacheControl`
-
-GetCacheControl returns the CacheControl field if non-nil, zero value otherwise.
-
-### GetCacheControlOk
-
-`func (o *AnthropicContentBlock) GetCacheControlOk() (*CacheControl, bool)`
-
-GetCacheControlOk returns a tuple with the CacheControl field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetCacheControl
-
-`func (o *AnthropicContentBlock) SetCacheControl(v CacheControl)`
-
-SetCacheControl sets CacheControl field to given value.
-
-### HasCacheControl
-
-`func (o *AnthropicContentBlock) HasCacheControl() bool`
-
-HasCacheControl returns a boolean if a field has been set.
-
 ### GetSource
 
 `func (o *AnthropicContentBlock) GetSource() AnthropicContentBlockSource`
@@ -135,81 +106,6 @@ SetSource sets Source field to given value.
 `func (o *AnthropicContentBlock) HasSource() bool`
 
 HasSource returns a boolean if a field has been set.
-
-### GetImageUrl
-
-`func (o *AnthropicContentBlock) GetImageUrl() AnthropicContentBlockImageUrl`
-
-GetImageUrl returns the ImageUrl field if non-nil, zero value otherwise.
-
-### GetImageUrlOk
-
-`func (o *AnthropicContentBlock) GetImageUrlOk() (*AnthropicContentBlockImageUrl, bool)`
-
-GetImageUrlOk returns a tuple with the ImageUrl field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetImageUrl
-
-`func (o *AnthropicContentBlock) SetImageUrl(v AnthropicContentBlockImageUrl)`
-
-SetImageUrl sets ImageUrl field to given value.
-
-### HasImageUrl
-
-`func (o *AnthropicContentBlock) HasImageUrl() bool`
-
-HasImageUrl returns a boolean if a field has been set.
-
-### GetInputAudio
-
-`func (o *AnthropicContentBlock) GetInputAudio() AudioContentPartInputAudio`
-
-GetInputAudio returns the InputAudio field if non-nil, zero value otherwise.
-
-### GetInputAudioOk
-
-`func (o *AnthropicContentBlock) GetInputAudioOk() (*AudioContentPartInputAudio, bool)`
-
-GetInputAudioOk returns a tuple with the InputAudio field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetInputAudio
-
-`func (o *AnthropicContentBlock) SetInputAudio(v AudioContentPartInputAudio)`
-
-SetInputAudio sets InputAudio field to given value.
-
-### HasInputAudio
-
-`func (o *AnthropicContentBlock) HasInputAudio() bool`
-
-HasInputAudio returns a boolean if a field has been set.
-
-### GetVideoUrl
-
-`func (o *AnthropicContentBlock) GetVideoUrl() string`
-
-GetVideoUrl returns the VideoUrl field if non-nil, zero value otherwise.
-
-### GetVideoUrlOk
-
-`func (o *AnthropicContentBlock) GetVideoUrlOk() (*string, bool)`
-
-GetVideoUrlOk returns a tuple with the VideoUrl field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetVideoUrl
-
-`func (o *AnthropicContentBlock) SetVideoUrl(v string)`
-
-SetVideoUrl sets VideoUrl field to given value.
-
-### HasVideoUrl
-
-`func (o *AnthropicContentBlock) HasVideoUrl() bool`
-
-HasVideoUrl returns a boolean if a field has been set.
 
 ### GetId
 

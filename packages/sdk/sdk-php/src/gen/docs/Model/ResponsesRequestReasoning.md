@@ -6,7 +6,5 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **effort** | **string** |  | [optional]
 **summary** | **string** |  | [optional]
-**enabled** | **bool** |  | [optional]
-**max_tokens** | **int** |  | [optional]
 
 [[Back to Model list]](../../README.md#models) [[Back to API list]](../../README.md#endpoints) [[Back to README]](../../README.md)

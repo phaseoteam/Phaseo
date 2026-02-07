@@ -12,8 +12,6 @@ Name | Type | Description | Notes
 **StopReason** | **string** |  | [optional] 
 **StopSequence** | **string** |  | [optional] 
 **Usage** | [**AnthropicUsage**](AnthropicUsage.md) |  | [optional] 
-**Meta** | **Object** |  | [optional] 
-**Debug** | [**DebugResponse**](DebugResponse.md) |  | [optional] 
 
 [[Back to Model list]](../../README.md#documentation-for-models) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to README]](../../README.md)
 

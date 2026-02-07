@@ -3,7 +3,7 @@
 // How: Maps between protocol payloads and IR structures.
 
 // Anthropic Messages Protocol - Decoder
-// Transforms Anthropic Messages Request → IR
+// Transforms Anthropic Messages Request -> IR
 
 import type {
 	IRChatRequest,
@@ -31,6 +31,10 @@ export type AnthropicMessagesRequest = {
 	tool_choice?: AnthropicToolChoice;
 	metadata?: Record<string, any>;
 	stop_sequences?: string[];
+	thinking?: {
+		type: "enabled" | "disabled";
+		budget_tokens?: number;
+	};
 };
 
 export type AnthropicMessage = {
@@ -185,6 +189,14 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		tools,
 		toolChoice,
 
+		// Reasoning / thinking
+		reasoning: req.thinking
+			? {
+				enabled: req.thinking.type === "enabled",
+				maxTokens: req.thinking.budget_tokens,
+			}
+			: undefined,
+
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
@@ -241,7 +253,7 @@ function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart 
 		return undefined;
 	}
 
-	// Fallback: unknown type → text
+	// Fallback: unknown type -> text
 	return { type: "text", text: String(block) };
 }
 

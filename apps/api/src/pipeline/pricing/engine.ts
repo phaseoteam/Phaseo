@@ -173,7 +173,7 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     return { meters, context };
 }
 
-/** price qty at rule’s price/unit_size using nanos math */
+/** price qty at rule's price/unit_size using nanos math */
 function priceWithRule(qty: number, rule: PriceRule) {
     const unitSize = rule.unit_size;
     const billableUnits = Math.ceil(qty / unitSize);
@@ -198,7 +198,7 @@ function priceWithRule(qty: number, rule: PriceRule) {
     };
 }
 
-/** Main public API — build a full pricing summary from raw usage. */
+/** Main public API -- build a full pricing summary from raw usage. */
 export function computeBillSummary(
     usageRaw: Record<string, any>,
     card: PriceCard,

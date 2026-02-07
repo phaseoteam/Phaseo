@@ -7,8 +7,69 @@ import type { Endpoint } from "./types";
 import type { PipelineContext } from "@pipeline/before/types";
 import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
-import { emitGatewayRequestEvent } from "@observability/events";
 import { getEdgeMeta } from "./edge";
+
+const REDACT_ERROR_KEYS = new Set([
+    "messages",
+    "message",
+    "content",
+    "input",
+    "prompt",
+    "text",
+    "audio",
+    "image",
+    "video",
+    "tools",
+    "tool",
+]);
+
+function redactErrorValue(value: unknown, depth = 0): unknown {
+    if (depth > 4) return "[truncated]";
+    if (Array.isArray(value)) {
+        return value.map((entry) => redactErrorValue(entry, depth + 1));
+    }
+    if (value && typeof value === "object") {
+        const obj = value as Record<string, unknown>;
+        const next: Record<string, unknown> = {};
+        for (const [key, val] of Object.entries(obj)) {
+            if (REDACT_ERROR_KEYS.has(key)) {
+                next[key] = "[redacted]";
+            } else {
+                next[key] = redactErrorValue(val, depth + 1);
+            }
+        }
+        return next;
+    }
+    return value;
+}
+
+function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
+    const attemptErrors = ctx ? (ctx as any).attemptErrors ?? null : null;
+    const safeAttemptErrors = Array.isArray(attemptErrors)
+        ? attemptErrors.map((entry) => {
+            if (!entry || typeof entry !== "object") return entry;
+            const e = entry as Record<string, unknown>;
+            return {
+                provider: e.provider ?? null,
+                endpoint: e.endpoint ?? null,
+                type: e.type ?? e.reason ?? null,
+                reason: e.reason ?? null,
+                message: e.message ?? null,
+                status: e.status ?? null,
+                code: e.code ?? null,
+            };
+        })
+        : attemptErrors;
+    const details = {
+        upstream_error: redactErrorValue(body ?? null),
+        attempt_errors: safeAttemptErrors,
+    };
+    try {
+        return JSON.stringify(details);
+    } catch {
+        return null;
+    }
+}
 
 // Helper to extract error code from a response body
 export function extractErrorCode(body: any, fallback: string): string {
@@ -223,6 +284,19 @@ export async function handleError({
             return null;
         }
     })();
+    const errorDetailsJson = buildErrorDetails(body, ctx);
+    const internalLatencyMs = ctx ? (ctx as any)?.timing?.internal_latency_ms ?? null : null;
+    const providerFromAttempts = (() => {
+        const attempts = ctx ? (ctx as any)?.attemptErrors : null;
+        if (Array.isArray(attempts) && attempts.length > 0) {
+            const last = attempts[attempts.length - 1];
+            if (last && typeof last === "object" && "provider" in last) {
+                return (last as any).provider ?? null;
+            }
+        }
+        return null;
+    })();
+    const providerForAudit = providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
@@ -238,6 +312,7 @@ export async function handleError({
         execute: ctx ? (ctx as any)?.timing?.execute ?? null : null,
         latencyMs: ctx ? Math.round(((ctx as any)?.timing?.before?.total_ms ?? 0) + ((ctx as any)?.timing?.execute?.total_ms ?? 0)) : (body?.timing?.before?.total_ms ? Math.round(body.timing.before.total_ms) : null),
         generationMs: ctx ? ((ctx as any)?.timing?.execute?.adapter_ms ? Math.round((ctx as any).timing.execute.adapter_ms) : null) : null,
+        internalLatencyMs,
         byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
         keyId: ctx?.meta?.apiKeyId ?? null,
         requestMethod: requestMeta.requestMethod,
@@ -252,31 +327,13 @@ export async function handleError({
         edgeContinent: requestMeta.edgeContinent,
         edgeAsn: requestMeta.edgeAsn,
         extraJson: auditExtraJson,
+        errorDetailsJson,
     };
     if (stage === "execute") {
         auditArgs.stream = ctx?.stream;
+        auditArgs.provider = providerForAudit;
     }
     await auditFailure(auditArgs);
-    const reasonHint = typeof body?.reason === "string" ? body.reason : null;
-    const internalReason =
-        reasonHint ??
-        (errCode === "unsupported_model_or_endpoint"
-            ? ((ctx?.providers?.length ?? 0) === 0 || stage === "before" ? "no_provider_candidates" : null)
-            : (errCode === "pricing_not_configured" ? "no_provider_pricing" : null));
-    await emitGatewayRequestEvent({
-        ctx,
-        statusCode,
-        success: false,
-        errorCode: `${attribution}:${errCode}`,
-        errorMessage: description ?? fallbackDescription,
-        errorStage: stage,
-        internalReason,
-        requestId: generationId,
-        teamId: ctx?.teamId ?? body?.team_id ?? null,
-        model: ctx?.model ?? body?.model ?? null,
-        endpoint,
-    });
-
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
 

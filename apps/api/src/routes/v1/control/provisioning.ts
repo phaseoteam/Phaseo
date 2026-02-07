@@ -293,3 +293,6 @@ provisioningRoutes.get("/keys/:id", handleGetKey);
 provisioningRoutes.patch("/keys/:id", handleUpdateKey);
 provisioningRoutes.delete("/keys/:id", handleDeleteKey);
 
+// Canonical naming moving forward.
+export const managementRoutes = provisioningRoutes;
+

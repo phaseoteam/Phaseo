@@ -29,13 +29,15 @@ function resolveByokKey(metaList: ByokKeyMeta[]): { key: string; byokId: string 
 }
 
 export function resolveProviderKey(
-    args: Pick<ProviderExecuteArgs, "providerId" | "byokMeta">,
+    args: Pick<ProviderExecuteArgs, "providerId" | "byokMeta"> & { forceGatewayKey?: boolean },
     fallbackKey: () => string | undefined,
     options?: { allowEmptyFallback?: boolean }
 ): ResolvedKey {
-    const byok = resolveByokKey(args.byokMeta ?? []);
-    if (byok) {
-        return { key: byok.key, source: "byok", byokId: byok.byokId };
+    if (!args.forceGatewayKey) {
+        const byok = resolveByokKey(args.byokMeta ?? []);
+        if (byok) {
+            return { key: byok.key, source: "byok", byokId: byok.byokId };
+        }
     }
 
     const fallback = fallbackKey();

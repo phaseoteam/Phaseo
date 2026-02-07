@@ -15,8 +15,6 @@ import type {
   ImagesGenerationRequest,
   ImagesGenerationResponse,
   AudioSpeechRequest,
-  AudioTranscriptionRequest,
-  AudioTranslationRequest,
   ModerationsRequest,
   ModerationsResponse,
   FileResponse,
@@ -47,8 +45,6 @@ type ChatCompletionCreateParamsNonStreaming = ChatCompletionCreateParams & {
 
 type ImageGenerateParams = ImagesGenerationRequest;
 type AudioSpeechCreateParams = AudioSpeechRequest;
-type AudioTranscriptionCreateParams = AudioTranscriptionRequest;
-type AudioTranslationCreateParams = AudioTranslationRequest;
 type ModerationCreateParams = ModerationsRequest;
 
 /**
@@ -76,10 +72,10 @@ export class OpenAI {
       create(params: AudioSpeechCreateParams): Promise<Blob>;
     };
     transcriptions: {
-      create(params: AudioTranscriptionCreateParams): Promise<unknown>;
+      create(params: Record<string, unknown>): Promise<unknown>;
     };
     translations: {
-      create(params: AudioTranslationCreateParams): Promise<unknown>;
+      create(params: Record<string, unknown>): Promise<unknown>;
     };
   };
 
@@ -137,7 +133,7 @@ export class OpenAI {
         create: (params) => this.aiStats.generateTranscription(params)
       },
       translations: {
-        create: (params) => this.aiStats.generateTranslation(params)
+        create: (params) => this.aiStats.generateTranslation(params as any)
       }
     };
 

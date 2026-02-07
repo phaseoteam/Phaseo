@@ -38,7 +38,7 @@
 									"v1/developers/introduction",
 									"v1/developers/integrating-with-the-gateway",
 									"v1/developers/authentication",
-									"v1/developers/provisioning-keys",
+									"v1/developers/management-api-keys",
 									"v1/developers/rate-limits",
 									"v1/developers/error-handling",
 									"v1/developers/best-practices"
@@ -67,7 +67,7 @@
 								]
 							},
 							{
-								"group": "Integrations and migrations",
+								"group": "Integrations",
 								"pages": [
 									{
 										"group": "Integrations",
@@ -78,19 +78,6 @@
 											"v1/guides/integrations/codex",
 											"v1/guides/integrations/opencode",
 											"v1/guides/examples"
-										]
-									},
-									{
-										"group": "Migrations",
-										"pages": [
-											"v1/migration-guides/index",
-											"v1/migration-guides/from-openai",
-											"v1/migration-guides/from-anthropic",
-											"v1/migration-guides/from-openrouter",
-											"v1/migration-guides/from-vercel",
-											"v1/migration-guides/from-litellm",
-											"v1/migration-guides/from-cloudflare",
-											"v1/migration-guides/from-helicone"
 										]
 									}
 								]
@@ -250,12 +237,12 @@
 										"group": "Keys",
 										"expanded": false,
 										"pages": [
-											"v1/api-reference/endpoint/provisioning/index",
-											"v1/api-reference/endpoint/provisioning/keys-list",
-											"v1/api-reference/endpoint/provisioning/keys-create",
-											"v1/api-reference/endpoint/provisioning/keys-get",
-											"v1/api-reference/endpoint/provisioning/keys-update",
-											"v1/api-reference/endpoint/provisioning/keys-delete"
+											"v1/api-reference/endpoint/management/index",
+											"v1/api-reference/endpoint/management/keys-list",
+											"v1/api-reference/endpoint/management/keys-create",
+											"v1/api-reference/endpoint/management/keys-get",
+											"v1/api-reference/endpoint/management/keys-update",
+											"v1/api-reference/endpoint/management/keys-delete"
 										]
 									},
 									{
@@ -294,6 +281,15 @@
 						"tab": "SDK Reference (Alpha)",
 						"icon": "package",
 						"menu": [
+							{
+								"item": "AI SDK (Vercel)",
+								"groups": [
+									{
+										"group": "Overview",
+										"pages": ["v1/sdk-reference/sdk/ai-sdk"]
+									}
+								]
+							},
 							{
 								"item": "TypeScript SDK",
 								"groups": [
@@ -632,6 +628,42 @@
 											"v1/sdk-reference/ruby/models",
 											"v1/sdk-reference/ruby/generation",
 											"v1/sdk-reference/ruby/health"
+										]
+									}
+								]
+							},
+							{
+								"item": "Java SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/java/overview",
+											"v1/sdk-reference/java/installation"
+										]
+									}
+								]
+							},
+							{
+								"item": "Rust SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/rust/overview",
+											"v1/sdk-reference/rust/installation"
+										]
+									}
+								]
+							},
+							{
+								"item": "C++ SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/cpp/overview",
+											"v1/sdk-reference/cpp/installation"
 										]
 									}
 								]

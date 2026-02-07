@@ -20,7 +20,6 @@
 | **seed** | **Integer** |  | [optional] |
 | **person_generation** | **String** |  | [optional] |
 | **output_storage_uri** | **String** |  | [optional] |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
@@ -45,7 +44,6 @@ instance = AIStatsSdk::VideoGenerationRequest.new(
   seed: null,
   person_generation: null,
   output_storage_uri: null,
-  debug: null,
   provider: null
 )
 ```

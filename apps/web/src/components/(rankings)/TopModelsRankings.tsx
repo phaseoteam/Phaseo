@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { RankingModel } from "@/lib/fetchers/rankings/getRankingsData";
+import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 
 interface TopModelsRankingsProps {
     initialData: RankingModel[];
@@ -36,6 +37,15 @@ export function TopModelsRankings({
     const [data] = useState(initialData);
     const [timeRange] = useState<TimeRange>(initialTimeRange as TimeRange);
     const [metric] = useState<Metric>(initialMetric as Metric);
+
+    if (!data.length) {
+        return (
+            <RankingsEmptyState
+                title="No rankings data yet"
+                description="Rankings appear once enough requests are aggregated to meet privacy thresholds."
+            />
+        );
+    }
 
     const getTrendIcon = (trend: string, rankChange: number) => {
         const change = Math.abs(rankChange);
@@ -67,17 +77,19 @@ export function TopModelsRankings({
     };
 
     const formatValue = (value: number, metricType: Metric) => {
+        const safeValue = Number(value);
+        if (!Number.isFinite(safeValue)) return "--";
         if (metricType === "tokens") {
-            return value >= 1e9
-                ? `${(value / 1e9).toFixed(2)}B`
-                : value >= 1e6
-                ? `${(value / 1e6).toFixed(2)}M`
-                : value >= 1e3
-                ? `${(value / 1e3).toFixed(2)}K`
-                : value.toString();
+            return safeValue >= 1e9
+                ? `${(safeValue / 1e9).toFixed(2)}B`
+                : safeValue >= 1e6
+                ? `${(safeValue / 1e6).toFixed(2)}M`
+                : safeValue >= 1e3
+                ? `${(safeValue / 1e3).toFixed(2)}K`
+                : safeValue.toString();
         }
-        if (metricType === "cost") return `$${value.toFixed(2)}`;
-        return value.toLocaleString();
+        if (metricType === "cost") return `$${safeValue.toFixed(2)}`;
+        return safeValue.toLocaleString();
     };
 
     return (
@@ -98,14 +110,22 @@ export function TopModelsRankings({
                     </TableHeader>
                     <TableBody>
                         {data.map((row) => {
-                            const rankChange = row.prev_rank - row.rank;
+                            const rank = Number(row.rank ?? 0);
+                            const prevRank = Number(row.prev_rank ?? row.rank ?? 0);
+                            const rankChange = prevRank - rank;
+                            const latency = Number(row.median_latency_ms);
+                            const successRate = Number(row.success_rate);
                             return (
                                 <TableRow key={`${row.model_id}-${row.provider}`}>
-                                    <TableCell className="font-medium">#{row.rank}</TableCell>
-                                    <TableCell>{getTrendIcon(row.trend, rankChange)}</TableCell>
-                                    <TableCell className="font-semibold">{row.model_id}</TableCell>
+                                    <TableCell className="font-medium">#{rank}</TableCell>
+                                    <TableCell>
+                                        {getTrendIcon(row.trend ?? "same", rankChange)}
+                                    </TableCell>
+                                    <TableCell className="font-semibold">
+                                        {row.model_id || "Unknown"}
+                                    </TableCell>
                                     <TableCell className="text-muted-foreground">
-                                        {row.provider}
+                                        {row.provider || "Unknown"}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {formatValue(row.requests, "requests")}
@@ -114,19 +134,25 @@ export function TopModelsRankings({
                                         {formatValue(row.total_tokens, "tokens")}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        {Math.round(row.median_latency_ms)}ms
+                                        {Number.isFinite(latency)
+                                            ? `${Math.round(latency)}ms`
+                                            : "--"}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <span
                                             className={
-                                                row.success_rate >= 0.99
+                                                Number.isFinite(successRate) &&
+                                                successRate >= 0.99
                                                     ? "text-green-600"
-                                                    : row.success_rate >= 0.95
+                                                    : Number.isFinite(successRate) &&
+                                                      successRate >= 0.95
                                                     ? "text-yellow-600"
                                                     : "text-red-600"
                                             }
                                         >
-                                            {(row.success_rate * 100).toFixed(1)}%
+                                            {Number.isFinite(successRate)
+                                                ? `${(successRate * 100).toFixed(1)}%`
+                                                : "--"}
                                         </span>
                                     </TableCell>
                                 </TableRow>

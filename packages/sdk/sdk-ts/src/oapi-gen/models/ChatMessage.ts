@@ -2,42 +2,14 @@ export interface ChatMessage {
   content?:
     | string
     | {
-        cache_control?: {
-          cache?: {
-            ttl?: "5m" | "1h";
-            type?: "ehpemeral" | "ephemeral";
-          };
-          ttl?: "5m" | "1h";
-          type?: "ehpemeral" | "ephemeral";
-        };
         text: string;
         type: "text";
-      }
-    | {
-        cache_control?: {
-          cache?: {
-            ttl?: "5m" | "1h";
-            type?: "ehpemeral" | "ephemeral";
-          };
-          ttl?: "5m" | "1h";
-          type?: "ehpemeral" | "ephemeral";
-        };
-        text: string;
-        type: "input_text";
       }
     | {
         image_url: {
           url?: string;
         };
         type: "image_url";
-      }
-    | {
-        image_url:
-          | string
-          | {
-              url?: string;
-            };
-        type: "input_image";
       }
     | {
         input_audio: {
@@ -59,7 +31,6 @@ export interface ChatMessage {
         type: "tool_call";
       }[];
   name?: string;
-  reasoning_content?: string;
   role: "system" | "user" | "assistant" | "tool";
   tool_call_id?: string;
   tool_calls?: {

@@ -11,8 +11,8 @@
 		"typecheck": "tsc --noEmit",
 		"simulate:pricing": "tsx scripts/pricing-simulator.tsx --all",
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
-		"test": "pnpm exec vitest run",
-		"test:live": "pnpm exec vitest run tests/integration/openai-gpt5-nano.live.spec.ts"
+		"test": "bunx vitest run",
+		"test:live": "bunx vitest run tests/integration/openai-gpt5-nano.live.spec.ts"
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.56.1",

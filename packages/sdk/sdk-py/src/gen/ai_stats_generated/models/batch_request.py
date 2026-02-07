@@ -19,7 +19,6 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -32,9 +31,8 @@ class BatchRequest(BaseModel):
     endpoint: StrictStr
     completion_window: Optional[StrictStr] = None
     metadata: Optional[Dict[str, Any]] = None
-    debug: Optional[DebugOptions] = None
     provider: Optional[ProviderRoutingOptions] = None
-    __properties: ClassVar[List[str]] = ["input_file_id", "endpoint", "completion_window", "metadata", "debug", "provider"]
+    __properties: ClassVar[List[str]] = ["input_file_id", "endpoint", "completion_window", "metadata", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -75,9 +73,6 @@ class BatchRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of debug
-        if self.debug:
-            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of provider
         if self.provider:
             _dict['provider'] = self.provider.to_dict()
@@ -97,7 +92,6 @@ class BatchRequest(BaseModel):
             "endpoint": obj.get("endpoint"),
             "completion_window": obj.get("completion_window"),
             "metadata": obj.get("metadata"),
-            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj

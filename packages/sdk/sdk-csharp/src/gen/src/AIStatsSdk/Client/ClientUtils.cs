@@ -113,22 +113,8 @@ namespace AIStatsSdk.Client
                     : "false";
             if (obj is AnthropicContentBlock.TypeEnum anthropicContentBlockTypeEnum)
                 return AnthropicContentBlock.TypeEnumToJsonValue(anthropicContentBlockTypeEnum);
-            if (obj is AnthropicContentBlockDeltaEvent.EventEnum anthropicContentBlockDeltaEventEventEnum)
-                return AnthropicContentBlockDeltaEvent.EventEnumToJsonValue(anthropicContentBlockDeltaEventEventEnum);
-            if (obj is AnthropicContentBlockStartEvent.EventEnum anthropicContentBlockStartEventEventEnum)
-                return AnthropicContentBlockStartEvent.EventEnumToJsonValue(anthropicContentBlockStartEventEventEnum);
-            if (obj is AnthropicContentBlockStopEvent.EventEnum anthropicContentBlockStopEventEventEnum)
-                return AnthropicContentBlockStopEvent.EventEnumToJsonValue(anthropicContentBlockStopEventEventEnum);
             if (obj is AnthropicMessage.RoleEnum anthropicMessageRoleEnum)
                 return AnthropicMessage.RoleEnumToJsonValue(anthropicMessageRoleEnum);
-            if (obj is AnthropicMessageDeltaEvent.EventEnum anthropicMessageDeltaEventEventEnum)
-                return AnthropicMessageDeltaEvent.EventEnumToJsonValue(anthropicMessageDeltaEventEventEnum);
-            if (obj is AnthropicMessageStartEvent.EventEnum anthropicMessageStartEventEventEnum)
-                return AnthropicMessageStartEvent.EventEnumToJsonValue(anthropicMessageStartEventEventEnum);
-            if (obj is AnthropicMessageStopEvent.EventEnum anthropicMessageStopEventEventEnum)
-                return AnthropicMessageStopEvent.EventEnumToJsonValue(anthropicMessageStopEventEventEnum);
-            if (obj is AnthropicMessagesRequest.ModalitiesEnum anthropicMessagesRequestModalitiesEnum)
-                return AnthropicMessagesRequest.ModalitiesEnumToJsonValue(anthropicMessagesRequestModalitiesEnum);
             if (obj is AnthropicMessagesResponse.RoleEnum anthropicMessagesResponseRoleEnum)
                 return AnthropicMessagesResponse.RoleEnumToJsonValue(anthropicMessagesResponseRoleEnum);
             if (obj is AudioContentPart.TypeEnum audioContentPartTypeEnum)
@@ -139,38 +125,18 @@ namespace AIStatsSdk.Client
                 return AudioSpeechRequest.FormatEnumToJsonValue(audioSpeechRequestFormatEnum);
             if (obj is BenchmarkId benchmarkId)
                 return BenchmarkIdValueConverter.ToJsonValue(benchmarkId);
-            if (obj is CacheControl.TypeEnum cacheControlTypeEnum)
-                return CacheControl.TypeEnumToJsonValue(cacheControlTypeEnum);
-            if (obj is CacheControl.TtlEnum cacheControlTtlEnum)
-                return CacheControl.TtlEnumToJsonValue(cacheControlTtlEnum);
-            if (obj is CacheControlCache.TypeEnum cacheControlCacheTypeEnum)
-                return CacheControlCache.TypeEnumToJsonValue(cacheControlCacheTypeEnum);
-            if (obj is CacheControlCache.TtlEnum cacheControlCacheTtlEnum)
-                return CacheControlCache.TtlEnumToJsonValue(cacheControlCacheTtlEnum);
             if (obj is ChatChoice.FinishReasonEnum chatChoiceFinishReasonEnum)
                 return ChatChoice.FinishReasonEnumToJsonValue(chatChoiceFinishReasonEnum);
-            if (obj is ChatCompletionsRequest.ModalitiesEnum chatCompletionsRequestModalitiesEnum)
-                return ChatCompletionsRequest.ModalitiesEnumToJsonValue(chatCompletionsRequestModalitiesEnum);
             if (obj is ChatCompletionsRequest.ServiceTierEnum chatCompletionsRequestServiceTierEnum)
                 return ChatCompletionsRequest.ServiceTierEnumToJsonValue(chatCompletionsRequestServiceTierEnum);
             if (obj is ChatCompletionsRequestToolsInner.TypeEnum chatCompletionsRequestToolsInnerTypeEnum)
                 return ChatCompletionsRequestToolsInner.TypeEnumToJsonValue(chatCompletionsRequestToolsInnerTypeEnum);
-            if (obj is ChatCompletionsStreamChunk.ObjectEnum chatCompletionsStreamChunkObjectEnum)
-                return ChatCompletionsStreamChunk.ObjectEnumToJsonValue(chatCompletionsStreamChunkObjectEnum);
             if (obj is ChatMessage.RoleEnum chatMessageRoleEnum)
                 return ChatMessage.RoleEnumToJsonValue(chatMessageRoleEnum);
-            if (obj is DebugOptions.TraceLevelEnum debugOptionsTraceLevelEnum)
-                return DebugOptions.TraceLevelEnumToJsonValue(debugOptionsTraceLevelEnum);
-            if (obj is DebugResponse.TraceLevelEnum debugResponseTraceLevelEnum)
-                return DebugResponse.TraceLevelEnumToJsonValue(debugResponseTraceLevelEnum);
             if (obj is ImageContentPart.TypeEnum imageContentPartTypeEnum)
                 return ImageContentPart.TypeEnumToJsonValue(imageContentPartTypeEnum);
             if (obj is ImageModerationInput.TypeEnum imageModerationInputTypeEnum)
                 return ImageModerationInput.TypeEnumToJsonValue(imageModerationInputTypeEnum);
-            if (obj is InputImageContentPart.TypeEnum inputImageContentPartTypeEnum)
-                return InputImageContentPart.TypeEnumToJsonValue(inputImageContentPartTypeEnum);
-            if (obj is InputTextContentPart.TypeEnum inputTextContentPartTypeEnum)
-                return InputTextContentPart.TypeEnumToJsonValue(inputTextContentPartTypeEnum);
             if (obj is ModelId modelId)
                 return ModelIdValueConverter.ToJsonValue(modelId);
             if (obj is MusicGenerateRequest.FormatEnum musicGenerateRequestFormatEnum)
@@ -189,44 +155,8 @@ namespace AIStatsSdk.Client
                 return ReasoningConfig.EffortEnumToJsonValue(reasoningConfigEffortEnum);
             if (obj is ReasoningConfig.SummaryEnum reasoningConfigSummaryEnum)
                 return ReasoningConfig.SummaryEnumToJsonValue(reasoningConfigSummaryEnum);
-            if (obj is ResponsesFunctionCallItem.TypeEnum responsesFunctionCallItemTypeEnum)
-                return ResponsesFunctionCallItem.TypeEnumToJsonValue(responsesFunctionCallItemTypeEnum);
-            if (obj is ResponsesFunctionCallOutputItem.TypeEnum responsesFunctionCallOutputItemTypeEnum)
-                return ResponsesFunctionCallOutputItem.TypeEnumToJsonValue(responsesFunctionCallOutputItemTypeEnum);
-            if (obj is ResponsesInputAudioItem.TypeEnum responsesInputAudioItemTypeEnum)
-                return ResponsesInputAudioItem.TypeEnumToJsonValue(responsesInputAudioItemTypeEnum);
-            if (obj is ResponsesInputImageItem.TypeEnum responsesInputImageItemTypeEnum)
-                return ResponsesInputImageItem.TypeEnumToJsonValue(responsesInputImageItemTypeEnum);
-            if (obj is ResponsesInputImageItem.DetailEnum responsesInputImageItemDetailEnum)
-                return ResponsesInputImageItem.DetailEnumToJsonValue(responsesInputImageItemDetailEnum);
-            if (obj is ResponsesInputTextItem.TypeEnum responsesInputTextItemTypeEnum)
-                return ResponsesInputTextItem.TypeEnumToJsonValue(responsesInputTextItemTypeEnum);
-            if (obj is ResponsesInputVideoItem.TypeEnum responsesInputVideoItemTypeEnum)
-                return ResponsesInputVideoItem.TypeEnumToJsonValue(responsesInputVideoItemTypeEnum);
-            if (obj is ResponsesMessageItem.TypeEnum responsesMessageItemTypeEnum)
-                return ResponsesMessageItem.TypeEnumToJsonValue(responsesMessageItemTypeEnum);
-            if (obj is ResponsesMessageItem.RoleEnum responsesMessageItemRoleEnum)
-                return ResponsesMessageItem.RoleEnumToJsonValue(responsesMessageItemRoleEnum);
-            if (obj is ResponsesOutputContent.TypeEnum responsesOutputContentTypeEnum)
-                return ResponsesOutputContent.TypeEnumToJsonValue(responsesOutputContentTypeEnum);
-            if (obj is ResponsesRequest.ModalitiesEnum responsesRequestModalitiesEnum)
-                return ResponsesRequest.ModalitiesEnumToJsonValue(responsesRequestModalitiesEnum);
             if (obj is ResponsesRequestReasoning.EffortEnum responsesRequestReasoningEffortEnum)
                 return ResponsesRequestReasoning.EffortEnumToJsonValue(responsesRequestReasoningEffortEnum);
-            if (obj is ResponsesStreamCompletedEvent.EventEnum responsesStreamCompletedEventEventEnum)
-                return ResponsesStreamCompletedEvent.EventEnumToJsonValue(responsesStreamCompletedEventEventEnum);
-            if (obj is ResponsesStreamCreatedEvent.EventEnum responsesStreamCreatedEventEventEnum)
-                return ResponsesStreamCreatedEvent.EventEnumToJsonValue(responsesStreamCreatedEventEventEnum);
-            if (obj is ResponsesStreamErrorEvent.EventEnum responsesStreamErrorEventEventEnum)
-                return ResponsesStreamErrorEvent.EventEnumToJsonValue(responsesStreamErrorEventEventEnum);
-            if (obj is ResponsesStreamFunctionCallArgumentsDeltaEvent.EventEnum responsesStreamFunctionCallArgumentsDeltaEventEventEnum)
-                return ResponsesStreamFunctionCallArgumentsDeltaEvent.EventEnumToJsonValue(responsesStreamFunctionCallArgumentsDeltaEventEventEnum);
-            if (obj is ResponsesStreamFunctionCallArgumentsDoneEvent.EventEnum responsesStreamFunctionCallArgumentsDoneEventEventEnum)
-                return ResponsesStreamFunctionCallArgumentsDoneEvent.EventEnumToJsonValue(responsesStreamFunctionCallArgumentsDoneEventEventEnum);
-            if (obj is ResponsesStreamOutputTextDeltaEvent.EventEnum responsesStreamOutputTextDeltaEventEventEnum)
-                return ResponsesStreamOutputTextDeltaEvent.EventEnumToJsonValue(responsesStreamOutputTextDeltaEventEventEnum);
-            if (obj is ResponsesStreamReasoningTextDeltaEvent.EventEnum responsesStreamReasoningTextDeltaEventEventEnum)
-                return ResponsesStreamReasoningTextDeltaEvent.EventEnumToJsonValue(responsesStreamReasoningTextDeltaEventEventEnum);
             if (obj is TextContentPart.TypeEnum textContentPartTypeEnum)
                 return TextContentPart.TypeEnumToJsonValue(textContentPartTypeEnum);
             if (obj is TextModerationInput.TypeEnum textModerationInputTypeEnum)

@@ -6,8 +6,6 @@ export const metadata = {
 	title: "Routing - Settings",
 };
 
-type RoutingMode = "balanced" | "price" | "latency" | "throughput";
-
 export default async function RoutingSettingsPage() {
 	const supabase = await createClient();
 	const teamId = await getTeamIdFromCookie();
@@ -31,7 +29,6 @@ export default async function RoutingSettingsPage() {
 			.eq("team_id", teamId)
 			.maybeSingle(),
 	]);
-
 	return (
 		<div className="space-y-6">
 			<header>
@@ -42,8 +39,10 @@ export default async function RoutingSettingsPage() {
 				</p>
 			</header>
 			<RoutingSettingsClient
-				initialMode={(settingsRow?.routing_mode as RoutingMode) ?? "balanced"}
-				initialBetaChannelEnabled={settingsRow?.beta_channel_enabled ?? false}
+				initialMode={(settingsRow?.routing_mode as any) ?? "balanced"}
+				initialBetaChannelEnabled={Boolean(
+					settingsRow?.beta_channel_enabled,
+				)}
 				teamName={teamRow?.name ?? null}
 			/>
 		</div>

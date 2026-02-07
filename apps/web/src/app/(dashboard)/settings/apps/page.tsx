@@ -19,12 +19,21 @@ type AppRow = {
 	url: string | null;
 	image_url: string | null;
 	is_public: boolean;
+	is_active: boolean;
 	last_seen: string | null;
 	created_at: string | null;
 };
 
-const INTERNAL_APP_TITLES = new Set(["ai stats chat"]);
-const INTERNAL_APP_KEY_PREFIXES = ["ai-stats-chat"];
+const INTERNAL_APP_TITLES = new Set([
+	"ai stats chat",
+	"ai stats playground",
+]);
+const INTERNAL_APP_KEY_PREFIXES = [
+	"ai-stats-chat",
+	"aistats-chat",
+	"ai-stats-playground",
+	"aistats-playground",
+];
 
 function isInternalApp(app: AppRow) {
 	const title = app.title?.trim().toLowerCase();
@@ -68,7 +77,7 @@ export default async function AppsSettingsPage() {
 		? await supabase
 				.from("api_apps")
 				.select(
-					"id, title, app_key, url, image_url, is_public, last_seen, created_at"
+					"id, title, app_key, url, image_url, is_public, is_active, last_seen, created_at"
 				)
 				.eq("team_id", initialTeamId)
 				.order("last_seen", { ascending: false })

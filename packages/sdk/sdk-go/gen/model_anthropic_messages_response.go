@@ -27,8 +27,6 @@ type AnthropicMessagesResponse struct {
 	StopReason *string `json:"stop_reason,omitempty"`
 	StopSequence *string `json:"stop_sequence,omitempty"`
 	Usage *AnthropicUsage `json:"usage,omitempty"`
-	Meta map[string]interface{} `json:"meta,omitempty"`
-	Debug *DebugResponse `json:"debug,omitempty"`
 }
 
 // NewAnthropicMessagesResponse instantiates a new AnthropicMessagesResponse object
@@ -304,70 +302,6 @@ func (o *AnthropicMessagesResponse) SetUsage(v AnthropicUsage) {
 	o.Usage = &v
 }
 
-// GetMeta returns the Meta field value if set, zero value otherwise.
-func (o *AnthropicMessagesResponse) GetMeta() map[string]interface{} {
-	if o == nil || IsNil(o.Meta) {
-		var ret map[string]interface{}
-		return ret
-	}
-	return o.Meta
-}
-
-// GetMetaOk returns a tuple with the Meta field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicMessagesResponse) GetMetaOk() (map[string]interface{}, bool) {
-	if o == nil || IsNil(o.Meta) {
-		return map[string]interface{}{}, false
-	}
-	return o.Meta, true
-}
-
-// HasMeta returns a boolean if a field has been set.
-func (o *AnthropicMessagesResponse) HasMeta() bool {
-	if o != nil && !IsNil(o.Meta) {
-		return true
-	}
-
-	return false
-}
-
-// SetMeta gets a reference to the given map[string]interface{} and assigns it to the Meta field.
-func (o *AnthropicMessagesResponse) SetMeta(v map[string]interface{}) {
-	o.Meta = v
-}
-
-// GetDebug returns the Debug field value if set, zero value otherwise.
-func (o *AnthropicMessagesResponse) GetDebug() DebugResponse {
-	if o == nil || IsNil(o.Debug) {
-		var ret DebugResponse
-		return ret
-	}
-	return *o.Debug
-}
-
-// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicMessagesResponse) GetDebugOk() (*DebugResponse, bool) {
-	if o == nil || IsNil(o.Debug) {
-		return nil, false
-	}
-	return o.Debug, true
-}
-
-// HasDebug returns a boolean if a field has been set.
-func (o *AnthropicMessagesResponse) HasDebug() bool {
-	if o != nil && !IsNil(o.Debug) {
-		return true
-	}
-
-	return false
-}
-
-// SetDebug gets a reference to the given DebugResponse and assigns it to the Debug field.
-func (o *AnthropicMessagesResponse) SetDebug(v DebugResponse) {
-	o.Debug = &v
-}
-
 func (o AnthropicMessagesResponse) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -401,12 +335,6 @@ func (o AnthropicMessagesResponse) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Usage) {
 		toSerialize["usage"] = o.Usage
-	}
-	if !IsNil(o.Meta) {
-		toSerialize["meta"] = o.Meta
-	}
-	if !IsNil(o.Debug) {
-		toSerialize["debug"] = o.Debug
 	}
 	return toSerialize, nil
 }

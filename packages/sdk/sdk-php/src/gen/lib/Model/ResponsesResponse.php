@@ -59,40 +59,12 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $openAPITypes = [
         'id' => 'string',
         'object' => 'string',
-        'created_at' => 'int',
-        'status' => 'string',
-        'completed_at' => 'int',
-        'error' => 'object',
-        'incomplete_details' => 'object',
-        'instructions' => 'string',
-        'max_output_tokens' => 'int',
-        'max_tool_calls' => 'int',
+        'created' => 'int',
         'model' => 'string',
-        'output' => '\AIStats\Sdk\Model\ResponsesOutputItem[]',
-        'parallel_tool_calls' => 'bool',
-        'previous_response_id' => 'string',
-        'reasoning' => '\AIStats\Sdk\Model\ResponsesResponseReasoning',
-        'frequency_penalty' => 'float',
-        'presence_penalty' => 'float',
-        'store' => 'bool',
-        'temperature' => 'float',
-        'text' => 'object',
-        'tool_choice' => '\AIStats\Sdk\Model\ChatCompletionsRequestToolChoice',
-        'tools' => 'object[]',
-        'top_logprobs' => 'int',
-        'top_p' => 'float',
-        'truncation' => 'string',
-        'user' => 'string',
-        'background' => 'bool',
-        'service_tier' => 'string',
-        'safety_identifier' => 'string',
-        'prompt_cache_key' => 'string',
-        'metadata' => 'object',
-        'native_response_id' => 'string',
-        'meta' => 'object',
-        'debug' => '\AIStats\Sdk\Model\DebugResponse',
-        'upstream_request' => '\AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest',
-        'upstream_response' => '\AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest',
+        'content' => 'object[]',
+        'role' => 'string',
+        'stop_reason' => 'string',
+        'type' => 'string',
         'usage' => '\AIStats\Sdk\Model\Usage'
     ];
 
@@ -106,40 +78,12 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $openAPIFormats = [
         'id' => null,
         'object' => null,
-        'created_at' => null,
-        'status' => null,
-        'completed_at' => null,
-        'error' => null,
-        'incomplete_details' => null,
-        'instructions' => null,
-        'max_output_tokens' => null,
-        'max_tool_calls' => null,
+        'created' => null,
         'model' => null,
-        'output' => null,
-        'parallel_tool_calls' => null,
-        'previous_response_id' => null,
-        'reasoning' => null,
-        'frequency_penalty' => null,
-        'presence_penalty' => null,
-        'store' => null,
-        'temperature' => null,
-        'text' => null,
-        'tool_choice' => null,
-        'tools' => null,
-        'top_logprobs' => null,
-        'top_p' => null,
-        'truncation' => null,
-        'user' => null,
-        'background' => null,
-        'service_tier' => null,
-        'safety_identifier' => null,
-        'prompt_cache_key' => null,
-        'metadata' => null,
-        'native_response_id' => null,
-        'meta' => null,
-        'debug' => null,
-        'upstream_request' => null,
-        'upstream_response' => null,
+        'content' => null,
+        'role' => null,
+        'stop_reason' => null,
+        'type' => null,
         'usage' => null
     ];
 
@@ -151,40 +95,12 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static array $openAPINullables = [
         'id' => false,
         'object' => false,
-        'created_at' => false,
-        'status' => false,
-        'completed_at' => true,
-        'error' => true,
-        'incomplete_details' => true,
-        'instructions' => true,
-        'max_output_tokens' => true,
-        'max_tool_calls' => true,
+        'created' => false,
         'model' => false,
-        'output' => false,
-        'parallel_tool_calls' => false,
-        'previous_response_id' => true,
-        'reasoning' => false,
-        'frequency_penalty' => true,
-        'presence_penalty' => true,
-        'store' => true,
-        'temperature' => true,
-        'text' => true,
-        'tool_choice' => false,
-        'tools' => false,
-        'top_logprobs' => true,
-        'top_p' => true,
-        'truncation' => false,
-        'user' => true,
-        'background' => true,
-        'service_tier' => true,
-        'safety_identifier' => true,
-        'prompt_cache_key' => true,
-        'metadata' => false,
-        'native_response_id' => false,
-        'meta' => false,
-        'debug' => false,
-        'upstream_request' => false,
-        'upstream_response' => false,
+        'content' => false,
+        'role' => false,
+        'stop_reason' => false,
+        'type' => false,
         'usage' => false
     ];
 
@@ -276,40 +192,12 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $attributeMap = [
         'id' => 'id',
         'object' => 'object',
-        'created_at' => 'created_at',
-        'status' => 'status',
-        'completed_at' => 'completed_at',
-        'error' => 'error',
-        'incomplete_details' => 'incomplete_details',
-        'instructions' => 'instructions',
-        'max_output_tokens' => 'max_output_tokens',
-        'max_tool_calls' => 'max_tool_calls',
+        'created' => 'created',
         'model' => 'model',
-        'output' => 'output',
-        'parallel_tool_calls' => 'parallel_tool_calls',
-        'previous_response_id' => 'previous_response_id',
-        'reasoning' => 'reasoning',
-        'frequency_penalty' => 'frequency_penalty',
-        'presence_penalty' => 'presence_penalty',
-        'store' => 'store',
-        'temperature' => 'temperature',
-        'text' => 'text',
-        'tool_choice' => 'tool_choice',
-        'tools' => 'tools',
-        'top_logprobs' => 'top_logprobs',
-        'top_p' => 'top_p',
-        'truncation' => 'truncation',
-        'user' => 'user',
-        'background' => 'background',
-        'service_tier' => 'service_tier',
-        'safety_identifier' => 'safety_identifier',
-        'prompt_cache_key' => 'prompt_cache_key',
-        'metadata' => 'metadata',
-        'native_response_id' => 'nativeResponseId',
-        'meta' => 'meta',
-        'debug' => 'debug',
-        'upstream_request' => 'upstream_request',
-        'upstream_response' => 'upstream_response',
+        'content' => 'content',
+        'role' => 'role',
+        'stop_reason' => 'stop_reason',
+        'type' => 'type',
         'usage' => 'usage'
     ];
 
@@ -321,40 +209,12 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $setters = [
         'id' => 'setId',
         'object' => 'setObject',
-        'created_at' => 'setCreatedAt',
-        'status' => 'setStatus',
-        'completed_at' => 'setCompletedAt',
-        'error' => 'setError',
-        'incomplete_details' => 'setIncompleteDetails',
-        'instructions' => 'setInstructions',
-        'max_output_tokens' => 'setMaxOutputTokens',
-        'max_tool_calls' => 'setMaxToolCalls',
+        'created' => 'setCreated',
         'model' => 'setModel',
-        'output' => 'setOutput',
-        'parallel_tool_calls' => 'setParallelToolCalls',
-        'previous_response_id' => 'setPreviousResponseId',
-        'reasoning' => 'setReasoning',
-        'frequency_penalty' => 'setFrequencyPenalty',
-        'presence_penalty' => 'setPresencePenalty',
-        'store' => 'setStore',
-        'temperature' => 'setTemperature',
-        'text' => 'setText',
-        'tool_choice' => 'setToolChoice',
-        'tools' => 'setTools',
-        'top_logprobs' => 'setTopLogprobs',
-        'top_p' => 'setTopP',
-        'truncation' => 'setTruncation',
-        'user' => 'setUser',
-        'background' => 'setBackground',
-        'service_tier' => 'setServiceTier',
-        'safety_identifier' => 'setSafetyIdentifier',
-        'prompt_cache_key' => 'setPromptCacheKey',
-        'metadata' => 'setMetadata',
-        'native_response_id' => 'setNativeResponseId',
-        'meta' => 'setMeta',
-        'debug' => 'setDebug',
-        'upstream_request' => 'setUpstreamRequest',
-        'upstream_response' => 'setUpstreamResponse',
+        'content' => 'setContent',
+        'role' => 'setRole',
+        'stop_reason' => 'setStopReason',
+        'type' => 'setType',
         'usage' => 'setUsage'
     ];
 
@@ -366,40 +226,12 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     protected static $getters = [
         'id' => 'getId',
         'object' => 'getObject',
-        'created_at' => 'getCreatedAt',
-        'status' => 'getStatus',
-        'completed_at' => 'getCompletedAt',
-        'error' => 'getError',
-        'incomplete_details' => 'getIncompleteDetails',
-        'instructions' => 'getInstructions',
-        'max_output_tokens' => 'getMaxOutputTokens',
-        'max_tool_calls' => 'getMaxToolCalls',
+        'created' => 'getCreated',
         'model' => 'getModel',
-        'output' => 'getOutput',
-        'parallel_tool_calls' => 'getParallelToolCalls',
-        'previous_response_id' => 'getPreviousResponseId',
-        'reasoning' => 'getReasoning',
-        'frequency_penalty' => 'getFrequencyPenalty',
-        'presence_penalty' => 'getPresencePenalty',
-        'store' => 'getStore',
-        'temperature' => 'getTemperature',
-        'text' => 'getText',
-        'tool_choice' => 'getToolChoice',
-        'tools' => 'getTools',
-        'top_logprobs' => 'getTopLogprobs',
-        'top_p' => 'getTopP',
-        'truncation' => 'getTruncation',
-        'user' => 'getUser',
-        'background' => 'getBackground',
-        'service_tier' => 'getServiceTier',
-        'safety_identifier' => 'getSafetyIdentifier',
-        'prompt_cache_key' => 'getPromptCacheKey',
-        'metadata' => 'getMetadata',
-        'native_response_id' => 'getNativeResponseId',
-        'meta' => 'getMeta',
-        'debug' => 'getDebug',
-        'upstream_request' => 'getUpstreamRequest',
-        'upstream_response' => 'getUpstreamResponse',
+        'content' => 'getContent',
+        'role' => 'getRole',
+        'stop_reason' => 'getStopReason',
+        'type' => 'getType',
         'usage' => 'getUsage'
     ];
 
@@ -462,40 +294,12 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     {
         $this->setIfExists('id', $data ?? [], null);
         $this->setIfExists('object', $data ?? [], null);
-        $this->setIfExists('created_at', $data ?? [], null);
-        $this->setIfExists('status', $data ?? [], null);
-        $this->setIfExists('completed_at', $data ?? [], null);
-        $this->setIfExists('error', $data ?? [], null);
-        $this->setIfExists('incomplete_details', $data ?? [], null);
-        $this->setIfExists('instructions', $data ?? [], null);
-        $this->setIfExists('max_output_tokens', $data ?? [], null);
-        $this->setIfExists('max_tool_calls', $data ?? [], null);
+        $this->setIfExists('created', $data ?? [], null);
         $this->setIfExists('model', $data ?? [], null);
-        $this->setIfExists('output', $data ?? [], null);
-        $this->setIfExists('parallel_tool_calls', $data ?? [], null);
-        $this->setIfExists('previous_response_id', $data ?? [], null);
-        $this->setIfExists('reasoning', $data ?? [], null);
-        $this->setIfExists('frequency_penalty', $data ?? [], null);
-        $this->setIfExists('presence_penalty', $data ?? [], null);
-        $this->setIfExists('store', $data ?? [], null);
-        $this->setIfExists('temperature', $data ?? [], null);
-        $this->setIfExists('text', $data ?? [], null);
-        $this->setIfExists('tool_choice', $data ?? [], null);
-        $this->setIfExists('tools', $data ?? [], null);
-        $this->setIfExists('top_logprobs', $data ?? [], null);
-        $this->setIfExists('top_p', $data ?? [], null);
-        $this->setIfExists('truncation', $data ?? [], null);
-        $this->setIfExists('user', $data ?? [], null);
-        $this->setIfExists('background', $data ?? [], null);
-        $this->setIfExists('service_tier', $data ?? [], null);
-        $this->setIfExists('safety_identifier', $data ?? [], null);
-        $this->setIfExists('prompt_cache_key', $data ?? [], null);
-        $this->setIfExists('metadata', $data ?? [], null);
-        $this->setIfExists('native_response_id', $data ?? [], null);
-        $this->setIfExists('meta', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
-        $this->setIfExists('upstream_request', $data ?? [], null);
-        $this->setIfExists('upstream_response', $data ?? [], null);
+        $this->setIfExists('content', $data ?? [], null);
+        $this->setIfExists('role', $data ?? [], null);
+        $this->setIfExists('stop_reason', $data ?? [], null);
+        $this->setIfExists('type', $data ?? [], null);
         $this->setIfExists('usage', $data ?? [], null);
     }
 
@@ -596,259 +400,28 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     }
 
     /**
-     * Gets created_at
+     * Gets created
      *
      * @return int|null
      */
-    public function getCreatedAt()
+    public function getCreated()
     {
-        return $this->container['created_at'];
+        return $this->container['created'];
     }
 
     /**
-     * Sets created_at
+     * Sets created
      *
-     * @param int|null $created_at created_at
+     * @param int|null $created created
      *
      * @return self
      */
-    public function setCreatedAt($created_at)
+    public function setCreated($created)
     {
-        if (is_null($created_at)) {
-            throw new \InvalidArgumentException('non-nullable created_at cannot be null');
+        if (is_null($created)) {
+            throw new \InvalidArgumentException('non-nullable created cannot be null');
         }
-        $this->container['created_at'] = $created_at;
-
-        return $this;
-    }
-
-    /**
-     * Gets status
-     *
-     * @return string|null
-     */
-    public function getStatus()
-    {
-        return $this->container['status'];
-    }
-
-    /**
-     * Sets status
-     *
-     * @param string|null $status status
-     *
-     * @return self
-     */
-    public function setStatus($status)
-    {
-        if (is_null($status)) {
-            throw new \InvalidArgumentException('non-nullable status cannot be null');
-        }
-        $this->container['status'] = $status;
-
-        return $this;
-    }
-
-    /**
-     * Gets completed_at
-     *
-     * @return int|null
-     */
-    public function getCompletedAt()
-    {
-        return $this->container['completed_at'];
-    }
-
-    /**
-     * Sets completed_at
-     *
-     * @param int|null $completed_at completed_at
-     *
-     * @return self
-     */
-    public function setCompletedAt($completed_at)
-    {
-        if (is_null($completed_at)) {
-            array_push($this->openAPINullablesSetToNull, 'completed_at');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('completed_at', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['completed_at'] = $completed_at;
-
-        return $this;
-    }
-
-    /**
-     * Gets error
-     *
-     * @return object|null
-     */
-    public function getError()
-    {
-        return $this->container['error'];
-    }
-
-    /**
-     * Sets error
-     *
-     * @param object|null $error error
-     *
-     * @return self
-     */
-    public function setError($error)
-    {
-        if (is_null($error)) {
-            array_push($this->openAPINullablesSetToNull, 'error');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('error', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['error'] = $error;
-
-        return $this;
-    }
-
-    /**
-     * Gets incomplete_details
-     *
-     * @return object|null
-     */
-    public function getIncompleteDetails()
-    {
-        return $this->container['incomplete_details'];
-    }
-
-    /**
-     * Sets incomplete_details
-     *
-     * @param object|null $incomplete_details incomplete_details
-     *
-     * @return self
-     */
-    public function setIncompleteDetails($incomplete_details)
-    {
-        if (is_null($incomplete_details)) {
-            array_push($this->openAPINullablesSetToNull, 'incomplete_details');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('incomplete_details', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['incomplete_details'] = $incomplete_details;
-
-        return $this;
-    }
-
-    /**
-     * Gets instructions
-     *
-     * @return string|null
-     */
-    public function getInstructions()
-    {
-        return $this->container['instructions'];
-    }
-
-    /**
-     * Sets instructions
-     *
-     * @param string|null $instructions instructions
-     *
-     * @return self
-     */
-    public function setInstructions($instructions)
-    {
-        if (is_null($instructions)) {
-            array_push($this->openAPINullablesSetToNull, 'instructions');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('instructions', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['instructions'] = $instructions;
-
-        return $this;
-    }
-
-    /**
-     * Gets max_output_tokens
-     *
-     * @return int|null
-     */
-    public function getMaxOutputTokens()
-    {
-        return $this->container['max_output_tokens'];
-    }
-
-    /**
-     * Sets max_output_tokens
-     *
-     * @param int|null $max_output_tokens max_output_tokens
-     *
-     * @return self
-     */
-    public function setMaxOutputTokens($max_output_tokens)
-    {
-        if (is_null($max_output_tokens)) {
-            array_push($this->openAPINullablesSetToNull, 'max_output_tokens');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('max_output_tokens', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['max_output_tokens'] = $max_output_tokens;
-
-        return $this;
-    }
-
-    /**
-     * Gets max_tool_calls
-     *
-     * @return int|null
-     */
-    public function getMaxToolCalls()
-    {
-        return $this->container['max_tool_calls'];
-    }
-
-    /**
-     * Sets max_tool_calls
-     *
-     * @param int|null $max_tool_calls max_tool_calls
-     *
-     * @return self
-     */
-    public function setMaxToolCalls($max_tool_calls)
-    {
-        if (is_null($max_tool_calls)) {
-            array_push($this->openAPINullablesSetToNull, 'max_tool_calls');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('max_tool_calls', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['max_tool_calls'] = $max_tool_calls;
+        $this->container['created'] = $created;
 
         return $this;
     }
@@ -881,767 +454,109 @@ class ResponsesResponse implements ModelInterface, ArrayAccess, \JsonSerializabl
     }
 
     /**
-     * Gets output
-     *
-     * @return \AIStats\Sdk\Model\ResponsesOutputItem[]|null
-     */
-    public function getOutput()
-    {
-        return $this->container['output'];
-    }
-
-    /**
-     * Sets output
-     *
-     * @param \AIStats\Sdk\Model\ResponsesOutputItem[]|null $output output
-     *
-     * @return self
-     */
-    public function setOutput($output)
-    {
-        if (is_null($output)) {
-            throw new \InvalidArgumentException('non-nullable output cannot be null');
-        }
-        $this->container['output'] = $output;
-
-        return $this;
-    }
-
-    /**
-     * Gets parallel_tool_calls
-     *
-     * @return bool|null
-     */
-    public function getParallelToolCalls()
-    {
-        return $this->container['parallel_tool_calls'];
-    }
-
-    /**
-     * Sets parallel_tool_calls
-     *
-     * @param bool|null $parallel_tool_calls parallel_tool_calls
-     *
-     * @return self
-     */
-    public function setParallelToolCalls($parallel_tool_calls)
-    {
-        if (is_null($parallel_tool_calls)) {
-            throw new \InvalidArgumentException('non-nullable parallel_tool_calls cannot be null');
-        }
-        $this->container['parallel_tool_calls'] = $parallel_tool_calls;
-
-        return $this;
-    }
-
-    /**
-     * Gets previous_response_id
-     *
-     * @return string|null
-     */
-    public function getPreviousResponseId()
-    {
-        return $this->container['previous_response_id'];
-    }
-
-    /**
-     * Sets previous_response_id
-     *
-     * @param string|null $previous_response_id previous_response_id
-     *
-     * @return self
-     */
-    public function setPreviousResponseId($previous_response_id)
-    {
-        if (is_null($previous_response_id)) {
-            array_push($this->openAPINullablesSetToNull, 'previous_response_id');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('previous_response_id', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['previous_response_id'] = $previous_response_id;
-
-        return $this;
-    }
-
-    /**
-     * Gets reasoning
-     *
-     * @return \AIStats\Sdk\Model\ResponsesResponseReasoning|null
-     */
-    public function getReasoning()
-    {
-        return $this->container['reasoning'];
-    }
-
-    /**
-     * Sets reasoning
-     *
-     * @param \AIStats\Sdk\Model\ResponsesResponseReasoning|null $reasoning reasoning
-     *
-     * @return self
-     */
-    public function setReasoning($reasoning)
-    {
-        if (is_null($reasoning)) {
-            throw new \InvalidArgumentException('non-nullable reasoning cannot be null');
-        }
-        $this->container['reasoning'] = $reasoning;
-
-        return $this;
-    }
-
-    /**
-     * Gets frequency_penalty
-     *
-     * @return float|null
-     */
-    public function getFrequencyPenalty()
-    {
-        return $this->container['frequency_penalty'];
-    }
-
-    /**
-     * Sets frequency_penalty
-     *
-     * @param float|null $frequency_penalty frequency_penalty
-     *
-     * @return self
-     */
-    public function setFrequencyPenalty($frequency_penalty)
-    {
-        if (is_null($frequency_penalty)) {
-            array_push($this->openAPINullablesSetToNull, 'frequency_penalty');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('frequency_penalty', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['frequency_penalty'] = $frequency_penalty;
-
-        return $this;
-    }
-
-    /**
-     * Gets presence_penalty
-     *
-     * @return float|null
-     */
-    public function getPresencePenalty()
-    {
-        return $this->container['presence_penalty'];
-    }
-
-    /**
-     * Sets presence_penalty
-     *
-     * @param float|null $presence_penalty presence_penalty
-     *
-     * @return self
-     */
-    public function setPresencePenalty($presence_penalty)
-    {
-        if (is_null($presence_penalty)) {
-            array_push($this->openAPINullablesSetToNull, 'presence_penalty');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('presence_penalty', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['presence_penalty'] = $presence_penalty;
-
-        return $this;
-    }
-
-    /**
-     * Gets store
-     *
-     * @return bool|null
-     */
-    public function getStore()
-    {
-        return $this->container['store'];
-    }
-
-    /**
-     * Sets store
-     *
-     * @param bool|null $store store
-     *
-     * @return self
-     */
-    public function setStore($store)
-    {
-        if (is_null($store)) {
-            array_push($this->openAPINullablesSetToNull, 'store');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('store', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['store'] = $store;
-
-        return $this;
-    }
-
-    /**
-     * Gets temperature
-     *
-     * @return float|null
-     */
-    public function getTemperature()
-    {
-        return $this->container['temperature'];
-    }
-
-    /**
-     * Sets temperature
-     *
-     * @param float|null $temperature temperature
-     *
-     * @return self
-     */
-    public function setTemperature($temperature)
-    {
-        if (is_null($temperature)) {
-            array_push($this->openAPINullablesSetToNull, 'temperature');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('temperature', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['temperature'] = $temperature;
-
-        return $this;
-    }
-
-    /**
-     * Gets text
-     *
-     * @return object|null
-     */
-    public function getText()
-    {
-        return $this->container['text'];
-    }
-
-    /**
-     * Sets text
-     *
-     * @param object|null $text text
-     *
-     * @return self
-     */
-    public function setText($text)
-    {
-        if (is_null($text)) {
-            array_push($this->openAPINullablesSetToNull, 'text');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('text', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['text'] = $text;
-
-        return $this;
-    }
-
-    /**
-     * Gets tool_choice
-     *
-     * @return \AIStats\Sdk\Model\ChatCompletionsRequestToolChoice|null
-     */
-    public function getToolChoice()
-    {
-        return $this->container['tool_choice'];
-    }
-
-    /**
-     * Sets tool_choice
-     *
-     * @param \AIStats\Sdk\Model\ChatCompletionsRequestToolChoice|null $tool_choice tool_choice
-     *
-     * @return self
-     */
-    public function setToolChoice($tool_choice)
-    {
-        if (is_null($tool_choice)) {
-            throw new \InvalidArgumentException('non-nullable tool_choice cannot be null');
-        }
-        $this->container['tool_choice'] = $tool_choice;
-
-        return $this;
-    }
-
-    /**
-     * Gets tools
+     * Gets content
      *
      * @return object[]|null
      */
-    public function getTools()
+    public function getContent()
     {
-        return $this->container['tools'];
+        return $this->container['content'];
     }
 
     /**
-     * Sets tools
+     * Sets content
      *
-     * @param object[]|null $tools tools
+     * @param object[]|null $content content
      *
      * @return self
      */
-    public function setTools($tools)
+    public function setContent($content)
     {
-        if (is_null($tools)) {
-            throw new \InvalidArgumentException('non-nullable tools cannot be null');
+        if (is_null($content)) {
+            throw new \InvalidArgumentException('non-nullable content cannot be null');
         }
-        $this->container['tools'] = $tools;
+        $this->container['content'] = $content;
 
         return $this;
     }
 
     /**
-     * Gets top_logprobs
-     *
-     * @return int|null
-     */
-    public function getTopLogprobs()
-    {
-        return $this->container['top_logprobs'];
-    }
-
-    /**
-     * Sets top_logprobs
-     *
-     * @param int|null $top_logprobs top_logprobs
-     *
-     * @return self
-     */
-    public function setTopLogprobs($top_logprobs)
-    {
-        if (is_null($top_logprobs)) {
-            array_push($this->openAPINullablesSetToNull, 'top_logprobs');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('top_logprobs', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['top_logprobs'] = $top_logprobs;
-
-        return $this;
-    }
-
-    /**
-     * Gets top_p
-     *
-     * @return float|null
-     */
-    public function getTopP()
-    {
-        return $this->container['top_p'];
-    }
-
-    /**
-     * Sets top_p
-     *
-     * @param float|null $top_p top_p
-     *
-     * @return self
-     */
-    public function setTopP($top_p)
-    {
-        if (is_null($top_p)) {
-            array_push($this->openAPINullablesSetToNull, 'top_p');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('top_p', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['top_p'] = $top_p;
-
-        return $this;
-    }
-
-    /**
-     * Gets truncation
+     * Gets role
      *
      * @return string|null
      */
-    public function getTruncation()
+    public function getRole()
     {
-        return $this->container['truncation'];
+        return $this->container['role'];
     }
 
     /**
-     * Sets truncation
+     * Sets role
      *
-     * @param string|null $truncation truncation
+     * @param string|null $role role
      *
      * @return self
      */
-    public function setTruncation($truncation)
+    public function setRole($role)
     {
-        if (is_null($truncation)) {
-            throw new \InvalidArgumentException('non-nullable truncation cannot be null');
+        if (is_null($role)) {
+            throw new \InvalidArgumentException('non-nullable role cannot be null');
         }
-        $this->container['truncation'] = $truncation;
+        $this->container['role'] = $role;
 
         return $this;
     }
 
     /**
-     * Gets user
+     * Gets stop_reason
      *
      * @return string|null
      */
-    public function getUser()
+    public function getStopReason()
     {
-        return $this->container['user'];
+        return $this->container['stop_reason'];
     }
 
     /**
-     * Sets user
+     * Sets stop_reason
      *
-     * @param string|null $user user
+     * @param string|null $stop_reason stop_reason
      *
      * @return self
      */
-    public function setUser($user)
+    public function setStopReason($stop_reason)
     {
-        if (is_null($user)) {
-            array_push($this->openAPINullablesSetToNull, 'user');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('user', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
+        if (is_null($stop_reason)) {
+            throw new \InvalidArgumentException('non-nullable stop_reason cannot be null');
         }
-        $this->container['user'] = $user;
+        $this->container['stop_reason'] = $stop_reason;
 
         return $this;
     }
 
     /**
-     * Gets background
-     *
-     * @return bool|null
-     */
-    public function getBackground()
-    {
-        return $this->container['background'];
-    }
-
-    /**
-     * Sets background
-     *
-     * @param bool|null $background background
-     *
-     * @return self
-     */
-    public function setBackground($background)
-    {
-        if (is_null($background)) {
-            array_push($this->openAPINullablesSetToNull, 'background');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('background', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['background'] = $background;
-
-        return $this;
-    }
-
-    /**
-     * Gets service_tier
+     * Gets type
      *
      * @return string|null
      */
-    public function getServiceTier()
+    public function getType()
     {
-        return $this->container['service_tier'];
+        return $this->container['type'];
     }
 
     /**
-     * Sets service_tier
+     * Sets type
      *
-     * @param string|null $service_tier service_tier
+     * @param string|null $type type
      *
      * @return self
      */
-    public function setServiceTier($service_tier)
+    public function setType($type)
     {
-        if (is_null($service_tier)) {
-            array_push($this->openAPINullablesSetToNull, 'service_tier');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('service_tier', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
+        if (is_null($type)) {
+            throw new \InvalidArgumentException('non-nullable type cannot be null');
         }
-        $this->container['service_tier'] = $service_tier;
-
-        return $this;
-    }
-
-    /**
-     * Gets safety_identifier
-     *
-     * @return string|null
-     */
-    public function getSafetyIdentifier()
-    {
-        return $this->container['safety_identifier'];
-    }
-
-    /**
-     * Sets safety_identifier
-     *
-     * @param string|null $safety_identifier safety_identifier
-     *
-     * @return self
-     */
-    public function setSafetyIdentifier($safety_identifier)
-    {
-        if (is_null($safety_identifier)) {
-            array_push($this->openAPINullablesSetToNull, 'safety_identifier');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('safety_identifier', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['safety_identifier'] = $safety_identifier;
-
-        return $this;
-    }
-
-    /**
-     * Gets prompt_cache_key
-     *
-     * @return string|null
-     */
-    public function getPromptCacheKey()
-    {
-        return $this->container['prompt_cache_key'];
-    }
-
-    /**
-     * Sets prompt_cache_key
-     *
-     * @param string|null $prompt_cache_key prompt_cache_key
-     *
-     * @return self
-     */
-    public function setPromptCacheKey($prompt_cache_key)
-    {
-        if (is_null($prompt_cache_key)) {
-            array_push($this->openAPINullablesSetToNull, 'prompt_cache_key');
-        } else {
-            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
-            $index = array_search('prompt_cache_key', $nullablesSetToNull);
-            if ($index !== FALSE) {
-                unset($nullablesSetToNull[$index]);
-                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
-            }
-        }
-        $this->container['prompt_cache_key'] = $prompt_cache_key;
-
-        return $this;
-    }
-
-    /**
-     * Gets metadata
-     *
-     * @return object|null
-     */
-    public function getMetadata()
-    {
-        return $this->container['metadata'];
-    }
-
-    /**
-     * Sets metadata
-     *
-     * @param object|null $metadata metadata
-     *
-     * @return self
-     */
-    public function setMetadata($metadata)
-    {
-        if (is_null($metadata)) {
-            throw new \InvalidArgumentException('non-nullable metadata cannot be null');
-        }
-        $this->container['metadata'] = $metadata;
-
-        return $this;
-    }
-
-    /**
-     * Gets native_response_id
-     *
-     * @return string|null
-     */
-    public function getNativeResponseId()
-    {
-        return $this->container['native_response_id'];
-    }
-
-    /**
-     * Sets native_response_id
-     *
-     * @param string|null $native_response_id native_response_id
-     *
-     * @return self
-     */
-    public function setNativeResponseId($native_response_id)
-    {
-        if (is_null($native_response_id)) {
-            throw new \InvalidArgumentException('non-nullable native_response_id cannot be null');
-        }
-        $this->container['native_response_id'] = $native_response_id;
-
-        return $this;
-    }
-
-    /**
-     * Gets meta
-     *
-     * @return object|null
-     */
-    public function getMeta()
-    {
-        return $this->container['meta'];
-    }
-
-    /**
-     * Sets meta
-     *
-     * @param object|null $meta meta
-     *
-     * @return self
-     */
-    public function setMeta($meta)
-    {
-        if (is_null($meta)) {
-            throw new \InvalidArgumentException('non-nullable meta cannot be null');
-        }
-        $this->container['meta'] = $meta;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugResponse|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugResponse|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
-
-        return $this;
-    }
-
-    /**
-     * Gets upstream_request
-     *
-     * @return \AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest|null
-     */
-    public function getUpstreamRequest()
-    {
-        return $this->container['upstream_request'];
-    }
-
-    /**
-     * Sets upstream_request
-     *
-     * @param \AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest|null $upstream_request upstream_request
-     *
-     * @return self
-     */
-    public function setUpstreamRequest($upstream_request)
-    {
-        if (is_null($upstream_request)) {
-            throw new \InvalidArgumentException('non-nullable upstream_request cannot be null');
-        }
-        $this->container['upstream_request'] = $upstream_request;
-
-        return $this;
-    }
-
-    /**
-     * Gets upstream_response
-     *
-     * @return \AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest|null
-     */
-    public function getUpstreamResponse()
-    {
-        return $this->container['upstream_response'];
-    }
-
-    /**
-     * Sets upstream_response
-     *
-     * @param \AIStats\Sdk\Model\ChatCompletionsResponseUpstreamRequest|null $upstream_response upstream_response
-     *
-     * @return self
-     */
-    public function setUpstreamResponse($upstream_response)
-    {
-        if (is_null($upstream_response)) {
-            throw new \InvalidArgumentException('non-nullable upstream_response cannot be null');
-        }
-        $this->container['upstream_response'] = $upstream_response;
+        $this->container['type'] = $type;
 
         return $this;
     }

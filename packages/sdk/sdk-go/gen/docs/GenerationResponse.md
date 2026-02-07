@@ -19,7 +19,7 @@ Name | Type | Description | Notes
 **ErrorMessage** | Pointer to **NullableString** |  | [optional] 
 **LatencyMs** | Pointer to **float32** |  | [optional] 
 **GenerationMs** | Pointer to **float32** |  | [optional] 
-**Usage** | Pointer to [**Usage**](Usage.md) |  | [optional] 
+**Usage** | Pointer to [**NullableGenerationResponseUsage**](GenerationResponseUsage.md) |  | [optional] 
 **CostNanos** | Pointer to **float32** |  | [optional] 
 **Currency** | Pointer to **string** |  | [optional] 
 **PricingLines** | Pointer to **[]map[string]interface{}** |  | [optional] 
@@ -462,20 +462,20 @@ HasGenerationMs returns a boolean if a field has been set.
 
 ### GetUsage
 
-`func (o *GenerationResponse) GetUsage() Usage`
+`func (o *GenerationResponse) GetUsage() GenerationResponseUsage`
 
 GetUsage returns the Usage field if non-nil, zero value otherwise.
 
 ### GetUsageOk
 
-`func (o *GenerationResponse) GetUsageOk() (*Usage, bool)`
+`func (o *GenerationResponse) GetUsageOk() (*GenerationResponseUsage, bool)`
 
 GetUsageOk returns a tuple with the Usage field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetUsage
 
-`func (o *GenerationResponse) SetUsage(v Usage)`
+`func (o *GenerationResponse) SetUsage(v GenerationResponseUsage)`
 
 SetUsage sets Usage field to given value.
 
@@ -485,6 +485,16 @@ SetUsage sets Usage field to given value.
 
 HasUsage returns a boolean if a field has been set.
 
+### SetUsageNil
+
+`func (o *GenerationResponse) SetUsageNil(b bool)`
+
+ SetUsageNil sets the value for Usage to be an explicit nil
+
+### UnsetUsage
+`func (o *GenerationResponse) UnsetUsage()`
+
+UnsetUsage ensures that no value is present for Usage, not even an explicit nil
 ### GetCostNanos
 
 `func (o *GenerationResponse) GetCostNanos() float32`

@@ -796,12 +796,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-    /provisioning/keys:
+    /management/keys:
         get:
             x-beta: true
             operationId: listProvisioningKeys
-            summary: List provisioning keys
-            description: Returns all provisioning keys for a team.
+            summary: List management API keys
+            description: Returns all management API keys for a team.
             parameters:
                 - name: team_id
                   in: query
@@ -826,7 +826,7 @@ paths:
                       minimum: 0
             responses:
                 "200":
-                    description: List of provisioning keys
+                    description: List of management API keys
                     content:
                         application/json:
                             schema:
@@ -863,8 +863,8 @@ paths:
         post:
             x-beta: true
             operationId: createProvisioningKey
-            summary: Create provisioning key
-            description: Creates a new provisioning key for a team.
+            summary: Create management API key
+            description: Creates a new management API key for a team.
             requestBody:
                 required: true
                 content:
@@ -891,7 +891,7 @@ paths:
                                     description: The user ID creating this key
             responses:
                 "201":
-                    description: Created provisioning key
+                    description: Created management API key
                     content:
                         application/json:
                             schema:
@@ -914,22 +914,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-    /provisioning/keys/{id}:
+    /management/keys/{id}:
         get:
             x-beta: true
             operationId: getProvisioningKey
-            summary: Get provisioning key
-            description: Returns details of a specific provisioning key.
+            summary: Get management API key
+            description: Returns details of a specific management API key.
             parameters:
                 - name: id
                   in: path
-                  description: The provisioning key ID
+                  description: The management API key ID
                   required: true
                   schema:
                       type: string
             responses:
                 "200":
-                    description: Provisioning key details
+                    description: Management API key details
                     content:
                         application/json:
                             schema:
@@ -955,12 +955,12 @@ paths:
         patch:
             x-beta: true
             operationId: updateProvisioningKey
-            summary: Update provisioning key
-            description: Updates the name, status, or blocked state of a provisioning key.
+            summary: Update management API key
+            description: Updates the name, status, or blocked state of a management API key.
             parameters:
                 - name: id
                   in: path
-                  description: The provisioning key ID
+                  description: The management API key ID
                   required: true
                   schema:
                       type: string
@@ -1019,12 +1019,12 @@ paths:
         delete:
             x-beta: true
             operationId: deleteProvisioningKey
-            summary: Delete provisioning key
-            description: Permanently deletes a provisioning key.
+            summary: Delete management API key
+            description: Permanently deletes a management API key.
             parameters:
                 - name: id
                   in: path
-                  description: The provisioning key ID
+                  description: The management API key ID
                   required: true
                   schema:
                       type: string
@@ -1076,6 +1076,26 @@ components:
                     type: array
                     items:
                         type: string
+                include_alpha:
+                    type: boolean
+                    description: Include alpha providers in routing (off by default).
+        DebugOptions:
+            type: object
+            description: Gateway debug controls. These flags are never forwarded upstream.
+            properties:
+                enabled:
+                    type: boolean
+                return_upstream_request:
+                    type: boolean
+                return_upstream_response:
+                    type: boolean
+                trace:
+                    type: boolean
+                trace_level:
+                    type: string
+                    enum:
+                        - summary
+                        - full
         Provider:
             type: object
             properties:
@@ -1168,6 +1188,8 @@ components:
                 meta:
                     type: boolean
                     default: false
+                debug:
+                    $ref: "#/components/schemas/DebugOptions"
                 presence_penalty:
                     type: number
                     minimum: -2
@@ -1491,6 +1513,8 @@ components:
                     type: object
                     additionalProperties:
                         type: string
+                debug:
+                    $ref: "#/components/schemas/DebugOptions"
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
         AnthropicMessagesResponse:
@@ -1690,6 +1714,8 @@ components:
                     type: boolean
                 meta:
                     type: boolean
+                debug:
+                    $ref: "#/components/schemas/DebugOptions"
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
         ResponsesResponse:
@@ -1774,6 +1800,8 @@ components:
                                         - ubinary
                 user:
                     type: string
+                debug:
+                    $ref: "#/components/schemas/DebugOptions"
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
             anyOf:
@@ -1818,6 +1846,8 @@ components:
                 meta:
                     type: boolean
                     default: false
+                debug:
+                    $ref: "#/components/schemas/DebugOptions"
                 input:
                     oneOf:
                         - type: string
@@ -2168,6 +2198,8 @@ components:
                     type: string
                 echo_upstream_request:
                     type: boolean
+                debug:
+                    $ref: "#/components/schemas/DebugOptions"
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
         OcrResponse:
@@ -2255,6 +2287,8 @@ components:
                             type: string
                 echo_upstream_request:
                     type: boolean
+                debug:
+                    $ref: "#/components/schemas/DebugOptions"
         MusicGenerateResponse:
             type: object
             additionalProperties: true
@@ -2272,6 +2306,8 @@ components:
                     type: string
                 metadata:
                     type: object
+                debug:
+                    $ref: "#/components/schemas/DebugOptions"
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
         BatchResponse:
@@ -3301,7 +3337,7 @@ components:
                     example: "2026-01-20T10:30:00Z"
                 key:
                     type: string
-                    description: The raw provisioning key. Only returned on creation.
+                    description: The raw management API key. Only returned on creation.
                     example: "pk_abc123xy_abc123def456..."
         ProvisioningKeyDetail:
             type: object

@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from "react";
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from "recharts";
+import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { assignSeriesColours, keyForSeries } from "@/components/(rankings)/chart-colors";
 import {
 	ChartContainer,
 	ChartTooltip,
 	ChartTooltipContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from "recharts";
 
 type Row = {
 	created_at: string;
@@ -19,360 +20,286 @@ type Row = {
 
 const TOP_MODELS = 10;
 const UNKNOWN_MODEL_LABEL = "Unknown model";
-const DEFAULT_PASTELS = [
-	"#A7C7E7",
-	"#F7C5CC",
-	"#C1E5C0",
-	"#F8D7A9",
-	"#D4C2FC",
-	"#FFE3A3",
-	"#BFE3F2",
-	"#FFD0E1",
-	"#C8F0DD",
-	"#FBE2B4",
-];
-const GOLDEN_ANGLE = 137.508;
+const WINDOW_DAYS = 30;
 
 function formatDayLabel(date: Date) {
-	return date.toLocaleDateString(undefined, {
+	return date.toLocaleDateString("en-US", {
 		month: "short",
 		day: "numeric",
 	});
 }
 
-function getTokens(u: any) {
-	const input = Number(u?.input_text_tokens ?? u?.input_tokens ?? 0) || 0;
-	const output = Number(u?.output_text_tokens ?? u?.output_tokens ?? 0) || 0;
+function formatNumber(value: number) {
+	if (!Number.isFinite(value)) return "--";
+	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
+	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+	return value.toLocaleString();
+}
+
+function getTokens(usage: any) {
+	const total = Number(usage?.total_tokens);
+	if (Number.isFinite(total) && total > 0) return total;
+	const input = Number(usage?.input_text_tokens ?? usage?.input_tokens ?? 0) || 0;
+	const output = Number(usage?.output_text_tokens ?? usage?.output_tokens ?? 0) || 0;
 	return input + output;
 }
 
-function hash32(str: string) {
-	let h = 0x811c9dc5 >>> 0;
-	for (let i = 0; i < str.length; i++) {
-		h ^= str.charCodeAt(i);
-		h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
-	}
-	return h >>> 0;
+function normalizeColour(value?: string | null) {
+	if (!value) return null;
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+	if (/^[0-9a-fA-F]{6}$/.test(trimmed)) return `#${trimmed}`;
+	return trimmed;
 }
 
-function assignSeriesColours(
-	models: string[],
-	palette?: string[]
-): Record<string, { fill: string; stroke: string }> {
-	const entries = models
-		.map((m) => ({ m, h: hash32(m) }))
-		.sort((a, b) => a.h - b.h);
-
-	const out: Record<string, { fill: string; stroke: string }> = {};
-
-	if (palette && palette.length) {
-		const step = Math.max(1, Math.round(palette.length * 0.381966));
-		entries.forEach((e, i) => {
-			const idx = (e.h + i * step) % palette.length;
-			const fill = palette[idx];
-			out[e.m] = { fill, stroke: fill };
-		});
-		return out;
-	}
-
-	const SAT = 45;
-	const LIT = 78;
-	entries.forEach((e, i) => {
-		const hue = ((e.h % 360) + i * GOLDEN_ANGLE) % 360;
-		const fill = `hsl(${hue} ${SAT}% ${LIT}% / 0.88)`;
-		const stroke = `hsl(${hue} ${Math.max(30, SAT - 10)}% ${Math.max(
-			55,
-			LIT - 20
-		)}% / 0.95)`;
-		out[e.m] = { fill, stroke };
-	});
-	return out;
-}
-
-function keyForModel(model: string) {
-	return `m_${model.replace(/[^a-zA-Z0-9]+/g, "_")}`;
-}
-
-type TooltipProps = {
-	seriesStyle: Record<string, { label: string; color: string }>;
-	hoveredKey: string | null;
-	setHoveredKey: (key: string | null) => void;
-};
-
-function AppUsageTooltipContent(
-	props: TooltipProps & Record<string, any>
-) {
-	const { seriesStyle, hoveredKey, setHoveredKey, ...rest } = props;
-
-	return (
-		<ChartTooltipContent
-			{...rest}
-			labelFormatter={(label) => String(label ?? "")}
-			formatter={(value, name, item) => {
-				const val = Number(value ?? 0);
-				const formatted = Intl.NumberFormat().format(Math.round(val));
-				const key = String(item?.dataKey ?? name ?? "");
-				const cfg = seriesStyle[key];
-				const label = cfg?.label ?? key;
-				const color = cfg?.color ?? "hsl(0 0% 70%)";
-				const isActive = hoveredKey === key;
-
-				return (
-					<div
-						className="flex w-full items-center justify-between gap-4"
-						onMouseEnter={() => setHoveredKey(key)}
-					>
-						<span className="inline-flex items-center gap-2">
-							<span
-								className="inline-block rounded-[2px]"
-								style={{
-									backgroundColor: color,
-									width: isActive ? 6 : 4,
-									height: 14,
-								}}
-							/>
-							<span className={isActive ? "font-medium" : ""}>
-								{label}
-							</span>
-						</span>
-						<span className="ml-auto font-mono">{formatted}</span>
-					</div>
-				);
-			}}
-		/>
-	);
-}
+type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
 
 export default function AppUsageChart({
 	rows,
-	windowLabel,
-	fullWidth = false,
+	windowLabel: _windowLabel,
+	modelLabels = {},
+	modelColours = {},
 }: {
 	rows: Row[];
 	windowLabel: string;
-	fullWidth?: boolean;
+	modelLabels?: Record<string, string>;
+	modelColours?: Record<string, string | null | undefined>;
 }) {
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
-	const { chartData, seriesKeys, seriesStyle, totalTokens } = useMemo(() => {
-		const today = new Date();
-		today.setHours(12, 0, 0, 0);
-
-		const buckets = Array.from({ length: 28 }, (_, index) => {
-			const date = new Date(today);
-			date.setDate(today.getDate() - (27 - index));
+	const { chartData, seriesKeys, seriesStyle } = useMemo(() => {
+		const end = new Date();
+		end.setHours(12, 0, 0, 0);
+		const dayBuckets = Array.from({ length: WINDOW_DAYS }, (_, index) => {
+			const date = new Date(end);
+			date.setDate(end.getDate() - (WINDOW_DAYS - 1 - index));
 			const dayKey = date.toISOString().slice(0, 10);
-			return { dayKey, label: formatDayLabel(date) };
-		});
-
-		const perBucketPerModel = new Map<string, Map<string, number>>();
-		const totalsByModel = new Map<string, number>();
-		let totalTokens = 0;
-
-		rows.forEach((row) => {
-			if (!row.created_at) return;
-			if (row.success === false) return;
-
-			const date = new Date(row.created_at);
-			if (Number.isNaN(date.getTime())) return;
-
-			const dayKey = date.toISOString().slice(0, 10);
-			const rawModel = row.model_id ?? UNKNOWN_MODEL_LABEL;
-			const modelName =
-				typeof rawModel === "string"
-					? rawModel.trim() || UNKNOWN_MODEL_LABEL
-					: String(rawModel);
-			const tokens = getTokens(row.usage);
-			if (tokens === 0) return;
-
-			totalTokens += tokens;
-
-			const bucketMap =
-				perBucketPerModel.get(dayKey) ?? new Map<string, number>();
-			bucketMap.set(modelName, (bucketMap.get(modelName) ?? 0) + tokens);
-			perBucketPerModel.set(dayKey, bucketMap);
-
-			totalsByModel.set(
-				modelName,
-				(totalsByModel.get(modelName) ?? 0) + tokens
-			);
-		});
-
-		const sortedModels = Array.from(totalsByModel.entries())
-			.sort((a, b) => b[1] - a[1])
-			.map(([model]) => model);
-		const topModels = sortedModels.slice(0, TOP_MODELS);
-		const useOther = sortedModels.length > TOP_MODELS;
-		const isTop = new Set(topModels);
-		const colourMap = assignSeriesColours(topModels, DEFAULT_PASTELS);
-
-		const seriesStyle: Record<
-			string,
-			{ label: string; color: string; stroke: string }
-		> = {};
-		const seriesKeys: string[] = [];
-
-		topModels.forEach((model) => {
-			const key = keyForModel(model);
-			const colour = colourMap[model];
-			const fill = colour?.fill ?? "hsl(0 0% 80% / 0.6)";
-			const stroke = colour?.stroke ?? fill;
-			seriesKeys.push(key);
-			seriesStyle[key] = {
-				label: model,
-				color: fill,
-				stroke,
+			return {
+				dayKey,
+				label: formatDayLabel(date),
 			};
 		});
+		const bucketKeySet = new Set(dayBuckets.map((bucket) => bucket.dayKey));
 
-		if (useOther) {
-			seriesKeys.push("other");
-			seriesStyle["other"] = {
+		const bucketMap = new Map<string, Map<string, number>>();
+		const totalsByModel = new Map<string, number>();
+
+		for (const row of rows) {
+			if (row.success === false || !row.created_at) continue;
+			const date = new Date(row.created_at);
+			if (Number.isNaN(date.getTime())) continue;
+			date.setHours(12, 0, 0, 0);
+			const dayKey = date.toISOString().slice(0, 10);
+			if (!bucketKeySet.has(dayKey)) continue;
+
+			const rawModel = row.model_id?.trim() || UNKNOWN_MODEL_LABEL;
+			const tokens = getTokens(row.usage);
+			if (!tokens || tokens < 0) continue;
+
+			const dayMap = bucketMap.get(dayKey) ?? new Map<string, number>();
+			dayMap.set(rawModel, (dayMap.get(rawModel) ?? 0) + tokens);
+			bucketMap.set(dayKey, dayMap);
+
+			totalsByModel.set(rawModel, (totalsByModel.get(rawModel) ?? 0) + tokens);
+		}
+
+		const modelOrder = Array.from(totalsByModel.entries())
+			.sort((a, b) => b[1] - a[1])
+			.map(([model]) => model);
+		const topModels = modelOrder.slice(0, TOP_MODELS);
+		const hasOther = modelOrder.length > TOP_MODELS;
+		const topSet = new Set(topModels);
+
+		const keyMap = new Map<string, string>();
+		for (const model of topModels) {
+			keyMap.set(model, keyForSeries(model));
+		}
+		if (hasOther) keyMap.set("Other", "other");
+
+		const generatedColours = assignSeriesColours(topModels);
+		const styles: SeriesStyle = {};
+		for (const model of topModels) {
+			const key = keyMap.get(model) ?? model;
+			const explicit = normalizeColour(modelColours[model]);
+			const generated = generatedColours[model];
+			styles[key] = {
+				label: modelLabels[model] ?? model,
+				color: explicit ?? generated?.fill ?? "hsl(210 70% 75%)",
+				stroke: explicit ?? generated?.stroke ?? "hsl(210 70% 55%)",
+			};
+		}
+		if (hasOther) {
+			styles.other = {
 				label: "Other",
-				color: "hsl(210 10% 68% / 0.7)",
-				stroke: "hsl(210 10% 55%)",
+				color: "hsl(0 0% 70% / 0.6)",
+				stroke: "hsl(0 0% 50%)",
 			};
 		}
 
-		const chartData = buckets.map((bucket) => {
-			const row: Record<string, number | string> = {
-				bucket: bucket.label,
+		const chartRows = dayBuckets.map(({ dayKey, label }) => {
+			const row: Record<string, string | number | boolean> = {
+				bucket: label,
 			};
-			seriesKeys.forEach((key) => {
+			for (const model of topModels) {
+				const key = keyMap.get(model) ?? model;
 				row[key] = 0;
-			});
-
-			let otherSum = 0;
-			const bucketMap = perBucketPerModel.get(bucket.dayKey);
-			if (bucketMap) {
-				bucketMap.forEach((value, model) => {
-					if (isTop.has(model)) {
-						const key = keyForModel(model);
-						row[key] = (row[key] as number) + value;
-					} else if (useOther) {
-						otherSum += value;
-					}
-				});
 			}
+			if (hasOther) row.other = 0;
 
-			if (useOther) {
-				row["other"] = otherSum;
+			const dayMap = bucketMap.get(dayKey);
+			if (dayMap) {
+				for (const [model, value] of dayMap.entries()) {
+					if (topSet.has(model)) {
+						const key = keyMap.get(model) ?? model;
+						row[key] = Number(row[key] ?? 0) + value;
+					} else if (hasOther) {
+						row.other = Number(row.other ?? 0) + value;
+					}
+				}
 			}
 
 			return row;
 		});
 
+		const keys = [
+			...topModels.map((model) => keyMap.get(model) ?? model),
+			...(hasOther ? ["other"] : []),
+		];
+
 		return {
-			chartData,
-			seriesKeys,
-			seriesStyle,
-			totalTokens,
+			chartData: chartRows,
+			seriesKeys: keys,
+			seriesStyle: styles,
 		};
-	}, [rows]);
+	}, [rows, modelLabels, modelColours]);
 
-	const header = (
-		<CardHeader className="space-y-1 pb-3">
-			<CardTitle>Usage Over Time</CardTitle>
-			<p className="text-sm text-muted-foreground">{windowLabel}</p>
-			<p className="text-xs text-muted-foreground">
-				Token usage split by the models powering this app.
-			</p>
-		</CardHeader>
-	);
-
-	if (!rows.length || totalTokens === 0) {
+	if (!rows.length || !seriesKeys.length) {
 		return (
-			<Card
-				className={fullWidth ? "-mx-4 rounded-none border-x-0" : ""}
-			>
-				{header}
-				<CardContent>
-					<p className="text-muted-foreground">
-						No token usage recorded within this window.
-					</p>
-				</CardContent>
-			</Card>
+			<RankingsEmptyState
+				title="No usage data yet"
+				description="Usage appears once this app has recent successful requests."
+			/>
 		);
 	}
 
-	const chartConfig = Object.fromEntries(
-		Object.entries(seriesStyle).map(([key, style]) => [
-			key,
-			{ label: style.label, color: style.color },
-		])
-	) as Record<string, { label: string; color: string }>;
+	const chartConfig = {
+		value: { label: "Tokens", color: "hsl(var(--primary))" },
+		...Object.fromEntries(
+			Object.entries(seriesStyle).map(([k, v]) => [
+				k,
+				{ label: v.label, color: v.color },
+			]),
+		),
+	} as const;
 
 	return (
-		<Card className={fullWidth ? "-mx-4 rounded-none border-x-0" : ""}>
-			{header}
-			<CardContent>
-				<ChartContainer
-					config={chartConfig}
-					className="h-[340px] w-full flex-none aspect-auto"
+		<div className="space-y-4">
+			<ChartContainer config={chartConfig} className="h-[420px] w-full">
+				<BarChart
+					data={chartData}
+					margin={{ top: 16, right: 12, left: 0, bottom: 32 }}
+					onMouseLeave={() => setHoveredKey(null)}
 				>
-					<BarChart
-						data={chartData}
-						margin={{ left: 0, right: 12 }}
-						onMouseLeave={() => setHoveredKey(null)}
-					>
-						<CartesianGrid strokeDasharray="3 3" />
-						<XAxis
-							dataKey="bucket"
-							tick={{ fontSize: 12 }}
-							interval="preserveStartEnd"
-						/>
-						<YAxis
-							tick={{ fontSize: 12 }}
-							tickFormatter={(value) =>
-								Number(value).toLocaleString()
-							}
-						/>
-						<ChartTooltip
-							content={
-								<AppUsageTooltipContent
-									seriesStyle={seriesStyle}
-									hoveredKey={hoveredKey}
-									setHoveredKey={setHoveredKey}
-								/>
-							}
-						/>
-						{seriesKeys.map((key) => {
-							const style = seriesStyle[key];
-							const active = hoveredKey
-								? hoveredKey === key
-								: true;
-							return (
-								<Bar
-									key={key}
-									dataKey={key}
-									name={style.label}
-									stackId="a"
-									fill={`var(--color-${key}, ${style.color})`}
-									stroke={style.stroke}
-									fillOpacity={
-										hoveredKey
-											? active
-												? 0.95
-												: 0.4
-											: 0.9
-									}
-									strokeOpacity={
-										hoveredKey
-											? active
-												? 0.95
-												: 0.5
-											: 0.9
-									}
-									strokeWidth={active ? 1.1 : 0.8}
-									onMouseOver={() => setHoveredKey(key)}
-									onMouseOut={() => setHoveredKey(null)}
-									isAnimationActive={false}
-								/>
+					<CartesianGrid vertical={false} className="stroke-muted" />
+					<XAxis
+						dataKey="bucket"
+						minTickGap={24}
+						interval="preserveStartEnd"
+						tickLine={false}
+						axisLine={false}
+					/>
+					<YAxis
+						tickFormatter={(value) => formatNumber(Number(value))}
+						width={60}
+						tickLine={false}
+						axisLine={false}
+					/>
+					<ChartTooltip
+						content={(props) => {
+							const filteredPayload =
+								props.payload
+									?.filter((item) => Number(item?.value ?? 0) > 0)
+									.sort(
+										(a, b) =>
+											Number(b?.value ?? 0) - Number(a?.value ?? 0),
+									)
+									.slice(0, 10) ?? [];
+							if (!filteredPayload.length) return null;
+							const weeklyTotal = filteredPayload.reduce(
+								(sum, item) => sum + Number(item?.value ?? 0),
+								0
 							);
-						})}
-					</BarChart>
-				</ChartContainer>
-			</CardContent>
-		</Card>
+							return (
+								<div className="grid min-w-32 items-start gap-1.5 rounded-lg border border-zinc-200/50 bg-white px-2.5 py-1.5 text-xs shadow-xl dark:border-zinc-800/50 dark:bg-zinc-950">
+									<ChartTooltipContent
+										active={props.active}
+										label={props.label}
+										payload={filteredPayload}
+										className="min-w-0 border-0 bg-transparent p-0 shadow-none"
+										labelFormatter={(lbl) => String(lbl)}
+										formatter={(v, name, item) => {
+											const val = Number(v ?? 0);
+											const seriesKey = String(item?.dataKey ?? name ?? "");
+											const cfg = seriesStyle[seriesKey];
+											const isActive = hoveredKey === seriesKey;
+											return (
+												<div
+													className={`flex w-full items-center justify-between rounded-md px-1.5 py-0.5 ${
+														isActive
+															? "bg-zinc-200/70 dark:bg-zinc-800/70"
+															: ""
+													}`}
+												>
+													<span className="inline-flex items-center gap-1.5">
+														<span
+															className="inline-block rounded-[2px]"
+															style={{
+																backgroundColor: cfg?.color,
+																width: 4,
+																height: 14,
+															}}
+														/>
+														<span>{cfg?.label ?? String(name ?? "")}</span>
+													</span>
+													<span className="ml-auto pl-3 font-mono">
+														{formatNumber(val)}
+													</span>
+												</div>
+											);
+										}}
+									/>
+									<div className="space-y-0.5 border-t border-border/60 pt-1.5 text-xs">
+										<div className="flex items-center justify-between">
+											<span className="text-muted-foreground">Total</span>
+											<span className="font-mono">{formatNumber(weeklyTotal)}</span>
+										</div>
+									</div>
+								</div>
+							);
+						}}
+					/>
+					{seriesKeys.map((key, index) => {
+						const style = seriesStyle[key];
+						const active = hoveredKey ? hoveredKey === key : true;
+						return (
+							<Bar
+								key={key}
+								dataKey={key}
+								name={style?.label}
+								stackId="usage"
+								fill={`var(--color-${key}, ${style?.color})`}
+								fillOpacity={hoveredKey ? (active ? 0.95 : 0.35) : 0.9}
+								radius={index === seriesKeys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+								onMouseOver={() => setHoveredKey(key)}
+								onMouseOut={() => setHoveredKey(null)}
+								isAnimationActive={false}
+							/>
+						);
+					})}
+				</BarChart>
+			</ChartContainer>
+		</div>
 	);
 }
+

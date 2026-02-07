@@ -31,8 +31,8 @@ export default function EditProvisioningKeyItem({ k }: any) {
 		const promise = updateProvisioningKeyAction(k.id, { name, paused });
 		try {
 			await toast.promise(promise, {
-				loading: "Saving provisioning key...",
-				success: "Provisioning key updated",
+				loading: "Saving management API key...",
+				success: "Management API key updated",
 				error: (err) => {
 					const message =
 						(err && (err as any).message) || "Failed to update key";
@@ -63,7 +63,7 @@ export default function EditProvisioningKeyItem({ k }: any) {
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						Edit Provisioning Key
+						Edit Management API Key
 					</DialogTitle>
 					<DialogDescription>
 						Update name or pause this elevated-privilege key.

@@ -22,16 +22,16 @@ paths:
           description: Welcome message
       summary: Root endpoint
       x-beta: true
-  /health:
+  /healthz:
     get:
       description: Returns the health status of the API.
-      operationId: health
+      operationId: healthz
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/health_200_response"
+                $ref: "#/components/schemas/healthz_200_response"
           description: OK
       summary: Health check
       x-beta: true
@@ -214,9 +214,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChatCompletionsResponse"
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/ChatCompletionsStreamEvent"
           description: Chat completion response
       summary: Create chat completion
   /responses:
@@ -235,9 +232,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ResponsesResponse"
-            text/event-stream:
-              schema:
-                $ref: "#/components/schemas/ResponsesStreamEvent"
           description: Response
       summary: Create response
   /messages:
@@ -258,7 +252,7 @@ paths:
                 $ref: "#/components/schemas/AnthropicMessagesResponse"
             text/event-stream:
               schema:
-                $ref: "#/components/schemas/AnthropicMessagesStreamEvent"
+                type: string
           description: Message response
       summary: Create message
   /embeddings:
@@ -932,8 +926,7 @@ paths:
 components:
   schemas:
     ProviderRoutingOptions:
-      description: Provider routing preferences for gateway selection. Global routing
-        policy is configured in the dashboard and applied before request-level overrides.
+      description: Provider routing preferences for gateway selection.
       example:
         only:
         - only
@@ -957,272 +950,6 @@ components:
           items:
             type: string
           type: array
-      type: object
-    DebugOptions:
-      description: Debug options for request tracing and upstream capture.
-      example:
-        trace_level: summary
-        trace: true
-        return_upstream_request: true
-        return_upstream_response: true
-        enabled: true
-      properties:
-        enabled:
-          description: Enable debug mode for the request.
-          type: boolean
-        return_upstream_request:
-          description: Include the upstream request payload in the response.
-          type: boolean
-        return_upstream_response:
-          description: Include the upstream response payload in the response.
-          type: boolean
-        trace:
-          description: Include a redacted field-level mapping trace under response
-            debug.trace.
-          type: boolean
-        trace_level:
-          description: Controls trace detail level.
-          enum:
-          - summary
-          - full
-          type: string
-      type: object
-    DebugResponse:
-      example:
-        trace_level: summary
-        trace:
-        - key: ""
-        - key: ""
-        return_upstream_request: true
-        return_upstream_response: true
-        enabled: true
-      properties:
-        enabled:
-          type: boolean
-        return_upstream_request:
-          type: boolean
-        return_upstream_response:
-          type: boolean
-        trace_level:
-          enum:
-          - summary
-          - full
-          type: string
-        trace:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
-      type: object
-    ChatCompletionsStreamEvent:
-      additionalProperties: true
-      description: |
-        Server-Sent Event wrapper. Wire format is `event: <optional>\ndata: <json>\n\n`.
-        Most Chat Completions streams only send data lines.
-      properties:
-        event:
-          nullable: true
-          type: string
-        data:
-          $ref: "#/components/schemas/ChatCompletionsStreamChunk"
-      type: object
-    ChatCompletionsStreamChunk:
-      additionalProperties: true
-      properties:
-        id:
-          type: string
-        nativeResponseId:
-          type: string
-        object:
-          enum:
-          - chat.completion.chunk
-          type: string
-        created:
-          type: integer
-        model:
-          type: string
-        system_fingerprint:
-          type: string
-        service_tier:
-          type: string
-        choices:
-          items:
-            $ref: "#/components/schemas/ChatCompletionsStreamChoice"
-          type: array
-        usage:
-          $ref: "#/components/schemas/Usage"
-        meta:
-          type: object
-      type: object
-    ChatCompletionsStreamChoice:
-      additionalProperties: true
-      properties:
-        index:
-          type: integer
-        delta:
-          $ref: "#/components/schemas/ChatCompletionsStreamDelta"
-        finish_reason:
-          type: string
-        logprobs:
-          type: object
-      type: object
-    ChatCompletionsStreamDelta:
-      additionalProperties: true
-      properties:
-        role:
-          type: string
-        content:
-          type: string
-        reasoning_content:
-          type: string
-        tool_calls:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
-      type: object
-    ResponsesStreamEvent:
-      description: |
-        Server-Sent Event wrapper. Wire format is `event: <event>\ndata: <json>\n\n`.
-        Each SSE frame maps to one of the event-specific shapes below.
-      oneOf:
-      - $ref: "#/components/schemas/ResponsesStreamCreatedEvent"
-      - $ref: "#/components/schemas/ResponsesStreamOutputTextDeltaEvent"
-      - $ref: "#/components/schemas/ResponsesStreamReasoningTextDeltaEvent"
-      - $ref: "#/components/schemas/ResponsesStreamFunctionCallArgumentsDeltaEvent"
-      - $ref: "#/components/schemas/ResponsesStreamFunctionCallArgumentsDoneEvent"
-      - $ref: "#/components/schemas/ResponsesStreamCompletedEvent"
-      - $ref: "#/components/schemas/ResponsesStreamErrorEvent"
-    ResponsesStreamCreatedEvent:
-      properties:
-        event:
-          enum:
-          - response.created
-          type: string
-        data:
-          $ref: "#/components/schemas/ResponsesStreamCreatedEvent_data"
-      type: object
-    ResponsesStreamOutputTextDeltaEvent:
-      properties:
-        event:
-          enum:
-          - response.output_text.delta
-          type: string
-        data:
-          $ref: "#/components/schemas/ResponsesStreamOutputTextDeltaEvent_data"
-      type: object
-    ResponsesStreamReasoningTextDeltaEvent:
-      properties:
-        event:
-          enum:
-          - response.reasoning_text.delta
-          type: string
-        data:
-          $ref: "#/components/schemas/ResponsesStreamReasoningTextDeltaEvent_data"
-      type: object
-    ResponsesStreamFunctionCallArgumentsDeltaEvent:
-      properties:
-        event:
-          enum:
-          - response.function_call_arguments.delta
-          type: string
-        data:
-          $ref: "#/components/schemas/ResponsesStreamFunctionCallArgumentsDeltaEvent_data"
-      type: object
-    ResponsesStreamFunctionCallArgumentsDoneEvent:
-      properties:
-        event:
-          enum:
-          - response.function_call_arguments.done
-          type: string
-        data:
-          $ref: "#/components/schemas/ResponsesStreamFunctionCallArgumentsDoneEvent_data"
-      type: object
-    ResponsesStreamCompletedEvent:
-      properties:
-        event:
-          enum:
-          - response.completed
-          type: string
-        data:
-          $ref: "#/components/schemas/ResponsesStreamCompletedEvent_data"
-      type: object
-    ResponsesStreamErrorEvent:
-      properties:
-        event:
-          enum:
-          - response.error
-          - error
-          type: string
-        data:
-          additionalProperties: true
-          type: object
-      type: object
-    AnthropicMessagesStreamEvent:
-      description: |
-        Anthropic Messages SSE events (message_start, content_block_start, content_block_delta,
-        content_block_stop, message_delta, message_stop). Wire format is `event: <event>\ndata: <json>\n\n`.
-      oneOf:
-      - $ref: "#/components/schemas/AnthropicMessageStartEvent"
-      - $ref: "#/components/schemas/AnthropicContentBlockStartEvent"
-      - $ref: "#/components/schemas/AnthropicContentBlockDeltaEvent"
-      - $ref: "#/components/schemas/AnthropicContentBlockStopEvent"
-      - $ref: "#/components/schemas/AnthropicMessageDeltaEvent"
-      - $ref: "#/components/schemas/AnthropicMessageStopEvent"
-    AnthropicMessageStartEvent:
-      properties:
-        event:
-          enum:
-          - message_start
-          type: string
-        data:
-          $ref: "#/components/schemas/AnthropicMessageStartEvent_data"
-      type: object
-    AnthropicContentBlockStartEvent:
-      properties:
-        event:
-          enum:
-          - content_block_start
-          type: string
-        data:
-          $ref: "#/components/schemas/AnthropicContentBlockStartEvent_data"
-      type: object
-    AnthropicContentBlockDeltaEvent:
-      properties:
-        event:
-          enum:
-          - content_block_delta
-          type: string
-        data:
-          $ref: "#/components/schemas/AnthropicContentBlockDeltaEvent_data"
-      type: object
-    AnthropicContentBlockStopEvent:
-      properties:
-        event:
-          enum:
-          - content_block_stop
-          type: string
-        data:
-          $ref: "#/components/schemas/AnthropicContentBlockStopEvent_data"
-      type: object
-    AnthropicMessageDeltaEvent:
-      properties:
-        event:
-          enum:
-          - message_delta
-          type: string
-        data:
-          $ref: "#/components/schemas/AnthropicMessageDeltaEvent_data"
-      type: object
-    AnthropicMessageStopEvent:
-      properties:
-        event:
-          enum:
-          - message_stop
-          type: string
-        data:
-          additionalProperties: true
-          type: object
       type: object
     Provider:
       example:
@@ -1253,7 +980,7 @@ components:
       type: object
     Model:
       example:
-        deprecation_date: deprecation_date
+        organisation_id: organisation_id
         endpoints:
         - endpoints
         - endpoints
@@ -1266,17 +993,9 @@ components:
         input_types:
         - input_types
         - input_types
-        supported_params:
-        - supported_params
-        - supported_params
-        top_provider: top_provider
-        organisation_colour: organisation_colour
-        model_id: model_id
-        organisation_name: organisation_name
-        organisation_id: organisation_id
-        retirement_date: retirement_date
         release_date: release_date
         name: name
+        model_id: model_id
         providers:
         - api_provider_id: api_provider_id
           params:
@@ -1286,120 +1005,17 @@ components:
           params:
           - params
           - params
-        pricing:
-          pricing_plan: standard
-          meters:
-            output_image_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            output_text_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            output_audio_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            output_image:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            input_audio_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            input_video_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            cached_read_text_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            input_text_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            web_search:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            output_audio_seconds:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            cached_write_text_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            input_image_tokens:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            input_image:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
-            input_audio_seconds:
-              unit: unit
-              unit_size: 5.962133916683182
-              provider_id: provider_id
-              currency: currency
-              price_per_unit: price_per_unit
         status: status
       properties:
         model_id:
           type: string
         name:
-          nullable: true
           type: string
         release_date:
-          nullable: true
-          type: string
-        deprecation_date:
-          nullable: true
-          type: string
-        retirement_date:
-          nullable: true
           type: string
         status:
-          nullable: true
           type: string
         organisation_id:
-          nullable: true
-          type: string
-        organisation_name:
-          nullable: true
-          type: string
-        organisation_colour:
-          nullable: true
           type: string
         aliases:
           items:
@@ -1421,156 +1037,26 @@ components:
           items:
             $ref: "#/components/schemas/Model_providers_inner"
           type: array
-        supported_params:
-          items:
-            type: string
-          type: array
-        top_provider:
-          nullable: true
-          type: string
-        pricing:
-          $ref: "#/components/schemas/ModelPricing"
-      type: object
-    ModelPricing:
-      example:
-        pricing_plan: standard
-        meters:
-          output_image_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          output_text_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          output_audio_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          output_image:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          input_audio_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          input_video_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          cached_read_text_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          input_text_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          web_search:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          output_audio_seconds:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          cached_write_text_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          input_image_tokens:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          input_image:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-          input_audio_seconds:
-            unit: unit
-            unit_size: 5.962133916683182
-            provider_id: provider_id
-            currency: currency
-            price_per_unit: price_per_unit
-      properties:
-        pricing_plan:
-          example: standard
-          type: string
-        meters:
-          $ref: "#/components/schemas/ModelPricing_meters"
-      type: object
-    ModelPricingMeter:
-      example:
-        unit: unit
-        unit_size: 5.962133916683182
-        provider_id: provider_id
-        currency: currency
-        price_per_unit: price_per_unit
-      nullable: true
-      properties:
-        provider_id:
-          type: string
-        unit:
-          type: string
-        unit_size:
-          type: number
-        price_per_unit:
-          type: string
-        currency:
-          nullable: true
-          type: string
       type: object
     ChatCompletionsRequest:
       example:
-        top_logprobs: 4
+        top_logprobs: 7
         logit_bias:
-          key: 1.4658129805029452
-        seed: -2147483648
+          key: 6.027456183070403
+        seed: 2147483647
         max_tool_calls: 1
-        presence_penalty: 0.25495066265333133
+        presence_penalty: 0.38485356667327286
         reasoning:
           summary: auto
-          max_tokens: 0
           effort: medium
-          enabled: true
         usage: true
         tools:
         - type: function
         - type: function
         logprobs: false
-        top_p: 0.4145608029883936
-        frequency_penalty: 0.4109824732281613
+        top_p: 0.20271230230023218
+        frequency_penalty: -1.6796687238155954
         response_format: ChatCompletionsRequest_response_format
-        modalities:
-        - text
-        - text
         stream: false
         provider:
           only:
@@ -1583,16 +1069,10 @@ components:
           - order
           - order
         top_k: 1
-        temperature: 1.4122802483006218
+        temperature: 0.46042717738695305
         tool_choice: ChatCompletionsRequest_tool_choice
         model: model
         service_tier: standard
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         system: system
         parallel_tool_calls: true
         user_id: user_id
@@ -1617,7 +1097,6 @@ components:
             id: id
             type: function
           content: ChatMessage_content
-          reasoning_content: reasoning_content
         - role: system
           tool_call_id: tool_call_id
           name: name
@@ -1637,7 +1116,6 @@ components:
             id: id
             type: function
           content: ChatMessage_content
-          reasoning_content: reasoning_content
         max_output_tokens: 1
       properties:
         model:
@@ -1665,8 +1143,6 @@ components:
         meta:
           default: false
           type: boolean
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         presence_penalty:
           maximum: 2
           minimum: -2
@@ -1711,15 +1187,6 @@ components:
           type: number
         response_format:
           $ref: "#/components/schemas/ChatCompletionsRequest_response_format"
-        modalities:
-          items:
-            enum:
-            - text
-            - image
-            - audio
-            - video
-            type: string
-          type: array
         usage:
           type: boolean
         provider:
@@ -1760,7 +1227,6 @@ components:
           id: id
           type: function
         content: ChatMessage_content
-        reasoning_content: reasoning_content
       properties:
         role:
           enum:
@@ -1771,8 +1237,6 @@ components:
           type: string
         content:
           $ref: "#/components/schemas/ChatMessage_content"
-        reasoning_content:
-          type: string
         name:
           type: string
         tool_calls:
@@ -1787,34 +1251,10 @@ components:
     MessageContentPart:
       oneOf:
       - $ref: "#/components/schemas/TextContentPart"
-      - $ref: "#/components/schemas/InputTextContentPart"
       - $ref: "#/components/schemas/ImageContentPart"
-      - $ref: "#/components/schemas/InputImageContentPart"
       - $ref: "#/components/schemas/AudioContentPart"
       - $ref: "#/components/schemas/VideoContentPart"
       - $ref: "#/components/schemas/ToolCallContentPart"
-    CacheControl:
-      description: Optional prompt caching metadata (Anthropic-compatible).
-      example:
-        cache:
-          type: ehpemeral
-          ttl: 5m
-        type: ehpemeral
-        ttl: 5m
-      properties:
-        type:
-          enum:
-          - ehpemeral
-          - ephemeral
-          type: string
-        ttl:
-          enum:
-          - 5m
-          - 1h
-          type: string
-        cache:
-          $ref: "#/components/schemas/CacheControl_cache"
-      type: object
     TextContentPart:
       properties:
         type:
@@ -1823,22 +1263,6 @@ components:
           type: string
         text:
           type: string
-        cache_control:
-          $ref: "#/components/schemas/CacheControl"
-      required:
-      - text
-      - type
-      type: object
-    InputTextContentPart:
-      properties:
-        type:
-          enum:
-          - input_text
-          type: string
-        text:
-          type: string
-        cache_control:
-          $ref: "#/components/schemas/CacheControl"
       required:
       - text
       - type
@@ -1851,18 +1275,6 @@ components:
           type: string
         image_url:
           $ref: "#/components/schemas/ImageContentPart_image_url"
-      required:
-      - image_url
-      - type
-      type: object
-    InputImageContentPart:
-      properties:
-        type:
-          enum:
-          - input_image
-          type: string
-        image_url:
-          $ref: "#/components/schemas/InputImageContentPart_image_url"
       required:
       - image_url
       - type
@@ -1907,140 +1319,6 @@ components:
       - id
       - type
       type: object
-    ResponsesInputItem:
-      oneOf:
-      - $ref: "#/components/schemas/ResponsesInputTextItem"
-      - $ref: "#/components/schemas/ResponsesInputImageItem"
-      - $ref: "#/components/schemas/ResponsesInputAudioItem"
-      - $ref: "#/components/schemas/ResponsesInputVideoItem"
-      - $ref: "#/components/schemas/ResponsesMessageItem"
-      - $ref: "#/components/schemas/ResponsesFunctionCallItem"
-      - $ref: "#/components/schemas/ResponsesFunctionCallOutputItem"
-    ResponsesInputTextItem:
-      example:
-        cache_control:
-          cache:
-            type: ehpemeral
-            ttl: 5m
-          type: ehpemeral
-          ttl: 5m
-        text: text
-        type: input_text
-      properties:
-        type:
-          enum:
-          - input_text
-          type: string
-        text:
-          type: string
-        cache_control:
-          $ref: "#/components/schemas/CacheControl"
-      required:
-      - text
-      - type
-      type: object
-    ResponsesInputImageItem:
-      properties:
-        type:
-          enum:
-          - input_image
-          type: string
-        image_url:
-          $ref: "#/components/schemas/InputImageContentPart_image_url"
-        detail:
-          enum:
-          - auto
-          - low
-          - high
-          type: string
-      required:
-      - image_url
-      - type
-      type: object
-    ResponsesInputAudioItem:
-      properties:
-        type:
-          enum:
-          - input_audio
-          type: string
-        input_audio:
-          $ref: "#/components/schemas/AudioContentPart_input_audio"
-      required:
-      - input_audio
-      - type
-      type: object
-    ResponsesInputVideoItem:
-      properties:
-        type:
-          enum:
-          - input_video
-          type: string
-        video_url:
-          format: uri
-          type: string
-      required:
-      - type
-      - video_url
-      type: object
-    ResponsesMessageItem:
-      properties:
-        type:
-          enum:
-          - message
-          type: string
-        role:
-          enum:
-          - system
-          - developer
-          - user
-          - assistant
-          - tool
-          type: string
-        content:
-          $ref: "#/components/schemas/ChatMessage_content"
-        tool_calls:
-          items:
-            $ref: "#/components/schemas/ToolCall"
-          type: array
-        tool_call_id:
-          type: string
-      required:
-      - content
-      - role
-      - type
-      type: object
-    ResponsesFunctionCallItem:
-      properties:
-        type:
-          enum:
-          - function_call
-          type: string
-        call_id:
-          type: string
-        name:
-          type: string
-        arguments:
-          type: string
-      required:
-      - arguments
-      - name
-      - type
-      type: object
-    ResponsesFunctionCallOutputItem:
-      properties:
-        type:
-          enum:
-          - function_call_output
-          type: string
-        call_id:
-          type: string
-        output:
-          type: string
-      required:
-      - call_id
-      - output
-      - type
-      type: object
     ToolCall:
       example:
         function:
@@ -2067,9 +1345,7 @@ components:
     ReasoningConfig:
       example:
         summary: auto
-        max_tokens: 0
         effort: medium
-        enabled: true
       properties:
         effort:
           default: medium
@@ -2088,91 +1364,15 @@ components:
           - concise
           - detailed
           type: string
-        enabled:
-          type: boolean
-        max_tokens:
-          minimum: 0
-          type: integer
       type: object
     ChatCompletionsResponse:
       example:
-        debug:
-          trace_level: summary
-          trace:
-          - key: ""
-          - key: ""
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         created: 0
         usage:
-          pricing_breakdown:
-            total_usd_str: total_usd_str
-            total_nanos: 9
-            currency: currency
-            lines:
-            - key: ""
-            - key: ""
-            total_cents: 6
           completion_tokens: 5
-          input_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          output_text_tokens: 1
-          completion_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          input_tokens: 1
-          output_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          cached_read_text_tokens: 4
-          input_text_tokens: 7
-          prompt_tokens: 5
-          cached_write_text_tokens: 5
-          prompt_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          total_tokens: 2
-          output_tokens: 6
-          reasoning_tokens: 9
-          pricing:
-            total_usd_str: total_usd_str
-            total_nanos: 9
-            currency: currency
-            lines:
-            - key: ""
-            - key: ""
-            total_cents: 6
-        nativeResponseId: nativeResponseId
-        system_fingerprint: system_fingerprint
-        meta: "{}"
+          prompt_tokens: 1
+          total_tokens: 5
         model: model
-        service_tier: service_tier
         id: id
         choices:
         - finish_reason: stop
@@ -2197,8 +1397,6 @@ components:
               id: id
               type: function
             content: ChatMessage_content
-            reasoning_content: reasoning_content
-          logprobs: "{}"
         - finish_reason: stop
           index: 6
           message:
@@ -2221,15 +1419,9 @@ components:
               id: id
               type: function
             content: ChatMessage_content
-            reasoning_content: reasoning_content
-          logprobs: "{}"
-        upstream_request: "{}"
-        upstream_response: null
         object: object
       properties:
         id:
-          type: string
-        nativeResponseId:
           type: string
         object:
           type: string
@@ -2243,18 +1435,6 @@ components:
           type: array
         usage:
           $ref: "#/components/schemas/Usage"
-        service_tier:
-          type: string
-        system_fingerprint:
-          type: string
-        meta:
-          type: object
-        debug:
-          $ref: "#/components/schemas/DebugResponse"
-        upstream_request:
-          $ref: "#/components/schemas/ChatCompletionsResponse_upstream_request"
-        upstream_response:
-          $ref: "#/components/schemas/ChatCompletionsResponse_upstream_request"
       type: object
     ChatChoice:
       example:
@@ -2280,15 +1460,11 @@ components:
             id: id
             type: function
           content: ChatMessage_content
-          reasoning_content: reasoning_content
-        logprobs: "{}"
       properties:
         index:
           type: integer
         message:
           $ref: "#/components/schemas/ChatMessage"
-        logprobs:
-          type: object
         finish_reason:
           enum:
           - stop
@@ -2299,68 +1475,9 @@ components:
       type: object
     Usage:
       example:
-        pricing_breakdown:
-          total_usd_str: total_usd_str
-          total_nanos: 9
-          currency: currency
-          lines:
-          - key: ""
-          - key: ""
-          total_cents: 6
         completion_tokens: 5
-        input_tokens_details:
-          input_images: 3
-          output_audio: 7
-          output_videos: 1
-          input_audio: 4
-          input_videos: 1
-          output_images: 2
-          reasoning_tokens: 9
-          cached_tokens: 7
-        output_text_tokens: 1
-        completion_tokens_details:
-          input_images: 3
-          output_audio: 7
-          output_videos: 1
-          input_audio: 4
-          input_videos: 1
-          output_images: 2
-          reasoning_tokens: 9
-          cached_tokens: 7
-        input_tokens: 1
-        output_tokens_details:
-          input_images: 3
-          output_audio: 7
-          output_videos: 1
-          input_audio: 4
-          input_videos: 1
-          output_images: 2
-          reasoning_tokens: 9
-          cached_tokens: 7
-        cached_read_text_tokens: 4
-        input_text_tokens: 7
-        prompt_tokens: 5
-        cached_write_text_tokens: 5
-        prompt_tokens_details:
-          input_images: 3
-          output_audio: 7
-          output_videos: 1
-          input_audio: 4
-          input_videos: 1
-          output_images: 2
-          reasoning_tokens: 9
-          cached_tokens: 7
-        total_tokens: 2
-        output_tokens: 6
-        reasoning_tokens: 9
-        pricing:
-          total_usd_str: total_usd_str
-          total_nanos: 9
-          currency: currency
-          lines:
-          - key: ""
-          - key: ""
-          total_cents: 6
+        prompt_tokens: 1
+        total_tokens: 5
       properties:
         prompt_tokens:
           type: integer
@@ -2368,111 +1485,14 @@ components:
           type: integer
         total_tokens:
           type: integer
-        prompt_tokens_details:
-          $ref: "#/components/schemas/UsageDetails"
-        completion_tokens_details:
-          $ref: "#/components/schemas/UsageDetails"
-        input_tokens:
-          type: integer
-        output_tokens:
-          type: integer
-        input_tokens_details:
-          $ref: "#/components/schemas/UsageDetails"
-        output_tokens_details:
-          $ref: "#/components/schemas/UsageDetails"
-        input_text_tokens:
-          type: integer
-        output_text_tokens:
-          type: integer
-        cached_read_text_tokens:
-          type: integer
-        cached_write_text_tokens:
-          type: integer
-        reasoning_tokens:
-          type: integer
-        pricing:
-          $ref: "#/components/schemas/PricingBreakdown"
-        pricing_breakdown:
-          $ref: "#/components/schemas/PricingBreakdown"
-      type: object
-    UsageDetails:
-      example:
-        input_images: 3
-        output_audio: 7
-        output_videos: 1
-        input_audio: 4
-        input_videos: 1
-        output_images: 2
-        reasoning_tokens: 9
-        cached_tokens: 7
-      properties:
-        cached_tokens:
-          type: integer
-        reasoning_tokens:
-          type: integer
-        input_images:
-          type: integer
-        output_images:
-          type: integer
-        input_audio:
-          type: integer
-        output_audio:
-          type: integer
-        input_videos:
-          type: integer
-        output_videos:
-          type: integer
-      type: object
-    PricingBreakdown:
-      example:
-        total_usd_str: total_usd_str
-        total_nanos: 9
-        currency: currency
-        lines:
-        - key: ""
-        - key: ""
-        total_cents: 6
-      properties:
-        total_nanos:
-          type: integer
-        total_usd_str:
-          type: string
-        total_cents:
-          type: integer
-        currency:
-          type: string
-        lines:
-          items:
-            additionalProperties: true
-            type: object
-          type: array
       type: object
     AnthropicMessagesRequest:
       example:
-        stop_sequences:
-        - stop_sequences
-        - stop_sequences
+        top_p: 0.14658129805029452
         metadata:
           key: metadata
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
-        max_tokens: 1
-        tools:
-        - input_schema: "{}"
-          name: name
-          description: description
-        - input_schema: "{}"
-          name: name
-          description: description
-        top_p: 0.14658129805029452
         system: AnthropicMessagesRequest_system
-        modalities:
-        - text
-        - text
+        max_tokens: 1
         stream: true
         provider:
           only:
@@ -2484,9 +1504,8 @@ components:
           order:
           - order
           - order
-        meta: true
         top_k: 1
-        temperature: 0.6027456183070403
+        temperature: 1.2054912366140806
         messages:
         - role: user
           content: AnthropicMessage_content
@@ -2494,6 +1513,13 @@ components:
           content: AnthropicMessage_content
         tool_choice: ChatCompletionsRequest_tool_choice
         model: model
+        tools:
+        - input_schema: "{}"
+          name: name
+          description: description
+        - input_schema: "{}"
+          name: name
+          description: description
       properties:
         model:
           type: string
@@ -2508,7 +1534,7 @@ components:
           minimum: 1
           type: integer
         temperature:
-          maximum: 1
+          maximum: 2
           minimum: 0
           type: number
         top_p:
@@ -2526,74 +1552,31 @@ components:
           $ref: "#/components/schemas/ChatCompletionsRequest_tool_choice"
         stream:
           type: boolean
-        stop_sequences:
-          items:
-            type: string
-          type: array
-        modalities:
-          items:
-            enum:
-            - text
-            - image
-            - audio
-            - video
-            type: string
-          type: array
         metadata:
           additionalProperties:
             type: string
           type: object
-        meta:
-          type: boolean
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
-      - max_tokens
       - messages
       - model
       type: object
     AnthropicMessagesResponse:
       example:
         role: assistant
-        debug:
-          trace_level: summary
-          trace:
-          - key: ""
-          - key: ""
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         stop_sequence: stop_sequence
-        meta: "{}"
         usage:
-          server_tool_use: true
           output_tokens: 6
-          cache_creation: "{}"
-          service_tier: service_tier
-          cache_creation_input_tokens: 1
           input_tokens: 0
-          cache_read_input_tokens: 5
         stop_reason: stop_reason
         model: model
         id: id
         type: type
         content:
         - input: "{}"
-          input_audio:
-            data: data
-            format: wav
-          video_url: video_url
           tool_use_id: tool_use_id
-          image_url: AnthropicContentBlock_image_url
           name: name
-          cache_control:
-            cache:
-              type: ehpemeral
-              ttl: 5m
-            type: ehpemeral
-            ttl: 5m
           text: text
           source:
             data: data
@@ -2604,19 +1587,8 @@ components:
           type: text
           content: content
         - input: "{}"
-          input_audio:
-            data: data
-            format: wav
-          video_url: video_url
           tool_use_id: tool_use_id
-          image_url: AnthropicContentBlock_image_url
           name: name
-          cache_control:
-            cache:
-              type: ehpemeral
-              ttl: 5m
-            type: ehpemeral
-            ttl: 5m
           text: text
           source:
             data: data
@@ -2647,10 +1619,6 @@ components:
           type: string
         usage:
           $ref: "#/components/schemas/AnthropicUsage"
-        meta:
-          type: object
-        debug:
-          $ref: "#/components/schemas/DebugResponse"
       type: object
     AnthropicMessage:
       example:
@@ -2671,19 +1639,8 @@ components:
     AnthropicContentBlock:
       example:
         input: "{}"
-        input_audio:
-          data: data
-          format: wav
-        video_url: video_url
         tool_use_id: tool_use_id
-        image_url: AnthropicContentBlock_image_url
         name: name
-        cache_control:
-          cache:
-            type: ehpemeral
-            ttl: 5m
-          type: ehpemeral
-          ttl: 5m
         text: text
         source:
           data: data
@@ -2697,26 +1654,14 @@ components:
         type:
           enum:
           - text
-          - input_text
           - image
-          - input_image
-          - input_audio
-          - input_video
           - tool_use
           - tool_result
           type: string
         text:
           type: string
-        cache_control:
-          $ref: "#/components/schemas/CacheControl"
         source:
           $ref: "#/components/schemas/AnthropicContentBlock_source"
-        image_url:
-          $ref: "#/components/schemas/AnthropicContentBlock_image_url"
-        input_audio:
-          $ref: "#/components/schemas/AudioContentPart_input_audio"
-        video_url:
-          type: string
         id:
           type: string
         name:
@@ -2745,51 +1690,31 @@ components:
       type: object
     AnthropicUsage:
       example:
-        server_tool_use: true
         output_tokens: 6
-        cache_creation: "{}"
-        service_tier: service_tier
-        cache_creation_input_tokens: 1
         input_tokens: 0
-        cache_read_input_tokens: 5
       properties:
         input_tokens:
           type: integer
         output_tokens:
           type: integer
-        cache_creation:
-          type: object
-        cache_creation_input_tokens:
-          type: integer
-        cache_read_input_tokens:
-          type: integer
-        server_tool_use:
-          type: boolean
-        service_tier:
-          type: string
       type: object
     ResponsesRequest:
       example:
-        top_logprobs: 4
+        top_logprobs: 11
         instructions: instructions
         metadata:
           key: metadata
         max_tool_calls: 0
         reasoning:
           summary: summary
-          max_tokens: 0
           effort: none
-          enabled: true
+        usage: true
         safety_identifier: safety_identifier
-        max_tools_calls: 0
         tools:
         - "{}"
         - "{}"
-        top_p: 0.7061401241503109
+        top_p: 0.5637376656633328
         previous_response_id: previous_response_id
-        modalities:
-        - text
-        - text
         stream: true
         provider:
           only:
@@ -2801,7 +1726,7 @@ components:
           order:
           - order
           - order
-        temperature: 1.1274753313266657
+        temperature: 0.29316259610058903
         tool_choice: null
         model: model
         service_tier: service_tier
@@ -2812,75 +1737,14 @@ components:
         include:
         - include
         - include
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         input_items:
-        - cache_control:
-            cache:
-              type: ehpemeral
-              ttl: 5m
-            type: ehpemeral
-            ttl: 5m
-          text: text
-          type: input_text
-        - cache_control:
-            cache:
-              type: ehpemeral
-              ttl: 5m
-            type: ehpemeral
-            ttl: 5m
-          text: text
-          type: input_text
+        - "{}"
+        - "{}"
         store: true
-        input: ResponsesRequest_input
+        input: "{}"
         parallel_tool_calls: true
         background: true
         meta: true
-        messages:
-        - role: system
-          tool_call_id: tool_call_id
-          name: name
-          tool_calls:
-          - function:
-              name: name
-              description: description
-              arguments: arguments
-              parameters: "{}"
-            id: id
-            type: function
-          - function:
-              name: name
-              description: description
-              arguments: arguments
-              parameters: "{}"
-            id: id
-            type: function
-          content: ChatMessage_content
-          reasoning_content: reasoning_content
-        - role: system
-          tool_call_id: tool_call_id
-          name: name
-          tool_calls:
-          - function:
-              name: name
-              description: description
-              arguments: arguments
-              parameters: "{}"
-            id: id
-            type: function
-          - function:
-              name: name
-              description: description
-              arguments: arguments
-              parameters: "{}"
-            id: id
-            type: function
-          content: ChatMessage_content
-          reasoning_content: reasoning_content
         stream_options: "{}"
         prompt:
           variables: "{}"
@@ -2893,15 +1757,10 @@ components:
         model:
           type: string
         input:
-          $ref: "#/components/schemas/ResponsesRequest_input"
-        messages:
-          items:
-            $ref: "#/components/schemas/ChatMessage"
-          minItems: 1
-          type: array
+          type: object
         input_items:
           items:
-            $ref: "#/components/schemas/ResponsesInputItem"
+            type: object
           type: array
         conversation:
           $ref: "#/components/schemas/ChatCompletionsRequest_tool_choice"
@@ -2917,15 +1776,10 @@ components:
         max_tool_calls:
           minimum: 0
           type: integer
-        max_tools_calls:
-          minimum: 0
-          type: integer
         metadata:
           additionalProperties:
             type: string
           type: object
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         parallel_tool_calls:
           type: boolean
         previous_response_id:
@@ -2936,15 +1790,6 @@ components:
           type: string
         prompt_cache_retention:
           type: string
-        modalities:
-          items:
-            enum:
-            - text
-            - image
-            - audio
-            - video
-            type: string
-          type: array
         reasoning:
           $ref: "#/components/schemas/ResponsesRequest_reasoning"
         safety_identifier:
@@ -2983,6 +1828,8 @@ components:
           type: boolean
         user:
           type: string
+        usage:
+          type: boolean
         meta:
           type: boolean
         provider:
@@ -2992,357 +1839,46 @@ components:
       type: object
     ResponsesResponse:
       example:
-        top_logprobs: 9
-        instructions: instructions
-        metadata: "{}"
-        max_tool_calls: 5
-        presence_penalty: 2.3021358869347655
-        reasoning:
-          summary: summary
-          effort: effort
+        role: role
+        created: 0
         usage:
-          pricing_breakdown:
-            total_usd_str: total_usd_str
-            total_nanos: 9
-            currency: currency
-            lines:
-            - key: ""
-            - key: ""
-            total_cents: 6
           completion_tokens: 5
-          input_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          output_text_tokens: 1
-          completion_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          input_tokens: 1
-          output_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          cached_read_text_tokens: 4
-          input_text_tokens: 7
-          prompt_tokens: 5
-          cached_write_text_tokens: 5
-          prompt_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          total_tokens: 2
-          output_tokens: 6
-          reasoning_tokens: 9
-          pricing:
-            total_usd_str: total_usd_str
-            total_nanos: 9
-            currency: currency
-            lines:
-            - key: ""
-            - key: ""
-            total_cents: 6
-        created_at: 0
-        safety_identifier: safety_identifier
-        error: "{}"
-        nativeResponseId: nativeResponseId
-        tools:
-        - "{}"
-        - "{}"
-        output:
-        - role: role
-          name: name
-          arguments: arguments
-          id: id
-          type: type
-          content:
-          - mime_type: mime_type
-            image_url:
-              url: url
-            annotations:
-            - "{}"
-            - "{}"
-            text: text
-            b64_json: b64_json
-            type: output_text
-          - mime_type: mime_type
-            image_url:
-              url: url
-            annotations:
-            - "{}"
-            - "{}"
-            text: text
-            b64_json: b64_json
-            type: output_text
-          status: status
-          call_id: call_id
-        - role: role
-          name: name
-          arguments: arguments
-          id: id
-          type: type
-          content:
-          - mime_type: mime_type
-            image_url:
-              url: url
-            annotations:
-            - "{}"
-            - "{}"
-            text: text
-            b64_json: b64_json
-            type: output_text
-          - mime_type: mime_type
-            image_url:
-              url: url
-            annotations:
-            - "{}"
-            - "{}"
-            text: text
-            b64_json: b64_json
-            type: output_text
-          status: status
-          call_id: call_id
-        top_p: 3.616076749251911
-        previous_response_id: previous_response_id
-        frequency_penalty: 5.637376656633329
-        temperature: 7.061401241503109
-        tool_choice: ChatCompletionsRequest_tool_choice
+          prompt_tokens: 1
+          total_tokens: 5
+        stop_reason: stop_reason
         model: model
-        service_tier: service_tier
         id: id
-        text: "{}"
-        incomplete_details: "{}"
-        truncation: truncation
-        prompt_cache_key: prompt_cache_key
-        upstream_response: null
-        debug:
-          trace_level: summary
-          trace:
-          - key: ""
-          - key: ""
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
-        store: true
-        completed_at: 6
-        parallel_tool_calls: true
-        background: true
-        meta: "{}"
-        user: user
-        upstream_request: "{}"
+        type: type
+        content:
+        - "{}"
+        - "{}"
         object: object
-        status: status
-        max_output_tokens: 1
       properties:
         id:
           type: string
         object:
           type: string
-        created_at:
-          type: integer
-        status:
-          type: string
-        completed_at:
-          nullable: true
-          type: integer
-        error:
-          nullable: true
-          type: object
-        incomplete_details:
-          nullable: true
-          type: object
-        instructions:
-          nullable: true
-          type: string
-        max_output_tokens:
-          nullable: true
-          type: integer
-        max_tool_calls:
-          nullable: true
+        created:
           type: integer
         model:
           type: string
-        output:
-          items:
-            $ref: "#/components/schemas/ResponsesOutputItem"
-          type: array
-        parallel_tool_calls:
-          type: boolean
-        previous_response_id:
-          nullable: true
-          type: string
-        reasoning:
-          $ref: "#/components/schemas/ResponsesResponse_reasoning"
-        frequency_penalty:
-          nullable: true
-          type: number
-        presence_penalty:
-          nullable: true
-          type: number
-        store:
-          nullable: true
-          type: boolean
-        temperature:
-          nullable: true
-          type: number
-        text:
-          nullable: true
-          type: object
-        tool_choice:
-          $ref: "#/components/schemas/ChatCompletionsRequest_tool_choice"
-        tools:
+        content:
           items:
             type: object
           type: array
-        top_logprobs:
-          nullable: true
-          type: integer
-        top_p:
-          nullable: true
-          type: number
-        truncation:
-          type: string
-        user:
-          nullable: true
-          type: string
-        background:
-          nullable: true
-          type: boolean
-        service_tier:
-          nullable: true
-          type: string
-        safety_identifier:
-          nullable: true
-          type: string
-        prompt_cache_key:
-          nullable: true
-          type: string
-        metadata:
-          type: object
-        nativeResponseId:
-          type: string
-        meta:
-          type: object
-        debug:
-          $ref: "#/components/schemas/DebugResponse"
-        upstream_request:
-          $ref: "#/components/schemas/ChatCompletionsResponse_upstream_request"
-        upstream_response:
-          $ref: "#/components/schemas/ChatCompletionsResponse_upstream_request"
-        usage:
-          $ref: "#/components/schemas/Usage"
-      type: object
-    ResponsesOutputItem:
-      additionalProperties: true
-      example:
-        role: role
-        name: name
-        arguments: arguments
-        id: id
-        type: type
-        content:
-        - mime_type: mime_type
-          image_url:
-            url: url
-          annotations:
-          - "{}"
-          - "{}"
-          text: text
-          b64_json: b64_json
-          type: output_text
-        - mime_type: mime_type
-          image_url:
-            url: url
-          annotations:
-          - "{}"
-          - "{}"
-          text: text
-          b64_json: b64_json
-          type: output_text
-        status: status
-        call_id: call_id
-      properties:
-        type:
-          type: string
-        id:
-          type: string
-        status:
-          type: string
         role:
           type: string
-        content:
-          items:
-            $ref: "#/components/schemas/ResponsesOutputContent"
-          type: array
-        call_id:
+        stop_reason:
           type: string
-        name:
-          type: string
-        arguments:
-          type: string
-      type: object
-    ResponsesOutputContent:
-      additionalProperties: true
-      example:
-        mime_type: mime_type
-        image_url:
-          url: url
-        annotations:
-        - "{}"
-        - "{}"
-        text: text
-        b64_json: b64_json
-        type: output_text
-      properties:
         type:
-          enum:
-          - output_text
-          - output_image
           type: string
-        text:
-          type: string
-        annotations:
-          items:
-            type: object
-          type: array
-        image_url:
-          $ref: "#/components/schemas/AnthropicContentBlock_image_url_oneOf"
-        b64_json:
-          type: string
-        mime_type:
-          type: string
+        usage:
+          $ref: "#/components/schemas/Usage"
       type: object
     EmbeddingsRequest:
       anyOf: []
       example:
         input: ""
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         provider:
           only:
           - only
@@ -3417,8 +1953,6 @@ components:
           type: object
         user:
           type: string
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       type: object
@@ -3436,68 +1970,9 @@ components:
           - 0.8008281904610115
           object: object
         usage:
-          pricing_breakdown:
-            total_usd_str: total_usd_str
-            total_nanos: 9
-            currency: currency
-            lines:
-            - key: ""
-            - key: ""
-            total_cents: 6
           completion_tokens: 5
-          input_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          output_text_tokens: 1
-          completion_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          input_tokens: 1
-          output_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          cached_read_text_tokens: 4
-          input_text_tokens: 7
-          prompt_tokens: 5
-          cached_write_text_tokens: 5
-          prompt_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          total_tokens: 2
-          output_tokens: 6
-          reasoning_tokens: 9
-          pricing:
-            total_usd_str: total_usd_str
-            total_nanos: 9
-            currency: currency
-            lines:
-            - key: ""
-            - key: ""
-            total_cents: 6
+          prompt_tokens: 1
+          total_tokens: 5
         model: model
         object: object
       properties:
@@ -3532,12 +2007,6 @@ components:
     ModerationsRequest:
       example:
         input: ModerationsRequest_input
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         provider:
           only:
           - only
@@ -3556,8 +2025,6 @@ components:
         meta:
           default: false
           type: boolean
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         input:
           $ref: "#/components/schemas/ModerationsRequest_input"
         provider:
@@ -3768,12 +2235,6 @@ components:
       example:
         voice: voice
         input: input
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         provider:
           only:
           - only
@@ -3800,8 +2261,6 @@ components:
           - ogg
           - aac
           type: string
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
@@ -3819,8 +2278,6 @@ components:
           type: string
         language:
           type: string
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
@@ -3850,8 +2307,6 @@ components:
           maximum: 2
           minimum: 0
           type: number
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
@@ -3867,12 +2322,6 @@ components:
     ImagesGenerationRequest:
       example:
         response_format: response_format
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         size: size
         provider:
           only:
@@ -3909,8 +2358,6 @@ components:
           type: string
         user:
           type: string
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
@@ -3970,8 +2417,6 @@ components:
           type: boolean
         usage:
           type: boolean
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
@@ -4001,12 +2446,6 @@ components:
       example:
         duration_seconds: 1
         aspect_ratio: aspect_ratio
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         seed: 5
         input_reference_mime_type: input_reference_mime_type
         resolution: resolution
@@ -4066,8 +2505,6 @@ components:
           type: string
         output_storage_uri:
           type: string
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
@@ -4120,12 +2557,7 @@ components:
     OcrRequest:
       example:
         image: image
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
+        echo_upstream_request: true
         provider:
           only:
           - only
@@ -4145,8 +2577,8 @@ components:
           type: string
         language:
           type: string
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
+        echo_upstream_request:
+          type: boolean
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
@@ -4159,12 +2591,7 @@ components:
     MusicGenerateRequest:
       example:
         duration: 0
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
+        echo_upstream_request: true
         provider:
           only:
           - only
@@ -4222,8 +2649,8 @@ components:
           $ref: "#/components/schemas/MusicGenerateRequest_suno"
         elevenlabs:
           $ref: "#/components/schemas/MusicGenerateRequest_elevenlabs"
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
+        echo_upstream_request:
+          type: boolean
       required:
       - model
       type: object
@@ -4234,12 +2661,6 @@ components:
       example:
         endpoint: endpoint
         metadata: "{}"
-        debug:
-          trace_level: summary
-          trace: true
-          return_upstream_request: true
-          return_upstream_response: true
-          enabled: true
         input_file_id: input_file_id
         provider:
           only:
@@ -4261,8 +2682,6 @@ components:
           type: string
         metadata:
           type: object
-        debug:
-          $ref: "#/components/schemas/DebugOptions"
         provider:
           $ref: "#/components/schemas/ProviderRoutingOptions"
       required:
@@ -5046,75 +3465,15 @@ components:
         $ref: "#/components/schemas/OrganisationId"
       type: array
     GenerationResponse:
-      additionalProperties: true
       example:
         error_message: error_message
         status_code: 0.8008281904610115
         key_id: key_id
         usage:
-          pricing_breakdown:
-            total_usd_str: total_usd_str
-            total_nanos: 9
-            currency: currency
-            lines:
-            - key: ""
-            - key: ""
-            total_cents: 6
-          completion_tokens: 5
-          input_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          output_text_tokens: 1
-          completion_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          input_tokens: 1
-          output_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          cached_read_text_tokens: 4
-          input_text_tokens: 7
-          prompt_tokens: 5
-          cached_write_text_tokens: 5
-          prompt_tokens_details:
-            input_images: 3
-            output_audio: 7
-            output_videos: 1
-            input_audio: 4
-            input_videos: 1
-            output_images: 2
-            reasoning_tokens: 9
-            cached_tokens: 7
-          total_tokens: 2
-          output_tokens: 6
-          reasoning_tokens: 9
-          pricing:
-            total_usd_str: total_usd_str
-            total_nanos: 9
-            currency: currency
-            lines:
-            - key: ""
-            - key: ""
-            total_cents: 6
-        cost_nanos: 8.762042012749001
+          completion_tokens: 5.637376656633329
+          prompt_tokens: 5.962133916683182
+          total_tokens: 2.3021358869347655
+        cost_nanos: 7.061401241503109
         native_response_id: native_response_id
         generation_ms: 1.4658129805029452
         team_id: team_id
@@ -5129,7 +3488,7 @@ components:
         success: true
         error_code: error_code
         currency: currency
-        throughput: 9.018348186070783
+        throughput: 9.301444243932576
         request_id: request_id
         app_id: app_id
         byok: true
@@ -5169,7 +3528,7 @@ components:
         generation_ms:
           type: number
         usage:
-          $ref: "#/components/schemas/Usage"
+          $ref: "#/components/schemas/GenerationResponse_usage"
         cost_nanos:
           type: number
         currency:
@@ -5518,7 +3877,7 @@ components:
           format: date-time
           type: string
       type: object
-    health_200_response:
+    healthz_200_response:
       example:
         status: ok
       properties:
@@ -5533,7 +3892,7 @@ components:
     listModels_200_response:
       example:
         models:
-        - deprecation_date: deprecation_date
+        - organisation_id: organisation_id
           endpoints:
           - endpoints
           - endpoints
@@ -5546,17 +3905,9 @@ components:
           input_types:
           - input_types
           - input_types
-          supported_params:
-          - supported_params
-          - supported_params
-          top_provider: top_provider
-          organisation_colour: organisation_colour
-          model_id: model_id
-          organisation_name: organisation_name
-          organisation_id: organisation_id
-          retirement_date: retirement_date
           release_date: release_date
           name: name
+          model_id: model_id
           providers:
           - api_provider_id: api_provider_id
             params:
@@ -5566,95 +3917,8 @@ components:
             params:
             - params
             - params
-          pricing:
-            pricing_plan: standard
-            meters:
-              output_image_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              output_text_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              output_audio_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              output_image:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_audio_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_video_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              cached_read_text_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_text_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              web_search:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              output_audio_seconds:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              cached_write_text_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_image_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_image:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_audio_seconds:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
           status: status
-        - deprecation_date: deprecation_date
+        - organisation_id: organisation_id
           endpoints:
           - endpoints
           - endpoints
@@ -5667,17 +3931,9 @@ components:
           input_types:
           - input_types
           - input_types
-          supported_params:
-          - supported_params
-          - supported_params
-          top_provider: top_provider
-          organisation_colour: organisation_colour
-          model_id: model_id
-          organisation_name: organisation_name
-          organisation_id: organisation_id
-          retirement_date: retirement_date
           release_date: release_date
           name: name
+          model_id: model_id
           providers:
           - api_provider_id: api_provider_id
             params:
@@ -5687,93 +3943,6 @@ components:
             params:
             - params
             - params
-          pricing:
-            pricing_plan: standard
-            meters:
-              output_image_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              output_text_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              output_audio_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              output_image:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_audio_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_video_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              cached_read_text_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_text_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              web_search:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              output_audio_seconds:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              cached_write_text_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_image_tokens:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_image:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
-              input_audio_seconds:
-                unit: unit
-                unit_size: 5.962133916683182
-                provider_id: provider_id
-                currency: currency
-                price_per_unit: price_per_unit
           status: status
         total: 1
         offset: 6
@@ -6107,130 +4276,6 @@ components:
           example: Key updated successfully
           type: string
       type: object
-    ResponsesStreamCreatedEvent_data_response:
-      properties:
-        id:
-          type: string
-        created_at:
-          type: integer
-        model:
-          type: string
-      type: object
-    ResponsesStreamCreatedEvent_data:
-      properties:
-        response:
-          $ref: "#/components/schemas/ResponsesStreamCreatedEvent_data_response"
-      type: object
-    ResponsesStreamOutputTextDeltaEvent_data:
-      additionalProperties: true
-      properties:
-        delta:
-          type: string
-        output_index:
-          type: integer
-        item_id:
-          type: string
-        logprobs:
-          nullable: true
-          type: object
-      type: object
-    ResponsesStreamReasoningTextDeltaEvent_data:
-      additionalProperties: true
-      properties:
-        delta:
-          type: string
-        output_index:
-          type: integer
-        item_id:
-          type: string
-      type: object
-    ResponsesStreamFunctionCallArgumentsDeltaEvent_data:
-      additionalProperties: true
-      properties:
-        item_id:
-          type: string
-        output_index:
-          type: integer
-        delta:
-          type: string
-      type: object
-    ResponsesStreamFunctionCallArgumentsDoneEvent_data:
-      additionalProperties: true
-      properties:
-        item_id:
-          type: string
-        output_index:
-          type: integer
-        name:
-          type: string
-        arguments:
-          type: string
-      type: object
-    ResponsesStreamCompletedEvent_data:
-      additionalProperties: true
-      properties:
-        response:
-          $ref: "#/components/schemas/ResponsesResponse"
-      type: object
-    AnthropicMessageStartEvent_data_message:
-      properties:
-        id:
-          type: string
-        type:
-          type: string
-        role:
-          type: string
-        model:
-          type: string
-        content:
-          items:
-            $ref: "#/components/schemas/AnthropicContentBlock"
-          type: array
-        stop_reason:
-          type: string
-        stop_sequence:
-          type: string
-        usage:
-          $ref: "#/components/schemas/AnthropicUsage"
-      type: object
-    AnthropicMessageStartEvent_data:
-      additionalProperties: true
-      properties:
-        message:
-          $ref: "#/components/schemas/AnthropicMessageStartEvent_data_message"
-      type: object
-    AnthropicContentBlockStartEvent_data:
-      additionalProperties: true
-      properties:
-        index:
-          type: integer
-        content_block:
-          $ref: "#/components/schemas/AnthropicContentBlock"
-      type: object
-    AnthropicContentBlockDeltaEvent_data:
-      additionalProperties: true
-      properties:
-        index:
-          type: integer
-        delta:
-          additionalProperties: true
-          type: object
-      type: object
-    AnthropicContentBlockStopEvent_data:
-      additionalProperties: true
-      properties:
-        index:
-          type: integer
-      type: object
-    AnthropicMessageDeltaEvent_data:
-      additionalProperties: true
-      properties:
-        delta:
-          additionalProperties: true
-          type: object
-        usage:
-          $ref: "#/components/schemas/AnthropicUsage"
-      type: object
     Model_providers_inner:
       example:
         api_provider_id: api_provider_id
@@ -6244,122 +4289,6 @@ components:
           items:
             type: string
           type: array
-      type: object
-    ModelPricing_meters:
-      example:
-        output_image_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        output_text_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        output_audio_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        output_image:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        input_audio_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        input_video_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        cached_read_text_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        input_text_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        web_search:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        output_audio_seconds:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        cached_write_text_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        input_image_tokens:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        input_image:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-        input_audio_seconds:
-          unit: unit
-          unit_size: 5.962133916683182
-          provider_id: provider_id
-          currency: currency
-          price_per_unit: price_per_unit
-      properties:
-        input_text_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        input_image_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        input_image:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        input_video_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        input_audio_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        input_audio_seconds:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        output_text_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        output_image_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        output_image:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        output_audio_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        output_audio_seconds:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        web_search:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        cached_read_text_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
-        cached_write_text_tokens:
-          $ref: "#/components/schemas/ModelPricingMeter"
       type: object
     ChatCompletionsRequest_tools_inner:
       example:
@@ -6391,36 +4320,13 @@ components:
       - items:
           $ref: "#/components/schemas/MessageContentPart"
         type: array
-    CacheControl_cache:
-      example:
-        type: ehpemeral
-        ttl: 5m
-      properties:
-        type:
-          enum:
-          - ehpemeral
-          - ephemeral
-          type: string
-        ttl:
-          enum:
-          - 5m
-          - 1h
-          type: string
-      type: object
     ImageContentPart_image_url:
       properties:
         url:
           format: uri
           type: string
       type: object
-    InputImageContentPart_image_url:
-      oneOf:
-      - type: string
-      - $ref: "#/components/schemas/ImageContentPart_image_url"
     AudioContentPart_input_audio:
-      example:
-        data: data
-        format: wav
       properties:
         data:
           type: string
@@ -6458,10 +4364,6 @@ components:
         parameters:
           type: object
       type: object
-    ChatCompletionsResponse_upstream_request:
-      oneOf:
-      - type: object
-      - type: string
     AnthropicMessagesRequest_system:
       oneOf:
       - type: string
@@ -6490,24 +4392,6 @@ components:
         url:
           type: string
       type: object
-    AnthropicContentBlock_image_url_oneOf:
-      example:
-        url: url
-      properties:
-        url:
-          type: string
-      type: object
-    AnthropicContentBlock_image_url:
-      oneOf:
-      - type: string
-      - $ref: "#/components/schemas/AnthropicContentBlock_image_url_oneOf"
-    ResponsesRequest_input:
-      oneOf:
-      - type: string
-      - items:
-          $ref: "#/components/schemas/ResponsesInputItem"
-        type: array
-      - type: object
     ResponsesRequest_prompt:
       example:
         variables: "{}"
@@ -6524,9 +4408,7 @@ components:
     ResponsesRequest_reasoning:
       example:
         summary: summary
-        max_tokens: 0
         effort: none
-        enabled: true
       properties:
         effort:
           enum:
@@ -6538,23 +4420,6 @@ components:
           - xhigh
           type: string
         summary:
-          type: string
-        enabled:
-          type: boolean
-        max_tokens:
-          minimum: 0
-          type: integer
-      type: object
-    ResponsesResponse_reasoning:
-      example:
-        summary: summary
-        effort: effort
-      properties:
-        effort:
-          nullable: true
-          type: string
-        summary:
-          nullable: true
           type: string
       type: object
     ModerationsRequest_input_oneOf_inner:
@@ -6667,6 +4532,20 @@ components:
           type: boolean
         output_format:
           type: string
+      type: object
+    GenerationResponse_usage:
+      example:
+        completion_tokens: 5.637376656633329
+        prompt_tokens: 5.962133916683182
+        total_tokens: 2.3021358869347655
+      nullable: true
+      properties:
+        prompt_tokens:
+          type: number
+        completion_tokens:
+          type: number
+        total_tokens:
+          type: number
       type: object
     ActivityEntry_usage:
       example:

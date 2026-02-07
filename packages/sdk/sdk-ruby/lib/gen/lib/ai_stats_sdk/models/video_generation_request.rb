@@ -47,8 +47,6 @@ module AIStatsSdk
 
     attr_accessor :output_storage_uri
 
-    attr_accessor :debug
-
     attr_accessor :provider
 
     # Attribute mapping from ruby-style variable name to JSON key.
@@ -70,7 +68,6 @@ module AIStatsSdk
         :'seed' => :'seed',
         :'person_generation' => :'person_generation',
         :'output_storage_uri' => :'output_storage_uri',
-        :'debug' => :'debug',
         :'provider' => :'provider'
       }
     end
@@ -104,7 +101,6 @@ module AIStatsSdk
         :'seed' => :'Integer',
         :'person_generation' => :'String',
         :'output_storage_uri' => :'String',
-        :'debug' => :'DebugOptions',
         :'provider' => :'ProviderRoutingOptions'
       }
     end
@@ -197,10 +193,6 @@ module AIStatsSdk
 
       if attributes.key?(:'output_storage_uri')
         self.output_storage_uri = attributes[:'output_storage_uri']
-      end
-
-      if attributes.key?(:'debug')
-        self.debug = attributes[:'debug']
       end
 
       if attributes.key?(:'provider')
@@ -302,7 +294,6 @@ module AIStatsSdk
           seed == o.seed &&
           person_generation == o.person_generation &&
           output_storage_uri == o.output_storage_uri &&
-          debug == o.debug &&
           provider == o.provider
     end
 
@@ -315,7 +306,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, prompt, seconds, size, input_reference, input_reference_mime_type, duration, duration_seconds, ratio, aspect_ratio, resolution, negative_prompt, sample_count, seed, person_generation, output_storage_uri, debug, provider].hash
+      [model, prompt, seconds, size, input_reference, input_reference_mime_type, duration, duration_seconds, ratio, aspect_ratio, resolution, negative_prompt, sample_count, seed, person_generation, output_storage_uri, provider].hash
     end
 
     # Builds the object from hash

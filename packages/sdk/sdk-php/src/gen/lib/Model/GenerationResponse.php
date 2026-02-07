@@ -72,7 +72,7 @@ class GenerationResponse implements ModelInterface, ArrayAccess, \JsonSerializab
         'error_message' => 'string',
         'latency_ms' => 'float',
         'generation_ms' => 'float',
-        'usage' => '\AIStats\Sdk\Model\Usage',
+        'usage' => '\AIStats\Sdk\Model\GenerationResponseUsage',
         'cost_nanos' => 'float',
         'currency' => 'string',
         'pricing_lines' => 'object[]',
@@ -132,7 +132,7 @@ class GenerationResponse implements ModelInterface, ArrayAccess, \JsonSerializab
         'error_message' => true,
         'latency_ms' => false,
         'generation_ms' => false,
-        'usage' => false,
+        'usage' => true,
         'cost_nanos' => false,
         'currency' => false,
         'pricing_lines' => false,
@@ -865,7 +865,7 @@ class GenerationResponse implements ModelInterface, ArrayAccess, \JsonSerializab
     /**
      * Gets usage
      *
-     * @return \AIStats\Sdk\Model\Usage|null
+     * @return \AIStats\Sdk\Model\GenerationResponseUsage|null
      */
     public function getUsage()
     {
@@ -875,14 +875,21 @@ class GenerationResponse implements ModelInterface, ArrayAccess, \JsonSerializab
     /**
      * Sets usage
      *
-     * @param \AIStats\Sdk\Model\Usage|null $usage usage
+     * @param \AIStats\Sdk\Model\GenerationResponseUsage|null $usage usage
      *
      * @return self
      */
     public function setUsage($usage)
     {
         if (is_null($usage)) {
-            throw new \InvalidArgumentException('non-nullable usage cannot be null');
+            array_push($this->openAPINullablesSetToNull, 'usage');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('usage', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
         }
         $this->container['usage'] = $usage;
 

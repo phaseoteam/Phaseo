@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { cacheLife, cacheTag } from "next/cache";
 
 export interface AuditModelData {
@@ -56,7 +56,7 @@ export async function getAuditModels(
 	cacheLife("days");
 	cacheTag("audit-models");
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	// Fetch all models with their relationships
 	let query = supabase

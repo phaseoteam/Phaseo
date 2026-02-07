@@ -125,8 +125,8 @@ pub fn getVideoContent<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn health<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/health");
+pub fn healthz<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/healthz");
 	client.request("GET", &resolved_path, body)
 }
 

@@ -105,7 +105,6 @@ describe 'DefaultApi' do
   # @option opts [String] :user 
   # @option opts [Boolean] :meta 
   # @option opts [Boolean] :usage 
-  # @option opts [DebugOptions] :debug 
   # @option opts [ProviderRoutingOptions] :provider 
   # @return [ImagesEditResponse]
   describe 'create_image_edit test' do
@@ -182,7 +181,6 @@ describe 'DefaultApi' do
   # @option opts [String] :audio_url 
   # @option opts [String] :audio_b64 
   # @option opts [String] :language 
-  # @option opts [DebugOptions] :debug 
   # @option opts [ProviderRoutingOptions] :provider 
   # @return [AudioTranscriptionResponse]
   describe 'create_transcription test' do
@@ -201,7 +199,6 @@ describe 'DefaultApi' do
   # @option opts [String] :language 
   # @option opts [String] :prompt 
   # @option opts [Float] :temperature 
-  # @option opts [DebugOptions] :debug 
   # @option opts [ProviderRoutingOptions] :provider 
   # @return [AudioTranslationResponse]
   describe 'create_translation test' do
@@ -345,12 +342,12 @@ describe 'DefaultApi' do
     end
   end
 
-  # unit tests for health
+  # unit tests for healthz
   # Health check
   # Returns the health status of the API.
   # @param [Hash] opts the optional parameters
-  # @return [Health200Response]
-  describe 'health test' do
+  # @return [Healthz200Response]
+  describe 'healthz test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

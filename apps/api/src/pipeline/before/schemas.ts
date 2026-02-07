@@ -139,6 +139,7 @@ const byokMetaSchema = z
 const providerSchema = z
     .object({
         provider_id: z.string(),
+        provider_status: z.string().nullable().optional(),
         provider_model_slug: z.string().nullable().optional(),
         supports_endpoint: z.boolean().optional().default(true),
         base_weight: z.coerce.number().optional().default(1),
@@ -149,6 +150,7 @@ const providerSchema = z
     })
     .transform<GatewayProviderSnapshot>((provider) => ({
         providerId: provider.provider_id,
+        providerStatus: (provider.provider_status ?? null) as GatewayProviderSnapshot["providerStatus"],
         providerModelSlug: provider.provider_model_slug ?? null,
         supportsEndpoint: provider.supports_endpoint ?? true,
         baseWeight: Number.isFinite(provider.base_weight) ? provider.base_weight : 1,

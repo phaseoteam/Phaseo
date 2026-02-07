@@ -146,7 +146,7 @@ class DefaultApi
         'getVideoContent' => [
             'application/json',
         ],
-        'health' => [
+        'healthz' => [
             'application/json',
         ],
         'listFiles' => [
@@ -974,7 +974,7 @@ class DefaultApi
 
 
         $headers = $this->headerSelector->selectHeaders(
-            ['application/json', 'text/event-stream', ],
+            ['application/json', ],
             $contentType,
             $multipart
         );
@@ -1593,7 +1593,6 @@ class DefaultApi
      * @param  string|null $user user (optional)
      * @param  bool|null $meta meta (optional)
      * @param  bool|null $usage usage (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
@@ -1601,9 +1600,9 @@ class DefaultApi
      * @throws \InvalidArgumentException
      * @return \AIStats\Sdk\Model\ImagesEditResponse
      */
-    public function createImageEdit($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEdit($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
-        list($response) = $this->createImageEditWithHttpInfo($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $debug, $provider, $contentType);
+        list($response) = $this->createImageEditWithHttpInfo($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider, $contentType);
         return $response;
     }
 
@@ -1621,7 +1620,6 @@ class DefaultApi
      * @param  string|null $user (optional)
      * @param  bool|null $meta (optional)
      * @param  bool|null $usage (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
@@ -1629,9 +1627,9 @@ class DefaultApi
      * @throws \InvalidArgumentException
      * @return array of \AIStats\Sdk\Model\ImagesEditResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function createImageEditWithHttpInfo($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEditWithHttpInfo($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
-        $request = $this->createImageEditRequest($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $debug, $provider, $contentType);
+        $request = $this->createImageEditRequest($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider, $contentType);
 
         try {
             $options = $this->createHttpClientOption();
@@ -1716,16 +1714,15 @@ class DefaultApi
      * @param  string|null $user (optional)
      * @param  bool|null $meta (optional)
      * @param  bool|null $usage (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createImageEditAsync($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEditAsync($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
-        return $this->createImageEditAsyncWithHttpInfo($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $debug, $provider, $contentType)
+        return $this->createImageEditAsyncWithHttpInfo($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider, $contentType)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -1747,17 +1744,16 @@ class DefaultApi
      * @param  string|null $user (optional)
      * @param  bool|null $meta (optional)
      * @param  bool|null $usage (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createImageEditAsyncWithHttpInfo($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEditAsyncWithHttpInfo($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
         $returnType = '\AIStats\Sdk\Model\ImagesEditResponse';
-        $request = $this->createImageEditRequest($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $debug, $provider, $contentType);
+        $request = $this->createImageEditRequest($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage, $provider, $contentType);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -1807,14 +1803,13 @@ class DefaultApi
      * @param  string|null $user (optional)
      * @param  bool|null $meta (optional)
      * @param  bool|null $usage (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createImageEdit'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    public function createImageEditRequest($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
+    public function createImageEditRequest($model, $image, $prompt, $mask = null, $size = null, $n = null, $user = null, $meta = null, $usage = null, $provider = null, string $contentType = self::contentTypes['createImageEdit'][0])
     {
 
         // verify the required parameter 'model' is set
@@ -1852,7 +1847,6 @@ class DefaultApi
 
 
 
-
         $resourcePath = '/images/edits';
         $formParams = [];
         $queryParams = [];
@@ -1876,7 +1870,6 @@ class DefaultApi
             'user' => $user,
             'meta' => $meta,
             'usage' => $usage,
-            'debug' => $debug,
             'provider' => $provider,
         ]);
 
@@ -2990,7 +2983,7 @@ class DefaultApi
 
 
         $headers = $this->headerSelector->selectHeaders(
-            ['application/json', 'text/event-stream', ],
+            ['application/json', ],
             $contentType,
             $multipart
         );
@@ -3333,7 +3326,6 @@ class DefaultApi
      * @param  string|null $audio_url audio_url (optional)
      * @param  string|null $audio_b64 audio_b64 (optional)
      * @param  string|null $language language (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
@@ -3341,9 +3333,9 @@ class DefaultApi
      * @throws \InvalidArgumentException
      * @return \AIStats\Sdk\Model\AudioTranscriptionResponse
      */
-    public function createTranscription($model, $audio_url = null, $audio_b64 = null, $language = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscription($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
-        list($response) = $this->createTranscriptionWithHttpInfo($model, $audio_url, $audio_b64, $language, $debug, $provider, $contentType);
+        list($response) = $this->createTranscriptionWithHttpInfo($model, $audio_url, $audio_b64, $language, $provider, $contentType);
         return $response;
     }
 
@@ -3356,7 +3348,6 @@ class DefaultApi
      * @param  string|null $audio_url (optional)
      * @param  string|null $audio_b64 (optional)
      * @param  string|null $language (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
@@ -3364,9 +3355,9 @@ class DefaultApi
      * @throws \InvalidArgumentException
      * @return array of \AIStats\Sdk\Model\AudioTranscriptionResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function createTranscriptionWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscriptionWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
-        $request = $this->createTranscriptionRequest($model, $audio_url, $audio_b64, $language, $debug, $provider, $contentType);
+        $request = $this->createTranscriptionRequest($model, $audio_url, $audio_b64, $language, $provider, $contentType);
 
         try {
             $options = $this->createHttpClientOption();
@@ -3446,16 +3437,15 @@ class DefaultApi
      * @param  string|null $audio_url (optional)
      * @param  string|null $audio_b64 (optional)
      * @param  string|null $language (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createTranscriptionAsync($model, $audio_url = null, $audio_b64 = null, $language = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscriptionAsync($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
-        return $this->createTranscriptionAsyncWithHttpInfo($model, $audio_url, $audio_b64, $language, $debug, $provider, $contentType)
+        return $this->createTranscriptionAsyncWithHttpInfo($model, $audio_url, $audio_b64, $language, $provider, $contentType)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -3472,17 +3462,16 @@ class DefaultApi
      * @param  string|null $audio_url (optional)
      * @param  string|null $audio_b64 (optional)
      * @param  string|null $language (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createTranscriptionAsyncWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscriptionAsyncWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
         $returnType = '\AIStats\Sdk\Model\AudioTranscriptionResponse';
-        $request = $this->createTranscriptionRequest($model, $audio_url, $audio_b64, $language, $debug, $provider, $contentType);
+        $request = $this->createTranscriptionRequest($model, $audio_url, $audio_b64, $language, $provider, $contentType);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -3527,14 +3516,13 @@ class DefaultApi
      * @param  string|null $audio_url (optional)
      * @param  string|null $audio_b64 (optional)
      * @param  string|null $language (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranscription'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    public function createTranscriptionRequest($model, $audio_url = null, $audio_b64 = null, $language = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
+    public function createTranscriptionRequest($model, $audio_url = null, $audio_b64 = null, $language = null, $provider = null, string $contentType = self::contentTypes['createTranscription'][0])
     {
 
         // verify the required parameter 'model' is set
@@ -3543,7 +3531,6 @@ class DefaultApi
                 'Missing the required parameter $model when calling createTranscription'
             );
         }
-
 
 
 
@@ -3568,7 +3555,6 @@ class DefaultApi
             'audio_url' => $audio_url,
             'audio_b64' => $audio_b64,
             'language' => $language,
-            'debug' => $debug,
             'provider' => $provider,
         ]);
 
@@ -3644,7 +3630,6 @@ class DefaultApi
      * @param  string|null $language language (optional)
      * @param  string|null $prompt prompt (optional)
      * @param  float|null $temperature temperature (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
@@ -3652,9 +3637,9 @@ class DefaultApi
      * @throws \InvalidArgumentException
      * @return \AIStats\Sdk\Model\AudioTranslationResponse
      */
-    public function createTranslation($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslation($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
-        list($response) = $this->createTranslationWithHttpInfo($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $debug, $provider, $contentType);
+        list($response) = $this->createTranslationWithHttpInfo($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider, $contentType);
         return $response;
     }
 
@@ -3669,7 +3654,6 @@ class DefaultApi
      * @param  string|null $language (optional)
      * @param  string|null $prompt (optional)
      * @param  float|null $temperature (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
@@ -3677,9 +3661,9 @@ class DefaultApi
      * @throws \InvalidArgumentException
      * @return array of \AIStats\Sdk\Model\AudioTranslationResponse, HTTP status code, HTTP response headers (array of strings)
      */
-    public function createTranslationWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslationWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
-        $request = $this->createTranslationRequest($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $debug, $provider, $contentType);
+        $request = $this->createTranslationRequest($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider, $contentType);
 
         try {
             $options = $this->createHttpClientOption();
@@ -3761,16 +3745,15 @@ class DefaultApi
      * @param  string|null $language (optional)
      * @param  string|null $prompt (optional)
      * @param  float|null $temperature (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createTranslationAsync($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslationAsync($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
-        return $this->createTranslationAsyncWithHttpInfo($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $debug, $provider, $contentType)
+        return $this->createTranslationAsyncWithHttpInfo($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider, $contentType)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -3789,17 +3772,16 @@ class DefaultApi
      * @param  string|null $language (optional)
      * @param  string|null $prompt (optional)
      * @param  float|null $temperature (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function createTranslationAsyncWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslationAsyncWithHttpInfo($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
         $returnType = '\AIStats\Sdk\Model\AudioTranslationResponse';
-        $request = $this->createTranslationRequest($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $debug, $provider, $contentType);
+        $request = $this->createTranslationRequest($model, $audio_url, $audio_b64, $language, $prompt, $temperature, $provider, $contentType);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -3846,14 +3828,13 @@ class DefaultApi
      * @param  string|null $language (optional)
      * @param  string|null $prompt (optional)
      * @param  float|null $temperature (optional)
-     * @param  \AIStats\Sdk\Model\DebugOptions|null $debug (optional)
      * @param  \AIStats\Sdk\Model\ProviderRoutingOptions|null $provider (optional)
      * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['createTranslation'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    public function createTranslationRequest($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $debug = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
+    public function createTranslationRequest($model, $audio_url = null, $audio_b64 = null, $language = null, $prompt = null, $temperature = null, $provider = null, string $contentType = self::contentTypes['createTranslation'][0])
     {
 
         // verify the required parameter 'model' is set
@@ -3876,7 +3857,6 @@ class DefaultApi
         
 
 
-
         $resourcePath = '/audio/translations';
         $formParams = [];
         $queryParams = [];
@@ -3897,7 +3877,6 @@ class DefaultApi
             'language' => $language,
             'prompt' => $prompt,
             'temperature' => $temperature,
-            'debug' => $debug,
             'provider' => $provider,
         ]);
 
@@ -7155,36 +7134,36 @@ class DefaultApi
     }
 
     /**
-     * Operation health
+     * Operation healthz
      *
      * Health check
      *
-     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['health'] to see the possible values for this operation
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['healthz'] to see the possible values for this operation
      *
      * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \AIStats\Sdk\Model\Health200Response
+     * @return \AIStats\Sdk\Model\Healthz200Response
      */
-    public function health(string $contentType = self::contentTypes['health'][0])
+    public function healthz(string $contentType = self::contentTypes['healthz'][0])
     {
-        list($response) = $this->healthWithHttpInfo($contentType);
+        list($response) = $this->healthzWithHttpInfo($contentType);
         return $response;
     }
 
     /**
-     * Operation healthWithHttpInfo
+     * Operation healthzWithHttpInfo
      *
      * Health check
      *
-     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['health'] to see the possible values for this operation
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['healthz'] to see the possible values for this operation
      *
      * @throws \AIStats\Sdk\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \AIStats\Sdk\Model\Health200Response, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \AIStats\Sdk\Model\Healthz200Response, HTTP status code, HTTP response headers (array of strings)
      */
-    public function healthWithHttpInfo(string $contentType = self::contentTypes['health'][0])
+    public function healthzWithHttpInfo(string $contentType = self::contentTypes['healthz'][0])
     {
-        $request = $this->healthRequest($contentType);
+        $request = $this->healthzRequest($contentType);
 
         try {
             $options = $this->createHttpClientOption();
@@ -7212,7 +7191,7 @@ class DefaultApi
             switch($statusCode) {
                 case 200:
                     return $this->handleResponseWithDataType(
-                        '\AIStats\Sdk\Model\Health200Response',
+                        '\AIStats\Sdk\Model\Healthz200Response',
                         $request,
                         $response,
                     );
@@ -7234,7 +7213,7 @@ class DefaultApi
             }
 
             return $this->handleResponseWithDataType(
-                '\AIStats\Sdk\Model\Health200Response',
+                '\AIStats\Sdk\Model\Healthz200Response',
                 $request,
                 $response,
             );
@@ -7243,7 +7222,7 @@ class DefaultApi
                 case 200:
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
-                        '\AIStats\Sdk\Model\Health200Response',
+                        '\AIStats\Sdk\Model\Healthz200Response',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);
@@ -7256,18 +7235,18 @@ class DefaultApi
     }
 
     /**
-     * Operation healthAsync
+     * Operation healthzAsync
      *
      * Health check
      *
-     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['health'] to see the possible values for this operation
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['healthz'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function healthAsync(string $contentType = self::contentTypes['health'][0])
+    public function healthzAsync(string $contentType = self::contentTypes['healthz'][0])
     {
-        return $this->healthAsyncWithHttpInfo($contentType)
+        return $this->healthzAsyncWithHttpInfo($contentType)
             ->then(
                 function ($response) {
                     return $response[0];
@@ -7276,19 +7255,19 @@ class DefaultApi
     }
 
     /**
-     * Operation healthAsyncWithHttpInfo
+     * Operation healthzAsyncWithHttpInfo
      *
      * Health check
      *
-     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['health'] to see the possible values for this operation
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['healthz'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Promise\PromiseInterface
      */
-    public function healthAsyncWithHttpInfo(string $contentType = self::contentTypes['health'][0])
+    public function healthzAsyncWithHttpInfo(string $contentType = self::contentTypes['healthz'][0])
     {
-        $returnType = '\AIStats\Sdk\Model\Health200Response';
-        $request = $this->healthRequest($contentType);
+        $returnType = '\AIStats\Sdk\Model\Healthz200Response';
+        $request = $this->healthzRequest($contentType);
 
         return $this->client
             ->sendAsync($request, $this->createHttpClientOption())
@@ -7327,18 +7306,18 @@ class DefaultApi
     }
 
     /**
-     * Create request for operation 'health'
+     * Create request for operation 'healthz'
      *
-     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['health'] to see the possible values for this operation
+     * @param  string $contentType The value for the Content-Type header. Check self::contentTypes['healthz'] to see the possible values for this operation
      *
      * @throws \InvalidArgumentException
      * @return \GuzzleHttp\Psr7\Request
      */
-    public function healthRequest(string $contentType = self::contentTypes['health'][0])
+    public function healthzRequest(string $contentType = self::contentTypes['healthz'][0])
     {
 
 
-        $resourcePath = '/health';
+        $resourcePath = '/healthz';
         $formParams = [];
         $queryParams = [];
         $headerParams = [];

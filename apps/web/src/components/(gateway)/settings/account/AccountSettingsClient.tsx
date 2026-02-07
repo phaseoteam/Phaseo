@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
 	AlertDialog,
@@ -67,12 +68,12 @@ export type UserPayload = {
 };
 
 type TeamOption = { id: string; name: string };
-type MFAFactor = { id: string; friendlyName: string; createdAt?: string | null };
 
 type Props = {
 	user: UserPayload;
 	teams: TeamOption[];
-	mfaFactors?: MFAFactor[];
+	mfaEnabled?: boolean;
+	mfaFactorId?: string | null;
 	hasPassword?: boolean;
 };
 
@@ -116,7 +117,8 @@ const emailChangeSchema = z.object({
 export default function AccountSettingsClient({
 	user,
 	teams,
-	mfaFactors = [],
+	mfaEnabled = false,
+	mfaFactorId = null,
 	hasPassword = true,
 }: Props) {
 	const router = useRouter();
@@ -154,10 +156,7 @@ export default function AccountSettingsClient({
 	// MFA state
 	const [mfaDialogOpen, setMfaDialogOpen] = React.useState(false);
 	const [disablingMFA, setDisablingMFA] = React.useState(false);
-	const [mfaDisableCode, setMfaDisableCode] = React.useState("");
-	const [pendingDisableFactor, setPendingDisableFactor] =
-		React.useState<MFAFactor | null>(null);
-	const mfaEnabled = mfaFactors.length > 0;
+	const [mfaDisablePassword, setMfaDisablePassword] = React.useState("");
 
 	const initial = React.useMemo(
 		() => ({
@@ -188,8 +187,8 @@ export default function AccountSettingsClient({
 		setSaving(true);
 		try {
 			await toast.promise(updateAccount(parsed.data), {
-				loading: "Saving your settings…",
-				success: "Saved ✅",
+				loading: "Saving your settings...",
+				success: "Saved [PASS]",
 				error: (err: any) => err?.message || "Could not save settings",
 			});
 		} catch (e) {
@@ -203,8 +202,8 @@ export default function AccountSettingsClient({
 		setDeleting(true);
 		try {
 			await toast.promise(deleteAccount(), {
-				loading: "Deleting your account…",
-				success: "Account deleted. Goodbye 👋",
+				loading: "Deleting your account...",
+				success: "Account deleted. Goodbye ðŸ‘‹",
 				error: (err: any) => err?.message || "Could not delete account",
 			});
 			// Redirect
@@ -237,7 +236,7 @@ export default function AccountSettingsClient({
 			await toast.promise(
 				changePasswordAction(currentPassword, newPassword),
 				{
-					loading: "Changing your password…",
+					loading: "Changing your password...",
 					success: "Password changed successfully!",
 					error: (err: any) =>
 						err?.message || "Could not change password",
@@ -274,7 +273,7 @@ export default function AccountSettingsClient({
 			const result = await toast.promise(
 				changeEmailAction(newEmail, emailPassword),
 				{
-					loading: "Changing your email…",
+					loading: "Changing your email...",
 					success:
 						"Email change initiated. Check both email addresses for confirmation.",
 					error: (err: any) => err?.message || "Could not change email",
@@ -291,28 +290,29 @@ export default function AccountSettingsClient({
 	}
 
 	async function handleDisableMFA() {
-		if (!pendingDisableFactor) {
+		if (!mfaFactorId) {
 			toast.error("No MFA factor found");
 			return;
 		}
 
-		if (!/^\d{6}$/.test(mfaDisableCode.trim())) {
-			toast.error("Enter a valid 6-digit authenticator code");
+		// For email/password users, require password confirmation
+		// For OAuth users, skip password requirement
+		if (hasPassword && !mfaDisablePassword) {
+			toast.error("Password is required");
 			return;
 		}
 
 		setDisablingMFA(true);
 		try {
 			await toast.promise(
-				unenrollMFAAction(pendingDisableFactor.id, mfaDisableCode),
+				unenrollMFAAction(mfaFactorId, mfaDisablePassword),
 				{
 					loading: "Disabling two-factor authentication...",
 					success: "Two-factor authentication disabled",
 					error: (err: any) => err?.message || "Could not disable MFA",
 				}
 			);
-			setMfaDisableCode("");
-			setPendingDisableFactor(null);
+			setMfaDisablePassword("");
 			// Refresh server component data to update MFA status
 			router.refresh();
 		} catch (e) {
@@ -332,8 +332,8 @@ export default function AccountSettingsClient({
 
 	async function handleMFADialogClose(open: boolean) {
 		setMfaDialogOpen(open);
-		// Always clean up any in-progress/unverified factor when closing the dialog.
-		if (!open) {
+		// If closing and MFA not yet enabled, cleanup and refresh
+		if (!open && !mfaEnabled) {
 			try {
 				await cleanupUnverifiedMFAAction();
 			} catch (err) {
@@ -485,7 +485,7 @@ export default function AccountSettingsClient({
 								{saving ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Saving…
+										Saving...
 									</>
 								) : (
 									"Save changes"
@@ -591,7 +591,7 @@ export default function AccountSettingsClient({
 								{changingPassword ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Changing password…
+										Changing password...
 									</>
 								) : (
 									"Change password"
@@ -678,7 +678,7 @@ export default function AccountSettingsClient({
 								{changingEmail ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Changing email…
+										Changing email...
 									</>
 								) : (
 									"Change email"
@@ -691,156 +691,187 @@ export default function AccountSettingsClient({
 
 			{/* Two-Factor Authentication Card - Available for ALL users */}
 			<Card className="border">
-				<CardHeader className="flex flex-row items-start justify-between gap-4">
-					<div>
-						<CardTitle className="flex items-center gap-2">
-							{mfaEnabled ? (
-								<ShieldCheck className="h-5 w-5 text-green-600" />
-							) : (
-								<Shield className="h-5 w-5" />
-							)}
-							Two-factor authentication
-						</CardTitle>
-						<CardDescription>
-							Add an extra layer of security to your account by requiring a code from your authenticator app when signing in.
-						</CardDescription>
-					</div>
-					{mfaEnabled ? (
-						<Badge variant="default" className="bg-green-600">
-							Enabled ({mfaFactors.length})
-						</Badge>
-					) : (
-						<Badge variant="outline">Disabled</Badge>
-					)}
-				</CardHeader>
-
-				<Separator />
-
-				<CardContent className="pt-6 grid gap-6">
-					{!mfaEnabled ? (
-						<div className="space-y-4">
-							<div className="rounded-lg border bg-muted/50 p-4">
-								<h4 className="mb-2 text-sm font-medium">
-									Why enable two-factor authentication?
-								</h4>
-								<ul className="space-y-1 text-sm text-muted-foreground">
-									<li>Protects your account even if your password is compromised.</li>
-									<li>Works with popular authenticator apps like Google Authenticator, Authy, and 1Password.</li>
-									<li>You can add another authenticator app as a backup factor.</li>
-								</ul>
-							</div>
-
-							<div className="flex justify-end">
-								<Button onClick={() => setMfaDialogOpen(true)}>
-									Enable two-factor authentication
-								</Button>
-							</div>
+					<CardHeader className="flex flex-row items-start justify-between gap-4">
+						<div>
+							<CardTitle className="flex items-center gap-2">
+								{mfaEnabled ? (
+									<ShieldCheck className="h-5 w-5 text-green-600" />
+								) : (
+									<Shield className="h-5 w-5" />
+								)}
+								Two-factor authentication
+							</CardTitle>
+							<CardDescription>
+								Add an extra layer of security to your account
+								by requiring a code from your authenticator app
+								when signing in.
+							</CardDescription>
 						</div>
-					) : (
-						<div className="space-y-4">
-							<div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900/50 dark:bg-green-900/10">
-								<p className="text-sm text-green-900 dark:text-green-200">
-									Your account is protected with two-factor authentication. Add a second authenticator app as a backup factor if possible.
-								</p>
-							</div>
+						{mfaEnabled ? (
+							<Badge variant="default" className="bg-green-600">
+								Enabled
+							</Badge>
+						) : (
+							<Badge variant="outline">Disabled</Badge>
+						)}
+					</CardHeader>
 
-							<div className="space-y-2">
-								{mfaFactors.map((factor) => (
-									<div
-										key={factor.id}
-										className="flex items-center justify-between rounded-lg border p-3"
+					<Separator />
+
+					<CardContent className="pt-6 grid gap-6">
+						{!mfaEnabled ? (
+							<div className="space-y-4">
+								<div className="rounded-lg border bg-muted/50 p-4">
+									<h4 className="text-sm font-medium mb-2">
+										Why enable two-factor authentication?
+									</h4>
+									<ul className="text-sm text-muted-foreground space-y-1">
+										<li className="flex items-start gap-2">
+											<span className="text-green-600 mt-0.5">
+												[OK]
+											</span>
+											<span>
+												Protects your account even if
+												your password is compromised
+											</span>
+										</li>
+										<li className="flex items-start gap-2">
+											<span className="text-green-600 mt-0.5">
+												[OK]
+											</span>
+											<span>
+												Works with popular authenticator
+												apps like Google Authenticator,
+												Authy, or 1Password
+											</span>
+										</li>
+										<li className="flex items-start gap-2">
+											<span className="text-green-600 mt-0.5">
+												[OK]
+											</span>
+											<span>
+												Includes recovery codes for
+												backup access
+											</span>
+										</li>
+									</ul>
+								</div>
+
+								<div className="flex justify-end">
+									<Button
+										onClick={() => setMfaDialogOpen(true)}
 									>
-										<div>
-											<p className="text-sm font-medium">
-												{factor.friendlyName}
-											</p>
-											<p className="text-xs text-muted-foreground">
-												Added {factor.createdAt ? new Date(factor.createdAt).toLocaleDateString() : "recently"}
-											</p>
-										</div>
-										<Button
-											variant="outline"
-											onClick={() => {
-												setPendingDisableFactor(factor);
-												setMfaDisableCode("");
-											}}
-										>
-											Disable
-										</Button>
+										Enable two-factor authentication
+									</Button>
+								</div>
+							</div>
+						) : (
+							<div className="space-y-4">
+								<div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900/50 dark:bg-green-900/10">
+									<p className="text-sm text-green-900 dark:text-green-200">
+										Your account is protected with
+										two-factor authentication. You'll need
+										your authenticator app to sign in.
+									</p>
+								</div>
+
+								<div className="flex items-center justify-between">
+									<div>
+										<h4 className="text-sm font-medium">
+											Disable MFA
+										</h4>
+										<p className="text-sm text-muted-foreground">
+											Remove two-factor authentication from
+											your account
+										</p>
 									</div>
-								))}
+
+									<AlertDialog>
+										<AlertDialogTrigger asChild>
+											<Button variant="outline">
+												Disable
+											</Button>
+										</AlertDialogTrigger>
+										<AlertDialogContent>
+											<AlertDialogHeader>
+												<AlertDialogTitle>
+													Disable two-factor
+													authentication?
+												</AlertDialogTitle>
+												<AlertDialogDescription>
+													This will remove the extra
+													security layer from your
+													account.{" "}
+													{hasPassword
+														? "You'll only need your password to sign in."
+														: "You'll only need your OAuth provider to sign in."}
+												</AlertDialogDescription>
+											</AlertDialogHeader>
+
+											{hasPassword ? (
+												<div className="grid gap-3 py-4">
+													<div className="grid gap-2">
+														<Label htmlFor="mfaDisablePassword">
+															Confirm with password
+														</Label>
+														<Input
+															id="mfaDisablePassword"
+															type="password"
+															value={
+																mfaDisablePassword
+															}
+															onChange={(e) =>
+																setMfaDisablePassword(
+																	e.target.value
+																)
+															}
+															placeholder="Enter your password"
+															autoFocus
+														/>
+													</div>
+												</div>
+											) : (
+												<div className="rounded-lg border bg-muted/50 p-4">
+													<p className="text-sm text-muted-foreground">
+														You're using OAuth
+														authentication. No password
+														confirmation needed.
+													</p>
+												</div>
+											)}
+
+											<AlertDialogFooter>
+												<AlertDialogCancel
+													disabled={disablingMFA}
+												>
+													Cancel
+												</AlertDialogCancel>
+												<Button
+													variant="destructive"
+													onClick={handleDisableMFA}
+													disabled={
+														(hasPassword &&
+															!mfaDisablePassword) ||
+														disablingMFA
+													}
+												>
+													{disablingMFA ? (
+														<>
+															<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+															Disabling...
+														</>
+													) : (
+														"Disable MFA"
+													)}
+												</Button>
+											</AlertDialogFooter>
+										</AlertDialogContent>
+									</AlertDialog>
+								</div>
 							</div>
-
-							<div className="flex justify-end">
-								<Button onClick={() => setMfaDialogOpen(true)}>
-									Add backup authenticator app
-								</Button>
-							</div>
-						</div>
-					)}
-				</CardContent>
-			</Card>
-
-			<AlertDialog
-				open={!!pendingDisableFactor}
-				onOpenChange={(open) => {
-					if (!open) {
-						setPendingDisableFactor(null);
-						setMfaDisableCode("");
-					}
-				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>
-							Disable authenticator app?
-						</AlertDialogTitle>
-						<AlertDialogDescription>
-							To disable this factor, enter a current 6-digit code from {pendingDisableFactor?.friendlyName ?? "your authenticator app"}.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-
-					<div className="grid gap-3 py-2">
-						<div className="grid gap-2">
-							<Label htmlFor="mfaDisableCode">
-								Authenticator code
-							</Label>
-							<Input
-								id="mfaDisableCode"
-								value={mfaDisableCode}
-								onChange={(e) =>
-									setMfaDisableCode(
-										e.target.value.replace(/\D/g, "").slice(0, 6)
-									)
-								}
-								inputMode="numeric"
-								placeholder="123456"
-								autoFocus
-							/>
-						</div>
-					</div>
-
-					<AlertDialogFooter>
-						<AlertDialogCancel disabled={disablingMFA}>
-							Cancel
-						</AlertDialogCancel>
-						<Button
-							variant="destructive"
-							onClick={handleDisableMFA}
-							disabled={disablingMFA || mfaDisableCode.length !== 6}
-						>
-							{disablingMFA ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Disabling...
-								</>
-							) : (
-								"Disable factor"
-							)}
-						</Button>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+						)}
+					</CardContent>
+				</Card>
 
 			{/* MFA Enrollment Dialog */}
 			<MFAEnrollmentFlow
@@ -941,7 +972,7 @@ function ConfirmDelete({
 						{deleting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Deleting…
+								Deleting...
 							</>
 						) : (
 							"Yes, delete my account"

@@ -1,32 +1,16 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Iterator, Optional, Union
-from pathlib import Path
-import sys
 from typing_extensions import NotRequired, TypedDict
 
 import httpx
 
-_gen_root = Path(__file__).resolve().parent.parent / "gen"
-if _gen_root.exists():
-    sys.path.insert(0, str(_gen_root))
-
-from ai_stats_generated import ApiClient, Configuration  # type: ignore
-from ai_stats_generated.api.default_api import DefaultApi  # type: ignore
-from ai_stats_generated import models  # type: ignore
+from gen.client import Client
+from gen import models
+from gen import operations as ops
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
 DEFAULT_USER_AGENT = "ai-stats-python"
-
-
-def _coerce_model(model_cls: Any, value: Any) -> Any:
-    if isinstance(value, model_cls):
-        return value
-    if isinstance(value, dict) and hasattr(model_cls, "from_dict"):
-        return model_cls.from_dict(value)
-    if hasattr(model_cls, "model_validate"):
-        return model_cls.model_validate(value)
-    return value
 
 
 class _ChatCompletionsResource:
@@ -179,9 +163,7 @@ class AIStats:
         host = (base_url or DEFAULT_BASE_URL).rstrip("/")
         self._base_url = host
         self._headers = {"Authorization": f"Bearer {api_key}", "User-Agent": DEFAULT_USER_AGENT}
-        config = Configuration(host=host, access_token=api_key)
-        self._client = ApiClient(configuration=config)
-        self._api = DefaultApi(self._client)
+        self._client = Client(base_url=host, headers=self._headers)
         self._timeout = timeout
         self.chat = _ChatResource(self)
         self.responses = _ResponsesResource(self)
@@ -205,7 +187,7 @@ class AIStats:
     def generate_text(self, request: models.ChatCompletionsRequest | ChatCompletionsParams) -> dict[str, Any]:
         payload = dict(request)
         payload["stream"] = False
-        return self._api.create_chat_completion(_coerce_model(models.ChatCompletionsRequest, payload))
+        return ops.createChatCompletion(self._client, body=payload)
 
     def stream_text(self, request: models.ChatCompletionsRequest | ChatCompletionsParams) -> Iterator[str]:
         payload = dict(request)
@@ -231,10 +213,10 @@ class AIStats:
         return self._coming_soon("images/edits", dict(request))
 
     def generate_embedding(self, body: dict[str, Any]) -> dict[str, Any]:
-        return self._api.create_embedding(_coerce_model(models.EmbeddingsRequest, body))
+        return ops.createEmbedding(self._client, body=body)
 
     def generate_moderation(self, request: models.ModerationsRequest) -> dict[str, Any]:
-        return self._api.create_moderation(_coerce_model(models.ModerationsRequest, request))
+        return ops.createModeration(self._client, body=request)
 
     def generate_video(self, request: models.VideoGenerationRequest) -> dict[str, Any]:
         return self._coming_soon("videos", dict(request))
@@ -249,7 +231,7 @@ class AIStats:
         return self._coming_soon("audio/speech", dict(body))
 
     def generate_response(self, request: models.ResponsesRequest) -> dict[str, Any]:
-        return self._api.create_response(_coerce_model(models.ResponsesRequest, dict(request)))
+        return ops.createResponse(self._client, body=request)
 
     def stream_response(self, request: models.ResponsesRequest) -> Iterator[str]:
         payload = dict(request)
@@ -268,7 +250,7 @@ class AIStats:
                 yield line.decode("utf-8") if isinstance(line, (bytes, bytearray)) else str(line)
 
     def generate_message(self, request: models.AnthropicMessagesRequest) -> dict[str, Any]:
-        return self._api.create_anthropic_message(_coerce_model(models.AnthropicMessagesRequest, dict(request)))
+        return ops.createAnthropicMessage(self._client, body=request)
 
     def stream_messages(self, request: models.AnthropicMessagesRequest) -> Iterator[str]:
         payload = dict(request)
@@ -288,57 +270,55 @@ class AIStats:
 
     def create_batch(self, request: models.BatchRequest | dict[str, Any]) -> dict[str, Any]:
         payload = request if isinstance(request, dict) else dict(request)
-        return self._api.create_batch(_coerce_model(models.BatchRequest, payload))
+        return self._coming_soon("batches", payload)
 
     def get_batch(self, batch_id: str) -> dict[str, Any]:
         return self._coming_soon("batches/{batch_id}", {"batch_id": batch_id})
 
     def list_files(self) -> dict[str, Any]:
-        return self._api.list_files()
+        return self._coming_soon("files", {})
 
     def get_file(self, file_id: str) -> dict[str, Any]:
         return self._coming_soon("files/{file_id}", {"file_id": file_id})
 
     def upload_file(self, *, purpose: Optional[str] = None, file: Any = None) -> dict[str, Any]:
-        return self._api.upload_file(purpose=purpose, file=file)
+        return self._coming_soon("files", {"purpose": purpose})
 
     def get_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self._api.list_models(**(params or {}))
+        return ops.listModels(self._client, query=params or {})
 
     def get_health(self) -> dict[str, Any]:
-        return self._api.health()
+        return ops.health(self._client)
 
     def get_generation(self, generation_id: str) -> dict[str, Any]:
-        return self._api.get_generation(generation_id)
+        return self._coming_soon("generation", {"id": generation_id})
 
     def list_providers(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self._api.list_providers(**(params or {}))
+        return ops.listProviders(self._client, query=params or {})
 
     def get_credits(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self._api.get_credits(**(params or {}))
+        return ops.getCredits(self._client, query=params or {})
 
     def get_activity(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self._api.get_activity(**(params or {}))
+        return ops.getActivity(self._client, query=params or {})
 
     def get_analytics(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self._api.get_analytics(**(params or {}))
+        return ops.getAnalytics(self._client, query=params or {})
 
     def list_provisioning_keys(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return self._api.list_provisioning_keys(**(params or {}))
+        return ops.listProvisioningKeys(self._client, query=params or {})
 
     def create_provisioning_key(self, body: dict[str, Any]) -> dict[str, Any]:
-        return self._api.create_provisioning_key(_coerce_model(models.CreateProvisioningKeyRequest, body))
+        return ops.createProvisioningKey(self._client, body=body)
 
     def get_provisioning_key(self, key_id: str) -> dict[str, Any]:
-        return self._api.get_provisioning_key(key_id)
+        return ops.getProvisioningKey(self._client, path={"id": key_id})
 
     def update_provisioning_key(self, key_id: str, body: dict[str, Any]) -> dict[str, Any]:
-        return self._api.update_provisioning_key(
-            key_id, _coerce_model(models.UpdateProvisioningKeyRequest, body)
-        )
+        return ops.updateProvisioningKey(self._client, path={"id": key_id}, body=body)
 
     def delete_provisioning_key(self, key_id: str) -> dict[str, Any]:
-        return self._api.delete_provisioning_key(key_id)
+        return ops.deleteProvisioningKey(self._client, path={"id": key_id})
 
 
 __all__ = [

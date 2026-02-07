@@ -8,10 +8,6 @@ create index if not exists credit_ledger_refund_claim_state_idx
     on public.credit_ledger (refund_claim_state)
     where ref_type = 'Stripe_Payment_Intent';
 
-update public.credit_ledger
-set refund_claim_state = lower(refund_claim_state)
-where refund_claim_state is not null;
-
 create or replace function public.stripe_claim_self_serve_refund(
     p_team_id uuid,
     p_payment_intent_id text,
@@ -59,7 +55,7 @@ begin
     end if;
 
     v_claim_state := coalesce(v_purchase.refund_claim_state, '');
-    if v_claim_state not in ('', 'failed', 'canceled', 'rejected') then
+    if v_claim_state not in ('', 'Failed', 'Canceled', 'Rejected') then
         return query select false, 'refund_claim_in_progress', 0::bigint, 0::bigint, v_purchase.event_time;
         return;
     end if;
@@ -76,7 +72,7 @@ begin
 
     if v_has_active_refund then
         update public.credit_ledger
-        set refund_claim_state = 'requested',
+        set refund_claim_state = 'Requested',
             refund_claim_reason = 'Refund already in progress.',
             refund_claimed_at = now(),
             refund_claimed_by_user_id = p_user_id
@@ -95,7 +91,7 @@ begin
 
     if v_usage_nanos > coalesce(v_purchase.before_balance_nanos, 0) then
         update public.credit_ledger
-        set refund_claim_state = 'rejected',
+        set refund_claim_state = 'Rejected',
             refund_claim_reason = 'Credits from this top-up have already been used.',
             refund_claimed_at = now(),
             refund_claimed_by_user_id = p_user_id
@@ -106,7 +102,7 @@ begin
     end if;
 
     update public.credit_ledger
-    set refund_claim_state = 'applying',
+    set refund_claim_state = 'Applying',
         refund_claim_reason = null,
         refund_claimed_at = now(),
         refund_claimed_by_user_id = p_user_id

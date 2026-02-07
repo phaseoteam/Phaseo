@@ -35,13 +35,11 @@ namespace AIStatsSdk.Model
         /// </summary>
         /// <param name="type">type</param>
         /// <param name="text">text</param>
-        /// <param name="cacheControl">cacheControl</param>
         [JsonConstructor]
-        public TextContentPart(TypeEnum type, string text, Option<CacheControl?> cacheControl = default)
+        public TextContentPart(TypeEnum type, string text)
         {
             Type = type;
             Text = text;
-            CacheControlOption = cacheControl;
             OnCreated();
         }
 
@@ -112,19 +110,6 @@ namespace AIStatsSdk.Model
         public string Text { get; set; }
 
         /// <summary>
-        /// Used to track the state of CacheControl
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<CacheControl?> CacheControlOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets CacheControl
-        /// </summary>
-        [JsonPropertyName("cache_control")]
-        public CacheControl? CacheControl { get { return this.CacheControlOption; } set { this.CacheControlOption = new(value); } }
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -134,7 +119,6 @@ namespace AIStatsSdk.Model
             sb.Append("class TextContentPart {\n");
             sb.Append("  Type: ").Append(Type).Append("\n");
             sb.Append("  Text: ").Append(Text).Append("\n");
-            sb.Append("  CacheControl: ").Append(CacheControl).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -174,7 +158,6 @@ namespace AIStatsSdk.Model
 
             Option<TextContentPart.TypeEnum?> type = default;
             Option<string?> text = default;
-            Option<CacheControl?> cacheControl = default;
 
             while (utf8JsonReader.Read())
             {
@@ -199,9 +182,6 @@ namespace AIStatsSdk.Model
                         case "text":
                             text = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "cache_control":
-                            cacheControl = new Option<CacheControl?>(JsonSerializer.Deserialize<CacheControl>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         default:
                             break;
                     }
@@ -220,10 +200,7 @@ namespace AIStatsSdk.Model
             if (text.IsSet && text.Value == null)
                 throw new ArgumentNullException(nameof(text), "Property is not nullable for class TextContentPart.");
 
-            if (cacheControl.IsSet && cacheControl.Value == null)
-                throw new ArgumentNullException(nameof(cacheControl), "Property is not nullable for class TextContentPart.");
-
-            return new TextContentPart(type.Value!.Value!, text.Value!, cacheControl);
+            return new TextContentPart(type.Value!.Value!, text.Value!);
         }
 
         /// <summary>
@@ -253,18 +230,9 @@ namespace AIStatsSdk.Model
             if (textContentPart.Text == null)
                 throw new ArgumentNullException(nameof(textContentPart.Text), "Property is required for class TextContentPart.");
 
-            if (textContentPart.CacheControlOption.IsSet && textContentPart.CacheControl == null)
-                throw new ArgumentNullException(nameof(textContentPart.CacheControl), "Property is required for class TextContentPart.");
-
             var typeRawValue = TextContentPart.TypeEnumToJsonValue(textContentPart.Type);
             writer.WriteString("type", typeRawValue);
             writer.WriteString("text", textContentPart.Text);
-
-            if (textContentPart.CacheControlOption.IsSet)
-            {
-                writer.WritePropertyName("cache_control");
-                JsonSerializer.Serialize(writer, textContentPart.CacheControl, jsonSerializerOptions);
-            }
         }
     }
 }

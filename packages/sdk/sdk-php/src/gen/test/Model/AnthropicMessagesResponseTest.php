@@ -150,22 +150,4 @@ class AnthropicMessagesResponseTest extends TestCase
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
-
-    /**
-     * Test attribute "meta"
-     */
-    public function testPropertyMeta()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "debug"
-     */
-    public function testPropertyDebug()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
 }

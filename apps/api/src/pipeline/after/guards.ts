@@ -7,6 +7,7 @@ import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
 import { makeHeaders, createResponse } from "./http";
 import { handleFailureAudit } from "./audit";
+import { parseJsonLoose } from "../debug";
 import { extractRequestedParams, providerSupportsParam } from "../before/paramCapabilities";
 
 export type AfterGuardOk<T> = { ok: true; value: T };
@@ -82,8 +83,11 @@ export async function guardUpstreamStatus(
         if (details?.length) {
             responseBody.details = details;
         }
-        if (ctx.meta?.echoUpstreamRequest && result.mappedRequest) {
-            responseBody.upstream_request = result.mappedRequest;
+        if (ctx.meta?.debug?.return_upstream_request && result.mappedRequest) {
+            responseBody.upstream_request = parseJsonLoose(result.mappedRequest);
+        }
+        if (ctx.meta?.debug?.return_upstream_response && result.rawResponse) {
+            responseBody.upstream_response = result.rawResponse;
         }
 
         return {

@@ -1,21 +1,28 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { getModelCollections } from "@/lib/fetchers/collections/getCollections";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
-import { buildMetadata } from "@/lib/seo";
+import { Button } from "@/components/ui/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+	Grid as GridIcon,
+	Table as TableIcon,
+	Layers as LayersIcon,
+} from "lucide-react";
 
-export const metadata: Metadata = buildMetadata({
-	title: "Model Collections and Curated AI Picks",
+export const metadata: Metadata = {
+	title: "Model collections - Curated groups by capability",
 	description:
 		"Explore curated collections of AI models, from free tiers to top benchmark performers.",
-	path: "/models/collections",
-	keywords: [
-		"AI model collections",
-		"curated AI models",
-		"AI model picks",
-		"AI Stats",
-	],
-});
+	alternates: {
+		canonical: "/collections",
+	},
+};
 
 function CollectionSkeleton() {
 	return (
@@ -35,8 +42,62 @@ async function CollectionsPageContent() {
 
 	return (
 		<div className="space-y-12">
-			<header className="space-y-2">
-				<h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
+			<header className="space-y-3">
+				<div className="flex items-center justify-between gap-3">
+					<h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
+					<div className="inline-flex rounded-md overflow-hidden border bg-background">
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="sm"
+									asChild
+									variant="outline"
+									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+								>
+									<Link href="/models" aria-label="Card view">
+										<GridIcon className="h-4 w-4" />
+									</Link>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="top">Card view</TooltipContent>
+						</Tooltip>
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="sm"
+									asChild
+									variant="outline"
+									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+								>
+									<Link href="/models/table" aria-label="Table view">
+										<TableIcon className="h-4 w-4" />
+									</Link>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="top">Table view</TooltipContent>
+						</Tooltip>
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="sm"
+									asChild
+									variant="default"
+									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+								>
+									<Link
+										href="/models/collections"
+										aria-label="Collections view"
+									>
+										<LayersIcon className="h-4 w-4" />
+									</Link>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="top">Collections</TooltipContent>
+						</Tooltip>
+					</div>
+				</div>
 				<p className="text-muted-foreground max-w-2xl">
 					Quick picks across providers to help you find the right model faster.
 				</p>

@@ -164,11 +164,11 @@ export const MILESTONES: RoadmapMilestone[] = [
     },
     {
         key: "provisioning-keys",
-        title: "Provisioning Keys",
+        title: "Management API Keys",
         status: "Planned",
         due: "Jan 2026",
         description:
-            "Automated provisioning and management of API keys for users.",
+            "Automated creation and management of elevated management API keys.",
         icon: "BadgeDollarSign",
     },
     {

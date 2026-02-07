@@ -12,6 +12,7 @@ import { zaiQuirks } from "./zai";
 import { deepseekQuirks } from "./deepseek";
 import { xiaomiQuirks } from "./xiaomi";
 import { googleQuirks } from "./google";
+import { xAiQuirks } from "./x-ai";
 import { defaultQuirks } from "./default";
 
 /**
@@ -26,6 +27,8 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	zai: zaiQuirks,
 	deepseek: deepseekQuirks,
 	xiaomi: xiaomiQuirks,
+	"x-ai": xAiQuirks,
+	xai: xAiQuirks,
 	// Note: Google quirks removed - Google now uses native implementation, not OpenAI-compat
 };
 

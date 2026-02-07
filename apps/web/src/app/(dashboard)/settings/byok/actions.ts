@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { encryptSecret, sha256Hex } from "@/lib/byok/crypto";
 import { cookies } from "next/headers";
+import { getTeamIdFromCookie } from "@/utils/teamCookie";
 
 function base64ToPgBytea(b64: string): string {
     if (!b64) throw new Error("Missing base64 value");
@@ -113,4 +114,65 @@ export async function deleteByokKeyAction(id: string) {
     if (error) throw error;
     revalidatePath("/settings/byok");
     return { success: true };
+}
+
+export async function updateByokFallbackAction(enabled: boolean) {
+    const supabase = await createClient();
+    const teamId = await getTeamIdFromCookie();
+    if (!teamId) {
+        throw new Error("Missing team id");
+    }
+    const {
+        data: { user },
+        error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+        throw new Error("Unauthorized");
+    }
+
+    const { data: membership, error: membershipError } = await supabase
+        .from("team_members")
+        .select("team_id")
+        .eq("team_id", teamId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+    if (membershipError) {
+        throw membershipError;
+    }
+    if (!membership) {
+        throw new Error("Unauthorized");
+    }
+
+    const payload = {
+        team_id: teamId,
+        byok_fallback_enabled: enabled,
+        updated_at: new Date().toISOString(),
+    };
+
+    const { data: existing, error: fetchError } = await supabase
+        .from("team_settings")
+        .select("team_id")
+        .eq("team_id", teamId)
+        .maybeSingle();
+
+    if (fetchError) {
+        throw fetchError;
+    }
+
+    const { error } = existing
+        ? await supabase
+              .from("team_settings")
+              .update(payload)
+              .eq("team_id", teamId)
+        : await supabase.from("team_settings").insert({
+              ...payload,
+              routing_mode: "balanced",
+          });
+
+    if (error) {
+        throw error;
+    }
+
+    revalidatePath("/settings/byok");
 }

@@ -15,33 +15,14 @@ public final class Models {
 	}
 
 	public static class AnthropicContentBlock {
-		public Object cache_control;
 		public String content;
 		public String id;
-		public Object image_url;
 		public Object input;
-		public Object input_audio;
 		public String name;
 		public Object source;
 		public String text;
 		public String tool_use_id;
 		public Object type;
-		public String video_url;
-	}
-
-	public static class AnthropicContentBlockDeltaEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class AnthropicContentBlockStartEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class AnthropicContentBlockStopEvent {
-		public Object data;
-		public Object event;
 	}
 
 	public static class AnthropicMessage {
@@ -49,21 +30,12 @@ public final class Models {
 		public Object role;
 	}
 
-	public static class AnthropicMessageDeltaEvent {
-		public Object data;
-		public Object event;
-	}
-
 	public static class AnthropicMessagesRequest {
-		public Object debug;
 		public Integer max_tokens;
 		public java.util.List<Object> messages;
-		public Boolean meta;
 		public Object metadata;
-		public java.util.List<Object> modalities;
 		public String model;
 		public Object provider;
-		public java.util.List<String> stop_sequences;
 		public Boolean stream;
 		public Object system;
 		public Double temperature;
@@ -75,28 +47,13 @@ public final class Models {
 
 	public static class AnthropicMessagesResponse {
 		public java.util.List<Object> content;
-		public Object debug;
 		public String id;
-		public Object meta;
 		public String model;
 		public Object role;
 		public String stop_reason;
 		public String stop_sequence;
 		public String type;
 		public Object usage;
-	}
-
-	public static class AnthropicMessagesStreamEvent {
-	}
-
-	public static class AnthropicMessageStartEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class AnthropicMessageStopEvent {
-		public Object data;
-		public Object event;
 	}
 
 	public static class AnthropicTool {
@@ -106,13 +63,8 @@ public final class Models {
 	}
 
 	public static class AnthropicUsage {
-		public Object cache_creation;
-		public Integer cache_creation_input_tokens;
-		public Integer cache_read_input_tokens;
 		public Integer input_tokens;
 		public Integer output_tokens;
-		public Boolean server_tool_use;
-		public String service_tier;
 	}
 
 	public static class AudioContentPart {
@@ -121,7 +73,6 @@ public final class Models {
 	}
 
 	public static class AudioSpeechRequest {
-		public Object debug;
 		public Object format;
 		public String input;
 		public String model;
@@ -132,7 +83,6 @@ public final class Models {
 	public static class AudioTranscriptionRequest {
 		public String audio_b64;
 		public String audio_url;
-		public Object debug;
 		public String language;
 		public String model;
 		public Object provider;
@@ -145,7 +95,6 @@ public final class Models {
 	public static class AudioTranslationRequest {
 		public String audio_b64;
 		public String audio_url;
-		public Object debug;
 		public String language;
 		public String model;
 		public String prompt;
@@ -159,7 +108,6 @@ public final class Models {
 
 	public static class BatchRequest {
 		public String completion_window;
-		public Object debug;
 		public String endpoint;
 		public String input_file_id;
 		public Object metadata;
@@ -198,21 +146,13 @@ public final class Models {
 	public static class BenchmarkId {
 	}
 
-	public static class CacheControl {
-		public Object cache;
-		public Object ttl;
-		public Object type;
-	}
-
 	public static class ChatChoice {
 		public Object finish_reason;
 		public Integer index;
-		public Object logprobs;
 		public Object message;
 	}
 
 	public static class ChatCompletionsRequest {
-		public Object debug;
 		public Double frequency_penalty;
 		public Object logit_bias;
 		public Boolean logprobs;
@@ -220,7 +160,6 @@ public final class Models {
 		public Integer max_tool_calls;
 		public java.util.List<Object> messages;
 		public Boolean meta;
-		public java.util.List<Object> modalities;
 		public String model;
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
@@ -244,74 +183,18 @@ public final class Models {
 	public static class ChatCompletionsResponse {
 		public java.util.List<Object> choices;
 		public Integer created;
-		public Object debug;
 		public String id;
-		public Object meta;
 		public String model;
-		public String nativeResponseId;
 		public String object;
-		public String service_tier;
-		public String system_fingerprint;
-		public Object upstream_request;
-		public Object upstream_response;
 		public Object usage;
-	}
-
-	public static class ChatCompletionsStreamChoice {
-		public Object delta;
-		public String finish_reason;
-		public Integer index;
-		public Object logprobs;
-	}
-
-	public static class ChatCompletionsStreamChunk {
-		public java.util.List<Object> choices;
-		public Integer created;
-		public String id;
-		public Object meta;
-		public String model;
-		public String nativeResponseId;
-		public Object object;
-		public String service_tier;
-		public String system_fingerprint;
-		public Object usage;
-	}
-
-	public static class ChatCompletionsStreamDelta {
-		public String content;
-		public String reasoning_content;
-		public String role;
-		public java.util.List<Object> tool_calls;
-	}
-
-	public static class ChatCompletionsStreamEvent {
-		public Object data;
-		public String event;
 	}
 
 	public static class ChatMessage {
 		public Object content;
 		public String name;
-		public String reasoning_content;
 		public Object role;
 		public String tool_call_id;
 		public java.util.List<Object> tool_calls;
-	}
-
-	public static class DebugOptions {
-		public Boolean enabled;
-		public Boolean return_upstream_request;
-		public Boolean return_upstream_response;
-		public Boolean trace;
-		public Object trace_level;
-	}
-
-	public static class DebugResponse {
-		public Boolean enabled;
-		public Boolean return_upstream_request;
-		public Boolean return_upstream_response;
-		public java.util.List<Object> trace;
-		public Object trace_level;
 	}
 
 	public static class Embedding {
@@ -393,7 +276,6 @@ public final class Models {
 	}
 
 	public static class ImagesEditRequest {
-		public Object debug;
 		public String image;
 		public String mask;
 		public Boolean meta;
@@ -412,7 +294,6 @@ public final class Models {
 	}
 
 	public static class ImagesGenerationRequest {
-		public Object debug;
 		public String model;
 		public Integer n;
 		public String prompt;
@@ -429,17 +310,6 @@ public final class Models {
 		public java.util.List<Object> data;
 	}
 
-	public static class InputImageContentPart {
-		public Object image_url;
-		public Object type;
-	}
-
-	public static class InputTextContentPart {
-		public Object cache_control;
-		public String text;
-		public Object type;
-	}
-
 	public static class ListFilesResponse {
 		public java.util.List<Object> data;
 		public String object;
@@ -450,33 +320,18 @@ public final class Models {
 
 	public static class Model {
 		public java.util.List<String> aliases;
-		public String deprecation_date;
 		public java.util.List<String> endpoints;
 		public java.util.List<String> input_types;
 		public String model_id;
 		public String name;
-		public String organisation_colour;
 		public String organisation_id;
-		public String organisation_name;
 		public java.util.List<String> output_types;
-		public Object pricing;
 		public java.util.List<Object> providers;
 		public String release_date;
-		public String retirement_date;
 		public String status;
-		public java.util.List<String> supported_params;
-		public String top_provider;
 	}
 
 	public static class ModelId {
-	}
-
-	public static class ModelPricing {
-		public Object meters;
-		public String pricing_plan;
-	}
-
-	public static class ModelPricingMeter {
 	}
 
 	public static class ModerationCategories {
@@ -514,7 +369,6 @@ public final class Models {
 	}
 
 	public static class ModerationsRequest {
-		public Object debug;
 		public Object input;
 		public Boolean meta;
 		public String model;
@@ -528,8 +382,8 @@ public final class Models {
 	}
 
 	public static class MusicGenerateRequest {
-		public Object debug;
 		public Integer duration;
+		public Boolean echo_upstream_request;
 		public Object elevenlabs;
 		public Object format;
 		public String model;
@@ -542,7 +396,7 @@ public final class Models {
 	}
 
 	public static class OcrRequest {
-		public Object debug;
+		public Boolean echo_upstream_request;
 		public String image;
 		public String language;
 		public String model;
@@ -556,14 +410,6 @@ public final class Models {
 	}
 
 	public static class OrganisationIdList {
-	}
-
-	public static class PricingBreakdown {
-		public String currency;
-		public java.util.List<Object> lines;
-		public Integer total_cents;
-		public Integer total_nanos;
-		public String total_usd_str;
 	}
 
 	public static class Provider {
@@ -615,92 +461,20 @@ public final class Models {
 
 	public static class ReasoningConfig {
 		public Object effort;
-		public Boolean enabled;
-		public Integer max_tokens;
 		public Object summary;
-	}
-
-	public static class ResponsesFunctionCallItem {
-		public String arguments;
-		public String call_id;
-		public String name;
-		public Object type;
-	}
-
-	public static class ResponsesFunctionCallOutputItem {
-		public String call_id;
-		public String output;
-		public Object type;
-	}
-
-	public static class ResponsesInputAudioItem {
-		public Object input_audio;
-		public Object type;
-	}
-
-	public static class ResponsesInputImageItem {
-		public Object detail;
-		public Object image_url;
-		public Object type;
-	}
-
-	public static class ResponsesInputItem {
-	}
-
-	public static class ResponsesInputTextItem {
-		public Object cache_control;
-		public String text;
-		public Object type;
-	}
-
-	public static class ResponsesInputVideoItem {
-		public Object type;
-		public String video_url;
-	}
-
-	public static class ResponsesMessageItem {
-		public Object content;
-		public Object role;
-		public String tool_call_id;
-		public java.util.List<Object> tool_calls;
-		public Object type;
-	}
-
-	public static class ResponsesOutputContent {
-		public java.util.List<Object> annotations;
-		public String b64_json;
-		public Object image_url;
-		public String mime_type;
-		public String text;
-		public Object type;
-	}
-
-	public static class ResponsesOutputItem {
-		public String arguments;
-		public String call_id;
-		public java.util.List<Object> content;
-		public String id;
-		public String name;
-		public String role;
-		public String status;
-		public String type;
 	}
 
 	public static class ResponsesRequest {
 		public Boolean background;
 		public Object conversation;
-		public Object debug;
 		public java.util.List<String> include;
 		public Object input;
 		public java.util.List<Object> input_items;
 		public String instructions;
 		public Integer max_output_tokens;
 		public Integer max_tool_calls;
-		public Integer max_tools_calls;
-		public java.util.List<Object> messages;
 		public Boolean meta;
 		public Object metadata;
-		public java.util.List<Object> modalities;
 		public String model;
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
@@ -721,89 +495,23 @@ public final class Models {
 		public Integer top_logprobs;
 		public Double top_p;
 		public String truncation;
+		public Boolean usage;
 		public String user;
 	}
 
 	public static class ResponsesResponse {
-		public Boolean background;
-		public Integer completed_at;
-		public Integer created_at;
-		public Object debug;
-		public Object error;
-		public Double frequency_penalty;
+		public java.util.List<Object> content;
+		public Integer created;
 		public String id;
-		public Object incomplete_details;
-		public String instructions;
-		public Integer max_output_tokens;
-		public Integer max_tool_calls;
-		public Object meta;
-		public Object metadata;
 		public String model;
-		public String nativeResponseId;
 		public String object;
-		public java.util.List<Object> output;
-		public Boolean parallel_tool_calls;
-		public Double presence_penalty;
-		public String previous_response_id;
-		public String prompt_cache_key;
-		public Object reasoning;
-		public String safety_identifier;
-		public String service_tier;
-		public String status;
-		public Boolean store;
-		public Double temperature;
-		public Object text;
-		public Object tool_choice;
-		public java.util.List<Object> tools;
-		public Integer top_logprobs;
-		public Double top_p;
-		public String truncation;
-		public Object upstream_request;
-		public Object upstream_response;
+		public String role;
+		public String stop_reason;
+		public String type;
 		public Object usage;
-		public String user;
-	}
-
-	public static class ResponsesStreamCompletedEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class ResponsesStreamCreatedEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class ResponsesStreamErrorEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class ResponsesStreamEvent {
-	}
-
-	public static class ResponsesStreamFunctionCallArgumentsDeltaEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class ResponsesStreamFunctionCallArgumentsDoneEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class ResponsesStreamOutputTextDeltaEvent {
-		public Object data;
-		public Object event;
-	}
-
-	public static class ResponsesStreamReasoningTextDeltaEvent {
-		public Object data;
-		public Object event;
 	}
 
 	public static class TextContentPart {
-		public Object cache_control;
 		public String text;
 		public Object type;
 	}
@@ -826,33 +534,9 @@ public final class Models {
 	}
 
 	public static class Usage {
-		public Integer cached_read_text_tokens;
-		public Integer cached_write_text_tokens;
 		public Integer completion_tokens;
-		public Object completion_tokens_details;
-		public Integer input_text_tokens;
-		public Integer input_tokens;
-		public Object input_tokens_details;
-		public Integer output_text_tokens;
-		public Integer output_tokens;
-		public Object output_tokens_details;
-		public Object pricing;
-		public Object pricing_breakdown;
 		public Integer prompt_tokens;
-		public Object prompt_tokens_details;
-		public Integer reasoning_tokens;
 		public Integer total_tokens;
-	}
-
-	public static class UsageDetails {
-		public Integer cached_tokens;
-		public Integer input_audio;
-		public Integer input_images;
-		public Integer input_videos;
-		public Integer output_audio;
-		public Integer output_images;
-		public Integer output_videos;
-		public Integer reasoning_tokens;
 	}
 
 	public static class VideoContentPart {
@@ -868,7 +552,6 @@ public final class Models {
 
 	public static class VideoGenerationRequest {
 		public String aspect_ratio;
-		public Object debug;
 		public Integer duration;
 		public Integer duration_seconds;
 		public String input_reference;

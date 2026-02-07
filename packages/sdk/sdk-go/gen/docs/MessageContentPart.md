@@ -6,8 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Type** | **string** |  | 
 **Text** | **string** |  | 
-**CacheControl** | Pointer to [**CacheControl**](CacheControl.md) |  | [optional] 
-**ImageUrl** | [**InputImageContentPartImageUrl**](InputImageContentPartImageUrl.md) |  | 
+**ImageUrl** | [**ImageContentPartImageUrl**](ImageContentPartImageUrl.md) |  | 
 **InputAudio** | [**AudioContentPartInputAudio**](AudioContentPartInputAudio.md) |  | 
 **VideoUrl** | **string** |  | 
 **Id** | **string** |  | 
@@ -17,7 +16,7 @@ Name | Type | Description | Notes
 
 ### NewMessageContentPart
 
-`func NewMessageContentPart(type_ string, text string, imageUrl InputImageContentPartImageUrl, inputAudio AudioContentPartInputAudio, videoUrl string, id string, function ToolCallContentPartFunction, ) *MessageContentPart`
+`func NewMessageContentPart(type_ string, text string, imageUrl ImageContentPartImageUrl, inputAudio AudioContentPartInputAudio, videoUrl string, id string, function ToolCallContentPartFunction, ) *MessageContentPart`
 
 NewMessageContentPart instantiates a new MessageContentPart object
 This constructor will assign default values to properties that have it defined,
@@ -72,47 +71,22 @@ and a boolean to check if the value has been set.
 SetText sets Text field to given value.
 
 
-### GetCacheControl
-
-`func (o *MessageContentPart) GetCacheControl() CacheControl`
-
-GetCacheControl returns the CacheControl field if non-nil, zero value otherwise.
-
-### GetCacheControlOk
-
-`func (o *MessageContentPart) GetCacheControlOk() (*CacheControl, bool)`
-
-GetCacheControlOk returns a tuple with the CacheControl field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetCacheControl
-
-`func (o *MessageContentPart) SetCacheControl(v CacheControl)`
-
-SetCacheControl sets CacheControl field to given value.
-
-### HasCacheControl
-
-`func (o *MessageContentPart) HasCacheControl() bool`
-
-HasCacheControl returns a boolean if a field has been set.
-
 ### GetImageUrl
 
-`func (o *MessageContentPart) GetImageUrl() InputImageContentPartImageUrl`
+`func (o *MessageContentPart) GetImageUrl() ImageContentPartImageUrl`
 
 GetImageUrl returns the ImageUrl field if non-nil, zero value otherwise.
 
 ### GetImageUrlOk
 
-`func (o *MessageContentPart) GetImageUrlOk() (*InputImageContentPartImageUrl, bool)`
+`func (o *MessageContentPart) GetImageUrlOk() (*ImageContentPartImageUrl, bool)`
 
 GetImageUrlOk returns a tuple with the ImageUrl field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetImageUrl
 
-`func (o *MessageContentPart) SetImageUrl(v InputImageContentPartImageUrl)`
+`func (o *MessageContentPart) SetImageUrl(v ImageContentPartImageUrl)`
 
 SetImageUrl sets ImageUrl field to given value.
 

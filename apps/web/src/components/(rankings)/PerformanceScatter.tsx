@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import {
     ScatterChart,
     Scatter,
@@ -16,118 +16,229 @@ import {
     ResponsiveContainer,
     ZAxis,
 } from "recharts";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Logo } from "@/components/Logo";
 import type { PerformanceData } from "@/lib/fetchers/rankings/getRankingsData";
+import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
+
+export type PerformanceMode = "throughput" | "latency";
+
+type PerformanceScatterRow = PerformanceData & {
+    model_name?: string | null;
+    organisation_id?: string | null;
+    provider_name?: string | null;
+};
 
 interface PerformanceScatterProps {
-    data: PerformanceData[];
+    data: PerformanceScatterRow[];
+    mode?: PerformanceMode;
 }
 
-type Mode = "throughput" | "latency";
+function formatCompact(value: number) {
+    if (!Number.isFinite(value)) return "--";
+    if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+    return value.toLocaleString();
+}
 
-export function PerformanceScatter({ data }: PerformanceScatterProps) {
-    const [mode, setMode] = useState<Mode>("throughput");
+export function PerformanceScatter({
+    data,
+    mode = "throughput",
+}: PerformanceScatterProps) {
+    if (!data.length) {
+        return (
+            <RankingsEmptyState
+                title="No performance data yet"
+                description="Performance metrics appear once enough requests are aggregated for a model."
+            />
+        );
+    }
 
-    const chartData = data.map((row) => ({
-        x: row.cost_per_1m_tokens,
-        y: mode === "throughput" ? row.median_throughput : row.median_latency_ms,
-        z: row.requests, // Bubble size
-        model: row.model_id,
-        provider: row.provider,
-        successRate: row.success_rate,
-        requests: row.requests,
-        cost: row.cost_per_1m_tokens,
-        latency: row.median_latency_ms,
-        throughput: row.median_throughput,
-    }));
+    const chartData = data
+        .map((row) => {
+            const cost = Number(row.cost_per_1m_tokens);
+            const latency = Number(row.median_latency_ms);
+            const throughput = Number(row.median_throughput);
+            const requests = Number(row.requests);
+            const modelName = row.model_name?.trim() || row.model_id || "Unknown model";
+            const providerName =
+                row.provider_name?.trim() || row.provider || "Unknown provider";
+
+            const yValue = mode === "throughput" ? throughput : latency;
+
+            if (
+                !Number.isFinite(cost) ||
+                !Number.isFinite(yValue) ||
+                !Number.isFinite(requests)
+            ) {
+                return null;
+            }
+
+            return {
+                x: cost,
+                y: yValue,
+                z: requests,
+                modelId: row.model_id || "",
+                modelName,
+                organisationId: row.organisation_id || null,
+                providerName,
+                providerId: row.provider || "unknown",
+                requests,
+                cost,
+                latency,
+                throughput,
+            };
+        })
+        .filter(Boolean) as Array<{
+            x: number;
+            y: number;
+            z: number;
+            modelId: string;
+            modelName: string;
+            organisationId: string | null;
+            providerName: string;
+            providerId: string;
+            requests: number;
+            cost: number;
+            latency: number;
+            throughput: number;
+        }>;
+
+    if (!chartData.length) {
+        return (
+            <RankingsEmptyState
+                title="No performance data yet"
+                description="Performance metrics appear once enough requests are aggregated for a model."
+            />
+        );
+    }
 
     return (
-        <div className="space-y-4">
-            {/* Mode Toggle */}
-            <div className="flex gap-2">
-                <Button
-                    variant={mode === "throughput" ? "default" : "outline"}
-                    onClick={() => setMode("throughput")}
-                >
-                    Throughput View
-                </Button>
-                <Button
-                    variant={mode === "latency" ? "default" : "outline"}
-                    onClick={() => setMode("latency")}
-                >
-                    Latency View
-                </Button>
-            </div>
-
-            {/* Scatter Chart */}
-            <Card className="p-4">
-                <ResponsiveContainer width="100%" height={500}>
-                    <ScatterChart margin={{ top: 20, right: 20, bottom: 60, left: 60 }}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                        <XAxis
-                            type="number"
-                            dataKey="x"
-                            name="Cost per 1M tokens"
-                            label={{
-                                value: "Cost per 1M Tokens ($)",
-                                position: "bottom",
-                                offset: 40,
-                            }}
-                            domain={[0, "auto"]}
-                        />
-                        <YAxis
-                            type="number"
-                            dataKey="y"
-                            name={mode === "throughput" ? "Throughput" : "Latency"}
-                            label={{
-                                value:
-                                    mode === "throughput"
-                                        ? "Throughput (tokens/s)"
-                                        : "Latency P50 (ms)",
-                                angle: -90,
-                                position: "left",
-                                offset: 40,
-                            }}
-                            domain={[0, "auto"]}
-                        />
-                        <ZAxis type="number" dataKey="z" range={[50, 1000]} />
-                        <Tooltip
-                            content={({ payload }) => {
-                                if (!payload?.[0]) return null;
-                                const data = payload[0].payload;
-                                return (
-                                    <Card className="p-3 shadow-lg border">
-                                        <div className="space-y-2">
-                                            <p className="font-semibold">{data.model}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {data.provider}
-                                            </p>
-                                            <div className="text-sm space-y-1 pt-2 border-t">
-                                                <p>Cost: ${data.cost.toFixed(2)}/1M tokens</p>
-                                                <p>
-                                                    {mode === "throughput"
-                                                        ? `Throughput: ${data.throughput.toFixed(1)} tok/s`
-                                                        : `Latency: ${Math.round(data.latency)}ms`}
-                                                </p>
-                                                <p>Requests: {data.requests.toLocaleString()}</p>
-                                                <p>
-                                                    Success Rate:{" "}
-                                                    {(data.successRate * 100).toFixed(1)}%
-                                                </p>
+        <div className="h-[500px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 60, left: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis
+                        type="number"
+                        dataKey="x"
+                        name="Cost per 1M tokens"
+                        label={{
+                            value: "Cost per 1M Tokens ($)",
+                            position: "bottom",
+                            offset: 40,
+                        }}
+                        domain={[0, "auto"]}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <YAxis
+                        type="number"
+                        dataKey="y"
+                        name={mode === "throughput" ? "Throughput" : "Latency"}
+                        label={{
+                            value:
+                                mode === "throughput"
+                                    ? "Throughput (tokens/s)"
+                                    : "Latency P50 (ms)",
+                            angle: -90,
+                            position: "left",
+                            offset: 40,
+                        }}
+                        domain={[0, "auto"]}
+                        axisLine={false}
+                        tickLine={false}
+                    />
+                    <ZAxis type="number" dataKey="z" range={[50, 1000]} />
+                    <Tooltip
+                        cursor={false}
+                        content={({ payload }) => {
+                            if (!payload?.[0]) return null;
+                            const point = payload[0].payload;
+                            const modelHref = getModelDetailsHref(
+                                point.organisationId,
+                                point.modelId
+                            );
+                            const providerHref =
+                                point.providerId && point.providerId !== "unknown"
+                                    ? `/api-providers/${encodeURIComponent(point.providerId)}`
+                                    : null;
+                            return (
+                                <div className="min-w-[260px] rounded-lg border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/90">
+                                    <div className="flex items-center gap-2 pb-2">
+                                        {providerHref ? (
+                                            <Link
+                                                href={providerHref}
+                                                className="h-8 w-8 rounded-lg border border-border/60 flex items-center justify-center"
+                                                aria-label={point.providerName}
+                                            >
+                                                <div className="relative h-4 w-4">
+                                                    <Logo
+                                                        id={point.providerId}
+                                                        alt={point.providerName}
+                                                        className="object-contain"
+                                                        fill
+                                                    />
+                                                </div>
+                                            </Link>
+                                        ) : (
+                                            <div className="h-8 w-8 rounded-lg border border-border/60 flex items-center justify-center">
+                                                <div className="relative h-4 w-4">
+                                                    <Logo
+                                                        id={point.providerId}
+                                                        alt={point.providerName}
+                                                        className="object-contain"
+                                                        fill
+                                                    />
+                                                </div>
                                             </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            {modelHref ? (
+                                                <Link href={modelHref} className="truncate text-sm font-medium block">
+                                                    {point.modelName}
+                                                </Link>
+                                            ) : (
+                                                <p className="truncate text-sm font-medium">
+                                                    {point.modelName}
+                                                </p>
+                                            )}
+                                            {providerHref ? (
+                                                <Link href={providerHref} className="truncate text-xs text-muted-foreground block">
+                                                    {point.providerName}
+                                                </Link>
+                                            ) : (
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {point.providerName}
+                                                </p>
+                                            )}
                                         </div>
-                                    </Card>
-                                );
-                            }}
-                        />
-                        <Scatter data={chartData} fill="hsl(var(--primary))" fillOpacity={0.6} />
-                    </ScatterChart>
-                </ResponsiveContainer>
-                <p className="text-sm text-muted-foreground text-center mt-4">
-                    Bubble size represents request volume (last 24 hours). Lower cost + {mode === "throughput" ? "higher throughput" : "lower latency"} = better value.
-                </p>
-            </Card>
+                                    </div>
+                                    <div className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs">
+                                        <span className="text-muted-foreground">Cost</span>
+                                        <span className="text-right font-mono">
+                                            ${point.cost.toFixed(2)}/1M
+                                        </span>
+                                        <span className="text-muted-foreground">
+                                            {mode === "throughput" ? "Throughput" : "Latency"}
+                                        </span>
+                                        <span className="text-right font-mono">
+                                            {mode === "throughput"
+                                                ? `${point.throughput.toFixed(1)} tok/s`
+                                                : `${Math.round(point.latency)}ms`}
+                                        </span>
+                                        <span className="text-muted-foreground">Requests</span>
+                                        <span className="text-right font-mono">
+                                            {formatCompact(point.requests)}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        }}
+                    />
+                    <Scatter data={chartData} fill="hsl(var(--primary))" fillOpacity={0.6} />
+                </ScatterChart>
+            </ResponsiveContainer>
         </div>
     );
 }

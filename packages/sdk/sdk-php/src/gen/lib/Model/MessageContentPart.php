@@ -59,8 +59,7 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $openAPITypes = [
         'type' => 'string',
         'text' => 'string',
-        'cache_control' => '\AIStats\Sdk\Model\CacheControl',
-        'image_url' => '\AIStats\Sdk\Model\InputImageContentPartImageUrl',
+        'image_url' => '\AIStats\Sdk\Model\ImageContentPartImageUrl',
         'input_audio' => '\AIStats\Sdk\Model\AudioContentPartInputAudio',
         'video_url' => 'string',
         'id' => 'string',
@@ -77,7 +76,6 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $openAPIFormats = [
         'type' => null,
         'text' => null,
-        'cache_control' => null,
         'image_url' => null,
         'input_audio' => null,
         'video_url' => 'uri',
@@ -93,7 +91,6 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static array $openAPINullables = [
         'type' => false,
         'text' => false,
-        'cache_control' => false,
         'image_url' => false,
         'input_audio' => false,
         'video_url' => false,
@@ -189,7 +186,6 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $attributeMap = [
         'type' => 'type',
         'text' => 'text',
-        'cache_control' => 'cache_control',
         'image_url' => 'image_url',
         'input_audio' => 'input_audio',
         'video_url' => 'video_url',
@@ -205,7 +201,6 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $setters = [
         'type' => 'setType',
         'text' => 'setText',
-        'cache_control' => 'setCacheControl',
         'image_url' => 'setImageUrl',
         'input_audio' => 'setInputAudio',
         'video_url' => 'setVideoUrl',
@@ -221,7 +216,6 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     protected static $getters = [
         'type' => 'getType',
         'text' => 'getText',
-        'cache_control' => 'getCacheControl',
         'image_url' => 'getImageUrl',
         'input_audio' => 'getInputAudio',
         'video_url' => 'getVideoUrl',
@@ -271,9 +265,7 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     }
 
     public const TYPE_TEXT = 'text';
-    public const TYPE_INPUT_TEXT = 'input_text';
     public const TYPE_IMAGE_URL = 'image_url';
-    public const TYPE_INPUT_IMAGE = 'input_image';
     public const TYPE_INPUT_AUDIO = 'input_audio';
     public const TYPE_INPUT_VIDEO = 'input_video';
     public const TYPE_TOOL_CALL = 'tool_call';
@@ -287,9 +279,7 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     {
         return [
             self::TYPE_TEXT,
-            self::TYPE_INPUT_TEXT,
             self::TYPE_IMAGE_URL,
-            self::TYPE_INPUT_IMAGE,
             self::TYPE_INPUT_AUDIO,
             self::TYPE_INPUT_VIDEO,
             self::TYPE_TOOL_CALL,
@@ -313,7 +303,6 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     {
         $this->setIfExists('type', $data ?? [], null);
         $this->setIfExists('text', $data ?? [], null);
-        $this->setIfExists('cache_control', $data ?? [], null);
         $this->setIfExists('image_url', $data ?? [], null);
         $this->setIfExists('input_audio', $data ?? [], null);
         $this->setIfExists('video_url', $data ?? [], null);
@@ -458,36 +447,9 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     }
 
     /**
-     * Gets cache_control
-     *
-     * @return \AIStats\Sdk\Model\CacheControl|null
-     */
-    public function getCacheControl()
-    {
-        return $this->container['cache_control'];
-    }
-
-    /**
-     * Sets cache_control
-     *
-     * @param \AIStats\Sdk\Model\CacheControl|null $cache_control cache_control
-     *
-     * @return self
-     */
-    public function setCacheControl($cache_control)
-    {
-        if (is_null($cache_control)) {
-            throw new \InvalidArgumentException('non-nullable cache_control cannot be null');
-        }
-        $this->container['cache_control'] = $cache_control;
-
-        return $this;
-    }
-
-    /**
      * Gets image_url
      *
-     * @return \AIStats\Sdk\Model\InputImageContentPartImageUrl
+     * @return \AIStats\Sdk\Model\ImageContentPartImageUrl
      */
     public function getImageUrl()
     {
@@ -497,7 +459,7 @@ class MessageContentPart implements ModelInterface, ArrayAccess, \JsonSerializab
     /**
      * Sets image_url
      *
-     * @param \AIStats\Sdk\Model\InputImageContentPartImageUrl $image_url image_url
+     * @param \AIStats\Sdk\Model\ImageContentPartImageUrl $image_url image_url
      *
      * @return self
      */

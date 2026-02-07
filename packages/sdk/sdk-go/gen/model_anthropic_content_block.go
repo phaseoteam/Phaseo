@@ -21,11 +21,7 @@ var _ MappedNullable = &AnthropicContentBlock{}
 type AnthropicContentBlock struct {
 	Type *string `json:"type,omitempty"`
 	Text *string `json:"text,omitempty"`
-	CacheControl *CacheControl `json:"cache_control,omitempty"`
 	Source *AnthropicContentBlockSource `json:"source,omitempty"`
-	ImageUrl *AnthropicContentBlockImageUrl `json:"image_url,omitempty"`
-	InputAudio *AudioContentPartInputAudio `json:"input_audio,omitempty"`
-	VideoUrl *string `json:"video_url,omitempty"`
 	Id *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	Input map[string]interface{} `json:"input,omitempty"`
@@ -114,38 +110,6 @@ func (o *AnthropicContentBlock) SetText(v string) {
 	o.Text = &v
 }
 
-// GetCacheControl returns the CacheControl field value if set, zero value otherwise.
-func (o *AnthropicContentBlock) GetCacheControl() CacheControl {
-	if o == nil || IsNil(o.CacheControl) {
-		var ret CacheControl
-		return ret
-	}
-	return *o.CacheControl
-}
-
-// GetCacheControlOk returns a tuple with the CacheControl field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicContentBlock) GetCacheControlOk() (*CacheControl, bool) {
-	if o == nil || IsNil(o.CacheControl) {
-		return nil, false
-	}
-	return o.CacheControl, true
-}
-
-// HasCacheControl returns a boolean if a field has been set.
-func (o *AnthropicContentBlock) HasCacheControl() bool {
-	if o != nil && !IsNil(o.CacheControl) {
-		return true
-	}
-
-	return false
-}
-
-// SetCacheControl gets a reference to the given CacheControl and assigns it to the CacheControl field.
-func (o *AnthropicContentBlock) SetCacheControl(v CacheControl) {
-	o.CacheControl = &v
-}
-
 // GetSource returns the Source field value if set, zero value otherwise.
 func (o *AnthropicContentBlock) GetSource() AnthropicContentBlockSource {
 	if o == nil || IsNil(o.Source) {
@@ -176,102 +140,6 @@ func (o *AnthropicContentBlock) HasSource() bool {
 // SetSource gets a reference to the given AnthropicContentBlockSource and assigns it to the Source field.
 func (o *AnthropicContentBlock) SetSource(v AnthropicContentBlockSource) {
 	o.Source = &v
-}
-
-// GetImageUrl returns the ImageUrl field value if set, zero value otherwise.
-func (o *AnthropicContentBlock) GetImageUrl() AnthropicContentBlockImageUrl {
-	if o == nil || IsNil(o.ImageUrl) {
-		var ret AnthropicContentBlockImageUrl
-		return ret
-	}
-	return *o.ImageUrl
-}
-
-// GetImageUrlOk returns a tuple with the ImageUrl field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicContentBlock) GetImageUrlOk() (*AnthropicContentBlockImageUrl, bool) {
-	if o == nil || IsNil(o.ImageUrl) {
-		return nil, false
-	}
-	return o.ImageUrl, true
-}
-
-// HasImageUrl returns a boolean if a field has been set.
-func (o *AnthropicContentBlock) HasImageUrl() bool {
-	if o != nil && !IsNil(o.ImageUrl) {
-		return true
-	}
-
-	return false
-}
-
-// SetImageUrl gets a reference to the given AnthropicContentBlockImageUrl and assigns it to the ImageUrl field.
-func (o *AnthropicContentBlock) SetImageUrl(v AnthropicContentBlockImageUrl) {
-	o.ImageUrl = &v
-}
-
-// GetInputAudio returns the InputAudio field value if set, zero value otherwise.
-func (o *AnthropicContentBlock) GetInputAudio() AudioContentPartInputAudio {
-	if o == nil || IsNil(o.InputAudio) {
-		var ret AudioContentPartInputAudio
-		return ret
-	}
-	return *o.InputAudio
-}
-
-// GetInputAudioOk returns a tuple with the InputAudio field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicContentBlock) GetInputAudioOk() (*AudioContentPartInputAudio, bool) {
-	if o == nil || IsNil(o.InputAudio) {
-		return nil, false
-	}
-	return o.InputAudio, true
-}
-
-// HasInputAudio returns a boolean if a field has been set.
-func (o *AnthropicContentBlock) HasInputAudio() bool {
-	if o != nil && !IsNil(o.InputAudio) {
-		return true
-	}
-
-	return false
-}
-
-// SetInputAudio gets a reference to the given AudioContentPartInputAudio and assigns it to the InputAudio field.
-func (o *AnthropicContentBlock) SetInputAudio(v AudioContentPartInputAudio) {
-	o.InputAudio = &v
-}
-
-// GetVideoUrl returns the VideoUrl field value if set, zero value otherwise.
-func (o *AnthropicContentBlock) GetVideoUrl() string {
-	if o == nil || IsNil(o.VideoUrl) {
-		var ret string
-		return ret
-	}
-	return *o.VideoUrl
-}
-
-// GetVideoUrlOk returns a tuple with the VideoUrl field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *AnthropicContentBlock) GetVideoUrlOk() (*string, bool) {
-	if o == nil || IsNil(o.VideoUrl) {
-		return nil, false
-	}
-	return o.VideoUrl, true
-}
-
-// HasVideoUrl returns a boolean if a field has been set.
-func (o *AnthropicContentBlock) HasVideoUrl() bool {
-	if o != nil && !IsNil(o.VideoUrl) {
-		return true
-	}
-
-	return false
-}
-
-// SetVideoUrl gets a reference to the given string and assigns it to the VideoUrl field.
-func (o *AnthropicContentBlock) SetVideoUrl(v string) {
-	o.VideoUrl = &v
 }
 
 // GetId returns the Id field value if set, zero value otherwise.
@@ -450,20 +318,8 @@ func (o AnthropicContentBlock) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Text) {
 		toSerialize["text"] = o.Text
 	}
-	if !IsNil(o.CacheControl) {
-		toSerialize["cache_control"] = o.CacheControl
-	}
 	if !IsNil(o.Source) {
 		toSerialize["source"] = o.Source
-	}
-	if !IsNil(o.ImageUrl) {
-		toSerialize["image_url"] = o.ImageUrl
-	}
-	if !IsNil(o.InputAudio) {
-		toSerialize["input_audio"] = o.InputAudio
-	}
-	if !IsNil(o.VideoUrl) {
-		toSerialize["video_url"] = o.VideoUrl
 	}
 	if !IsNil(o.Id) {
 		toSerialize["id"] = o.Id

@@ -6,6 +6,8 @@ import { CopyButton } from "@/components/ui/copy-button";
 import {
 	BarChart2,
 	ChevronDown,
+	Globe,
+	Lock,
 	MoreHorizontal,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,6 +34,7 @@ type AppItem = {
 	url: string | null;
 	image_url: string | null;
 	is_public: boolean;
+	is_active: boolean;
 	last_seen: string | null;
 	created_at: string | null;
 };
@@ -42,9 +45,6 @@ function formatDate(value: string | null) {
 	if (Number.isNaN(date.getTime())) return "-";
 	return date.toLocaleDateString();
 }
-
-const ATTRIBUTION_DOCS_HREF =
-	"https://docs.ai-stats.phaseo.app/v1/guides/app-attribution";
 
 export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 	const [items, setItems] = useState<AppItem[]>(apps);
@@ -89,8 +89,8 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 
 	const handleToggle = async (
 		app: AppItem,
-		field: "is_public",
-		value: boolean
+		field: "is_public" | "is_active",
+		value: boolean,
 	) => {
 		setBusy(app.id, true);
 		try {
@@ -200,6 +200,11 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 										handleToggle(app, "is_public", !app.is_public)
 									}
 								>
+									{app.is_public ? (
+										<Globe className="mr-1 h-3 w-3" />
+									) : (
+										<Lock className="mr-1 h-3 w-3" />
+									)}
 									{app.is_public ? "Public" : "Private"}
 								</Button>
 								<DropdownMenu>
@@ -282,20 +287,6 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 										/>
 									</Button>
 								</CollapsibleTrigger>
-								<Button
-									asChild
-									size="sm"
-									variant="outline"
-									className="text-xs"
-								>
-									<Link
-										href={ATTRIBUTION_DOCS_HREF}
-										target="_blank"
-										rel="noreferrer"
-									>
-										Docs
-									</Link>
-								</Button>
 							</div>
 							<CollapsibleContent>
 								<div className="mt-3 rounded-xl border border-border/60 bg-muted/30 p-4">

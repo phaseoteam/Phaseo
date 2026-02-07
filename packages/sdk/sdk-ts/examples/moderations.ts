@@ -6,7 +6,7 @@ if (!key) throw new Error("Set AI_STATS_API_KEY");
 async function main() {
   const client = new AIStats({ apiKey: key });
   const response = await client.generateModeration({
-    model: "openai/omni-moderation",
+    model: "openai/moderation-latest",
     input: "Please rate this message for safety.",
   });
   console.log("moderation result:", response.results?.[0]?.categories);

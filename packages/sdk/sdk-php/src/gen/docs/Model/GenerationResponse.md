@@ -19,7 +19,7 @@ Name | Type | Description | Notes
 **error_message** | **string** |  | [optional]
 **latency_ms** | **float** |  | [optional]
 **generation_ms** | **float** |  | [optional]
-**usage** | [**\AIStats\Sdk\Model\Usage**](Usage.md) |  | [optional]
+**usage** | [**\AIStats\Sdk\Model\GenerationResponseUsage**](GenerationResponseUsage.md) |  | [optional]
 **cost_nanos** | **float** |  | [optional]
 **currency** | **string** |  | [optional]
 **pricing_lines** | **object[]** |  | [optional]

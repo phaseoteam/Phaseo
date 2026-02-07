@@ -34,16 +34,14 @@ namespace AIStatsSdk.Model
         /// Initializes a new instance of the <see cref="ChatMessage" /> class.
         /// </summary>
         /// <param name="content">content</param>
-        /// <param name="reasoningContent">reasoningContent</param>
         /// <param name="name">name</param>
         /// <param name="toolCalls">toolCalls</param>
         /// <param name="toolCallId">toolCallId</param>
         [JsonConstructor]
-        public ChatMessage(Option<ChatMessageContent?> content = default, Option<string?> reasoningContent = default, Option<string?> name = default, Option<List<ToolCall>?> toolCalls = default, Option<string?> toolCallId = default)
+        public ChatMessage(Option<ChatMessageContent?> content = default, Option<string?> name = default, Option<List<ToolCall>?> toolCalls = default, Option<string?> toolCallId = default)
         {
             Role = (RoleEnum)Enum.Parse(typeof(RoleEnum), this.GetType().Name);
             ContentOption = content;
-            ReasoningContentOption = reasoningContent;
             NameOption = name;
             ToolCallsOption = toolCalls;
             ToolCallIdOption = toolCallId;
@@ -167,19 +165,6 @@ namespace AIStatsSdk.Model
         public ChatMessageContent? Content { get { return this.ContentOption; } set { this.ContentOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of ReasoningContent
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> ReasoningContentOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ReasoningContent
-        /// </summary>
-        [JsonPropertyName("reasoning_content")]
-        public string? ReasoningContent { get { return this.ReasoningContentOption; } set { this.ReasoningContentOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Name
         /// </summary>
         [JsonIgnore]
@@ -227,7 +212,6 @@ namespace AIStatsSdk.Model
             StringBuilder sb = new StringBuilder();
             sb.Append("class ChatMessage {\n");
             sb.Append("  Content: ").Append(Content).Append("\n");
-            sb.Append("  ReasoningContent: ").Append(ReasoningContent).Append("\n");
             sb.Append("  Name: ").Append(Name).Append("\n");
             sb.Append("  ToolCalls: ").Append(ToolCalls).Append("\n");
             sb.Append("  ToolCallId: ").Append(ToolCallId).Append("\n");
@@ -280,7 +264,6 @@ namespace AIStatsSdk.Model
 
             Option<ChatMessage.RoleEnum?> role = default;
             Option<ChatMessageContent?> content = default;
-            Option<string?> reasoningContent = default;
             Option<string?> name = default;
             Option<List<ToolCall>?> toolCalls = default;
             Option<string?> toolCallId = default;
@@ -308,9 +291,6 @@ namespace AIStatsSdk.Model
                         case "content":
                             content = new Option<ChatMessageContent?>(JsonSerializer.Deserialize<ChatMessageContent>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
-                        case "reasoning_content":
-                            reasoningContent = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
                         case "name":
                             name = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
@@ -335,9 +315,6 @@ namespace AIStatsSdk.Model
             if (content.IsSet && content.Value == null)
                 throw new ArgumentNullException(nameof(content), "Property is not nullable for class ChatMessage.");
 
-            if (reasoningContent.IsSet && reasoningContent.Value == null)
-                throw new ArgumentNullException(nameof(reasoningContent), "Property is not nullable for class ChatMessage.");
-
             if (name.IsSet && name.Value == null)
                 throw new ArgumentNullException(nameof(name), "Property is not nullable for class ChatMessage.");
 
@@ -347,7 +324,7 @@ namespace AIStatsSdk.Model
             if (toolCallId.IsSet && toolCallId.Value == null)
                 throw new ArgumentNullException(nameof(toolCallId), "Property is not nullable for class ChatMessage.");
 
-            return new ChatMessage(content, reasoningContent, name, toolCalls, toolCallId);
+            return new ChatMessage(content, name, toolCalls, toolCallId);
         }
 
         /// <summary>
@@ -377,9 +354,6 @@ namespace AIStatsSdk.Model
             if (chatMessage.ContentOption.IsSet && chatMessage.Content == null)
                 throw new ArgumentNullException(nameof(chatMessage.Content), "Property is required for class ChatMessage.");
 
-            if (chatMessage.ReasoningContentOption.IsSet && chatMessage.ReasoningContent == null)
-                throw new ArgumentNullException(nameof(chatMessage.ReasoningContent), "Property is required for class ChatMessage.");
-
             if (chatMessage.NameOption.IsSet && chatMessage.Name == null)
                 throw new ArgumentNullException(nameof(chatMessage.Name), "Property is required for class ChatMessage.");
 
@@ -396,9 +370,6 @@ namespace AIStatsSdk.Model
                 writer.WritePropertyName("content");
                 JsonSerializer.Serialize(writer, chatMessage.Content, jsonSerializerOptions);
             }
-            if (chatMessage.ReasoningContentOption.IsSet)
-                writer.WriteString("reasoning_content", chatMessage.ReasoningContent);
-
             if (chatMessage.NameOption.IsSet)
                 writer.WriteString("name", chatMessage.Name);
 

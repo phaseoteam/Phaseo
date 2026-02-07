@@ -6,7 +6,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **role** | **string** |  |
 **content** | [**\AIStats\Sdk\Model\ChatMessageContent**](ChatMessageContent.md) |  | [optional]
-**reasoning_content** | **string** |  | [optional]
 **name** | **string** |  | [optional]
 **tool_calls** | [**\AIStats\Sdk\Model\ToolCall[]**](ToolCall.md) |  | [optional]
 **tool_call_id** | **string** |  | [optional]

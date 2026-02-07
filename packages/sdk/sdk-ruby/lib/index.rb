@@ -1,210 +1,60 @@
-require_relative "gen/client"
-require_relative "gen/operations"
-require_relative "gen/models"
+require_relative 'gen/api/default_api'
+require_relative 'gen/api_client'
+require_relative 'gen/configuration'
 
 module AIStatsSdk
-  # Thin wrapper around the custom OAPI generator output.
+  # Thin wrapper around the generated Ruby SDK.
+  # Regenerate with: `pnpm openapi:gen:ruby`
   class Client
-    attr_reader :chat, :responses, :messages, :images, :audio, :moderations, :batches, :files, :models
-
-    def initialize(api_key:, base_path: "https://api.phaseo.app/v1")
-      @client = AiStats::Gen::Client.new(
-        base_url: base_path,
-        headers: { "Authorization" => "Bearer #{api_key}" }
-      )
-      @chat = ChatResource.new(@client)
-      @responses = ResponsesResource.new(@client)
-      @messages = MessagesResource.new(@client)
-      @images = ImagesResource.new(@client)
-      @audio = AudioResource.new(@client)
-      @moderations = ModerationsResource.new(@client)
-      @batches = BatchesResource.new(@client)
-      @files = FilesResource.new(@client)
-      @models = ModelsResource.new(@client)
+    def initialize(api_key:, base_path: 'https://api.phaseo.app/v1')
+      config = AIStatsSdk::Configuration.default
+      config.base_path = base_path
+      config.access_token = api_key
+      @api = AIStatsSdk::DefaultApi.new(AIStatsSdk::ApiClient.new(config))
     end
 
     def generate_text(payload)
-      @chat.completions.create(payload)
+      @api.create_chat_completion(payload)
     end
 
     def generate_response(payload)
-      @responses.create(payload)
+      @api.create_response(payload)
     end
 
     def generate_image(payload)
-      @images.generate(payload)
+      @api.create_image(payload)
     end
 
-    def generate_image_edit(payload)
-      @images.edit(payload)
+    def generate_image_edit(model:, image:, prompt:, **opts)
+      @api.create_image_edit(model, image, prompt, opts[:mask], opts[:size], opts[:n], opts[:user], opts[:meta], opts[:usage])
     end
 
     def generate_embedding(payload)
-      AiStats::Gen::Operations.createEmbedding(@client, body: payload)
+      @api.create_embedding(payload)
     end
 
     def generate_moderation(payload)
-      @moderations.create(payload)
+      @api.create_moderation(payload)
     end
 
     def generate_speech(payload)
-      @audio.speech.create(payload)
+      @api.create_speech(payload)
     end
 
-    def generate_transcription(payload)
-      @audio.transcriptions.create(payload)
+    def generate_transcription(model:, audio_url: nil, audio_b64: nil, language: nil)
+      @api.create_transcription(model, audio_url, audio_b64, language)
     end
 
-    def generate_translation(payload)
-      @audio.translations.create(payload)
+    def generate_translation(model:, audio_url: nil, audio_b64: nil, language: nil, prompt: nil, temperature: nil)
+      @api.create_translation(model, audio_url, audio_b64, language, prompt, temperature)
     end
 
     def list_models(options = {})
-      @models.list(options)
+      @api.list_models(options)
     end
 
     def health
-      AiStats::Gen::Operations.health(@client)
-    end
-  end
-
-  class ChatCompletionsResource
-    def initialize(client)
-      @client = client
-    end
-
-    def create(payload)
-      AiStats::Gen::Operations.createChatCompletion(@client, body: payload)
-    end
-  end
-
-  class ChatResource
-    attr_reader :completions
-
-    def initialize(client)
-      @completions = ChatCompletionsResource.new(client)
-    end
-  end
-
-  class ResponsesResource
-    def initialize(client)
-      @client = client
-    end
-
-    def create(payload)
-      AiStats::Gen::Operations.createResponse(@client, body: payload)
-    end
-  end
-
-  class MessagesResource
-    def initialize(client)
-      @client = client
-    end
-
-    def create(payload)
-      AiStats::Gen::Operations.createAnthropicMessage(@client, body: payload)
-    end
-  end
-
-  class ImagesResource
-    def initialize(client)
-      @client = client
-    end
-
-    def generate(payload)
-      AiStats::Gen::Operations.createImage(@client, body: payload)
-    end
-
-    def edit(payload)
-      AiStats::Gen::Operations.createImageEdit(@client, body: payload)
-    end
-  end
-
-  class AudioSpeechResource
-    def initialize(client)
-      @client = client
-    end
-
-    def create(payload)
-      AiStats::Gen::Operations.createSpeech(@client, body: payload)
-    end
-  end
-
-  class AudioTranscriptionsResource
-    def initialize(client)
-      @client = client
-    end
-
-    def create(payload)
-      AiStats::Gen::Operations.createTranscription(@client, body: payload)
-    end
-  end
-
-  class AudioTranslationsResource
-    def initialize(client)
-      @client = client
-    end
-
-    def create(payload)
-      AiStats::Gen::Operations.createTranslation(@client, body: payload)
-    end
-  end
-
-  class AudioResource
-    attr_reader :speech, :transcriptions, :translations
-
-    def initialize(client)
-      @speech = AudioSpeechResource.new(client)
-      @transcriptions = AudioTranscriptionsResource.new(client)
-      @translations = AudioTranslationsResource.new(client)
-    end
-  end
-
-  class ModerationsResource
-    def initialize(client)
-      @client = client
-    end
-
-    def create(payload)
-      AiStats::Gen::Operations.createModeration(@client, body: payload)
-    end
-  end
-
-  class BatchesResource
-    def initialize(client)
-      @client = client
-    end
-
-    def create(payload)
-      AiStats::Gen::Operations.createBatch(@client, body: payload)
-    end
-
-    def retrieve(batch_id)
-      AiStats::Gen::Operations.retrieveBatch(@client, path: { "batch_id" => batch_id })
-    end
-  end
-
-  class FilesResource
-    def initialize(client)
-      @client = client
-    end
-
-    def list
-      AiStats::Gen::Operations.listFiles(@client)
-    end
-
-    def retrieve(file_id)
-      AiStats::Gen::Operations.retrieveFile(@client, path: { "file_id" => file_id })
-    end
-  end
-
-  class ModelsResource
-    def initialize(client)
-      @client = client
-    end
-
-    def list(options = {})
-      AiStats::Gen::Operations.listModels(@client, query: options)
+      @api.healthz
     end
   end
 end

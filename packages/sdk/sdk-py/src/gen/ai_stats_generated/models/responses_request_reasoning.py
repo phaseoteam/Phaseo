@@ -17,9 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -29,9 +28,7 @@ class ResponsesRequestReasoning(BaseModel):
     """ # noqa: E501
     effort: Optional[StrictStr] = None
     summary: Optional[StrictStr] = None
-    enabled: Optional[StrictBool] = None
-    max_tokens: Optional[Annotated[int, Field(strict=True, ge=0)]] = None
-    __properties: ClassVar[List[str]] = ["effort", "summary", "enabled", "max_tokens"]
+    __properties: ClassVar[List[str]] = ["effort", "summary"]
 
     @field_validator('effort')
     def effort_validate_enum(cls, value):
@@ -95,9 +92,7 @@ class ResponsesRequestReasoning(BaseModel):
 
         _obj = cls.model_validate({
             "effort": obj.get("effort"),
-            "summary": obj.get("summary"),
-            "enabled": obj.get("enabled"),
-            "max_tokens": obj.get("max_tokens")
+            "summary": obj.get("summary")
         })
         return _obj
 

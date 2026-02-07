@@ -6,8 +6,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Effort** | Pointer to **string** |  | [optional] 
 **Summary** | Pointer to **string** |  | [optional] 
-**Enabled** | Pointer to **bool** |  | [optional] 
-**MaxTokens** | Pointer to **int32** |  | [optional] 
 
 ## Methods
 
@@ -77,56 +75,6 @@ SetSummary sets Summary field to given value.
 `func (o *ResponsesRequestReasoning) HasSummary() bool`
 
 HasSummary returns a boolean if a field has been set.
-
-### GetEnabled
-
-`func (o *ResponsesRequestReasoning) GetEnabled() bool`
-
-GetEnabled returns the Enabled field if non-nil, zero value otherwise.
-
-### GetEnabledOk
-
-`func (o *ResponsesRequestReasoning) GetEnabledOk() (*bool, bool)`
-
-GetEnabledOk returns a tuple with the Enabled field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetEnabled
-
-`func (o *ResponsesRequestReasoning) SetEnabled(v bool)`
-
-SetEnabled sets Enabled field to given value.
-
-### HasEnabled
-
-`func (o *ResponsesRequestReasoning) HasEnabled() bool`
-
-HasEnabled returns a boolean if a field has been set.
-
-### GetMaxTokens
-
-`func (o *ResponsesRequestReasoning) GetMaxTokens() int32`
-
-GetMaxTokens returns the MaxTokens field if non-nil, zero value otherwise.
-
-### GetMaxTokensOk
-
-`func (o *ResponsesRequestReasoning) GetMaxTokensOk() (*int32, bool)`
-
-GetMaxTokensOk returns a tuple with the MaxTokens field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetMaxTokens
-
-`func (o *ResponsesRequestReasoning) SetMaxTokens(v int32)`
-
-SetMaxTokens sets MaxTokens field to given value.
-
-### HasMaxTokens
-
-`func (o *ResponsesRequestReasoning) HasMaxTokens() bool`
-
-HasMaxTokens returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

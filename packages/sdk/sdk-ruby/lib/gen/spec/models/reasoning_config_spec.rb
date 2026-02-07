@@ -47,16 +47,4 @@ describe AIStatsSdk::ReasoningConfig do
     end
   end
 
-  describe 'test attribute "enabled"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  describe 'test attribute "max_tokens"' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
 end

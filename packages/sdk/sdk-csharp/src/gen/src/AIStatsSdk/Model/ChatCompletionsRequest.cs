@@ -41,7 +41,6 @@ namespace AIStatsSdk.Model
         /// <param name="logitBias">logitBias</param>
         /// <param name="maxOutputTokens">maxOutputTokens</param>
         /// <param name="meta">meta (default to false)</param>
-        /// <param name="debug">debug</param>
         /// <param name="presencePenalty">presencePenalty</param>
         /// <param name="seed">seed</param>
         /// <param name="stream">stream (default to false)</param>
@@ -55,13 +54,12 @@ namespace AIStatsSdk.Model
         /// <param name="topLogprobs">topLogprobs</param>
         /// <param name="topP">topP</param>
         /// <param name="responseFormat">responseFormat</param>
-        /// <param name="modalities">modalities</param>
         /// <param name="usage">usage</param>
         /// <param name="provider">provider</param>
         /// <param name="userId">userId</param>
         /// <param name="serviceTier">serviceTier (default to ServiceTierEnum.Standard)</param>
         [JsonConstructor]
-        public ChatCompletionsRequest(string model, List<ChatMessage> messages, Option<string?> @system = default, Option<ReasoningConfig?> reasoning = default, Option<decimal?> frequencyPenalty = default, Option<Dictionary<string, decimal>?> logitBias = default, Option<int?> maxOutputTokens = default, Option<bool?> meta = default, Option<DebugOptions?> debug = default, Option<decimal?> presencePenalty = default, Option<long?> seed = default, Option<bool?> stream = default, Option<decimal?> temperature = default, Option<List<ChatCompletionsRequestToolsInner>?> tools = default, Option<int?> maxToolCalls = default, Option<bool?> parallelToolCalls = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<int?> topK = default, Option<bool?> logprobs = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<ChatCompletionsRequestResponseFormat?> responseFormat = default, Option<List<ChatCompletionsRequest.ModalitiesEnum>?> modalities = default, Option<bool?> usage = default, Option<ProviderRoutingOptions?> provider = default, Option<string?> userId = default, Option<ServiceTierEnum?> serviceTier = default)
+        public ChatCompletionsRequest(string model, List<ChatMessage> messages, Option<string?> @system = default, Option<ReasoningConfig?> reasoning = default, Option<decimal?> frequencyPenalty = default, Option<Dictionary<string, decimal>?> logitBias = default, Option<int?> maxOutputTokens = default, Option<bool?> meta = default, Option<decimal?> presencePenalty = default, Option<long?> seed = default, Option<bool?> stream = default, Option<decimal?> temperature = default, Option<List<ChatCompletionsRequestToolsInner>?> tools = default, Option<int?> maxToolCalls = default, Option<bool?> parallelToolCalls = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<int?> topK = default, Option<bool?> logprobs = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<ChatCompletionsRequestResponseFormat?> responseFormat = default, Option<bool?> usage = default, Option<ProviderRoutingOptions?> provider = default, Option<string?> userId = default, Option<ServiceTierEnum?> serviceTier = default)
         {
             Model = model;
             Messages = messages;
@@ -71,7 +69,6 @@ namespace AIStatsSdk.Model
             LogitBiasOption = logitBias;
             MaxOutputTokensOption = maxOutputTokens;
             MetaOption = meta;
-            DebugOption = debug;
             PresencePenaltyOption = presencePenalty;
             SeedOption = seed;
             StreamOption = stream;
@@ -85,7 +82,6 @@ namespace AIStatsSdk.Model
             TopLogprobsOption = topLogprobs;
             TopPOption = topP;
             ResponseFormatOption = responseFormat;
-            ModalitiesOption = modalities;
             UsageOption = usage;
             ProviderOption = provider;
             UserIdOption = userId;
@@ -94,100 +90,6 @@ namespace AIStatsSdk.Model
         }
 
         partial void OnCreated();
-
-        /// <summary>
-        /// Defines Modalities
-        /// </summary>
-        public enum ModalitiesEnum
-        {
-            /// <summary>
-            /// Enum Text for value: text
-            /// </summary>
-            Text = 1,
-
-            /// <summary>
-            /// Enum Image for value: image
-            /// </summary>
-            Image = 2,
-
-            /// <summary>
-            /// Enum Audio for value: audio
-            /// </summary>
-            Audio = 3,
-
-            /// <summary>
-            /// Enum Video for value: video
-            /// </summary>
-            Video = 4
-        }
-
-        /// <summary>
-        /// Returns a <see cref="ModalitiesEnum"/>
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static ModalitiesEnum ModalitiesEnumFromString(string value)
-        {
-            if (value.Equals("text"))
-                return ModalitiesEnum.Text;
-
-            if (value.Equals("image"))
-                return ModalitiesEnum.Image;
-
-            if (value.Equals("audio"))
-                return ModalitiesEnum.Audio;
-
-            if (value.Equals("video"))
-                return ModalitiesEnum.Video;
-
-            throw new NotImplementedException($"Could not convert value to type ModalitiesEnum: '{value}'");
-        }
-
-        /// <summary>
-        /// Returns a <see cref="ModalitiesEnum"/>
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public static ModalitiesEnum? ModalitiesEnumFromStringOrDefault(string value)
-        {
-            if (value.Equals("text"))
-                return ModalitiesEnum.Text;
-
-            if (value.Equals("image"))
-                return ModalitiesEnum.Image;
-
-            if (value.Equals("audio"))
-                return ModalitiesEnum.Audio;
-
-            if (value.Equals("video"))
-                return ModalitiesEnum.Video;
-
-            return null;
-        }
-
-        /// <summary>
-        /// Converts the <see cref="ModalitiesEnum"/> to the json value
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static string ModalitiesEnumToJsonValue(ModalitiesEnum? value)
-        {
-            if (value == ModalitiesEnum.Text)
-                return "text";
-
-            if (value == ModalitiesEnum.Image)
-                return "image";
-
-            if (value == ModalitiesEnum.Audio)
-                return "audio";
-
-            if (value == ModalitiesEnum.Video)
-                return "video";
-
-            throw new NotImplementedException($"Value could not be handled: '{value}'");
-        }
 
         /// <summary>
         /// Defines ServiceTier
@@ -373,19 +275,6 @@ namespace AIStatsSdk.Model
         public bool? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugOptions?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of PresencePenalty
         /// </summary>
         [JsonIgnore]
@@ -555,19 +444,6 @@ namespace AIStatsSdk.Model
         public ChatCompletionsRequestResponseFormat? ResponseFormat { get { return this.ResponseFormatOption; } set { this.ResponseFormatOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Modalities
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<List<ChatCompletionsRequest.ModalitiesEnum>?> ModalitiesOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Modalities
-        /// </summary>
-        [JsonPropertyName("modalities")]
-        public List<ChatCompletionsRequest.ModalitiesEnum>? Modalities { get { return this.ModalitiesOption; } set { this.ModalitiesOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Usage
         /// </summary>
         [JsonIgnore]
@@ -622,7 +498,6 @@ namespace AIStatsSdk.Model
             sb.Append("  LogitBias: ").Append(LogitBias).Append("\n");
             sb.Append("  MaxOutputTokens: ").Append(MaxOutputTokens).Append("\n");
             sb.Append("  Meta: ").Append(Meta).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  PresencePenalty: ").Append(PresencePenalty).Append("\n");
             sb.Append("  Seed: ").Append(Seed).Append("\n");
             sb.Append("  Stream: ").Append(Stream).Append("\n");
@@ -636,7 +511,6 @@ namespace AIStatsSdk.Model
             sb.Append("  TopLogprobs: ").Append(TopLogprobs).Append("\n");
             sb.Append("  TopP: ").Append(TopP).Append("\n");
             sb.Append("  ResponseFormat: ").Append(ResponseFormat).Append("\n");
-            sb.Append("  Modalities: ").Append(Modalities).Append("\n");
             sb.Append("  Usage: ").Append(Usage).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("  UserId: ").Append(UserId).Append("\n");
@@ -776,7 +650,6 @@ namespace AIStatsSdk.Model
             Option<Dictionary<string, decimal>?> logitBias = default;
             Option<int?> maxOutputTokens = default;
             Option<bool?> meta = default;
-            Option<DebugOptions?> debug = default;
             Option<decimal?> presencePenalty = default;
             Option<long?> seed = default;
             Option<bool?> stream = default;
@@ -790,7 +663,6 @@ namespace AIStatsSdk.Model
             Option<int?> topLogprobs = default;
             Option<decimal?> topP = default;
             Option<ChatCompletionsRequestResponseFormat?> responseFormat = default;
-            Option<List<ChatCompletionsRequest.ModalitiesEnum>?> modalities = default;
             Option<bool?> usage = default;
             Option<ProviderRoutingOptions?> provider = default;
             Option<string?> userId = default;
@@ -835,9 +707,6 @@ namespace AIStatsSdk.Model
                         case "meta":
                             meta = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
-                        case "debug":
-                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         case "presence_penalty":
                             presencePenalty = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
                             break;
@@ -876,9 +745,6 @@ namespace AIStatsSdk.Model
                             break;
                         case "response_format":
                             responseFormat = new Option<ChatCompletionsRequestResponseFormat?>(JsonSerializer.Deserialize<ChatCompletionsRequestResponseFormat>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "modalities":
-                            modalities = new Option<List<ChatCompletionsRequest.ModalitiesEnum>?>(JsonSerializer.Deserialize<List<ChatCompletionsRequest.ModalitiesEnum>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         case "usage":
                             usage = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
@@ -930,9 +796,6 @@ namespace AIStatsSdk.Model
             if (meta.IsSet && meta.Value == null)
                 throw new ArgumentNullException(nameof(meta), "Property is not nullable for class ChatCompletionsRequest.");
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class ChatCompletionsRequest.");
-
             if (presencePenalty.IsSet && presencePenalty.Value == null)
                 throw new ArgumentNullException(nameof(presencePenalty), "Property is not nullable for class ChatCompletionsRequest.");
 
@@ -972,9 +835,6 @@ namespace AIStatsSdk.Model
             if (responseFormat.IsSet && responseFormat.Value == null)
                 throw new ArgumentNullException(nameof(responseFormat), "Property is not nullable for class ChatCompletionsRequest.");
 
-            if (modalities.IsSet && modalities.Value == null)
-                throw new ArgumentNullException(nameof(modalities), "Property is not nullable for class ChatCompletionsRequest.");
-
             if (usage.IsSet && usage.Value == null)
                 throw new ArgumentNullException(nameof(usage), "Property is not nullable for class ChatCompletionsRequest.");
 
@@ -987,7 +847,7 @@ namespace AIStatsSdk.Model
             if (serviceTier.IsSet && serviceTier.Value == null)
                 throw new ArgumentNullException(nameof(serviceTier), "Property is not nullable for class ChatCompletionsRequest.");
 
-            return new ChatCompletionsRequest(model.Value!, messages.Value!, varSystem, reasoning, frequencyPenalty, logitBias, maxOutputTokens, meta, debug, presencePenalty, seed, stream, temperature, tools, maxToolCalls, parallelToolCalls, toolChoice, topK, logprobs, topLogprobs, topP, responseFormat, modalities, usage, provider, userId, serviceTier);
+            return new ChatCompletionsRequest(model.Value!, messages.Value!, varSystem, reasoning, frequencyPenalty, logitBias, maxOutputTokens, meta, presencePenalty, seed, stream, temperature, tools, maxToolCalls, parallelToolCalls, toolChoice, topK, logprobs, topLogprobs, topP, responseFormat, usage, provider, userId, serviceTier);
         }
 
         /// <summary>
@@ -1029,9 +889,6 @@ namespace AIStatsSdk.Model
             if (chatCompletionsRequest.LogitBiasOption.IsSet && chatCompletionsRequest.LogitBias == null)
                 throw new ArgumentNullException(nameof(chatCompletionsRequest.LogitBias), "Property is required for class ChatCompletionsRequest.");
 
-            if (chatCompletionsRequest.DebugOption.IsSet && chatCompletionsRequest.Debug == null)
-                throw new ArgumentNullException(nameof(chatCompletionsRequest.Debug), "Property is required for class ChatCompletionsRequest.");
-
             if (chatCompletionsRequest.ToolsOption.IsSet && chatCompletionsRequest.Tools == null)
                 throw new ArgumentNullException(nameof(chatCompletionsRequest.Tools), "Property is required for class ChatCompletionsRequest.");
 
@@ -1040,9 +897,6 @@ namespace AIStatsSdk.Model
 
             if (chatCompletionsRequest.ResponseFormatOption.IsSet && chatCompletionsRequest.ResponseFormat == null)
                 throw new ArgumentNullException(nameof(chatCompletionsRequest.ResponseFormat), "Property is required for class ChatCompletionsRequest.");
-
-            if (chatCompletionsRequest.ModalitiesOption.IsSet && chatCompletionsRequest.Modalities == null)
-                throw new ArgumentNullException(nameof(chatCompletionsRequest.Modalities), "Property is required for class ChatCompletionsRequest.");
 
             if (chatCompletionsRequest.ProviderOption.IsSet && chatCompletionsRequest.Provider == null)
                 throw new ArgumentNullException(nameof(chatCompletionsRequest.Provider), "Property is required for class ChatCompletionsRequest.");
@@ -1076,11 +930,6 @@ namespace AIStatsSdk.Model
             if (chatCompletionsRequest.MetaOption.IsSet)
                 writer.WriteBoolean("meta", chatCompletionsRequest.MetaOption.Value!.Value);
 
-            if (chatCompletionsRequest.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, chatCompletionsRequest.Debug, jsonSerializerOptions);
-            }
             if (chatCompletionsRequest.PresencePenaltyOption.IsSet)
                 writer.WriteNumber("presence_penalty", chatCompletionsRequest.PresencePenaltyOption.Value!.Value);
 
@@ -1125,11 +974,6 @@ namespace AIStatsSdk.Model
             {
                 writer.WritePropertyName("response_format");
                 JsonSerializer.Serialize(writer, chatCompletionsRequest.ResponseFormat, jsonSerializerOptions);
-            }
-            if (chatCompletionsRequest.ModalitiesOption.IsSet)
-            {
-                writer.WritePropertyName("modalities");
-                JsonSerializer.Serialize(writer, chatCompletionsRequest.Modalities, jsonSerializerOptions);
             }
             if (chatCompletionsRequest.UsageOption.IsSet)
                 writer.WriteBoolean("usage", chatCompletionsRequest.UsageOption.Value!.Value);

@@ -30,8 +30,8 @@ export default function DeleteProvisioningKeyItem({ k }: any) {
 		const promise = deleteProvisioningKeyAction(k.id, confirm);
 		try {
 			await toast.promise(promise, {
-				loading: `Deleting provisioning key...`,
-				success: `Provisioning key deleted`,
+				loading: `Deleting management API key...`,
+				success: `Management API key deleted`,
 				error: (err) => {
 					return (
 						(err && (err as any).message) || "Failed to delete key"
@@ -63,7 +63,7 @@ export default function DeleteProvisioningKeyItem({ k }: any) {
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2 text-red-600">
 						<ShieldAlert className="h-5 w-5" />
-						Delete Provisioning Key
+						Delete Management API Key
 					</DialogTitle>
 					<DialogDescription>
 						This action is permanent. This key has elevated privileges.

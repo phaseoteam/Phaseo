@@ -1,16 +1,11 @@
-import type { LanguageModelV3ToolChoice, LanguageModelV3FunctionTool } from '@ai-sdk/provider';
-
-type ProviderTool = {
-  type: 'provider' | 'provider-defined';
-  [key: string]: any;
-};
+import type { LanguageModelV1ToolChoice, LanguageModelV1FunctionTool, LanguageModelV1ProviderDefinedTool } from '@ai-sdk/provider';
 
 /**
  * Converts AI SDK tools to AI Stats Gateway format
  */
-export function prepareTools(tools: Array<LanguageModelV3FunctionTool | ProviderTool | any>): any[] {
+export function prepareTools(tools: Array<LanguageModelV1FunctionTool | LanguageModelV1ProviderDefinedTool>): any[] {
   return tools.map((tool) => {
-    if (tool.type === 'provider' || tool.type === 'provider-defined') {
+    if (tool.type === 'provider-defined') {
       // For provider-defined tools, we just pass through the configuration
       return tool;
     }
@@ -29,7 +24,7 @@ export function prepareTools(tools: Array<LanguageModelV3FunctionTool | Provider
 /**
  * Converts AI SDK tool choice to gateway format
  */
-export function convertToolChoice(toolChoice: LanguageModelV3ToolChoice | any): any {
+export function convertToolChoice(toolChoice: LanguageModelV1ToolChoice): any {
   switch (toolChoice.type) {
     case 'auto':
       return 'auto';

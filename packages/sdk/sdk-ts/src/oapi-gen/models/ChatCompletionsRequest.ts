@@ -1,11 +1,4 @@
 export interface ChatCompletionsRequest {
-  debug?: {
-    enabled?: boolean;
-    return_upstream_request?: boolean;
-    return_upstream_response?: boolean;
-    trace?: boolean;
-    trace_level?: "summary" | "full";
-  };
   frequency_penalty?: number;
   logit_bias?: {
     [key: string]: number;
@@ -17,42 +10,14 @@ export interface ChatCompletionsRequest {
     content?:
       | string
       | {
-          cache_control?: {
-            cache?: {
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
-            ttl?: "5m" | "1h";
-            type?: "ehpemeral" | "ephemeral";
-          };
           text: string;
           type: "text";
-        }
-      | {
-          cache_control?: {
-            cache?: {
-              ttl?: "5m" | "1h";
-              type?: "ehpemeral" | "ephemeral";
-            };
-            ttl?: "5m" | "1h";
-            type?: "ehpemeral" | "ephemeral";
-          };
-          text: string;
-          type: "input_text";
         }
       | {
           image_url: {
             url?: string;
           };
           type: "image_url";
-        }
-      | {
-          image_url:
-            | string
-            | {
-                url?: string;
-              };
-          type: "input_image";
         }
       | {
           input_audio: {
@@ -74,7 +39,6 @@ export interface ChatCompletionsRequest {
           type: "tool_call";
         }[];
     name?: string;
-    reasoning_content?: string;
     role: "system" | "user" | "assistant" | "tool";
     tool_call_id?: string;
     tool_calls?: {
@@ -89,7 +53,6 @@ export interface ChatCompletionsRequest {
     }[];
   }[];
   meta?: boolean;
-  modalities?: "text" | "image" | "audio" | "video"[];
   model: string;
   parallel_tool_calls?: boolean;
   presence_penalty?: number;
@@ -100,8 +63,6 @@ export interface ChatCompletionsRequest {
   };
   reasoning?: {
     effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
-    enabled?: boolean;
-    max_tokens?: number;
     summary?: "auto" | "concise" | "detailed";
   };
   response_format?:

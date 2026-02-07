@@ -58,9 +58,7 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static $openAPITypes = [
         'effort' => 'string',
-        'summary' => 'string',
-        'enabled' => 'bool',
-        'max_tokens' => 'int'
+        'summary' => 'string'
     ];
 
     /**
@@ -72,9 +70,7 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static $openAPIFormats = [
         'effort' => null,
-        'summary' => null,
-        'enabled' => null,
-        'max_tokens' => null
+        'summary' => null
     ];
 
     /**
@@ -84,9 +80,7 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static array $openAPINullables = [
         'effort' => false,
-        'summary' => false,
-        'enabled' => false,
-        'max_tokens' => false
+        'summary' => false
     ];
 
     /**
@@ -176,9 +170,7 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $attributeMap = [
         'effort' => 'effort',
-        'summary' => 'summary',
-        'enabled' => 'enabled',
-        'max_tokens' => 'max_tokens'
+        'summary' => 'summary'
     ];
 
     /**
@@ -188,9 +180,7 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $setters = [
         'effort' => 'setEffort',
-        'summary' => 'setSummary',
-        'enabled' => 'setEnabled',
-        'max_tokens' => 'setMaxTokens'
+        'summary' => 'setSummary'
     ];
 
     /**
@@ -200,9 +190,7 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $getters = [
         'effort' => 'getEffort',
-        'summary' => 'getSummary',
-        'enabled' => 'getEnabled',
-        'max_tokens' => 'getMaxTokens'
+        'summary' => 'getSummary'
     ];
 
     /**
@@ -304,8 +292,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('effort', $data ?? [], 'medium');
         $this->setIfExists('summary', $data ?? [], 'auto');
-        $this->setIfExists('enabled', $data ?? [], null);
-        $this->setIfExists('max_tokens', $data ?? [], null);
     }
 
     /**
@@ -351,10 +337,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
                 $this->container['summary'],
                 implode("', '", $allowedValues)
             );
-        }
-
-        if (!is_null($this->container['max_tokens']) && ($this->container['max_tokens'] < 0)) {
-            $invalidProperties[] = "invalid value for 'max_tokens', must be bigger than or equal to 0.";
         }
 
         return $invalidProperties;
@@ -442,65 +424,6 @@ class ReasoningConfig implements ModelInterface, ArrayAccess, \JsonSerializable
             );
         }
         $this->container['summary'] = $summary;
-
-        return $this;
-    }
-
-    /**
-     * Gets enabled
-     *
-     * @return bool|null
-     */
-    public function getEnabled()
-    {
-        return $this->container['enabled'];
-    }
-
-    /**
-     * Sets enabled
-     *
-     * @param bool|null $enabled enabled
-     *
-     * @return self
-     */
-    public function setEnabled($enabled)
-    {
-        if (is_null($enabled)) {
-            throw new \InvalidArgumentException('non-nullable enabled cannot be null');
-        }
-        $this->container['enabled'] = $enabled;
-
-        return $this;
-    }
-
-    /**
-     * Gets max_tokens
-     *
-     * @return int|null
-     */
-    public function getMaxTokens()
-    {
-        return $this->container['max_tokens'];
-    }
-
-    /**
-     * Sets max_tokens
-     *
-     * @param int|null $max_tokens max_tokens
-     *
-     * @return self
-     */
-    public function setMaxTokens($max_tokens)
-    {
-        if (is_null($max_tokens)) {
-            throw new \InvalidArgumentException('non-nullable max_tokens cannot be null');
-        }
-
-        if (($max_tokens < 0)) {
-            throw new \InvalidArgumentException('invalid value for $max_tokens when calling ReasoningConfig., must be bigger than or equal to 0.');
-        }
-
-        $this->container['max_tokens'] = $max_tokens;
 
         return $this;
     }

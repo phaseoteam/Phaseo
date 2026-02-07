@@ -41,10 +41,9 @@ namespace AIStatsSdk.Model
         /// <param name="responseFormat">responseFormat</param>
         /// <param name="style">style</param>
         /// <param name="user">user</param>
-        /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public ImagesGenerationRequest(string model, string prompt, Option<string?> size = default, Option<int?> n = default, Option<string?> quality = default, Option<string?> responseFormat = default, Option<string?> style = default, Option<string?> user = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
+        public ImagesGenerationRequest(string model, string prompt, Option<string?> size = default, Option<int?> n = default, Option<string?> quality = default, Option<string?> responseFormat = default, Option<string?> style = default, Option<string?> user = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Prompt = prompt;
@@ -54,7 +53,6 @@ namespace AIStatsSdk.Model
             ResponseFormatOption = responseFormat;
             StyleOption = style;
             UserOption = user;
-            DebugOption = debug;
             ProviderOption = provider;
             OnCreated();
         }
@@ -152,19 +150,6 @@ namespace AIStatsSdk.Model
         public string? User { get { return this.UserOption; } set { this.UserOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugOptions?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
-
-        /// <summary>
         /// Used to track the state of Provider
         /// </summary>
         [JsonIgnore]
@@ -193,7 +178,6 @@ namespace AIStatsSdk.Model
             sb.Append("  ResponseFormat: ").Append(ResponseFormat).Append("\n");
             sb.Append("  Style: ").Append(Style).Append("\n");
             sb.Append("  User: ").Append(User).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -252,7 +236,6 @@ namespace AIStatsSdk.Model
             Option<string?> responseFormat = default;
             Option<string?> style = default;
             Option<string?> user = default;
-            Option<DebugOptions?> debug = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -294,9 +277,6 @@ namespace AIStatsSdk.Model
                         case "user":
                             user = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "debug":
-                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
@@ -336,13 +316,10 @@ namespace AIStatsSdk.Model
             if (user.IsSet && user.Value == null)
                 throw new ArgumentNullException(nameof(user), "Property is not nullable for class ImagesGenerationRequest.");
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class ImagesGenerationRequest.");
-
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class ImagesGenerationRequest.");
 
-            return new ImagesGenerationRequest(model.Value!, prompt.Value!, size, n, quality, responseFormat, style, user, debug, provider);
+            return new ImagesGenerationRequest(model.Value!, prompt.Value!, size, n, quality, responseFormat, style, user, provider);
         }
 
         /// <summary>
@@ -390,9 +367,6 @@ namespace AIStatsSdk.Model
             if (imagesGenerationRequest.UserOption.IsSet && imagesGenerationRequest.User == null)
                 throw new ArgumentNullException(nameof(imagesGenerationRequest.User), "Property is required for class ImagesGenerationRequest.");
 
-            if (imagesGenerationRequest.DebugOption.IsSet && imagesGenerationRequest.Debug == null)
-                throw new ArgumentNullException(nameof(imagesGenerationRequest.Debug), "Property is required for class ImagesGenerationRequest.");
-
             if (imagesGenerationRequest.ProviderOption.IsSet && imagesGenerationRequest.Provider == null)
                 throw new ArgumentNullException(nameof(imagesGenerationRequest.Provider), "Property is required for class ImagesGenerationRequest.");
 
@@ -418,11 +392,6 @@ namespace AIStatsSdk.Model
             if (imagesGenerationRequest.UserOption.IsSet)
                 writer.WriteString("user", imagesGenerationRequest.User);
 
-            if (imagesGenerationRequest.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, imagesGenerationRequest.Debug, jsonSerializerOptions);
-            }
             if (imagesGenerationRequest.ProviderOption.IsSet)
             {
                 writer.WritePropertyName("provider");

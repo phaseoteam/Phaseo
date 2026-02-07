@@ -70,50 +70,5 @@ namespace AIStatsSdk.Test.Model
         {
             // TODO unit test for the property 'OutputTokens'
         }
-
-        /// <summary>
-        /// Test the property 'CacheCreation'
-        /// </summary>
-        [Fact]
-        public void CacheCreationTest()
-        {
-            // TODO unit test for the property 'CacheCreation'
-        }
-
-        /// <summary>
-        /// Test the property 'CacheCreationInputTokens'
-        /// </summary>
-        [Fact]
-        public void CacheCreationInputTokensTest()
-        {
-            // TODO unit test for the property 'CacheCreationInputTokens'
-        }
-
-        /// <summary>
-        /// Test the property 'CacheReadInputTokens'
-        /// </summary>
-        [Fact]
-        public void CacheReadInputTokensTest()
-        {
-            // TODO unit test for the property 'CacheReadInputTokens'
-        }
-
-        /// <summary>
-        /// Test the property 'ServerToolUse'
-        /// </summary>
-        [Fact]
-        public void ServerToolUseTest()
-        {
-            // TODO unit test for the property 'ServerToolUse'
-        }
-
-        /// <summary>
-        /// Test the property 'ServiceTier'
-        /// </summary>
-        [Fact]
-        public void ServiceTierTest()
-        {
-            // TODO unit test for the property 'ServiceTier'
-        }
     }
 }

@@ -21,7 +21,6 @@ from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from ai_stats_generated.models.anthropic_content_block import AnthropicContentBlock
 from ai_stats_generated.models.anthropic_usage import AnthropicUsage
-from ai_stats_generated.models.debug_response import DebugResponse
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -37,9 +36,7 @@ class AnthropicMessagesResponse(BaseModel):
     stop_reason: Optional[StrictStr] = None
     stop_sequence: Optional[StrictStr] = None
     usage: Optional[AnthropicUsage] = None
-    meta: Optional[Dict[str, Any]] = None
-    debug: Optional[DebugResponse] = None
-    __properties: ClassVar[List[str]] = ["id", "type", "role", "model", "content", "stop_reason", "stop_sequence", "usage", "meta", "debug"]
+    __properties: ClassVar[List[str]] = ["id", "type", "role", "model", "content", "stop_reason", "stop_sequence", "usage"]
 
     @field_validator('role')
     def role_validate_enum(cls, value):
@@ -100,9 +97,6 @@ class AnthropicMessagesResponse(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of usage
         if self.usage:
             _dict['usage'] = self.usage.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of debug
-        if self.debug:
-            _dict['debug'] = self.debug.to_dict()
         return _dict
 
     @classmethod
@@ -122,9 +116,7 @@ class AnthropicMessagesResponse(BaseModel):
             "content": [AnthropicContentBlock.from_dict(_item) for _item in obj["content"]] if obj.get("content") is not None else None,
             "stop_reason": obj.get("stop_reason"),
             "stop_sequence": obj.get("stop_sequence"),
-            "usage": AnthropicUsage.from_dict(obj["usage"]) if obj.get("usage") is not None else None,
-            "meta": obj.get("meta"),
-            "debug": DebugResponse.from_dict(obj["debug"]) if obj.get("debug") is not None else None
+            "usage": AnthropicUsage.from_dict(obj["usage"]) if obj.get("usage") is not None else None
         })
         return _obj
 

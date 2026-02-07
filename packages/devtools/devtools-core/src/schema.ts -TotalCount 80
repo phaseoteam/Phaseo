@@ -1,0 +1,80 @@
+import { z } from "zod";
+
+/**
+ * Supported endpoint types across all AI Stats API endpoints
+ */
+export const EndpointTypeSchema = z.enum([
+  "chat.completions",
+  "images.generations",
+  "images.edits",
+  "audio.speech",
+  "audio.transcriptions",
+  "audio.translations",
+  "video.generations",
+  "embeddings",
+  "moderations",
+  "responses",
+  "batches.create",
+  "batches.retrieve",
+  "files.list",
+  "files.retrieve",
+  "files.upload",
+  "models.list",
+  "health",
+  "analytics",
+  "generations.retrieve"
+]);
+
+export type EndpointType = z.infer<typeof EndpointTypeSchema>;
+
+/**
+ * SDK language/platform identifier
+ */
+export const SdkIdentifierSchema = z.enum([
+  "typescript",
+  "python",
+  "go",
+  "csharp",
+  "ruby",
+  "php",
+  "java",
+  "rust",
+  "cpp"
+]);
+
+export type SdkIdentifier = z.infer<typeof SdkIdentifierSchema>;
+
+/**
+ * Error information when a request fails
+ */
+export const ErrorInfoSchema = z.object({
+  message: z.string(),
+  code: z.string().optional(),
+  status: z.number().optional(),
+  stack: z.string().optional()
+});
+
+export type ErrorInfo = z.infer<typeof ErrorInfoSchema>;
+
+/**
+ * Usage information (tokens, images, audio seconds, etc.)
+ */
+export const UsageInfoSchema = z.object({
+  prompt_tokens: z.number().optional(),
+  completion_tokens: z.number().optional(),
+  total_tokens: z.number().optional(),
+  images_generated: z.number().optional(),
+  audio_seconds: z.number().optional(),
+  video_seconds: z.number().optional(),
+  cache_creation_input_tokens: z.number().optional(),
+  cache_read_input_tokens: z.number().optional()
+});
+
+export type UsageInfo = z.infer<typeof UsageInfoSchema>;
+
+/**
+ * Cost breakdown in USD
+ */
+export const CostInfoSchema = z.object({
+  input_cost: z.number().optional(),
+  output_cost: z.number().optional(),

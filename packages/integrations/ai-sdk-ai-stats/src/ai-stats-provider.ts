@@ -1,10 +1,10 @@
 import type {
-  LanguageModelV3,
-  ProviderV3,
-  EmbeddingModelV3,
-  ImageModelV3,
-  TranscriptionModelV3,
-  SpeechModelV3,
+  LanguageModelV1,
+  ProviderV1,
+  EmbeddingModelV1,
+  ImageModelV1,
+  TranscriptionModelV1,
+  SpeechModelV1,
 } from '@ai-sdk/provider';
 import { AIStatsLanguageModel } from './ai-stats-language-model.js';
 import { AIStatsEmbeddingModel } from './ai-stats-embedding-model.js';
@@ -39,12 +39,7 @@ const DEFAULT_BASE_URL = 'https://api.phaseo.app/v1';
  * });
  * ```
  */
-type AIStatsProvider = ProviderV3 & ((
-  modelId: string,
-  modelSettings?: AIStatsModelSettings
-) => LanguageModelV3);
-
-export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
+export function createAIStats(settings: AIStatsSettings = {}): ProviderV1 {
   // Resolve API key from settings or environment variable
   const apiKey = settings.apiKey ?? process.env.AI_STATS_API_KEY;
 
@@ -59,10 +54,10 @@ export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
   const baseURL = settings.baseURL ?? DEFAULT_BASE_URL;
 
   // Create the provider function that returns language model instances
-  const provider = ((
+  const provider = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): LanguageModelV3 => {
+  ): LanguageModelV1 => {
     return new AIStatsLanguageModel(
       modelId,
       {
@@ -73,21 +68,17 @@ export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
       },
       modelSettings
     );
-  }) as AIStatsProvider;
-
-  Object.defineProperty(provider, 'specificationVersion', {
-    value: 'v3',
-  });
-
-  // Set the provider ID for debugging
-  provider.languageModel = (modelId: string) => {
-    return provider(modelId);
   };
 
-  provider.embeddingModel = (
+  // Set the provider ID for debugging
+  provider.languageModel = (modelId: string, modelSettings?: AIStatsModelSettings) => {
+    return provider(modelId, modelSettings);
+  };
+
+  provider.textEmbeddingModel = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): EmbeddingModelV3 => {
+  ): EmbeddingModelV1<string> => {
     return new AIStatsEmbeddingModel(
       modelId,
       {
@@ -100,13 +91,10 @@ export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
     );
   };
 
-  provider.textEmbeddingModel = (modelId: string): EmbeddingModelV3 =>
-    provider.embeddingModel(modelId);
-
   provider.imageModel = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): ImageModelV3 => {
+  ): ImageModelV1 => {
     return new AIStatsImageModel(
       modelId,
       {
@@ -122,7 +110,7 @@ export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
   provider.transcriptionModel = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): TranscriptionModelV3 => {
+  ): TranscriptionModelV1 => {
     return new AIStatsTranscriptionModel(
       modelId,
       {
@@ -138,7 +126,7 @@ export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
   provider.speechModel = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): SpeechModelV3 => {
+  ): SpeechModelV1 => {
     return new AIStatsSpeechModel(
       modelId,
       {
@@ -149,10 +137,6 @@ export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
       },
       modelSettings
     );
-  };
-
-  provider.rerankingModel = () => {
-    throw new Error('Reranking models are not supported by this provider.');
   };
 
   return provider;

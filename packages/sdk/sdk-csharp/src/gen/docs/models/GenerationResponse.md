@@ -19,7 +19,7 @@ Name | Type | Description | Notes
 **ErrorMessage** | **string** |  | [optional] 
 **LatencyMs** | **decimal** |  | [optional] 
 **GenerationMs** | **decimal** |  | [optional] 
-**Usage** | [**Usage**](Usage.md) |  | [optional] 
+**Usage** | [**GenerationResponseUsage**](GenerationResponseUsage.md) |  | [optional] 
 **CostNanos** | **decimal** |  | [optional] 
 **Currency** | **string** |  | [optional] 
 **PricingLines** | **List&lt;Object&gt;** |  | [optional] 

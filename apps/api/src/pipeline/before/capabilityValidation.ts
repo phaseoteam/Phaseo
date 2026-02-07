@@ -6,12 +6,8 @@ import type { Endpoint } from "@core/types";
 import type { ProviderCandidate } from "./types";
 import { err } from "./http";
 import { providerSupportsParam, extractRequestedParams } from "./paramCapabilities";
-import {
-	canProviderHandleReasoning,
-	isReasoningRequested,
-	extractReasoningFromBody,
-} from "./reasoningNormalization";
 import { isParamSupported, getResponseFormatConfig } from "./paramConfig";
+import { validateProviderDocsCompliance } from "./providerDocsValidation";
 
 type ValidationResult =
 	| { ok: true; providers: ProviderCandidate[]; body: any }
@@ -166,54 +162,6 @@ function validateResponseFormat(args: {
 }
 
 /**
- * Validates reasoning parameter support
- */
-function validateReasoning(args: {
-	body: any;
-	providers: ProviderCandidate[];
-	requestId: string;
-	teamId: string;
-	model: string;
-}): ValidationResult {
-	// Check if reasoning is requested
-	if (!isReasoningRequested(args.body)) {
-		return { ok: true, providers: args.providers, body: args.body };
-	}
-
-	// Extract reasoning configuration
-	const reasoning = extractReasoningFromBody(args.body);
-	if (!reasoning) {
-		return { ok: true, providers: args.providers, body: args.body };
-	}
-
-	// Filter providers that can handle reasoning
-	const filtered = args.providers.filter((provider) =>
-		canProviderHandleReasoning(reasoning, provider)
-	);
-
-	if (!filtered.length) {
-		const effortInfo = reasoning.effort ? ` (effort: ${reasoning.effort})` : "";
-		const tokensInfo = reasoning.maxTokens ? ` (max_tokens: ${reasoning.maxTokens})` : "";
-
-		return {
-			ok: false,
-			response: err("validation_error", {
-				details: [{
-					message: `Model "${args.model}" has no providers that support reasoning${effortInfo}${tokensInfo}`,
-					path: ["reasoning"],
-					keyword: "unsupported_reasoning",
-					params: { reasoning, model: args.model },
-				}],
-				request_id: args.requestId,
-				team_id: args.teamId,
-			}),
-		};
-	}
-
-	return { ok: true, providers: filtered, body: args.body };
-}
-
-/**
  * Filters providers based on max_tokens requirements
  * If max_tokens is provided, only include providers that can accommodate it
  */
@@ -318,6 +266,8 @@ export function validateCapabilities(args: {
 	providers: ProviderCandidate[];
 	model: string;
 }): ValidationResult {
+	const requested = extractRequestedParams(args.endpoint, args.rawBody);
+
 	// Step 1: Basic parameter support (always active)
 	const paramResult = validateParameterSupport({
 		endpoint: args.endpoint,
@@ -329,10 +279,22 @@ export function validateCapabilities(args: {
 	});
 	if (!paramResult.ok) return paramResult;
 
+	// Step 1.5: Provider docs validation (hard constraints from provider API docs)
+	const docsResult = validateProviderDocsCompliance({
+		endpoint: args.endpoint,
+		body: paramResult.body,
+		requestId: args.requestId,
+		teamId: args.teamId,
+		model: args.model,
+		providers: paramResult.providers,
+		requestedParams: requested,
+	});
+	if (!docsResult.ok) return docsResult;
+
 	// Step 2: Response format validation
 	const formatResult = validateResponseFormat({
-		body: args.body,
-		providers: paramResult.providers,
+		body: docsResult.body,
+		providers: docsResult.providers,
 		requestId: args.requestId,
 		teamId: args.teamId,
 		model: args.model,
@@ -349,20 +311,10 @@ export function validateCapabilities(args: {
 	});
 	if (!structuredResult.ok) return structuredResult;
 
-	// Step 4: Reasoning validation
-	const reasoningResult = validateReasoning({
-		body: args.body,
-		providers: structuredResult.providers,
-		requestId: args.requestId,
-		teamId: args.teamId,
-		model: args.model,
-	});
-	if (!reasoningResult.ok) return reasoningResult;
-
-	// Step 5: Token limits (if max_tokens is provided)
+	// Step 4: Token limits (if max_tokens is provided)
 	const tokenResult = filterProvidersByTokenLimits({
 		body: args.body,
-		providers: reasoningResult.providers,
+		providers: structuredResult.providers,
 		requestId: args.requestId,
 		teamId: args.teamId,
 		model: args.model,

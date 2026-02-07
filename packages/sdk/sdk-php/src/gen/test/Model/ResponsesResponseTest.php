@@ -98,72 +98,9 @@ class ResponsesResponseTest extends TestCase
     }
 
     /**
-     * Test attribute "created_at"
+     * Test attribute "created"
      */
-    public function testPropertyCreatedAt()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "status"
-     */
-    public function testPropertyStatus()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "completed_at"
-     */
-    public function testPropertyCompletedAt()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "error"
-     */
-    public function testPropertyError()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "incomplete_details"
-     */
-    public function testPropertyIncompleteDetails()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "instructions"
-     */
-    public function testPropertyInstructions()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "max_output_tokens"
-     */
-    public function testPropertyMaxOutputTokens()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "max_tool_calls"
-     */
-    public function testPropertyMaxToolCalls()
+    public function testPropertyCreated()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -179,225 +116,36 @@ class ResponsesResponseTest extends TestCase
     }
 
     /**
-     * Test attribute "output"
+     * Test attribute "content"
      */
-    public function testPropertyOutput()
+    public function testPropertyContent()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
 
     /**
-     * Test attribute "parallel_tool_calls"
+     * Test attribute "role"
      */
-    public function testPropertyParallelToolCalls()
+    public function testPropertyRole()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
 
     /**
-     * Test attribute "previous_response_id"
+     * Test attribute "stop_reason"
      */
-    public function testPropertyPreviousResponseId()
+    public function testPropertyStopReason()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
 
     /**
-     * Test attribute "reasoning"
+     * Test attribute "type"
      */
-    public function testPropertyReasoning()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "frequency_penalty"
-     */
-    public function testPropertyFrequencyPenalty()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "presence_penalty"
-     */
-    public function testPropertyPresencePenalty()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "store"
-     */
-    public function testPropertyStore()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "temperature"
-     */
-    public function testPropertyTemperature()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "text"
-     */
-    public function testPropertyText()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "tool_choice"
-     */
-    public function testPropertyToolChoice()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "tools"
-     */
-    public function testPropertyTools()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "top_logprobs"
-     */
-    public function testPropertyTopLogprobs()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "top_p"
-     */
-    public function testPropertyTopP()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "truncation"
-     */
-    public function testPropertyTruncation()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "user"
-     */
-    public function testPropertyUser()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "background"
-     */
-    public function testPropertyBackground()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "service_tier"
-     */
-    public function testPropertyServiceTier()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "safety_identifier"
-     */
-    public function testPropertySafetyIdentifier()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "prompt_cache_key"
-     */
-    public function testPropertyPromptCacheKey()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "metadata"
-     */
-    public function testPropertyMetadata()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "native_response_id"
-     */
-    public function testPropertyNativeResponseId()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "meta"
-     */
-    public function testPropertyMeta()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "debug"
-     */
-    public function testPropertyDebug()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "upstream_request"
-     */
-    public function testPropertyUpstreamRequest()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "upstream_response"
-     */
-    public function testPropertyUpstreamResponse()
+    public function testPropertyType()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

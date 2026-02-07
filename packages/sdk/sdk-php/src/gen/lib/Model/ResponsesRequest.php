@@ -58,23 +58,19 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
       */
     protected static $openAPITypes = [
         'model' => 'string',
-        'input' => '\AIStats\Sdk\Model\ResponsesRequestInput',
-        'messages' => '\AIStats\Sdk\Model\ChatMessage[]',
-        'input_items' => '\AIStats\Sdk\Model\ResponsesInputItem[]',
+        'input' => 'object',
+        'input_items' => 'object[]',
         'conversation' => '\AIStats\Sdk\Model\ChatCompletionsRequestToolChoice',
         'include' => 'string[]',
         'instructions' => 'string',
         'max_output_tokens' => 'int',
         'max_tool_calls' => 'int',
-        'max_tools_calls' => 'int',
         'metadata' => 'array<string,string>',
-        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'parallel_tool_calls' => 'bool',
         'previous_response_id' => 'string',
         'prompt' => '\AIStats\Sdk\Model\ResponsesRequestPrompt',
         'prompt_cache_key' => 'string',
         'prompt_cache_retention' => 'string',
-        'modalities' => 'string[]',
         'reasoning' => '\AIStats\Sdk\Model\ResponsesRequestReasoning',
         'safety_identifier' => 'string',
         'service_tier' => 'string',
@@ -90,6 +86,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'truncation' => 'string',
         'background' => 'bool',
         'user' => 'string',
+        'usage' => 'bool',
         'meta' => 'bool',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
@@ -104,22 +101,18 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPIFormats = [
         'model' => null,
         'input' => null,
-        'messages' => null,
         'input_items' => null,
         'conversation' => null,
         'include' => null,
         'instructions' => null,
         'max_output_tokens' => null,
         'max_tool_calls' => null,
-        'max_tools_calls' => null,
         'metadata' => null,
-        'debug' => null,
         'parallel_tool_calls' => null,
         'previous_response_id' => null,
         'prompt' => null,
         'prompt_cache_key' => null,
         'prompt_cache_retention' => null,
-        'modalities' => null,
         'reasoning' => null,
         'safety_identifier' => null,
         'service_tier' => null,
@@ -135,6 +128,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'truncation' => null,
         'background' => null,
         'user' => null,
+        'usage' => null,
         'meta' => null,
         'provider' => null
     ];
@@ -147,22 +141,18 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static array $openAPINullables = [
         'model' => false,
         'input' => false,
-        'messages' => false,
         'input_items' => false,
         'conversation' => false,
         'include' => false,
         'instructions' => false,
         'max_output_tokens' => false,
         'max_tool_calls' => false,
-        'max_tools_calls' => false,
         'metadata' => false,
-        'debug' => false,
         'parallel_tool_calls' => false,
         'previous_response_id' => false,
         'prompt' => false,
         'prompt_cache_key' => false,
         'prompt_cache_retention' => false,
-        'modalities' => false,
         'reasoning' => false,
         'safety_identifier' => false,
         'service_tier' => false,
@@ -178,6 +168,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'truncation' => false,
         'background' => false,
         'user' => false,
+        'usage' => false,
         'meta' => false,
         'provider' => false
     ];
@@ -270,22 +261,18 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $attributeMap = [
         'model' => 'model',
         'input' => 'input',
-        'messages' => 'messages',
         'input_items' => 'input_items',
         'conversation' => 'conversation',
         'include' => 'include',
         'instructions' => 'instructions',
         'max_output_tokens' => 'max_output_tokens',
         'max_tool_calls' => 'max_tool_calls',
-        'max_tools_calls' => 'max_tools_calls',
         'metadata' => 'metadata',
-        'debug' => 'debug',
         'parallel_tool_calls' => 'parallel_tool_calls',
         'previous_response_id' => 'previous_response_id',
         'prompt' => 'prompt',
         'prompt_cache_key' => 'prompt_cache_key',
         'prompt_cache_retention' => 'prompt_cache_retention',
-        'modalities' => 'modalities',
         'reasoning' => 'reasoning',
         'safety_identifier' => 'safety_identifier',
         'service_tier' => 'service_tier',
@@ -301,6 +288,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'truncation' => 'truncation',
         'background' => 'background',
         'user' => 'user',
+        'usage' => 'usage',
         'meta' => 'meta',
         'provider' => 'provider'
     ];
@@ -313,22 +301,18 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $setters = [
         'model' => 'setModel',
         'input' => 'setInput',
-        'messages' => 'setMessages',
         'input_items' => 'setInputItems',
         'conversation' => 'setConversation',
         'include' => 'setInclude',
         'instructions' => 'setInstructions',
         'max_output_tokens' => 'setMaxOutputTokens',
         'max_tool_calls' => 'setMaxToolCalls',
-        'max_tools_calls' => 'setMaxToolsCalls',
         'metadata' => 'setMetadata',
-        'debug' => 'setDebug',
         'parallel_tool_calls' => 'setParallelToolCalls',
         'previous_response_id' => 'setPreviousResponseId',
         'prompt' => 'setPrompt',
         'prompt_cache_key' => 'setPromptCacheKey',
         'prompt_cache_retention' => 'setPromptCacheRetention',
-        'modalities' => 'setModalities',
         'reasoning' => 'setReasoning',
         'safety_identifier' => 'setSafetyIdentifier',
         'service_tier' => 'setServiceTier',
@@ -344,6 +328,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'truncation' => 'setTruncation',
         'background' => 'setBackground',
         'user' => 'setUser',
+        'usage' => 'setUsage',
         'meta' => 'setMeta',
         'provider' => 'setProvider'
     ];
@@ -356,22 +341,18 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $getters = [
         'model' => 'getModel',
         'input' => 'getInput',
-        'messages' => 'getMessages',
         'input_items' => 'getInputItems',
         'conversation' => 'getConversation',
         'include' => 'getInclude',
         'instructions' => 'getInstructions',
         'max_output_tokens' => 'getMaxOutputTokens',
         'max_tool_calls' => 'getMaxToolCalls',
-        'max_tools_calls' => 'getMaxToolsCalls',
         'metadata' => 'getMetadata',
-        'debug' => 'getDebug',
         'parallel_tool_calls' => 'getParallelToolCalls',
         'previous_response_id' => 'getPreviousResponseId',
         'prompt' => 'getPrompt',
         'prompt_cache_key' => 'getPromptCacheKey',
         'prompt_cache_retention' => 'getPromptCacheRetention',
-        'modalities' => 'getModalities',
         'reasoning' => 'getReasoning',
         'safety_identifier' => 'getSafetyIdentifier',
         'service_tier' => 'getServiceTier',
@@ -387,6 +368,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'truncation' => 'getTruncation',
         'background' => 'getBackground',
         'user' => 'getUser',
+        'usage' => 'getUsage',
         'meta' => 'getMeta',
         'provider' => 'getProvider'
     ];
@@ -432,25 +414,6 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         return self::$openAPIModelName;
     }
 
-    public const MODALITIES_TEXT = 'text';
-    public const MODALITIES_IMAGE = 'image';
-    public const MODALITIES_AUDIO = 'audio';
-    public const MODALITIES_VIDEO = 'video';
-
-    /**
-     * Gets allowable values of the enum
-     *
-     * @return string[]
-     */
-    public function getModalitiesAllowableValues()
-    {
-        return [
-            self::MODALITIES_TEXT,
-            self::MODALITIES_IMAGE,
-            self::MODALITIES_AUDIO,
-            self::MODALITIES_VIDEO,
-        ];
-    }
 
     /**
      * Associative array for storing property values
@@ -469,22 +432,18 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('model', $data ?? [], null);
         $this->setIfExists('input', $data ?? [], null);
-        $this->setIfExists('messages', $data ?? [], null);
         $this->setIfExists('input_items', $data ?? [], null);
         $this->setIfExists('conversation', $data ?? [], null);
         $this->setIfExists('include', $data ?? [], null);
         $this->setIfExists('instructions', $data ?? [], null);
         $this->setIfExists('max_output_tokens', $data ?? [], null);
         $this->setIfExists('max_tool_calls', $data ?? [], null);
-        $this->setIfExists('max_tools_calls', $data ?? [], null);
         $this->setIfExists('metadata', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('parallel_tool_calls', $data ?? [], null);
         $this->setIfExists('previous_response_id', $data ?? [], null);
         $this->setIfExists('prompt', $data ?? [], null);
         $this->setIfExists('prompt_cache_key', $data ?? [], null);
         $this->setIfExists('prompt_cache_retention', $data ?? [], null);
-        $this->setIfExists('modalities', $data ?? [], null);
         $this->setIfExists('reasoning', $data ?? [], null);
         $this->setIfExists('safety_identifier', $data ?? [], null);
         $this->setIfExists('service_tier', $data ?? [], null);
@@ -500,6 +459,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('truncation', $data ?? [], null);
         $this->setIfExists('background', $data ?? [], null);
         $this->setIfExists('user', $data ?? [], null);
+        $this->setIfExists('usage', $data ?? [], null);
         $this->setIfExists('meta', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
@@ -534,20 +494,12 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         if ($this->container['model'] === null) {
             $invalidProperties[] = "'model' can't be null";
         }
-        if (!is_null($this->container['messages']) && (count($this->container['messages']) < 1)) {
-            $invalidProperties[] = "invalid value for 'messages', number of items must be greater than or equal to 1.";
-        }
-
         if (!is_null($this->container['max_output_tokens']) && ($this->container['max_output_tokens'] < 1)) {
             $invalidProperties[] = "invalid value for 'max_output_tokens', must be bigger than or equal to 1.";
         }
 
         if (!is_null($this->container['max_tool_calls']) && ($this->container['max_tool_calls'] < 0)) {
             $invalidProperties[] = "invalid value for 'max_tool_calls', must be bigger than or equal to 0.";
-        }
-
-        if (!is_null($this->container['max_tools_calls']) && ($this->container['max_tools_calls'] < 0)) {
-            $invalidProperties[] = "invalid value for 'max_tools_calls', must be bigger than or equal to 0.";
         }
 
         if (!is_null($this->container['temperature']) && ($this->container['temperature'] > 2)) {
@@ -619,7 +571,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     /**
      * Gets input
      *
-     * @return \AIStats\Sdk\Model\ResponsesRequestInput|null
+     * @return object|null
      */
     public function getInput()
     {
@@ -629,7 +581,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     /**
      * Sets input
      *
-     * @param \AIStats\Sdk\Model\ResponsesRequestInput|null $input input
+     * @param object|null $input input
      *
      * @return self
      */
@@ -644,41 +596,9 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     }
 
     /**
-     * Gets messages
-     *
-     * @return \AIStats\Sdk\Model\ChatMessage[]|null
-     */
-    public function getMessages()
-    {
-        return $this->container['messages'];
-    }
-
-    /**
-     * Sets messages
-     *
-     * @param \AIStats\Sdk\Model\ChatMessage[]|null $messages messages
-     *
-     * @return self
-     */
-    public function setMessages($messages)
-    {
-        if (is_null($messages)) {
-            throw new \InvalidArgumentException('non-nullable messages cannot be null');
-        }
-
-
-        if ((count($messages) < 1)) {
-            throw new \InvalidArgumentException('invalid length for $messages when calling ResponsesRequest., number of items must be greater than or equal to 1.');
-        }
-        $this->container['messages'] = $messages;
-
-        return $this;
-    }
-
-    /**
      * Gets input_items
      *
-     * @return \AIStats\Sdk\Model\ResponsesInputItem[]|null
+     * @return object[]|null
      */
     public function getInputItems()
     {
@@ -688,7 +608,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     /**
      * Sets input_items
      *
-     * @param \AIStats\Sdk\Model\ResponsesInputItem[]|null $input_items input_items
+     * @param object[]|null $input_items input_items
      *
      * @return self
      */
@@ -848,38 +768,6 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
     }
 
     /**
-     * Gets max_tools_calls
-     *
-     * @return int|null
-     */
-    public function getMaxToolsCalls()
-    {
-        return $this->container['max_tools_calls'];
-    }
-
-    /**
-     * Sets max_tools_calls
-     *
-     * @param int|null $max_tools_calls max_tools_calls
-     *
-     * @return self
-     */
-    public function setMaxToolsCalls($max_tools_calls)
-    {
-        if (is_null($max_tools_calls)) {
-            throw new \InvalidArgumentException('non-nullable max_tools_calls cannot be null');
-        }
-
-        if (($max_tools_calls < 0)) {
-            throw new \InvalidArgumentException('invalid value for $max_tools_calls when calling ResponsesRequest., must be bigger than or equal to 0.');
-        }
-
-        $this->container['max_tools_calls'] = $max_tools_calls;
-
-        return $this;
-    }
-
-    /**
      * Gets metadata
      *
      * @return array<string,string>|null
@@ -902,33 +790,6 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable metadata cannot be null');
         }
         $this->container['metadata'] = $metadata;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugOptions|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
 
         return $this;
     }
@@ -1064,42 +925,6 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable prompt_cache_retention cannot be null');
         }
         $this->container['prompt_cache_retention'] = $prompt_cache_retention;
-
-        return $this;
-    }
-
-    /**
-     * Gets modalities
-     *
-     * @return string[]|null
-     */
-    public function getModalities()
-    {
-        return $this->container['modalities'];
-    }
-
-    /**
-     * Sets modalities
-     *
-     * @param string[]|null $modalities modalities
-     *
-     * @return self
-     */
-    public function setModalities($modalities)
-    {
-        if (is_null($modalities)) {
-            throw new \InvalidArgumentException('non-nullable modalities cannot be null');
-        }
-        $allowedValues = $this->getModalitiesAllowableValues();
-        if (array_diff($modalities, $allowedValues)) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    "Invalid value for 'modalities', must be one of '%s'",
-                    implode("', '", $allowedValues)
-                )
-            );
-        }
-        $this->container['modalities'] = $modalities;
 
         return $this;
     }
@@ -1529,6 +1354,33 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable user cannot be null');
         }
         $this->container['user'] = $user;
+
+        return $this;
+    }
+
+    /**
+     * Gets usage
+     *
+     * @return bool|null
+     */
+    public function getUsage()
+    {
+        return $this->container['usage'];
+    }
+
+    /**
+     * Sets usage
+     *
+     * @param bool|null $usage usage
+     *
+     * @return self
+     */
+    public function setUsage($usage)
+    {
+        if (is_null($usage)) {
+            throw new \InvalidArgumentException('non-nullable usage cannot be null');
+        }
+        $this->container['usage'] = $usage;
 
         return $this;
     }

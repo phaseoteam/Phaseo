@@ -35,7 +35,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		model: args.providerModelSlug || ir.model,
 	});
 
-	const captureRequest = Boolean(args.meta.debug?.return_upstream_request || args.meta.debug?.trace);
+	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);
 	const mappedRequest = captureRequest ? JSON.stringify(requestBody) : undefined;
 
 	const res = await fetch(openAICompatUrl(args.providerId, "/embeddings"), {

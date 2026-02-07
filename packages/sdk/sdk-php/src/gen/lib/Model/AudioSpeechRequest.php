@@ -61,7 +61,6 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'input' => 'string',
         'voice' => 'string',
         'format' => 'string',
-        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -77,7 +76,6 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'input' => null,
         'voice' => null,
         'format' => null,
-        'debug' => null,
         'provider' => null
     ];
 
@@ -91,7 +89,6 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'input' => false,
         'voice' => false,
         'format' => false,
-        'debug' => false,
         'provider' => false
     ];
 
@@ -185,7 +182,6 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'input' => 'input',
         'voice' => 'voice',
         'format' => 'format',
-        'debug' => 'debug',
         'provider' => 'provider'
     ];
 
@@ -199,7 +195,6 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'input' => 'setInput',
         'voice' => 'setVoice',
         'format' => 'setFormat',
-        'debug' => 'setDebug',
         'provider' => 'setProvider'
     ];
 
@@ -213,7 +208,6 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         'input' => 'getInput',
         'voice' => 'getVoice',
         'format' => 'getFormat',
-        'debug' => 'getDebug',
         'provider' => 'getProvider'
     ];
 
@@ -297,7 +291,6 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
         $this->setIfExists('input', $data ?? [], null);
         $this->setIfExists('voice', $data ?? [], null);
         $this->setIfExists('format', $data ?? [], null);
-        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -472,33 +465,6 @@ class AudioSpeechRequest implements ModelInterface, ArrayAccess, \JsonSerializab
             );
         }
         $this->container['format'] = $format;
-
-        return $this;
-    }
-
-    /**
-     * Gets debug
-     *
-     * @return \AIStats\Sdk\Model\DebugOptions|null
-     */
-    public function getDebug()
-    {
-        return $this->container['debug'];
-    }
-
-    /**
-     * Sets debug
-     *
-     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
-     *
-     * @return self
-     */
-    public function setDebug($debug)
-    {
-        if (is_null($debug)) {
-            throw new \InvalidArgumentException('non-nullable debug cannot be null');
-        }
-        $this->container['debug'] = $debug;
 
         return $this;
     }

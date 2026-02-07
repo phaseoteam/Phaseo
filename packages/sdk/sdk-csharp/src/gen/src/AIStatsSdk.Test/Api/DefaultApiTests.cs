@@ -125,9 +125,8 @@ namespace AIStatsSdk.Test.Api
             Client.Option<string> user = default!;
             Client.Option<bool> meta = default!;
             Client.Option<bool> usage = default!;
-            Client.Option<DebugOptions> debug = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, debug, provider);
+            var response = await _instance.CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, provider);
             var model = response.Ok();
             Assert.IsType<ImagesEditResponse>(model);
         }
@@ -202,9 +201,8 @@ namespace AIStatsSdk.Test.Api
             Client.Option<string> audioUrl = default!;
             Client.Option<string> audioB64 = default!;
             Client.Option<string> language = default!;
-            Client.Option<DebugOptions> debug = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateTranscriptionAsync(model, audioUrl, audioB64, language, debug, provider);
+            var response = await _instance.CreateTranscriptionAsync(model, audioUrl, audioB64, language, provider);
             var model = response.Ok();
             Assert.IsType<AudioTranscriptionResponse>(model);
         }
@@ -221,9 +219,8 @@ namespace AIStatsSdk.Test.Api
             Client.Option<string> language = default!;
             Client.Option<string> prompt = default!;
             Client.Option<decimal> temperature = default!;
-            Client.Option<DebugOptions> debug = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, debug, provider);
+            var response = await _instance.CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, provider);
             var model = response.Ok();
             Assert.IsType<AudioTranslationResponse>(model);
         }
@@ -364,14 +361,14 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
-        /// Test Health
+        /// Test Healthz
         /// </summary>
         [Fact (Skip = "not implemented")]
-        public async Task HealthAsyncTest()
+        public async Task HealthzAsyncTest()
         {
-            var response = await _instance.HealthAsync();
+            var response = await _instance.HealthzAsync();
             var model = response.Ok();
-            Assert.IsType<Health200Response>(model);
+            Assert.IsType<Healthz200Response>(model);
         }
 
         /// <summary>

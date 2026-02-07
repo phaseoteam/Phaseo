@@ -322,7 +322,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
-		expect(ir.toolChoice).toBeUndefined();
+		expect(ir.toolChoice).toBe("none");
 	});
 
 	it("should decode tool_choice - specific function", () => {
@@ -335,6 +335,44 @@ describe("decodeOpenAIResponsesRequest", () => {
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
 		expect(ir.toolChoice).toEqual({ name: "get_weather" });
+	});
+
+	it("should decode tool_choice - function object form", () => {
+		const request = {
+			model: "gpt-4",
+			input: "Hello",
+			tool_choice: {
+				type: "function",
+				function: {
+					name: "get_weather",
+				},
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.toolChoice).toEqual({ name: "get_weather" });
+	});
+
+	it("should stringify non-string function_call_output payloads", () => {
+		const request = {
+			model: "gpt-4",
+			input: [
+				{
+					type: "function_call_output",
+					call_id: "call_abc123",
+					output: { weather: "sunny", c: 22 },
+				},
+			],
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.messages[0].role).toBe("tool");
+		if (ir.messages[0].role === "tool") {
+			expect(ir.messages[0].toolResults[0]).toEqual({
+				toolCallId: "call_abc123",
+				content: JSON.stringify({ weather: "sunny", c: 22 }),
+			});
+		}
 	});
 
 	it("should decode reasoning configuration", () => {

@@ -6,7 +6,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Role** | **string** |  | 
 **Content** | [**ChatMessageContent**](ChatMessageContent.md) |  | [optional] 
-**ReasoningContent** | **string** |  | [optional] 
 **Name** | **string** |  | [optional] 
 **ToolCalls** | [**List&lt;ToolCall&gt;**](ToolCall.md) |  | [optional] 
 **ToolCallId** | **string** |  | [optional] 

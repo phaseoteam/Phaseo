@@ -1,9 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient as createServerClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { mapRawToModelCard, type ModelCard } from "@/lib/fetchers/models/getAllModels";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 import { extractFeatureKeys } from "@/lib/fetchers/models/table-view/helpers";
-import { createClient as createPublicClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export type ModelCollection = {
 	id: string;
@@ -14,16 +12,6 @@ export type ModelCollection = {
 };
 
 const DEFAULT_LIMIT = 10;
-const PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-const publicSupabaseClient = createPublicClient(
-	PUBLIC_SUPABASE_URL,
-	PUBLIC_SUPABASE_ANON_KEY,
-	{
-		auth: { persistSession: false, autoRefreshToken: false },
-	},
-);
 
 type ModelRow = {
 	model_id?: string | null;
@@ -43,6 +31,17 @@ type ModelRow = {
 		colour?: string | null;
 	}> | null;
 };
+
+function normalizeModelRow(raw: unknown): ModelRow {
+	const model = (raw ?? {}) as ModelRow;
+	const organisation = Array.isArray(model.organisation)
+		? model.organisation[0] ?? null
+		: model.organisation ?? null;
+	return {
+		...model,
+		organisation,
+	};
+}
 
 function uniqueModels(models: ModelCard[], limit: number): ModelCard[] {
 	const seen = new Set<string>();
@@ -78,9 +77,8 @@ async function getBenchmarkTopModels(args: {
 	benchmarkId: string;
 	limit: number;
 	includeHidden: boolean;
-	supabase: SupabaseClient;
 }): Promise<ModelCard[]> {
-	const supabase = args.supabase;
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_benchmark_results")
 		.select(
@@ -113,7 +111,7 @@ async function getBenchmarkTopModels(args: {
 	}
 
 	const mapped = (data ?? [])
-		.map((row: any) => row?.model as ModelRow)
+		.map((row: any) => normalizeModelRow(row?.model))
 		.filter((model) => {
 			if (!model) return false;
 			if (!args.includeHidden && model.hidden) return false;
@@ -127,9 +125,8 @@ async function getBenchmarkTopModels(args: {
 async function getImageGenerationModels(args: {
 	limit: number;
 	includeHidden: boolean;
-	supabase: SupabaseClient;
 }): Promise<ModelCard[]> {
-	const supabase = args.supabase;
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_models")
 		.select(
@@ -161,7 +158,7 @@ async function getImageGenerationModels(args: {
 
 	const mapped = (data ?? [])
 		.filter((model: any) => (args.includeHidden ? true : !model.hidden))
-		.map((model) => mapRawToModelCard(model));
+		.map((model: ModelRow) => mapRawToModelCard(normalizeModelRow(model)));
 
 	return uniqueModels(sortByReleaseDate(mapped), args.limit);
 }
@@ -169,9 +166,8 @@ async function getImageGenerationModels(args: {
 async function getFreeModels(args: {
 	limit: number;
 	includeHidden: boolean;
-	supabase: SupabaseClient;
 }): Promise<ModelCard[]> {
-	const supabase = args.supabase;
+	const supabase = createAdminClient();
 	const [providerModelsRes, pricingRes] = await Promise.all([
 		supabase
 			.from("data_api_provider_models")
@@ -217,7 +213,9 @@ async function getFreeModels(args: {
 
 	for (const row of providerModels) {
 		if (!row?.provider_id || !row?.api_model_id) continue;
-		const modelRow = Array.isArray(row.model) ? row.model[0] : row.model;
+		const modelRow = normalizeModelRow(
+			Array.isArray(row.model) ? row.model[0] : row.model
+		);
 		if (!modelRow) continue;
 		if (!args.includeHidden && modelRow.hidden) continue;
 		const key = `${row.provider_id}:${row.api_model_id}`;
@@ -252,9 +250,8 @@ async function getFreeModels(args: {
 async function getToolModels(args: {
 	limit: number;
 	includeHidden: boolean;
-	supabase: SupabaseClient;
 }): Promise<ModelCard[]> {
-	const supabase = args.supabase;
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_api_provider_model_capabilities")
 		.select(
@@ -300,21 +297,24 @@ async function getToolModels(args: {
 			? providerModel.model[0]
 			: providerModel.model;
 		if (!modelRow) continue;
-		if (!args.includeHidden && modelRow.hidden) continue;
+		const normalizedModel = normalizeModelRow(modelRow);
+		if (!args.includeHidden && normalizedModel.hidden) continue;
 		const features = extractFeatureKeys(row.params ?? {});
 		if (!features.includes("tools")) continue;
-		toolModels.push(mapRawToModelCard(modelRow));
+		toolModels.push(mapRawToModelCard(normalizedModel));
 	}
 
 	return uniqueModels(sortByReleaseDate(toolModels), args.limit);
 }
 
-async function buildModelCollections(args: {
-	limit: number;
-	includeHidden: boolean;
-	supabase: SupabaseClient;
-}): Promise<ModelCollection[]> {
-	const { limit, includeHidden, supabase } = args;
+export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelCollection[]> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("collections");
+
+	const includeHidden = false;
+
 	const [
 		freeModels,
 		imageModels,
@@ -322,20 +322,18 @@ async function buildModelCollections(args: {
 		codingModels,
 		imageUnderstandingModels,
 	] = await Promise.all([
-		getFreeModels({ limit, includeHidden, supabase }),
-		getImageGenerationModels({ limit, includeHidden, supabase }),
-		getToolModels({ limit, includeHidden, supabase }),
+		getFreeModels({ limit, includeHidden }),
+		getImageGenerationModels({ limit, includeHidden }),
+		getToolModels({ limit, includeHidden }),
 		getBenchmarkTopModels({
 			benchmarkId: "aider-polyglot",
 			limit,
 			includeHidden,
-			supabase,
 		}),
 		getBenchmarkTopModels({
 			benchmarkId: "mmmu",
 			limit,
 			includeHidden,
-			supabase,
 		}),
 	]);
 
@@ -373,29 +371,4 @@ async function buildModelCollections(args: {
 			models: imageUnderstandingModels,
 		},
 	];
-}
-
-export async function getModelCollections(limit = DEFAULT_LIMIT): Promise<ModelCollection[]> {
-	const includeHidden = await resolveIncludeHidden();
-	if (includeHidden) {
-		const supabase = await createServerClient();
-		return buildModelCollections({ limit, includeHidden, supabase });
-	}
-	return getModelCollectionsCached(limit, includeHidden);
-}
-
-export async function getModelCollectionsCached(
-	limit = DEFAULT_LIMIT,
-	includeHidden: boolean,
-): Promise<ModelCollection[]> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("collections");
-
-	return buildModelCollections({
-		limit,
-		includeHidden,
-		supabase: publicSupabaseClient,
-	});
 }

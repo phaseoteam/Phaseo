@@ -11,7 +11,6 @@ const LINKS = [
 	{ href: "/models", label: "Models" },
 	{ href: "/benchmarks", label: "Benchmarks" },
 	{ href: "/api-providers", label: "API Providers" },
-	{ href: "/help", label: "Help" },
 ];
 
 export default function MainNav() {
@@ -34,7 +33,7 @@ export default function MainNav() {
 							"inline-flex items-center whitespace-nowrap rounded-lg px-3 h-10 text-sm font-medium leading-none",
 							// make text non-selectable while keeping link clickable
 							"select-none",
-							// ghost base — use full foreground so inactive links aren't gray
+							// ghost base -- use full foreground so inactive links aren't gray
 							"border border-transparent text-foreground",
 							// hover (same hue for both themes)
 							"transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",

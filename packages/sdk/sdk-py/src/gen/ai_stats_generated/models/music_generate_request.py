@@ -17,9 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.music_generate_request_elevenlabs import MusicGenerateRequestElevenlabs
 from ai_stats_generated.models.music_generate_request_suno import MusicGenerateRequestSuno
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
@@ -37,8 +36,8 @@ class MusicGenerateRequest(BaseModel):
     provider: Optional[ProviderRoutingOptions] = None
     suno: Optional[MusicGenerateRequestSuno] = None
     elevenlabs: Optional[MusicGenerateRequestElevenlabs] = None
-    debug: Optional[DebugOptions] = None
-    __properties: ClassVar[List[str]] = ["model", "prompt", "duration", "format", "provider", "suno", "elevenlabs", "debug"]
+    echo_upstream_request: Optional[StrictBool] = None
+    __properties: ClassVar[List[str]] = ["model", "prompt", "duration", "format", "provider", "suno", "elevenlabs", "echo_upstream_request"]
 
     @field_validator('format')
     def format_validate_enum(cls, value):
@@ -98,9 +97,6 @@ class MusicGenerateRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of elevenlabs
         if self.elevenlabs:
             _dict['elevenlabs'] = self.elevenlabs.to_dict()
-        # override the default output from pydantic by calling `to_dict()` of debug
-        if self.debug:
-            _dict['debug'] = self.debug.to_dict()
         return _dict
 
     @classmethod
@@ -120,7 +116,7 @@ class MusicGenerateRequest(BaseModel):
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None,
             "suno": MusicGenerateRequestSuno.from_dict(obj["suno"]) if obj.get("suno") is not None else None,
             "elevenlabs": MusicGenerateRequestElevenlabs.from_dict(obj["elevenlabs"]) if obj.get("elevenlabs") is not None else None,
-            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None
+            "echo_upstream_request": obj.get("echo_upstream_request")
         })
         return _obj
 

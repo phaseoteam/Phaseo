@@ -36,15 +36,15 @@ namespace AIStatsSdk.Model
         /// <param name="model">model</param>
         /// <param name="image">image</param>
         /// <param name="language">language</param>
-        /// <param name="debug">debug</param>
+        /// <param name="echoUpstreamRequest">echoUpstreamRequest</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public OcrRequest(string model, string image, Option<string?> language = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
+        public OcrRequest(string model, string image, Option<string?> language = default, Option<bool?> echoUpstreamRequest = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Image = image;
             LanguageOption = language;
-            DebugOption = debug;
+            EchoUpstreamRequestOption = echoUpstreamRequest;
             ProviderOption = provider;
             OnCreated();
         }
@@ -77,17 +77,17 @@ namespace AIStatsSdk.Model
         public string? Language { get { return this.LanguageOption; } set { this.LanguageOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of Debug
+        /// Used to track the state of EchoUpstreamRequest
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugOptions?> DebugOption { get; private set; }
+        public Option<bool?> EchoUpstreamRequestOption { get; private set; }
 
         /// <summary>
-        /// Gets or Sets Debug
+        /// Gets or Sets EchoUpstreamRequest
         /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
+        [JsonPropertyName("echo_upstream_request")]
+        public bool? EchoUpstreamRequest { get { return this.EchoUpstreamRequestOption; } set { this.EchoUpstreamRequestOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Provider
@@ -113,7 +113,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Model: ").Append(Model).Append("\n");
             sb.Append("  Image: ").Append(Image).Append("\n");
             sb.Append("  Language: ").Append(Language).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
+            sb.Append("  EchoUpstreamRequest: ").Append(EchoUpstreamRequest).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -155,7 +155,7 @@ namespace AIStatsSdk.Model
             Option<string?> model = default;
             Option<string?> image = default;
             Option<string?> language = default;
-            Option<DebugOptions?> debug = default;
+            Option<bool?> echoUpstreamRequest = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -182,8 +182,8 @@ namespace AIStatsSdk.Model
                         case "language":
                             language = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "debug":
-                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                        case "echo_upstream_request":
+                            echoUpstreamRequest = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
@@ -209,13 +209,13 @@ namespace AIStatsSdk.Model
             if (language.IsSet && language.Value == null)
                 throw new ArgumentNullException(nameof(language), "Property is not nullable for class OcrRequest.");
 
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class OcrRequest.");
+            if (echoUpstreamRequest.IsSet && echoUpstreamRequest.Value == null)
+                throw new ArgumentNullException(nameof(echoUpstreamRequest), "Property is not nullable for class OcrRequest.");
 
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class OcrRequest.");
 
-            return new OcrRequest(model.Value!, image.Value!, language, debug, provider);
+            return new OcrRequest(model.Value!, image.Value!, language, echoUpstreamRequest, provider);
         }
 
         /// <summary>
@@ -251,9 +251,6 @@ namespace AIStatsSdk.Model
             if (ocrRequest.LanguageOption.IsSet && ocrRequest.Language == null)
                 throw new ArgumentNullException(nameof(ocrRequest.Language), "Property is required for class OcrRequest.");
 
-            if (ocrRequest.DebugOption.IsSet && ocrRequest.Debug == null)
-                throw new ArgumentNullException(nameof(ocrRequest.Debug), "Property is required for class OcrRequest.");
-
             if (ocrRequest.ProviderOption.IsSet && ocrRequest.Provider == null)
                 throw new ArgumentNullException(nameof(ocrRequest.Provider), "Property is required for class OcrRequest.");
 
@@ -264,11 +261,9 @@ namespace AIStatsSdk.Model
             if (ocrRequest.LanguageOption.IsSet)
                 writer.WriteString("language", ocrRequest.Language);
 
-            if (ocrRequest.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, ocrRequest.Debug, jsonSerializerOptions);
-            }
+            if (ocrRequest.EchoUpstreamRequestOption.IsSet)
+                writer.WriteBoolean("echo_upstream_request", ocrRequest.EchoUpstreamRequestOption.Value!.Value);
+
             if (ocrRequest.ProviderOption.IsSet)
             {
                 writer.WritePropertyName("provider");

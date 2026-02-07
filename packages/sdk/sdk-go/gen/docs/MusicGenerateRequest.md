@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 **Suno** | Pointer to [**MusicGenerateRequestSuno**](MusicGenerateRequestSuno.md) |  | [optional] 
 **Elevenlabs** | Pointer to [**MusicGenerateRequestElevenlabs**](MusicGenerateRequestElevenlabs.md) |  | [optional] 
-**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
+**EchoUpstreamRequest** | Pointer to **bool** |  | [optional] 
 
 ## Methods
 
@@ -202,30 +202,30 @@ SetElevenlabs sets Elevenlabs field to given value.
 
 HasElevenlabs returns a boolean if a field has been set.
 
-### GetDebug
+### GetEchoUpstreamRequest
 
-`func (o *MusicGenerateRequest) GetDebug() DebugOptions`
+`func (o *MusicGenerateRequest) GetEchoUpstreamRequest() bool`
 
-GetDebug returns the Debug field if non-nil, zero value otherwise.
+GetEchoUpstreamRequest returns the EchoUpstreamRequest field if non-nil, zero value otherwise.
 
-### GetDebugOk
+### GetEchoUpstreamRequestOk
 
-`func (o *MusicGenerateRequest) GetDebugOk() (*DebugOptions, bool)`
+`func (o *MusicGenerateRequest) GetEchoUpstreamRequestOk() (*bool, bool)`
 
-GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
+GetEchoUpstreamRequestOk returns a tuple with the EchoUpstreamRequest field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetDebug
+### SetEchoUpstreamRequest
 
-`func (o *MusicGenerateRequest) SetDebug(v DebugOptions)`
+`func (o *MusicGenerateRequest) SetEchoUpstreamRequest(v bool)`
 
-SetDebug sets Debug field to given value.
+SetEchoUpstreamRequest sets EchoUpstreamRequest field to given value.
 
-### HasDebug
+### HasEchoUpstreamRequest
 
-`func (o *MusicGenerateRequest) HasDebug() bool`
+`func (o *MusicGenerateRequest) HasEchoUpstreamRequest() bool`
 
-HasDebug returns a boolean if a field has been set.
+HasEchoUpstreamRequest returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

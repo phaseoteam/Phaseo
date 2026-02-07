@@ -1,6 +1,5 @@
 import { MetadataRoute } from "next";
 import manifestData from "@/data/manifest.json";
-import { getHelpRoutePaths } from "@/lib/content/helpCenter";
 
 type ManifestFile = {
     organisations?: string[];
@@ -56,7 +55,6 @@ const staticRoutes: Array<{
         { path: "/tools/json-formatter", changeFrequency: "monthly", priority: 0.55 },
         { path: "/tools/markdown-preview", changeFrequency: "monthly", priority: 0.55 },
         { path: "/tools/request-builder", changeFrequency: "monthly", priority: 0.55 },
-        { path: "/help", changeFrequency: "monthly", priority: 0.6 },
         { path: "/updates", changeFrequency: "weekly", priority: 0.65 },
         { path: "/updates/models", changeFrequency: "weekly", priority: 0.55 },
         { path: "/updates/web", changeFrequency: "weekly", priority: 0.55 },
@@ -197,10 +195,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         createItem(route.path, route.changeFrequency, route.priority, lastModified),
     );
 
-    const helpItems = (await getHelpRoutePaths()).map((route) =>
-        createItem(route, "monthly", route.split("/").length > 3 ? 0.5 : 0.58, lastModified),
-    );
-
     const dynamicItems = [
         ...generateItems(() => getModelSlugs(manifest.models), "/models", MODEL_SUFFIXES, lastModified),
         ...generateItems(() => normalizeSlugs(manifest.api_providers), "/api-providers", PROVIDER_SUFFIXES, lastModified),
@@ -209,5 +203,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ...generateItems(() => normalizeSlugs(manifest.subscription_plans), "/subscription-plans", PLAN_SUFFIXES, lastModified),
     ];
 
-    return [...staticItems, ...dynamicItems, ...helpItems];
+    return [...staticItems, ...dynamicItems];
 }

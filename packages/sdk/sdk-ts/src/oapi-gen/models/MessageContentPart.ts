@@ -1,41 +1,13 @@
 export type MessageContentPart =
   | {
-      cache_control?: {
-        cache?: {
-          ttl?: "5m" | "1h";
-          type?: "ehpemeral" | "ephemeral";
-        };
-        ttl?: "5m" | "1h";
-        type?: "ehpemeral" | "ephemeral";
-      };
       text: string;
       type: "text";
-    }
-  | {
-      cache_control?: {
-        cache?: {
-          ttl?: "5m" | "1h";
-          type?: "ehpemeral" | "ephemeral";
-        };
-        ttl?: "5m" | "1h";
-        type?: "ehpemeral" | "ephemeral";
-      };
-      text: string;
-      type: "input_text";
     }
   | {
       image_url: {
         url?: string;
       };
       type: "image_url";
-    }
-  | {
-      image_url:
-        | string
-        | {
-            url?: string;
-          };
-      type: "input_image";
     }
   | {
       input_audio: {

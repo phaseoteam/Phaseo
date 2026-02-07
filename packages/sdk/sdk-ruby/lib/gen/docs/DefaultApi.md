@@ -28,7 +28,7 @@ All URIs are relative to *https://api.phaseo.app/v1*
 | [**get_provisioning_key**](DefaultApi.md#get_provisioning_key) | **GET** /provisioning/keys/{id} | Get provisioning key |
 | [**get_video**](DefaultApi.md#get_video) | **GET** /videos/{video_id} | Get video status |
 | [**get_video_content**](DefaultApi.md#get_video_content) | **GET** /videos/{video_id}/content | Get video content |
-| [**health**](DefaultApi.md#health) | **GET** /health | Health check |
+| [**healthz**](DefaultApi.md#healthz) | **GET** /healthz | Health check |
 | [**list_files**](DefaultApi.md#list_files) | **GET** /files | List files |
 | [**list_models**](DefaultApi.md#list_models) | **GET** /models | List models |
 | [**list_providers**](DefaultApi.md#list_providers) | **GET** /providers | List providers |
@@ -60,7 +60,7 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-anthropic_messages_request = AIStatsSdk::AnthropicMessagesRequest.new({model: 'model_example', messages: [AIStatsSdk::AnthropicMessage.new({role: 'user', content: nil})], max_tokens: 37}) # AnthropicMessagesRequest | 
+anthropic_messages_request = AIStatsSdk::AnthropicMessagesRequest.new({model: 'model_example', messages: [AIStatsSdk::AnthropicMessage.new({role: 'user', content: nil})]}) # AnthropicMessagesRequest | 
 
 begin
   # Create message
@@ -244,7 +244,7 @@ end
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: application/json, text/event-stream
+- **Accept**: application/json
 
 
 ## create_embedding
@@ -415,7 +415,6 @@ opts = {
   user: 'user_example', # String | 
   meta: true, # Boolean | 
   usage: true, # Boolean | 
-  debug: AIStatsSdk::DebugOptions.new, # DebugOptions | 
   provider: AIStatsSdk::ProviderRoutingOptions.new # ProviderRoutingOptions | 
 }
 
@@ -459,7 +458,6 @@ end
 | **user** | **String** |  | [optional] |
 | **meta** | **Boolean** |  | [optional] |
 | **usage** | **Boolean** |  | [optional] |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ### Return type
@@ -749,7 +747,7 @@ end
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: application/json, text/event-stream
+- **Accept**: application/json
 
 
 ## create_speech
@@ -846,7 +844,6 @@ opts = {
   audio_url: 'audio_url_example', # String | 
   audio_b64: 'audio_b64_example', # String | 
   language: 'language_example', # String | 
-  debug: AIStatsSdk::DebugOptions.new, # DebugOptions | 
   provider: AIStatsSdk::ProviderRoutingOptions.new # ProviderRoutingOptions | 
 }
 
@@ -885,7 +882,6 @@ end
 | **audio_url** | **String** |  | [optional] |
 | **audio_b64** | **String** |  | [optional] |
 | **language** | **String** |  | [optional] |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ### Return type
@@ -929,7 +925,6 @@ opts = {
   language: 'language_example', # String | 
   prompt: 'prompt_example', # String | 
   temperature: 8.14, # Float | 
-  debug: AIStatsSdk::DebugOptions.new, # DebugOptions | 
   provider: AIStatsSdk::ProviderRoutingOptions.new # ProviderRoutingOptions | 
 }
 
@@ -970,7 +965,6 @@ end
 | **language** | **String** |  | [optional] |
 | **prompt** | **String** |  | [optional] |
 | **temperature** | **Float** |  | [optional] |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ### Return type
@@ -1754,9 +1748,9 @@ end
 - **Accept**: application/octet-stream
 
 
-## health
+## healthz
 
-> <Health200Response> health
+> <Healthz200Response> healthz
 
 Health check
 
@@ -1777,28 +1771,28 @@ api_instance = AIStatsSdk::DefaultApi.new
 
 begin
   # Health check
-  result = api_instance.health
+  result = api_instance.healthz
   p result
 rescue AIStatsSdk::ApiError => e
-  puts "Error when calling DefaultApi->health: #{e}"
+  puts "Error when calling DefaultApi->healthz: #{e}"
 end
 ```
 
-#### Using the health_with_http_info variant
+#### Using the healthz_with_http_info variant
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<Health200Response>, Integer, Hash)> health_with_http_info
+> <Array(<Healthz200Response>, Integer, Hash)> healthz_with_http_info
 
 ```ruby
 begin
   # Health check
-  data, status_code, headers = api_instance.health_with_http_info
+  data, status_code, headers = api_instance.healthz_with_http_info
   p status_code # => 2xx
   p headers # => { ... }
-  p data # => <Health200Response>
+  p data # => <Healthz200Response>
 rescue AIStatsSdk::ApiError => e
-  puts "Error when calling DefaultApi->health_with_http_info: #{e}"
+  puts "Error when calling DefaultApi->healthz_with_http_info: #{e}"
 end
 ```
 
@@ -1808,7 +1802,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**Health200Response**](Health200Response.md)
+[**Healthz200Response**](Healthz200Response.md)
 
 ### Authorization
 

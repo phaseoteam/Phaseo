@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 **Model** | **string** |  | 
 **Image** | **string** |  | 
 **Language** | Pointer to **string** |  | [optional] 
-**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
+**EchoUpstreamRequest** | Pointer to **bool** |  | [optional] 
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 ## Methods
@@ -94,30 +94,30 @@ SetLanguage sets Language field to given value.
 
 HasLanguage returns a boolean if a field has been set.
 
-### GetDebug
+### GetEchoUpstreamRequest
 
-`func (o *OcrRequest) GetDebug() DebugOptions`
+`func (o *OcrRequest) GetEchoUpstreamRequest() bool`
 
-GetDebug returns the Debug field if non-nil, zero value otherwise.
+GetEchoUpstreamRequest returns the EchoUpstreamRequest field if non-nil, zero value otherwise.
 
-### GetDebugOk
+### GetEchoUpstreamRequestOk
 
-`func (o *OcrRequest) GetDebugOk() (*DebugOptions, bool)`
+`func (o *OcrRequest) GetEchoUpstreamRequestOk() (*bool, bool)`
 
-GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
+GetEchoUpstreamRequestOk returns a tuple with the EchoUpstreamRequest field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetDebug
+### SetEchoUpstreamRequest
 
-`func (o *OcrRequest) SetDebug(v DebugOptions)`
+`func (o *OcrRequest) SetEchoUpstreamRequest(v bool)`
 
-SetDebug sets Debug field to given value.
+SetEchoUpstreamRequest sets EchoUpstreamRequest field to given value.
 
-### HasDebug
+### HasEchoUpstreamRequest
 
-`func (o *OcrRequest) HasDebug() bool`
+`func (o *OcrRequest) HasEchoUpstreamRequest() bool`
 
-HasDebug returns a boolean if a field has been set.
+HasEchoUpstreamRequest returns a boolean if a field has been set.
 
 ### GetProvider
 

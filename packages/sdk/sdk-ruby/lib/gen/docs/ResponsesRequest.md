@@ -5,23 +5,19 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **model** | **String** |  |  |
-| **input** | [**ResponsesRequestInput**](ResponsesRequestInput.md) |  | [optional] |
-| **messages** | [**Array&lt;ChatMessage&gt;**](ChatMessage.md) |  | [optional] |
-| **input_items** | [**Array&lt;ResponsesInputItem&gt;**](ResponsesInputItem.md) |  | [optional] |
+| **input** | **Object** |  | [optional] |
+| **input_items** | **Array&lt;Object&gt;** |  | [optional] |
 | **conversation** | [**ChatCompletionsRequestToolChoice**](ChatCompletionsRequestToolChoice.md) |  | [optional] |
 | **include** | **Array&lt;String&gt;** |  | [optional] |
 | **instructions** | **String** |  | [optional] |
 | **max_output_tokens** | **Integer** |  | [optional] |
 | **max_tool_calls** | **Integer** |  | [optional] |
-| **max_tools_calls** | **Integer** |  | [optional] |
 | **metadata** | **Hash&lt;String, String&gt;** |  | [optional] |
-| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **parallel_tool_calls** | **Boolean** |  | [optional] |
 | **previous_response_id** | **String** |  | [optional] |
 | **prompt** | [**ResponsesRequestPrompt**](ResponsesRequestPrompt.md) |  | [optional] |
 | **prompt_cache_key** | **String** |  | [optional] |
 | **prompt_cache_retention** | **String** |  | [optional] |
-| **modalities** | **Array&lt;String&gt;** |  | [optional] |
 | **reasoning** | [**ResponsesRequestReasoning**](ResponsesRequestReasoning.md) |  | [optional] |
 | **safety_identifier** | **String** |  | [optional] |
 | **service_tier** | **String** |  | [optional] |
@@ -37,6 +33,7 @@
 | **truncation** | **String** |  | [optional] |
 | **background** | **Boolean** |  | [optional] |
 | **user** | **String** |  | [optional] |
+| **usage** | **Boolean** |  | [optional] |
 | **meta** | **Boolean** |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
@@ -48,22 +45,18 @@ require 'ai_stats_sdk'
 instance = AIStatsSdk::ResponsesRequest.new(
   model: null,
   input: null,
-  messages: null,
   input_items: null,
   conversation: null,
   include: null,
   instructions: null,
   max_output_tokens: null,
   max_tool_calls: null,
-  max_tools_calls: null,
   metadata: null,
-  debug: null,
   parallel_tool_calls: null,
   previous_response_id: null,
   prompt: null,
   prompt_cache_key: null,
   prompt_cache_retention: null,
-  modalities: null,
   reasoning: null,
   safety_identifier: null,
   service_tier: null,
@@ -79,6 +72,7 @@ instance = AIStatsSdk::ResponsesRequest.new(
   truncation: null,
   background: null,
   user: null,
+  usage: null,
   meta: null,
   provider: null
 )

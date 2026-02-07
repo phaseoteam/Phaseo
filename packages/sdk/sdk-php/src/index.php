@@ -4,288 +4,98 @@
 
 namespace AIStats\Sdk;
 
+use AIStats\Sdk\Api\DefaultApi;
+use AIStats\Sdk\Configuration;
+use AIStats\Sdk\Model\ResponsesResponse;
+use AIStats\Sdk\Model\ChatCompletionsResponse;
+use AIStats\Sdk\Model\ImagesGenerationResponse;
+use AIStats\Sdk\Model\ImagesEditResponse;
+use AIStats\Sdk\Model\EmbeddingsResponse;
+use AIStats\Sdk\Model\ModerationsResponse;
+use AIStats\Sdk\Model\AudioTranscriptionResponse;
+use AIStats\Sdk\Model\AudioTranslationResponse;
+use AIStats\Sdk\Model\ListModels200Response;
+
 class Client
 {
-    private \AIStats\Gen\Client $client;
-    public ChatResource $chat;
-    public ResponsesResource $responses;
-    public MessagesResource $messages;
-    public ImagesResource $images;
-    public AudioResource $audio;
-    public ModerationsResource $moderations;
-    public BatchesResource $batches;
-    public FilesResource $files;
-    public ModelsResource $models;
+    private DefaultApi $api;
 
     public function __construct(string $apiKey, string $basePath = 'https://api.phaseo.app/v1')
     {
         $host = rtrim($basePath, '/');
-        $this->client = new \AIStats\Gen\Client($host, [
-            "Authorization" => "Bearer {$apiKey}"
-        ]);
-        $this->chat = new ChatResource($this->client);
-        $this->responses = new ResponsesResource($this->client);
-        $this->messages = new MessagesResource($this->client);
-        $this->images = new ImagesResource($this->client);
-        $this->audio = new AudioResource($this->client);
-        $this->moderations = new ModerationsResource($this->client);
-        $this->batches = new BatchesResource($this->client);
-        $this->files = new FilesResource($this->client);
-        $this->models = new ModelsResource($this->client);
+        $config = Configuration::getDefaultConfiguration()
+            ->setHost($host)
+            ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
+
+        $this->api = new DefaultApi(null, $config);
     }
 
     /**
      * Chat completions.
      */
-    public function generateText(array $payload)
+    public function generateText(array $payload): ChatCompletionsResponse
     {
-        return $this->chat->completions->create($payload);
+        return $this->api->createChatCompletion($payload);
     }
 
     /**
      * Responses API.
      */
-    public function generateResponse(array $payload)
+    public function generateResponse(array $payload): ResponsesResponse
     {
-        return $this->responses->create($payload);
+        return $this->api->createResponse($payload);
     }
 
-    public function generateImage(array $payload)
+    public function generateImage(array $payload): ImagesGenerationResponse
     {
-        return $this->images->generate($payload);
+        return $this->api->createImage($payload);
     }
 
-    public function generateImageEdit(array $payload)
+    public function generateImageEdit(array $payload): ImagesEditResponse
     {
-        return $this->images->edit($payload);
+        $model = $payload['model'] ?? null;
+        $image = $payload['image'] ?? null;
+        $prompt = $payload['prompt'] ?? null;
+        $mask = $payload['mask'] ?? null;
+        $size = $payload['size'] ?? null;
+        $n = $payload['n'] ?? null;
+        $user = $payload['user'] ?? null;
+        $meta = $payload['meta'] ?? null;
+        $usage = $payload['usage'] ?? null;
+
+        return $this->api->createImageEdit($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage);
     }
 
-    public function generateEmbedding(array $payload)
+    public function generateEmbedding(array $payload): EmbeddingsResponse
     {
-        return \AIStats\Gen\createEmbedding($this->client, null, null, null, $payload);
+        return $this->api->createEmbedding($payload);
     }
 
-    public function generateModeration(array $payload)
+    public function generateModeration(array $payload): ModerationsResponse
     {
-        return $this->moderations->create($payload);
+        return $this->api->createModeration($payload);
     }
 
-    public function generateTranscription(array $payload)
+    public function generateTranscription(array $payload): AudioTranscriptionResponse
     {
-        return $this->audio->transcriptions->create($payload);
+        return $this->api->createTranscription($payload['model'] ?? null, $payload['audioUrl'] ?? null, $payload['audioB64'] ?? null, $payload['language'] ?? null);
     }
 
-    public function generateTranslation(array $payload)
+    public function generateTranslation(array $payload): AudioTranslationResponse
     {
-        return $this->audio->translations->create($payload);
+        return $this->api->createTranslation($payload['model'] ?? null, $payload['audioUrl'] ?? null, $payload['audioB64'] ?? null, $payload['language'] ?? null, $payload['prompt'] ?? null, $payload['temperature'] ?? null);
     }
 
-    public function listModels(array $params = [])
+    public function listModels(array $params = []): ListModels200Response
     {
-        return $this->models->list($params);
-    }
-}
-
-class ChatCompletionsResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function create(array $payload)
-    {
-        return \AIStats\Gen\createChatCompletion($this->client, null, null, null, $payload);
-    }
-}
-
-class ChatResource
-{
-    public ChatCompletionsResource $completions;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->completions = new ChatCompletionsResource($client);
-    }
-}
-
-class ResponsesResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function create(array $payload)
-    {
-        return \AIStats\Gen\createResponse($this->client, null, null, null, $payload);
-    }
-}
-
-class MessagesResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function create(array $payload)
-    {
-        return \AIStats\Gen\createAnthropicMessage($this->client, null, null, null, $payload);
-    }
-}
-
-class ImagesResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function generate(array $payload)
-    {
-        return \AIStats\Gen\createImage($this->client, null, null, null, $payload);
-    }
-
-    public function edit(array $payload)
-    {
-        return \AIStats\Gen\createImageEdit($this->client, null, null, null, $payload);
-    }
-}
-
-class AudioSpeechResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function create(array $payload)
-    {
-        return \AIStats\Gen\createSpeech($this->client, null, null, null, $payload);
-    }
-}
-
-class AudioTranscriptionsResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function create(array $payload)
-    {
-        return \AIStats\Gen\createTranscription($this->client, null, null, null, $payload);
-    }
-}
-
-class AudioTranslationsResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function create(array $payload)
-    {
-        return \AIStats\Gen\createTranslation($this->client, null, null, null, $payload);
-    }
-}
-
-class AudioResource
-{
-    public AudioSpeechResource $speech;
-    public AudioTranscriptionsResource $transcriptions;
-    public AudioTranslationsResource $translations;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->speech = new AudioSpeechResource($client);
-        $this->transcriptions = new AudioTranscriptionsResource($client);
-        $this->translations = new AudioTranslationsResource($client);
-    }
-}
-
-class ModerationsResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function create(array $payload)
-    {
-        return \AIStats\Gen\createModeration($this->client, null, null, null, $payload);
-    }
-}
-
-class BatchesResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function create(array $payload)
-    {
-        return \AIStats\Gen\createBatch($this->client, null, null, null, $payload);
-    }
-
-    public function retrieve(string $batchId)
-    {
-        return \AIStats\Gen\retrieveBatch($this->client, ["batch_id" => $batchId], null, null, null);
-    }
-}
-
-class FilesResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function list()
-    {
-        return \AIStats\Gen\listFiles($this->client);
-    }
-
-    public function retrieve(string $fileId)
-    {
-        return \AIStats\Gen\retrieveFile($this->client, ["file_id" => $fileId], null, null, null);
-    }
-}
-
-class ModelsResource
-{
-    private \AIStats\Gen\Client $client;
-
-    public function __construct(\AIStats\Gen\Client $client)
-    {
-        $this->client = $client;
-    }
-
-    public function list(array $params = [])
-    {
-        return \AIStats\Gen\listModels($this->client, null, $params);
+        return $this->api->listModels(
+            $params['endpoints'] ?? null,
+            $params['organisation'] ?? null,
+            $params['input_types'] ?? null,
+            $params['output_types'] ?? null,
+            $params['params'] ?? null,
+            $params['limit'] ?? 50,
+            $params['offset'] ?? 0
+        );
     }
 }

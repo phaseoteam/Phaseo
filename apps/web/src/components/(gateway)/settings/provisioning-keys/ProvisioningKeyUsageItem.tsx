@@ -44,7 +44,7 @@ export default function ProvisioningKeyUsageItem({ k }: any) {
 					<DialogHeader>
 						<DialogTitle>Usage for {k.name}</DialogTitle>
 						<DialogDescription>
-							Request usage and cost for this provisioning key.
+							Request usage and cost for this management API key.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">

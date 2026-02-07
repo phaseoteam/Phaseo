@@ -11,6 +11,7 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { computeBill } from "@pipeline/pricing/engine";
+import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 
 /**
  * Transform IR request to Google Gemini format
@@ -375,8 +376,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			currency: "USD",
 		};
 
-		if (irResponse.usage && pricingCard) {
-			const priced = computeBill(irResponse.usage, pricingCard);
+		const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
+		if (usageMeters && pricingCard) {
+			const priced = computeBill(usageMeters, pricingCard);
 			bill.cost_cents = priced.pricing.total_cents;
 			bill.currency = priced.pricing.currency;
 			bill.usage = priced;

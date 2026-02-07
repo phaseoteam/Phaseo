@@ -6,7 +6,6 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Index** | Pointer to **int32** |  | [optional] 
 **Message** | Pointer to [**ChatMessage**](ChatMessage.md) |  | [optional] 
-**Logprobs** | Pointer to **map[string]interface{}** |  | [optional] 
 **FinishReason** | Pointer to **string** |  | [optional] 
 
 ## Methods
@@ -77,31 +76,6 @@ SetMessage sets Message field to given value.
 `func (o *ChatChoice) HasMessage() bool`
 
 HasMessage returns a boolean if a field has been set.
-
-### GetLogprobs
-
-`func (o *ChatChoice) GetLogprobs() map[string]interface{}`
-
-GetLogprobs returns the Logprobs field if non-nil, zero value otherwise.
-
-### GetLogprobsOk
-
-`func (o *ChatChoice) GetLogprobsOk() (*map[string]interface{}, bool)`
-
-GetLogprobsOk returns a tuple with the Logprobs field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetLogprobs
-
-`func (o *ChatChoice) SetLogprobs(v map[string]interface{})`
-
-SetLogprobs sets Logprobs field to given value.
-
-### HasLogprobs
-
-`func (o *ChatChoice) HasLogprobs() bool`
-
-HasLogprobs returns a boolean if a field has been set.
 
 ### GetFinishReason
 

@@ -59,11 +59,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     protected static $openAPITypes = [
         'type' => 'string',
         'text' => 'string',
-        'cache_control' => '\AIStats\Sdk\Model\CacheControl',
         'source' => '\AIStats\Sdk\Model\AnthropicContentBlockSource',
-        'image_url' => '\AIStats\Sdk\Model\AnthropicContentBlockImageUrl',
-        'input_audio' => '\AIStats\Sdk\Model\AudioContentPartInputAudio',
-        'video_url' => 'string',
         'id' => 'string',
         'name' => 'string',
         'input' => 'object',
@@ -81,11 +77,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     protected static $openAPIFormats = [
         'type' => null,
         'text' => null,
-        'cache_control' => null,
         'source' => null,
-        'image_url' => null,
-        'input_audio' => null,
-        'video_url' => null,
         'id' => null,
         'name' => null,
         'input' => null,
@@ -101,11 +93,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     protected static array $openAPINullables = [
         'type' => false,
         'text' => false,
-        'cache_control' => false,
         'source' => false,
-        'image_url' => false,
-        'input_audio' => false,
-        'video_url' => false,
         'id' => false,
         'name' => false,
         'input' => false,
@@ -201,11 +189,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     protected static $attributeMap = [
         'type' => 'type',
         'text' => 'text',
-        'cache_control' => 'cache_control',
         'source' => 'source',
-        'image_url' => 'image_url',
-        'input_audio' => 'input_audio',
-        'video_url' => 'video_url',
         'id' => 'id',
         'name' => 'name',
         'input' => 'input',
@@ -221,11 +205,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     protected static $setters = [
         'type' => 'setType',
         'text' => 'setText',
-        'cache_control' => 'setCacheControl',
         'source' => 'setSource',
-        'image_url' => 'setImageUrl',
-        'input_audio' => 'setInputAudio',
-        'video_url' => 'setVideoUrl',
         'id' => 'setId',
         'name' => 'setName',
         'input' => 'setInput',
@@ -241,11 +221,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     protected static $getters = [
         'type' => 'getType',
         'text' => 'getText',
-        'cache_control' => 'getCacheControl',
         'source' => 'getSource',
-        'image_url' => 'getImageUrl',
-        'input_audio' => 'getInputAudio',
-        'video_url' => 'getVideoUrl',
         'id' => 'getId',
         'name' => 'getName',
         'input' => 'getInput',
@@ -295,11 +271,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     }
 
     public const TYPE_TEXT = 'text';
-    public const TYPE_INPUT_TEXT = 'input_text';
     public const TYPE_IMAGE = 'image';
-    public const TYPE_INPUT_IMAGE = 'input_image';
-    public const TYPE_INPUT_AUDIO = 'input_audio';
-    public const TYPE_INPUT_VIDEO = 'input_video';
     public const TYPE_TOOL_USE = 'tool_use';
     public const TYPE_TOOL_RESULT = 'tool_result';
 
@@ -312,11 +284,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     {
         return [
             self::TYPE_TEXT,
-            self::TYPE_INPUT_TEXT,
             self::TYPE_IMAGE,
-            self::TYPE_INPUT_IMAGE,
-            self::TYPE_INPUT_AUDIO,
-            self::TYPE_INPUT_VIDEO,
             self::TYPE_TOOL_USE,
             self::TYPE_TOOL_RESULT,
         ];
@@ -339,11 +307,7 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     {
         $this->setIfExists('type', $data ?? [], null);
         $this->setIfExists('text', $data ?? [], null);
-        $this->setIfExists('cache_control', $data ?? [], null);
         $this->setIfExists('source', $data ?? [], null);
-        $this->setIfExists('image_url', $data ?? [], null);
-        $this->setIfExists('input_audio', $data ?? [], null);
-        $this->setIfExists('video_url', $data ?? [], null);
         $this->setIfExists('id', $data ?? [], null);
         $this->setIfExists('name', $data ?? [], null);
         $this->setIfExists('input', $data ?? [], null);
@@ -467,33 +431,6 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
     }
 
     /**
-     * Gets cache_control
-     *
-     * @return \AIStats\Sdk\Model\CacheControl|null
-     */
-    public function getCacheControl()
-    {
-        return $this->container['cache_control'];
-    }
-
-    /**
-     * Sets cache_control
-     *
-     * @param \AIStats\Sdk\Model\CacheControl|null $cache_control cache_control
-     *
-     * @return self
-     */
-    public function setCacheControl($cache_control)
-    {
-        if (is_null($cache_control)) {
-            throw new \InvalidArgumentException('non-nullable cache_control cannot be null');
-        }
-        $this->container['cache_control'] = $cache_control;
-
-        return $this;
-    }
-
-    /**
      * Gets source
      *
      * @return \AIStats\Sdk\Model\AnthropicContentBlockSource|null
@@ -516,87 +453,6 @@ class AnthropicContentBlock implements ModelInterface, ArrayAccess, \JsonSeriali
             throw new \InvalidArgumentException('non-nullable source cannot be null');
         }
         $this->container['source'] = $source;
-
-        return $this;
-    }
-
-    /**
-     * Gets image_url
-     *
-     * @return \AIStats\Sdk\Model\AnthropicContentBlockImageUrl|null
-     */
-    public function getImageUrl()
-    {
-        return $this->container['image_url'];
-    }
-
-    /**
-     * Sets image_url
-     *
-     * @param \AIStats\Sdk\Model\AnthropicContentBlockImageUrl|null $image_url image_url
-     *
-     * @return self
-     */
-    public function setImageUrl($image_url)
-    {
-        if (is_null($image_url)) {
-            throw new \InvalidArgumentException('non-nullable image_url cannot be null');
-        }
-        $this->container['image_url'] = $image_url;
-
-        return $this;
-    }
-
-    /**
-     * Gets input_audio
-     *
-     * @return \AIStats\Sdk\Model\AudioContentPartInputAudio|null
-     */
-    public function getInputAudio()
-    {
-        return $this->container['input_audio'];
-    }
-
-    /**
-     * Sets input_audio
-     *
-     * @param \AIStats\Sdk\Model\AudioContentPartInputAudio|null $input_audio input_audio
-     *
-     * @return self
-     */
-    public function setInputAudio($input_audio)
-    {
-        if (is_null($input_audio)) {
-            throw new \InvalidArgumentException('non-nullable input_audio cannot be null');
-        }
-        $this->container['input_audio'] = $input_audio;
-
-        return $this;
-    }
-
-    /**
-     * Gets video_url
-     *
-     * @return string|null
-     */
-    public function getVideoUrl()
-    {
-        return $this->container['video_url'];
-    }
-
-    /**
-     * Sets video_url
-     *
-     * @param string|null $video_url video_url
-     *
-     * @return self
-     */
-    public function setVideoUrl($video_url)
-    {
-        if (is_null($video_url)) {
-            throw new \InvalidArgumentException('non-nullable video_url cannot be null');
-        }
-        $this->container['video_url'] = $video_url;
 
         return $this;
     }

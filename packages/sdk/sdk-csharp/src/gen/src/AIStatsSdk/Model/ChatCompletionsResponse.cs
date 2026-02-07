@@ -34,34 +34,20 @@ namespace AIStatsSdk.Model
         /// Initializes a new instance of the <see cref="ChatCompletionsResponse" /> class.
         /// </summary>
         /// <param name="id">id</param>
-        /// <param name="nativeResponseId">nativeResponseId</param>
         /// <param name="object">object</param>
         /// <param name="created">created</param>
         /// <param name="model">model</param>
         /// <param name="choices">choices</param>
         /// <param name="usage">usage</param>
-        /// <param name="serviceTier">serviceTier</param>
-        /// <param name="systemFingerprint">systemFingerprint</param>
-        /// <param name="meta">meta</param>
-        /// <param name="debug">debug</param>
-        /// <param name="upstreamRequest">upstreamRequest</param>
-        /// <param name="upstreamResponse">upstreamResponse</param>
         [JsonConstructor]
-        public ChatCompletionsResponse(Option<string?> id = default, Option<string?> nativeResponseId = default, Option<string?> @object = default, Option<int?> created = default, Option<string?> model = default, Option<List<ChatChoice>?> choices = default, Option<Usage?> usage = default, Option<string?> serviceTier = default, Option<string?> systemFingerprint = default, Option<Object?> meta = default, Option<DebugResponse?> debug = default, Option<ChatCompletionsResponseUpstreamRequest?> upstreamRequest = default, Option<ChatCompletionsResponseUpstreamRequest?> upstreamResponse = default)
+        public ChatCompletionsResponse(Option<string?> id = default, Option<string?> @object = default, Option<int?> created = default, Option<string?> model = default, Option<List<ChatChoice>?> choices = default, Option<Usage?> usage = default)
         {
             IdOption = id;
-            NativeResponseIdOption = nativeResponseId;
             ObjectOption = @object;
             CreatedOption = created;
             ModelOption = model;
             ChoicesOption = choices;
             UsageOption = usage;
-            ServiceTierOption = serviceTier;
-            SystemFingerprintOption = systemFingerprint;
-            MetaOption = meta;
-            DebugOption = debug;
-            UpstreamRequestOption = upstreamRequest;
-            UpstreamResponseOption = upstreamResponse;
             OnCreated();
         }
 
@@ -79,19 +65,6 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonPropertyName("id")]
         public string? Id { get { return this.IdOption; } set { this.IdOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of NativeResponseId
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> NativeResponseIdOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets NativeResponseId
-        /// </summary>
-        [JsonPropertyName("nativeResponseId")]
-        public string? NativeResponseId { get { return this.NativeResponseIdOption; } set { this.NativeResponseIdOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Object
@@ -159,84 +132,6 @@ namespace AIStatsSdk.Model
         public Usage? Usage { get { return this.UsageOption; } set { this.UsageOption = new(value); } }
 
         /// <summary>
-        /// Used to track the state of ServiceTier
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> ServiceTierOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets ServiceTier
-        /// </summary>
-        [JsonPropertyName("service_tier")]
-        public string? ServiceTier { get { return this.ServiceTierOption; } set { this.ServiceTierOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of SystemFingerprint
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<string?> SystemFingerprintOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets SystemFingerprint
-        /// </summary>
-        [JsonPropertyName("system_fingerprint")]
-        public string? SystemFingerprint { get { return this.SystemFingerprintOption; } set { this.SystemFingerprintOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Meta
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<Object?> MetaOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Meta
-        /// </summary>
-        [JsonPropertyName("meta")]
-        public Object? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of Debug
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<DebugResponse?> DebugOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets Debug
-        /// </summary>
-        [JsonPropertyName("debug")]
-        public DebugResponse? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of UpstreamRequest
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<ChatCompletionsResponseUpstreamRequest?> UpstreamRequestOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets UpstreamRequest
-        /// </summary>
-        [JsonPropertyName("upstream_request")]
-        public ChatCompletionsResponseUpstreamRequest? UpstreamRequest { get { return this.UpstreamRequestOption; } set { this.UpstreamRequestOption = new(value); } }
-
-        /// <summary>
-        /// Used to track the state of UpstreamResponse
-        /// </summary>
-        [JsonIgnore]
-        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<ChatCompletionsResponseUpstreamRequest?> UpstreamResponseOption { get; private set; }
-
-        /// <summary>
-        /// Gets or Sets UpstreamResponse
-        /// </summary>
-        [JsonPropertyName("upstream_response")]
-        public ChatCompletionsResponseUpstreamRequest? UpstreamResponse { get { return this.UpstreamResponseOption; } set { this.UpstreamResponseOption = new(value); } }
-
-        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -245,18 +140,11 @@ namespace AIStatsSdk.Model
             StringBuilder sb = new StringBuilder();
             sb.Append("class ChatCompletionsResponse {\n");
             sb.Append("  Id: ").Append(Id).Append("\n");
-            sb.Append("  NativeResponseId: ").Append(NativeResponseId).Append("\n");
             sb.Append("  Object: ").Append(Object).Append("\n");
             sb.Append("  Created: ").Append(Created).Append("\n");
             sb.Append("  Model: ").Append(Model).Append("\n");
             sb.Append("  Choices: ").Append(Choices).Append("\n");
             sb.Append("  Usage: ").Append(Usage).Append("\n");
-            sb.Append("  ServiceTier: ").Append(ServiceTier).Append("\n");
-            sb.Append("  SystemFingerprint: ").Append(SystemFingerprint).Append("\n");
-            sb.Append("  Meta: ").Append(Meta).Append("\n");
-            sb.Append("  Debug: ").Append(Debug).Append("\n");
-            sb.Append("  UpstreamRequest: ").Append(UpstreamRequest).Append("\n");
-            sb.Append("  UpstreamResponse: ").Append(UpstreamResponse).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -295,18 +183,11 @@ namespace AIStatsSdk.Model
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
             Option<string?> id = default;
-            Option<string?> nativeResponseId = default;
             Option<string?> varObject = default;
             Option<int?> created = default;
             Option<string?> model = default;
             Option<List<ChatChoice>?> choices = default;
             Option<Usage?> usage = default;
-            Option<string?> serviceTier = default;
-            Option<string?> systemFingerprint = default;
-            Option<Object?> meta = default;
-            Option<DebugResponse?> debug = default;
-            Option<ChatCompletionsResponseUpstreamRequest?> upstreamRequest = default;
-            Option<ChatCompletionsResponseUpstreamRequest?> upstreamResponse = default;
 
             while (utf8JsonReader.Read())
             {
@@ -326,9 +207,6 @@ namespace AIStatsSdk.Model
                         case "id":
                             id = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
-                        case "nativeResponseId":
-                            nativeResponseId = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
                         case "object":
                             varObject = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
@@ -344,24 +222,6 @@ namespace AIStatsSdk.Model
                         case "usage":
                             usage = new Option<Usage?>(JsonSerializer.Deserialize<Usage>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
-                        case "service_tier":
-                            serviceTier = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
-                        case "system_fingerprint":
-                            systemFingerprint = new Option<string?>(utf8JsonReader.GetString()!);
-                            break;
-                        case "meta":
-                            meta = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "debug":
-                            debug = new Option<DebugResponse?>(JsonSerializer.Deserialize<DebugResponse>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "upstream_request":
-                            upstreamRequest = new Option<ChatCompletionsResponseUpstreamRequest?>(JsonSerializer.Deserialize<ChatCompletionsResponseUpstreamRequest>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
-                        case "upstream_response":
-                            upstreamResponse = new Option<ChatCompletionsResponseUpstreamRequest?>(JsonSerializer.Deserialize<ChatCompletionsResponseUpstreamRequest>(ref utf8JsonReader, jsonSerializerOptions)!);
-                            break;
                         default:
                             break;
                     }
@@ -370,9 +230,6 @@ namespace AIStatsSdk.Model
 
             if (id.IsSet && id.Value == null)
                 throw new ArgumentNullException(nameof(id), "Property is not nullable for class ChatCompletionsResponse.");
-
-            if (nativeResponseId.IsSet && nativeResponseId.Value == null)
-                throw new ArgumentNullException(nameof(nativeResponseId), "Property is not nullable for class ChatCompletionsResponse.");
 
             if (varObject.IsSet && varObject.Value == null)
                 throw new ArgumentNullException(nameof(varObject), "Property is not nullable for class ChatCompletionsResponse.");
@@ -389,25 +246,7 @@ namespace AIStatsSdk.Model
             if (usage.IsSet && usage.Value == null)
                 throw new ArgumentNullException(nameof(usage), "Property is not nullable for class ChatCompletionsResponse.");
 
-            if (serviceTier.IsSet && serviceTier.Value == null)
-                throw new ArgumentNullException(nameof(serviceTier), "Property is not nullable for class ChatCompletionsResponse.");
-
-            if (systemFingerprint.IsSet && systemFingerprint.Value == null)
-                throw new ArgumentNullException(nameof(systemFingerprint), "Property is not nullable for class ChatCompletionsResponse.");
-
-            if (meta.IsSet && meta.Value == null)
-                throw new ArgumentNullException(nameof(meta), "Property is not nullable for class ChatCompletionsResponse.");
-
-            if (debug.IsSet && debug.Value == null)
-                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class ChatCompletionsResponse.");
-
-            if (upstreamRequest.IsSet && upstreamRequest.Value == null)
-                throw new ArgumentNullException(nameof(upstreamRequest), "Property is not nullable for class ChatCompletionsResponse.");
-
-            if (upstreamResponse.IsSet && upstreamResponse.Value == null)
-                throw new ArgumentNullException(nameof(upstreamResponse), "Property is not nullable for class ChatCompletionsResponse.");
-
-            return new ChatCompletionsResponse(id, nativeResponseId, varObject, created, model, choices, usage, serviceTier, systemFingerprint, meta, debug, upstreamRequest, upstreamResponse);
+            return new ChatCompletionsResponse(id, varObject, created, model, choices, usage);
         }
 
         /// <summary>
@@ -437,9 +276,6 @@ namespace AIStatsSdk.Model
             if (chatCompletionsResponse.IdOption.IsSet && chatCompletionsResponse.Id == null)
                 throw new ArgumentNullException(nameof(chatCompletionsResponse.Id), "Property is required for class ChatCompletionsResponse.");
 
-            if (chatCompletionsResponse.NativeResponseIdOption.IsSet && chatCompletionsResponse.NativeResponseId == null)
-                throw new ArgumentNullException(nameof(chatCompletionsResponse.NativeResponseId), "Property is required for class ChatCompletionsResponse.");
-
             if (chatCompletionsResponse.ObjectOption.IsSet && chatCompletionsResponse.Object == null)
                 throw new ArgumentNullException(nameof(chatCompletionsResponse.Object), "Property is required for class ChatCompletionsResponse.");
 
@@ -452,29 +288,8 @@ namespace AIStatsSdk.Model
             if (chatCompletionsResponse.UsageOption.IsSet && chatCompletionsResponse.Usage == null)
                 throw new ArgumentNullException(nameof(chatCompletionsResponse.Usage), "Property is required for class ChatCompletionsResponse.");
 
-            if (chatCompletionsResponse.ServiceTierOption.IsSet && chatCompletionsResponse.ServiceTier == null)
-                throw new ArgumentNullException(nameof(chatCompletionsResponse.ServiceTier), "Property is required for class ChatCompletionsResponse.");
-
-            if (chatCompletionsResponse.SystemFingerprintOption.IsSet && chatCompletionsResponse.SystemFingerprint == null)
-                throw new ArgumentNullException(nameof(chatCompletionsResponse.SystemFingerprint), "Property is required for class ChatCompletionsResponse.");
-
-            if (chatCompletionsResponse.MetaOption.IsSet && chatCompletionsResponse.Meta == null)
-                throw new ArgumentNullException(nameof(chatCompletionsResponse.Meta), "Property is required for class ChatCompletionsResponse.");
-
-            if (chatCompletionsResponse.DebugOption.IsSet && chatCompletionsResponse.Debug == null)
-                throw new ArgumentNullException(nameof(chatCompletionsResponse.Debug), "Property is required for class ChatCompletionsResponse.");
-
-            if (chatCompletionsResponse.UpstreamRequestOption.IsSet && chatCompletionsResponse.UpstreamRequest == null)
-                throw new ArgumentNullException(nameof(chatCompletionsResponse.UpstreamRequest), "Property is required for class ChatCompletionsResponse.");
-
-            if (chatCompletionsResponse.UpstreamResponseOption.IsSet && chatCompletionsResponse.UpstreamResponse == null)
-                throw new ArgumentNullException(nameof(chatCompletionsResponse.UpstreamResponse), "Property is required for class ChatCompletionsResponse.");
-
             if (chatCompletionsResponse.IdOption.IsSet)
                 writer.WriteString("id", chatCompletionsResponse.Id);
-
-            if (chatCompletionsResponse.NativeResponseIdOption.IsSet)
-                writer.WriteString("nativeResponseId", chatCompletionsResponse.NativeResponseId);
 
             if (chatCompletionsResponse.ObjectOption.IsSet)
                 writer.WriteString("object", chatCompletionsResponse.Object);
@@ -494,32 +309,6 @@ namespace AIStatsSdk.Model
             {
                 writer.WritePropertyName("usage");
                 JsonSerializer.Serialize(writer, chatCompletionsResponse.Usage, jsonSerializerOptions);
-            }
-            if (chatCompletionsResponse.ServiceTierOption.IsSet)
-                writer.WriteString("service_tier", chatCompletionsResponse.ServiceTier);
-
-            if (chatCompletionsResponse.SystemFingerprintOption.IsSet)
-                writer.WriteString("system_fingerprint", chatCompletionsResponse.SystemFingerprint);
-
-            if (chatCompletionsResponse.MetaOption.IsSet)
-            {
-                writer.WritePropertyName("meta");
-                JsonSerializer.Serialize(writer, chatCompletionsResponse.Meta, jsonSerializerOptions);
-            }
-            if (chatCompletionsResponse.DebugOption.IsSet)
-            {
-                writer.WritePropertyName("debug");
-                JsonSerializer.Serialize(writer, chatCompletionsResponse.Debug, jsonSerializerOptions);
-            }
-            if (chatCompletionsResponse.UpstreamRequestOption.IsSet)
-            {
-                writer.WritePropertyName("upstream_request");
-                JsonSerializer.Serialize(writer, chatCompletionsResponse.UpstreamRequest, jsonSerializerOptions);
-            }
-            if (chatCompletionsResponse.UpstreamResponseOption.IsSet)
-            {
-                writer.WritePropertyName("upstream_response");
-                JsonSerializer.Serialize(writer, chatCompletionsResponse.UpstreamResponse, jsonSerializerOptions);
             }
         }
     }

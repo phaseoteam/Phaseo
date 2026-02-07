@@ -19,10 +19,6 @@ module AIStatsSdk
 
     attr_accessor :summary
 
-    attr_accessor :enabled
-
-    attr_accessor :max_tokens
-
     class EnumAttributeValidator
       attr_reader :datatype
       attr_reader :allowable_values
@@ -49,9 +45,7 @@ module AIStatsSdk
     def self.attribute_map
       {
         :'effort' => :'effort',
-        :'summary' => :'summary',
-        :'enabled' => :'enabled',
-        :'max_tokens' => :'max_tokens'
+        :'summary' => :'summary'
       }
     end
 
@@ -69,9 +63,7 @@ module AIStatsSdk
     def self.openapi_types
       {
         :'effort' => :'String',
-        :'summary' => :'String',
-        :'enabled' => :'Boolean',
-        :'max_tokens' => :'Integer'
+        :'summary' => :'String'
       }
     end
 
@@ -104,14 +96,6 @@ module AIStatsSdk
       if attributes.key?(:'summary')
         self.summary = attributes[:'summary']
       end
-
-      if attributes.key?(:'enabled')
-        self.enabled = attributes[:'enabled']
-      end
-
-      if attributes.key?(:'max_tokens')
-        self.max_tokens = attributes[:'max_tokens']
-      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -119,10 +103,6 @@ module AIStatsSdk
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
-      if !@max_tokens.nil? && @max_tokens < 0
-        invalid_properties.push('invalid value for "max_tokens", must be greater than or equal to 0.')
-      end
-
       invalid_properties
     end
 
@@ -132,7 +112,6 @@ module AIStatsSdk
       warn '[DEPRECATED] the `valid?` method is obsolete'
       effort_validator = EnumAttributeValidator.new('String', ["none", "minimal", "low", "medium", "high", "xhigh"])
       return false unless effort_validator.valid?(@effort)
-      return false if !@max_tokens.nil? && @max_tokens < 0
       true
     end
 
@@ -146,29 +125,13 @@ module AIStatsSdk
       @effort = effort
     end
 
-    # Custom attribute writer method with validation
-    # @param [Object] max_tokens Value to be assigned
-    def max_tokens=(max_tokens)
-      if max_tokens.nil?
-        fail ArgumentError, 'max_tokens cannot be nil'
-      end
-
-      if max_tokens < 0
-        fail ArgumentError, 'invalid value for "max_tokens", must be greater than or equal to 0.'
-      end
-
-      @max_tokens = max_tokens
-    end
-
     # Checks equality by comparing each attribute.
     # @param [Object] Object to be compared
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
           effort == o.effort &&
-          summary == o.summary &&
-          enabled == o.enabled &&
-          max_tokens == o.max_tokens
+          summary == o.summary
     end
 
     # @see the `==` method
@@ -180,7 +143,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [effort, summary, enabled, max_tokens].hash
+      [effort, summary].hash
     end
 
     # Builds the object from hash

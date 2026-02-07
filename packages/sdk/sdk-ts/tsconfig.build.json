@@ -11,6 +11,5 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src"],
-  "exclude": ["src/gen"]
+  "include": ["src"]
 }

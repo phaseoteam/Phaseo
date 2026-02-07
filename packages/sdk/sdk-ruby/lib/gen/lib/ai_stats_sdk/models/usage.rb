@@ -21,51 +21,12 @@ module AIStatsSdk
 
     attr_accessor :total_tokens
 
-    attr_accessor :prompt_tokens_details
-
-    attr_accessor :completion_tokens_details
-
-    attr_accessor :input_tokens
-
-    attr_accessor :output_tokens
-
-    attr_accessor :input_tokens_details
-
-    attr_accessor :output_tokens_details
-
-    attr_accessor :input_text_tokens
-
-    attr_accessor :output_text_tokens
-
-    attr_accessor :cached_read_text_tokens
-
-    attr_accessor :cached_write_text_tokens
-
-    attr_accessor :reasoning_tokens
-
-    attr_accessor :pricing
-
-    attr_accessor :pricing_breakdown
-
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'prompt_tokens' => :'prompt_tokens',
         :'completion_tokens' => :'completion_tokens',
-        :'total_tokens' => :'total_tokens',
-        :'prompt_tokens_details' => :'prompt_tokens_details',
-        :'completion_tokens_details' => :'completion_tokens_details',
-        :'input_tokens' => :'input_tokens',
-        :'output_tokens' => :'output_tokens',
-        :'input_tokens_details' => :'input_tokens_details',
-        :'output_tokens_details' => :'output_tokens_details',
-        :'input_text_tokens' => :'input_text_tokens',
-        :'output_text_tokens' => :'output_text_tokens',
-        :'cached_read_text_tokens' => :'cached_read_text_tokens',
-        :'cached_write_text_tokens' => :'cached_write_text_tokens',
-        :'reasoning_tokens' => :'reasoning_tokens',
-        :'pricing' => :'pricing',
-        :'pricing_breakdown' => :'pricing_breakdown'
+        :'total_tokens' => :'total_tokens'
       }
     end
 
@@ -84,20 +45,7 @@ module AIStatsSdk
       {
         :'prompt_tokens' => :'Integer',
         :'completion_tokens' => :'Integer',
-        :'total_tokens' => :'Integer',
-        :'prompt_tokens_details' => :'UsageDetails',
-        :'completion_tokens_details' => :'UsageDetails',
-        :'input_tokens' => :'Integer',
-        :'output_tokens' => :'Integer',
-        :'input_tokens_details' => :'UsageDetails',
-        :'output_tokens_details' => :'UsageDetails',
-        :'input_text_tokens' => :'Integer',
-        :'output_text_tokens' => :'Integer',
-        :'cached_read_text_tokens' => :'Integer',
-        :'cached_write_text_tokens' => :'Integer',
-        :'reasoning_tokens' => :'Integer',
-        :'pricing' => :'PricingBreakdown',
-        :'pricing_breakdown' => :'PricingBreakdown'
+        :'total_tokens' => :'Integer'
       }
     end
 
@@ -134,58 +82,6 @@ module AIStatsSdk
       if attributes.key?(:'total_tokens')
         self.total_tokens = attributes[:'total_tokens']
       end
-
-      if attributes.key?(:'prompt_tokens_details')
-        self.prompt_tokens_details = attributes[:'prompt_tokens_details']
-      end
-
-      if attributes.key?(:'completion_tokens_details')
-        self.completion_tokens_details = attributes[:'completion_tokens_details']
-      end
-
-      if attributes.key?(:'input_tokens')
-        self.input_tokens = attributes[:'input_tokens']
-      end
-
-      if attributes.key?(:'output_tokens')
-        self.output_tokens = attributes[:'output_tokens']
-      end
-
-      if attributes.key?(:'input_tokens_details')
-        self.input_tokens_details = attributes[:'input_tokens_details']
-      end
-
-      if attributes.key?(:'output_tokens_details')
-        self.output_tokens_details = attributes[:'output_tokens_details']
-      end
-
-      if attributes.key?(:'input_text_tokens')
-        self.input_text_tokens = attributes[:'input_text_tokens']
-      end
-
-      if attributes.key?(:'output_text_tokens')
-        self.output_text_tokens = attributes[:'output_text_tokens']
-      end
-
-      if attributes.key?(:'cached_read_text_tokens')
-        self.cached_read_text_tokens = attributes[:'cached_read_text_tokens']
-      end
-
-      if attributes.key?(:'cached_write_text_tokens')
-        self.cached_write_text_tokens = attributes[:'cached_write_text_tokens']
-      end
-
-      if attributes.key?(:'reasoning_tokens')
-        self.reasoning_tokens = attributes[:'reasoning_tokens']
-      end
-
-      if attributes.key?(:'pricing')
-        self.pricing = attributes[:'pricing']
-      end
-
-      if attributes.key?(:'pricing_breakdown')
-        self.pricing_breakdown = attributes[:'pricing_breakdown']
-      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -210,20 +106,7 @@ module AIStatsSdk
       self.class == o.class &&
           prompt_tokens == o.prompt_tokens &&
           completion_tokens == o.completion_tokens &&
-          total_tokens == o.total_tokens &&
-          prompt_tokens_details == o.prompt_tokens_details &&
-          completion_tokens_details == o.completion_tokens_details &&
-          input_tokens == o.input_tokens &&
-          output_tokens == o.output_tokens &&
-          input_tokens_details == o.input_tokens_details &&
-          output_tokens_details == o.output_tokens_details &&
-          input_text_tokens == o.input_text_tokens &&
-          output_text_tokens == o.output_text_tokens &&
-          cached_read_text_tokens == o.cached_read_text_tokens &&
-          cached_write_text_tokens == o.cached_write_text_tokens &&
-          reasoning_tokens == o.reasoning_tokens &&
-          pricing == o.pricing &&
-          pricing_breakdown == o.pricing_breakdown
+          total_tokens == o.total_tokens
     end
 
     # @see the `==` method
@@ -235,7 +118,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [prompt_tokens, completion_tokens, total_tokens, prompt_tokens_details, completion_tokens_details, input_tokens, output_tokens, input_tokens_details, output_tokens_details, input_text_tokens, output_text_tokens, cached_read_text_tokens, cached_write_text_tokens, reasoning_tokens, pricing, pricing_breakdown].hash
+      [prompt_tokens, completion_tokens, total_tokens].hash
     end
 
     # Builds the object from hash

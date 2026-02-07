@@ -30,11 +30,10 @@ class ChatMessage(BaseModel):
     """ # noqa: E501
     role: StrictStr
     content: Optional[ChatMessageContent] = None
-    reasoning_content: Optional[StrictStr] = None
     name: Optional[StrictStr] = None
     tool_calls: Optional[List[ToolCall]] = None
     tool_call_id: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["role", "content", "reasoning_content", "name", "tool_calls", "tool_call_id"]
+    __properties: ClassVar[List[str]] = ["role", "content", "name", "tool_calls", "tool_call_id"]
 
     @field_validator('role')
     def role_validate_enum(cls, value):
@@ -106,7 +105,6 @@ class ChatMessage(BaseModel):
         _obj = cls.model_validate({
             "role": obj.get("role"),
             "content": ChatMessageContent.from_dict(obj["content"]) if obj.get("content") is not None else None,
-            "reasoning_content": obj.get("reasoning_content"),
             "name": obj.get("name"),
             "tool_calls": [ToolCall.from_dict(_item) for _item in obj["tool_calls"]] if obj.get("tool_calls") is not None else None,
             "tool_call_id": obj.get("tool_call_id")

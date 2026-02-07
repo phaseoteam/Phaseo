@@ -8,15 +8,6 @@
 import type { ProviderQuirks } from "./types";
 
 export const xAiQuirks: ProviderQuirks = {
-	transformRequest: ({ request }) => {
-		// If streaming, ask xAI to include usage in the final chunk when supported.
-		if (request?.stream) {
-			request.stream_options = {
-				...(request.stream_options ?? {}),
-				include_usage: true,
-			};
-		}
-	},
 	normalizeResponse: ({ response }) => {
 		const usage = response?.usage;
 		if (!usage || typeof usage !== "object") return;

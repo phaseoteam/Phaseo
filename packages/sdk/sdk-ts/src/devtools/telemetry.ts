@@ -21,7 +21,8 @@ export class TelemetryCapture {
     } else if (process.env.AI_STATS_DEVTOOLS !== undefined) {
       this.enabled = process.env.AI_STATS_DEVTOOLS === "true";
     } else {
-      this.enabled = process.env.NODE_ENV !== "production";
+      // Opt-in only. Auto-enabling in local/dev keeps the process alive via timers.
+      this.enabled = false;
     }
     this.sdkVersion = sdkVersion;
 
@@ -209,6 +210,7 @@ export class TelemetryCapture {
     this.flushTimer = setInterval(() => {
       this.flushSync();
     }, this.flushIntervalMs);
+    this.flushTimer.unref?.();
 
     // Ensure flush on process exit
     process.on("exit", () => this.flushSync());

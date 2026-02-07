@@ -1,3 +1,6 @@
 declare module "js-yaml" {
-	export function load(input: string, options?: any): any;
+	export function load(
+		str: string,
+		options?: Record<string, unknown>
+	): unknown;
 }

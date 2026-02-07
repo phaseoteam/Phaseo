@@ -5,15 +5,93 @@
 
 import type { Endpoint } from "@core/types";
 import type { ProviderCandidate } from "../before/types";
+import type { PriceCard } from "../pricing/types";
 import { readHealthMany, ProviderHealth } from "./health";
 import { stripPrioritySuffix } from "./utils";
 
 type Priority = "default" | "fast" | "quick";
-const PRESETS: Record<Priority, { wSucc: number; wP50: number; wTail: number; wTPS: number; wLoad: number; noise: number; L0: number }> = {
-    default: { wSucc: 0.35, wP50: 0.35, wTail: 0.15, wTPS: 0.10, wLoad: 0.05, noise: 0.02, L0: 800 },
-    fast: { wSucc: 0.30, wP50: 0.50, wTail: 0.15, wTPS: 0.03, wLoad: 0.02, noise: 0.005, L0: 600 },
-    quick: { wSucc: 0.25, wP50: 0.45, wTail: 0.20, wTPS: 0.08, wLoad: 0.02, noise: 0.015, L0: 500 },
+type RoutingMode = "balanced" | "price" | "latency" | "throughput";
+type ProviderStatus = "active" | "beta" | "alpha" | "not_ready";
+
+type RoutingPreset = {
+    wSucc: number;
+    wP50: number;
+    wTail: number;
+    wTPS: number;
+    wLoad: number;
+    wPrice: number;
+    noise: number;
+    L0: number;
 };
+
+const PRESETS: Record<Priority, RoutingPreset> = {
+    default: { wSucc: 0.35, wP50: 0.35, wTail: 0.15, wTPS: 0.10, wLoad: 0.05, wPrice: 0.0, noise: 0.02, L0: 800 },
+    fast: { wSucc: 0.30, wP50: 0.50, wTail: 0.15, wTPS: 0.03, wLoad: 0.02, wPrice: 0.0, noise: 0.005, L0: 600 },
+    quick: { wSucc: 0.25, wP50: 0.45, wTail: 0.20, wTPS: 0.08, wLoad: 0.02, wPrice: 0.0, noise: 0.015, L0: 500 },
+};
+
+const TEXT_ENDPOINTS = new Set<Endpoint>(["responses", "chat.completions", "messages"]);
+const TEXT_PRICE_METERS = ["input_text_tokens", "output_text_tokens"];
+
+function normalizeRoutingMode(value?: string | null): RoutingMode {
+    const mode = (value ?? "").toLowerCase();
+    if (mode === "price") return "price";
+    if (mode === "latency") return "latency";
+    if (mode === "throughput") return "throughput";
+    return "balanced";
+}
+
+function normalizeProviderStatus(value?: string | null): ProviderStatus {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    if (normalized === "active") return "active";
+    if (normalized === "beta") return "beta";
+    if (normalized === "alpha") return "alpha";
+    if (
+        normalized === "notready" ||
+        normalized === "not_ready" ||
+        normalized === "not ready"
+    ) {
+        return "not_ready";
+    }
+    return "active";
+}
+
+function applyRoutingMode(preset: RoutingPreset, mode: RoutingMode): RoutingPreset {
+    if (mode === "price") {
+        return {
+            ...preset,
+            wSucc: 0.25,
+            wP50: 0.15,
+            wTail: 0.10,
+            wTPS: 0.05,
+            wLoad: 0.05,
+            wPrice: 0.40,
+        };
+    }
+    if (mode === "latency") {
+        return {
+            ...preset,
+            wSucc: 0.25,
+            wP50: 0.55,
+            wTail: 0.15,
+            wTPS: 0.02,
+            wLoad: 0.03,
+            wPrice: 0.0,
+        };
+    }
+    if (mode === "throughput") {
+        return {
+            ...preset,
+            wSucc: 0.20,
+            wP50: 0.20,
+            wTail: 0.10,
+            wTPS: 0.40,
+            wLoad: 0.10,
+            wPrice: 0.0,
+        };
+    }
+    return preset;
+}
 
 function parsePriority(model: string): { base: string; priority: Priority; strict: boolean } {
     const lower = model.toLowerCase();
@@ -32,12 +110,12 @@ function normalise(v: number, min: number, max: number) {
     return Math.max(0, Math.min(1, x));
 }
 
-function weightedOrder<T>(items: T[], weight: (x: T) => number): T[] {
+function weightedOrder<T>(items: T[], weight: (x: T) => number, rng: () => number): T[] {
     const bag = items.map(i => ({ i, w: Math.max(0.0001, weight(i)) }));
     const out: T[] = [];
     while (bag.length) {
         const total = bag.reduce((s, b) => s + b.w, 0);
-        let r = Math.random() * total;
+        let r = rng() * total;
         let idx = 0;
         for (; idx < bag.length; idx++) {
             r -= bag[idx].w;
@@ -47,6 +125,106 @@ function weightedOrder<T>(items: T[], weight: (x: T) => number): T[] {
         bag.splice(idx, 1);
     }
     return out;
+}
+
+function hashSeed(value: string): number {
+    let h = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+        h ^= value.charCodeAt(i);
+        h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+    }
+    return h >>> 0;
+}
+
+function seededRandom(seed: number): () => number {
+    let t = seed;
+    return () => {
+        t += 0x6D2B79F5;
+        let x = t;
+        x = Math.imul(x ^ (x >>> 15), x | 1);
+        x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function extractMeterPrices(card: PriceCard | null): Map<string, number> {
+    const out = new Map<string, number>();
+    if (!card) return out;
+    for (const rule of card.rules) {
+        const unitSize = rule.unit_size > 0 ? rule.unit_size : 1;
+        const price = Number(rule.price_per_unit);
+        if (!Number.isFinite(price)) continue;
+        const perUnit = price / unitSize;
+        const existing = out.get(rule.meter);
+        if (existing === undefined || perUnit < existing) {
+            out.set(rule.meter, perUnit);
+        }
+    }
+    return out;
+}
+
+function sharedPriceMeters(meterMaps: Map<string, number>[]): string[] {
+    if (!meterMaps.length) return [];
+    const [first, ...rest] = meterMaps;
+    const shared = new Set(first.keys());
+    for (const next of rest) {
+        for (const key of Array.from(shared)) {
+            if (!next.has(key)) shared.delete(key);
+        }
+    }
+    return Array.from(shared);
+}
+
+function pickPriceMeters(endpoint: Endpoint, meterMaps: Map<string, number>[]): string[] {
+    const shared = sharedPriceMeters(meterMaps);
+    if (!shared.length) return [];
+    if (TEXT_ENDPOINTS.has(endpoint)) {
+        const hasTextMeters = meterMaps.every((map) =>
+            TEXT_PRICE_METERS.every((meter) => map.has(meter))
+        );
+        if (hasTextMeters) return TEXT_PRICE_METERS;
+    }
+    return shared;
+}
+
+function computePriceScores(
+    endpoint: Endpoint,
+    candidates: ProviderCandidate[]
+): Map<string, number> {
+    const meterMaps = candidates.map((candidate) => extractMeterPrices(candidate.pricingCard ?? null));
+    const selectedMeters = pickPriceMeters(endpoint, meterMaps);
+    if (!selectedMeters.length) {
+        return new Map(candidates.map((candidate) => [candidate.providerId, 0.5]));
+    }
+
+    const prices = meterMaps.map((map) => {
+        let sum = 0;
+        for (const meter of selectedMeters) {
+            const value = map.get(meter);
+            if (value === undefined) return null;
+            sum += value;
+        }
+        return sum;
+    });
+
+    const validPrices = prices.filter((value): value is number => value !== null);
+    if (!validPrices.length) {
+        return new Map(candidates.map((candidate) => [candidate.providerId, 0.5]));
+    }
+
+    const min = Math.min(...validPrices);
+    const max = Math.max(...validPrices);
+    const range = max - min;
+    const scores = new Map<string, number>();
+    candidates.forEach((candidate, index) => {
+        const price = prices[index];
+        if (price === null || range === 0) {
+            scores.set(candidate.providerId, 0.5);
+        } else {
+            scores.set(candidate.providerId, 1 - (price - min) / range);
+        }
+    });
+    return scores;
 }
 
 export type RoutedCandidate = {
@@ -104,11 +282,28 @@ function calculateTokenAffinityScore(
 
 export async function routeProviders(
     candidates: ProviderCandidate[],
-    ctx: { endpoint: Endpoint; model: string; teamId: string; body?: any }
+    ctx: {
+        endpoint: Endpoint;
+        model: string;
+        teamId: string;
+        body?: any;
+        routingMode?: string | null;
+        betaChannelEnabled?: boolean;
+        requestId?: string | null;
+    }
 ): Promise<RoutedCandidate[]> {
     const { base, priority, strict } = parsePriority(ctx.model);
-    const preset = PRESETS[priority];
-    const hints = (ctx.body?.provider ?? {}) as { order?: string[]; only?: string[]; ignore?: string[] };
+    const mode = normalizeRoutingMode(ctx.routingMode);
+    const preset = applyRoutingMode(PRESETS[priority], mode);
+    const hints = (ctx.body?.provider ?? {}) as {
+        order?: string[];
+        only?: string[];
+        ignore?: string[];
+        include_alpha?: boolean;
+        includeAlpha?: boolean;
+    };
+    const includeAlpha = Boolean(hints.include_alpha ?? hints.includeAlpha);
+    const betaChannelEnabled = Boolean(ctx.betaChannelEnabled);
     const requestedMaxTokens = getRequestedMaxTokens(ctx.body);
 
     let poolCandidates = candidates;
@@ -121,6 +316,19 @@ export async function routeProviders(
         poolCandidates = poolCandidates.filter(c => !deny.has(c.adapter.name));
     }
     if (!poolCandidates.length) poolCandidates = candidates;
+
+    // Channel/status gating before health scoring.
+    poolCandidates = poolCandidates.filter((candidate) => {
+        const status = normalizeProviderStatus(candidate.providerStatus);
+        if (status === "active") return true;
+        if (status === "beta") return betaChannelEnabled;
+        if (status === "alpha") return includeAlpha;
+        return false;
+    });
+
+    if (!poolCandidates.length) {
+        return [];
+    }
 
     if (hints.order?.length) {
         const order = hints.order;
@@ -155,24 +363,32 @@ export async function routeProviders(
         ).length,
     });
 
-    const latP50s = pool.map(v => v.h.lat_ewma_10s);
-    const latTail = pool.map(v => Math.max(v.h.lat_ewma_60s, v.h.lat_ewma_10s * 1.6));
+    const latP50s = pool.map(v => v.h.lat_ewma_60s);
+    const latTail = pool.map(v => Math.max(v.h.lat_ewma_300s, v.h.lat_ewma_60s * 1.6));
     const tpss = pool.map(v => v.h.tp_ewma_60s);
-    const loads = pool.map(v => v.h.current_load);
-
     const minP50 = Math.min(...latP50s), maxP50 = Math.max(...latP50s);
     const minTail = Math.min(...latTail), maxTail = Math.max(...latTail);
     const minTPS = Math.min(...tpss), maxTPS = Math.max(...tpss);
 
+    const rng = seededRandom(hashSeed(`${ctx.requestId ?? ""}:${ctx.teamId}:${ctx.model}`));
+    const priceScores = preset.wPrice > 0 ? computePriceScores(ctx.endpoint, pool.map((p) => p.candidate)) : new Map();
     const scored = pool.map(v => {
         const h = v.h;
         const weight = v.candidate.baseWeight > 0 ? v.candidate.baseWeight : 1;
-        const succ = 1 - h.err_ewma_10s;
-        const p50Curve = 1 / (1 + (h.lat_ewma_10s / preset.L0));
-        const p50Norm = 1 - normalise(h.lat_ewma_10s, minP50, maxP50);
-        const tailNorm = 1 - normalise(Math.max(h.lat_ewma_60s, h.lat_ewma_10s * 1.6), minTail, maxTail);
+        const providerStatus = normalizeProviderStatus(v.candidate.providerStatus);
+        const rolloutMultiplier =
+            providerStatus === "beta"
+                ? 0.05
+                : providerStatus === "alpha"
+                    ? 0.03
+                    : 1;
+        const succ = 1 - h.err_ewma_60s;
+        const p50Curve = 1 / (1 + (h.lat_ewma_60s / preset.L0));
+        const p50Norm = 1 - normalise(h.lat_ewma_60s, minP50, maxP50);
+        const tailNorm = 1 - normalise(Math.max(h.lat_ewma_300s, h.lat_ewma_60s * 1.6), minTail, maxTail);
         const tpsNorm = maxTPS > 0 ? normalise(h.tp_ewma_60s, minTPS, maxTPS) : 0;
         const loadPen = h.current_load;
+        const priceScore = preset.wPrice > 0 ? (priceScores.get(v.candidate.providerId) ?? 0.5) : 0.5;
 
         // Token affinity: prefer providers with limits close to requested max_tokens
         const tokenAffinity = calculateTokenAffinityScore(requestedMaxTokens, v.candidate.maxOutputTokens);
@@ -184,10 +400,14 @@ export async function routeProviders(
             preset.wTail * tailNorm +
             preset.wTPS * tpsNorm -
             preset.wLoad * loadPen +
+            preset.wPrice * priceScore +
             tokenWeight * tokenAffinity +
-            preset.noise * Math.random();
+            preset.noise * rng();
 
-        const score = Math.max(0, baseScore * Math.max(weight, 0.0001));
+        const score = Math.max(
+            0,
+            baseScore * Math.max(weight, 0.0001) * rolloutMultiplier
+        );
         return { candidate: v.candidate, adapter: v.adapter, health: h, score };
     });
 
@@ -200,14 +420,14 @@ export async function routeProviders(
         if (strict) {
             return [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
         }
-        return [...ordered, ...weightedOrder(remaining, (s) => s.score)];
+        return [...ordered, ...weightedOrder(remaining, (s) => s.score, rng)];
     }
 
     if (strict) {
         return [...scored].sort((a, b) => b.score - a.score);
     }
 
-    return weightedOrder(scored, (s) => s.score);
+    return weightedOrder(scored, (s) => s.score, rng);
 }
 
 

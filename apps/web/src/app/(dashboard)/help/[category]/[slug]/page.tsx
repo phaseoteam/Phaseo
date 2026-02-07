@@ -16,9 +16,6 @@ type PageProps = {
 	params: Promise<{ category: string; slug: string }>;
 };
 
-export const dynamic = "force-static";
-export const dynamicParams = false;
-
 const markdownComponents: Components = {
 	h2: (props) => (
 		<h2 className="mt-10 text-2xl font-semibold tracking-tight" {...props} />

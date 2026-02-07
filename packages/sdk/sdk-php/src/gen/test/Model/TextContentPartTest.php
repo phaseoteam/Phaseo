@@ -96,13 +96,4 @@ class TextContentPartTest extends TestCase
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
-
-    /**
-     * Test attribute "cache_control"
-     */
-    public function testPropertyCacheControl()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
 }

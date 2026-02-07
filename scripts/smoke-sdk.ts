@@ -251,7 +251,7 @@ function ensureCacheDirs(env: Record<string, string | undefined>): void {
 
 function preflightFailure(label: string): string | null {
 	if (label === "ts" && !tsxPath) {
-		return "tsx is not available. Run bun install.";
+		return "tsx is not available. Run pnpm install.";
 	}
 	if (label === "java" && javaSources.length === 0) {
 		return `No Java sources found under ${javaGenDir}.`;

@@ -204,6 +204,9 @@ export type IRChatRequest = {
 
 	// Vendor-specific extensions (for features that don't map cleanly)
 	vendor?: Record<string, any>;
+
+	// Debug-only fields (never logged)
+	rawRequest?: any;
 };
 
 // ============================================================================
@@ -228,6 +231,8 @@ export type IREmbeddingsRequest = {
 	};
 	userId?: string;
 	metadata?: Record<string, string>;
+	// Debug-only fields (never logged)
+	rawRequest?: any;
 };
 
 export type IREmbedding = {
@@ -246,6 +251,42 @@ export type IREmbeddingsResponse = {
 	model: string;
 	data: IREmbedding[];
 	usage?: IREmbeddingsUsage;
+	// Debug-only fields (never logged)
+	rawResponse?: any;
+};
+
+// ============================================================================
+// MODERATIONS
+// ============================================================================
+
+export type IRModerationsRequest = {
+	model: string;
+	input: any;
+	userId?: string;
+	metadata?: Record<string, string>;
+	// Debug-only fields (never logged)
+	rawRequest?: any;
+};
+
+export type IRModerationsResult = {
+	flagged: boolean;
+	categories?: Record<string, boolean>;
+	categoryScores?: Record<string, number>;
+	categoryAppliedInputTypes?: Record<string, string[]>;
+};
+
+export type IRModerationsResponse = {
+	id?: string;
+	nativeId?: string;
+	model: string;
+	results: IRModerationsResult[];
+	usage?: {
+		inputTokens?: number;
+		outputTokens?: number;
+		totalTokens?: number;
+	};
+	// Debug-only fields (never logged)
+	rawResponse?: any;
 };
 
 // ============================================================================
@@ -337,6 +378,9 @@ export type IRChatResponse = {
 	// Service metadata
 	serviceTier?: string; // e.g., "default", "priority"
 	systemFingerprint?: string; // Provider fingerprint
+
+	// Debug-only fields (never logged)
+	rawResponse?: any;
 };
 
 // ============================================================================

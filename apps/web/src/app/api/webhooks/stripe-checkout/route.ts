@@ -28,16 +28,15 @@ function getSupabase() {
 /* Fees: Reverse-engineer the original amount from the total received, then apply tier-based fee */
 function computeNetAndFeeFromGross(grossNanos: number, feePct: number) {
     const minFeeNanos = 1_000_000_000; // $1 in nanos
-    const grossThresholdNanos = 11_000_000_000; // $11 in nanos (1100 cents)
 
     // Reverse-engineer: if user paid $X total including our fee, what was the original amount?
     // Original = Total / (1 + fee_rate)
     const originalNanos = Math.round(grossNanos / (1 + feePct / 100));
     const feeNanos = grossNanos - originalNanos;
 
-    // For small payments, ensure minimum fee
-    if (grossNanos < grossThresholdNanos) {
-        const adjustedFeeNanos = Math.max(feeNanos, minFeeNanos);
+    // Ensure minimum fee when percentage fee falls below $1
+    if (feeNanos < minFeeNanos) {
+        const adjustedFeeNanos = Math.min(grossNanos, minFeeNanos);
         const adjustedOriginalNanos = Math.max(grossNanos - adjustedFeeNanos, 0);
         return { netNanos: adjustedOriginalNanos, feeNanos: adjustedFeeNanos };
     }

@@ -89,15 +89,6 @@ class ChatCompletionsResponseTest extends TestCase
     }
 
     /**
-     * Test attribute "native_response_id"
-     */
-    public function testPropertyNativeResponseId()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
      * Test attribute "object"
      */
     public function testPropertyObject()
@@ -137,60 +128,6 @@ class ChatCompletionsResponseTest extends TestCase
      * Test attribute "usage"
      */
     public function testPropertyUsage()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "service_tier"
-     */
-    public function testPropertyServiceTier()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "system_fingerprint"
-     */
-    public function testPropertySystemFingerprint()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "meta"
-     */
-    public function testPropertyMeta()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "debug"
-     */
-    public function testPropertyDebug()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "upstream_request"
-     */
-    public function testPropertyUpstreamRequest()
-    {
-        // TODO: implement
-        self::markTestIncomplete('Not implemented');
-    }
-
-    /**
-     * Test attribute "upstream_response"
-     */
-    public function testPropertyUpstreamResponse()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
