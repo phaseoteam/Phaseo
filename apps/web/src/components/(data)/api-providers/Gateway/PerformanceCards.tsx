@@ -7,8 +7,12 @@ import {
 	GaugeCircle,
 	Timer,
 	Hourglass,
+	ShieldCheck,
+	ShieldAlert,
+	Activity,
 } from "lucide-react";
 import { getProviderMetrics } from "@/lib/fetchers/api-providers/getProviderMetrics";
+import { getProviderRoutingHealth } from "@/lib/fetchers/api-providers/getProviderRoutingHealth";
 import {
 	LatencyChart,
 	ThroughputChart,
@@ -154,7 +158,12 @@ export default async function PerformanceCards({
 	const apiProvider = resolvedParams?.apiProvider;
 
 	// Request last 7 days (24 hours * 7)
-	const metrics = await getProviderMetrics(apiProvider || "", 24 * 7);
+	const [metrics, routingHealth] = await Promise.all([
+		getProviderMetrics(apiProvider || "", 24 * 7),
+		apiProvider
+			? getProviderRoutingHealth(apiProvider, { windowHours: 24, maxPairs: 24 })
+			: Promise.resolve(null),
+	]);
 
 	const throughputData = metrics.timeseries.throughput; // Last 7 days
 	const latencyData = metrics.timeseries.latency; // Last 7 days
@@ -218,42 +227,132 @@ export default async function PerformanceCards({
 			title: "E2E Latency (Median round trip)",
 		},
 	};
+	const healthNowMs = routingHealth?.now_ms ?? 0;
+
+	const openPairs =
+		routingHealth?.pairs
+			.filter(
+				(entry) =>
+					entry.breaker === "open" &&
+					(entry.breaker_until_ms ?? 0) > healthNowMs,
+			)
+			.sort((a, b) => a.seconds_until_reopen - b.seconds_until_reopen)
+			.slice(0, 3) ?? [];
+
+	const statusBadge = (() => {
+		if (!routingHealth) {
+			return null;
+		}
+		if (routingHealth.deranked) {
+			return {
+				label: "Deranked",
+				description:
+					"At least one recent model/endpoint tuple is currently blocked by an open circuit breaker.",
+				className:
+					"border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200",
+				icon: ShieldAlert,
+			};
+		}
+		if (routingHealth.recovering) {
+			return {
+				label: "Recovering",
+				description:
+					"Circuit breaker is half-open on at least one tuple and currently in probe mode.",
+				className:
+					"border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-200",
+				icon: Activity,
+			};
+		}
+		if (routingHealth.checked_pairs > 0) {
+			return {
+				label: "Healthy",
+				description:
+					"No open breakers found across recently active model/endpoint tuples for this provider.",
+				className:
+					"border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-200",
+				icon: ShieldCheck,
+			};
+		}
+		return {
+			label: "No Recent Health Data",
+			description:
+				"No recent request tuples were found for this provider in the selected health window.",
+			className:
+				"border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/20 dark:text-slate-200",
+			icon: Activity,
+		};
+	})();
+
 	return (
-		<div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3 *:min-w-0">
-			<PerformanceCard
-				title={sample.throughput.title}
-				value={sample.throughput.value}
-				delta={sample.throughput.delta}
-				trend={sample.throughput.trend}
-				icon={GaugeCircle}
-				accent="cyan"
-			>
-				<ThroughputChart data={throughputData} />
-			</PerformanceCard>
+		<div className="space-y-4">
+			{statusBadge && (
+				<div
+					className={cn(
+						"rounded-lg border p-4",
+						statusBadge.className,
+					)}
+				>
+					<div className="flex items-center justify-between gap-3">
+						<div className="flex items-center gap-2 text-sm font-semibold">
+							<statusBadge.icon className="h-4 w-4" />
+							Gateway Routing Status
+						</div>
+						<div className="text-xs font-semibold uppercase tracking-wide">
+							{statusBadge.label}
+						</div>
+					</div>
+					<p className="mt-2 text-xs opacity-90">{statusBadge.description}</p>
+					{openPairs.length > 0 && (
+						<div className="mt-3 space-y-1 text-xs">
+							{openPairs.map((entry) => (
+								<div
+									key={`${entry.endpoint}:${entry.model}`}
+									className="font-mono opacity-90"
+								>
+									{entry.endpoint} {entry.model} {entry.seconds_until_reopen}s
+								</div>
+							))}
+						</div>
+					)}
+				</div>
+			)}
 
-			<PerformanceCard
-				title={sample.latency.title}
-				value={sample.latency.value}
-				delta={sample.latency.delta}
-				trend={sample.latency.trend}
-				icon={Timer}
-				accent="orange"
-				invertDeltaColors={true}
-			>
-				<LatencyChart data={latencyData} />
-			</PerformanceCard>
+			<div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3 *:min-w-0">
+				<PerformanceCard
+					title={sample.throughput.title}
+					value={sample.throughput.value}
+					delta={sample.throughput.delta}
+					trend={sample.throughput.trend}
+					icon={GaugeCircle}
+					accent="cyan"
+				>
+					<ThroughputChart data={throughputData} />
+				</PerformanceCard>
 
-			<PerformanceCard
-				title={sample.e2e.title}
-				value={sample.e2e.value}
-				delta={sample.e2e.delta}
-				trend={sample.e2e.trend}
-				icon={Hourglass}
-				accent="violet"
-				invertDeltaColors={true}
-			>
-				<E2ELatencyChart data={e2eLatencyData} />
-			</PerformanceCard>
+				<PerformanceCard
+					title={sample.latency.title}
+					value={sample.latency.value}
+					delta={sample.latency.delta}
+					trend={sample.latency.trend}
+					icon={Timer}
+					accent="orange"
+					invertDeltaColors={true}
+				>
+					<LatencyChart data={latencyData} />
+				</PerformanceCard>
+
+				<PerformanceCard
+					title={sample.e2e.title}
+					value={sample.e2e.value}
+					delta={sample.e2e.delta}
+					trend={sample.e2e.trend}
+					icon={Hourglass}
+					accent="violet"
+					invertDeltaColors={true}
+				>
+					<E2ELatencyChart data={e2eLatencyData} />
+				</PerformanceCard>
+			</div>
 		</div>
 	);
 }

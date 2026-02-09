@@ -61,6 +61,7 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'endpoint' => 'string',
         'completion_window' => 'string',
         'metadata' => 'object',
+        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -76,6 +77,7 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'endpoint' => null,
         'completion_window' => null,
         'metadata' => null,
+        'debug' => null,
         'provider' => null
     ];
 
@@ -89,6 +91,7 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'endpoint' => false,
         'completion_window' => false,
         'metadata' => false,
+        'debug' => false,
         'provider' => false
     ];
 
@@ -182,6 +185,7 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'endpoint' => 'endpoint',
         'completion_window' => 'completion_window',
         'metadata' => 'metadata',
+        'debug' => 'debug',
         'provider' => 'provider'
     ];
 
@@ -195,6 +199,7 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'endpoint' => 'setEndpoint',
         'completion_window' => 'setCompletionWindow',
         'metadata' => 'setMetadata',
+        'debug' => 'setDebug',
         'provider' => 'setProvider'
     ];
 
@@ -208,6 +213,7 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'endpoint' => 'getEndpoint',
         'completion_window' => 'getCompletionWindow',
         'metadata' => 'getMetadata',
+        'debug' => 'getDebug',
         'provider' => 'getProvider'
     ];
 
@@ -272,6 +278,7 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('endpoint', $data ?? [], null);
         $this->setIfExists('completion_window', $data ?? [], null);
         $this->setIfExists('metadata', $data ?? [], null);
+        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -427,6 +434,33 @@ class BatchRequest implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable metadata cannot be null');
         }
         $this->container['metadata'] = $metadata;
+
+        return $this;
+    }
+
+    /**
+     * Gets debug
+     *
+     * @return \AIStats\Sdk\Model\DebugOptions|null
+     */
+    public function getDebug()
+    {
+        return $this->container['debug'];
+    }
+
+    /**
+     * Sets debug
+     *
+     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
+     *
+     * @return self
+     */
+    public function setDebug($debug)
+    {
+        if (is_null($debug)) {
+            throw new \InvalidArgumentException('non-nullable debug cannot be null');
+        }
+        $this->container['debug'] = $debug;
 
         return $this;
     }

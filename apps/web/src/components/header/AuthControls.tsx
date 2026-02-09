@@ -10,9 +10,6 @@ export default async function AuthControls({
 }) {
 	const supabase = await createClient();
 
-	// Artificial delay for demo purposes
-	await new Promise((resolve) => setTimeout(resolve, 1000));
-
 	// supabase.auth.getUser() returns { data: { user } }
 	const { data: getUserData } = await supabase.auth.getUser();
 	const user = getUserData?.user ?? null;

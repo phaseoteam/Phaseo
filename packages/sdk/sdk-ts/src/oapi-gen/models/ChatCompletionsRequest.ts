@@ -1,4 +1,11 @@
 export interface ChatCompletionsRequest {
+  debug?: {
+    enabled?: boolean;
+    return_upstream_request?: boolean;
+    return_upstream_response?: boolean;
+    trace?: boolean;
+    trace_level?: "summary" | "full";
+  };
   frequency_penalty?: number;
   logit_bias?: {
     [key: string]: number;
@@ -58,6 +65,7 @@ export interface ChatCompletionsRequest {
   presence_penalty?: number;
   provider?: {
     ignore?: string[];
+    include_alpha?: boolean;
     only?: string[];
     order?: string[];
   };

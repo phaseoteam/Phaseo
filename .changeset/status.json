@@ -1,0 +1,363 @@
+{
+  "changesets": [
+    {
+      "releases": [
+        {
+          "name": "@ai-stats/ai-sdk-provider",
+          "type": "minor"
+        }
+      ],
+      "summary": "Update AI SDK provider tests and release readiness for the latest gateway models.",
+      "id": "ai-sdk-provider-release"
+    },
+    {
+      "releases": [
+        {
+          "name": "@ai-stats/gateway-api",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/sdk",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/py-sdk",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/go-sdk",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/csharp-sdk",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/php-sdk",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/ruby-sdk",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/java-sdk",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/rust-sdk",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/cpp-sdk",
+          "type": "major"
+        }
+      ],
+      "summary": "Prepare the API and all SDKs for a coordinated breaking release.\n\nThis captures breaking changes across endpoint surfaces, protocol/IR conversions,\nprovider routing/usage behavior, and regenerated SDK interfaces from the latest\nOpenAPI definitions.",
+      "id": "api-and-sdks-breaking-major"
+    },
+    {
+      "releases": [
+        {
+          "name": "@ai-stats/gateway-api",
+          "type": "patch"
+        },
+        {
+          "name": "@ai-stats/docs",
+          "type": "patch"
+        }
+      ],
+      "summary": "Update gateway and docs for recent API changes and documentation fixes.",
+      "id": "api-docs-refresh"
+    },
+    {
+      "releases": [
+        {
+          "name": "@ai-stats/web",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/docs",
+          "type": "major"
+        },
+        {
+          "name": "@ai-stats/ai-sdk-provider",
+          "type": "major"
+        }
+      ],
+      "summary": "Align the web app, docs, and AI SDK provider with the coordinated major release.\n\nThis captures breaking/structural updates tied to the gateway and SDK overhaul,\nincluding endpoint surface changes and updated integration expectations.",
+      "id": "major-release-train-apps-and-provider"
+    },
+    {
+      "releases": [
+        {
+          "name": "@ai-stats/sdk",
+          "type": "patch"
+        },
+        {
+          "name": "@ai-stats/py-sdk",
+          "type": "patch"
+        },
+        {
+          "name": "@ai-stats/go-sdk",
+          "type": "patch"
+        },
+        {
+          "name": "@ai-stats/csharp-sdk",
+          "type": "patch"
+        },
+        {
+          "name": "@ai-stats/php-sdk",
+          "type": "patch"
+        },
+        {
+          "name": "@ai-stats/ruby-sdk",
+          "type": "patch"
+        }
+      ],
+      "summary": "Bump all SDKs for the next alpha drop so they land on 0.2.1-alpha.0 together.",
+      "id": "sdk-alpha-release"
+    },
+    {
+      "releases": [
+        {
+          "name": "@ai-stats/sdk",
+          "type": "minor"
+        },
+        {
+          "name": "@ai-stats/py-sdk",
+          "type": "minor"
+        }
+      ],
+      "summary": "Regenerate SDKs against the latest OpenAPI spec and refresh runtime helpers for the TS and Python clients.",
+      "id": "sdk-core-release"
+    },
+    {
+      "releases": [
+        {
+          "name": "@ai-stats/cpp-sdk",
+          "type": "minor"
+        },
+        {
+          "name": "@ai-stats/csharp-sdk",
+          "type": "minor"
+        },
+        {
+          "name": "@ai-stats/go-sdk",
+          "type": "minor"
+        },
+        {
+          "name": "@ai-stats/java-sdk",
+          "type": "minor"
+        },
+        {
+          "name": "@ai-stats/php-sdk",
+          "type": "minor"
+        },
+        {
+          "name": "@ai-stats/ruby-sdk",
+          "type": "minor"
+        },
+        {
+          "name": "@ai-stats/rust-sdk",
+          "type": "minor"
+        }
+      ],
+      "summary": "Regenerate language SDKs against the latest OpenAPI spec.",
+      "id": "sdk-regens"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@ai-stats/ai-sdk-provider",
+      "type": "major",
+      "oldVersion": "0.1.0",
+      "changesets": [
+        "ai-sdk-provider-release",
+        "major-release-train-apps-and-provider"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/gateway-api",
+      "type": "major",
+      "oldVersion": "0.2.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "api-docs-refresh"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-alpha-release",
+        "sdk-core-release"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/py-sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-alpha-release",
+        "sdk-core-release"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/go-sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-alpha-release",
+        "sdk-regens"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/csharp-sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-alpha-release",
+        "sdk-regens"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/php-sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-alpha-release",
+        "sdk-regens"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/ruby-sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-alpha-release",
+        "sdk-regens"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/java-sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-regens"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/rust-sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-regens"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/cpp-sdk",
+      "type": "major",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [
+        "api-and-sdks-breaking-major",
+        "sdk-regens"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/docs",
+      "type": "major",
+      "oldVersion": "0.2.0",
+      "changesets": [
+        "api-docs-refresh",
+        "major-release-train-apps-and-provider"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/web",
+      "type": "major",
+      "oldVersion": "0.1.2",
+      "changesets": [
+        "major-release-train-apps-and-provider"
+      ],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@ai-stats/devtools",
+      "type": "patch",
+      "oldVersion": "0.2.1-alpha.0",
+      "changesets": [],
+      "newVersion": "0.2.1"
+    },
+    {
+      "name": "ai-stats",
+      "type": "patch",
+      "changesets": [],
+      "newVersion": null
+    }
+  ],
+  "preState": {
+    "mode": "exit",
+    "tag": "alpha",
+    "initialVersions": {
+      "@ai-stats/gateway-api": "0.2.0",
+      "@ai-stats/docs": "0.2.0",
+      "@ai-stats/web": "0.1.2",
+      "@ai-stats/devtools": "0.1.0",
+      "@ai-stats/devtools-core": "0.1.0",
+      "@ai-stats/devtools-node": "0.1.0",
+      "@ai-stats/csharp-sdk": "0.1.0",
+      "@ai-stats/go-sdk": "0.2.0",
+      "@ai-stats/php-sdk": "0.2.0",
+      "@ai-stats/py-sdk": "0.2.0",
+      "@ai-stats/ruby-sdk": "0.2.0",
+      "@ai-stats/sdk": "0.2.0",
+      "@ai-stats/devtools-viewer": "0.1.0",
+      "@ai-stats/ai-sdk-provider": "0.1.0",
+      "@ai-stats/oapi-backend-cpp": "0.0.0",
+      "@ai-stats/oapi-backend-csharp": "0.0.0",
+      "@ai-stats/oapi-backend-go": "0.0.0",
+      "@ai-stats/oapi-backend-java": "0.0.0",
+      "@ai-stats/oapi-backend-php": "0.0.0",
+      "@ai-stats/oapi-backend-python": "0.0.0",
+      "@ai-stats/oapi-backend-ruby": "0.0.0",
+      "@ai-stats/oapi-backend-rust": "0.0.0",
+      "@ai-stats/oapi-backend-ts": "0.0.0",
+      "@ai-stats/oapi-cli": "0.0.0",
+      "@ai-stats/oapi-core": "0.0.0",
+      "@ai-stats/cpp-sdk": "0.2.1-alpha.0",
+      "@ai-stats/java-sdk": "0.2.1-alpha.0",
+      "@ai-stats/rust-sdk": "0.2.1-alpha.0"
+    },
+    "changesets": [
+      "ai-sdk-provider-release",
+      "api-and-sdks-breaking-major",
+      "api-docs-refresh",
+      "major-release-train-apps-and-provider",
+      "sdk-alpha-release",
+      "sdk-core-release",
+      "sdk-regens"
+    ]
+  }
+}

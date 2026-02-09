@@ -29,6 +29,7 @@ type ChatCompletionsRequest struct {
 	LogitBias *map[string]float32 `json:"logit_bias,omitempty"`
 	MaxOutputTokens *int32 `json:"max_output_tokens,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
+	Debug *DebugOptions `json:"debug,omitempty"`
 	PresencePenalty *float32 `json:"presence_penalty,omitempty"`
 	Seed *int32 `json:"seed,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
@@ -331,6 +332,38 @@ func (o *ChatCompletionsRequest) HasMeta() bool {
 // SetMeta gets a reference to the given bool and assigns it to the Meta field.
 func (o *ChatCompletionsRequest) SetMeta(v bool) {
 	o.Meta = &v
+}
+
+// GetDebug returns the Debug field value if set, zero value otherwise.
+func (o *ChatCompletionsRequest) GetDebug() DebugOptions {
+	if o == nil || IsNil(o.Debug) {
+		var ret DebugOptions
+		return ret
+	}
+	return *o.Debug
+}
+
+// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ChatCompletionsRequest) GetDebugOk() (*DebugOptions, bool) {
+	if o == nil || IsNil(o.Debug) {
+		return nil, false
+	}
+	return o.Debug, true
+}
+
+// HasDebug returns a boolean if a field has been set.
+func (o *ChatCompletionsRequest) HasDebug() bool {
+	if o != nil && !IsNil(o.Debug) {
+		return true
+	}
+
+	return false
+}
+
+// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
+func (o *ChatCompletionsRequest) SetDebug(v DebugOptions) {
+	o.Debug = &v
 }
 
 // GetPresencePenalty returns the PresencePenalty field value if set, zero value otherwise.
@@ -906,6 +939,9 @@ func (o ChatCompletionsRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Meta) {
 		toSerialize["meta"] = o.Meta
+	}
+	if !IsNil(o.Debug) {
+		toSerialize["debug"] = o.Debug
 	}
 	if !IsNil(o.PresencePenalty) {
 		toSerialize["presence_penalty"] = o.PresencePenalty

@@ -83,9 +83,29 @@ function extractRequestEnrichment(ctx: PipelineContext): any {
 function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): any {
     try {
         const candidates = ctx.providers ?? [];
-        const attempts = (ctx as any).attemptErrors?.length ?? null;
-        const failed_providers = (ctx as any).attemptErrors?.map((e: any) => e.provider) ?? [];
-        const failure_reasons = (ctx as any).attemptErrors?.map((e: any) => e.reason) ?? [];
+        const attemptErrors: any[] = Array.isArray((ctx as any).attemptErrors)
+            ? (ctx as any).attemptErrors
+            : [];
+        const routingSnapshot: any[] = Array.isArray((ctx as any).routingSnapshot)
+            ? (ctx as any).routingSnapshot
+            : [];
+        const now = Date.now();
+        const attempts = attemptErrors.length || null;
+        const failed_providers = attemptErrors
+            .map((e: any) => e?.provider)
+            .filter((value: unknown) => typeof value === "string");
+        const failure_reasons = attemptErrors
+            .map((e: any) => e?.reason ?? e?.type ?? null)
+            .filter((value: unknown) => typeof value === "string");
+        const circuitBreakerOpenFromSnapshot = routingSnapshot.some((entry: any) => {
+            if (!entry || typeof entry !== "object") return false;
+            if (entry.breaker !== "open") return false;
+            return Number(entry.breaker_until_ms ?? 0) > now;
+        });
+        const circuitBreakerBlocked = attemptErrors.some(
+            (e: any) => (e?.type ?? e?.reason) === "blocked",
+        );
+        const healthContext = (result as any)?.healthContext;
 
         return {
             candidates_count: candidates.length,
@@ -93,8 +113,8 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
             attempts,
             failed_providers: failed_providers.length > 0 ? failed_providers : null,
             failure_reasons: failure_reasons.length > 0 ? failure_reasons : null,
-            circuit_breaker_open: false, // Could be enriched from health context if available
-            was_probe: false, // Could be enriched from health context if available
+            circuit_breaker_open: circuitBreakerOpenFromSnapshot || circuitBreakerBlocked,
+            was_probe: Boolean(healthContext?.isProbe),
         };
     } catch (err) {
         console.error("extractRoutingContext error", err);
@@ -158,6 +178,7 @@ export async function handleFailureAudit(
             teamId: ctx.teamId,
             endpoint: ctx.endpoint,
             model: ctx.model,
+            provider: result.provider ?? null,
             stream: ctx.stream,
             statusCode: upstreamStatus,
             errorCode: `${attribution}:${errorCode}`,

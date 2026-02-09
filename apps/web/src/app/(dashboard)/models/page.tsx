@@ -8,7 +8,6 @@ import { loadModelsSearchParams } from "./search-params";
 import type { Metadata } from "next";
 import type { SearchParams } from "nuqs/server";
 import { UPCOMING_TAB_VALUE, UNKNOWN_TAB_VALUE } from "@/lib/models/modelTabs";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = {
 	title: "AI models - Compare Benchmarks, Pricing & Providers",
@@ -131,7 +130,7 @@ function getYearPagination(
 
 async function ModelsPageContent({ searchParams }: ModelsPageProps) {
 	const { q, year } = await loadModelsSearchParams(searchParams);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const filteredModelsFromDb = await getModelsFiltered({ search: q, includeHidden });
 	const filteredModels = filterAndSortModels(filteredModelsFromDb, q);
 	const { years, activeYear, paginatedModels, hasUpcoming, hasUnknown } = getYearPagination(

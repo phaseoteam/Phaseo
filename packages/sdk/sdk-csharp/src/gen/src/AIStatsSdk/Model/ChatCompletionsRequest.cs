@@ -41,6 +41,7 @@ namespace AIStatsSdk.Model
         /// <param name="logitBias">logitBias</param>
         /// <param name="maxOutputTokens">maxOutputTokens</param>
         /// <param name="meta">meta (default to false)</param>
+        /// <param name="debug">debug</param>
         /// <param name="presencePenalty">presencePenalty</param>
         /// <param name="seed">seed</param>
         /// <param name="stream">stream (default to false)</param>
@@ -59,7 +60,7 @@ namespace AIStatsSdk.Model
         /// <param name="userId">userId</param>
         /// <param name="serviceTier">serviceTier (default to ServiceTierEnum.Standard)</param>
         [JsonConstructor]
-        public ChatCompletionsRequest(string model, List<ChatMessage> messages, Option<string?> @system = default, Option<ReasoningConfig?> reasoning = default, Option<decimal?> frequencyPenalty = default, Option<Dictionary<string, decimal>?> logitBias = default, Option<int?> maxOutputTokens = default, Option<bool?> meta = default, Option<decimal?> presencePenalty = default, Option<long?> seed = default, Option<bool?> stream = default, Option<decimal?> temperature = default, Option<List<ChatCompletionsRequestToolsInner>?> tools = default, Option<int?> maxToolCalls = default, Option<bool?> parallelToolCalls = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<int?> topK = default, Option<bool?> logprobs = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<ChatCompletionsRequestResponseFormat?> responseFormat = default, Option<bool?> usage = default, Option<ProviderRoutingOptions?> provider = default, Option<string?> userId = default, Option<ServiceTierEnum?> serviceTier = default)
+        public ChatCompletionsRequest(string model, List<ChatMessage> messages, Option<string?> @system = default, Option<ReasoningConfig?> reasoning = default, Option<decimal?> frequencyPenalty = default, Option<Dictionary<string, decimal>?> logitBias = default, Option<int?> maxOutputTokens = default, Option<bool?> meta = default, Option<DebugOptions?> debug = default, Option<decimal?> presencePenalty = default, Option<long?> seed = default, Option<bool?> stream = default, Option<decimal?> temperature = default, Option<List<ChatCompletionsRequestToolsInner>?> tools = default, Option<int?> maxToolCalls = default, Option<bool?> parallelToolCalls = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<int?> topK = default, Option<bool?> logprobs = default, Option<int?> topLogprobs = default, Option<decimal?> topP = default, Option<ChatCompletionsRequestResponseFormat?> responseFormat = default, Option<bool?> usage = default, Option<ProviderRoutingOptions?> provider = default, Option<string?> userId = default, Option<ServiceTierEnum?> serviceTier = default)
         {
             Model = model;
             Messages = messages;
@@ -69,6 +70,7 @@ namespace AIStatsSdk.Model
             LogitBiasOption = logitBias;
             MaxOutputTokensOption = maxOutputTokens;
             MetaOption = meta;
+            DebugOption = debug;
             PresencePenaltyOption = presencePenalty;
             SeedOption = seed;
             StreamOption = stream;
@@ -273,6 +275,19 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonPropertyName("meta")]
         public bool? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of Debug
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<DebugOptions?> DebugOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Debug
+        /// </summary>
+        [JsonPropertyName("debug")]
+        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of PresencePenalty
@@ -498,6 +513,7 @@ namespace AIStatsSdk.Model
             sb.Append("  LogitBias: ").Append(LogitBias).Append("\n");
             sb.Append("  MaxOutputTokens: ").Append(MaxOutputTokens).Append("\n");
             sb.Append("  Meta: ").Append(Meta).Append("\n");
+            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  PresencePenalty: ").Append(PresencePenalty).Append("\n");
             sb.Append("  Seed: ").Append(Seed).Append("\n");
             sb.Append("  Stream: ").Append(Stream).Append("\n");
@@ -557,15 +573,15 @@ namespace AIStatsSdk.Model
             }
 
             // Seed (long) maximum
-            if (this.SeedOption.IsSet && this.SeedOption.Value > (long)9223372036854776000)
+            if (this.SeedOption.IsSet && this.SeedOption.Value > long.MaxValue)
             {
-                yield return new ValidationResult("Invalid value for Seed, must be a value less than or equal to 9223372036854776000.", new [] { "Seed" });
+                yield return new ValidationResult("Invalid value for Seed, must be a value less than or equal to long.MaxValue.", new [] { "Seed" });
             }
 
             // Seed (long) minimum
-            if (this.SeedOption.IsSet && this.SeedOption.Value < (long)-9223372036854776000)
+            if (this.SeedOption.IsSet && this.SeedOption.Value < long.MinValue)
             {
-                yield return new ValidationResult("Invalid value for Seed, must be a value greater than or equal to -9223372036854776000.", new [] { "Seed" });
+                yield return new ValidationResult("Invalid value for Seed, must be a value greater than or equal to long.MinValue.", new [] { "Seed" });
             }
 
             // Temperature (decimal) maximum
@@ -650,6 +666,7 @@ namespace AIStatsSdk.Model
             Option<Dictionary<string, decimal>?> logitBias = default;
             Option<int?> maxOutputTokens = default;
             Option<bool?> meta = default;
+            Option<DebugOptions?> debug = default;
             Option<decimal?> presencePenalty = default;
             Option<long?> seed = default;
             Option<bool?> stream = default;
@@ -706,6 +723,9 @@ namespace AIStatsSdk.Model
                             break;
                         case "meta":
                             meta = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                            break;
+                        case "debug":
+                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
                         case "presence_penalty":
                             presencePenalty = new Option<decimal?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (decimal?)null : utf8JsonReader.GetDecimal());
@@ -796,6 +816,9 @@ namespace AIStatsSdk.Model
             if (meta.IsSet && meta.Value == null)
                 throw new ArgumentNullException(nameof(meta), "Property is not nullable for class ChatCompletionsRequest.");
 
+            if (debug.IsSet && debug.Value == null)
+                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class ChatCompletionsRequest.");
+
             if (presencePenalty.IsSet && presencePenalty.Value == null)
                 throw new ArgumentNullException(nameof(presencePenalty), "Property is not nullable for class ChatCompletionsRequest.");
 
@@ -847,7 +870,7 @@ namespace AIStatsSdk.Model
             if (serviceTier.IsSet && serviceTier.Value == null)
                 throw new ArgumentNullException(nameof(serviceTier), "Property is not nullable for class ChatCompletionsRequest.");
 
-            return new ChatCompletionsRequest(model.Value!, messages.Value!, varSystem, reasoning, frequencyPenalty, logitBias, maxOutputTokens, meta, presencePenalty, seed, stream, temperature, tools, maxToolCalls, parallelToolCalls, toolChoice, topK, logprobs, topLogprobs, topP, responseFormat, usage, provider, userId, serviceTier);
+            return new ChatCompletionsRequest(model.Value!, messages.Value!, varSystem, reasoning, frequencyPenalty, logitBias, maxOutputTokens, meta, debug, presencePenalty, seed, stream, temperature, tools, maxToolCalls, parallelToolCalls, toolChoice, topK, logprobs, topLogprobs, topP, responseFormat, usage, provider, userId, serviceTier);
         }
 
         /// <summary>
@@ -888,6 +911,9 @@ namespace AIStatsSdk.Model
 
             if (chatCompletionsRequest.LogitBiasOption.IsSet && chatCompletionsRequest.LogitBias == null)
                 throw new ArgumentNullException(nameof(chatCompletionsRequest.LogitBias), "Property is required for class ChatCompletionsRequest.");
+
+            if (chatCompletionsRequest.DebugOption.IsSet && chatCompletionsRequest.Debug == null)
+                throw new ArgumentNullException(nameof(chatCompletionsRequest.Debug), "Property is required for class ChatCompletionsRequest.");
 
             if (chatCompletionsRequest.ToolsOption.IsSet && chatCompletionsRequest.Tools == null)
                 throw new ArgumentNullException(nameof(chatCompletionsRequest.Tools), "Property is required for class ChatCompletionsRequest.");
@@ -930,6 +956,11 @@ namespace AIStatsSdk.Model
             if (chatCompletionsRequest.MetaOption.IsSet)
                 writer.WriteBoolean("meta", chatCompletionsRequest.MetaOption.Value!.Value);
 
+            if (chatCompletionsRequest.DebugOption.IsSet)
+            {
+                writer.WritePropertyName("debug");
+                JsonSerializer.Serialize(writer, chatCompletionsRequest.Debug, jsonSerializerOptions);
+            }
             if (chatCompletionsRequest.PresencePenaltyOption.IsSet)
                 writer.WriteNumber("presence_penalty", chatCompletionsRequest.PresencePenaltyOption.Value!.Value);
 

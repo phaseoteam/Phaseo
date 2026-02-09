@@ -165,6 +165,7 @@ namespace AIStatsSdk.Model
         /// <summary>
         /// Gets or Sets Id
         /// </summary>
+        /* <example>11111111-1111-4111-8111-111111111111</example> */
         [JsonPropertyName("id")]
         public Guid? Id { get { return this.IdOption; } set { this.IdOption = new(value); } }
 
@@ -178,6 +179,7 @@ namespace AIStatsSdk.Model
         /// <summary>
         /// Gets or Sets TeamId
         /// </summary>
+        /* <example>22222222-2222-4222-8222-222222222222</example> */
         [JsonPropertyName("team_id")]
         public Guid? TeamId { get { return this.TeamIdOption; } set { this.TeamIdOption = new(value); } }
 
@@ -233,6 +235,7 @@ namespace AIStatsSdk.Model
         /// <summary>
         /// Gets or Sets CreatedBy
         /// </summary>
+        /* <example>33333333-3333-4333-8333-333333333333</example> */
         [JsonPropertyName("created_by")]
         public Guid? CreatedBy { get { return this.CreatedByOption; } set { this.CreatedByOption = new(value); } }
 

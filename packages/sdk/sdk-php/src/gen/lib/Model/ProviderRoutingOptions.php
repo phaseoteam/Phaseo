@@ -60,7 +60,8 @@ class ProviderRoutingOptions implements ModelInterface, ArrayAccess, \JsonSerial
     protected static $openAPITypes = [
         'order' => 'string[]',
         'only' => 'string[]',
-        'ignore' => 'string[]'
+        'ignore' => 'string[]',
+        'include_alpha' => 'bool'
     ];
 
     /**
@@ -73,7 +74,8 @@ class ProviderRoutingOptions implements ModelInterface, ArrayAccess, \JsonSerial
     protected static $openAPIFormats = [
         'order' => null,
         'only' => null,
-        'ignore' => null
+        'ignore' => null,
+        'include_alpha' => null
     ];
 
     /**
@@ -84,7 +86,8 @@ class ProviderRoutingOptions implements ModelInterface, ArrayAccess, \JsonSerial
     protected static array $openAPINullables = [
         'order' => false,
         'only' => false,
-        'ignore' => false
+        'ignore' => false,
+        'include_alpha' => false
     ];
 
     /**
@@ -175,7 +178,8 @@ class ProviderRoutingOptions implements ModelInterface, ArrayAccess, \JsonSerial
     protected static $attributeMap = [
         'order' => 'order',
         'only' => 'only',
-        'ignore' => 'ignore'
+        'ignore' => 'ignore',
+        'include_alpha' => 'include_alpha'
     ];
 
     /**
@@ -186,7 +190,8 @@ class ProviderRoutingOptions implements ModelInterface, ArrayAccess, \JsonSerial
     protected static $setters = [
         'order' => 'setOrder',
         'only' => 'setOnly',
-        'ignore' => 'setIgnore'
+        'ignore' => 'setIgnore',
+        'include_alpha' => 'setIncludeAlpha'
     ];
 
     /**
@@ -197,7 +202,8 @@ class ProviderRoutingOptions implements ModelInterface, ArrayAccess, \JsonSerial
     protected static $getters = [
         'order' => 'getOrder',
         'only' => 'getOnly',
-        'ignore' => 'getIgnore'
+        'ignore' => 'getIgnore',
+        'include_alpha' => 'getIncludeAlpha'
     ];
 
     /**
@@ -260,6 +266,7 @@ class ProviderRoutingOptions implements ModelInterface, ArrayAccess, \JsonSerial
         $this->setIfExists('order', $data ?? [], null);
         $this->setIfExists('only', $data ?? [], null);
         $this->setIfExists('ignore', $data ?? [], null);
+        $this->setIfExists('include_alpha', $data ?? [], null);
     }
 
     /**
@@ -381,6 +388,33 @@ class ProviderRoutingOptions implements ModelInterface, ArrayAccess, \JsonSerial
             throw new \InvalidArgumentException('non-nullable ignore cannot be null');
         }
         $this->container['ignore'] = $ignore;
+
+        return $this;
+    }
+
+    /**
+     * Gets include_alpha
+     *
+     * @return bool|null
+     */
+    public function getIncludeAlpha()
+    {
+        return $this->container['include_alpha'];
+    }
+
+    /**
+     * Sets include_alpha
+     *
+     * @param bool|null $include_alpha Include alpha providers in routing (off by default).
+     *
+     * @return self
+     */
+    public function setIncludeAlpha($include_alpha)
+    {
+        if (is_null($include_alpha)) {
+            throw new \InvalidArgumentException('non-nullable include_alpha cannot be null');
+        }
+        $this->container['include_alpha'] = $include_alpha;
 
         return $this;
     }

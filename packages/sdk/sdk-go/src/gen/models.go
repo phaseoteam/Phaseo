@@ -28,6 +28,7 @@ type AnthropicMessage struct {
 }
 
 type AnthropicMessagesRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
 	MaxTokens *int `json:"max_tokens,omitempty"`
 	Messages []map[string]interface{} `json:"messages"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
@@ -105,6 +106,7 @@ type AudioTranslationResponse struct {
 
 type BatchRequest struct {
 	CompletionWindow *string `json:"completion_window,omitempty"`
+	Debug *map[string]interface{} `json:"debug,omitempty"`
 	Endpoint string `json:"endpoint"`
 	InputFileId string `json:"input_file_id"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
@@ -289,6 +291,7 @@ type ChatChoice struct {
 }
 
 type ChatCompletionsRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
 	LogitBias *map[string]interface{} `json:"logit_bias,omitempty"`
 	Logprobs *bool `json:"logprobs,omitempty"`
@@ -331,6 +334,14 @@ type ChatMessage struct {
 	Role string `json:"role"`
 	ToolCallId *string `json:"tool_call_id,omitempty"`
 	ToolCalls *[]map[string]interface{} `json:"tool_calls,omitempty"`
+}
+
+type DebugOptions struct {
+	Enabled *bool `json:"enabled,omitempty"`
+	ReturnUpstreamRequest *bool `json:"return_upstream_request,omitempty"`
+	ReturnUpstreamResponse *bool `json:"return_upstream_response,omitempty"`
+	Trace *bool `json:"trace,omitempty"`
+	TraceLevel *string `json:"trace_level,omitempty"`
 }
 
 type Embedding struct {
@@ -1096,6 +1107,7 @@ type ModerationResult struct {
 }
 
 type ModerationsRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
 	Input interface{} `json:"input"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
@@ -1109,6 +1121,7 @@ type ModerationsResponse struct {
 }
 
 type MusicGenerateRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
 	Duration *int `json:"duration,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	Elevenlabs *map[string]interface{} `json:"elevenlabs,omitempty"`
@@ -1123,6 +1136,7 @@ type MusicGenerateResponse struct {
 }
 
 type OcrRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	Image string `json:"image"`
 	Language *string `json:"language,omitempty"`
@@ -1178,6 +1192,7 @@ type Provider struct {
 
 type ProviderRoutingOptions struct {
 	Ignore *[]string `json:"ignore,omitempty"`
+	IncludeAlpha *bool `json:"include_alpha,omitempty"`
 	Only *[]string `json:"only,omitempty"`
 	Order *[]string `json:"order,omitempty"`
 }
@@ -1223,6 +1238,7 @@ type ReasoningConfig struct {
 type ResponsesRequest struct {
 	Background *bool `json:"background,omitempty"`
 	Conversation interface{} `json:"conversation,omitempty"`
+	Debug *map[string]interface{} `json:"debug,omitempty"`
 	Include *[]string `json:"include,omitempty"`
 	Input *map[string]interface{} `json:"input,omitempty"`
 	InputItems *[]map[string]interface{} `json:"input_items,omitempty"`

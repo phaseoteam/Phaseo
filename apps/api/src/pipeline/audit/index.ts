@@ -268,6 +268,7 @@ type AuditFailureExecute = {
     teamId: string;
     endpoint: Endpoint;
     model: string;
+    provider?: string | null;
     stream: boolean;
     statusCode: number;
     errorCode: string;
@@ -393,7 +394,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             teamId: args.teamId,
             endpoint: args.endpoint,
             model: args.model,
-            provider: null,
+            provider: args.provider ?? null,
             stream: !!args.stream,
             byok: !!args.byok,
             nativeResponseId: null,
@@ -426,7 +427,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         await runAxiom({
             requestId: args.requestId,
             teamId: args.teamId,
-            provider: "unknown",
+            provider: args.provider ?? "unknown",
             model: args.model,
             endpoint: args.endpoint,
             stream: !!args.stream,

@@ -36,13 +36,15 @@ namespace AIStatsSdk.Model
         /// <param name="model">model</param>
         /// <param name="input">input</param>
         /// <param name="meta">meta (default to false)</param>
+        /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public ModerationsRequest(string model, ModerationsRequestInput input, Option<bool?> meta = default, Option<ProviderRoutingOptions?> provider = default)
+        public ModerationsRequest(string model, ModerationsRequestInput input, Option<bool?> meta = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Input = input;
             MetaOption = meta;
+            DebugOption = debug;
             ProviderOption = provider;
             OnCreated();
         }
@@ -75,6 +77,19 @@ namespace AIStatsSdk.Model
         public bool? Meta { get { return this.MetaOption; } set { this.MetaOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Debug
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<DebugOptions?> DebugOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Debug
+        /// </summary>
+        [JsonPropertyName("debug")]
+        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
+
+        /// <summary>
         /// Used to track the state of Provider
         /// </summary>
         [JsonIgnore]
@@ -98,6 +113,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Model: ").Append(Model).Append("\n");
             sb.Append("  Input: ").Append(Input).Append("\n");
             sb.Append("  Meta: ").Append(Meta).Append("\n");
+            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -139,6 +155,7 @@ namespace AIStatsSdk.Model
             Option<string?> model = default;
             Option<ModerationsRequestInput?> input = default;
             Option<bool?> meta = default;
+            Option<DebugOptions?> debug = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -165,6 +182,9 @@ namespace AIStatsSdk.Model
                         case "meta":
                             meta = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
+                        case "debug":
+                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
@@ -189,10 +209,13 @@ namespace AIStatsSdk.Model
             if (meta.IsSet && meta.Value == null)
                 throw new ArgumentNullException(nameof(meta), "Property is not nullable for class ModerationsRequest.");
 
+            if (debug.IsSet && debug.Value == null)
+                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class ModerationsRequest.");
+
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class ModerationsRequest.");
 
-            return new ModerationsRequest(model.Value!, input.Value!, meta, provider);
+            return new ModerationsRequest(model.Value!, input.Value!, meta, debug, provider);
         }
 
         /// <summary>
@@ -225,6 +248,9 @@ namespace AIStatsSdk.Model
             if (moderationsRequest.Input == null)
                 throw new ArgumentNullException(nameof(moderationsRequest.Input), "Property is required for class ModerationsRequest.");
 
+            if (moderationsRequest.DebugOption.IsSet && moderationsRequest.Debug == null)
+                throw new ArgumentNullException(nameof(moderationsRequest.Debug), "Property is required for class ModerationsRequest.");
+
             if (moderationsRequest.ProviderOption.IsSet && moderationsRequest.Provider == null)
                 throw new ArgumentNullException(nameof(moderationsRequest.Provider), "Property is required for class ModerationsRequest.");
 
@@ -235,6 +261,11 @@ namespace AIStatsSdk.Model
             if (moderationsRequest.MetaOption.IsSet)
                 writer.WriteBoolean("meta", moderationsRequest.MetaOption.Value!.Value);
 
+            if (moderationsRequest.DebugOption.IsSet)
+            {
+                writer.WritePropertyName("debug");
+                JsonSerializer.Serialize(writer, moderationsRequest.Debug, jsonSerializerOptions);
+            }
             if (moderationsRequest.ProviderOption.IsSet)
             {
                 writer.WritePropertyName("provider");

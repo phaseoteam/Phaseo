@@ -30,6 +30,7 @@ pub struct AnthropicMessage {
 }
 
 pub struct AnthropicMessagesRequest {
+	pub debug: Option<HashMap<String, String>>,
 	pub max_tokens: Option<i64>,
 	pub messages: Vec<HashMap<String, String>>,
 	pub metadata: Option<HashMap<String, String>>,
@@ -107,6 +108,7 @@ pub struct AudioTranslationResponse {
 
 pub struct BatchRequest {
 	pub completion_window: Option<String>,
+	pub debug: Option<HashMap<String, String>>,
 	pub endpoint: String,
 	pub input_file_id: String,
 	pub metadata: Option<HashMap<String, String>>,
@@ -151,6 +153,7 @@ pub struct ChatChoice {
 }
 
 pub struct ChatCompletionsRequest {
+	pub debug: Option<HashMap<String, String>>,
 	pub frequency_penalty: Option<f64>,
 	pub logit_bias: Option<HashMap<String, String>>,
 	pub logprobs: Option<bool>,
@@ -193,6 +196,14 @@ pub struct ChatMessage {
 	pub role: String,
 	pub tool_call_id: Option<String>,
 	pub tool_calls: Option<Vec<HashMap<String, String>>>,
+}
+
+pub struct DebugOptions {
+	pub enabled: Option<bool>,
+	pub return_upstream_request: Option<bool>,
+	pub return_upstream_response: Option<bool>,
+	pub trace: Option<bool>,
+	pub trace_level: Option<String>,
 }
 
 pub struct Embedding {
@@ -364,6 +375,7 @@ pub struct ModerationResult {
 }
 
 pub struct ModerationsRequest {
+	pub debug: Option<HashMap<String, String>>,
 	pub input: String,
 	pub meta: Option<bool>,
 	pub model: String,
@@ -377,6 +389,7 @@ pub struct ModerationsResponse {
 }
 
 pub struct MusicGenerateRequest {
+	pub debug: Option<HashMap<String, String>>,
 	pub duration: Option<i64>,
 	pub echo_upstream_request: Option<bool>,
 	pub elevenlabs: Option<HashMap<String, String>>,
@@ -391,6 +404,7 @@ pub struct MusicGenerateResponse {
 }
 
 pub struct OcrRequest {
+	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub image: String,
 	pub language: Option<String>,
@@ -415,6 +429,7 @@ pub struct Provider {
 
 pub struct ProviderRoutingOptions {
 	pub ignore: Option<Vec<String>>,
+	pub include_alpha: Option<bool>,
 	pub only: Option<Vec<String>>,
 	pub order: Option<Vec<String>>,
 }
@@ -460,6 +475,7 @@ pub struct ReasoningConfig {
 pub struct ResponsesRequest {
 	pub background: Option<bool>,
 	pub conversation: Option<String>,
+	pub debug: Option<HashMap<String, String>>,
 	pub include: Option<Vec<String>>,
 	pub input: Option<HashMap<String, String>>,
 	pub input_items: Option<Vec<HashMap<String, String>>>,

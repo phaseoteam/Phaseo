@@ -6,7 +6,6 @@ import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { withUTM } from "@/lib/utm";
 import Script from "next/script";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 async function fetchOrganisation(organisationId: string, includeHidden: boolean) {
 	try {
@@ -24,7 +23,7 @@ export async function generateMetadata(props: {
 	params: Promise<{ organisationId: string }>;
 }): Promise<Metadata> {
 	const { organisationId } = await props.params;
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const organisation = await fetchOrganisation(organisationId, includeHidden);
 	const path = `/organisations/${organisationId}`;
 	const imagePath = `/og/organisations/${organisationId}`;
@@ -84,7 +83,7 @@ export default async function Page({
 }) {
 	const { organisationId } = await params;
 
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const organisation = await getOrganisationDataCached(organisationId, 12, includeHidden);
 
 	// Generate structured data and FAQs for SEO

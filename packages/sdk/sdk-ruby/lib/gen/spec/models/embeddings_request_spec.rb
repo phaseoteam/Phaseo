@@ -69,6 +69,12 @@ describe AIStatsSdk::EmbeddingsRequest do
     end
   end
 
+  describe 'test attribute "debug"' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   describe 'test attribute "provider"' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/

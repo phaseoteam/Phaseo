@@ -183,7 +183,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 			{ irReason: "stop", expected: "end_turn" },
 			{ irReason: "length", expected: "max_tokens" },
 			{ irReason: "tool_calls", expected: "tool_use" },
-			{ irReason: "content_filter", expected: "end_turn" },
+			{ irReason: "content_filter", expected: "refusal" },
 		];
 
 		for (const { irReason, expected } of testCases) {

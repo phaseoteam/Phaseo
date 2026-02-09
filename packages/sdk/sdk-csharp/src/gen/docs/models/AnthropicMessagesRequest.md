@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **ToolChoice** | [**ChatCompletionsRequestToolChoice**](ChatCompletionsRequestToolChoice.md) |  | [optional] 
 **Stream** | **bool** |  | [optional] 
 **Metadata** | **Dictionary&lt;string, string&gt;** |  | [optional] 
+**Debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **Provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 [[Back to Model list]](../../README.md#documentation-for-models) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to README]](../../README.md)

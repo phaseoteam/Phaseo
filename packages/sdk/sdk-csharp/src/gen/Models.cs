@@ -72,6 +72,9 @@ public sealed class AnthropicMessage
 
 public sealed class AnthropicMessagesRequest
 {
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
 	[JsonPropertyName("max_tokens")]
 	public int? MaxTokens { get; set; }
 
@@ -253,6 +256,9 @@ public sealed class BatchRequest
 	[JsonPropertyName("completion_window")]
 	public string? CompletionWindow { get; set; }
 
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
 	[JsonPropertyName("endpoint")]
 	public string Endpoint { get; set; }
 
@@ -361,6 +367,9 @@ public sealed class ChatChoice
 
 public sealed class ChatCompletionsRequest
 {
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
 	[JsonPropertyName("frequency_penalty")]
 	public double? FrequencyPenalty { get; set; }
 
@@ -476,6 +485,25 @@ public sealed class ChatMessage
 
 	[JsonPropertyName("tool_calls")]
 	public List<Dictionary<string, object>>? ToolCalls { get; set; }
+
+}
+
+public sealed class DebugOptions
+{
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("return_upstream_request")]
+	public bool? ReturnUpstreamRequest { get; set; }
+
+	[JsonPropertyName("return_upstream_response")]
+	public bool? ReturnUpstreamResponse { get; set; }
+
+	[JsonPropertyName("trace")]
+	public bool? Trace { get; set; }
+
+	[JsonPropertyName("trace_level")]
+	public string? TraceLevel { get; set; }
 
 }
 
@@ -883,6 +911,9 @@ public sealed class ModerationResult
 
 public sealed class ModerationsRequest
 {
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
 	[JsonPropertyName("input")]
 	public object Input { get; set; }
 
@@ -912,6 +943,9 @@ public sealed class ModerationsResponse
 
 public sealed class MusicGenerateRequest
 {
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
 	[JsonPropertyName("duration")]
 	public int? Duration { get; set; }
 
@@ -944,6 +978,9 @@ public sealed class MusicGenerateResponse
 
 public sealed class OcrRequest
 {
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
 	[JsonPropertyName("echo_upstream_request")]
 	public bool? EchoUpstreamRequest { get; set; }
 
@@ -992,6 +1029,9 @@ public sealed class ProviderRoutingOptions
 {
 	[JsonPropertyName("ignore")]
 	public List<string>? Ignore { get; set; }
+
+	[JsonPropertyName("include_alpha")]
+	public bool? IncludeAlpha { get; set; }
 
 	[JsonPropertyName("only")]
 	public List<string>? Only { get; set; }
@@ -1102,6 +1142,9 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("conversation")]
 	public object? Conversation { get; set; }
+
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
 
 	[JsonPropertyName("include")]
 	public List<string>? Include { get; set; }

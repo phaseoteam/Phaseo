@@ -147,7 +147,9 @@ Both basic and advanced actions invalidate relevant cache tags:
 revalidateTag("audit-models");           // Main audit view
 revalidateTag("data:models");            // General model data
 revalidateTag(`data:models:${modelId}`); // Specific model
-revalidateTag(`model:benchmarks:${modelId}`); // Model benchmarks
+revalidateTag(`model:benchmarks:highlights:${modelId}`); // Benchmark highlights
+revalidateTag(`model:benchmarks:table:${modelId}`); // Benchmark table
+revalidateTag(`model:benchmarks:comparisons:${modelId}`); // Benchmark comparisons
 ```
 
 ## Mobile Responsiveness

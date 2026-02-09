@@ -35,7 +35,9 @@ export default async function ModelsAuditPage() {
 	}
 
 	// Fetch audit data
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = await resolveIncludeHidden(undefined, {
+		allowAdminOverride: true,
+	});
 	const auditModels = await getAuditModels(includeHidden);
 
 	return (

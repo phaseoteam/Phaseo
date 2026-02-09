@@ -4,40 +4,136 @@ All URIs are relative to *https://api.phaseo.app/v1*
 
 | Method | HTTP request | Description |
 | ------ | ------------ | ----------- |
+| [**calculate_pricing**](DefaultApi.md#calculate_pricing) | **POST** /pricing/calculate | Calculate pricing |
 | [**create_anthropic_message**](DefaultApi.md#create_anthropic_message) | **POST** /messages | Create message |
 | [**create_batch**](DefaultApi.md#create_batch) | **POST** /batches | Create batch |
+| [**create_batch_alias**](DefaultApi.md#create_batch_alias) | **POST** /batch | Create batch (alias) |
 | [**create_chat_completion**](DefaultApi.md#create_chat_completion) | **POST** /chat/completions | Create chat completion |
 | [**create_embedding**](DefaultApi.md#create_embedding) | **POST** /embeddings | Create embeddings |
 | [**create_image**](DefaultApi.md#create_image) | **POST** /images/generations | Create image |
 | [**create_image_edit**](DefaultApi.md#create_image_edit) | **POST** /images/edits | Create image edit |
+| [**create_key_placeholder**](DefaultApi.md#create_key_placeholder) | **POST** /keys | Create key (placeholder) |
 | [**create_moderation**](DefaultApi.md#create_moderation) | **POST** /moderations | Create moderation |
+| [**create_o_auth_client**](DefaultApi.md#create_o_auth_client) | **POST** /oauth-clients | Create OAuth client |
 | [**create_ocr**](DefaultApi.md#create_ocr) | **POST** /ocr | Create OCR |
-| [**create_provisioning_key**](DefaultApi.md#create_provisioning_key) | **POST** /provisioning/keys | Create provisioning key |
 | [**create_response**](DefaultApi.md#create_response) | **POST** /responses | Create response |
 | [**create_speech**](DefaultApi.md#create_speech) | **POST** /audio/speech | Generate speech |
 | [**create_transcription**](DefaultApi.md#create_transcription) | **POST** /audio/transcriptions | Create transcription |
 | [**create_translation**](DefaultApi.md#create_translation) | **POST** /audio/translations | Create translation |
 | [**create_video**](DefaultApi.md#create_video) | **POST** /videos | Create video |
-| [**delete_provisioning_key**](DefaultApi.md#delete_provisioning_key) | **DELETE** /provisioning/keys/{id} | Delete provisioning key |
+| [**create_video_alias**](DefaultApi.md#create_video_alias) | **POST** /video/generations | Create video (alias) |
+| [**delete_o_auth_client**](DefaultApi.md#delete_o_auth_client) | **DELETE** /oauth-clients/{client_id} | Delete OAuth client |
+| [**delete_provisioning_key**](DefaultApi.md#delete_provisioning_key) | **DELETE** /management/keys/{id} | Delete management API key |
+| [**delete_provisioning_key_alias**](DefaultApi.md#delete_provisioning_key_alias) | **DELETE** /provisioning/keys/{id} | Delete provisioning key |
 | [**delete_video**](DefaultApi.md#delete_video) | **DELETE** /videos/{video_id} | Delete video |
+| [**delete_video_alias**](DefaultApi.md#delete_video_alias) | **DELETE** /video/generations/{video_id} | Delete video (alias) |
 | [**generate_music**](DefaultApi.md#generate_music) | **POST** /music/generate | Generate music |
+| [**generate_music_alias**](DefaultApi.md#generate_music_alias) | **POST** /music/generations | Generate music (alias) |
 | [**get_activity**](DefaultApi.md#get_activity) | **GET** /activity | Get activity |
 | [**get_analytics**](DefaultApi.md#get_analytics) | **POST** /analytics | Get analytics |
 | [**get_credits**](DefaultApi.md#get_credits) | **GET** /credits | Get remaining credits |
-| [**get_generation**](DefaultApi.md#get_generation) | **GET** /generation | Get generation |
-| [**get_provisioning_key**](DefaultApi.md#get_provisioning_key) | **GET** /provisioning/keys/{id} | Get provisioning key |
+| [**get_generation**](DefaultApi.md#get_generation) | **GET** /generations | Get generation |
+| [**get_key_placeholder**](DefaultApi.md#get_key_placeholder) | **GET** /key | Get key (placeholder) |
+| [**get_music_generation**](DefaultApi.md#get_music_generation) | **GET** /music/generate/{music_id} | Get music generation status |
+| [**get_music_generation_alias**](DefaultApi.md#get_music_generation_alias) | **GET** /music/generations/{music_id} | Get music generation status (alias) |
+| [**get_o_auth_client**](DefaultApi.md#get_o_auth_client) | **GET** /oauth-clients/{client_id} | Get OAuth client |
+| [**get_provider_derank_status**](DefaultApi.md#get_provider_derank_status) | **GET** /health/providers/{provider_id}/derank | Provider derank status |
+| [**get_provisioning_key**](DefaultApi.md#get_provisioning_key) | **GET** /management/keys/{id} | Get management API key |
+| [**get_provisioning_key_alias**](DefaultApi.md#get_provisioning_key_alias) | **GET** /provisioning/keys/{id} | Get provisioning key |
 | [**get_video**](DefaultApi.md#get_video) | **GET** /videos/{video_id} | Get video status |
+| [**get_video_alias**](DefaultApi.md#get_video_alias) | **GET** /video/generations/{video_id} | Get video status (alias) |
 | [**get_video_content**](DefaultApi.md#get_video_content) | **GET** /videos/{video_id}/content | Get video content |
-| [**healthz**](DefaultApi.md#healthz) | **GET** /healthz | Health check |
+| [**get_video_content_alias**](DefaultApi.md#get_video_content_alias) | **GET** /video/generations/{video_id}/content | Get video content (alias) |
+| [**healthz**](DefaultApi.md#healthz) | **GET** /health | Health check |
+| [**invalidate_gateway_key_cache**](DefaultApi.md#invalidate_gateway_key_cache) | **POST** /keys/{id}/invalidate | Invalidate key cache |
+| [**list_endpoints_placeholder**](DefaultApi.md#list_endpoints_placeholder) | **GET** /endpoints | List endpoints (placeholder) |
 | [**list_files**](DefaultApi.md#list_files) | **GET** /files | List files |
+| [**list_keys_placeholder**](DefaultApi.md#list_keys_placeholder) | **GET** /keys | List keys (placeholder) |
 | [**list_models**](DefaultApi.md#list_models) | **GET** /models | List models |
+| [**list_o_auth_clients**](DefaultApi.md#list_o_auth_clients) | **GET** /oauth-clients | List OAuth clients |
+| [**list_organisations**](DefaultApi.md#list_organisations) | **GET** /organisations | List organisations |
+| [**list_pricing_models**](DefaultApi.md#list_pricing_models) | **GET** /pricing/models | List pricing models |
 | [**list_providers**](DefaultApi.md#list_providers) | **GET** /providers | List providers |
-| [**list_provisioning_keys**](DefaultApi.md#list_provisioning_keys) | **GET** /provisioning/keys | List provisioning keys |
+| [**list_provisioning_keys**](DefaultApi.md#list_provisioning_keys) | **GET** /management/keys | List management API keys |
+| [**list_provisioning_keys_alias**](DefaultApi.md#list_provisioning_keys_alias) | **GET** /provisioning/keys | List provisioning keys |
+| [**regenerate_o_auth_client_secret**](DefaultApi.md#regenerate_o_auth_client_secret) | **POST** /oauth-clients/{client_id}/regenerate-secret | Regenerate OAuth client secret |
 | [**retrieve_batch**](DefaultApi.md#retrieve_batch) | **GET** /batches/{batch_id} | Retrieve batch |
+| [**retrieve_batch_alias**](DefaultApi.md#retrieve_batch_alias) | **GET** /batch/{id} | Retrieve batch (alias) |
 | [**retrieve_file**](DefaultApi.md#retrieve_file) | **GET** /files/{file_id} | Retrieve file |
 | [**root**](DefaultApi.md#root) | **GET** / | Root endpoint |
-| [**update_provisioning_key**](DefaultApi.md#update_provisioning_key) | **PATCH** /provisioning/keys/{id} | Update provisioning key |
+| [**update_o_auth_client**](DefaultApi.md#update_o_auth_client) | **PATCH** /oauth-clients/{client_id} | Update OAuth client |
+| [**update_provisioning_key**](DefaultApi.md#update_provisioning_key) | **PATCH** /management/keys/{id} | Update management API key |
+| [**update_provisioning_key_alias**](DefaultApi.md#update_provisioning_key_alias) | **PATCH** /provisioning/keys/{id} | Update provisioning key |
 | [**upload_file**](DefaultApi.md#upload_file) | **POST** /files | Upload file |
+
+
+## calculate_pricing
+
+> <CalculatePricing200Response> calculate_pricing(calculate_pricing_request)
+
+Calculate pricing
+
+Calculates price for a usage payload.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+calculate_pricing_request = AIStatsSdk::CalculatePricingRequest.new({provider: 'provider_example', model: 'model_example', endpoint: 'endpoint_example', usage: { key: 3.56}}) # CalculatePricingRequest | 
+
+begin
+  # Calculate pricing
+  result = api_instance.calculate_pricing(calculate_pricing_request)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->calculate_pricing: #{e}"
+end
+```
+
+#### Using the calculate_pricing_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<CalculatePricing200Response>, Integer, Hash)> calculate_pricing_with_http_info(calculate_pricing_request)
+
+```ruby
+begin
+  # Calculate pricing
+  data, status_code, headers = api_instance.calculate_pricing_with_http_info(calculate_pricing_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <CalculatePricing200Response>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->calculate_pricing_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **calculate_pricing_request** | [**CalculatePricingRequest**](CalculatePricingRequest.md) |  |  |
+
+### Return type
+
+[**CalculatePricing200Response**](CalculatePricing200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 
 ## create_anthropic_message
@@ -155,6 +251,75 @@ begin
   p data # => <BatchResponse>
 rescue AIStatsSdk::ApiError => e
   puts "Error when calling DefaultApi->create_batch_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **batch_request** | [**BatchRequest**](BatchRequest.md) |  |  |
+
+### Return type
+
+[**BatchResponse**](BatchResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## create_batch_alias
+
+> <BatchResponse> create_batch_alias(batch_request)
+
+Create batch (alias)
+
+Alias of /batches.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+batch_request = AIStatsSdk::BatchRequest.new({input_file_id: 'input_file_id_example', endpoint: 'endpoint_example'}) # BatchRequest | 
+
+begin
+  # Create batch (alias)
+  result = api_instance.create_batch_alias(batch_request)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->create_batch_alias: #{e}"
+end
+```
+
+#### Using the create_batch_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<BatchResponse>, Integer, Hash)> create_batch_alias_with_http_info(batch_request)
+
+```ruby
+begin
+  # Create batch (alias)
+  data, status_code, headers = api_instance.create_batch_alias_with_http_info(batch_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <BatchResponse>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->create_batch_alias_with_http_info: #{e}"
 end
 ```
 
@@ -474,6 +639,71 @@ end
 - **Accept**: application/json
 
 
+## create_key_placeholder
+
+> create_key_placeholder
+
+Create key (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+
+begin
+  # Create key (placeholder)
+  api_instance.create_key_placeholder
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->create_key_placeholder: #{e}"
+end
+```
+
+#### Using the create_key_placeholder_with_http_info variant
+
+This returns an Array which contains the response data (`nil` in this case), status code and headers.
+
+> <Array(nil, Integer, Hash)> create_key_placeholder_with_http_info
+
+```ruby
+begin
+  # Create key (placeholder)
+  data, status_code, headers = api_instance.create_key_placeholder_with_http_info
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => nil
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->create_key_placeholder_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+nil (empty response body)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
 ## create_moderation
 
 > <ModerationsResponse> create_moderation(moderations_request)
@@ -543,6 +773,75 @@ end
 - **Accept**: application/json
 
 
+## create_o_auth_client
+
+> Hash&lt;String, Object&gt; create_o_auth_client(create_o_auth_client_request)
+
+Create OAuth client
+
+Creates a team-scoped OAuth client.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+create_o_auth_client_request = AIStatsSdk::CreateOAuthClientRequest.new({name: 'name_example', redirect_uris: ['redirect_uris_example']}) # CreateOAuthClientRequest | 
+
+begin
+  # Create OAuth client
+  result = api_instance.create_o_auth_client(create_o_auth_client_request)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->create_o_auth_client: #{e}"
+end
+```
+
+#### Using the create_o_auth_client_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> create_o_auth_client_with_http_info(create_o_auth_client_request)
+
+```ruby
+begin
+  # Create OAuth client
+  data, status_code, headers = api_instance.create_o_auth_client_with_http_info(create_o_auth_client_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->create_o_auth_client_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **create_o_auth_client_request** | [**CreateOAuthClientRequest**](CreateOAuthClientRequest.md) |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
 ## create_ocr
 
 > Hash&lt;String, Object&gt; create_ocr(ocr_request)
@@ -601,75 +900,6 @@ end
 ### Return type
 
 **Hash&lt;String, Object&gt;**
-
-### Authorization
-
-[BearerAuth](../README.md#BearerAuth)
-
-### HTTP request headers
-
-- **Content-Type**: application/json
-- **Accept**: application/json
-
-
-## create_provisioning_key
-
-> <CreateProvisioningKey201Response> create_provisioning_key(create_provisioning_key_request)
-
-Create provisioning key
-
-Creates a new provisioning key for a team.
-
-### Examples
-
-```ruby
-require 'time'
-require 'ai_stats_sdk'
-# setup authorization
-AIStatsSdk.configure do |config|
-  # Configure Bearer authorization: BearerAuth
-  config.access_token = 'YOUR_BEARER_TOKEN'
-end
-
-api_instance = AIStatsSdk::DefaultApi.new
-create_provisioning_key_request = AIStatsSdk::CreateProvisioningKeyRequest.new({team_id: 'team_id_example', name: 'name_example', created_by: 'created_by_example'}) # CreateProvisioningKeyRequest | 
-
-begin
-  # Create provisioning key
-  result = api_instance.create_provisioning_key(create_provisioning_key_request)
-  p result
-rescue AIStatsSdk::ApiError => e
-  puts "Error when calling DefaultApi->create_provisioning_key: #{e}"
-end
-```
-
-#### Using the create_provisioning_key_with_http_info variant
-
-This returns an Array which contains the response data, status code and headers.
-
-> <Array(<CreateProvisioningKey201Response>, Integer, Hash)> create_provisioning_key_with_http_info(create_provisioning_key_request)
-
-```ruby
-begin
-  # Create provisioning key
-  data, status_code, headers = api_instance.create_provisioning_key_with_http_info(create_provisioning_key_request)
-  p status_code # => 2xx
-  p headers # => { ... }
-  p data # => <CreateProvisioningKey201Response>
-rescue AIStatsSdk::ApiError => e
-  puts "Error when calling DefaultApi->create_provisioning_key_with_http_info: #{e}"
-end
-```
-
-### Parameters
-
-| Name | Type | Description | Notes |
-| ---- | ---- | ----------- | ----- |
-| **create_provisioning_key_request** | [**CreateProvisioningKeyRequest**](CreateProvisioningKeyRequest.md) |  |  |
-
-### Return type
-
-[**CreateProvisioningKey201Response**](CreateProvisioningKey201Response.md)
 
 ### Authorization
 
@@ -1050,13 +1280,13 @@ end
 - **Accept**: application/json
 
 
-## delete_provisioning_key
+## create_video_alias
 
-> <DeleteProvisioningKey200Response> delete_provisioning_key(id)
+> <VideoGenerationResponse> create_video_alias(video_generation_request)
 
-Delete provisioning key
+Create video (alias)
 
-Permanently deletes a provisioning key.
+Alias of /videos.
 
 ### Examples
 
@@ -1070,10 +1300,148 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-id = 'id_example' # String | The provisioning key ID
+video_generation_request = AIStatsSdk::VideoGenerationRequest.new({model: 'model_example', prompt: 'prompt_example'}) # VideoGenerationRequest | 
 
 begin
-  # Delete provisioning key
+  # Create video (alias)
+  result = api_instance.create_video_alias(video_generation_request)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->create_video_alias: #{e}"
+end
+```
+
+#### Using the create_video_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<VideoGenerationResponse>, Integer, Hash)> create_video_alias_with_http_info(video_generation_request)
+
+```ruby
+begin
+  # Create video (alias)
+  data, status_code, headers = api_instance.create_video_alias_with_http_info(video_generation_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <VideoGenerationResponse>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->create_video_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **video_generation_request** | [**VideoGenerationRequest**](VideoGenerationRequest.md) |  |  |
+
+### Return type
+
+[**VideoGenerationResponse**](VideoGenerationResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## delete_o_auth_client
+
+> Hash&lt;String, Object&gt; delete_o_auth_client(client_id)
+
+Delete OAuth client
+
+Deletes an OAuth client and related metadata.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+client_id = 'client_id_example' # String | 
+
+begin
+  # Delete OAuth client
+  result = api_instance.delete_o_auth_client(client_id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->delete_o_auth_client: #{e}"
+end
+```
+
+#### Using the delete_o_auth_client_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> delete_o_auth_client_with_http_info(client_id)
+
+```ruby
+begin
+  # Delete OAuth client
+  data, status_code, headers = api_instance.delete_o_auth_client_with_http_info(client_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->delete_o_auth_client_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **client_id** | **String** |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## delete_provisioning_key
+
+> <DeleteProvisioningKey200Response> delete_provisioning_key(id)
+
+Delete management API key
+
+Permanently deletes a management API key.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+id = 'id_example' # String | The management API key ID
+
+begin
+  # Delete management API key
   result = api_instance.delete_provisioning_key(id)
   p result
 rescue AIStatsSdk::ApiError => e
@@ -1089,7 +1457,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  # Delete provisioning key
+  # Delete management API key
   data, status_code, headers = api_instance.delete_provisioning_key_with_http_info(id)
   p status_code # => 2xx
   p headers # => { ... }
@@ -1103,11 +1471,80 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **id** | **String** | The provisioning key ID |  |
+| **id** | **String** | The management API key ID |  |
 
 ### Return type
 
 [**DeleteProvisioningKey200Response**](DeleteProvisioningKey200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## delete_provisioning_key_alias
+
+> Hash&lt;String, Object&gt; delete_provisioning_key_alias(id)
+
+Delete provisioning key
+
+Alias of management key delete endpoint.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+id = 'id_example' # String | 
+
+begin
+  # Delete provisioning key
+  result = api_instance.delete_provisioning_key_alias(id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->delete_provisioning_key_alias: #{e}"
+end
+```
+
+#### Using the delete_provisioning_key_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> delete_provisioning_key_alias_with_http_info(id)
+
+```ruby
+begin
+  # Delete provisioning key
+  data, status_code, headers = api_instance.delete_provisioning_key_alias_with_http_info(id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->delete_provisioning_key_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
 
 ### Authorization
 
@@ -1188,6 +1625,75 @@ end
 - **Accept**: application/json
 
 
+## delete_video_alias
+
+> <VideoDeleteResponse> delete_video_alias(video_id)
+
+Delete video (alias)
+
+Alias of /videos/{video_id}.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+video_id = 'video_id_example' # String | 
+
+begin
+  # Delete video (alias)
+  result = api_instance.delete_video_alias(video_id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->delete_video_alias: #{e}"
+end
+```
+
+#### Using the delete_video_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<VideoDeleteResponse>, Integer, Hash)> delete_video_alias_with_http_info(video_id)
+
+```ruby
+begin
+  # Delete video (alias)
+  data, status_code, headers = api_instance.delete_video_alias_with_http_info(video_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <VideoDeleteResponse>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->delete_video_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **video_id** | **String** |  |  |
+
+### Return type
+
+[**VideoDeleteResponse**](VideoDeleteResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
 ## generate_music
 
 > Hash&lt;String, Object&gt; generate_music(music_generate_request)
@@ -1234,6 +1740,75 @@ begin
   p data # => Hash&lt;String, Object&gt;
 rescue AIStatsSdk::ApiError => e
   puts "Error when calling DefaultApi->generate_music_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **music_generate_request** | [**MusicGenerateRequest**](MusicGenerateRequest.md) |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## generate_music_alias
+
+> Hash&lt;String, Object&gt; generate_music_alias(music_generate_request)
+
+Generate music (alias)
+
+Alias of /music/generate.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+music_generate_request = AIStatsSdk::MusicGenerateRequest.new({model: 'model_example'}) # MusicGenerateRequest | 
+
+begin
+  # Generate music (alias)
+  result = api_instance.generate_music_alias(music_generate_request)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->generate_music_alias: #{e}"
+end
+```
+
+#### Using the generate_music_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> generate_music_alias_with_http_info(music_generate_request)
+
+```ruby
+begin
+  # Generate music (alias)
+  data, status_code, headers = api_instance.generate_music_alias_with_http_info(music_generate_request)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->generate_music_alias_with_http_info: #{e}"
 end
 ```
 
@@ -1541,13 +2116,13 @@ end
 - **Accept**: application/json
 
 
-## get_provisioning_key
+## get_key_placeholder
 
-> <GetProvisioningKey200Response> get_provisioning_key(id)
+> get_key_placeholder
 
-Get provisioning key
+Get key (placeholder)
 
-Returns details of a specific provisioning key.
+Placeholder route; currently returns not implemented.
 
 ### Examples
 
@@ -1561,10 +2136,359 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-id = 'id_example' # String | The provisioning key ID
 
 begin
-  # Get provisioning key
+  # Get key (placeholder)
+  api_instance.get_key_placeholder
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_key_placeholder: #{e}"
+end
+```
+
+#### Using the get_key_placeholder_with_http_info variant
+
+This returns an Array which contains the response data (`nil` in this case), status code and headers.
+
+> <Array(nil, Integer, Hash)> get_key_placeholder_with_http_info
+
+```ruby
+begin
+  # Get key (placeholder)
+  data, status_code, headers = api_instance.get_key_placeholder_with_http_info
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => nil
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_key_placeholder_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+nil (empty response body)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## get_music_generation
+
+> Hash&lt;String, Object&gt; get_music_generation(music_id)
+
+Get music generation status
+
+Retrieves the status for a music generation request.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+music_id = 'music_id_example' # String | The ID of the music generation request.
+
+begin
+  # Get music generation status
+  result = api_instance.get_music_generation(music_id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_music_generation: #{e}"
+end
+```
+
+#### Using the get_music_generation_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> get_music_generation_with_http_info(music_id)
+
+```ruby
+begin
+  # Get music generation status
+  data, status_code, headers = api_instance.get_music_generation_with_http_info(music_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_music_generation_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **music_id** | **String** | The ID of the music generation request. |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## get_music_generation_alias
+
+> Hash&lt;String, Object&gt; get_music_generation_alias(music_id)
+
+Get music generation status (alias)
+
+Alias of /music/generate/{music_id}.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+music_id = 'music_id_example' # String | 
+
+begin
+  # Get music generation status (alias)
+  result = api_instance.get_music_generation_alias(music_id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_music_generation_alias: #{e}"
+end
+```
+
+#### Using the get_music_generation_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> get_music_generation_alias_with_http_info(music_id)
+
+```ruby
+begin
+  # Get music generation status (alias)
+  data, status_code, headers = api_instance.get_music_generation_alias_with_http_info(music_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_music_generation_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **music_id** | **String** |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## get_o_auth_client
+
+> Hash&lt;String, Object&gt; get_o_auth_client(client_id)
+
+Get OAuth client
+
+Returns details for an OAuth client.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+client_id = 'client_id_example' # String | 
+
+begin
+  # Get OAuth client
+  result = api_instance.get_o_auth_client(client_id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_o_auth_client: #{e}"
+end
+```
+
+#### Using the get_o_auth_client_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> get_o_auth_client_with_http_info(client_id)
+
+```ruby
+begin
+  # Get OAuth client
+  data, status_code, headers = api_instance.get_o_auth_client_with_http_info(client_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_o_auth_client_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **client_id** | **String** |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## get_provider_derank_status
+
+> Hash&lt;String, Object&gt; get_provider_derank_status(provider_id, opts)
+
+Provider derank status
+
+Returns breaker-based derank/recovery status for a provider.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+provider_id = 'provider_id_example' # String | Provider identifier.
+opts = {
+  window_hours: 56, # Integer | Observation window in hours.
+  max_pairs: 56, # Integer | Max endpoint/model tuples to inspect.
+  fetch_limit: 56 # Integer | Max recent requests to scan.
+}
+
+begin
+  # Provider derank status
+  result = api_instance.get_provider_derank_status(provider_id, opts)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_provider_derank_status: #{e}"
+end
+```
+
+#### Using the get_provider_derank_status_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> get_provider_derank_status_with_http_info(provider_id, opts)
+
+```ruby
+begin
+  # Provider derank status
+  data, status_code, headers = api_instance.get_provider_derank_status_with_http_info(provider_id, opts)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_provider_derank_status_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **provider_id** | **String** | Provider identifier. |  |
+| **window_hours** | **Integer** | Observation window in hours. | [optional] |
+| **max_pairs** | **Integer** | Max endpoint/model tuples to inspect. | [optional] |
+| **fetch_limit** | **Integer** | Max recent requests to scan. | [optional] |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## get_provisioning_key
+
+> <GetProvisioningKey200Response> get_provisioning_key(id)
+
+Get management API key
+
+Returns details of a specific management API key.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+id = 'id_example' # String | The management API key ID
+
+begin
+  # Get management API key
   result = api_instance.get_provisioning_key(id)
   p result
 rescue AIStatsSdk::ApiError => e
@@ -1580,7 +2504,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  # Get provisioning key
+  # Get management API key
   data, status_code, headers = api_instance.get_provisioning_key_with_http_info(id)
   p status_code # => 2xx
   p headers # => { ... }
@@ -1594,11 +2518,80 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **id** | **String** | The provisioning key ID |  |
+| **id** | **String** | The management API key ID |  |
 
 ### Return type
 
 [**GetProvisioningKey200Response**](GetProvisioningKey200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## get_provisioning_key_alias
+
+> Hash&lt;String, Object&gt; get_provisioning_key_alias(id)
+
+Get provisioning key
+
+Alias of management key details endpoint.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+id = 'id_example' # String | 
+
+begin
+  # Get provisioning key
+  result = api_instance.get_provisioning_key_alias(id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_provisioning_key_alias: #{e}"
+end
+```
+
+#### Using the get_provisioning_key_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> get_provisioning_key_alias_with_http_info(id)
+
+```ruby
+begin
+  # Get provisioning key
+  data, status_code, headers = api_instance.get_provisioning_key_alias_with_http_info(id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_provisioning_key_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
 
 ### Authorization
 
@@ -1664,6 +2657,75 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **video_id** | **String** | The ID of the video generation request. |  |
+
+### Return type
+
+[**VideoGenerationResponse**](VideoGenerationResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## get_video_alias
+
+> <VideoGenerationResponse> get_video_alias(video_id)
+
+Get video status (alias)
+
+Alias of /videos/{video_id}.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+video_id = 'video_id_example' # String | 
+
+begin
+  # Get video status (alias)
+  result = api_instance.get_video_alias(video_id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_video_alias: #{e}"
+end
+```
+
+#### Using the get_video_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<VideoGenerationResponse>, Integer, Hash)> get_video_alias_with_http_info(video_id)
+
+```ruby
+begin
+  # Get video status (alias)
+  data, status_code, headers = api_instance.get_video_alias_with_http_info(video_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <VideoGenerationResponse>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_video_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **video_id** | **String** |  |  |
 
 ### Return type
 
@@ -1748,6 +2810,75 @@ end
 - **Accept**: application/octet-stream
 
 
+## get_video_content_alias
+
+> File get_video_content_alias(video_id)
+
+Get video content (alias)
+
+Alias of /videos/{video_id}/content.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+video_id = 'video_id_example' # String | 
+
+begin
+  # Get video content (alias)
+  result = api_instance.get_video_content_alias(video_id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_video_content_alias: #{e}"
+end
+```
+
+#### Using the get_video_content_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(File, Integer, Hash)> get_video_content_alias_with_http_info(video_id)
+
+```ruby
+begin
+  # Get video content (alias)
+  data, status_code, headers = api_instance.get_video_content_alias_with_http_info(video_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => File
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->get_video_content_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **video_id** | **String** |  |  |
+
+### Return type
+
+**File**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/octet-stream
+
+
 ## healthz
 
 > <Healthz200Response> healthz
@@ -1814,6 +2945,140 @@ This endpoint does not need any parameter.
 - **Accept**: application/json
 
 
+## invalidate_gateway_key_cache
+
+> Hash&lt;String, Object&gt; invalidate_gateway_key_cache(id)
+
+Invalidate key cache
+
+Bumps cache version for key id/kid and invalidates key cache entries.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+id = 'id_example' # String | Gateway key ID.
+
+begin
+  # Invalidate key cache
+  result = api_instance.invalidate_gateway_key_cache(id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->invalidate_gateway_key_cache: #{e}"
+end
+```
+
+#### Using the invalidate_gateway_key_cache_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> invalidate_gateway_key_cache_with_http_info(id)
+
+```ruby
+begin
+  # Invalidate key cache
+  data, status_code, headers = api_instance.invalidate_gateway_key_cache_with_http_info(id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->invalidate_gateway_key_cache_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** | Gateway key ID. |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## list_endpoints_placeholder
+
+> list_endpoints_placeholder
+
+List endpoints (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+
+begin
+  # List endpoints (placeholder)
+  api_instance.list_endpoints_placeholder
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_endpoints_placeholder: #{e}"
+end
+```
+
+#### Using the list_endpoints_placeholder_with_http_info variant
+
+This returns an Array which contains the response data (`nil` in this case), status code and headers.
+
+> <Array(nil, Integer, Hash)> list_endpoints_placeholder_with_http_info
+
+```ruby
+begin
+  # List endpoints (placeholder)
+  data, status_code, headers = api_instance.list_endpoints_placeholder_with_http_info
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => nil
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_endpoints_placeholder_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+nil (empty response body)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
 ## list_files
 
 > <ListFilesResponse> list_files
@@ -1869,6 +3134,71 @@ This endpoint does not need any parameter.
 ### Return type
 
 [**ListFilesResponse**](ListFilesResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## list_keys_placeholder
+
+> list_keys_placeholder
+
+List keys (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+
+begin
+  # List keys (placeholder)
+  api_instance.list_keys_placeholder
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_keys_placeholder: #{e}"
+end
+```
+
+#### Using the list_keys_placeholder_with_http_info variant
+
+This returns an Array which contains the response data (`nil` in this case), status code and headers.
+
+> <Array(nil, Integer, Hash)> list_keys_placeholder_with_http_info
+
+```ruby
+begin
+  # List keys (placeholder)
+  data, status_code, headers = api_instance.list_keys_placeholder_with_http_info
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => nil
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_keys_placeholder_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+nil (empty response body)
 
 ### Authorization
 
@@ -1963,6 +3293,211 @@ end
 - **Accept**: application/json
 
 
+## list_o_auth_clients
+
+> <ListOAuthClients200Response> list_o_auth_clients
+
+List OAuth clients
+
+Lists OAuth clients for the authenticated team.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+
+begin
+  # List OAuth clients
+  result = api_instance.list_o_auth_clients
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_o_auth_clients: #{e}"
+end
+```
+
+#### Using the list_o_auth_clients_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<ListOAuthClients200Response>, Integer, Hash)> list_o_auth_clients_with_http_info
+
+```ruby
+begin
+  # List OAuth clients
+  data, status_code, headers = api_instance.list_o_auth_clients_with_http_info
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <ListOAuthClients200Response>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_o_auth_clients_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ListOAuthClients200Response**](ListOAuthClients200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## list_organisations
+
+> <ListOrganisations200Response> list_organisations(opts)
+
+List organisations
+
+Returns a list of available organisations.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+opts = {
+  limit: 56, # Integer | Limit the number of results
+  offset: 56 # Integer | Offset for pagination
+}
+
+begin
+  # List organisations
+  result = api_instance.list_organisations(opts)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_organisations: #{e}"
+end
+```
+
+#### Using the list_organisations_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<ListOrganisations200Response>, Integer, Hash)> list_organisations_with_http_info(opts)
+
+```ruby
+begin
+  # List organisations
+  data, status_code, headers = api_instance.list_organisations_with_http_info(opts)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <ListOrganisations200Response>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_organisations_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **limit** | **Integer** | Limit the number of results | [optional][default to 50] |
+| **offset** | **Integer** | Offset for pagination | [optional][default to 0] |
+
+### Return type
+
+[**ListOrganisations200Response**](ListOrganisations200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## list_pricing_models
+
+> <ListPricingModels200Response> list_pricing_models
+
+List pricing models
+
+Returns active provider/model pricing entries.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+
+begin
+  # List pricing models
+  result = api_instance.list_pricing_models
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_pricing_models: #{e}"
+end
+```
+
+#### Using the list_pricing_models_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<ListPricingModels200Response>, Integer, Hash)> list_pricing_models_with_http_info
+
+```ruby
+begin
+  # List pricing models
+  data, status_code, headers = api_instance.list_pricing_models_with_http_info
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <ListPricingModels200Response>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_pricing_models_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ListPricingModels200Response**](ListPricingModels200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
 ## list_providers
 
 > <ListProviders200Response> list_providers(opts)
@@ -2040,9 +3575,84 @@ end
 
 > <ListProvisioningKeys200Response> list_provisioning_keys(team_id, opts)
 
+List management API keys
+
+Returns all management API keys for a team.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+team_id = 'team_id_example' # String | The team ID to query
+opts = {
+  limit: 56, # Integer | Maximum number of keys to return
+  offset: 56 # Integer | Pagination offset
+}
+
+begin
+  # List management API keys
+  result = api_instance.list_provisioning_keys(team_id, opts)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_provisioning_keys: #{e}"
+end
+```
+
+#### Using the list_provisioning_keys_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<ListProvisioningKeys200Response>, Integer, Hash)> list_provisioning_keys_with_http_info(team_id, opts)
+
+```ruby
+begin
+  # List management API keys
+  data, status_code, headers = api_instance.list_provisioning_keys_with_http_info(team_id, opts)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <ListProvisioningKeys200Response>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->list_provisioning_keys_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **team_id** | **String** | The team ID to query |  |
+| **limit** | **Integer** | Maximum number of keys to return | [optional][default to 50] |
+| **offset** | **Integer** | Pagination offset | [optional][default to 0] |
+
+### Return type
+
+[**ListProvisioningKeys200Response**](ListProvisioningKeys200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## list_provisioning_keys_alias
+
+> <ListProvisioningKeysAlias200Response> list_provisioning_keys_alias(team_id, opts)
+
 List provisioning keys
 
-Returns all provisioning keys for a team.
+Alias of management keys endpoint.
 
 ### Examples
 
@@ -2064,28 +3674,28 @@ opts = {
 
 begin
   # List provisioning keys
-  result = api_instance.list_provisioning_keys(team_id, opts)
+  result = api_instance.list_provisioning_keys_alias(team_id, opts)
   p result
 rescue AIStatsSdk::ApiError => e
-  puts "Error when calling DefaultApi->list_provisioning_keys: #{e}"
+  puts "Error when calling DefaultApi->list_provisioning_keys_alias: #{e}"
 end
 ```
 
-#### Using the list_provisioning_keys_with_http_info variant
+#### Using the list_provisioning_keys_alias_with_http_info variant
 
 This returns an Array which contains the response data, status code and headers.
 
-> <Array(<ListProvisioningKeys200Response>, Integer, Hash)> list_provisioning_keys_with_http_info(team_id, opts)
+> <Array(<ListProvisioningKeysAlias200Response>, Integer, Hash)> list_provisioning_keys_alias_with_http_info(team_id, opts)
 
 ```ruby
 begin
   # List provisioning keys
-  data, status_code, headers = api_instance.list_provisioning_keys_with_http_info(team_id, opts)
+  data, status_code, headers = api_instance.list_provisioning_keys_alias_with_http_info(team_id, opts)
   p status_code # => 2xx
   p headers # => { ... }
-  p data # => <ListProvisioningKeys200Response>
+  p data # => <ListProvisioningKeysAlias200Response>
 rescue AIStatsSdk::ApiError => e
-  puts "Error when calling DefaultApi->list_provisioning_keys_with_http_info: #{e}"
+  puts "Error when calling DefaultApi->list_provisioning_keys_alias_with_http_info: #{e}"
 end
 ```
 
@@ -2099,7 +3709,76 @@ end
 
 ### Return type
 
-[**ListProvisioningKeys200Response**](ListProvisioningKeys200Response.md)
+[**ListProvisioningKeysAlias200Response**](ListProvisioningKeysAlias200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## regenerate_o_auth_client_secret
+
+> Hash&lt;String, Object&gt; regenerate_o_auth_client_secret(client_id)
+
+Regenerate OAuth client secret
+
+Regenerates and returns a new OAuth client secret.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+client_id = 'client_id_example' # String | 
+
+begin
+  # Regenerate OAuth client secret
+  result = api_instance.regenerate_o_auth_client_secret(client_id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->regenerate_o_auth_client_secret: #{e}"
+end
+```
+
+#### Using the regenerate_o_auth_client_secret_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> regenerate_o_auth_client_secret_with_http_info(client_id)
+
+```ruby
+begin
+  # Regenerate OAuth client secret
+  data, status_code, headers = api_instance.regenerate_o_auth_client_secret_with_http_info(client_id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->regenerate_o_auth_client_secret_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **client_id** | **String** |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
 
 ### Authorization
 
@@ -2165,6 +3844,75 @@ end
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **batch_id** | **String** | The ID of the batch to retrieve. |  |
+
+### Return type
+
+[**BatchResponse**](BatchResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+
+## retrieve_batch_alias
+
+> <BatchResponse> retrieve_batch_alias(id)
+
+Retrieve batch (alias)
+
+Alias of /batches/{batch_id}.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+id = 'id_example' # String | 
+
+begin
+  # Retrieve batch (alias)
+  result = api_instance.retrieve_batch_alias(id)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->retrieve_batch_alias: #{e}"
+end
+```
+
+#### Using the retrieve_batch_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(<BatchResponse>, Integer, Hash)> retrieve_batch_alias_with_http_info(id)
+
+```ruby
+begin
+  # Retrieve batch (alias)
+  data, status_code, headers = api_instance.retrieve_batch_alias_with_http_info(id)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => <BatchResponse>
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->retrieve_batch_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** |  |  |
 
 ### Return type
 
@@ -2315,13 +4063,13 @@ This endpoint does not need any parameter.
 - **Accept**: application/json
 
 
-## update_provisioning_key
+## update_o_auth_client
 
-> <UpdateProvisioningKey200Response> update_provisioning_key(id, update_provisioning_key_request)
+> Hash&lt;String, Object&gt; update_o_auth_client(client_id, request_body)
 
-Update provisioning key
+Update OAuth client
 
-Updates the name, status, or blocked state of a provisioning key.
+Updates OAuth client metadata and redirect URIs.
 
 ### Examples
 
@@ -2335,11 +4083,82 @@ AIStatsSdk.configure do |config|
 end
 
 api_instance = AIStatsSdk::DefaultApi.new
-id = 'id_example' # String | The provisioning key ID
+client_id = 'client_id_example' # String | 
+request_body = { key: 3.56} # Hash<String, Object> | 
+
+begin
+  # Update OAuth client
+  result = api_instance.update_o_auth_client(client_id, request_body)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->update_o_auth_client: #{e}"
+end
+```
+
+#### Using the update_o_auth_client_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> update_o_auth_client_with_http_info(client_id, request_body)
+
+```ruby
+begin
+  # Update OAuth client
+  data, status_code, headers = api_instance.update_o_auth_client_with_http_info(client_id, request_body)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->update_o_auth_client_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **client_id** | **String** |  |  |
+| **request_body** | [**Hash&lt;String, Object&gt;**](Object.md) |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## update_provisioning_key
+
+> <UpdateProvisioningKey200Response> update_provisioning_key(id, update_provisioning_key_request)
+
+Update management API key
+
+Updates the name, status, or blocked state of a management API key.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+id = 'id_example' # String | The management API key ID
 update_provisioning_key_request = AIStatsSdk::UpdateProvisioningKeyRequest.new # UpdateProvisioningKeyRequest | 
 
 begin
-  # Update provisioning key
+  # Update management API key
   result = api_instance.update_provisioning_key(id, update_provisioning_key_request)
   p result
 rescue AIStatsSdk::ApiError => e
@@ -2355,7 +4174,7 @@ This returns an Array which contains the response data, status code and headers.
 
 ```ruby
 begin
-  # Update provisioning key
+  # Update management API key
   data, status_code, headers = api_instance.update_provisioning_key_with_http_info(id, update_provisioning_key_request)
   p status_code # => 2xx
   p headers # => { ... }
@@ -2369,12 +4188,83 @@ end
 
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
-| **id** | **String** | The provisioning key ID |  |
+| **id** | **String** | The management API key ID |  |
 | **update_provisioning_key_request** | [**UpdateProvisioningKeyRequest**](UpdateProvisioningKeyRequest.md) |  |  |
 
 ### Return type
 
 [**UpdateProvisioningKey200Response**](UpdateProvisioningKey200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+
+## update_provisioning_key_alias
+
+> Hash&lt;String, Object&gt; update_provisioning_key_alias(id, request_body)
+
+Update provisioning key
+
+Alias of management key update endpoint.
+
+### Examples
+
+```ruby
+require 'time'
+require 'ai_stats_sdk'
+# setup authorization
+AIStatsSdk.configure do |config|
+  # Configure Bearer authorization: BearerAuth
+  config.access_token = 'YOUR_BEARER_TOKEN'
+end
+
+api_instance = AIStatsSdk::DefaultApi.new
+id = 'id_example' # String | 
+request_body = { key: 3.56} # Hash<String, Object> | 
+
+begin
+  # Update provisioning key
+  result = api_instance.update_provisioning_key_alias(id, request_body)
+  p result
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->update_provisioning_key_alias: #{e}"
+end
+```
+
+#### Using the update_provisioning_key_alias_with_http_info variant
+
+This returns an Array which contains the response data, status code and headers.
+
+> <Array(Hash&lt;String, Object&gt;, Integer, Hash)> update_provisioning_key_alias_with_http_info(id, request_body)
+
+```ruby
+begin
+  # Update provisioning key
+  data, status_code, headers = api_instance.update_provisioning_key_alias_with_http_info(id, request_body)
+  p status_code # => 2xx
+  p headers # => { ... }
+  p data # => Hash&lt;String, Object&gt;
+rescue AIStatsSdk::ApiError => e
+  puts "Error when calling DefaultApi->update_provisioning_key_alias_with_http_info: #{e}"
+end
+```
+
+### Parameters
+
+| Name | Type | Description | Notes |
+| ---- | ---- | ----------- | ----- |
+| **id** | **String** |  |  |
+| **request_body** | [**Hash&lt;String, Object&gt;**](Object.md) |  |  |
+
+### Return type
+
+**Hash&lt;String, Object&gt;**
 
 ### Authorization
 

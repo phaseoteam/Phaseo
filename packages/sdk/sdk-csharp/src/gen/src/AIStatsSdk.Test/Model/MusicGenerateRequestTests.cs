@@ -124,5 +124,14 @@ namespace AIStatsSdk.Test.Model
         {
             // TODO unit test for the property 'EchoUpstreamRequest'
         }
+
+        /// <summary>
+        /// Test the property 'Debug'
+        /// </summary>
+        [Fact]
+        public void DebugTest()
+        {
+            // TODO unit test for the property 'Debug'
+        }
     }
 }

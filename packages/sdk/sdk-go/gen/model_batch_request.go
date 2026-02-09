@@ -25,6 +25,7 @@ type BatchRequest struct {
 	Endpoint string `json:"endpoint"`
 	CompletionWindow *string `json:"completion_window,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Debug *DebugOptions `json:"debug,omitempty"`
 	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
 
@@ -161,6 +162,38 @@ func (o *BatchRequest) SetMetadata(v map[string]interface{}) {
 	o.Metadata = v
 }
 
+// GetDebug returns the Debug field value if set, zero value otherwise.
+func (o *BatchRequest) GetDebug() DebugOptions {
+	if o == nil || IsNil(o.Debug) {
+		var ret DebugOptions
+		return ret
+	}
+	return *o.Debug
+}
+
+// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *BatchRequest) GetDebugOk() (*DebugOptions, bool) {
+	if o == nil || IsNil(o.Debug) {
+		return nil, false
+	}
+	return o.Debug, true
+}
+
+// HasDebug returns a boolean if a field has been set.
+func (o *BatchRequest) HasDebug() bool {
+	if o != nil && !IsNil(o.Debug) {
+		return true
+	}
+
+	return false
+}
+
+// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
+func (o *BatchRequest) SetDebug(v DebugOptions) {
+	o.Debug = &v
+}
+
 // GetProvider returns the Provider field value if set, zero value otherwise.
 func (o *BatchRequest) GetProvider() ProviderRoutingOptions {
 	if o == nil || IsNil(o.Provider) {
@@ -210,6 +243,9 @@ func (o BatchRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Metadata) {
 		toSerialize["metadata"] = o.Metadata
+	}
+	if !IsNil(o.Debug) {
+		toSerialize["debug"] = o.Debug
 	}
 	if !IsNil(o.Provider) {
 		toSerialize["provider"] = o.Provider

@@ -88,6 +88,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'user' => 'string',
         'usage' => 'bool',
         'meta' => 'bool',
+        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -130,6 +131,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'user' => null,
         'usage' => null,
         'meta' => null,
+        'debug' => null,
         'provider' => null
     ];
 
@@ -170,6 +172,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'user' => false,
         'usage' => false,
         'meta' => false,
+        'debug' => false,
         'provider' => false
     ];
 
@@ -290,6 +293,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'user' => 'user',
         'usage' => 'usage',
         'meta' => 'meta',
+        'debug' => 'debug',
         'provider' => 'provider'
     ];
 
@@ -330,6 +334,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'user' => 'setUser',
         'usage' => 'setUsage',
         'meta' => 'setMeta',
+        'debug' => 'setDebug',
         'provider' => 'setProvider'
     ];
 
@@ -370,6 +375,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         'user' => 'getUser',
         'usage' => 'getUsage',
         'meta' => 'getMeta',
+        'debug' => 'getDebug',
         'provider' => 'getProvider'
     ];
 
@@ -461,6 +467,7 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('user', $data ?? [], null);
         $this->setIfExists('usage', $data ?? [], null);
         $this->setIfExists('meta', $data ?? [], null);
+        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -1408,6 +1415,33 @@ class ResponsesRequest implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable meta cannot be null');
         }
         $this->container['meta'] = $meta;
+
+        return $this;
+    }
+
+    /**
+     * Gets debug
+     *
+     * @return \AIStats\Sdk\Model\DebugOptions|null
+     */
+    public function getDebug()
+    {
+        return $this->container['debug'];
+    }
+
+    /**
+     * Sets debug
+     *
+     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
+     *
+     * @return self
+     */
+    public function setDebug($debug)
+    {
+        if (is_null($debug)) {
+            throw new \InvalidArgumentException('non-nullable debug cannot be null');
+        }
+        $this->container['debug'] = $debug;
 
         return $this;
     }

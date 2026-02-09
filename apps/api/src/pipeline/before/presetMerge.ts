@@ -3,6 +3,7 @@
 // How: Apply preset defaults, inject system prompts, filter providers
 
 import type { PresetConfig, PresetData, ProviderCandidate } from "./types";
+import { normalizeProviderId, normalizeProviderList } from "@/lib/config/providerAliases";
 
 /**
  * Merge preset configuration with request body
@@ -67,13 +68,13 @@ export function filterProvidersByPreset(
 
 	// Apply allowed providers filter
 	if (config.allowedProviders && config.allowedProviders.length > 0) {
-		const allowedSet = new Set(config.allowedProviders);
+		const allowedSet = new Set(normalizeProviderList(config.allowedProviders));
 		filtered = filtered.filter((p) => allowedSet.has(p.providerId));
 	}
 
 	// Apply denied providers filter
 	if (config.deniedProviders && config.deniedProviders.length > 0) {
-		const deniedSet = new Set(config.deniedProviders);
+		const deniedSet = new Set(normalizeProviderList(config.deniedProviders));
 		filtered = filtered.filter((p) => !deniedSet.has(p.providerId));
 	}
 
@@ -123,8 +124,15 @@ export function applyProviderPreferences(
 		return providers;
 	}
 
+	const canonicalPreferences = Object.fromEntries(
+		Object.entries(config.providerPreferences).map(([providerId, weight]) => [
+			normalizeProviderId(providerId),
+			weight,
+		]),
+	);
+
 	return providers.map((provider) => {
-		const preference = config.providerPreferences?.[provider.providerId];
+		const preference = canonicalPreferences[provider.providerId];
 		if (preference !== undefined && Number.isFinite(preference)) {
 			return {
 				...provider,

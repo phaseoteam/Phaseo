@@ -57,12 +57,18 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     const tStart = performance.now();
     let firstFrameAt: number | null = null;
     let firstFrameAtMs: number | null = null;
+    let downstreamClosed = false;
 
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
     const writeJson = async (obj: unknown, eventName?: string | null) => {
+        if (downstreamClosed) return;
         const prefix = eventName ? `event: ${eventName}\n` : "";
         const line = `${prefix}data: ${JSON.stringify(obj)}\n\n`;
-        await writer.write(enc.encode(line));
+        try {
+            await writer.write(enc.encode(line));
+        } catch {
+            downstreamClosed = true;
+        }
     };
 
     let finalUsageSettled = false;
@@ -135,7 +141,13 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         json = JSON.parse(dataStr);
                     } catch {
                         // not JSON - just forward raw block
-                        await writer.write(enc.encode(raw + "\n\n"));
+                        if (!downstreamClosed) {
+                            try {
+                                await writer.write(enc.encode(raw + "\n\n"));
+                            } catch {
+                                downstreamClosed = true;
+                            }
+                        }
                         continue;
                     }
 
@@ -189,7 +201,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             if (!sawFinalUsage) {
                 await finalizeUsage(null, "aborted");
             }
-            try { await writer.close(); } catch { }
+            if (!downstreamClosed) {
+                try { await writer.close(); } catch { }
+            }
         }
     })().catch(err => {
         console.error("passthroughWithPricing stream error:", err, {

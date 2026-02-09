@@ -28,11 +28,14 @@ export interface ProviderModel {
     is_active_gateway: boolean;
     input_modalities: string;   // CSV in your current schema
     output_modalities: string;  // CSV in your current schema
+    quantization_scheme?: string | null;
     effective_from?: string | null;
     effective_to?: string | null;
     created_at?: string;
     updated_at?: string;
     params?: Record<string, unknown> | null;
+    max_input_tokens?: number | null;
+    max_output_tokens?: number | null;
 }
 
 export interface ProviderInfo {
@@ -78,6 +81,7 @@ export default async function getModelPricing(
             is_active_gateway,
             input_modalities,
             output_modalities,
+            quantization_scheme,
             effective_from,
             effective_to,
             created_at,
@@ -85,6 +89,8 @@ export default async function getModelPricing(
             data_api_provider_model_capabilities!inner (
                 capability_id,
                 params,
+                max_input_tokens,
+                max_output_tokens,
                 status
             ),
             data_api_providers (
@@ -137,7 +143,12 @@ export default async function getModelPricing(
             effective_to: row.effective_to,
             created_at: row.created_at,
             updated_at: row.updated_at,
-            params: row.data_api_provider_model_capabilities[0].params ?? [],
+            params: row.data_api_provider_model_capabilities[0].params ?? null,
+            quantization_scheme: row.quantization_scheme ?? null,
+            max_input_tokens:
+                row.data_api_provider_model_capabilities[0].max_input_tokens ?? null,
+            max_output_tokens:
+                row.data_api_provider_model_capabilities[0].max_output_tokens ?? null,
         });
 
         // Add to provider
@@ -155,10 +166,16 @@ export default async function getModelPricing(
             output_modalities: Array.isArray(row.output_modalities)
                 ? row.output_modalities.join(",")
                 : row.output_modalities ?? "",
+            quantization_scheme: row.quantization_scheme ?? null,
             effective_from: row.effective_from,
             effective_to: row.effective_to,
             created_at: row.created_at,
             updated_at: row.updated_at,
+            params: row.data_api_provider_model_capabilities[0].params ?? null,
+            max_input_tokens:
+                row.data_api_provider_model_capabilities[0].max_input_tokens ?? null,
+            max_output_tokens:
+                row.data_api_provider_model_capabilities[0].max_output_tokens ?? null,
         });
     }
 

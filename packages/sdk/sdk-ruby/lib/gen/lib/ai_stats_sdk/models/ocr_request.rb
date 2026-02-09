@@ -23,6 +23,8 @@ module AIStatsSdk
 
     attr_accessor :echo_upstream_request
 
+    attr_accessor :debug
+
     attr_accessor :provider
 
     # Attribute mapping from ruby-style variable name to JSON key.
@@ -32,6 +34,7 @@ module AIStatsSdk
         :'image' => :'image',
         :'language' => :'language',
         :'echo_upstream_request' => :'echo_upstream_request',
+        :'debug' => :'debug',
         :'provider' => :'provider'
       }
     end
@@ -53,6 +56,7 @@ module AIStatsSdk
         :'image' => :'String',
         :'language' => :'String',
         :'echo_upstream_request' => :'Boolean',
+        :'debug' => :'DebugOptions',
         :'provider' => :'ProviderRoutingOptions'
       }
     end
@@ -97,6 +101,10 @@ module AIStatsSdk
 
       if attributes.key?(:'echo_upstream_request')
         self.echo_upstream_request = attributes[:'echo_upstream_request']
+      end
+
+      if attributes.key?(:'debug')
+        self.debug = attributes[:'debug']
       end
 
       if attributes.key?(:'provider')
@@ -158,6 +166,7 @@ module AIStatsSdk
           image == o.image &&
           language == o.language &&
           echo_upstream_request == o.echo_upstream_request &&
+          debug == o.debug &&
           provider == o.provider
     end
 
@@ -170,7 +179,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, image, language, echo_upstream_request, provider].hash
+      [model, image, language, echo_upstream_request, debug, provider].hash
     end
 
     # Builds the object from hash

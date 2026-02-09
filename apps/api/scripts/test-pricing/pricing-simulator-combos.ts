@@ -3,8 +3,6 @@ import { getSupabaseAdmin } from "../../src/runtime/env";
 
 export async function loadCombos(options: CLIOptions): Promise<Combo[]> {
     const supabase = getSupabaseAdmin();
-    const nowIso = new Date().toISOString();
-
     let query = supabase
         .from("data_api_provider_models")
         .select("provider_api_model_id, provider_id, api_model_id, is_active_gateway, effective_from, effective_to");
@@ -23,7 +21,7 @@ export async function loadCombos(options: CLIOptions): Promise<Combo[]> {
 
     let capQuery = supabase
         .from("data_api_provider_model_capabilities")
-        .select("provider_api_model_id, capability_id, effective_from, effective_to")
+        .select("provider_api_model_id, capability_id")
         .in("provider_api_model_id", providerModelIds);
     if (options.endpoint) capQuery = capQuery.eq("capability_id", options.endpoint);
 
@@ -45,15 +43,6 @@ export async function loadCombos(options: CLIOptions): Promise<Combo[]> {
         if (!pm || !cap.capability_id) continue;
         if (!options.includeInactive) {
             if (pm.is_active_gateway !== true) continue;
-            const from = pm.effective_from ? new Date(pm.effective_from).toISOString() : null;
-            const to = pm.effective_to ? new Date(pm.effective_to).toISOString() : null;
-            if (from && from > nowIso) continue;
-            if (to && to <= nowIso) continue;
-
-            const capFrom = cap.effective_from ? new Date(cap.effective_from).toISOString() : null;
-            const capTo = cap.effective_to ? new Date(cap.effective_to).toISOString() : null;
-            if (capFrom && capFrom > nowIso) continue;
-            if (capTo && capTo <= nowIso) continue;
         }
 
         const key = `${pm.provider_id}:${pm.api_model_id}:${cap.capability_id}`;

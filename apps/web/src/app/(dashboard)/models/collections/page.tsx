@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { getModelCollections } from "@/lib/fetchers/collections/getCollections";
-import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import { Button } from "@/components/ui/button";
 import {
 	Tooltip,
@@ -13,6 +12,7 @@ import {
 	Grid as GridIcon,
 	Table as TableIcon,
 	Layers as LayersIcon,
+	ArrowRight as ArrowRightIcon,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 	description:
 		"Explore curated collections of AI models, from free tiers to top benchmark performers.",
 	alternates: {
-		canonical: "/collections",
+		canonical: "/models/collections",
 	},
 };
 
@@ -41,7 +41,7 @@ async function CollectionsPageContent() {
 	const collections = await getModelCollections(10);
 
 	return (
-		<div className="space-y-12">
+		<div className="space-y-8">
 			<header className="space-y-3">
 				<div className="flex items-center justify-between gap-3">
 					<h1 className="text-3xl font-semibold tracking-tight">Collections</h1>
@@ -103,24 +103,32 @@ async function CollectionsPageContent() {
 				</p>
 			</header>
 
-			{collections.map((collection) => (
-				<section key={collection.id} className="space-y-4">
-					<div className="space-y-1">
-						<h2 className="text-xl font-semibold">{collection.title}</h2>
-						<p className="text-sm text-muted-foreground">
-							{collection.description}
-						</p>
-						{collection.hint ? (
-							<p className="text-xs text-muted-foreground">{collection.hint}</p>
-						) : null}
-					</div>
-					<div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-						{collection.models.map((model) => (
-							<ModelCard key={model.model_id} model={model} />
-						))}
-					</div>
-				</section>
-			))}
+			<div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+				{collections.map((collection) => (
+					<Link
+						key={collection.id}
+						href={`/models/collections/${collection.id}`}
+						className="group rounded-xl border bg-card p-5 transition-colors hover:bg-muted/40"
+					>
+						<div className="flex items-start justify-between gap-4">
+							<div className="space-y-1.5">
+								<h2 className="text-lg font-semibold">{collection.title}</h2>
+								<p className="text-sm text-muted-foreground">
+									{collection.description}
+								</p>
+								{collection.hint ? (
+									<p className="text-xs text-muted-foreground">{collection.hint}</p>
+								) : null}
+							</div>
+							<ArrowRightIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+						</div>
+						<div className="mt-4 text-xs text-muted-foreground">
+							{collection.models.length} model
+							{collection.models.length === 1 ? "" : "s"}
+						</div>
+					</Link>
+				))}
+			</div>
 		</div>
 	);
 }

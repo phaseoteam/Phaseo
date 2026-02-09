@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import Script from "next/script";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 function parseScore(score: string | number | null | undefined): number | null {
 	if (score == null) return null;
@@ -35,7 +34,7 @@ export async function generateMetadata(props: {
 	params: Promise<{ benchmarkId: string }>;
 }): Promise<Metadata> {
 	const { benchmarkId } = await props.params;
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const benchmark = await fetchBenchmark(benchmarkId, includeHidden);
 	const path = `/benchmarks/${benchmarkId}`;
 	const imagePath = `/og/benchmarks/${benchmarkId}`;
@@ -124,7 +123,7 @@ export default async function Page({
 	params: Promise<{ benchmarkId: string }>;
 }) {
 	const { benchmarkId } = await params;
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const benchmark = await getBenchmarkCached(benchmarkId, includeHidden);
 
 	if (!benchmark) {

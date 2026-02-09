@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { revalidateTag } from "next/cache";
+import { revalidateModelDataTags } from "@/lib/cache/revalidateDataTags";
 
 async function checkAdminAuth() {
 	const supabase = await createClient();
@@ -69,8 +69,7 @@ export async function updateModelDetails(input: UpdateModelDetailsInput) {
 		}
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag(`data:models:${input.modelId}`, { expire: 0 });
+	revalidateModelDataTags({ modelId: input.modelId });
 
 	return { success: true };
 }
@@ -101,8 +100,10 @@ export async function updateModelOrganization(
 		return { success: false, error: error.message };
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag(`data:models:${input.modelId}`, { expire: 0 });
+	revalidateModelDataTags({
+		modelId: input.modelId,
+		organisationIds: [input.organisationId ?? null],
+	});
 
 	return { success: true };
 }
@@ -145,8 +146,7 @@ export async function updateModelLinks(input: UpdateModelLinksInput) {
 		}
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag(`data:models:${input.modelId}`, { expire: 0 });
+	revalidateModelDataTags({ modelId: input.modelId });
 
 	return { success: true };
 }
@@ -192,8 +192,7 @@ export async function updateModelAliases(input: UpdateModelAliasesInput) {
 		}
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag(`data:models:${input.modelId}`, { expire: 0 });
+	revalidateModelDataTags({ modelId: input.modelId });
 
 	return { success: true };
 }
@@ -234,8 +233,7 @@ export async function createProviderModel(input: CreateProviderModelInput) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag(`data:models:${input.internalModelId}`, { expire: 0 });
+	revalidateModelDataTags({ modelId: input.internalModelId });
 
 	return { success: true };
 }
@@ -254,6 +252,12 @@ export async function updateProviderModel(input: UpdateProviderModelInput) {
 	if (!authorized || !supabase) {
 		return { success: false, error: "Unauthorized" };
 	}
+
+	const { data: providerModelRow } = await supabase
+		.from("data_api_provider_models")
+		.select("internal_model_id")
+		.eq("provider_api_model_id", input.providerApiModelId)
+		.maybeSingle();
 
 	const updateData: any = {};
 	if (input.isActiveGateway !== undefined)
@@ -276,7 +280,9 @@ export async function updateProviderModel(input: UpdateProviderModelInput) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
+	revalidateModelDataTags({
+		modelId: providerModelRow?.internal_model_id ?? null,
+	});
 
 	return { success: true };
 }
@@ -287,6 +293,12 @@ export async function deleteProviderModel(providerApiModelId: string) {
 		return { success: false, error: "Unauthorized" };
 	}
 
+	const { data: providerModelRow } = await supabase
+		.from("data_api_provider_models")
+		.select("internal_model_id")
+		.eq("provider_api_model_id", providerApiModelId)
+		.maybeSingle();
+
 	const { error } = await supabase
 		.from("data_api_provider_models")
 		.delete()
@@ -296,7 +308,9 @@ export async function deleteProviderModel(providerApiModelId: string) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
+	revalidateModelDataTags({
+		modelId: providerModelRow?.internal_model_id ?? null,
+	});
 
 	return { success: true };
 }
@@ -335,8 +349,7 @@ export async function createBenchmarkResult(input: CreateBenchmarkResultInput) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag(`model:benchmarks:${input.modelId}`, { expire: 0 });
+	revalidateModelDataTags({ modelId: input.modelId });
 
 	return { success: true };
 }
@@ -373,7 +386,13 @@ export async function updateBenchmarkResult(input: UpdateBenchmarkResultInput) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
+	const { data: benchmarkRow } = await supabase
+		.from("data_benchmark_results")
+		.select("model_id")
+		.eq("id", input.resultId)
+		.maybeSingle();
+
+	revalidateModelDataTags({ modelId: benchmarkRow?.model_id ?? null });
 
 	return { success: true };
 }
@@ -384,6 +403,12 @@ export async function deleteBenchmarkResult(resultId: string) {
 		return { success: false, error: "Unauthorized" };
 	}
 
+	const { data: benchmarkRow } = await supabase
+		.from("data_benchmark_results")
+		.select("model_id")
+		.eq("id", resultId)
+		.maybeSingle();
+
 	const { error } = await supabase
 		.from("data_benchmark_results")
 		.delete()
@@ -393,7 +418,7 @@ export async function deleteBenchmarkResult(resultId: string) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
+	revalidateModelDataTags({ modelId: benchmarkRow?.model_id ?? null });
 
 	return { success: true };
 }
@@ -418,8 +443,7 @@ export async function deleteModel(modelId: string) {
 		return { success: false, error: error.message };
 	}
 
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag("data:models", { expire: 0 });
+	revalidateModelDataTags({ modelId });
 
 	return { success: true };
 }

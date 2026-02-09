@@ -58,13 +58,60 @@ export function sanitizeOpenAICompatRequest(args: {
 	deleteIfOutOfRange(request, "top_logprobs", 0, 20, dropped);
 	deleteIfNotPositiveInt(request, "max_tokens", dropped);
 	deleteIfNotPositiveInt(request, "max_output_tokens", dropped);
+	// OpenAI-style providers accept "default", not "standard".
+	if (request.service_tier === "standard") {
+		request.service_tier = "default";
+	}
 
 	switch (args.providerId) {
+		case "groq":
+			// Groq OpenAI compatibility docs list these as unsupported.
+			for (const key of ["logprobs", "logit_bias", "top_logprobs"]) {
+				if (key in request) {
+					delete request[key];
+					dropped.push(key);
+				}
+			}
+			if (Array.isArray(request.messages)) {
+				request.messages = request.messages.map((message: any) => {
+					if (!message || typeof message !== "object") return message;
+					if (!("name" in message)) return message;
+					const next = { ...message };
+					delete next.name;
+					return next;
+				});
+			}
+			break;
+		case "cerebras":
+			// Cerebras OpenAI compatibility docs list these as unsupported.
+			for (const key of ["frequency_penalty", "presence_penalty", "logit_bias"]) {
+				if (key in request) {
+					delete request[key];
+					dropped.push(key);
+				}
+			}
+			break;
+		case "amazon-bedrock":
+		case "google-vertex":
+			// These provider IDs typically front Anthropic models; mirror Anthropic parameter constraints.
+			for (const key of ["frequency_penalty", "presence_penalty", "logit_bias", "logprobs", "top_logprobs"]) {
+				if (key in request) {
+					delete request[key];
+					dropped.push(key);
+				}
+			}
+			break;
 		case "x-ai":
+		case "xai":
 			// xAI Responses docs: instructions are currently unsupported.
 			if (args.route === "responses" && "instructions" in request) {
 				delete request.instructions;
 				dropped.push("instructions");
+			}
+			// xAI rejects service_tier on chat/responses.
+			if ("service_tier" in request) {
+				delete request.service_tier;
+				dropped.push("service_tier");
 			}
 			break;
 		case "deepseek":
@@ -79,6 +126,7 @@ export function sanitizeOpenAICompatRequest(args: {
 			}
 			break;
 		case "qwen":
+		case "alibaba":
 			// DashScope OpenAI compatibility: use max_completion_tokens for Qwen 3 models.
 			if (args.route !== "legacy_completions") {
 				if (typeof request.max_tokens === "number" && request.max_completion_tokens == null) {
@@ -99,4 +147,3 @@ export function sanitizeOpenAICompatRequest(args: {
 
 	return { request, dropped };
 }
-

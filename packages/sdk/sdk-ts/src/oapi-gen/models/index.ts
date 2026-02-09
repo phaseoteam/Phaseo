@@ -19,6 +19,7 @@ export type { ChatChoice } from "./ChatChoice.js";
 export type { ChatCompletionsRequest } from "./ChatCompletionsRequest.js";
 export type { ChatCompletionsResponse } from "./ChatCompletionsResponse.js";
 export type { ChatMessage } from "./ChatMessage.js";
+export type { DebugOptions } from "./DebugOptions.js";
 export type { Embedding } from "./Embedding.js";
 export type { EmbeddingsRequest } from "./EmbeddingsRequest.js";
 export type { EmbeddingsResponse } from "./EmbeddingsResponse.js";

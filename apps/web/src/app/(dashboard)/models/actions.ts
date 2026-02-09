@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
+import { revalidateModelDataTags } from "@/lib/cache/revalidateDataTags"
 
 export interface ModelUpdatePayload {
   modelId: string
@@ -117,6 +118,12 @@ export async function updateModel(payload: ModelUpdatePayload) {
   if (output_types !== undefined) modelUpdate.output_types = output_types
   if (previous_model_id !== undefined) modelUpdate.previous_model_id = previous_model_id
   if (family_id !== undefined) modelUpdate.family_id = family_id
+
+  const { data: existingModelRow } = await supabase
+    .from("data_models")
+    .select("organisation_id")
+    .eq("model_id", modelId)
+    .maybeSingle()
 
   const { error: modelError } = await supabase
     .from("data_models")
@@ -432,6 +439,15 @@ export async function updateModel(payload: ModelUpdatePayload) {
     }
   }
 
+  const previousOrganisationId = existingModelRow?.organisation_id ?? null
+  const nextOrganisationId =
+    modelUpdate.organisation_id !== undefined
+      ? (modelUpdate.organisation_id as string | null)
+      : previousOrganisationId
+  revalidateModelDataTags({
+    modelId,
+    organisationIds: [previousOrganisationId, nextOrganisationId],
+  })
   revalidatePath(`/models/**`)
   revalidatePath("/models")
 
@@ -458,6 +474,12 @@ export async function deleteBenchmarkResult(id: string) {
     throw new Error("Unauthorized: Admin access required")
   }
 
+  const { data: benchmarkRow } = await supabase
+    .from("data_benchmark_results")
+    .select("model_id")
+    .eq("id", id)
+    .maybeSingle()
+
   const { error } = await supabase
     .from("data_benchmark_results")
     .delete()
@@ -467,6 +489,7 @@ export async function deleteBenchmarkResult(id: string) {
     throw new Error(error.message)
   }
 
+  revalidateModelDataTags({ modelId: benchmarkRow?.model_id ?? null })
   revalidatePath(`/models/**`)
   return { ok: true }
 }
@@ -500,6 +523,7 @@ export async function deletePricingRule(id: string) {
     throw new Error(error.message)
   }
 
+  revalidateModelDataTags()
   revalidatePath(`/models/**`)
   return { ok: true }
 }
@@ -524,6 +548,12 @@ export async function deleteProviderModel(id: string) {
     throw new Error("Unauthorized: Admin access required")
   }
 
+  const { data: providerModelRow } = await supabase
+    .from("data_api_provider_models")
+    .select("internal_model_id")
+    .eq("provider_api_model_id", id)
+    .maybeSingle()
+
   const { error } = await supabase
     .from("data_api_provider_models")
     .delete()
@@ -533,6 +563,7 @@ export async function deleteProviderModel(id: string) {
     throw new Error(error.message)
   }
 
+  revalidateModelDataTags({ modelId: providerModelRow?.internal_model_id ?? null })
   revalidatePath(`/models/**`)
   return { ok: true }
 }

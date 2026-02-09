@@ -6,12 +6,17 @@
 // Documentation: https://ai.google.dev/gemini-api/docs/text-generation
 // NOT OpenAI-compatible - uses Google's native API format
 
-import type { IRChatRequest, IRChatResponse, IRContentPart, IRMessage, IRChoice, IRStreamChunk, IRStreamDelta } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { resolveProviderKey } from "@providers/keys";
+import { getBindings } from "@/runtime/env";
+import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { withNormalizedReasoning } from "./normalize-reasoning";
+import { irPartsToGeminiParts } from "../shared/media";
 
 /**
  * Transform IR request to Google Gemini format
@@ -23,35 +28,52 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
  * - `generationConfig` for parameters
  * - Model in URL path, not request body
  */
-function irToGemini(ir: IRChatRequest): any {
+async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
 	const contents: any[] = [];
 	let systemInstruction: any = null;
+	const toolNamesById = new Map<string, string>();
+
+	for (const msg of ir.messages) {
+		if (msg.role !== "assistant" || !Array.isArray(msg.toolCalls)) continue;
+		for (const toolCall of msg.toolCalls) {
+			if (!toolCall?.id || !toolCall?.name) continue;
+			toolNamesById.set(toolCall.id, toolCall.name);
+		}
+	}
 
 	// Process messages
 	for (const msg of ir.messages) {
 		if (msg.role === "system") {
 			// System messages go in systemInstruction, not contents
-			const parts = msg.content.map(irPartToGeminiPart);
+			const parts = await irPartsToGeminiParts(msg.content);
 			systemInstruction = { parts };
 		} else if (msg.role === "user") {
 			contents.push({
 				role: "user",
-				parts: msg.content.map(irPartToGeminiPart),
+				parts: await irPartsToGeminiParts(msg.content),
 			});
 		} else if (msg.role === "assistant") {
 			contents.push({
 				role: "model", // Google uses "model" not "assistant"
-				parts: msg.content.map(irPartToGeminiPart),
+				parts: await irPartsToGeminiParts(msg.content),
 			});
 		} else if (msg.role === "tool") {
 			// Tool results
 			for (const toolResult of msg.toolResults) {
+				let responsePayload: any = toolResult.content;
+				if (typeof toolResult.content === "string") {
+					try {
+						responsePayload = JSON.parse(toolResult.content);
+					} catch {
+						responsePayload = { content: toolResult.content };
+					}
+				}
 				contents.push({
-					role: "function",
+					role: "user",
 					parts: [{
 						functionResponse: {
-							name: toolResult.toolCallId, // TODO: Need to track function name
-							response: JSON.parse(toolResult.content),
+							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+							response: responsePayload,
 						},
 					}],
 				});
@@ -78,11 +100,32 @@ function irToGemini(ir: IRChatRequest): any {
 		generationConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
 	}
 
-	// Thinking mode support (Google uses thinkingBudget)
-	if (ir.reasoning?.enabled || (ir.reasoning?.maxTokens && ir.reasoning.maxTokens > 0)) {
-		generationConfig.thinkingBudget = {
-			tokens: ir.reasoning?.maxTokens || 8192, // Default thinking budget
+	// Thinking mode support (Gemini 2.x and 3.x)
+	if (ir.reasoning?.enabled || ir.reasoning?.effort || (ir.reasoning?.maxTokens !== undefined)) {
+		const thinkingConfig: any = {
+			includeThoughts: true,
 		};
+		const modelName = modelOverride ?? ir.model;
+		const isGemini3 = typeof modelName === "string" && modelName.startsWith("gemini-3");
+		if (ir.reasoning?.effort && isGemini3) {
+			const levelMap: Record<string, string> = {
+				minimal: "MINIMAL",
+				low: "LOW",
+				medium: "MEDIUM",
+				high: "HIGH",
+				xhigh: "HIGH",
+			};
+			thinkingConfig.thinkingLevel = levelMap[ir.reasoning.effort] || "HIGH";
+		} else if (ir.reasoning?.maxTokens !== undefined) {
+			thinkingConfig.thinkingBudget = ir.reasoning.maxTokens;
+		} else if (ir.reasoning?.enabled) {
+			if (isGemini3) {
+				thinkingConfig.thinkingLevel = "HIGH";
+			} else {
+				thinkingConfig.thinkingBudget = -1;
+			}
+		}
+		generationConfig.thinkingConfig = thinkingConfig;
 	}
 
 	// Response format (JSON mode)
@@ -139,57 +182,6 @@ function irToGemini(ir: IRChatRequest): any {
 	}
 
 	return request;
-}
-
-/**
- * Convert IR content part to Google Gemini part
- */
-function irPartToGeminiPart(part: IRContentPart): any {
-	if (part.type === "text" || part.type === "reasoning_text") {
-		return { text: part.text };
-	}
-
-	if (part.type === "image") {
-		if (part.source === "url") {
-			// Google doesn't support URLs directly - need to fetch and convert to base64
-			// For now, return as inline_data with URL (caller should pre-fetch)
-			return {
-				inline_data: {
-					mime_type: part.mimeType || "image/jpeg",
-					data: part.data, // Assume already base64
-				},
-			};
-		} else {
-			// Base64 data
-			return {
-				inline_data: {
-					mime_type: part.mimeType || "image/jpeg",
-					data: part.data,
-				},
-			};
-		}
-	}
-
-	if (part.type === "audio") {
-		return {
-			inline_data: {
-				mime_type: `audio/${part.format || "wav"}`,
-				data: part.data,
-			},
-		};
-	}
-
-	if (part.type === "video") {
-		return {
-			inline_data: {
-				mime_type: "video/mp4",
-				data: part.url, // TODO: Should be base64
-			},
-		};
-	}
-
-	// Fallback
-	return { text: String(part) };
 }
 
 /**
@@ -257,6 +249,7 @@ function geminiToIR(
 		outputTokens: json.usageMetadata.candidatesTokenCount || 0,
 		totalTokens: json.usageMetadata.totalTokenCount || 0,
 		cachedInputTokens: json.usageMetadata.cachedContentTokenCount,
+		reasoningTokens: json.usageMetadata.thoughtsTokenCount ?? json.usageMetadata.thoughtTokenCount,
 	} : undefined;
 
 	return {
@@ -303,45 +296,43 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
  * Execute Google Gemini request
  */
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const { ir, providerId, providerModelSlug, requestId, byokMeta, pricingCard, meta } = args;
+	const { ir, providerId, providerModelSlug, requestId, pricingCard, meta } = args;
+	const bindings = getBindings() as any;
 
-	// Resolve API key
-	const apiKey = byokMeta?.[0]?.value ||
-		process.env.GOOGLE_API_KEY ||
-		process.env.GOOGLE_AI_STUDIO_API_KEY;
-
-	if (!apiKey) {
-		return {
-			kind: "completed",
-			ir: undefined,
-			upstream: new Response(JSON.stringify({ error: "Missing Google API key" }), {
-				status: 401,
-				headers: { "Content-Type": "application/json" },
-			}),
-			bill: { cost_cents: 0, currency: "USD" },
-		};
-	}
+	const keyInfo = resolveProviderKey(args, () => {
+		return bindings.GOOGLE_API_KEY || bindings.GOOGLE_AI_STUDIO_API_KEY;
+	});
 
 	// Determine model (must be in URL, not body)
 	const model = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
 
 	// Transform IR to Google format
-	const geminiRequest = irToGemini(ir);
+	const geminiRequest = await irToGemini(ir, model);
+	const baseRoot = String(bindings.GOOGLE_BASE_URL || "https://generativelanguage.googleapis.com").replace(/\/+$/, "");
+	const baseUrl = /\/v1beta$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
 
 	// Determine endpoint based on streaming
 	// Note: We MUST append ?alt=sse for streaming to get Server-Sent Events
 	const endpoint = ir.stream
-		? `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`
-		: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+		? `${baseUrl}/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`
+		: `${baseUrl}/models/${encodeURIComponent(model)}:generateContent`;
 
-	const upstreamStartMs = Date.now();
+	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
+	const mappedRequest = (
+		meta.echoUpstreamRequest ||
+		meta.returnUpstreamRequest ||
+		meta.debug?.return_upstream_request ||
+		meta.debug?.trace
+	)
+		? JSON.stringify(geminiRequest)
+		: undefined;
 
 	try {
 		const response = await fetch(endpoint, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"x-goog-api-key": apiKey,
+				"x-goog-api-key": keyInfo.key,
 			},
 			body: JSON.stringify(geminiRequest),
 		});
@@ -352,6 +343,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				ir: undefined,
 				upstream: response,
 				bill: { cost_cents: 0, currency: "USD" },
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
 			};
 		}
 
@@ -362,6 +356,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				stream: response.body,
 				bill: { cost_cents: 0, currency: "USD" },
 				upstream: response,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
 				usageFinalizer: async () => null,
 			};
 		}
@@ -391,6 +388,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			ir: irResponse,
 			upstream: response,
 			bill,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
 			timing: {
 				latencyMs: undefined,
 				generationMs: totalMs,
@@ -405,6 +405,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				headers: { "Content-Type": "application/json" },
 			}),
 			bill: { cost_cents: 0, currency: "USD" },
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
 		};
 	}
 }
@@ -436,7 +439,7 @@ export function transformStream(
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
 	const provider = args.providerId || "google";
 
-	return new ReadableStream<Uint8Array>({
+	const openAIStream = new ReadableStream<Uint8Array>({
 		async start(controller) {
 			try {
 				while (true) {
@@ -517,7 +520,7 @@ export function transformStream(
 								inputTokens: payload.usageMetadata.promptTokenCount || 0,
 								outputTokens: payload.usageMetadata.candidatesTokenCount || 0,
 								totalTokens: payload.usageMetadata.totalTokenCount || 0,
-								reasoningTokens: payload.usageMetadata.thoughtTokenCount,
+								reasoningTokens: payload.usageMetadata.thoughtsTokenCount ?? payload.usageMetadata.thoughtTokenCount,
 							};
 						}
 
@@ -535,6 +538,17 @@ export function transformStream(
 			}
 		},
 	});
+
+	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
+	if (protocol === "openai.chat.completions") {
+		return openAIStream;
+	}
+
+	return resolveStreamForProtocol(
+		new Response(openAIStream),
+		args,
+		"chat",
+	);
 }
 
 /**
@@ -587,7 +601,15 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 }
 
 export const executor: ProviderExecutor = buildTextExecutor({
-	preprocess,
+	preprocess: (ir, args) =>
+		preprocess(
+			withNormalizedReasoning(
+				ir,
+				args.capabilityParams,
+				args.providerModelSlug ?? ir.model,
+			),
+			args,
+		),
 	execute,
 	postprocess,
 	transformStream,

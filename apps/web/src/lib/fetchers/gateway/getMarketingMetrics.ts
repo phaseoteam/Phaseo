@@ -1,8 +1,6 @@
-"use server";
-
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@/utils/supabase/server";
-import { connection } from "next/server";
+import { cacheLife, cacheTag } from "next/cache";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 type RawGatewayRequest = {
 	created_at: string;
@@ -541,9 +539,14 @@ function buildFallbackMetrics(
 export async function getGatewayMarketingMetrics(
 	hours = HOURS_DEFAULT
 ): Promise<GatewayMarketingMetrics> {
-	await connection();
+	"use cache";
+
+	cacheLife("minutes");
+	cacheTag("gateway:marketing-metrics");
+	cacheTag("data:gateway_requests");
+
 	const now = new Date();
-	const client = await createClient();
+	const client = createAdminClient();
 
 	let supportedRows: ActiveProviderModelRow[] = [];
 	let supportedError: string | undefined;

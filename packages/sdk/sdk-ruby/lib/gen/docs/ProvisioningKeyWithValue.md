@@ -10,7 +10,7 @@
 | **status** | **String** |  | [optional] |
 | **scopes** | **String** |  | [optional] |
 | **created_at** | **Time** |  | [optional] |
-| **key** | **String** | The raw provisioning key. Only returned on creation. | [optional] |
+| **key** | **String** | The raw management API key. Only returned on creation. | [optional] |
 
 ## Example
 
@@ -18,7 +18,7 @@
 require 'ai_stats_sdk'
 
 instance = AIStatsSdk::ProvisioningKeyWithValue.new(
-  id: null,
+  id: 11111111-1111-4111-8111-111111111111,
   name: My New Key,
   prefix: pk_abc123xy,
   status: active,

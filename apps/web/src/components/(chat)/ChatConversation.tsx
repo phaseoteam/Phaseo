@@ -17,23 +17,56 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { Orb } from "@/components/ui/orb";
+import {
+	MediaPlayer,
+	MediaPlayerControls,
+	MediaPlayerControlsOverlay,
+	MediaPlayerDownload,
+	MediaPlayerError,
+	MediaPlayerFullscreen,
+	MediaPlayerLoading,
+	MediaPlayerPiP,
+	MediaPlayerPlay,
+	MediaPlayerSeek,
+	MediaPlayerSeekBackward,
+	MediaPlayerSeekForward,
+	MediaPlayerSettings,
+	MediaPlayerTime,
+	MediaPlayerVideo,
+	MediaPlayerVolume,
+	MediaPlayerVolumeIndicator,
+} from "@/components/ui/media-player";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, ChatThread } from "@/lib/indexeddb/chats";
+import type {
+	ChatMessage,
+	ChatSettings,
+	ChatThread,
+} from "@/lib/indexeddb/chats";
 import {
+	Brain,
 	ChevronLeft,
 	ChevronRight,
 	Copy,
 	Cpu,
 	GitBranch,
 	Info,
+	Mic,
 	MessageSquare,
 	Pencil,
 	Paperclip,
@@ -41,28 +74,71 @@ import {
 	Search,
 	SendHorizontal,
 	Save,
+	Square,
 	X,
 } from "lucide-react";
+
+export type ChatSendPayload = {
+	content: string;
+	attachments: File[];
+	webSearchEnabled: boolean;
+};
 
 type ChatConversationProps = {
 	activeThread: ChatThread | null;
 	isSending: boolean;
 	isAuthenticated: boolean;
 	hasApiKey: boolean;
+	mode?: "classic" | "unified";
+	webSearchEnabled?: boolean;
+	onWebSearchEnabledChange?: (enabled: boolean) => void;
+	reasoningEnabled?: boolean;
+	reasoningEffort?: ChatSettings["reasoningEffort"];
+	onReasoningEnabledChange?: (enabled: boolean) => void;
+	onReasoningEffortChange?: (effort: NonNullable<ChatSettings["reasoningEffort"]>) => void;
 	presetPrompt?: string;
-	onSend: (content: string) => void;
+	onSend: (payload: ChatSendPayload) => void;
 	onEditMessage: (messageId: string, content: string) => void;
 	onRetryAssistant: (messageId: string) => void;
 	onBranchAssistant: (messageId: string) => void;
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
 	orgNameById: Record<string, string>;
-	onOpenSettings: () => void;
 	accentColor: string;
 	selectedOrgId: string;
 	selectedModelId: string;
 	selectedModelLabel: string;
+	selectedModelCount?: number;
+	selectedModelsHint?: string;
 	onOpenModelPicker: () => void;
+	onAudioAttachmentRequirementChange?: (requiresAudioInput: boolean) => void;
 };
+
+const AUDIO_RECORDING_MIME_CANDIDATES = [
+	"audio/webm;codecs=opus",
+	"audio/webm",
+	"audio/mp4",
+	"audio/ogg;codecs=opus",
+	"audio/ogg",
+] as const;
+
+function getSupportedRecordingMimeType() {
+	if (typeof MediaRecorder === "undefined") return "";
+	for (const mimeType of AUDIO_RECORDING_MIME_CANDIDATES) {
+		if (MediaRecorder.isTypeSupported(mimeType)) {
+			return mimeType;
+		}
+	}
+	return "";
+}
+
+function extensionForAudioMimeType(mimeType: string) {
+	const normalized = mimeType.toLowerCase();
+	if (normalized.includes("mp4")) return "m4a";
+	if (normalized.includes("ogg")) return "ogg";
+	if (normalized.includes("mpeg")) return "mp3";
+	if (normalized.includes("wav")) return "wav";
+	return "webm";
+}
 
 function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
@@ -79,6 +155,32 @@ function buildModelLink(modelId: string) {
 	const [org, ...rest] = modelId.split("/");
 	const modelSlug = rest.length ? rest.join("/") : modelId;
 	return `/models/${org}/${modelSlug}`;
+}
+
+function escapeRegExp(value: string) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractGeneratedVideoUrl(content: string): string | null {
+	const markdownMatch = content.match(
+		/\[[^\]]*(generated video|open generated video|video result|open result)[^\]]*\]\((https?:\/\/[^)\s]+)\)/i,
+	);
+	if (markdownMatch?.[2]) return markdownMatch[2];
+
+	const directUrlMatch = content.match(
+		/(https?:\/\/[^\s)]+?\.(mp4|webm|mov|m4v)(\?[^\s)]*)?)/i,
+	);
+	if (directUrlMatch?.[1]) return directUrlMatch[1];
+
+	return null;
+}
+
+function stripMarkdownLink(content: string, url: string): string {
+	const pattern = new RegExp(
+		`\\[[^\\]]*\\]\\(${escapeRegExp(url)}\\)`,
+		"i",
+	);
+	return content.replace(pattern, "").trim();
 }
 
 function ensureVariants(message: ChatMessage) {
@@ -117,6 +219,13 @@ export function ChatConversation({
 	isSending,
 	isAuthenticated,
 	hasApiKey,
+	mode = "classic",
+	webSearchEnabled = false,
+	onWebSearchEnabledChange,
+	reasoningEnabled = false,
+	reasoningEffort = "medium",
+	onReasoningEnabledChange,
+	onReasoningEffortChange,
 	presetPrompt,
 	onSend,
 	onEditMessage,
@@ -124,13 +233,16 @@ export function ChatConversation({
 	onBranchAssistant,
 	onSelectVariant,
 	orgNameById,
-	onOpenSettings,
 	accentColor,
 	selectedOrgId,
 	selectedModelId,
 	selectedModelLabel,
+	selectedModelCount = selectedModelId ? 1 : 0,
+	selectedModelsHint,
 	onOpenModelPicker,
+	onAudioAttachmentRequirementChange,
 }: ChatConversationProps) {
+	const isUnified = mode === "unified";
 	const [composer, setComposer] = useState("");
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editingValue, setEditingValue] = useState("");
@@ -138,8 +250,14 @@ export function ChatConversation({
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 	const scrollAreaRef = useRef<HTMLDivElement | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
+	const audioInputRef = useRef<HTMLInputElement | null>(null);
 	const [attachments, setAttachments] = useState<File[]>([]);
-	const [searchEnabled, setSearchEnabled] = useState(false);
+	const [recordingSupported, setRecordingSupported] = useState(false);
+	const [isRecording, setIsRecording] = useState(false);
+	const [isStartingRecording, setIsStartingRecording] = useState(false);
+	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+	const mediaStreamRef = useRef<MediaStream | null>(null);
+	const recordingChunksRef = useRef<Blob[]>([]);
 	const appliedPresetRef = useRef<string | null>(null);
 
 	const placeholder = useMemo(() => {
@@ -174,9 +292,107 @@ export function ChatConversation({
 	useEffect(() => {
 		const raf = requestAnimationFrame(() => {
 			setComposer("");
+			setAttachments([]);
 		});
 		return () => cancelAnimationFrame(raf);
 	}, [activeThread?.id]);
+
+	useEffect(() => {
+		const supported =
+			typeof navigator !== "undefined" &&
+			typeof window !== "undefined" &&
+			typeof MediaRecorder !== "undefined" &&
+			typeof navigator.mediaDevices?.getUserMedia === "function";
+		setRecordingSupported(supported);
+	}, []);
+
+	useEffect(() => {
+		const requiresAudioInput = attachments.some((attachment) =>
+			attachment.type.startsWith("audio/"),
+		);
+		onAudioAttachmentRequirementChange?.(requiresAudioInput);
+	}, [attachments, onAudioAttachmentRequirementChange]);
+
+	const stopRecording = useCallback(() => {
+		const recorder = mediaRecorderRef.current;
+		if (recorder && recorder.state !== "inactive") {
+			recorder.stop();
+		}
+		if (mediaStreamRef.current) {
+			for (const track of mediaStreamRef.current.getTracks()) {
+				track.stop();
+			}
+			mediaStreamRef.current = null;
+		}
+		setIsRecording(false);
+		setIsStartingRecording(false);
+	}, []);
+
+	const startRecording = useCallback(async () => {
+		if (!recordingSupported) return;
+		setIsStartingRecording(true);
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: true,
+			});
+			mediaStreamRef.current = stream;
+			recordingChunksRef.current = [];
+			const mimeType = getSupportedRecordingMimeType();
+			const recorder = mimeType
+				? new MediaRecorder(stream, { mimeType })
+				: new MediaRecorder(stream);
+			mediaRecorderRef.current = recorder;
+			recorder.ondataavailable = (event) => {
+				if (event.data.size > 0) {
+					recordingChunksRef.current.push(event.data);
+				}
+			};
+			recorder.onstop = () => {
+				const chunks = recordingChunksRef.current;
+				recordingChunksRef.current = [];
+				const fallbackType = recorder.mimeType || "audio/webm";
+				const audioBlob = chunks.length
+					? new Blob(chunks, { type: fallbackType })
+					: null;
+				if (audioBlob && audioBlob.size > 0) {
+					const extension = extensionForAudioMimeType(fallbackType);
+					const file = new File(
+						[audioBlob],
+						`recording-${Date.now()}.${extension}`,
+						{ type: fallbackType },
+					);
+					setAttachments((prev) => prev.concat(file));
+				}
+				if (mediaStreamRef.current) {
+					for (const track of mediaStreamRef.current.getTracks()) {
+						track.stop();
+					}
+					mediaStreamRef.current = null;
+				}
+				setIsRecording(false);
+			};
+			recorder.start(200);
+			setIsRecording(true);
+		} catch {
+			setIsRecording(false);
+		} finally {
+			setIsStartingRecording(false);
+		}
+	}, [recordingSupported]);
+
+	useEffect(() => {
+		return () => {
+			const recorder = mediaRecorderRef.current;
+			if (recorder && recorder.state !== "inactive") {
+				recorder.stop();
+			}
+			if (mediaStreamRef.current) {
+				for (const track of mediaStreamRef.current.getTracks()) {
+					track.stop();
+				}
+			}
+		};
+	}, []);
 
 	useEffect(() => {
 		if (!presetPrompt) return;
@@ -353,6 +569,9 @@ export function ChatConversation({
 			const activeVariantIndex = message.activeVariantIndex ?? 0;
 			const activeVariant = variants[activeVariantIndex] ?? variants[0];
 			const content = activeVariant?.content ?? message.content;
+			const videoUrl = isUser ? null : extractGeneratedVideoUrl(content);
+			const contentWithoutVideoLink =
+				videoUrl ? stripMarkdownLink(content, videoUrl) : content;
 			const reasoningText =
 				(activeVariant?.meta as any)?.reasoning_text ??
 				(activeVariant?.meta as any)?.reasoning ??
@@ -469,7 +688,44 @@ export function ChatConversation({
 										</ReasoningContent>
 									</Reasoning>
 								) : null}
-								<Streamdown>{content}</Streamdown>
+								{contentWithoutVideoLink ? (
+									<Streamdown>{contentWithoutVideoLink}</Streamdown>
+								) : null}
+								{videoUrl ? (
+									<div className="not-prose mt-3 grid gap-2">
+										<MediaPlayer className="w-full">
+											<MediaPlayerVideo>
+												<source src={videoUrl} type="video/mp4" />
+											</MediaPlayerVideo>
+											<MediaPlayerLoading />
+											<MediaPlayerError />
+											<MediaPlayerVolumeIndicator />
+											<MediaPlayerControls>
+												<MediaPlayerControlsOverlay />
+												<MediaPlayerSeek />
+												<div className="flex flex-wrap items-center gap-1">
+													<MediaPlayerPlay />
+													<MediaPlayerSeekBackward />
+													<MediaPlayerSeekForward />
+													<MediaPlayerVolume className="mr-1" />
+													<MediaPlayerTime className="mr-auto" />
+													<MediaPlayerPiP />
+													<MediaPlayerFullscreen />
+													<MediaPlayerDownload />
+													<MediaPlayerSettings />
+												</div>
+											</MediaPlayerControls>
+										</MediaPlayer>
+										<Link
+											href={videoUrl}
+											target="_blank"
+											rel="noreferrer"
+											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+										>
+											Open video in new tab
+										</Link>
+									</div>
+								) : null}
 							</div>
 						)}
 					</div>
@@ -722,8 +978,12 @@ export function ChatConversation({
 
 	const handleSubmit = () => {
 		const text = composer.trim();
-		if (!text) return;
-		onSend(text);
+		if (!text && attachments.length === 0) return;
+		onSend({
+			content: text,
+			attachments,
+			webSearchEnabled: isUnified ? webSearchEnabled : false,
+		});
 		setComposer("");
 		setAttachments([]);
 	};
@@ -735,10 +995,51 @@ export function ChatConversation({
 		event.target.value = "";
 	};
 
+	const toggleRecording = useCallback(() => {
+		if (isStartingRecording) return;
+		if (isRecording) {
+			stopRecording();
+			return;
+		}
+		if (!recordingSupported) {
+			audioInputRef.current?.click();
+			return;
+		}
+		void startRecording();
+	}, [isRecording, isStartingRecording, startRecording, stopRecording]);
+
 	return (
 		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
 			<ScrollArea className="flex-1" ref={scrollAreaRef}>
 				<div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8">
+					{isRecording ? (
+						<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
+							<div className="flex items-center gap-3">
+								<button
+									type="button"
+									onClick={toggleRecording}
+									disabled={isStartingRecording}
+									aria-label="Stop recording"
+									className="relative h-14 w-14 shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+								>
+									<Orb
+										agentState="listening"
+										className="h-full w-full"
+										colors={["#8BB8FF", "#5E8DD6"]}
+									/>
+									<span className="pointer-events-none absolute inset-0 flex items-center justify-center text-primary-foreground">
+										<Square className="h-4 w-4 fill-current text-foreground/85" />
+									</span>
+								</button>
+								<div className="min-w-0">
+									<p className="text-sm font-medium">Listening...</p>
+									<p className="text-xs text-muted-foreground">
+										Speak now, then stop to attach the clip.
+									</p>
+								</div>
+							</div>
+						</div>
+					) : null}
 					{messagesContent}
 				</div>
 			</ScrollArea>
@@ -748,6 +1049,14 @@ export function ChatConversation({
 						<input
 							ref={fileInputRef}
 							type="file"
+							className="hidden"
+							multiple
+							onChange={handleFileSelect}
+						/>
+						<input
+							ref={audioInputRef}
+							type="file"
+							accept="audio/*"
 							className="hidden"
 							multiple
 							onChange={handleFileSelect}
@@ -768,6 +1077,27 @@ export function ChatConversation({
 							placeholder={placeholder}
 							className="min-h-[56px] resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
 						/>
+						{attachments.length > 0 ? (
+							<div className="flex flex-wrap gap-1 pb-1">
+								{attachments.map((file, index) => (
+									<button
+										key={`${file.name}-${file.size}-${index}`}
+										type="button"
+										className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+										onClick={() =>
+											setAttachments((prev) =>
+												prev.filter((_, i) => i !== index),
+											)
+										}
+									>
+										<span className="max-w-[180px] truncate">
+											{file.name}
+										</span>
+										<X className="h-3 w-3" />
+									</button>
+								))}
+							</div>
+						) : null}
 						<div className="flex items-center justify-between pt-2">
 							<div className="flex items-center gap-2">
 								<Tooltip>
@@ -777,61 +1107,174 @@ export function ChatConversation({
 											onClick={onOpenModelPicker}
 											className="h-8 px-2 gap-1.5"
 										>
-										{selectedModelLabel ===
-										"Select model" ? (
-											<Cpu className="h-4 w-4 text-muted-foreground" />
-										) : (
-											<Logo
-												id={selectedOrgId}
-												alt={selectedOrgId}
-												width={16}
-												height={16}
-												className="rounded-xl shrink-0"
-											/>
-										)}
-									</Button>
+											{selectedModelCount > 1 ? (
+												<span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-medium text-background">
+													{selectedModelCount}
+												</span>
+											) : selectedModelLabel ===
+											  "Select model" ? (
+												<Cpu className="h-4 w-4 text-muted-foreground" />
+											) : (
+												<Logo
+													id={selectedOrgId}
+													alt={selectedOrgId}
+													width={16}
+													height={16}
+													className="rounded-xl shrink-0"
+												/>
+											)}
+										</Button>
 									</TooltipTrigger>
 									<TooltipContent>
-										{selectedModelId || "Select model"}
+										{selectedModelCount > 1
+											? selectedModelsHint ??
+											  `${selectedModelCount} models selected`
+											: selectedModelId ||
+											  "Select model"}
 									</TooltipContent>
 								</Tooltip>
 								<Tooltip>
 									<TooltipTrigger asChild>
-										<span>
-											<Button
-												variant="ghost"
-												size="icon"
-												disabled={true}
-												className="h-8 w-8"
-											>
-												<Paperclip className="h-4 w-4" />
-											</Button>
-										</span>
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-8 w-8"
+											disabled={!isUnified}
+											onClick={() => fileInputRef.current?.click()}
+										>
+											<Paperclip className="h-4 w-4" />
+										</Button>
 									</TooltipTrigger>
-									<TooltipContent>Coming soon</TooltipContent>
+									<TooltipContent>
+										{isUnified ? "Add files" : "Available in unified chat"}
+									</TooltipContent>
 								</Tooltip>
 								<Tooltip>
 									<TooltipTrigger asChild>
-										<span>
-											<Button
-												variant="ghost"
-												size="icon"
-												disabled={true}
-												className="h-8 w-8"
-											>
-												<Search className="h-4 w-4" />
-											</Button>
-										</span>
+										<Button
+											variant="ghost"
+											size="icon"
+											disabled={isStartingRecording}
+											className={cn(
+												"h-8 w-8",
+												isRecording
+													? "bg-primary/12 text-primary hover:bg-primary/20 hover:text-primary"
+													: "",
+											)}
+											onClick={toggleRecording}
+											aria-label={
+												isRecording
+													? "Stop recording"
+													: "Record audio"
+											}
+										>
+											{isRecording ? (
+												<Square className="h-3.5 w-3.5 fill-current" />
+											) : (
+												<Mic className="h-4 w-4" />
+											)}
+										</Button>
 									</TooltipTrigger>
-									<TooltipContent>Coming soon</TooltipContent>
+									<TooltipContent>
+										{isRecording
+											? "Stop recording and attach audio"
+											: recordingSupported
+												? "Record and attach audio"
+												: "Recording unavailable in this browser context, click to add audio file"}
+									</TooltipContent>
 								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon"
+											disabled={!isUnified}
+											className={cn(
+												"h-8 w-8",
+												webSearchEnabled && isUnified
+													? "bg-muted text-foreground"
+													: "",
+											)}
+											onClick={() => {
+												if (!isUnified) return;
+												const next = !webSearchEnabled;
+												onWebSearchEnabledChange?.(next);
+											}}
+										>
+											<Search className="h-4 w-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>
+										{isUnified
+											? webSearchEnabled
+												? "Disable web search"
+												: "Enable web search"
+											: "Available in unified chat"}
+									</TooltipContent>
+								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="ghost"
+											size="icon"
+											className={cn(
+												"h-8 w-8",
+												reasoningEnabled
+													? "bg-muted text-foreground"
+													: "",
+											)}
+											onClick={() =>
+												onReasoningEnabledChange?.(
+													!reasoningEnabled,
+												)
+											}
+										>
+											<Brain className="h-4 w-4" />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>
+										{reasoningEnabled
+											? "Disable reasoning"
+											: "Enable reasoning"}
+									</TooltipContent>
+								</Tooltip>
+								{reasoningEnabled ? (
+									<Select
+										value={reasoningEffort ?? "medium"}
+										onValueChange={(value) =>
+											onReasoningEffortChange?.(
+												value as NonNullable<ChatSettings["reasoningEffort"]>,
+											)
+										}
+									>
+										<SelectTrigger className="h-8 w-[104px]">
+											<SelectValue placeholder="Effort" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="none">None</SelectItem>
+											<SelectItem value="minimal">
+												Minimal
+											</SelectItem>
+											<SelectItem value="low">Low</SelectItem>
+											<SelectItem value="medium">
+												Medium
+											</SelectItem>
+											<SelectItem value="high">
+												High
+											</SelectItem>
+											<SelectItem value="xhigh">
+												X-High
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								) : null}
 							</div>
 							<Button
 								size="icon"
 								onClick={handleSubmit}
 								disabled={
 									isSending ||
-									!composer.trim() ||
+									(!composer.trim() && attachments.length === 0) ||
 									!isAuthenticated ||
 									!hasApiKey
 								}

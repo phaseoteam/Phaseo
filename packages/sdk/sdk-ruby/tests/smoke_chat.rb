@@ -12,7 +12,7 @@ client = AiStats::Gen::Client.new(base_url: base_url, headers: { "Authorization"
 response = AiStats::Gen::Operations.createChatCompletion(
   client,
   body: {
-    model: "openai/gpt-5-nano-2025-08-07",
+    model: "openai/gpt-5-nano",
     messages: [{ role: "user", content: "Hi" }]
   }
 )

@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **logit_bias** | **array<string,float>** |  | [optional]
 **max_output_tokens** | **int** |  | [optional]
 **meta** | **bool** |  | [optional] [default to false]
+**debug** | [**\AIStats\Sdk\Model\DebugOptions**](DebugOptions.md) |  | [optional]
 **presence_penalty** | **float** |  | [optional]
 **seed** | **int** |  | [optional]
 **stream** | **bool** |  | [optional] [default to false]

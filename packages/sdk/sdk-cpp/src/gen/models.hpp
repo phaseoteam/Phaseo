@@ -34,6 +34,7 @@ struct AnthropicMessage {
 };
 
 struct AnthropicMessagesRequest {
+	std::map<std::string, std::any> debug;
 	std::optional<int> max_tokens;
 	std::vector<std::map<std::string, std::any>> messages;
 	std::map<std::string, std::any> metadata;
@@ -111,6 +112,7 @@ struct AudioTranslationResponse {
 
 struct BatchRequest {
 	std::string completion_window;
+	std::map<std::string, std::any> debug;
 	std::string endpoint;
 	std::string input_file_id;
 	std::map<std::string, std::any> metadata;
@@ -155,6 +157,7 @@ struct ChatChoice {
 };
 
 struct ChatCompletionsRequest {
+	std::map<std::string, std::any> debug;
 	std::optional<double> frequency_penalty;
 	std::map<std::string, std::any> logit_bias;
 	std::optional<bool> logprobs;
@@ -197,6 +200,14 @@ struct ChatMessage {
 	std::any role;
 	std::string tool_call_id;
 	std::vector<std::map<std::string, std::any>> tool_calls;
+};
+
+struct DebugOptions {
+	std::optional<bool> enabled;
+	std::optional<bool> return_upstream_request;
+	std::optional<bool> return_upstream_response;
+	std::optional<bool> trace;
+	std::any trace_level;
 };
 
 struct Embedding {
@@ -368,6 +379,7 @@ struct ModerationResult {
 };
 
 struct ModerationsRequest {
+	std::map<std::string, std::any> debug;
 	std::any input;
 	std::optional<bool> meta;
 	std::string model;
@@ -381,6 +393,7 @@ struct ModerationsResponse {
 };
 
 struct MusicGenerateRequest {
+	std::map<std::string, std::any> debug;
 	std::optional<int> duration;
 	std::optional<bool> echo_upstream_request;
 	std::map<std::string, std::any> elevenlabs;
@@ -395,6 +408,7 @@ struct MusicGenerateResponse {
 };
 
 struct OcrRequest {
+	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::string image;
 	std::string language;
@@ -419,6 +433,7 @@ struct Provider {
 
 struct ProviderRoutingOptions {
 	std::vector<std::string> ignore;
+	std::optional<bool> include_alpha;
 	std::vector<std::string> only;
 	std::vector<std::string> order;
 };
@@ -464,6 +479,7 @@ struct ReasoningConfig {
 struct ResponsesRequest {
 	std::optional<bool> background;
 	std::any conversation;
+	std::map<std::string, std::any> debug;
 	std::vector<std::string> include;
 	std::map<std::string, std::any> input;
 	std::vector<std::map<std::string, std::any>> input_items;

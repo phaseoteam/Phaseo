@@ -1,6 +1,7 @@
 // lib/fetchers/landing/getModelUpdates.ts
 import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import { cacheLife, cacheTag } from "next/cache";
 
 export type EventType = "Announced" | "Released" | "Deprecated" | "Retired";
 
@@ -103,12 +104,18 @@ export async function getRecentModelUpdatesSplit(
     {
         limit = 5,
         offset = 0,
-        now = new Date(),
+        now: nowInput,
         upcomingLimit = 5,
         pastMonths,
         includeHidden = false,
     }: Args = {}
 ): Promise<ModelEventSegments> {
+    "use cache";
+    cacheLife("hours");
+    cacheTag("data:model-updates");
+    cacheTag("data:models");
+
+    const now = nowInput ?? new Date();
     const supabase = await createClient();
 
     const { data, error } = await applyHiddenFilter(

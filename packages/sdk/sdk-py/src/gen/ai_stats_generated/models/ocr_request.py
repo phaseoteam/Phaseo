@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -31,8 +32,9 @@ class OcrRequest(BaseModel):
     image: StrictStr
     language: Optional[StrictStr] = None
     echo_upstream_request: Optional[StrictBool] = None
+    debug: Optional[DebugOptions] = None
     provider: Optional[ProviderRoutingOptions] = None
-    __properties: ClassVar[List[str]] = ["model", "image", "language", "echo_upstream_request", "provider"]
+    __properties: ClassVar[List[str]] = ["model", "image", "language", "echo_upstream_request", "debug", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -73,6 +75,9 @@ class OcrRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of debug
+        if self.debug:
+            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of provider
         if self.provider:
             _dict['provider'] = self.provider.to_dict()
@@ -92,6 +97,7 @@ class OcrRequest(BaseModel):
             "image": obj.get("image"),
             "language": obj.get("language"),
             "echo_upstream_request": obj.get("echo_upstream_request"),
+            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj

@@ -77,8 +77,8 @@ function isExternal(href: string) {
     }
 }
 
-function relTime(iso: string, now = new Date()) {
-    const diffMs = +now - Date.parse(iso);
+function relTime(iso: string, nowMs: number) {
+    const diffMs = nowMs - Date.parse(iso);
     const sec = Math.round(diffMs / 1000);
     const abs = Math.abs(sec);
     const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
@@ -135,13 +135,21 @@ async function fetchLatestUpdateRows(limit: number): Promise<DbRow[]> {
 // ------------------------------
 const CACHE_LIMIT = 32;
 
-async function getLatestUpdateRowsCached(): Promise<DbRow[]> {
+async function getLatestUpdateRowsCached(): Promise<{
+    rows: DbRow[];
+    generatedAt: string;
+}> {
     "use cache";
 
     cacheLife("days");
     cacheTag("data:latest-updates");
 
-    return fetchLatestUpdateRows(CACHE_LIMIT);
+    const now = new Date();
+    const rows = await fetchLatestUpdateRows(CACHE_LIMIT);
+    return {
+        rows,
+        generatedAt: now.toISOString(),
+    };
 }
 
 // ------------------------------
@@ -151,7 +159,9 @@ async function getLatestUpdateRowsCached(): Promise<DbRow[]> {
 export async function getLatestUpdateCards(
     limit = 5
 ): Promise<UpdateCardProps[]> {
-    const rows = await getLatestUpdateRowsCached();
+    const { rows, generatedAt } = await getLatestUpdateRowsCached();
+    const nowMs = Date.parse(generatedAt);
+
     return rows.slice(0, limit).map((r) => {
         const cat = normaliseCategory(r.type, r.link);
         const meta = UPDATE_ENTRY_META[cat];
@@ -165,7 +175,7 @@ export async function getLatestUpdateCards(
             link: { href: r.link, external: isExternal(r.link), cta },
             subtitle,
             dateIso: r.created_at,
-            relative: relTime(r.created_at),
+            relative: relTime(r.created_at, nowMs),
             badges: [
                 {
                     label: `${meta.label} Watcher`,

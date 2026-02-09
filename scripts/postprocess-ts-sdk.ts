@@ -94,8 +94,12 @@ function dedupeImports(filePath: string): boolean {
 }
 
 function main() {
-  const genDir = path.join(__dirname, "..", "packages", "sdk-ts", "src", "gen");
-  if (!fs.existsSync(genDir)) {
+  const candidates = [
+    path.join(__dirname, "..", "packages", "sdk", "sdk-ts", "src", "gen"),
+    path.join(__dirname, "..", "packages", "sdk-ts", "src", "gen"),
+  ];
+  const genDir = candidates.find((dir) => fs.existsSync(dir));
+  if (!genDir) {
     console.warn("[postprocess-ts-sdk] Generated directory not found, skipping.");
     return;
   }

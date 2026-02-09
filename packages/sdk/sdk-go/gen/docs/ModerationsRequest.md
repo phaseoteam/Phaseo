@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Model** | **string** |  | 
 **Meta** | Pointer to **bool** |  | [optional] [default to false]
+**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **Input** | [**ModerationsRequestInput**](ModerationsRequestInput.md) |  | 
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
@@ -72,6 +73,31 @@ SetMeta sets Meta field to given value.
 `func (o *ModerationsRequest) HasMeta() bool`
 
 HasMeta returns a boolean if a field has been set.
+
+### GetDebug
+
+`func (o *ModerationsRequest) GetDebug() DebugOptions`
+
+GetDebug returns the Debug field if non-nil, zero value otherwise.
+
+### GetDebugOk
+
+`func (o *ModerationsRequest) GetDebugOk() (*DebugOptions, bool)`
+
+GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDebug
+
+`func (o *ModerationsRequest) SetDebug(v DebugOptions)`
+
+SetDebug sets Debug field to given value.
+
+### HasDebug
+
+`func (o *ModerationsRequest) HasDebug() bool`
+
+HasDebug returns a boolean if a field has been set.
 
 ### GetInput
 

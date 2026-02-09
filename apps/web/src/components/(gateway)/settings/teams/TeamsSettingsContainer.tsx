@@ -18,6 +18,7 @@ type Props = {
 	personalTeamId?: string | null;
 	manageableTeamIds?: string[];
 	walletBalances?: Record<string, number>;
+	hideTitle?: boolean;
 };
 
 export default function TeamsSettingsContainer({
@@ -30,6 +31,7 @@ export default function TeamsSettingsContainer({
 	personalTeamId,
 	manageableTeamIds,
 	walletBalances,
+	hideTitle = false,
 }: Props) {
 	// Controlled active team id state shared between child panels
 	const getInitial = () =>
@@ -73,8 +75,10 @@ export default function TeamsSettingsContainer({
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<h1 className="text-2xl font-bold">Teams</h1>
+			<div
+				className={`flex flex-col gap-3 sm:flex-row sm:items-center ${hideTitle ? "sm:justify-end" : "sm:justify-between"}`}
+			>
+				{hideTitle ? null : <h1 className="text-2xl font-bold">Teams</h1>}
 				<div className="flex flex-wrap items-center gap-2">
 					<CreateTeamDialog
 						currentUserId={currentUserId ?? undefined}

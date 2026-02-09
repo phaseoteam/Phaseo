@@ -1,7 +1,7 @@
 import type { RuleSummary, EstimationResult, EstimationLine, Condition } from "./pricing-simulator-types";
-import type { PriceCard } from "../../src/lib/gateway/pricing/types";
-import { parseUsdToNanos, formatUsdFromNanosExact } from "../../src/lib/gateway/pricing/money";
-import { matchesConditions } from "../../src/lib/gateway/pricing/conditions";
+import type { PriceCard } from "../../src/pipeline/pricing/types";
+import { parseUsdToNanos, formatUsdFromNanosExact } from "../../src/pipeline/pricing/money";
+import { matchesConditions } from "../../src/pipeline/pricing/conditions";
 import type { RandomSource } from "./pricing-simulator-random";
 import type { CLIOptions } from "./pricing-simulator-types";
 
@@ -335,3 +335,4 @@ export function computeRuleSummaries(card: PriceCard, plan: string): RuleSummary
             conditions: Array.isArray(rule.match) ? rule.match : [],
         }));
 }
+

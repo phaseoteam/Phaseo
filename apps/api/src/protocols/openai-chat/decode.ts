@@ -119,6 +119,11 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		logprobs: req.logprobs,
 		topLogprobs: req.top_logprobs,
 		stop: req.stop,
+		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
+		serviceTier: resolveRequestedServiceTier({
+			service_tier: (req as any).service_tier,
+			speed: (req as any).speed,
+		}),
 
 		// Metadata
 		userId: req.user_id ?? req.user,
@@ -206,5 +211,14 @@ function normalizeResponseFormat(format: any): IRChatRequest["responseFormat"] {
 	}
 
 	return undefined;
+}
+
+function resolveRequestedServiceTier(input: {
+	service_tier?: unknown;
+	speed?: unknown;
+}): string | undefined {
+	const speed = typeof input.speed === "string" ? input.speed.toLowerCase() : undefined;
+	if (speed === "fast") return "priority";
+	return typeof input.service_tier === "string" ? input.service_tier : undefined;
 }
 

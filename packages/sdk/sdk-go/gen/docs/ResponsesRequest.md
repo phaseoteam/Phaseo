@@ -35,6 +35,7 @@ Name | Type | Description | Notes
 **User** | Pointer to **string** |  | [optional] 
 **Usage** | Pointer to **bool** |  | [optional] 
 **Meta** | Pointer to **bool** |  | [optional] 
+**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 ## Methods
@@ -825,6 +826,31 @@ SetMeta sets Meta field to given value.
 `func (o *ResponsesRequest) HasMeta() bool`
 
 HasMeta returns a boolean if a field has been set.
+
+### GetDebug
+
+`func (o *ResponsesRequest) GetDebug() DebugOptions`
+
+GetDebug returns the Debug field if non-nil, zero value otherwise.
+
+### GetDebugOk
+
+`func (o *ResponsesRequest) GetDebugOk() (*DebugOptions, bool)`
+
+GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDebug
+
+`func (o *ResponsesRequest) SetDebug(v DebugOptions)`
+
+SetDebug sets Debug field to given value.
+
+### HasDebug
+
+`func (o *ResponsesRequest) HasDebug() bool`
+
+HasDebug returns a boolean if a field has been set.
 
 ### GetProvider
 

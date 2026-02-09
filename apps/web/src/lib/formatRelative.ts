@@ -1,7 +1,9 @@
-export function formatRelativeToNow(date: Date | number): string {
-    const now = new Date()
+export function formatRelativeToNow(
+    date: Date | number,
+    nowMs: number
+): string {
     const targetDate = date instanceof Date ? date : new Date(date)
-    const diffInSeconds = Math.floor((now.getTime() - targetDate.getTime()) / 1000)
+    const diffInSeconds = Math.floor((nowMs - targetDate.getTime()) / 1000)
 
     // Less than 5 minutes
     if (diffInSeconds < 300) {

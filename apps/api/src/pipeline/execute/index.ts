@@ -18,6 +18,7 @@ import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err } from "./http";
 import { getBaseModel, calculateMaxTries } from "./utils";
 import { rankProviders } from "./providers";
+import { attemptProvider } from "./attempt";
 import { resolveProviderExecutor } from "../../executors";
 import { admitThroughBreaker, onCallEnd, onCallStart, maybeOpenOnRecentErrors, reportProbeResult } from "./health";
 import { logDebugEvent, previewValue, parseJsonLoose } from "../debug";
@@ -36,7 +37,28 @@ export type Bill = {
 // IR-AWARE EXECUTION (NEW)
 // ============================================================================
 
-import type { IRChatRequest, IRChatResponse, IREmbeddingsRequest, IREmbeddingsResponse, IRModerationsRequest, IRModerationsResponse } from "@core/ir";
+import type {
+	IRChatRequest,
+	IRChatResponse,
+	IREmbeddingsRequest,
+	IREmbeddingsResponse,
+	IRImageGenerationRequest,
+	IRImageGenerationResponse,
+	IRAudioSpeechRequest,
+	IRAudioSpeechResponse,
+	IRAudioTranscriptionRequest,
+	IRAudioTranscriptionResponse,
+	IRAudioTranslationRequest,
+	IRAudioTranslationResponse,
+	IRModerationsRequest,
+	IRModerationsResponse,
+	IROcrRequest,
+	IROcrResponse,
+	IRMusicGenerateRequest,
+	IRMusicGenerateResponse,
+	IRVideoGenerationRequest,
+	IRVideoGenerationResponse,
+} from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { normalizeIRForProvider } from "./normalize";
 import { normalizeCapability } from "@/executors";
@@ -55,7 +77,17 @@ function shouldFallbackFromByok(status: number | null | undefined): boolean {
  */
 export type IRRequestResult = {
 	kind: "completed" | "stream";
-	ir?: IRChatResponse | IREmbeddingsResponse | IRModerationsResponse; // IR response (for completed requests)
+	ir?:
+		| IRChatResponse
+		| IREmbeddingsResponse
+		| IRModerationsResponse
+		| IRImageGenerationResponse
+		| IRAudioSpeechResponse
+		| IRAudioTranscriptionResponse
+		| IRAudioTranslationResponse
+		| IRVideoGenerationResponse
+		| IROcrResponse
+		| IRMusicGenerateResponse; // IR response (for completed requests)
 	normalized?: GatewayResponsePayload;
 	upstream: Response;
 	stream?: ReadableStream<Uint8Array> | null;
@@ -72,6 +104,51 @@ export type IRRequestResult = {
 export type RequestResult = IRRequestResult;
 
 /**
+ * Execute request using adapter pipeline (non-IR surfaces like media/OCR/music).
+ */
+export async function doRequestWithAdapters(
+	ctx: PipelineContext,
+	timing: PipelineTiming,
+): Promise<Response | { ok: true; result: IRRequestResult }> {
+	const baseModel = getBaseModel(ctx.model);
+
+	const candidatesGuard = await guardCandidates(ctx, timing);
+	if (!candidatesGuard.ok) return (candidatesGuard as { ok: false; response: Response }).response;
+	const candidates = candidatesGuard.value;
+
+	const anyPricingAvailable = candidates.some((entry) => Boolean(entry.pricingCard));
+	if (!anyPricingAvailable) {
+		const pricingGuard = await guardPricingFound(false, ctx, timing);
+		if (!pricingGuard.ok) return (pricingGuard as { ok: false; response: Response }).response;
+	}
+
+	const ranked = await rankProviders(candidates, ctx);
+	const maxTries = calculateMaxTries(ranked.length);
+	let anyPricingFound = anyPricingAvailable;
+
+	for (let attempt = 0; attempt < maxTries; attempt++) {
+		const choice = ranked[attempt];
+		const result = await attemptProvider(choice, ctx, timing, baseModel);
+
+		if (result.ok) {
+			return { ok: true, result: result.result as IRRequestResult };
+		}
+
+		if ("skip" in result && (result.skip === "no_pricing" || result.skip === "blocked")) {
+			continue;
+		}
+
+		anyPricingFound = true;
+	}
+
+	const pricingGuard = await guardPricingFound(anyPricingFound, ctx, timing);
+	if (!pricingGuard.ok) return (pricingGuard as { ok: false; response: Response }).response;
+
+	const failureGuard = await guardAllFailed(ctx, timing);
+	return (failureGuard as { ok: false; response: Response }).response;
+}
+
+/**
  * Execute request using IR pipeline
  * @param ctx - Pipeline context
  * @param ir - IR chat request
@@ -80,7 +157,17 @@ export type RequestResult = IRRequestResult;
  */
 export async function doRequestWithIR(
 	ctx: PipelineContext,
-	ir: IRChatRequest | IREmbeddingsRequest | IRModerationsRequest,
+	ir:
+		| IRChatRequest
+		| IREmbeddingsRequest
+		| IRModerationsRequest
+		| IRImageGenerationRequest
+		| IRAudioSpeechRequest
+		| IRAudioTranscriptionRequest
+		| IRAudioTranslationRequest
+		| IRVideoGenerationRequest
+		| IROcrRequest
+		| IRMusicGenerateRequest,
 	timing: PipelineTiming,
 ): Promise<Response | { ok: true; result: IRRequestResult }> {
 	const baseModel = getBaseModel(ctx.model);
@@ -156,10 +243,22 @@ export async function doRequestWithIR(
 async function attemptProviderWithIR(
 	routed: any, // RoutedCandidate type
 	ctx: PipelineContext,
-	ir: IRChatRequest | IREmbeddingsRequest | IRModerationsRequest,
+	ir:
+		| IRChatRequest
+		| IREmbeddingsRequest
+		| IRModerationsRequest
+		| IRImageGenerationRequest
+		| IRAudioSpeechRequest
+		| IRAudioTranscriptionRequest
+		| IRAudioTranslationRequest
+		| IRVideoGenerationRequest
+		| IROcrRequest
+		| IRMusicGenerateRequest,
 	timing: PipelineTiming,
 	baseModel: string,
 ): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string }> {
+	const attemptErrors: Array<Record<string, unknown>> = ((ctx as any).attemptErrors ??= []);
+
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
 
@@ -172,6 +271,11 @@ async function attemptProviderWithIR(
 		routed.health,
 	);
 	if (admission === "blocked") {
+		attemptErrors.push({
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			type: "blocked",
+		});
 		return { ok: false, skip: "blocked" };
 	}
 	const isProbe = admission === "probe";
@@ -183,6 +287,11 @@ async function attemptProviderWithIR(
 	// Get pricing card
 	const pricingCard = candidate.pricingCard;
 	if (!pricingCard) {
+		attemptErrors.push({
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			type: "no_pricing",
+		});
 		return { ok: false, skip: "no_pricing" };
 	}
 
@@ -200,6 +309,11 @@ async function attemptProviderWithIR(
 		ctx.meta.upstreamStartMs = Date.now();
 		const executor = resolveProviderExecutor(candidate.providerId, ctx.capability);
 		if (!executor) {
+			attemptErrors.push({
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				type: "unsupported_executor",
+			});
 			return { ok: false, skip: "unsupported_executor" };
 		}
 
@@ -299,6 +413,14 @@ async function attemptProviderWithIR(
 				await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
 			}
 		}
+		if (!executorResult.upstream.ok) {
+			attemptErrors.push({
+				provider: candidate.providerId,
+				endpoint: ctx.endpoint,
+				type: "upstream_non_2xx",
+				status: executorResult.upstream.status,
+			});
+		}
 
 		// Build result
 		const result: IRRequestResult = {
@@ -314,6 +436,11 @@ async function attemptProviderWithIR(
 			byokKeyId: executorResult.byokKeyId,
 			mappedRequest: executorResult.mappedRequest,
 			rawResponse: executorResult.rawResponse,
+		};
+		(result as any).healthContext = {
+			provider: candidate.providerId,
+			model: baseModel,
+			isProbe,
 		};
 
 		if (ctx.meta.debug?.enabled) {
@@ -331,17 +458,15 @@ async function attemptProviderWithIR(
 			});
 		}
 
-		if (executorResult.kind === "stream") {
-			(result as any).healthContext = {
-				provider: candidate.providerId,
-				model: baseModel,
-				isProbe,
-			};
-		}
-
 		return { ok: true, result };
 	} catch (err) {
 		console.error(`Executor execution failed for ${candidate.providerId}:`, err);
+		attemptErrors.push({
+			provider: candidate.providerId,
+			endpoint: ctx.endpoint,
+			type: "error",
+			message: err instanceof Error ? err.message : String(err),
+		});
 		const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
 		await onCallEnd(ctx.endpoint, {
 			provider: candidate.providerId,

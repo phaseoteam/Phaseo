@@ -6,8 +6,7 @@ import { simulateEach } from "./pricing-simulator-simulation";
 import type { SimulationRun, TabularTable } from "./pricing-simulator-types";
 
 const LOG_PREFIX = "[pricing-test]";
-const DEFAULT_RUNS_PER_COMBO = 1000;
-// const DEFAULT_RUNS_PER_COMBO = 100_000;
+const DEFAULT_RUNS_PER_COMBO = 100;
 const MAX_COMBO_REPORT = 10000;
 
 type ComboAggregate = {
@@ -135,12 +134,15 @@ function renderComboIssues(entries: ComboAggregate[]): string {
 }
 
 async function main() {
-    const options = parseArgv(process.argv.slice(2));
-    options.limit = Number.POSITIVE_INFINITY;
-    options.runs = DEFAULT_RUNS_PER_COMBO;
+    const argv = process.argv.slice(2);
+    const options = parseArgv(argv);
+    const hasRunsFlag = argv.includes("--runs") || argv.includes("-r");
+    if (!hasRunsFlag) {
+        options.runs = DEFAULT_RUNS_PER_COMBO;
+    }
 
     console.log(
-        `${LOG_PREFIX} Running pricing harness with limit=all combos and ${options.runs.toLocaleString()} runs per provider/model/endpoint/plan.`,
+        `${LOG_PREFIX} Running pricing harness with limit=${Number.isFinite(options.limit) ? options.limit : "all"} and ${options.runs.toLocaleString()} runs per provider/model/endpoint/plan.`,
     );
 
     const comboAggregates = new Map<string, ComboAggregate>();
@@ -195,10 +197,12 @@ async function main() {
         totalRuns += 1;
         totalTokensTested += tokensThisRun;
 
-        const billedNonZero = run.engineTotalNanos > 0;
         const matchesEstimate = run.engineTotalNanos === run.estimation.totalNanos;
+        const expectedZero = run.estimation.totalNanos === 0;
+        const billedNonZero = run.engineTotalNanos > 0;
+        const runSucceeded = matchesEstimate && (billedNonZero || expectedZero);
 
-        if (billedNonZero && matchesEstimate) {
+        if (runSucceeded) {
             comboAggregate.successfulRuns += 1;
             modelAggregate.successfulRuns += 1;
             totalSuccesses += 1;

@@ -1,5 +1,5 @@
-import type { Endpoint } from "../src/lib/types";
-import type { PriceCard, PriceRule, PricingBreakdownLine, Condition } from "../src/lib/gateway/pricing/types";
+import type { Endpoint } from "../src/core/types";
+import type { PriceCard, PriceRule, PricingBreakdownLine, Condition } from "../src/pipeline/pricing/types";
 
 export type { Endpoint, Condition };
 

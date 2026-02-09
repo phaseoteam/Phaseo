@@ -1,10 +1,30 @@
-import React from "react";
+import { Suspense } from "react";
 import AccountSettingsClient, {
 	UserPayload,
 } from "@/components/(gateway)/settings/account/AccountSettingsClient";
 import { createClient } from "@/utils/supabase/server";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
-export default async function AccountSettingsPage() {
+export default function AccountSettingsPage() {
+	return (
+		<div>
+			<header>
+				<h1 className="text-2xl font-bold">Account</h1>
+				<p className="mt-2 text-sm text-muted-foreground">
+					Manage your login credentials, security settings, or delete your
+					account.
+				</p>
+			</header>
+			<div className="mt-6">
+				<Suspense fallback={<SettingsSectionFallback />}>
+					<AccountSettingsContent />
+				</Suspense>
+			</div>
+		</div>
+	);
+}
+
+async function AccountSettingsContent() {
 	const supabase = await createClient();
 
 	// get the authenticated user from Supabase auth
@@ -14,11 +34,8 @@ export default async function AccountSettingsPage() {
 	if (!authUser) {
 		// If no user, render a simple message (you may redirect in your app)
 		return (
-			<div>
-				<h1 className="text-2xl font-bold">Account</h1>
-				<p className="mt-2 text-sm text-muted-foreground">
-					Not signed in.
-				</p>
+			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+				Not signed in.
 			</div>
 		);
 	}
@@ -69,24 +86,12 @@ export default async function AccountSettingsPage() {
 	}[];
 
 	return (
-		<div>
-			<header>
-				<h1 className="text-2xl font-bold">Account</h1>
-				<p className="mt-2 text-sm text-muted-foreground">
-					Manage your login credentials, security settings, or delete
-					your account.
-				</p>
-			</header>
-
-			<div className="mt-6">
-				<AccountSettingsClient
-					user={user}
-					teams={teams}
-					mfaEnabled={mfaEnabled}
-					mfaFactorId={mfaFactorId}
-					hasPassword={hasPassword}
-				/>
-			</div>
-		</div>
+		<AccountSettingsClient
+			user={user}
+			teams={teams}
+			mfaEnabled={mfaEnabled}
+			mfaFactorId={mfaFactorId}
+			hasPassword={hasPassword}
+		/>
 	);
 }

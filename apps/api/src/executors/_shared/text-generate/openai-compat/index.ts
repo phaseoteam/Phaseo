@@ -254,6 +254,19 @@ export function resolveStreamForProtocol(
 		return transformChatStreamToResponses(res.body, args, state);
 	}
 
+	if (protocol === "anthropic.messages") {
+		if (route === "legacy_completions") {
+			const legacyStream = transformLegacyCompletionsStream(res.body, args);
+			const responsesStream = transformChatStreamToResponses(legacyStream, args, state);
+			return transformResponsesStreamToAnthropic(responsesStream, args);
+		}
+		if (route === "chat") {
+			const responsesStream = transformChatStreamToResponses(res.body, args, state);
+			return transformResponsesStreamToAnthropic(responsesStream, args);
+		}
+		return transformResponsesStreamToAnthropic(res.body, args);
+	}
+
 	// Default: passthrough (responses protocol or unknown)
 	return res.body;
 }
@@ -418,6 +431,34 @@ function transformResponsesStreamToChat(
 								}, controller, entry.output_index ?? 0);
 								break;
 							}
+							case "response.output_item.added":
+							case "response.output_item.done": {
+								const item = payload?.item;
+								const itemType = String(item?.type ?? "").toLowerCase();
+								if (itemType !== "function_call" && itemType !== "tool_call") break;
+								const itemId = item?.call_id ?? item?.id ?? payload?.item_id;
+								if (!itemId) break;
+								const entry = toolBuffer.get(itemId) ?? { arguments: "", output_index: payload?.output_index ?? 0 };
+								if (typeof item?.name === "string") {
+									entry.name = item.name;
+								}
+								if (typeof item?.arguments === "string") {
+									entry.arguments = item.arguments;
+								}
+								toolBuffer.set(itemId, entry);
+								await emitDelta({
+									role: "assistant",
+									tool_calls: [{
+										id: itemId,
+										type: "function",
+										function: {
+											name: entry.name ?? "",
+											arguments: entry.arguments ?? "",
+										},
+									}],
+								}, controller, entry.output_index ?? 0);
+								break;
+							}
 							case "response.function_call_arguments.done": {
 								const itemId = payload?.item_id;
 								if (!itemId) break;
@@ -487,7 +528,7 @@ type ResponsesStreamChoiceState = {
 	reasoningOutputIndex?: number;
 	messageItemId?: string;
 	reasoningItemId?: string;
-	toolCalls: Map<number, { id: string; name: string; arguments: string; outputIndex: number }>;
+	toolCalls: Map<number, { id: string; name: string; arguments: string; outputIndex: number; emittedAdded?: boolean }>;
 	emittedText?: boolean;
 	emittedReasoning?: boolean;
 };
@@ -565,6 +606,7 @@ function transformChatStreamToResponses(
 				name: "",
 				arguments: "",
 				outputIndex: nextOutputIndex++,
+				emittedAdded: false,
 			};
 			entry.toolCalls.set(toolIndex, tool);
 		}
@@ -692,6 +734,20 @@ function transformChatStreamToResponses(
 									}
 									if (typeof toolDelta?.function?.arguments === "string") {
 										tool.arguments += toolDelta.function.arguments;
+										if (!tool.emittedAdded) {
+											await emitEvent("response.output_item.added", {
+												output_index: tool.outputIndex,
+												item: {
+													type: "function_call",
+													id: tool.id,
+													call_id: tool.id,
+													name: tool.name,
+													arguments: tool.arguments,
+													status: "in_progress",
+												},
+											}, controller);
+											tool.emittedAdded = true;
+										}
 										await emitEvent("response.function_call_arguments.delta", {
 											item_id: tool.id,
 											output_index: tool.outputIndex,
@@ -723,6 +779,20 @@ function transformChatStreamToResponses(
 											}
 											if (typeof toolCall?.function?.arguments === "string") {
 												tool.arguments = toolCall.function.arguments;
+											}
+											if (!tool.emittedAdded) {
+												await emitEvent("response.output_item.added", {
+													output_index: tool.outputIndex,
+													item: {
+														type: "function_call",
+														id: tool.id,
+														call_id: tool.id,
+														name: tool.name,
+														arguments: tool.arguments,
+														status: "in_progress",
+													},
+												}, controller);
+												tool.emittedAdded = true;
 											}
 										}
 									}
@@ -756,11 +826,36 @@ function transformChatStreamToResponses(
 
 					for (const entry of choiceStates.values()) {
 						for (const tool of entry.toolCalls.values()) {
+							if (!tool.emittedAdded) {
+								await emitEvent("response.output_item.added", {
+									output_index: tool.outputIndex,
+									item: {
+										type: "function_call",
+										id: tool.id,
+										call_id: tool.id,
+										name: tool.name,
+										arguments: tool.arguments,
+										status: "in_progress",
+									},
+								}, controller);
+								tool.emittedAdded = true;
+							}
 							await emitEvent("response.function_call_arguments.done", {
 								item_id: tool.id,
 								output_index: tool.outputIndex,
 								name: tool.name,
 								arguments: tool.arguments,
+							}, controller);
+							await emitEvent("response.output_item.done", {
+								output_index: tool.outputIndex,
+								item: {
+									type: "function_call",
+									id: tool.id,
+									call_id: tool.id,
+									name: tool.name,
+									arguments: tool.arguments,
+									status: "completed",
+								},
 							}, controller);
 						}
 					}
@@ -796,6 +891,240 @@ function transformChatStreamToResponses(
 			}
 		},
 	});
+}
+
+function transformResponsesStreamToAnthropic(
+	stream: ReadableStream<Uint8Array>,
+	args: ExecutorExecuteArgs,
+): ReadableStream<Uint8Array> {
+	const reader = stream.getReader();
+	const decoder = new TextDecoder();
+	const encoder = new TextEncoder();
+	let buf = "";
+
+	const emit = async (
+		controller: ReadableStreamDefaultController<Uint8Array>,
+		eventName: string,
+		payload: any,
+	) => {
+		controller.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`));
+	};
+
+	return new ReadableStream<Uint8Array>({
+		async start(controller) {
+			let finalResponse: any = null;
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+					buf += decoder.decode(value, { stream: true });
+					const frames = buf.split(/\n\n/);
+					buf = frames.pop() ?? "";
+
+					for (const raw of frames) {
+						const { event, data } = parseSseBlock(raw);
+						if (!data || data === "[DONE]") continue;
+						let payload: any;
+						try {
+							payload = JSON.parse(data);
+						} catch {
+							continue;
+						}
+
+						const normalizedEvent = normalizeResponsesEvent(event);
+						if (normalizedEvent === "response.completed") {
+							finalResponse = payload?.response ?? payload;
+							continue;
+						}
+
+						if (!normalizedEvent && payload?.object === "response") {
+							finalResponse = payload;
+						}
+					}
+				}
+
+				if (!finalResponse) return;
+
+				const outputItems = Array.isArray(finalResponse?.output)
+					? finalResponse.output
+					: (Array.isArray(finalResponse?.output_items) ? finalResponse.output_items : []);
+				const usage = normalizeUsageToAnthropic(finalResponse?.usage);
+				const messageId = finalResponse?.nativeResponseId ?? finalResponse?.id ?? args.requestId;
+				const model = finalResponse?.model ?? args.providerModelSlug ?? args.ir.model;
+
+				await emit(controller, "message_start", {
+					type: "message_start",
+					message: {
+						id: messageId,
+						type: "message",
+						role: "assistant",
+						model,
+						content: [],
+						stop_reason: null,
+						stop_sequence: null,
+						usage,
+					},
+				});
+
+				let blockIndex = 0;
+				let hasToolUse = false;
+
+				for (const item of outputItems) {
+					const type = String(item?.type ?? "").toLowerCase();
+
+					if (type === "reasoning") {
+						const text = extractOutputText(item?.content);
+						const idx = blockIndex++;
+						await emit(controller, "content_block_start", {
+							type: "content_block_start",
+							index: idx,
+							content_block: { type: "thinking", thinking: "" },
+						});
+						if (text) {
+							await emit(controller, "content_block_delta", {
+								type: "content_block_delta",
+								index: idx,
+								delta: { type: "thinking_delta", thinking: text },
+							});
+						}
+						await emit(controller, "content_block_stop", {
+							type: "content_block_stop",
+							index: idx,
+						});
+						continue;
+					}
+
+					if (type === "message") {
+						const content = Array.isArray(item?.content) ? item.content : [];
+						for (const part of content) {
+							const text = extractTextPart(part);
+							if (!text) continue;
+							const idx = blockIndex++;
+							await emit(controller, "content_block_start", {
+								type: "content_block_start",
+								index: idx,
+								content_block: { type: "text", text: "" },
+							});
+							await emit(controller, "content_block_delta", {
+								type: "content_block_delta",
+								index: idx,
+								delta: { type: "text_delta", text },
+							});
+							await emit(controller, "content_block_stop", {
+								type: "content_block_stop",
+								index: idx,
+							});
+						}
+						continue;
+					}
+
+					if (type === "function_call" || type === "tool_call") {
+						hasToolUse = true;
+						const idx = blockIndex++;
+						await emit(controller, "content_block_start", {
+							type: "content_block_start",
+							index: idx,
+							content_block: {
+								type: "tool_use",
+								id: item?.call_id ?? item?.id ?? `tool_${idx}`,
+								name: item?.name ?? "tool",
+								input: parseFunctionArguments(item?.arguments),
+							},
+						});
+						await emit(controller, "content_block_stop", {
+							type: "content_block_stop",
+							index: idx,
+						});
+					}
+				}
+
+				const stopReason = mapResponsesStatusToAnthropicStopReason(finalResponse, hasToolUse);
+				await emit(controller, "message_delta", {
+					type: "message_delta",
+					delta: {
+						stop_reason: stopReason,
+						stop_sequence: null,
+					},
+					usage: {
+						input_tokens: usage.input_tokens,
+						output_tokens: usage.output_tokens,
+					},
+				});
+				await emit(controller, "message_stop", { type: "message_stop" });
+			} catch (err) {
+				console.error("openai compat responses->anthropic stream transform failed:", err);
+			} finally {
+				controller.close();
+			}
+		},
+	});
+}
+
+function normalizeUsageToAnthropic(usage: any): { input_tokens: number; output_tokens: number } {
+	const inputTokens = Number(
+		usage?.input_tokens ??
+		usage?.prompt_tokens ??
+		usage?.inputTokens ??
+		0,
+	);
+	const outputTokens = Number(
+		usage?.output_tokens ??
+		usage?.completion_tokens ??
+		usage?.outputTokens ??
+		0,
+	);
+	return {
+		input_tokens: Number.isFinite(inputTokens) ? inputTokens : 0,
+		output_tokens: Number.isFinite(outputTokens) ? outputTokens : 0,
+	};
+}
+
+function extractOutputText(content: any): string {
+	if (!Array.isArray(content)) return "";
+	return content
+		.map((part) => extractTextPart(part))
+		.filter((part) => part.length > 0)
+		.join("");
+}
+
+function extractTextPart(part: any): string {
+	if (!part || typeof part !== "object") return "";
+	if (typeof part.text === "string") return part.text;
+	if (part.type === "output_text" && typeof part.text === "string") return part.text;
+	return "";
+}
+
+function parseFunctionArguments(argumentsRaw: unknown): Record<string, any> {
+	if (argumentsRaw && typeof argumentsRaw === "object" && !Array.isArray(argumentsRaw)) {
+		return argumentsRaw as Record<string, any>;
+	}
+	if (typeof argumentsRaw === "string" && argumentsRaw.length > 0) {
+		try {
+			const parsed = JSON.parse(argumentsRaw);
+			if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+				return parsed as Record<string, any>;
+			}
+		} catch {
+			// ignore parse errors
+		}
+	}
+	return {};
+}
+
+function mapResponsesStatusToAnthropicStopReason(
+	response: any,
+	hasToolUse: boolean,
+): "end_turn" | "max_tokens" | "stop_sequence" | "tool_use" | "refusal" | null {
+	const status = String(response?.status ?? "").toLowerCase();
+	if (status === "failed") return null;
+	if (hasToolUse) return "tool_use";
+	if (status === "incomplete") {
+		const reason = String(response?.incomplete_details?.reason ?? "").toLowerCase();
+		if (reason.includes("stop_sequence")) return "stop_sequence";
+		if (reason.includes("content")) return "refusal";
+		return "max_tokens";
+	}
+	return "end_turn";
 }
 
 function buildResponsesOutputFromState(

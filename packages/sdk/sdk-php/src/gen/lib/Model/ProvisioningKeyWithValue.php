@@ -542,7 +542,7 @@ class ProvisioningKeyWithValue implements ModelInterface, ArrayAccess, \JsonSeri
     /**
      * Sets key
      *
-     * @param string|null $key The raw provisioning key. Only returned on creation.
+     * @param string|null $key The raw management API key. Only returned on creation.
      *
      * @return self
      */

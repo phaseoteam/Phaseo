@@ -24,6 +24,7 @@ from ai_stats_generated.models.anthropic_message import AnthropicMessage
 from ai_stats_generated.models.anthropic_messages_request_system import AnthropicMessagesRequestSystem
 from ai_stats_generated.models.anthropic_tool import AnthropicTool
 from ai_stats_generated.models.chat_completions_request_tool_choice import ChatCompletionsRequestToolChoice
+from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -43,8 +44,9 @@ class AnthropicMessagesRequest(BaseModel):
     tool_choice: Optional[ChatCompletionsRequestToolChoice] = None
     stream: Optional[StrictBool] = None
     metadata: Optional[Dict[str, StrictStr]] = None
+    debug: Optional[DebugOptions] = None
     provider: Optional[ProviderRoutingOptions] = None
-    __properties: ClassVar[List[str]] = ["model", "system", "messages", "max_tokens", "temperature", "top_p", "top_k", "tools", "tool_choice", "stream", "metadata", "provider"]
+    __properties: ClassVar[List[str]] = ["model", "system", "messages", "max_tokens", "temperature", "top_p", "top_k", "tools", "tool_choice", "stream", "metadata", "debug", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -105,6 +107,9 @@ class AnthropicMessagesRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of tool_choice
         if self.tool_choice:
             _dict['tool_choice'] = self.tool_choice.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of debug
+        if self.debug:
+            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of provider
         if self.provider:
             _dict['provider'] = self.provider.to_dict()
@@ -131,6 +136,7 @@ class AnthropicMessagesRequest(BaseModel):
             "tool_choice": ChatCompletionsRequestToolChoice.from_dict(obj["tool_choice"]) if obj.get("tool_choice") is not None else None,
             "stream": obj.get("stream"),
             "metadata": obj.get("metadata"),
+            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })
         return _obj

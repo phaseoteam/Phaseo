@@ -19,6 +19,8 @@ module AIStatsSdk
 
     attr_accessor :meta
 
+    attr_accessor :debug
+
     attr_accessor :input
 
     attr_accessor :provider
@@ -28,6 +30,7 @@ module AIStatsSdk
       {
         :'model' => :'model',
         :'meta' => :'meta',
+        :'debug' => :'debug',
         :'input' => :'input',
         :'provider' => :'provider'
       }
@@ -48,6 +51,7 @@ module AIStatsSdk
       {
         :'model' => :'String',
         :'meta' => :'Boolean',
+        :'debug' => :'DebugOptions',
         :'input' => :'ModerationsRequestInput',
         :'provider' => :'ProviderRoutingOptions'
       }
@@ -85,6 +89,10 @@ module AIStatsSdk
         self.meta = attributes[:'meta']
       else
         self.meta = false
+      end
+
+      if attributes.key?(:'debug')
+        self.debug = attributes[:'debug']
       end
 
       if attributes.key?(:'input')
@@ -150,6 +158,7 @@ module AIStatsSdk
       self.class == o.class &&
           model == o.model &&
           meta == o.meta &&
+          debug == o.debug &&
           input == o.input &&
           provider == o.provider
     end
@@ -163,7 +172,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, meta, input, provider].hash
+      [model, meta, debug, input, provider].hash
     end
 
     # Builds the object from hash

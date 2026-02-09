@@ -51,6 +51,18 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test CalculatePricing
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task CalculatePricingAsyncTest()
+        {
+            CalculatePricingRequest calculatePricingRequest = default!;
+            var response = await _instance.CalculatePricingAsync(calculatePricingRequest);
+            var model = response.Ok();
+            Assert.IsType<CalculatePricing200Response>(model);
+        }
+
+        /// <summary>
         /// Test CreateAnthropicMessage
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -70,6 +82,18 @@ namespace AIStatsSdk.Test.Api
         {
             BatchRequest batchRequest = default!;
             var response = await _instance.CreateBatchAsync(batchRequest);
+            var model = response.Ok();
+            Assert.IsType<BatchResponse>(model);
+        }
+
+        /// <summary>
+        /// Test CreateBatchAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task CreateBatchAliasAsyncTest()
+        {
+            BatchRequest batchRequest = default!;
+            var response = await _instance.CreateBatchAliasAsync(batchRequest);
             var model = response.Ok();
             Assert.IsType<BatchResponse>(model);
         }
@@ -116,7 +140,7 @@ namespace AIStatsSdk.Test.Api
         [Fact (Skip = "not implemented")]
         public async Task CreateImageEditAsyncTest()
         {
-            string model = default!;
+            string modelId = default!;
             string image = default!;
             string prompt = default!;
             Client.Option<string> mask = default!;
@@ -126,9 +150,20 @@ namespace AIStatsSdk.Test.Api
             Client.Option<bool> meta = default!;
             Client.Option<bool> usage = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, provider);
+            var response = await _instance.CreateImageEditAsync(modelId, image, prompt, mask, size, n, user, meta, usage, provider);
             var model = response.Ok();
             Assert.IsType<ImagesEditResponse>(model);
+        }
+
+        /// <summary>
+        /// Test CreateKeyPlaceholder
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task CreateKeyPlaceholderAsyncTest()
+        {
+            var response = await _instance.CreateKeyPlaceholderAsync();
+            var model = response.NotImplemented();
+            Assert.IsType<ErrorResponse>(model);
         }
 
         /// <summary>
@@ -144,6 +179,18 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test CreateOAuthClient
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task CreateOAuthClientAsyncTest()
+        {
+            CreateOAuthClientRequest createOAuthClientRequest = default!;
+            var response = await _instance.CreateOAuthClientAsync(createOAuthClientRequest);
+            var model = response.Created();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
         /// Test CreateOcr
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -153,18 +200,6 @@ namespace AIStatsSdk.Test.Api
             var response = await _instance.CreateOcrAsync(ocrRequest);
             var model = response.Ok();
             Assert.IsType<Dictionary<string, Object>>(model);
-        }
-
-        /// <summary>
-        /// Test CreateProvisioningKey
-        /// </summary>
-        [Fact (Skip = "not implemented")]
-        public async Task CreateProvisioningKeyAsyncTest()
-        {
-            CreateProvisioningKeyRequest createProvisioningKeyRequest = default!;
-            var response = await _instance.CreateProvisioningKeyAsync(createProvisioningKeyRequest);
-            var model = response.Created();
-            Assert.IsType<CreateProvisioningKey201Response>(model);
         }
 
         /// <summary>
@@ -197,12 +232,12 @@ namespace AIStatsSdk.Test.Api
         [Fact (Skip = "not implemented")]
         public async Task CreateTranscriptionAsyncTest()
         {
-            string model = default!;
+            string modelId = default!;
             Client.Option<string> audioUrl = default!;
             Client.Option<string> audioB64 = default!;
             Client.Option<string> language = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateTranscriptionAsync(model, audioUrl, audioB64, language, provider);
+            var response = await _instance.CreateTranscriptionAsync(modelId, audioUrl, audioB64, language, provider);
             var model = response.Ok();
             Assert.IsType<AudioTranscriptionResponse>(model);
         }
@@ -213,14 +248,14 @@ namespace AIStatsSdk.Test.Api
         [Fact (Skip = "not implemented")]
         public async Task CreateTranslationAsyncTest()
         {
-            string model = default!;
+            string modelId = default!;
             Client.Option<string> audioUrl = default!;
             Client.Option<string> audioB64 = default!;
             Client.Option<string> language = default!;
             Client.Option<string> prompt = default!;
             Client.Option<decimal> temperature = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, provider);
+            var response = await _instance.CreateTranslationAsync(modelId, audioUrl, audioB64, language, prompt, temperature, provider);
             var model = response.Ok();
             Assert.IsType<AudioTranslationResponse>(model);
         }
@@ -238,6 +273,30 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test CreateVideoAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task CreateVideoAliasAsyncTest()
+        {
+            VideoGenerationRequest videoGenerationRequest = default!;
+            var response = await _instance.CreateVideoAliasAsync(videoGenerationRequest);
+            var model = response.Ok();
+            Assert.IsType<VideoGenerationResponse>(model);
+        }
+
+        /// <summary>
+        /// Test DeleteOAuthClient
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task DeleteOAuthClientAsyncTest()
+        {
+            string clientId = default!;
+            var response = await _instance.DeleteOAuthClientAsync(clientId);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
         /// Test DeleteProvisioningKey
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -247,6 +306,18 @@ namespace AIStatsSdk.Test.Api
             var response = await _instance.DeleteProvisioningKeyAsync(id);
             var model = response.Ok();
             Assert.IsType<DeleteProvisioningKey200Response>(model);
+        }
+
+        /// <summary>
+        /// Test DeleteProvisioningKeyAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task DeleteProvisioningKeyAliasAsyncTest()
+        {
+            string id = default!;
+            var response = await _instance.DeleteProvisioningKeyAliasAsync(id);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
         }
 
         /// <summary>
@@ -262,6 +333,18 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test DeleteVideoAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task DeleteVideoAliasAsyncTest()
+        {
+            string videoId = default!;
+            var response = await _instance.DeleteVideoAliasAsync(videoId);
+            var model = response.Ok();
+            Assert.IsType<VideoDeleteResponse>(model);
+        }
+
+        /// <summary>
         /// Test GenerateMusic
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -269,6 +352,18 @@ namespace AIStatsSdk.Test.Api
         {
             MusicGenerateRequest musicGenerateRequest = default!;
             var response = await _instance.GenerateMusicAsync(musicGenerateRequest);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
+        /// Test GenerateMusicAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GenerateMusicAliasAsyncTest()
+        {
+            MusicGenerateRequest musicGenerateRequest = default!;
+            var response = await _instance.GenerateMusicAliasAsync(musicGenerateRequest);
             var model = response.Ok();
             Assert.IsType<Dictionary<string, Object>>(model);
         }
@@ -325,6 +420,68 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test GetKeyPlaceholder
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetKeyPlaceholderAsyncTest()
+        {
+            var response = await _instance.GetKeyPlaceholderAsync();
+            var model = response.NotImplemented();
+            Assert.IsType<ErrorResponse>(model);
+        }
+
+        /// <summary>
+        /// Test GetMusicGeneration
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetMusicGenerationAsyncTest()
+        {
+            string musicId = default!;
+            var response = await _instance.GetMusicGenerationAsync(musicId);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
+        /// Test GetMusicGenerationAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetMusicGenerationAliasAsyncTest()
+        {
+            string musicId = default!;
+            var response = await _instance.GetMusicGenerationAliasAsync(musicId);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
+        /// Test GetOAuthClient
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetOAuthClientAsyncTest()
+        {
+            string clientId = default!;
+            var response = await _instance.GetOAuthClientAsync(clientId);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
+        /// Test GetProviderDerankStatus
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetProviderDerankStatusAsyncTest()
+        {
+            string providerId = default!;
+            Client.Option<int> windowHours = default!;
+            Client.Option<int> maxPairs = default!;
+            Client.Option<int> fetchLimit = default!;
+            var response = await _instance.GetProviderDerankStatusAsync(providerId, windowHours, maxPairs, fetchLimit);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
         /// Test GetProvisioningKey
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -337,6 +494,18 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test GetProvisioningKeyAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetProvisioningKeyAliasAsyncTest()
+        {
+            string id = default!;
+            var response = await _instance.GetProvisioningKeyAliasAsync(id);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
         /// Test GetVideo
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -344,6 +513,18 @@ namespace AIStatsSdk.Test.Api
         {
             string videoId = default!;
             var response = await _instance.GetVideoAsync(videoId);
+            var model = response.Ok();
+            Assert.IsType<VideoGenerationResponse>(model);
+        }
+
+        /// <summary>
+        /// Test GetVideoAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetVideoAliasAsyncTest()
+        {
+            string videoId = default!;
+            var response = await _instance.GetVideoAliasAsync(videoId);
             var model = response.Ok();
             Assert.IsType<VideoGenerationResponse>(model);
         }
@@ -361,6 +542,18 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test GetVideoContentAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task GetVideoContentAliasAsyncTest()
+        {
+            string videoId = default!;
+            var response = await _instance.GetVideoContentAliasAsync(videoId);
+            var model = response.Ok();
+            Assert.IsType<System.IO.Stream>(model);
+        }
+
+        /// <summary>
         /// Test Healthz
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -372,6 +565,29 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test InvalidateGatewayKeyCache
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task InvalidateGatewayKeyCacheAsyncTest()
+        {
+            string id = default!;
+            var response = await _instance.InvalidateGatewayKeyCacheAsync(id);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
+        /// Test ListEndpointsPlaceholder
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task ListEndpointsPlaceholderAsyncTest()
+        {
+            var response = await _instance.ListEndpointsPlaceholderAsync();
+            var model = response.NotImplemented();
+            Assert.IsType<ErrorResponse>(model);
+        }
+
+        /// <summary>
         /// Test ListFiles
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -380,6 +596,17 @@ namespace AIStatsSdk.Test.Api
             var response = await _instance.ListFilesAsync();
             var model = response.Ok();
             Assert.IsType<ListFilesResponse>(model);
+        }
+
+        /// <summary>
+        /// Test ListKeysPlaceholder
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task ListKeysPlaceholderAsyncTest()
+        {
+            var response = await _instance.ListKeysPlaceholderAsync();
+            var model = response.NotImplemented();
+            Assert.IsType<ErrorResponse>(model);
         }
 
         /// <summary>
@@ -398,6 +625,41 @@ namespace AIStatsSdk.Test.Api
             var response = await _instance.ListModelsAsync(endpoints, organisation, inputTypes, outputTypes, varParams, limit, offset);
             var model = response.Ok();
             Assert.IsType<ListModels200Response>(model);
+        }
+
+        /// <summary>
+        /// Test ListOAuthClients
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task ListOAuthClientsAsyncTest()
+        {
+            var response = await _instance.ListOAuthClientsAsync();
+            var model = response.Ok();
+            Assert.IsType<ListOAuthClients200Response>(model);
+        }
+
+        /// <summary>
+        /// Test ListOrganisations
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task ListOrganisationsAsyncTest()
+        {
+            Client.Option<int> limit = default!;
+            Client.Option<int> offset = default!;
+            var response = await _instance.ListOrganisationsAsync(limit, offset);
+            var model = response.Ok();
+            Assert.IsType<ListOrganisations200Response>(model);
+        }
+
+        /// <summary>
+        /// Test ListPricingModels
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task ListPricingModelsAsyncTest()
+        {
+            var response = await _instance.ListPricingModelsAsync();
+            var model = response.Ok();
+            Assert.IsType<ListPricingModels200Response>(model);
         }
 
         /// <summary>
@@ -428,6 +690,32 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test ListProvisioningKeysAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task ListProvisioningKeysAliasAsyncTest()
+        {
+            string teamId = default!;
+            Client.Option<int> limit = default!;
+            Client.Option<int> offset = default!;
+            var response = await _instance.ListProvisioningKeysAliasAsync(teamId, limit, offset);
+            var model = response.Ok();
+            Assert.IsType<ListProvisioningKeysAlias200Response>(model);
+        }
+
+        /// <summary>
+        /// Test RegenerateOAuthClientSecret
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task RegenerateOAuthClientSecretAsyncTest()
+        {
+            string clientId = default!;
+            var response = await _instance.RegenerateOAuthClientSecretAsync(clientId);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
         /// Test RetrieveBatch
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -435,6 +723,18 @@ namespace AIStatsSdk.Test.Api
         {
             string batchId = default!;
             var response = await _instance.RetrieveBatchAsync(batchId);
+            var model = response.Ok();
+            Assert.IsType<BatchResponse>(model);
+        }
+
+        /// <summary>
+        /// Test RetrieveBatchAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task RetrieveBatchAliasAsyncTest()
+        {
+            string id = default!;
+            var response = await _instance.RetrieveBatchAliasAsync(id);
             var model = response.Ok();
             Assert.IsType<BatchResponse>(model);
         }
@@ -463,6 +763,19 @@ namespace AIStatsSdk.Test.Api
         }
 
         /// <summary>
+        /// Test UpdateOAuthClient
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task UpdateOAuthClientAsyncTest()
+        {
+            string clientId = default!;
+            Dictionary<string, Object> requestBody = default!;
+            var response = await _instance.UpdateOAuthClientAsync(clientId, requestBody);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
+        }
+
+        /// <summary>
         /// Test UpdateProvisioningKey
         /// </summary>
         [Fact (Skip = "not implemented")]
@@ -473,6 +786,19 @@ namespace AIStatsSdk.Test.Api
             var response = await _instance.UpdateProvisioningKeyAsync(id, updateProvisioningKeyRequest);
             var model = response.Ok();
             Assert.IsType<UpdateProvisioningKey200Response>(model);
+        }
+
+        /// <summary>
+        /// Test UpdateProvisioningKeyAlias
+        /// </summary>
+        [Fact (Skip = "not implemented")]
+        public async Task UpdateProvisioningKeyAliasAsyncTest()
+        {
+            string id = default!;
+            Dictionary<string, Object> requestBody = default!;
+            var response = await _instance.UpdateProvisioningKeyAliasAsync(id, requestBody);
+            var model = response.Ok();
+            Assert.IsType<Dictionary<string, Object>>(model);
         }
 
         /// <summary>

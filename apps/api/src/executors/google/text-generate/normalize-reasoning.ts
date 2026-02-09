@@ -18,16 +18,25 @@ function effortToTokens(effort: ReasoningEffort, maxReasoningTokens: number): nu
 
 function normalizeGoogleReasoning(
 	reasoning: IRReasoning | undefined,
+	model: string | null | undefined,
 	maxReasoningTokens?: number | null,
 ): IRReasoning | undefined {
 	if (!reasoning) return undefined;
 	const normalized: IRReasoning = { ...reasoning };
 	const maxTokens = typeof maxReasoningTokens === "number" ? maxReasoningTokens : undefined;
+	const isGemini3 = typeof model === "string" && model.startsWith("gemini-3");
 
 	if (normalized.enabled === false || normalized.effort === "none") {
 		normalized.enabled = false;
 		delete normalized.maxTokens;
 		delete normalized.effort;
+		return normalized;
+	}
+
+	if (isGemini3) {
+		if (normalized.effort) {
+			delete normalized.maxTokens;
+		}
 		return normalized;
 	}
 
@@ -46,9 +55,11 @@ function normalizeGoogleReasoning(
 export function withNormalizedReasoning(
 	ir: IRChatRequest,
 	capabilityParams?: Record<string, any> | null,
+	modelOverride?: string | null,
 ): IRChatRequest {
 	const nextReasoning = normalizeGoogleReasoning(
 		ir.reasoning,
+		modelOverride ?? ir.model,
 		capabilityParams?.reasoning?.maxReasoningTokens,
 	);
 	if (nextReasoning === ir.reasoning) return ir;

@@ -1,7 +1,15 @@
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 
-export async function resolveIncludeHidden(includeHidden?: boolean): Promise<boolean> {
+type ResolveIncludeHiddenOptions = {
+	allowAdminOverride?: boolean;
+};
+
+export async function resolveIncludeHidden(
+	includeHidden?: boolean,
+	options: ResolveIncludeHiddenOptions = {}
+): Promise<boolean> {
 	if (typeof includeHidden === "boolean") return includeHidden;
+	if (!options.allowAdminOverride) return false;
 	try {
 		return await isAdminViewer();
 	} catch {

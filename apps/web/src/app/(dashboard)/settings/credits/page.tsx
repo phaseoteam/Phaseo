@@ -12,6 +12,8 @@ import {
 } from "@/components/(gateway)/credits/tiers";
 import { TierBadge } from "@/components/(gateway)/credits/TierBadge";
 import { Metadata } from "next";
+import { Suspense } from "react";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata: Metadata = {
 	title: "Credits - Settings",
@@ -25,7 +27,22 @@ function money(amount: number, currency: string) {
 	}).format(amount);
 }
 
-export default async function Page(props: {
+export default function Page(props: {
+	searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+	return (
+		<div className="space-y-6">
+			<div>
+				<h1 className="text-2xl font-bold">Credits</h1>
+			</div>
+			<Suspense fallback={<SettingsSectionFallback />}>
+				<CreditsSettingsContent searchParams={props.searchParams} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function CreditsSettingsContent(props: {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
 	const searchParams = await props.searchParams;
@@ -248,8 +265,7 @@ export default async function Page(props: {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-				<h1 className="text-2xl font-bold">Credits</h1>
+			<div className="flex justify-end">
 				<TierBadge
 					href="/settings/tiers"
 					tierName={current.name}

@@ -1,10 +1,11 @@
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OAuthAppDetailPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppDetailPanel";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata = {
 	title: "OAuth App Details - Settings",
@@ -16,7 +17,30 @@ interface OAuthAppDetailPageProps {
 	}>;
 }
 
-export default async function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) {
+export default function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) {
+	return (
+		<div className="space-y-6">
+			<div className="flex items-center gap-4">
+				<Button variant="ghost" size="icon" asChild>
+					<Link href="/settings/oauth-apps">
+						<ChevronLeft className="h-5 w-5" />
+					</Link>
+				</Button>
+				<div className="flex-1">
+					<h1 className="text-2xl font-bold">OAuth Application</h1>
+					<p className="text-sm text-muted-foreground mt-1">
+						OAuth Application Details
+					</p>
+				</div>
+			</div>
+			<Suspense fallback={<SettingsSectionFallback />}>
+				<OAuthAppDetailContent params={params} />
+			</Suspense>
+		</div>
+	);
+}
+
+async function OAuthAppDetailContent({ params }: OAuthAppDetailPageProps) {
 	const { clientId } = await params;
 	const supabase = await createClient();
 
@@ -72,29 +96,11 @@ export default async function OAuthAppDetailPage({ params }: OAuthAppDetailPageP
 		.order("created_at", { ascending: true });
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center gap-4">
-				<Button variant="ghost" size="icon" asChild>
-					<Link href="/settings/oauth-apps">
-						<ChevronLeft className="h-5 w-5" />
-					</Link>
-				</Button>
-				<div className="flex-1">
-					<h1 className="text-2xl font-bold">{oauthApp.name}</h1>
-					<p className="text-sm text-muted-foreground mt-1">
-						OAuth Application Details
-					</p>
-				</div>
-			</div>
-
-			<Suspense fallback={<div>Loading app details...</div>}>
-				<OAuthAppDetailPanel
-					oauthApp={oauthApp}
-					authorizations={authorizations ?? []}
-					usageStats={usageStats ?? []}
-					currentUserId={user.id}
-				/>
-			</Suspense>
-		</div>
+		<OAuthAppDetailPanel
+			oauthApp={oauthApp}
+			authorizations={authorizations ?? []}
+			usageStats={usageStats ?? []}
+			currentUserId={user.id}
+		/>
 	);
 }

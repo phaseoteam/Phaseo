@@ -17,8 +17,7 @@ const tabs = [
 	{ label: "Family", key: "family" },
 	{ label: "Timeline", key: "timeline" },
 	{ label: "Benchmarks", key: "benchmarks" },
-	{ label: "Availability", key: "availability" },
-	{ label: "Pricing", key: "pricing" },
+	{ label: "Availability + Pricing", key: "pricing" },
 	{ label: "Quickstart", key: "quickstart" },
 	{ label: "Performance", key: "performance" },
 ];

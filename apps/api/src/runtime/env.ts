@@ -19,8 +19,12 @@ export type GatewayBindings = {
     OPENAI_BASE_URL?: string;
     GOOGLE_AI_STUDIO_API_KEY?: string;
     GOOGLE_AI_STUDIO_BASE_URL?: string;
+    GOOGLE_API_KEY?: string;
+    GOOGLE_BASE_URL?: string;
     ANTHROPIC_API_KEY?: string;
     X_AI_API_KEY?: string;
+    XAI_API_KEY?: string;
+    XAI_BASE_URL?: string;
     XAI_DEBUG_USAGE?: string;
     AI21_API_KEY?: string;
     AI21_BASE_URL?: string;
@@ -28,6 +32,11 @@ export type GatewayBindings = {
     ALIBABA_BASE_URL?: string;
     AMAZON_BEDROCK_API_KEY?: string;
     AMAZON_BEDROCK_BASE_URL?: string;
+    AMAZON_BEDROCK_REGION?: string;
+    AWS_ACCESS_KEY_ID?: string;
+    AWS_SECRET_ACCESS_KEY?: string;
+    AWS_SESSION_TOKEN?: string;
+    AWS_REGION?: string;
     ARCEE_API_KEY?: string;
     ARCEE_BASE_URL?: string;
     ATLAS_CLOUD_API_KEY?: string;
@@ -64,6 +73,9 @@ export type GatewayBindings = {
     GROQ_BASE_URL?: string;
     GOOGLE_VERTEX_API_KEY?: string;
     GOOGLE_VERTEX_BASE_URL?: string;
+    GOOGLE_VERTEX_ACCESS_TOKEN?: string;
+    GOOGLE_VERTEX_PROJECT?: string;
+    GOOGLE_VERTEX_LOCATION?: string;
     HYPERBOLIC_API_KEY?: string;
     HYPERBOLIC_BASE_URL?: string;
     INCEPTION_API_KEY?: string;
@@ -82,6 +94,10 @@ export type GatewayBindings = {
     MINIMAX_BASE_URL?: string;
     MISTRAL_API_KEY?: string;
     MISTRAL_BASE_URL?: string;
+    ELEVENLABS_API_KEY?: string;
+    ELEVENLABS_BASE_URL?: string;
+    SUNO_API_KEY?: string;
+    SUNO_BASE_URL?: string;
     MOONSHOT_API_KEY?: string;
     MOONSHOT_BASE_URL?: string;
     MORPH_API_KEY?: string;
@@ -117,6 +133,7 @@ export type GatewayBindings = {
     AION_LABS_API_KEY?: string;
     AION_LABS_BASE_URL?: string;
     ZAI_API_KEY?: string;
+    ZAI_BASE_URL?: string;
     AZURE_OPENAI_API_KEY?: string;
     AZURE_OPENAI_BASE_URL?: string;
     AZURE_OPENAI_API_VERSION?: string;
@@ -150,9 +167,13 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "OPENAI_BASE_URL",
     "GOOGLE_AI_STUDIO_API_KEY",
     "GOOGLE_AI_STUDIO_BASE_URL",
+    "GOOGLE_API_KEY",
+    "GOOGLE_BASE_URL",
     "ANTHROPIC_API_KEY",
     "KEY_PEPPER",
     "X_AI_API_KEY",
+    "XAI_API_KEY",
+    "XAI_BASE_URL",
     "XAI_DEBUG_USAGE",
     "AI21_API_KEY",
     "AI21_BASE_URL",
@@ -160,6 +181,11 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "ALIBABA_BASE_URL",
     "AMAZON_BEDROCK_API_KEY",
     "AMAZON_BEDROCK_BASE_URL",
+    "AMAZON_BEDROCK_REGION",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_REGION",
     "ARCEE_API_KEY",
     "ARCEE_BASE_URL",
     "ATLAS_CLOUD_API_KEY",
@@ -196,6 +222,9 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "GROQ_BASE_URL",
     "GOOGLE_VERTEX_API_KEY",
     "GOOGLE_VERTEX_BASE_URL",
+    "GOOGLE_VERTEX_ACCESS_TOKEN",
+    "GOOGLE_VERTEX_PROJECT",
+    "GOOGLE_VERTEX_LOCATION",
     "HYPERBOLIC_API_KEY",
     "HYPERBOLIC_BASE_URL",
     "INCEPTION_API_KEY",
@@ -214,6 +243,10 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "MINIMAX_BASE_URL",
     "MISTRAL_API_KEY",
     "MISTRAL_BASE_URL",
+    "ELEVENLABS_API_KEY",
+    "ELEVENLABS_BASE_URL",
+    "SUNO_API_KEY",
+    "SUNO_BASE_URL",
     "MOONSHOT_API_KEY",
     "MOONSHOT_BASE_URL",
     "MORPH_API_KEY",
@@ -249,6 +282,7 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "AION_LABS_API_KEY",
     "AION_LABS_BASE_URL",
     "ZAI_API_KEY",
+    "ZAI_BASE_URL",
     "AZURE_OPENAI_API_KEY",
     "AZURE_OPENAI_BASE_URL",
     "AZURE_OPENAI_API_VERSION",
@@ -277,6 +311,15 @@ function snapshotBindings(env: GatewayBindings): GatewayBindings {
             snap[key] = typeof value === "string" ? `${value}` : value;
         }
     }
+
+    // Backward-compatible aliases used across scripts/docs/tests.
+    if (!snap.X_AI_API_KEY && env.XAI_API_KEY) {
+        snap.X_AI_API_KEY = `${env.XAI_API_KEY}`;
+    }
+    if (!snap.XAI_API_KEY && env.X_AI_API_KEY) {
+        snap.XAI_API_KEY = `${env.X_AI_API_KEY}`;
+    }
+
     return Object.freeze(snap) as GatewayBindings;
 }
 

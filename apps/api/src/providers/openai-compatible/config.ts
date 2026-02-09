@@ -43,7 +43,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     // AI21 - OpenAI-style Studio API
     alibaba: {
         providerId: "alibaba",
-        baseUrl: "https://dashscope.aliyuncs.com",
+        baseUrl: "https://dashscope-intl.aliyuncs.com",
         pathPrefix: "/compatible-mode/v1",
         apiKeyEnv: "ALIBABA_API_KEY",
         baseUrlEnv: "ALIBABA_BASE_URL",
@@ -91,7 +91,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "AMAZON_BEDROCK_BASE_URL",
         apiKeyEnv: "AMAZON_BEDROCK_API_KEY",
         pathPrefix: "/v1",
-        supportsResponses: true,
+        supportsResponses: false,
     },
     baseten: {
         providerId: "baseten",
@@ -113,6 +113,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/v1",
         apiKeyEnv: "CEREBRAS_API_KEY",
         baseUrlEnv: "CEREBRAS_BASE_URL",
+        supportsResponses: false,
     },
     clarifai: {
         providerId: "clarifai",
@@ -177,7 +178,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "GOOGLE_VERTEX_BASE_URL",
         apiKeyEnv: "GOOGLE_VERTEX_API_KEY",
         pathPrefix: "",
-        supportsResponses: true,
+        supportsResponses: false,
     },
     groq: {
         providerId: "groq",
@@ -185,6 +186,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/openai/v1",
         apiKeyEnv: "GROQ_API_KEY",
         baseUrlEnv: "GROQ_BASE_URL",
+        supportsResponses: true,
     },
     hyperbolic: {
         providerId: "hyperbolic",
@@ -223,14 +225,15 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     },
     minimax: {
         providerId: "minimax",
-        baseUrl: "https://api.minimax.chat",
+        // MiniMax OpenAI compatibility docs use api.minimax.io.
+        baseUrl: "https://api.minimax.io",
         pathPrefix: "/v1",
         apiKeyEnv: "MINIMAX_API_KEY",
         baseUrlEnv: "MINIMAX_BASE_URL",
     },
     "minimax-lightning": {
         providerId: "minimax-lightning",
-        baseUrl: "https://api.minimax.chat",
+        baseUrl: "https://api.minimax.io",
         pathPrefix: "/v1",
         apiKeyEnv: "MINIMAX_API_KEY",
         baseUrlEnv: "MINIMAX_BASE_URL",
@@ -300,7 +303,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     },
     qwen: {
         providerId: "qwen",
-        baseUrl: "https://dashscope.aliyuncs.com",
+        baseUrl: "https://dashscope-intl.aliyuncs.com",
         pathPrefix: "/compatible-mode/v1",
         apiKeyEnv: "QWEN_API_KEY",
         baseUrlEnv: "QWEN_BASE_URL",
@@ -367,6 +370,14 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrl: "https://api.x.ai",
         pathPrefix: "/v1",
         apiKeyEnv: "X_AI_API_KEY",
+        baseUrlEnv: "XAI_BASE_URL",
+        supportsResponses: true,
+    },
+    xai: {
+        providerId: "xai",
+        baseUrl: "https://api.x.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "XAI_API_KEY",
         baseUrlEnv: "XAI_BASE_URL",
         supportsResponses: true,
     },

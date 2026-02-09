@@ -22,6 +22,8 @@ type ProviderRoutingOptions struct {
 	Order []string `json:"order,omitempty"`
 	Only []string `json:"only,omitempty"`
 	Ignore []string `json:"ignore,omitempty"`
+	// Include alpha providers in routing (off by default).
+	IncludeAlpha *bool `json:"include_alpha,omitempty"`
 }
 
 // NewProviderRoutingOptions instantiates a new ProviderRoutingOptions object
@@ -137,6 +139,38 @@ func (o *ProviderRoutingOptions) SetIgnore(v []string) {
 	o.Ignore = v
 }
 
+// GetIncludeAlpha returns the IncludeAlpha field value if set, zero value otherwise.
+func (o *ProviderRoutingOptions) GetIncludeAlpha() bool {
+	if o == nil || IsNil(o.IncludeAlpha) {
+		var ret bool
+		return ret
+	}
+	return *o.IncludeAlpha
+}
+
+// GetIncludeAlphaOk returns a tuple with the IncludeAlpha field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ProviderRoutingOptions) GetIncludeAlphaOk() (*bool, bool) {
+	if o == nil || IsNil(o.IncludeAlpha) {
+		return nil, false
+	}
+	return o.IncludeAlpha, true
+}
+
+// HasIncludeAlpha returns a boolean if a field has been set.
+func (o *ProviderRoutingOptions) HasIncludeAlpha() bool {
+	if o != nil && !IsNil(o.IncludeAlpha) {
+		return true
+	}
+
+	return false
+}
+
+// SetIncludeAlpha gets a reference to the given bool and assigns it to the IncludeAlpha field.
+func (o *ProviderRoutingOptions) SetIncludeAlpha(v bool) {
+	o.IncludeAlpha = &v
+}
+
 func (o ProviderRoutingOptions) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -155,6 +189,9 @@ func (o ProviderRoutingOptions) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Ignore) {
 		toSerialize["ignore"] = o.Ignore
+	}
+	if !IsNil(o.IncludeAlpha) {
+		toSerialize["include_alpha"] = o.IncludeAlpha
 	}
 	return toSerialize, nil
 }

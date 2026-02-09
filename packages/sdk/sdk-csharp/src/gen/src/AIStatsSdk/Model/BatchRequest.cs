@@ -37,14 +37,16 @@ namespace AIStatsSdk.Model
         /// <param name="endpoint">endpoint</param>
         /// <param name="completionWindow">completionWindow</param>
         /// <param name="metadata">metadata</param>
+        /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public BatchRequest(string inputFileId, string endpoint, Option<string?> completionWindow = default, Option<Object?> metadata = default, Option<ProviderRoutingOptions?> provider = default)
+        public BatchRequest(string inputFileId, string endpoint, Option<string?> completionWindow = default, Option<Object?> metadata = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
         {
             InputFileId = inputFileId;
             Endpoint = endpoint;
             CompletionWindowOption = completionWindow;
             MetadataOption = metadata;
+            DebugOption = debug;
             ProviderOption = provider;
             OnCreated();
         }
@@ -90,6 +92,19 @@ namespace AIStatsSdk.Model
         public Object? Metadata { get { return this.MetadataOption; } set { this.MetadataOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Debug
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<DebugOptions?> DebugOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Debug
+        /// </summary>
+        [JsonPropertyName("debug")]
+        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
+
+        /// <summary>
         /// Used to track the state of Provider
         /// </summary>
         [JsonIgnore]
@@ -114,6 +129,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Endpoint: ").Append(Endpoint).Append("\n");
             sb.Append("  CompletionWindow: ").Append(CompletionWindow).Append("\n");
             sb.Append("  Metadata: ").Append(Metadata).Append("\n");
+            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -156,6 +172,7 @@ namespace AIStatsSdk.Model
             Option<string?> endpoint = default;
             Option<string?> completionWindow = default;
             Option<Object?> metadata = default;
+            Option<DebugOptions?> debug = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -185,6 +202,9 @@ namespace AIStatsSdk.Model
                         case "metadata":
                             metadata = new Option<Object?>(JsonSerializer.Deserialize<Object>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
+                        case "debug":
+                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
@@ -212,10 +232,13 @@ namespace AIStatsSdk.Model
             if (metadata.IsSet && metadata.Value == null)
                 throw new ArgumentNullException(nameof(metadata), "Property is not nullable for class BatchRequest.");
 
+            if (debug.IsSet && debug.Value == null)
+                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class BatchRequest.");
+
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class BatchRequest.");
 
-            return new BatchRequest(inputFileId.Value!, endpoint.Value!, completionWindow, metadata, provider);
+            return new BatchRequest(inputFileId.Value!, endpoint.Value!, completionWindow, metadata, debug, provider);
         }
 
         /// <summary>
@@ -254,6 +277,9 @@ namespace AIStatsSdk.Model
             if (batchRequest.MetadataOption.IsSet && batchRequest.Metadata == null)
                 throw new ArgumentNullException(nameof(batchRequest.Metadata), "Property is required for class BatchRequest.");
 
+            if (batchRequest.DebugOption.IsSet && batchRequest.Debug == null)
+                throw new ArgumentNullException(nameof(batchRequest.Debug), "Property is required for class BatchRequest.");
+
             if (batchRequest.ProviderOption.IsSet && batchRequest.Provider == null)
                 throw new ArgumentNullException(nameof(batchRequest.Provider), "Property is required for class BatchRequest.");
 
@@ -268,6 +294,11 @@ namespace AIStatsSdk.Model
             {
                 writer.WritePropertyName("metadata");
                 JsonSerializer.Serialize(writer, batchRequest.Metadata, jsonSerializerOptions);
+            }
+            if (batchRequest.DebugOption.IsSet)
+            {
+                writer.WritePropertyName("debug");
+                JsonSerializer.Serialize(writer, batchRequest.Debug, jsonSerializerOptions);
             }
             if (batchRequest.ProviderOption.IsSet)
             {

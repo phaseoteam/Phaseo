@@ -56,26 +56,14 @@ export default function UpdateCard({
 	accentClass,
 	className,
 }: Props) {
-	const isTodayRelease =
-		badges.some((b) => b.label === "Release") &&
-		(dateIso
-			? (() => {
-					const now = new Date();
-					const d = new Date(dateIso);
-					return (
-						now.getUTCFullYear() === d.getUTCFullYear() &&
-						now.getUTCMonth() === d.getUTCMonth() &&
-						now.getUTCDate() === d.getUTCDate()
-					);
-			  })()
-			: false);
+	const isModelRelease = badges.some((b) => b.label === "Release");
 
 	return (
 		<Card
 			key={id}
 			className={cn(
 				"flex h-full flex-col border border-zinc-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-950",
-				isTodayRelease &&
+				isModelRelease &&
 					"border-amber-300 dark:border-amber-500 bg-amber-50/60 dark:bg-amber-900/20",
 				className
 			)}
@@ -169,7 +157,7 @@ export default function UpdateCard({
 					{dateIso ? (
 						<TimeDisplay
 							dateIso={dateIso}
-							isModelRelease={isTodayRelease}
+							isModelRelease={isModelRelease}
 						/>
 					) : null}
 				</div>

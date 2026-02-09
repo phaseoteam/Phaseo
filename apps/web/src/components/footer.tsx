@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { ThemeSelector } from "@/components/theme-toggle";
 import {
+	ArrowRightLeft,
 	FilePlus,
 	Book,
 	Milestone,
@@ -202,6 +203,16 @@ export default function Footer() {
 									<Link href="/tools" aria-label="Tools">
 										<Hammer className="h-4 w-4" />
 										<span className="text-xs">Tools</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link href="/migrate" aria-label="Migrate">
+										<ArrowRightLeft className="h-4 w-4" />
+										<span className="text-xs">Migrate</span>
 									</Link>
 								</Button>
 								<Button
@@ -481,6 +492,16 @@ export default function Footer() {
 								variant="ghost"
 								className="w-fit py-1 px-2 h-7"
 							>
+								<Link href="/migrate" aria-label="Migrate">
+									<ArrowRightLeft className="h-4 w-4" />
+									<span className="text-xs">Migrate</span>
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
 								<Link
 									href="/tools/pricing-calculator"
 									aria-label="Pricing Calculator"
@@ -618,7 +639,9 @@ export default function Footer() {
 							If you run into any issues or notice any data
 							errors, please visit our GitHub and report an issue.
 						</span>
-						<LastUpdated deployTime={deployTime} />
+						<React.Suspense fallback={null}>
+							<LastUpdated deployTime={deployTime} />
+						</React.Suspense>
 					</div>
 				</div>
 			</div>

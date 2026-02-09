@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import { getStripe } from "@/lib/stripe";
@@ -12,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { StripePortalButton } from "./StripePortalButton";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 function formatCardBrand(brand: string | null | undefined) {
   if (!brand) return "Unknown";
@@ -35,7 +37,23 @@ function formatDate(unixSeconds: number | null | undefined) {
   }
 }
 
-export default async function Page() {
+export default function Page() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold">Payment Methods</h1>
+        <p className="text-sm text-muted-foreground">
+          Review saved cards and identify the default payment method used for auto top-ups and invoices.
+        </p>
+      </div>
+      <Suspense fallback={<SettingsSectionFallback />}>
+        <PaymentMethodsContent />
+      </Suspense>
+    </div>
+  );
+}
+
+async function PaymentMethodsContent() {
   const supabase = await createClient();
   const teamId = await getTeamIdFromCookie();
   const stripe = getStripe();
@@ -85,14 +103,6 @@ export default async function Page() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">Payment Methods</h1>
-        <p className="text-sm text-muted-foreground">
-          Review saved cards and identify the default payment method used for auto top-ups and invoices.
-        </p>
-      </div>
-
       <Card>
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
@@ -171,7 +181,5 @@ export default async function Page() {
           )}
         </CardContent>
       </Card>
-    </div>
   );
 }
-

@@ -2,12 +2,12 @@ import type { CLIOptions, SimulationRun } from "./pricing-simulator-types";
 import { ensureRuntimeConfigured, clearRuntime } from "./pricing-simulator-env";
 import { loadCombos } from "./pricing-simulator-combos";
 import { RandomSource, shuffleInPlace } from "./pricing-simulator-random";
-import { computeBillSummary } from "../../src/lib/gateway/pricing/engine";
-import { parseUsdToNanos, formatUsdFromNanosExact } from "../../src/lib/gateway/pricing/money";
+import { loadPriceCard } from "../../src/pipeline/pricing/loader";
+import { computeBillSummary } from "../../src/pipeline/pricing/engine";
+import { parseUsdToNanos, formatUsdFromNanosExact } from "../../src/pipeline/pricing/money";
 import { computeRuleSummaries, generateUsageAndContext, estimateCostFromRules } from "./pricing-simulator-pricing-utils";
 import { withPricingDebug } from "./pricing-simulator-debug";
 import { isFlaggedDiff } from "./pricing-simulator-formatting";
-import { loadPriceCardsForCombos, makeComboKey } from "./pricing-simulator-price-cards";
 
 export type SimulationRunHandler = (run: SimulationRun) => void | Promise<void>;
 
@@ -24,11 +24,10 @@ export async function simulateEach(options: CLIOptions, onRun: SimulationRunHand
         if (options.randomize) shuffleInPlace(combos, random);
 
         const selected = combos.slice(0, Number.isFinite(options.limit) ? options.limit : combos.length);
-        const cardsByKey = await loadPriceCardsForCombos(selected);
         let emittedRuns = 0;
 
         for (const combo of selected) {
-            const card = cardsByKey.get(makeComboKey(combo));
+            const card = await loadPriceCard(combo.provider, combo.model, combo.endpoint);
             if (!card) continue;
 
             const planSet = new Set<string>(card.rules.map((r) => r.pricing_plan || "standard"));
@@ -147,3 +146,4 @@ export async function simulate(options: CLIOptions): Promise<SimulationRun[]> {
 
     return runs;
 }
+

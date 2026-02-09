@@ -35,6 +35,17 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -47,10 +58,8 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
-import type { ChatThread } from "@/lib/indexeddb/chats";
+import type { ChatThread, UnifiedChatEndpoint } from "@/lib/indexeddb/chats";
 import {
-	Check,
-	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
 	ChevronsUpDown,
@@ -58,9 +67,10 @@ import {
 	Database,
 	MessageCircleDashed,
 	Paintbrush,
+	Plus,
 	Settings,
 	Shield,
-	SlidersHorizontal,
+	X,
 } from "lucide-react";
 import {
 	Tooltip,
@@ -73,6 +83,7 @@ type ModelOption = {
 	orgId: string;
 	orgName: string;
 	label: string;
+	capabilityEndpoints: UnifiedChatEndpoint[];
 	providerIds: string[];
 	providerNames: string[];
 	providerAvailability: Record<string, boolean>;
@@ -106,6 +117,13 @@ const ACCENT_COLORS = [
 
 const MAX_PROVIDER_LOGOS = 8;
 const BASE_URL_OPTIONS = [BASE_URL];
+const CAPABILITY_LABELS: Record<UnifiedChatEndpoint, string> = {
+	responses: "Text",
+	"images.generations": "Image",
+	"video.generation": "Video",
+	"music.generate": "Music",
+	"audio.speech": "Audio",
+};
 
 const getModelBadgeProps = (suffix: string) => {
 	switch (suffix) {
@@ -140,8 +158,6 @@ const isNewModel = (releaseDate: string | null): boolean => {
 type ChatHeaderProps = {
 	activeThread: ChatThread | null;
 	modelOptions: ModelOptions;
-	selectedOrgId: string;
-	selectedModelLabel: string;
 	modelPickerOpen: boolean;
 	onModelPickerOpenChange: (open: boolean) => void;
 	onUpdateModel: (modelId: string) => void;
@@ -161,17 +177,32 @@ type ChatHeaderProps = {
 	isAdmin: boolean;
 	debugEnabled: boolean;
 	onDebugChange: (value: boolean) => void;
+	allowModelCompare?: boolean;
+	compareModelIds?: string[];
+	onCompareModelIdsChange?: (ids: string[]) => void;
+	onRemoveModel?: (modelId: string) => void;
+	onRemoveAllModels?: () => void;
+	onOpenModelSettingsForModel?: (modelId: string) => void;
+	modelDisplayNameById?: Record<string, string>;
+	modelEnabledById?: Record<string, boolean>;
+	modelCapabilitiesById?: Record<string, UnifiedChatEndpoint[]>;
+	modelSupportsAudioInputById?: Record<string, boolean>;
+	requiredCapability?: UnifiedChatEndpoint | null;
+	requireAudioInput?: boolean;
 };
 
 function formatOrgLabel(orgId: string) {
 	return orgId.replace(/-/g, " ");
 }
 
+function getOrgId(modelId: string) {
+	const [org] = modelId.split("/");
+	return org || "ai-stats";
+}
+
 export function ChatHeader({
 	activeThread,
 	modelOptions,
-	selectedOrgId,
-	selectedModelLabel,
 	modelPickerOpen,
 	onModelPickerOpenChange,
 	onUpdateModel,
@@ -191,6 +222,18 @@ export function ChatHeader({
 	isAdmin,
 	debugEnabled,
 	onDebugChange,
+	allowModelCompare = false,
+	compareModelIds = [],
+	onCompareModelIdsChange,
+	onRemoveModel,
+	onRemoveAllModels,
+	onOpenModelSettingsForModel,
+	modelDisplayNameById,
+	modelEnabledById,
+	modelCapabilitiesById,
+	modelSupportsAudioInputById,
+	requiredCapability = null,
+	requireAudioInput = false,
 }: ChatHeaderProps) {
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const [settingsTab, setSettingsTab] = useState<
@@ -218,6 +261,214 @@ export function ChatHeader({
 			),
 		[comingSoonEntries]
 	);
+	const selectedModelIds = useMemo(() => {
+		const ids: string[] = [];
+		if (activeThread?.modelId) {
+			ids.push(activeThread.modelId);
+		}
+		for (const id of compareModelIds ?? []) {
+			if (!id || id === activeThread?.modelId) continue;
+			ids.push(id);
+		}
+		return Array.from(new Set(ids));
+	}, [activeThread?.modelId, compareModelIds]);
+	const selectedModelPreview = selectedModelIds.slice(0, 5);
+	const hiddenSelectedCount = Math.max(
+		0,
+		selectedModelIds.length - selectedModelPreview.length,
+	);
+	const hiddenSelectedModelIds = useMemo(
+		() => selectedModelIds.slice(selectedModelPreview.length),
+		[selectedModelIds, selectedModelPreview.length],
+	);
+	const compareModelIdSet = useMemo(
+		() =>
+			new Set(
+				selectedModelIds.filter((id) => id !== activeThread?.modelId),
+			),
+		[selectedModelIds, activeThread?.modelId],
+	);
+	const selectedModelLabelById = useMemo(() => {
+		const labelById = new Map<string, string>();
+		for (const option of modelOptions.featured) {
+			labelById.set(option.modelId, option.label);
+		}
+		for (const list of modelOptions.grouped.values()) {
+			for (const option of list) {
+				labelById.set(option.modelId, option.label);
+			}
+		}
+		for (const list of modelOptions.comingSoon.values()) {
+			for (const option of list) {
+				labelById.set(option.modelId, option.label);
+			}
+		}
+		return labelById;
+	}, [modelOptions.featured, modelOptions.grouped, modelOptions.comingSoon]);
+	const selectedModelOrgIdById = useMemo(() => {
+		const orgIdById = new Map<string, string>();
+		for (const option of modelOptions.featured) {
+			orgIdById.set(option.modelId, option.orgId);
+		}
+		for (const list of modelOptions.grouped.values()) {
+			for (const option of list) {
+				orgIdById.set(option.modelId, option.orgId);
+			}
+		}
+		for (const list of modelOptions.comingSoon.values()) {
+			for (const option of list) {
+				orgIdById.set(option.modelId, option.orgId);
+			}
+		}
+		return orgIdById;
+	}, [modelOptions.featured, modelOptions.grouped, modelOptions.comingSoon]);
+	const requiredCapabilityLabel = requiredCapability
+		? CAPABILITY_LABELS[requiredCapability] ?? "Text"
+		: null;
+	const requiredFilterLabel = useMemo(() => {
+		const labels: string[] = [];
+		if (requiredCapabilityLabel) {
+			labels.push(requiredCapabilityLabel.toLowerCase());
+		}
+		if (requireAudioInput) {
+			labels.push("audio input");
+		}
+		if (!labels.length) return null;
+		return labels.join(" + ");
+	}, [requiredCapabilityLabel, requireAudioInput]);
+	const getModelCapabilities = (modelId: string): UnifiedChatEndpoint[] =>
+		modelCapabilitiesById?.[modelId] ?? ["responses"];
+	const supportsModelAudioInput = (modelId: string) =>
+		modelSupportsAudioInputById?.[modelId] === true;
+	const isModelCapabilityCompatible = (modelId: string) =>
+		(!requiredCapability ||
+			getModelCapabilities(modelId).includes(requiredCapability)) &&
+		(!requireAudioInput || supportsModelAudioInput(modelId));
+	const getIncompatibleCapabilityLabel = (modelId: string) => {
+		if (requireAudioInput && !supportsModelAudioInput(modelId)) {
+			return "Audio input";
+		}
+		const labels = Array.from(
+			new Set(
+				getModelCapabilities(modelId).map(
+					(capability) => CAPABILITY_LABELS[capability] ?? "Text",
+				),
+			),
+		);
+		if (labels.length === 0) return "Text";
+		if (labels.length === 1) return labels[0];
+		return labels.slice(0, 2).join("/");
+	};
+	const handleModelSelect = (modelId: string) => {
+		if (!isModelCapabilityCompatible(modelId)) {
+			return;
+		}
+		if (!allowModelCompare) {
+			onUpdateModel(modelId);
+			onModelPickerOpenChange(false);
+			return;
+		}
+		if (!activeThread?.modelId) {
+			onUpdateModel(modelId);
+			return;
+		}
+		if (activeThread.modelId === modelId) {
+			if (selectedModelIds.length > 0) {
+				onRemoveModel?.(modelId);
+			}
+			return;
+		}
+		if (!onCompareModelIdsChange) {
+			onUpdateModel(modelId);
+			return;
+		}
+		const nextSet = new Set(compareModelIdSet);
+		if (nextSet.has(modelId)) {
+			nextSet.delete(modelId);
+		} else {
+			nextSet.add(modelId);
+		}
+		onCompareModelIdsChange(Array.from(nextSet));
+	};
+	const handleRemoveModel = (modelId: string) => {
+		onRemoveModel?.(modelId);
+	};
+	const handleOpenModelSettings = (modelId: string) => {
+		if (onOpenModelSettingsForModel) {
+			onOpenModelSettingsForModel(modelId);
+			return;
+		}
+		onOpenModelSettings();
+	};
+	const renderSelectedModelChip = (modelId: string) => {
+		const orgId = selectedModelOrgIdById.get(modelId) ?? getOrgId(modelId);
+		const baseLabel = (selectedModelLabelById.get(modelId) ?? modelId).split(
+			":",
+		)[0];
+		const label = modelDisplayNameById?.[modelId]?.trim() || baseLabel;
+		const modelEnabled = modelEnabledById?.[modelId] !== false;
+		const canRemoveModel = Boolean(onRemoveModel);
+		return (
+			<div key={modelId} className="relative shrink-0">
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={() => handleOpenModelSettings(modelId)}
+					className={cn(
+						"h-8 max-w-[220px] gap-1.5 pl-2",
+						!modelEnabled && "opacity-55",
+						canRemoveModel ? "pr-7" : "pr-2",
+					)}
+				>
+					<Logo
+						id={orgId}
+						alt={label}
+						width={14}
+						height={14}
+						className="shrink-0 rounded"
+					/>
+					<span className="truncate text-xs">{label}</span>
+				</Button>
+				{canRemoveModel ? (
+					<ContextMenu>
+						<ContextMenuTrigger asChild>
+							<button
+								type="button"
+								className="absolute right-1 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+								onClick={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+									handleRemoveModel(modelId);
+								}}
+								aria-label={`Remove ${label}`}
+							>
+								<X className="h-3.5 w-3.5" />
+							</button>
+						</ContextMenuTrigger>
+						<ContextMenuContent>
+							<ContextMenuItem
+								onClick={(event) => {
+									event.preventDefault();
+									handleRemoveModel(modelId);
+								}}
+							>
+								Remove
+							</ContextMenuItem>
+							<ContextMenuItem
+								onClick={(event) => {
+									event.preventDefault();
+									onRemoveAllModels?.();
+								}}
+								className="text-destructive focus:text-destructive"
+							>
+								Remove all
+							</ContextMenuItem>
+						</ContextMenuContent>
+					</ContextMenu>
+				) : null}
+			</div>
+		);
+	};
 	const normalizeSearch = (value: string) =>
 		value
 			.toLowerCase()
@@ -288,7 +539,7 @@ export function ChatHeader({
 							width={18}
 							height={18}
 							className={cn(
-								"border border-background bg-background shrink-0",
+								"shrink-0",
 								option.providerAvailability?.[providerId]
 									? null
 									: "grayscale opacity-60"
@@ -325,30 +576,41 @@ export function ChatHeader({
 					</TooltipTrigger>
 					<TooltipContent>Toggle sidebar</TooltipContent>
 				</Tooltip>
+				{selectedModelIds.length > 0 ? (
+					<div className="flex max-w-[min(60vw,520px)] items-center gap-1 overflow-x-auto lg:max-w-[760px] xl:max-w-[880px]">
+						{selectedModelPreview.map(renderSelectedModelChip)}
+						{hiddenSelectedCount > 0 ? (
+							<HoverCard openDelay={100} closeDelay={120}>
+								<HoverCardTrigger asChild>
+									<Badge
+										variant="secondary"
+										className="h-5 cursor-default rounded-full px-1.5 text-[10px]"
+									>
+										+{hiddenSelectedCount}
+									</Badge>
+								</HoverCardTrigger>
+								<HoverCardContent
+									side="bottom"
+									align="start"
+									className="w-[min(86vw,540px)] p-2"
+								>
+									<div className="flex max-h-[280px] flex-wrap items-center gap-1 overflow-auto pr-1">
+										{hiddenSelectedModelIds.map(
+											renderSelectedModelChip,
+										)}
+									</div>
+								</HoverCardContent>
+							</HoverCard>
+						) : null}
+					</div>
+				) : null}
 				<ModelSelector
 					open={modelPickerOpen}
 					onOpenChange={onModelPickerOpenChange}
 				>
 					<ModelSelectorTrigger asChild>
-						<Button variant="ghost" className="gap-2">
-						{activeThread?.modelId ? (
-							<Logo
-								id={selectedOrgId}
-								alt={selectedOrgId}
-								width={18}
-								height={18}
-								className="shrink-0"
-							/>
-						) : (
-							<Cpu className="h-4 w-4 text-muted-foreground" />
-						)}
-							<span className="hidden md:inline text-left text-sm">
-								{selectedModelLabel}
-							</span>
-							<span className="md:hidden max-w-[180px] truncate text-left text-sm">
-								{selectedModelLabel}
-							</span>
-							<ChevronDown className="h-4 w-4 text-muted-foreground" />
+						<Button variant="ghost" size="icon" className="h-8 w-8">
+							<Plus className="h-4 w-4" />
 						</Button>
 					</ModelSelectorTrigger>
 					<ModelSelectorContent
@@ -360,6 +622,12 @@ export function ChatHeader({
 							<ModelSelectorEmpty>
 								No models found.
 							</ModelSelectorEmpty>
+							{requiredFilterLabel ? (
+								<p className="px-2 pb-2 text-xs text-muted-foreground">
+									Showing {requiredFilterLabel}-compatible
+									models for this chat.
+								</p>
+							) : null}
 							{modelOptions.featured.length > 0 && (
 								<>
 									<ModelSelectorGroup
@@ -371,18 +639,28 @@ export function ChatHeader({
 											key={option.modelId}
 											value={option.modelId}
 											onSelect={() => {
-												onUpdateModel(option.modelId);
-												onModelPickerOpenChange(false);
+												handleModelSelect(option.modelId);
 											}}
 											keywords={buildSearchKeywords(
 												option
 											)}
 											className={cn(
 												"flex items-center gap-3",
-												activeThread?.modelId ===
-													option.modelId &&
+												!isModelCapabilityCompatible(
+													option.modelId,
+												) && "opacity-55",
+												(activeThread?.modelId ===
+													option.modelId ||
+													compareModelIdSet.has(
+														option.modelId,
+													)) &&
 													"bg-foreground/5"
 											)}
+											disabled={
+												!isModelCapabilityCompatible(
+													option.modelId,
+												)
+											}
 										>
 											<Logo
 												id={option.orgId}
@@ -429,9 +707,30 @@ export function ChatHeader({
 														New
 													</Badge>
 												)}
-												{activeThread?.modelId ===
-													option.modelId && (
-													<Check className="h-4 w-4 text-foreground ml-1" />
+												{(activeThread?.modelId ===
+													option.modelId ||
+													compareModelIdSet.has(
+														option.modelId,
+													)) && (
+														<Badge
+															variant="secondary"
+															className="text-[10px] px-1.5 py-0"
+														>
+															Selected
+														</Badge>
+													)}
+												{!isModelCapabilityCompatible(
+													option.modelId,
+												) && (
+													<Badge
+														variant="outline"
+														className="text-[10px] px-1.5 py-0"
+													>
+														{getIncompatibleCapabilityLabel(
+															option.modelId,
+														)}{" "}
+														only
+													</Badge>
 												)}
 											</div>
 											{renderProviderLogos(option)}
@@ -457,16 +756,27 @@ export function ChatHeader({
 																	key={option.modelId}
 																	value={option.modelId}
 																	onSelect={() => {
-																		onUpdateModel(option.modelId);
-																		onModelPickerOpenChange(false);
+																		handleModelSelect(option.modelId);
 																	}}
 																	keywords={buildSearchKeywords(option)}
 																	className={cn(
 																		"flex items-center gap-3",
-																		activeThread?.modelId ===
-																			option.modelId &&
+																		!isModelCapabilityCompatible(
+																			option.modelId,
+																		) &&
+																			"opacity-55",
+																		(activeThread?.modelId ===
+																			option.modelId ||
+																			compareModelIdSet.has(
+																				option.modelId,
+																			)) &&
 																			"bg-foreground/5"
 																	)}
+																	disabled={
+																		!isModelCapabilityCompatible(
+																			option.modelId,
+																		)
+																	}
 																>
 																	<Logo
 																		id={option.orgId}
@@ -513,9 +823,30 @@ export function ChatHeader({
 														New
 													</Badge>
 												)}
-												{activeThread?.modelId ===
-													option.modelId && (
-													<Check className="h-4 w-4 text-foreground ml-1" />
+												{(activeThread?.modelId ===
+													option.modelId ||
+													compareModelIdSet.has(
+														option.modelId,
+													)) && (
+														<Badge
+															variant="secondary"
+															className="text-[10px] px-1.5 py-0"
+														>
+															Selected
+														</Badge>
+													)}
+												{!isModelCapabilityCompatible(
+													option.modelId,
+												) && (
+													<Badge
+														variant="outline"
+														className="text-[10px] px-1.5 py-0"
+													>
+														{getIncompatibleCapabilityLabel(
+															option.modelId,
+														)}{" "}
+														only
+													</Badge>
 												)}
 											</div>
 											{renderProviderLogos(
@@ -646,18 +977,6 @@ export function ChatHeader({
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>Temporary chat</TooltipContent>
-				</Tooltip>
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={onOpenModelSettings}
-						>
-							<SlidersHorizontal className="h-5 w-5" />
-						</Button>
-					</TooltipTrigger>
-					<TooltipContent>Model parameters</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>

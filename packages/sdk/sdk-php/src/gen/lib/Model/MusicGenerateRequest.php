@@ -64,7 +64,8 @@ class MusicGenerateRequest implements ModelInterface, ArrayAccess, \JsonSerializ
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions',
         'suno' => '\AIStats\Sdk\Model\MusicGenerateRequestSuno',
         'elevenlabs' => '\AIStats\Sdk\Model\MusicGenerateRequestElevenlabs',
-        'echo_upstream_request' => 'bool'
+        'echo_upstream_request' => 'bool',
+        'debug' => '\AIStats\Sdk\Model\DebugOptions'
     ];
 
     /**
@@ -82,7 +83,8 @@ class MusicGenerateRequest implements ModelInterface, ArrayAccess, \JsonSerializ
         'provider' => null,
         'suno' => null,
         'elevenlabs' => null,
-        'echo_upstream_request' => null
+        'echo_upstream_request' => null,
+        'debug' => null
     ];
 
     /**
@@ -98,7 +100,8 @@ class MusicGenerateRequest implements ModelInterface, ArrayAccess, \JsonSerializ
         'provider' => false,
         'suno' => false,
         'elevenlabs' => false,
-        'echo_upstream_request' => false
+        'echo_upstream_request' => false,
+        'debug' => false
     ];
 
     /**
@@ -194,7 +197,8 @@ class MusicGenerateRequest implements ModelInterface, ArrayAccess, \JsonSerializ
         'provider' => 'provider',
         'suno' => 'suno',
         'elevenlabs' => 'elevenlabs',
-        'echo_upstream_request' => 'echo_upstream_request'
+        'echo_upstream_request' => 'echo_upstream_request',
+        'debug' => 'debug'
     ];
 
     /**
@@ -210,7 +214,8 @@ class MusicGenerateRequest implements ModelInterface, ArrayAccess, \JsonSerializ
         'provider' => 'setProvider',
         'suno' => 'setSuno',
         'elevenlabs' => 'setElevenlabs',
-        'echo_upstream_request' => 'setEchoUpstreamRequest'
+        'echo_upstream_request' => 'setEchoUpstreamRequest',
+        'debug' => 'setDebug'
     ];
 
     /**
@@ -226,7 +231,8 @@ class MusicGenerateRequest implements ModelInterface, ArrayAccess, \JsonSerializ
         'provider' => 'getProvider',
         'suno' => 'getSuno',
         'elevenlabs' => 'getElevenlabs',
-        'echo_upstream_request' => 'getEchoUpstreamRequest'
+        'echo_upstream_request' => 'getEchoUpstreamRequest',
+        'debug' => 'getDebug'
     ];
 
     /**
@@ -313,6 +319,7 @@ class MusicGenerateRequest implements ModelInterface, ArrayAccess, \JsonSerializ
         $this->setIfExists('suno', $data ?? [], null);
         $this->setIfExists('elevenlabs', $data ?? [], null);
         $this->setIfExists('echo_upstream_request', $data ?? [], null);
+        $this->setIfExists('debug', $data ?? [], null);
     }
 
     /**
@@ -591,6 +598,33 @@ class MusicGenerateRequest implements ModelInterface, ArrayAccess, \JsonSerializ
             throw new \InvalidArgumentException('non-nullable echo_upstream_request cannot be null');
         }
         $this->container['echo_upstream_request'] = $echo_upstream_request;
+
+        return $this;
+    }
+
+    /**
+     * Gets debug
+     *
+     * @return \AIStats\Sdk\Model\DebugOptions|null
+     */
+    public function getDebug()
+    {
+        return $this->container['debug'];
+    }
+
+    /**
+     * Sets debug
+     *
+     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
+     *
+     * @return self
+     */
+    public function setDebug($debug)
+    {
+        if (is_null($debug)) {
+            throw new \InvalidArgumentException('non-nullable debug cannot be null');
+        }
+        $this->container['debug'] = $debug;
 
         return $this;
     }

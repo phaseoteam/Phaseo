@@ -8,26 +8,24 @@ interface LastUpdatedProps {
 }
 
 export default function LastUpdated({ deployTime }: LastUpdatedProps) {
-	// Calculate initial value immediately to avoid flash of empty content
-	const initialValue = deployTime
-		? formatRelativeToNow(new Date(deployTime))
-		: "";
-	const [lastUpdated, setLastUpdated] = useState<string>(initialValue);
-	useEffect(() => {
-		// Define the update function inside useEffect to avoid dependency issues
-		function updateLastUpdated() {
-			if (!deployTime) {
-				setLastUpdated("");
-				return;
-			}
+	const [lastUpdated, setLastUpdated] = useState<string>("");
 
-			setLastUpdated(formatRelativeToNow(new Date(deployTime)));
+	useEffect(() => {
+		const targetMs = Date.parse(deployTime);
+		if (!Number.isFinite(targetMs)) {
+			setLastUpdated("");
+			return;
 		}
+
+		function updateLastUpdated() {
+			setLastUpdated(formatRelativeToNow(targetMs, Date.now()));
+		}
+
+		updateLastUpdated();
 
 		// Update every minute to keep the relative time fresh
 		const interval = setInterval(updateLastUpdated, 60000);
 
-		// Return cleanup function
 		return () => clearInterval(interval);
 	}, [deployTime]);
 

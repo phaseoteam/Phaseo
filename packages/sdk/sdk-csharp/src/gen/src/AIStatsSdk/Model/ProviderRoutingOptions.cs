@@ -36,12 +36,14 @@ namespace AIStatsSdk.Model
         /// <param name="order">order</param>
         /// <param name="only">only</param>
         /// <param name="ignore">ignore</param>
+        /// <param name="includeAlpha">Include alpha providers in routing (off by default).</param>
         [JsonConstructor]
-        public ProviderRoutingOptions(Option<List<string>?> order = default, Option<List<string>?> only = default, Option<List<string>?> ignore = default)
+        public ProviderRoutingOptions(Option<List<string>?> order = default, Option<List<string>?> only = default, Option<List<string>?> ignore = default, Option<bool?> includeAlpha = default)
         {
             OrderOption = order;
             OnlyOption = only;
             IgnoreOption = ignore;
+            IncludeAlphaOption = includeAlpha;
             OnCreated();
         }
 
@@ -87,6 +89,20 @@ namespace AIStatsSdk.Model
         public List<string>? Ignore { get { return this.IgnoreOption; } set { this.IgnoreOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of IncludeAlpha
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<bool?> IncludeAlphaOption { get; private set; }
+
+        /// <summary>
+        /// Include alpha providers in routing (off by default).
+        /// </summary>
+        /// <value>Include alpha providers in routing (off by default).</value>
+        [JsonPropertyName("include_alpha")]
+        public bool? IncludeAlpha { get { return this.IncludeAlphaOption; } set { this.IncludeAlphaOption = new(value); } }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -97,6 +113,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Order: ").Append(Order).Append("\n");
             sb.Append("  Only: ").Append(Only).Append("\n");
             sb.Append("  Ignore: ").Append(Ignore).Append("\n");
+            sb.Append("  IncludeAlpha: ").Append(IncludeAlpha).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -137,6 +154,7 @@ namespace AIStatsSdk.Model
             Option<List<string>?> order = default;
             Option<List<string>?> only = default;
             Option<List<string>?> ignore = default;
+            Option<bool?> includeAlpha = default;
 
             while (utf8JsonReader.Read())
             {
@@ -162,6 +180,9 @@ namespace AIStatsSdk.Model
                         case "ignore":
                             ignore = new Option<List<string>?>(JsonSerializer.Deserialize<List<string>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
+                        case "include_alpha":
+                            includeAlpha = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
+                            break;
                         default:
                             break;
                     }
@@ -177,7 +198,10 @@ namespace AIStatsSdk.Model
             if (ignore.IsSet && ignore.Value == null)
                 throw new ArgumentNullException(nameof(ignore), "Property is not nullable for class ProviderRoutingOptions.");
 
-            return new ProviderRoutingOptions(order, only, ignore);
+            if (includeAlpha.IsSet && includeAlpha.Value == null)
+                throw new ArgumentNullException(nameof(includeAlpha), "Property is not nullable for class ProviderRoutingOptions.");
+
+            return new ProviderRoutingOptions(order, only, ignore, includeAlpha);
         }
 
         /// <summary>
@@ -228,6 +252,8 @@ namespace AIStatsSdk.Model
                 writer.WritePropertyName("ignore");
                 JsonSerializer.Serialize(writer, providerRoutingOptions.Ignore, jsonSerializerOptions);
             }
+            if (providerRoutingOptions.IncludeAlphaOption.IsSet)
+                writer.WriteBoolean("include_alpha", providerRoutingOptions.IncludeAlphaOption.Value!.Value);
         }
     }
 }

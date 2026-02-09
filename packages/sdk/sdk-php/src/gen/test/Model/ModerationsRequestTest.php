@@ -98,6 +98,15 @@ class ModerationsRequestTest extends TestCase
     }
 
     /**
+     * Test attribute "debug"
+     */
+    public function testPropertyDebug()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test attribute "input"
      */
     public function testPropertyInput()

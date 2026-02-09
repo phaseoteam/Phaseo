@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 **Order** | Pointer to **[]string** |  | [optional] 
 **Only** | Pointer to **[]string** |  | [optional] 
 **Ignore** | Pointer to **[]string** |  | [optional] 
+**IncludeAlpha** | Pointer to **bool** | Include alpha providers in routing (off by default). | [optional] 
 
 ## Methods
 
@@ -101,6 +102,31 @@ SetIgnore sets Ignore field to given value.
 `func (o *ProviderRoutingOptions) HasIgnore() bool`
 
 HasIgnore returns a boolean if a field has been set.
+
+### GetIncludeAlpha
+
+`func (o *ProviderRoutingOptions) GetIncludeAlpha() bool`
+
+GetIncludeAlpha returns the IncludeAlpha field if non-nil, zero value otherwise.
+
+### GetIncludeAlphaOk
+
+`func (o *ProviderRoutingOptions) GetIncludeAlphaOk() (*bool, bool)`
+
+GetIncludeAlphaOk returns a tuple with the IncludeAlpha field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetIncludeAlpha
+
+`func (o *ProviderRoutingOptions) SetIncludeAlpha(v bool)`
+
+SetIncludeAlpha sets IncludeAlpha field to given value.
+
+### HasIncludeAlpha
+
+`func (o *ProviderRoutingOptions) HasIncludeAlpha() bool`
+
+HasIncludeAlpha returns a boolean if a field has been set.
 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

@@ -68,6 +68,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tool_choice' => '\AIStats\Sdk\Model\ChatCompletionsRequestToolChoice',
         'stream' => 'bool',
         'metadata' => 'array<string,string>',
+        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -90,6 +91,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tool_choice' => null,
         'stream' => null,
         'metadata' => null,
+        'debug' => null,
         'provider' => null
     ];
 
@@ -110,6 +112,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tool_choice' => false,
         'stream' => false,
         'metadata' => false,
+        'debug' => false,
         'provider' => false
     ];
 
@@ -210,6 +213,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tool_choice' => 'tool_choice',
         'stream' => 'stream',
         'metadata' => 'metadata',
+        'debug' => 'debug',
         'provider' => 'provider'
     ];
 
@@ -230,6 +234,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tool_choice' => 'setToolChoice',
         'stream' => 'setStream',
         'metadata' => 'setMetadata',
+        'debug' => 'setDebug',
         'provider' => 'setProvider'
     ];
 
@@ -250,6 +255,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         'tool_choice' => 'getToolChoice',
         'stream' => 'getStream',
         'metadata' => 'getMetadata',
+        'debug' => 'getDebug',
         'provider' => 'getProvider'
     ];
 
@@ -321,6 +327,7 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
         $this->setIfExists('tool_choice', $data ?? [], null);
         $this->setIfExists('stream', $data ?? [], null);
         $this->setIfExists('metadata', $data ?? [], null);
+        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -724,6 +731,33 @@ class AnthropicMessagesRequest implements ModelInterface, ArrayAccess, \JsonSeri
             throw new \InvalidArgumentException('non-nullable metadata cannot be null');
         }
         $this->container['metadata'] = $metadata;
+
+        return $this;
+    }
+
+    /**
+     * Gets debug
+     *
+     * @return \AIStats\Sdk\Model\DebugOptions|null
+     */
+    public function getDebug()
+    {
+        return $this->container['debug'];
+    }
+
+    /**
+     * Sets debug
+     *
+     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
+     *
+     * @return self
+     */
+    public function setDebug($debug)
+    {
+        if (is_null($debug)) {
+            throw new \InvalidArgumentException('non-nullable debug cannot be null');
+        }
+        $this->container['debug'] = $debug;
 
         return $this;
     }

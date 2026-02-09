@@ -18,6 +18,11 @@ import { shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 
+function decodeBase64ToBytes(value: string): Uint8Array {
+	const binary = atob(value);
+	return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
 export async function finalizeRequest(args: {
     pre: { ok: true; ctx: PipelineContext };
     exec: { ok: true; result: RequestResult };
@@ -187,6 +192,21 @@ async function handleNonStreamResponse(
         payload,
         includeMeta,
     });
+
+    if (ctx.endpoint === "audio.speech") {
+        const audioBase64 = typeof payload?.audio_base64 === "string"
+            ? payload.audio_base64
+            : (typeof payload?.audio?.data === "string" ? payload.audio.data : null);
+        if (audioBase64) {
+            const mimeType = payload?.mime_type ?? payload?.audio?.mime_type ?? payload?.audio?.mimeType ?? "audio/mpeg";
+            const headers = makeHeaders(timingHeader);
+            headers.set("Content-Type", mimeType);
+            return new Response(decodeBase64ToBytes(audioBase64), {
+                status: result.upstream.status,
+                headers,
+            });
+        }
+    }
 
     if (ctx.meta?.debug?.enabled) {
         void logDebugEvent("response.pipeline", {

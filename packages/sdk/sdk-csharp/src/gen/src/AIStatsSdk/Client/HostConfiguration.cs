@@ -64,6 +64,8 @@ namespace AIStatsSdk.Client
             _jsonOptions.Converters.Add(new BatchResponseJsonConverter());
             _jsonOptions.Converters.Add(new BenchmarkIdJsonConverter());
             _jsonOptions.Converters.Add(new BenchmarkIdNullableJsonConverter());
+            _jsonOptions.Converters.Add(new CalculatePricing200ResponseJsonConverter());
+            _jsonOptions.Converters.Add(new CalculatePricingRequestJsonConverter());
             _jsonOptions.Converters.Add(new ChatChoiceJsonConverter());
             _jsonOptions.Converters.Add(new ChatCompletionsRequestJsonConverter());
             _jsonOptions.Converters.Add(new ChatCompletionsRequestResponseFormatJsonConverter());
@@ -73,8 +75,8 @@ namespace AIStatsSdk.Client
             _jsonOptions.Converters.Add(new ChatCompletionsResponseJsonConverter());
             _jsonOptions.Converters.Add(new ChatMessageJsonConverter());
             _jsonOptions.Converters.Add(new ChatMessageContentJsonConverter());
-            _jsonOptions.Converters.Add(new CreateProvisioningKey201ResponseJsonConverter());
-            _jsonOptions.Converters.Add(new CreateProvisioningKeyRequestJsonConverter());
+            _jsonOptions.Converters.Add(new CreateOAuthClientRequestJsonConverter());
+            _jsonOptions.Converters.Add(new DebugOptionsJsonConverter());
             _jsonOptions.Converters.Add(new DeleteProvisioningKey200ResponseJsonConverter());
             _jsonOptions.Converters.Add(new EmbeddingJsonConverter());
             _jsonOptions.Converters.Add(new EmbeddingsRequestJsonConverter());
@@ -103,8 +105,13 @@ namespace AIStatsSdk.Client
             _jsonOptions.Converters.Add(new ListModels200ResponseJsonConverter());
             _jsonOptions.Converters.Add(new ListModels500ResponseJsonConverter());
             _jsonOptions.Converters.Add(new ListModelsOrganisationParameterJsonConverter());
+            _jsonOptions.Converters.Add(new ListOAuthClients200ResponseJsonConverter());
+            _jsonOptions.Converters.Add(new ListOrganisations200ResponseJsonConverter());
+            _jsonOptions.Converters.Add(new ListOrganisations200ResponseOrganisationsInnerJsonConverter());
+            _jsonOptions.Converters.Add(new ListPricingModels200ResponseJsonConverter());
             _jsonOptions.Converters.Add(new ListProviders200ResponseJsonConverter());
             _jsonOptions.Converters.Add(new ListProvisioningKeys200ResponseJsonConverter());
+            _jsonOptions.Converters.Add(new ListProvisioningKeysAlias200ResponseJsonConverter());
             _jsonOptions.Converters.Add(new MessageContentPartJsonConverter());
             _jsonOptions.Converters.Add(new ModelJsonConverter());
             _jsonOptions.Converters.Add(new ModelIdJsonConverter());

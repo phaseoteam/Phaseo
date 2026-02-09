@@ -153,13 +153,16 @@ function resolveProviderId(providerId: string) {
 }
 
 const PROVIDER_SCENARIO_OVERRIDES: Record<string, Partial<Record<Endpoint, Scenario>>> = {
-    // Example:
-    // "perplexity": {
-    //     embeddings: {
-    //         ...SCENARIOS.embeddings!,
-    //         responseBody: { ... },
-    //     },
-    // },
+    elevenlabs: {
+        "audio.speech": {
+            ...SCENARIOS["audio.speech"]!,
+            urlMatch: (url) => url.includes("/v1/text-to-speech/"),
+        },
+        "audio.transcription": {
+            ...SCENARIOS["audio.transcription"]!,
+            urlMatch: (url) => url.includes("/v1/speech-to-text"),
+        },
+    },
 };
 
 function resolveScenario(providerId: string, endpoint: Endpoint): Scenario | undefined {
@@ -175,6 +178,8 @@ function supportedEndpointsFor(providerId: string): Set<Endpoint> {
             return GOOGLE_ENDPOINTS;
         case "azure":
             return AZURE_ENDPOINTS;
+        case "elevenlabs":
+            return new Set<Endpoint>(["audio.speech", "audio.transcription"]);
         case "anthropic":
         case "x-ai":
         case "xiaomi":

@@ -1,0 +1,20 @@
+appId: com.aistats.desktopstudio
+productName: AI Stats Desktop Studio
+directories:
+  output: release
+files:
+  - dist/**
+asar: true
+win:
+  target:
+    - nsis
+mac:
+  target:
+    - dmg
+linux:
+  target:
+    - AppImage
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true

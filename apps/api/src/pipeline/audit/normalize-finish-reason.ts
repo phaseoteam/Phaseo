@@ -35,7 +35,9 @@ export function normalizeFinishReason(
 		provider === "fireworks" ||
 		provider === "groq" ||
 		provider === "deepseek" ||
-		provider === "cerebras"
+		provider === "cerebras" ||
+		provider === "qwen" ||
+		provider === "alibaba"
 	) {
 		if (lower === "stop") return "stop";
 		if (lower === "length") return "length";
@@ -55,7 +57,7 @@ export function normalizeFinishReason(
 	}
 
 	// Google (Gemini/Vertex)
-	if (provider === "google-ai-studio" || provider === "google-vertex") {
+	if (provider === "google" || provider === "google-ai-studio" || provider === "google-vertex") {
 		if (lower === "stop") return "stop";
 		if (lower === "max_tokens") return "length";
 		if (lower === "safety") return "safety";
@@ -95,14 +97,14 @@ export function normalizeFinishReason(
 	}
 
 	// Moonshot
-	if (provider === "moonshot-ai" || provider === "moonshot-ai-turbo") {
+	if (provider === "moonshotai" || provider === "moonshot-ai" || provider === "moonshot-ai-turbo") {
 		if (lower === "stop") return "stop";
 		if (lower === "length") return "length";
 		if (lower === "tool_calls") return "tool_calls";
 	}
 
 	// Z.AI (Zhipu/GLM)
-	if (provider === "z-ai") {
+	if (provider === "z-ai" || provider === "zai") {
 		if (lower === "stop") return "stop";
 		if (lower === "length") return "length";
 		if (lower === "tool_calls") return "tool_calls";
@@ -118,7 +120,7 @@ export function normalizeFinishReason(
 	}
 
 	// X.AI (Grok)
-	if (provider === "x-ai") {
+	if (provider === "x-ai" || provider === "xai") {
 		if (lower === "stop") return "stop";
 		if (lower === "length") return "length";
 		if (lower === "tool_use") return "tool_calls";

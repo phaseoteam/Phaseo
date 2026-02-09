@@ -4,40 +4,106 @@ All URIs are relative to *https://api.phaseo.app/v1*
 
 | Method | HTTP request | Description |
 |--------|--------------|-------------|
+| [**CalculatePricing**](DefaultApi.md#calculatepricing) | **POST** /pricing/calculate | Calculate pricing |
 | [**CreateAnthropicMessage**](DefaultApi.md#createanthropicmessage) | **POST** /messages | Create message |
 | [**CreateBatch**](DefaultApi.md#createbatch) | **POST** /batches | Create batch |
+| [**CreateBatchAlias**](DefaultApi.md#createbatchalias) | **POST** /batch | Create batch (alias) |
 | [**CreateChatCompletion**](DefaultApi.md#createchatcompletion) | **POST** /chat/completions | Create chat completion |
 | [**CreateEmbedding**](DefaultApi.md#createembedding) | **POST** /embeddings | Create embeddings |
 | [**CreateImage**](DefaultApi.md#createimage) | **POST** /images/generations | Create image |
 | [**CreateImageEdit**](DefaultApi.md#createimageedit) | **POST** /images/edits | Create image edit |
+| [**CreateKeyPlaceholder**](DefaultApi.md#createkeyplaceholder) | **POST** /keys | Create key (placeholder) |
 | [**CreateModeration**](DefaultApi.md#createmoderation) | **POST** /moderations | Create moderation |
+| [**CreateOAuthClient**](DefaultApi.md#createoauthclient) | **POST** /oauth-clients | Create OAuth client |
 | [**CreateOcr**](DefaultApi.md#createocr) | **POST** /ocr | Create OCR |
-| [**CreateProvisioningKey**](DefaultApi.md#createprovisioningkey) | **POST** /provisioning/keys | Create provisioning key |
 | [**CreateResponse**](DefaultApi.md#createresponse) | **POST** /responses | Create response |
 | [**CreateSpeech**](DefaultApi.md#createspeech) | **POST** /audio/speech | Generate speech |
 | [**CreateTranscription**](DefaultApi.md#createtranscription) | **POST** /audio/transcriptions | Create transcription |
 | [**CreateTranslation**](DefaultApi.md#createtranslation) | **POST** /audio/translations | Create translation |
 | [**CreateVideo**](DefaultApi.md#createvideo) | **POST** /videos | Create video |
-| [**DeleteProvisioningKey**](DefaultApi.md#deleteprovisioningkey) | **DELETE** /provisioning/keys/{id} | Delete provisioning key |
+| [**CreateVideoAlias**](DefaultApi.md#createvideoalias) | **POST** /video/generations | Create video (alias) |
+| [**DeleteOAuthClient**](DefaultApi.md#deleteoauthclient) | **DELETE** /oauth-clients/{client_id} | Delete OAuth client |
+| [**DeleteProvisioningKey**](DefaultApi.md#deleteprovisioningkey) | **DELETE** /management/keys/{id} | Delete management API key |
+| [**DeleteProvisioningKeyAlias**](DefaultApi.md#deleteprovisioningkeyalias) | **DELETE** /provisioning/keys/{id} | Delete provisioning key |
 | [**DeleteVideo**](DefaultApi.md#deletevideo) | **DELETE** /videos/{video_id} | Delete video |
+| [**DeleteVideoAlias**](DefaultApi.md#deletevideoalias) | **DELETE** /video/generations/{video_id} | Delete video (alias) |
 | [**GenerateMusic**](DefaultApi.md#generatemusic) | **POST** /music/generate | Generate music |
+| [**GenerateMusicAlias**](DefaultApi.md#generatemusicalias) | **POST** /music/generations | Generate music (alias) |
 | [**GetActivity**](DefaultApi.md#getactivity) | **GET** /activity | Get activity |
 | [**GetAnalytics**](DefaultApi.md#getanalytics) | **POST** /analytics | Get analytics |
 | [**GetCredits**](DefaultApi.md#getcredits) | **GET** /credits | Get remaining credits |
-| [**GetGeneration**](DefaultApi.md#getgeneration) | **GET** /generation | Get generation |
-| [**GetProvisioningKey**](DefaultApi.md#getprovisioningkey) | **GET** /provisioning/keys/{id} | Get provisioning key |
+| [**GetGeneration**](DefaultApi.md#getgeneration) | **GET** /generations | Get generation |
+| [**GetKeyPlaceholder**](DefaultApi.md#getkeyplaceholder) | **GET** /key | Get key (placeholder) |
+| [**GetMusicGeneration**](DefaultApi.md#getmusicgeneration) | **GET** /music/generate/{music_id} | Get music generation status |
+| [**GetMusicGenerationAlias**](DefaultApi.md#getmusicgenerationalias) | **GET** /music/generations/{music_id} | Get music generation status (alias) |
+| [**GetOAuthClient**](DefaultApi.md#getoauthclient) | **GET** /oauth-clients/{client_id} | Get OAuth client |
+| [**GetProviderDerankStatus**](DefaultApi.md#getproviderderankstatus) | **GET** /health/providers/{provider_id}/derank | Provider derank status |
+| [**GetProvisioningKey**](DefaultApi.md#getprovisioningkey) | **GET** /management/keys/{id} | Get management API key |
+| [**GetProvisioningKeyAlias**](DefaultApi.md#getprovisioningkeyalias) | **GET** /provisioning/keys/{id} | Get provisioning key |
 | [**GetVideo**](DefaultApi.md#getvideo) | **GET** /videos/{video_id} | Get video status |
+| [**GetVideoAlias**](DefaultApi.md#getvideoalias) | **GET** /video/generations/{video_id} | Get video status (alias) |
 | [**GetVideoContent**](DefaultApi.md#getvideocontent) | **GET** /videos/{video_id}/content | Get video content |
-| [**Healthz**](DefaultApi.md#healthz) | **GET** /healthz | Health check |
+| [**GetVideoContentAlias**](DefaultApi.md#getvideocontentalias) | **GET** /video/generations/{video_id}/content | Get video content (alias) |
+| [**Healthz**](DefaultApi.md#healthz) | **GET** /health | Health check |
+| [**InvalidateGatewayKeyCache**](DefaultApi.md#invalidategatewaykeycache) | **POST** /keys/{id}/invalidate | Invalidate key cache |
+| [**ListEndpointsPlaceholder**](DefaultApi.md#listendpointsplaceholder) | **GET** /endpoints | List endpoints (placeholder) |
 | [**ListFiles**](DefaultApi.md#listfiles) | **GET** /files | List files |
+| [**ListKeysPlaceholder**](DefaultApi.md#listkeysplaceholder) | **GET** /keys | List keys (placeholder) |
 | [**ListModels**](DefaultApi.md#listmodels) | **GET** /models | List models |
+| [**ListOAuthClients**](DefaultApi.md#listoauthclients) | **GET** /oauth-clients | List OAuth clients |
+| [**ListOrganisations**](DefaultApi.md#listorganisations) | **GET** /organisations | List organisations |
+| [**ListPricingModels**](DefaultApi.md#listpricingmodels) | **GET** /pricing/models | List pricing models |
 | [**ListProviders**](DefaultApi.md#listproviders) | **GET** /providers | List providers |
-| [**ListProvisioningKeys**](DefaultApi.md#listprovisioningkeys) | **GET** /provisioning/keys | List provisioning keys |
+| [**ListProvisioningKeys**](DefaultApi.md#listprovisioningkeys) | **GET** /management/keys | List management API keys |
+| [**ListProvisioningKeysAlias**](DefaultApi.md#listprovisioningkeysalias) | **GET** /provisioning/keys | List provisioning keys |
+| [**RegenerateOAuthClientSecret**](DefaultApi.md#regenerateoauthclientsecret) | **POST** /oauth-clients/{client_id}/regenerate-secret | Regenerate OAuth client secret |
 | [**RetrieveBatch**](DefaultApi.md#retrievebatch) | **GET** /batches/{batch_id} | Retrieve batch |
+| [**RetrieveBatchAlias**](DefaultApi.md#retrievebatchalias) | **GET** /batch/{id} | Retrieve batch (alias) |
 | [**RetrieveFile**](DefaultApi.md#retrievefile) | **GET** /files/{file_id} | Retrieve file |
 | [**Root**](DefaultApi.md#root) | **GET** / | Root endpoint |
-| [**UpdateProvisioningKey**](DefaultApi.md#updateprovisioningkey) | **PATCH** /provisioning/keys/{id} | Update provisioning key |
+| [**UpdateOAuthClient**](DefaultApi.md#updateoauthclient) | **PATCH** /oauth-clients/{client_id} | Update OAuth client |
+| [**UpdateProvisioningKey**](DefaultApi.md#updateprovisioningkey) | **PATCH** /management/keys/{id} | Update management API key |
+| [**UpdateProvisioningKeyAlias**](DefaultApi.md#updateprovisioningkeyalias) | **PATCH** /provisioning/keys/{id} | Update provisioning key |
 | [**UploadFile**](DefaultApi.md#uploadfile) | **POST** /files | Upload file |
+
+<a id="calculatepricing"></a>
+# **CalculatePricing**
+> CalculatePricing200Response CalculatePricing (CalculatePricingRequest calculatePricingRequest)
+
+Calculate pricing
+
+Calculates price for a usage payload.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **calculatePricingRequest** | [**CalculatePricingRequest**](CalculatePricingRequest.md) |  |  |
+
+### Return type
+
+[**CalculatePricing200Response**](CalculatePricing200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Pricing calculation result |  -  |
+| **400** | Missing required fields |  -  |
+| **404** | Pricing not found |  -  |
+| **500** | Calculation error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
 <a id="createanthropicmessage"></a>
 # **CreateAnthropicMessage**
@@ -82,6 +148,42 @@ Creates a message using the Anthropic Messages API.
 Create batch
 
 Creates a batch of API requests.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **batchRequest** | [**BatchRequest**](BatchRequest.md) |  |  |
+
+### Return type
+
+[**BatchResponse**](BatchResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Batch response |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="createbatchalias"></a>
+# **CreateBatchAlias**
+> BatchResponse CreateBatchAlias (BatchRequest batchRequest)
+
+Create batch (alias)
+
+Alias of /batches.
 
 
 ### Parameters
@@ -264,6 +366,38 @@ Creates an edited or extended image given an original image and a prompt.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
+<a id="createkeyplaceholder"></a>
+# **CreateKeyPlaceholder**
+> void CreateKeyPlaceholder ()
+
+Create key (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+
+### Parameters
+This endpoint does not need any parameter.
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **501** | Not implemented |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
 <a id="createmoderation"></a>
 # **CreateModeration**
 > ModerationsResponse CreateModeration (ModerationsRequest moderationsRequest)
@@ -300,6 +434,44 @@ Classifies if text violates OpenAI's usage policies.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
+<a id="createoauthclient"></a>
+# **CreateOAuthClient**
+> Dictionary&lt;string, Object&gt; CreateOAuthClient (CreateOAuthClientRequest createOAuthClientRequest)
+
+Create OAuth client
+
+Creates a team-scoped OAuth client.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **createOAuthClientRequest** | [**CreateOAuthClientRequest**](CreateOAuthClientRequest.md) |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **201** | OAuth client created |  -  |
+| **400** | Validation error |  -  |
+| **401** | Unauthorized |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
 <a id="createocr"></a>
 # **CreateOcr**
 > Dictionary&lt;string, Object&gt; CreateOcr (OcrRequest ocrRequest)
@@ -333,44 +505,6 @@ Extracts text from an image using the requested model.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | OCR response |  -  |
-
-[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
-
-<a id="createprovisioningkey"></a>
-# **CreateProvisioningKey**
-> CreateProvisioningKey201Response CreateProvisioningKey (CreateProvisioningKeyRequest createProvisioningKeyRequest)
-
-Create provisioning key
-
-Creates a new provisioning key for a team.
-
-
-### Parameters
-
-| Name | Type | Description | Notes |
-|------|------|-------------|-------|
-| **createProvisioningKeyRequest** | [**CreateProvisioningKeyRequest**](CreateProvisioningKeyRequest.md) |  |  |
-
-### Return type
-
-[**CreateProvisioningKey201Response**](CreateProvisioningKey201Response.md)
-
-### Authorization
-
-[BearerAuth](../README.md#BearerAuth)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-| **201** | Created provisioning key |  -  |
-| **400** | Bad request |  -  |
-| **500** | Server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
@@ -564,20 +698,93 @@ Creates a video from a prompt.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
-<a id="deleteprovisioningkey"></a>
-# **DeleteProvisioningKey**
-> DeleteProvisioningKey200Response DeleteProvisioningKey (string id)
+<a id="createvideoalias"></a>
+# **CreateVideoAlias**
+> VideoGenerationResponse CreateVideoAlias (VideoGenerationRequest videoGenerationRequest)
 
-Delete provisioning key
+Create video (alias)
 
-Permanently deletes a provisioning key.
+Alias of /videos.
 
 
 ### Parameters
 
 | Name | Type | Description | Notes |
 |------|------|-------------|-------|
-| **id** | **string** | The provisioning key ID |  |
+| **videoGenerationRequest** | [**VideoGenerationRequest**](VideoGenerationRequest.md) |  |  |
+
+### Return type
+
+[**VideoGenerationResponse**](VideoGenerationResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Video response |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="deleteoauthclient"></a>
+# **DeleteOAuthClient**
+> Dictionary&lt;string, Object&gt; DeleteOAuthClient (string clientId)
+
+Delete OAuth client
+
+Deletes an OAuth client and related metadata.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **clientId** | **string** |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | OAuth client deleted |  -  |
+| **404** | OAuth app not found |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="deleteprovisioningkey"></a>
+# **DeleteProvisioningKey**
+> DeleteProvisioningKey200Response DeleteProvisioningKey (string id)
+
+Delete management API key
+
+Permanently deletes a management API key.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **id** | **string** | The management API key ID |  |
 
 ### Return type
 
@@ -599,6 +806,42 @@ Permanently deletes a provisioning key.
 | **200** | Key deleted successfully |  -  |
 | **404** | Key not found |  -  |
 | **500** | Server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="deleteprovisioningkeyalias"></a>
+# **DeleteProvisioningKeyAlias**
+> Dictionary&lt;string, Object&gt; DeleteProvisioningKeyAlias (string id)
+
+Delete provisioning key
+
+Alias of management key delete endpoint.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **id** | **string** |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Provisioning key deleted |  -  |
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
@@ -638,6 +881,42 @@ Deletes a video generation request.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
+<a id="deletevideoalias"></a>
+# **DeleteVideoAlias**
+> VideoDeleteResponse DeleteVideoAlias (string videoId)
+
+Delete video (alias)
+
+Alias of /videos/{video_id}.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **videoId** | **string** |  |  |
+
+### Return type
+
+[**VideoDeleteResponse**](VideoDeleteResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Video deletion response |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
 <a id="generatemusic"></a>
 # **GenerateMusic**
 > Dictionary&lt;string, Object&gt; GenerateMusic (MusicGenerateRequest musicGenerateRequest)
@@ -645,6 +924,42 @@ Deletes a video generation request.
 Generate music
 
 Generates music using the requested model and provider settings.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **musicGenerateRequest** | [**MusicGenerateRequest**](MusicGenerateRequest.md) |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Music generation response |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="generatemusicalias"></a>
+# **GenerateMusicAlias**
+> Dictionary&lt;string, Object&gt; GenerateMusicAlias (MusicGenerateRequest musicGenerateRequest)
+
+Generate music (alias)
+
+Alias of /music/generate.
 
 
 ### Parameters
@@ -827,20 +1142,204 @@ Retrieve a specific generation by ID.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
-<a id="getprovisioningkey"></a>
-# **GetProvisioningKey**
-> GetProvisioningKey200Response GetProvisioningKey (string id)
+<a id="getkeyplaceholder"></a>
+# **GetKeyPlaceholder**
+> void GetKeyPlaceholder ()
 
-Get provisioning key
+Get key (placeholder)
 
-Returns details of a specific provisioning key.
+Placeholder route; currently returns not implemented.
+
+
+### Parameters
+This endpoint does not need any parameter.
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **501** | Not implemented |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="getmusicgeneration"></a>
+# **GetMusicGeneration**
+> Dictionary&lt;string, Object&gt; GetMusicGeneration (string musicId)
+
+Get music generation status
+
+Retrieves the status for a music generation request.
 
 
 ### Parameters
 
 | Name | Type | Description | Notes |
 |------|------|-------------|-------|
-| **id** | **string** | The provisioning key ID |  |
+| **musicId** | **string** | The ID of the music generation request. |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Music generation status response |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="getmusicgenerationalias"></a>
+# **GetMusicGenerationAlias**
+> Dictionary&lt;string, Object&gt; GetMusicGenerationAlias (string musicId)
+
+Get music generation status (alias)
+
+Alias of /music/generate/{music_id}.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **musicId** | **string** |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Music generation status response |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="getoauthclient"></a>
+# **GetOAuthClient**
+> Dictionary&lt;string, Object&gt; GetOAuthClient (string clientId)
+
+Get OAuth client
+
+Returns details for an OAuth client.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **clientId** | **string** |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | OAuth client details |  -  |
+| **404** | OAuth app not found |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="getproviderderankstatus"></a>
+# **GetProviderDerankStatus**
+> Dictionary&lt;string, Object&gt; GetProviderDerankStatus (string providerId, int windowHours = null, int maxPairs = null, int fetchLimit = null)
+
+Provider derank status
+
+Returns breaker-based derank/recovery status for a provider.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **providerId** | **string** | Provider identifier. |  |
+| **windowHours** | **int** | Observation window in hours. | [optional]  |
+| **maxPairs** | **int** | Max endpoint/model tuples to inspect. | [optional]  |
+| **fetchLimit** | **int** | Max recent requests to scan. | [optional]  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Provider derank snapshot |  -  |
+| **400** | Invalid provider id |  -  |
+| **403** | Invalid control secret |  -  |
+| **503** | Control secret not configured |  -  |
+| **500** | Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="getprovisioningkey"></a>
+# **GetProvisioningKey**
+> GetProvisioningKey200Response GetProvisioningKey (string id)
+
+Get management API key
+
+Returns details of a specific management API key.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **id** | **string** | The management API key ID |  |
 
 ### Return type
 
@@ -859,9 +1358,45 @@ Returns details of a specific provisioning key.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | Provisioning key details |  -  |
+| **200** | Management API key details |  -  |
 | **404** | Key not found |  -  |
 | **500** | Server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="getprovisioningkeyalias"></a>
+# **GetProvisioningKeyAlias**
+> Dictionary&lt;string, Object&gt; GetProvisioningKeyAlias (string id)
+
+Get provisioning key
+
+Alias of management key details endpoint.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **id** | **string** |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Provisioning key details |  -  |
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
@@ -879,6 +1414,42 @@ Retrieves the status for a video generation request.
 | Name | Type | Description | Notes |
 |------|------|-------------|-------|
 | **videoId** | **string** | The ID of the video generation request. |  |
+
+### Return type
+
+[**VideoGenerationResponse**](VideoGenerationResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Video status response |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="getvideoalias"></a>
+# **GetVideoAlias**
+> VideoGenerationResponse GetVideoAlias (string videoId)
+
+Get video status (alias)
+
+Alias of /videos/{video_id}.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **videoId** | **string** |  |  |
 
 ### Return type
 
@@ -937,6 +1508,42 @@ Downloads the rendered video content.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
+<a id="getvideocontentalias"></a>
+# **GetVideoContentAlias**
+> System.IO.Stream GetVideoContentAlias (string videoId)
+
+Get video content (alias)
+
+Alias of /videos/{video_id}/content.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **videoId** | **string** |  |  |
+
+### Return type
+
+**System.IO.Stream**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/octet-stream
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Video content |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
 <a id="healthz"></a>
 # **Healthz**
 > Healthz200Response Healthz ()
@@ -969,6 +1576,79 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
+<a id="invalidategatewaykeycache"></a>
+# **InvalidateGatewayKeyCache**
+> Dictionary&lt;string, Object&gt; InvalidateGatewayKeyCache (string id)
+
+Invalidate key cache
+
+Bumps cache version for key id/kid and invalidates key cache entries.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **id** | **string** | Gateway key ID. |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Key cache invalidated |  -  |
+| **400** | Invalid key ID |  -  |
+| **403** | Invalid control secret |  -  |
+| **404** | Key not found |  -  |
+| **503** | Control secret not configured |  -  |
+| **500** | Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="listendpointsplaceholder"></a>
+# **ListEndpointsPlaceholder**
+> void ListEndpointsPlaceholder ()
+
+List endpoints (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+
+### Parameters
+This endpoint does not need any parameter.
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **501** | Not implemented |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
 <a id="listfiles"></a>
 # **ListFiles**
 > ListFilesResponse ListFiles ()
@@ -998,6 +1678,38 @@ This endpoint does not need any parameter.
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | List of files |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="listkeysplaceholder"></a>
+# **ListKeysPlaceholder**
+> void ListKeysPlaceholder ()
+
+List keys (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+
+### Parameters
+This endpoint does not need any parameter.
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **501** | Not implemented |  -  |
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
@@ -1044,6 +1756,110 @@ Returns a list of available models.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
+<a id="listoauthclients"></a>
+# **ListOAuthClients**
+> ListOAuthClients200Response ListOAuthClients ()
+
+List OAuth clients
+
+Lists OAuth clients for the authenticated team.
+
+
+### Parameters
+This endpoint does not need any parameter.
+### Return type
+
+[**ListOAuthClients200Response**](ListOAuthClients200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | OAuth clients list |  -  |
+| **401** | Unauthorized |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="listorganisations"></a>
+# **ListOrganisations**
+> ListOrganisations200Response ListOrganisations (int limit = null, int offset = null)
+
+List organisations
+
+Returns a list of available organisations.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **limit** | **int** | Limit the number of results | [optional] [default to 50] |
+| **offset** | **int** | Offset for pagination | [optional] [default to 0] |
+
+### Return type
+
+[**ListOrganisations200Response**](ListOrganisations200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | List of organisations |  -  |
+| **500** | Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="listpricingmodels"></a>
+# **ListPricingModels**
+> ListPricingModels200Response ListPricingModels ()
+
+List pricing models
+
+Returns active provider/model pricing entries.
+
+
+### Parameters
+This endpoint does not need any parameter.
+### Return type
+
+[**ListPricingModels200Response**](ListPricingModels200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Pricing model list |  -  |
+| **500** | Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
 <a id="listproviders"></a>
 # **ListProviders**
 > ListProviders200Response ListProviders (int limit = null, int offset = null)
@@ -1086,9 +1902,9 @@ Returns a list of available API providers.
 # **ListProvisioningKeys**
 > ListProvisioningKeys200Response ListProvisioningKeys (string teamId, int limit = null, int offset = null)
 
-List provisioning keys
+List management API keys
 
-Returns all provisioning keys for a team.
+Returns all management API keys for a team.
 
 
 ### Parameters
@@ -1116,9 +1932,84 @@ Returns all provisioning keys for a team.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-| **200** | List of provisioning keys |  -  |
+| **200** | List of management API keys |  -  |
 | **400** | Bad request |  -  |
 | **500** | Server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="listprovisioningkeysalias"></a>
+# **ListProvisioningKeysAlias**
+> ListProvisioningKeysAlias200Response ListProvisioningKeysAlias (string teamId, int limit = null, int offset = null)
+
+List provisioning keys
+
+Alias of management keys endpoint.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **teamId** | **string** | The team ID to query |  |
+| **limit** | **int** | Maximum number of keys to return | [optional] [default to 50] |
+| **offset** | **int** | Pagination offset | [optional] [default to 0] |
+
+### Return type
+
+[**ListProvisioningKeysAlias200Response**](ListProvisioningKeysAlias200Response.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | List of provisioning keys |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="regenerateoauthclientsecret"></a>
+# **RegenerateOAuthClientSecret**
+> Dictionary&lt;string, Object&gt; RegenerateOAuthClientSecret (string clientId)
+
+Regenerate OAuth client secret
+
+Regenerates and returns a new OAuth client secret.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **clientId** | **string** |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | OAuth client secret regenerated |  -  |
+| **404** | OAuth app not found |  -  |
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
@@ -1136,6 +2027,42 @@ Retrieves a batch.
 | Name | Type | Description | Notes |
 |------|------|-------------|-------|
 | **batchId** | **string** | The ID of the batch to retrieve. |  |
+
+### Return type
+
+[**BatchResponse**](BatchResponse.md)
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Batch information |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="retrievebatchalias"></a>
+# **RetrieveBatchAlias**
+> BatchResponse RetrieveBatchAlias (string id)
+
+Retrieve batch (alias)
+
+Alias of /batches/{batch_id}.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **id** | **string** |  |  |
 
 ### Return type
 
@@ -1226,20 +2153,59 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 
-<a id="updateprovisioningkey"></a>
-# **UpdateProvisioningKey**
-> UpdateProvisioningKey200Response UpdateProvisioningKey (string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest)
+<a id="updateoauthclient"></a>
+# **UpdateOAuthClient**
+> Dictionary&lt;string, Object&gt; UpdateOAuthClient (string clientId, Dictionary<string, Object> requestBody)
 
-Update provisioning key
+Update OAuth client
 
-Updates the name, status, or blocked state of a provisioning key.
+Updates OAuth client metadata and redirect URIs.
 
 
 ### Parameters
 
 | Name | Type | Description | Notes |
 |------|------|-------------|-------|
-| **id** | **string** | The provisioning key ID |  |
+| **clientId** | **string** |  |  |
+| **requestBody** | [**Dictionary&lt;string, Object&gt;**](Object.md) |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | OAuth client updated |  -  |
+| **400** | Validation error |  -  |
+| **404** | OAuth app not found |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="updateprovisioningkey"></a>
+# **UpdateProvisioningKey**
+> UpdateProvisioningKey200Response UpdateProvisioningKey (string id, UpdateProvisioningKeyRequest updateProvisioningKeyRequest)
+
+Update management API key
+
+Updates the name, status, or blocked state of a management API key.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **id** | **string** | The management API key ID |  |
 | **updateProvisioningKeyRequest** | [**UpdateProvisioningKeyRequest**](UpdateProvisioningKeyRequest.md) |  |  |
 
 ### Return type
@@ -1263,6 +2229,43 @@ Updates the name, status, or blocked state of a provisioning key.
 | **400** | Bad request |  -  |
 | **404** | Key not found |  -  |
 | **500** | Server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
+
+<a id="updateprovisioningkeyalias"></a>
+# **UpdateProvisioningKeyAlias**
+> Dictionary&lt;string, Object&gt; UpdateProvisioningKeyAlias (string id, Dictionary<string, Object> requestBody)
+
+Update provisioning key
+
+Alias of management key update endpoint.
+
+
+### Parameters
+
+| Name | Type | Description | Notes |
+|------|------|-------------|-------|
+| **id** | **string** |  |  |
+| **requestBody** | [**Dictionary&lt;string, Object&gt;**](Object.md) |  |  |
+
+### Return type
+
+**Dictionary<string, Object>**
+
+### Authorization
+
+[BearerAuth](../README.md#BearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | Provisioning key updated |  -  |
 
 [[Back to top]](#) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to Model list]](../../README.md#documentation-for-models) [[Back to README]](../../README.md)
 

@@ -8,6 +8,20 @@ import type {
 	IRChatResponse,
 	IREmbeddingsRequest,
 	IREmbeddingsResponse,
+	IRImageGenerationRequest,
+	IRImageGenerationResponse,
+	IRAudioSpeechRequest,
+	IRAudioSpeechResponse,
+	IRAudioTranscriptionRequest,
+	IRAudioTranscriptionResponse,
+	IRAudioTranslationRequest,
+	IRAudioTranslationResponse,
+	IRVideoGenerationRequest,
+	IRVideoGenerationResponse,
+	IROcrRequest,
+	IROcrResponse,
+	IRMusicGenerateRequest,
+	IRMusicGenerateResponse,
 	IRModerationsRequest,
 	IRModerationsResponse,
 } from "@core/ir";
@@ -17,7 +31,17 @@ import type { DebugOptions } from "@core/types";
 import type { Protocol } from "@protocols/detect";
 
 export type ExecutorExecuteArgs = {
-	ir: IRChatRequest | IREmbeddingsRequest | IRModerationsRequest;
+	ir:
+		| IRChatRequest
+		| IREmbeddingsRequest
+		| IRModerationsRequest
+		| IRImageGenerationRequest
+		| IRAudioSpeechRequest
+		| IRAudioTranscriptionRequest
+		| IRAudioTranslationRequest
+		| IRVideoGenerationRequest
+		| IROcrRequest
+		| IRMusicGenerateRequest;
 
 	requestId: string;
 	teamId: string;
@@ -55,7 +79,17 @@ export type Bill = {
 
 export type ExecutorCompletedResult = {
 	kind: "completed";
-	ir?: IRChatResponse | IREmbeddingsResponse | IRModerationsResponse;
+	ir?:
+		| IRChatResponse
+		| IREmbeddingsResponse
+		| IRModerationsResponse
+		| IRImageGenerationResponse
+		| IRAudioSpeechResponse
+		| IRAudioTranscriptionResponse
+		| IRAudioTranslationResponse
+		| IRVideoGenerationResponse
+		| IROcrResponse
+		| IRMusicGenerateResponse;
 	bill: Bill;
 	upstream: Response;
 	keySource: "gateway" | "byok";

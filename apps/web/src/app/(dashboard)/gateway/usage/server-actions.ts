@@ -259,6 +259,28 @@ export async function fetchModelMetadata(
 		return new Map();
 	}
 
+	const uniqueModelIds = Array.from(new Set(modelIds));
+	const metadataMap = new Map<
+		string,
+		{ organisationId: string; organisationName: string }
+	>();
+
+	const addMetadata = (
+		key: string | null | undefined,
+		value: { organisationId: string; organisationName: string },
+	) => {
+		if (!key) return;
+		if (!metadataMap.has(key)) {
+			metadataMap.set(key, value);
+		}
+	};
+
+	const normalizeApiId = (id: string) => {
+		const base = id.split(":")[0];
+		const dotToDash = base.replace(/\./g, "-");
+		return Array.from(new Set([id, base, dotToDash]));
+	};
+
 	const { data: models } = await supabase
 		.from("data_models")
 		.select(
@@ -268,22 +290,112 @@ export async function fetchModelMetadata(
 			organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, organisation_name)
 		`
 		)
-		.in("model_id", modelIds);
-
-	const metadataMap = new Map<string, { organisationId: string; organisationName: string }>();
+		.in("model_id", uniqueModelIds);
 
 	if (models) {
 		models.forEach((m: any) => {
 			if (m.organisation) {
-				metadataMap.set(m.model_id, {
+				const value = {
 					organisationId: m.organisation.organisation_id,
 					organisationName: m.organisation.organisation_name || m.organisation.organisation_id,
-				});
+				};
+				addMetadata(m.model_id, value);
+				if (m.model_id.includes("/")) {
+					const withoutOrg = m.model_id.split("/").slice(1).join("/");
+					addMetadata(withoutOrg, value);
+				}
 			}
 		});
 	}
 
+	// Also resolve API model IDs to internal model metadata.
+	const apiLookupIds = Array.from(
+		new Set(uniqueModelIds.flatMap((id) => normalizeApiId(id))),
+	);
+	const { data: providerModels } = await supabase
+		.from("data_api_provider_models")
+		.select(
+			`
+			api_model_id,
+			internal_model_id,
+			model:data_models!data_api_provider_models_internal_model_id_fkey(
+				model_id,
+				organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, organisation_name)
+			)
+		`
+		)
+		.in("api_model_id", apiLookupIds);
+
+	if (providerModels) {
+		providerModels.forEach((pm: any) => {
+			const org = pm?.model?.organisation;
+			if (!org) return;
+			const value = {
+				organisationId: org.organisation_id,
+				organisationName: org.organisation_name || org.organisation_id,
+			};
+			const apiId: string | null = pm.api_model_id ?? null;
+			const internalId: string | null =
+				pm.internal_model_id ?? pm?.model?.model_id ?? null;
+
+			addMetadata(apiId, value);
+			if (apiId && apiId.includes(":")) {
+				addMetadata(apiId.split(":")[0], value);
+			}
+			if (apiId && apiId.includes("/")) {
+				addMetadata(apiId.split("/").slice(1).join("/"), value);
+			}
+			addMetadata(internalId, value);
+			if (internalId && internalId.includes("/")) {
+				addMetadata(internalId.split("/").slice(1).join("/"), value);
+			}
+		});
+	}
+
+	for (const id of uniqueModelIds) {
+		if (metadataMap.has(id)) continue;
+		const variants = normalizeApiId(id);
+		const match = variants.find((variant) => metadataMap.has(variant));
+		if (match) {
+			metadataMap.set(id, metadataMap.get(match)!);
+		}
+	}
+
 	return metadataMap;
+}
+
+/**
+ * Fetch provider names for display labels
+ * Returns a map of provider_id -> provider name
+ */
+export async function fetchProviderNames(
+	providerIds: string[]
+): Promise<Map<string, string>> {
+	const supabase = await createClient();
+
+	if (providerIds.length === 0) {
+		return new Map();
+	}
+
+	const uniqueProviderIds = Array.from(new Set(providerIds.filter(Boolean)));
+	const { data: providers } = await supabase
+		.from("data_api_providers")
+		.select("api_provider_id, api_provider_name")
+		.in("api_provider_id", uniqueProviderIds);
+
+	const providerNameMap = new Map<string, string>();
+
+	if (providers) {
+		providers.forEach((provider: any) => {
+			if (!provider?.api_provider_id) return;
+			providerNameMap.set(
+				provider.api_provider_id,
+				provider.api_provider_name || provider.api_provider_id
+			);
+		});
+	}
+
+	return providerNameMap;
 }
 
 /**

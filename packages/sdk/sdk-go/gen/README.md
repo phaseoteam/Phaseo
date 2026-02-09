@@ -78,39 +78,66 @@ All URIs are relative to *https://api.phaseo.app/v1*
 
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
+*DefaultAPI* | [**CalculatePricing**](docs/DefaultAPI.md#calculatepricing) | **Post** /pricing/calculate | Calculate pricing
 *DefaultAPI* | [**CreateAnthropicMessage**](docs/DefaultAPI.md#createanthropicmessage) | **Post** /messages | Create message
 *DefaultAPI* | [**CreateBatch**](docs/DefaultAPI.md#createbatch) | **Post** /batches | Create batch
+*DefaultAPI* | [**CreateBatchAlias**](docs/DefaultAPI.md#createbatchalias) | **Post** /batch | Create batch (alias)
 *DefaultAPI* | [**CreateChatCompletion**](docs/DefaultAPI.md#createchatcompletion) | **Post** /chat/completions | Create chat completion
 *DefaultAPI* | [**CreateEmbedding**](docs/DefaultAPI.md#createembedding) | **Post** /embeddings | Create embeddings
 *DefaultAPI* | [**CreateImage**](docs/DefaultAPI.md#createimage) | **Post** /images/generations | Create image
 *DefaultAPI* | [**CreateImageEdit**](docs/DefaultAPI.md#createimageedit) | **Post** /images/edits | Create image edit
+*DefaultAPI* | [**CreateKeyPlaceholder**](docs/DefaultAPI.md#createkeyplaceholder) | **Post** /keys | Create key (placeholder)
 *DefaultAPI* | [**CreateModeration**](docs/DefaultAPI.md#createmoderation) | **Post** /moderations | Create moderation
+*DefaultAPI* | [**CreateOAuthClient**](docs/DefaultAPI.md#createoauthclient) | **Post** /oauth-clients | Create OAuth client
 *DefaultAPI* | [**CreateOcr**](docs/DefaultAPI.md#createocr) | **Post** /ocr | Create OCR
-*DefaultAPI* | [**CreateProvisioningKey**](docs/DefaultAPI.md#createprovisioningkey) | **Post** /provisioning/keys | Create provisioning key
 *DefaultAPI* | [**CreateResponse**](docs/DefaultAPI.md#createresponse) | **Post** /responses | Create response
 *DefaultAPI* | [**CreateSpeech**](docs/DefaultAPI.md#createspeech) | **Post** /audio/speech | Generate speech
 *DefaultAPI* | [**CreateTranscription**](docs/DefaultAPI.md#createtranscription) | **Post** /audio/transcriptions | Create transcription
 *DefaultAPI* | [**CreateTranslation**](docs/DefaultAPI.md#createtranslation) | **Post** /audio/translations | Create translation
 *DefaultAPI* | [**CreateVideo**](docs/DefaultAPI.md#createvideo) | **Post** /videos | Create video
-*DefaultAPI* | [**DeleteProvisioningKey**](docs/DefaultAPI.md#deleteprovisioningkey) | **Delete** /provisioning/keys/{id} | Delete provisioning key
+*DefaultAPI* | [**CreateVideoAlias**](docs/DefaultAPI.md#createvideoalias) | **Post** /video/generations | Create video (alias)
+*DefaultAPI* | [**DeleteOAuthClient**](docs/DefaultAPI.md#deleteoauthclient) | **Delete** /oauth-clients/{client_id} | Delete OAuth client
+*DefaultAPI* | [**DeleteProvisioningKey**](docs/DefaultAPI.md#deleteprovisioningkey) | **Delete** /management/keys/{id} | Delete management API key
+*DefaultAPI* | [**DeleteProvisioningKeyAlias**](docs/DefaultAPI.md#deleteprovisioningkeyalias) | **Delete** /provisioning/keys/{id} | Delete provisioning key
 *DefaultAPI* | [**DeleteVideo**](docs/DefaultAPI.md#deletevideo) | **Delete** /videos/{video_id} | Delete video
+*DefaultAPI* | [**DeleteVideoAlias**](docs/DefaultAPI.md#deletevideoalias) | **Delete** /video/generations/{video_id} | Delete video (alias)
 *DefaultAPI* | [**GenerateMusic**](docs/DefaultAPI.md#generatemusic) | **Post** /music/generate | Generate music
+*DefaultAPI* | [**GenerateMusicAlias**](docs/DefaultAPI.md#generatemusicalias) | **Post** /music/generations | Generate music (alias)
 *DefaultAPI* | [**GetActivity**](docs/DefaultAPI.md#getactivity) | **Get** /activity | Get activity
 *DefaultAPI* | [**GetAnalytics**](docs/DefaultAPI.md#getanalytics) | **Post** /analytics | Get analytics
 *DefaultAPI* | [**GetCredits**](docs/DefaultAPI.md#getcredits) | **Get** /credits | Get remaining credits
-*DefaultAPI* | [**GetGeneration**](docs/DefaultAPI.md#getgeneration) | **Get** /generation | Get generation
-*DefaultAPI* | [**GetProvisioningKey**](docs/DefaultAPI.md#getprovisioningkey) | **Get** /provisioning/keys/{id} | Get provisioning key
+*DefaultAPI* | [**GetGeneration**](docs/DefaultAPI.md#getgeneration) | **Get** /generations | Get generation
+*DefaultAPI* | [**GetKeyPlaceholder**](docs/DefaultAPI.md#getkeyplaceholder) | **Get** /key | Get key (placeholder)
+*DefaultAPI* | [**GetMusicGeneration**](docs/DefaultAPI.md#getmusicgeneration) | **Get** /music/generate/{music_id} | Get music generation status
+*DefaultAPI* | [**GetMusicGenerationAlias**](docs/DefaultAPI.md#getmusicgenerationalias) | **Get** /music/generations/{music_id} | Get music generation status (alias)
+*DefaultAPI* | [**GetOAuthClient**](docs/DefaultAPI.md#getoauthclient) | **Get** /oauth-clients/{client_id} | Get OAuth client
+*DefaultAPI* | [**GetProviderDerankStatus**](docs/DefaultAPI.md#getproviderderankstatus) | **Get** /health/providers/{provider_id}/derank | Provider derank status
+*DefaultAPI* | [**GetProvisioningKey**](docs/DefaultAPI.md#getprovisioningkey) | **Get** /management/keys/{id} | Get management API key
+*DefaultAPI* | [**GetProvisioningKeyAlias**](docs/DefaultAPI.md#getprovisioningkeyalias) | **Get** /provisioning/keys/{id} | Get provisioning key
 *DefaultAPI* | [**GetVideo**](docs/DefaultAPI.md#getvideo) | **Get** /videos/{video_id} | Get video status
+*DefaultAPI* | [**GetVideoAlias**](docs/DefaultAPI.md#getvideoalias) | **Get** /video/generations/{video_id} | Get video status (alias)
 *DefaultAPI* | [**GetVideoContent**](docs/DefaultAPI.md#getvideocontent) | **Get** /videos/{video_id}/content | Get video content
-*DefaultAPI* | [**Healthz**](docs/DefaultAPI.md#healthz) | **Get** /healthz | Health check
+*DefaultAPI* | [**GetVideoContentAlias**](docs/DefaultAPI.md#getvideocontentalias) | **Get** /video/generations/{video_id}/content | Get video content (alias)
+*DefaultAPI* | [**Healthz**](docs/DefaultAPI.md#healthz) | **Get** /health | Health check
+*DefaultAPI* | [**InvalidateGatewayKeyCache**](docs/DefaultAPI.md#invalidategatewaykeycache) | **Post** /keys/{id}/invalidate | Invalidate key cache
+*DefaultAPI* | [**ListEndpointsPlaceholder**](docs/DefaultAPI.md#listendpointsplaceholder) | **Get** /endpoints | List endpoints (placeholder)
 *DefaultAPI* | [**ListFiles**](docs/DefaultAPI.md#listfiles) | **Get** /files | List files
+*DefaultAPI* | [**ListKeysPlaceholder**](docs/DefaultAPI.md#listkeysplaceholder) | **Get** /keys | List keys (placeholder)
 *DefaultAPI* | [**ListModels**](docs/DefaultAPI.md#listmodels) | **Get** /models | List models
+*DefaultAPI* | [**ListOAuthClients**](docs/DefaultAPI.md#listoauthclients) | **Get** /oauth-clients | List OAuth clients
+*DefaultAPI* | [**ListOrganisations**](docs/DefaultAPI.md#listorganisations) | **Get** /organisations | List organisations
+*DefaultAPI* | [**ListPricingModels**](docs/DefaultAPI.md#listpricingmodels) | **Get** /pricing/models | List pricing models
 *DefaultAPI* | [**ListProviders**](docs/DefaultAPI.md#listproviders) | **Get** /providers | List providers
-*DefaultAPI* | [**ListProvisioningKeys**](docs/DefaultAPI.md#listprovisioningkeys) | **Get** /provisioning/keys | List provisioning keys
+*DefaultAPI* | [**ListProvisioningKeys**](docs/DefaultAPI.md#listprovisioningkeys) | **Get** /management/keys | List management API keys
+*DefaultAPI* | [**ListProvisioningKeysAlias**](docs/DefaultAPI.md#listprovisioningkeysalias) | **Get** /provisioning/keys | List provisioning keys
+*DefaultAPI* | [**RegenerateOAuthClientSecret**](docs/DefaultAPI.md#regenerateoauthclientsecret) | **Post** /oauth-clients/{client_id}/regenerate-secret | Regenerate OAuth client secret
 *DefaultAPI* | [**RetrieveBatch**](docs/DefaultAPI.md#retrievebatch) | **Get** /batches/{batch_id} | Retrieve batch
+*DefaultAPI* | [**RetrieveBatchAlias**](docs/DefaultAPI.md#retrievebatchalias) | **Get** /batch/{id} | Retrieve batch (alias)
 *DefaultAPI* | [**RetrieveFile**](docs/DefaultAPI.md#retrievefile) | **Get** /files/{file_id} | Retrieve file
 *DefaultAPI* | [**Root**](docs/DefaultAPI.md#root) | **Get** / | Root endpoint
-*DefaultAPI* | [**UpdateProvisioningKey**](docs/DefaultAPI.md#updateprovisioningkey) | **Patch** /provisioning/keys/{id} | Update provisioning key
+*DefaultAPI* | [**UpdateOAuthClient**](docs/DefaultAPI.md#updateoauthclient) | **Patch** /oauth-clients/{client_id} | Update OAuth client
+*DefaultAPI* | [**UpdateProvisioningKey**](docs/DefaultAPI.md#updateprovisioningkey) | **Patch** /management/keys/{id} | Update management API key
+*DefaultAPI* | [**UpdateProvisioningKeyAlias**](docs/DefaultAPI.md#updateprovisioningkeyalias) | **Patch** /provisioning/keys/{id} | Update provisioning key
 *DefaultAPI* | [**UploadFile**](docs/DefaultAPI.md#uploadfile) | **Post** /files | Upload file
 
 
@@ -136,6 +163,8 @@ Class | Method | HTTP request | Description
  - [BatchRequestCounts](docs/BatchRequestCounts.md)
  - [BatchResponse](docs/BatchResponse.md)
  - [BenchmarkId](docs/BenchmarkId.md)
+ - [CalculatePricing200Response](docs/CalculatePricing200Response.md)
+ - [CalculatePricingRequest](docs/CalculatePricingRequest.md)
  - [ChatChoice](docs/ChatChoice.md)
  - [ChatCompletionsRequest](docs/ChatCompletionsRequest.md)
  - [ChatCompletionsRequestResponseFormat](docs/ChatCompletionsRequestResponseFormat.md)
@@ -145,8 +174,8 @@ Class | Method | HTTP request | Description
  - [ChatCompletionsResponse](docs/ChatCompletionsResponse.md)
  - [ChatMessage](docs/ChatMessage.md)
  - [ChatMessageContent](docs/ChatMessageContent.md)
- - [CreateProvisioningKey201Response](docs/CreateProvisioningKey201Response.md)
- - [CreateProvisioningKeyRequest](docs/CreateProvisioningKeyRequest.md)
+ - [CreateOAuthClientRequest](docs/CreateOAuthClientRequest.md)
+ - [DebugOptions](docs/DebugOptions.md)
  - [DeleteProvisioningKey200Response](docs/DeleteProvisioningKey200Response.md)
  - [Embedding](docs/Embedding.md)
  - [EmbeddingsRequest](docs/EmbeddingsRequest.md)
@@ -175,8 +204,13 @@ Class | Method | HTTP request | Description
  - [ListModels200Response](docs/ListModels200Response.md)
  - [ListModels500Response](docs/ListModels500Response.md)
  - [ListModelsOrganisationParameter](docs/ListModelsOrganisationParameter.md)
+ - [ListOAuthClients200Response](docs/ListOAuthClients200Response.md)
+ - [ListOrganisations200Response](docs/ListOrganisations200Response.md)
+ - [ListOrganisations200ResponseOrganisationsInner](docs/ListOrganisations200ResponseOrganisationsInner.md)
+ - [ListPricingModels200Response](docs/ListPricingModels200Response.md)
  - [ListProviders200Response](docs/ListProviders200Response.md)
  - [ListProvisioningKeys200Response](docs/ListProvisioningKeys200Response.md)
+ - [ListProvisioningKeysAlias200Response](docs/ListProvisioningKeysAlias200Response.md)
  - [MessageContentPart](docs/MessageContentPart.md)
  - [Model](docs/Model.md)
  - [ModelId](docs/ModelId.md)

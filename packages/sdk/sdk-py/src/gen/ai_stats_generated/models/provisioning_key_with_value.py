@@ -34,7 +34,7 @@ class ProvisioningKeyWithValue(BaseModel):
     status: Optional[StrictStr] = None
     scopes: Optional[StrictStr] = None
     created_at: Optional[datetime] = None
-    key: Optional[StrictStr] = Field(default=None, description="The raw provisioning key. Only returned on creation.")
+    key: Optional[StrictStr] = Field(default=None, description="The raw management API key. Only returned on creation.")
     __properties: ClassVar[List[str]] = ["id", "name", "prefix", "status", "scopes", "created_at", "key"]
 
     @field_validator('status')

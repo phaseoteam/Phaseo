@@ -4,6 +4,7 @@ export interface AudioSpeechRequest {
   model: string;
   provider?: {
     ignore?: string[];
+    include_alpha?: boolean;
     only?: string[];
     order?: string[];
   };

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Logo } from "@/components/Logo";
 import {
     Accordion,
@@ -14,6 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,16 +25,31 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    Command,
+    CommandEmpty,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { ChatSettings } from "@/lib/indexeddb/chats";
+import type { ChatModelSettings } from "@/lib/indexeddb/chats";
 
 type ModelSettingsDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    settings: ChatSettings;
-    selectedModelId: string | null;
+    settings: ChatModelSettings;
+    selectedModelId?: string | null;
+    modelChoices?: Array<{
+        id: string;
+        label: string;
+        orgId: string;
+        orgName: string;
+    }>;
+    modelLabel?: string;
     providerOptions: Array<{ id: string; name: string }>;
     supportedProvidersForModel?: string[];
     temperatureValue: number;
@@ -44,8 +61,12 @@ type ModelSettingsDialogProps = {
     frequencyValue: number;
     presenceValue: number;
     repetitionValue: number;
-    onUpdate: (partial: Partial<ChatSettings>) => void;
-    onUpdateNumber: (key: keyof ChatSettings, value: number | null) => void;
+    onUpdate: (partial: Partial<ChatModelSettings>) => void;
+    onUpdateNumber: (key: keyof ChatModelSettings, value: number | null) => void;
+    onModelChange?: (modelId: string) => void;
+    onReset?: () => void;
+    onApplyToAll?: () => void;
+    canApplyToAll?: boolean;
 };
 
 export function ModelSettingsDialog({
@@ -53,6 +74,8 @@ export function ModelSettingsDialog({
     onOpenChange,
     settings,
     selectedModelId,
+    modelChoices = [],
+    modelLabel,
     providerOptions,
     supportedProvidersForModel,
     temperatureValue,
@@ -66,35 +89,104 @@ export function ModelSettingsDialog({
     repetitionValue,
     onUpdate,
     onUpdateNumber,
+    onModelChange,
+    onReset,
+    onApplyToAll,
+    canApplyToAll = false,
 }: ModelSettingsDialogProps) {
+    const [modelPickerOpen, setModelPickerOpen] = useState(false);
     const filteredProviderOptions = supportedProvidersForModel
         ? providerOptions.filter((provider) =>
               supportedProvidersForModel.includes(provider.id)
           )
         : providerOptions;
+    const groupedModelChoices = useMemo(() => {
+        const grouped = new Map<string, typeof modelChoices>();
+        for (const choice of modelChoices) {
+            const key = choice.orgName || "Other";
+            const existing = grouped.get(key);
+            if (existing) {
+                existing.push(choice);
+            } else {
+                grouped.set(key, [choice]);
+            }
+        }
+        return Array.from(grouped.entries()).sort(([a], [b]) =>
+            a.localeCompare(b)
+        );
+    }, [modelChoices]);
+    const selectedChoice =
+        modelChoices.find((choice) => choice.id === selectedModelId) ?? null;
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden">
+            <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-4">
                 <DialogHeader>
-                    <DialogTitle>Model settings</DialogTitle>
+                    <DialogTitle>
+                        Model settings
+                        {modelLabel ? ` - ${modelLabel}` : ""}
+                    </DialogTitle>
                     <DialogDescription>
-                        Tune how this model responds for the current chat.
+                        Tune how this model responds in this chat.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid max-h-[75vh] gap-6 overflow-y-auto pr-2">
+                <div className="grid max-h-[75vh] gap-3 overflow-y-auto pr-1">
                     <div className="grid gap-2">
-                        <Label htmlFor="system-prompt">System prompt</Label>
-                        <Textarea
-                            id="system-prompt"
-                            value={settings.systemPrompt ?? ""}
-                            onChange={(event) =>
-                                onUpdate({ systemPrompt: event.target.value })
-                            }
-                            rows={6}
-                        />
-                    </div>
-                    <div className="grid gap-4">
-                        <div className="grid gap-2">
+                        <div className="flex items-end gap-2">
+                            <div className="grid flex-1 gap-1.5">
+                                <Label htmlFor="chat-display-name">Chat display name</Label>
+                                <Input
+                                    id="chat-display-name"
+                                    value={settings.displayName ?? ""}
+                                    onChange={(event) =>
+                                        onUpdate({ displayName: event.target.value })
+                                    }
+                                    placeholder="Optional model alias for this chat"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 pb-1">
+                                <Label htmlFor="enable-model" className="text-sm">
+                                    Enabled
+                                </Label>
+                                <Switch
+                                    id="enable-model"
+                                    checked={settings.enabled ?? true}
+                                    onCheckedChange={(checked) =>
+                                        onUpdate({ enabled: checked })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-1.5">
+                            <Label>Model</Label>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="justify-start gap-2"
+                                disabled={!onModelChange || modelChoices.length === 0}
+                                onClick={() => setModelPickerOpen(true)}
+                            >
+                                {selectedChoice ? (
+                                    <>
+                                        <Logo
+                                            id={selectedChoice.orgId}
+                                            alt={selectedChoice.orgName}
+                                            width={16}
+                                            height={16}
+                                            className="shrink-0"
+                                        />
+                                        <span className="truncate">
+                                            {selectedChoice.label}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span className="truncate text-muted-foreground">
+                                        {modelLabel ?? "Current model"}
+                                    </span>
+                                )}
+                            </Button>
+                        </div>
+                        <div className="grid gap-1.5">
                             <Label>Provider</Label>
                             <Select
                                 value={settings.providerId ?? "auto"}
@@ -142,56 +234,21 @@ export function ModelSettingsDialog({
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="grid gap-3 rounded-lg border border-border px-3 py-2">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium">Reasoning</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Enable chain-of-thought effort.
-                                    </p>
-                                </div>
-                                <Switch
-                                    checked={settings.reasoningEnabled ?? false}
-                                    onCheckedChange={(checked) =>
-                                        onUpdate({ reasoningEnabled: checked })
-                                    }
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Effort</Label>
-                                <Select
-                                    value={settings.reasoningEffort ?? "medium"}
-                                    onValueChange={(value) =>
-                                        onUpdate({
-                                            reasoningEffort:
-                                                value as ChatSettings["reasoningEffort"],
-                                        })
-                                    }
-                                    disabled={!settings.reasoningEnabled}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Medium" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">None</SelectItem>
-                                        <SelectItem value="minimal">
-                                            Minimal
-                                        </SelectItem>
-                                        <SelectItem value="low">Low</SelectItem>
-                                        <SelectItem value="medium">
-                                            Medium
-                                        </SelectItem>
-                                        <SelectItem value="high">High</SelectItem>
-                                        <SelectItem value="xhigh">
-                                            Extra high
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
                     </div>
-                    <div className="grid gap-4">
-                        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                    <Separator />
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="system-prompt">System prompt</Label>
+                        <Textarea
+                            id="system-prompt"
+                            value={settings.systemPrompt ?? ""}
+                            onChange={(event) =>
+                                onUpdate({ systemPrompt: event.target.value })
+                            }
+                            rows={3}
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium">
                                     Stream responses
@@ -208,7 +265,7 @@ export function ModelSettingsDialog({
                             />
                         </div>
                     </div>
-                    <div className="grid gap-4">
+                    <div className="grid gap-2">
                         <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="sampling">
                                 <AccordionTrigger>
@@ -558,8 +615,76 @@ export function ModelSettingsDialog({
                             </AccordionItem>
                         </Accordion>
                     </div>
+                    <Separator />
+                    <div className="flex items-center justify-between gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={onReset}
+                            disabled={!onReset}
+                        >
+                            Reset
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onApplyToAll}
+                            disabled={!canApplyToAll}
+                        >
+                            Apply to all
+                        </Button>
+                    </div>
                 </div>
             </DialogContent>
+            <Dialog open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
+                <DialogContent className="max-w-xl p-4">
+                    <DialogHeader>
+                        <DialogTitle>Choose model</DialogTitle>
+                        <DialogDescription>
+                            Pick which model you are editing in this settings panel.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Command>
+                        <CommandInput placeholder="Search models..." />
+                        <CommandList className="max-h-[52vh]">
+                            <CommandEmpty>No models found.</CommandEmpty>
+                            {groupedModelChoices.map(([orgName, choices]) => (
+                                <div key={orgName} className="px-1 py-1">
+                                    <p className="mb-0.5 text-xs font-medium text-muted-foreground">
+                                        {orgName}
+                                    </p>
+                                    <div className="space-y-1">
+                                        {choices.map((choice) => (
+                                            <CommandItem
+                                                key={choice.id}
+                                                value={`${choice.label} ${choice.orgName} ${choice.id}`}
+                                                onSelect={() => {
+                                                    onModelChange?.(choice.id);
+                                                    setModelPickerOpen(false);
+                                                }}
+                                                className="gap-2"
+                                            >
+                                                <Logo
+                                                    id={choice.orgId}
+                                                    alt={choice.orgName}
+                                                    width={16}
+                                                    height={16}
+                                                    className="shrink-0"
+                                                />
+                                                <span className="truncate">
+                                                    {choice.label}
+                                                </span>
+                                            </CommandItem>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </CommandList>
+                    </Command>
+                </DialogContent>
+            </Dialog>
         </Dialog>
     );
 }

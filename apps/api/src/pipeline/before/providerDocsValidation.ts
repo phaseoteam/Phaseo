@@ -27,7 +27,6 @@ const UNSUPPORTED_TEXT_PARAMS: Record<string, Set<string>> = {
 		"logprobs",
 		"top_logprobs",
 		"seed",
-		"service_tier",
 		"prompt_cache_key",
 		"safety_identifier",
 		"background",
@@ -155,9 +154,9 @@ function validateProviderSpecific(
 	}
 
 	// xAI Responses docs: `instructions` currently unsupported.
-	if (providerId === "x-ai" && endpoint === "responses" && body?.instructions != null) {
+	if ((providerId === "x-ai" || providerId === "xai") && endpoint === "responses" && body?.instructions != null) {
 		details.push({
-			message: `Provider "x-ai" does not currently support the "instructions" field on /responses.`,
+			message: `Provider "${providerId}" does not currently support the "instructions" field on /responses.`,
 			path: ["instructions"],
 			keyword: "unsupported_param",
 			params: { provider: providerId, param: "instructions" },
@@ -235,4 +234,3 @@ export function validateProviderDocsCompliance(args: {
 		}),
 	};
 }
-

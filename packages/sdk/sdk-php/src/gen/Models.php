@@ -35,6 +35,7 @@ class AnthropicMessage
 
 class AnthropicMessagesRequest
 {
+	public $debug;
 	public $max_tokens;
 	public $messages;
 	public $metadata;
@@ -122,6 +123,7 @@ class AudioTranslationResponse
 class BatchRequest
 {
 	public $completion_window;
+	public $debug;
 	public $endpoint;
 	public $input_file_id;
 	public $metadata;
@@ -170,6 +172,7 @@ class ChatChoice
 
 class ChatCompletionsRequest
 {
+	public $debug;
 	public $frequency_penalty;
 	public $logit_bias;
 	public $logprobs;
@@ -214,6 +217,15 @@ class ChatMessage
 	public $role;
 	public $tool_call_id;
 	public $tool_calls;
+}
+
+class DebugOptions
+{
+	public $enabled;
+	public $return_upstream_request;
+	public $return_upstream_response;
+	public $trace;
+	public $trace_level;
 }
 
 class Embedding
@@ -404,6 +416,7 @@ class ModerationResult
 
 class ModerationsRequest
 {
+	public $debug;
 	public $input;
 	public $meta;
 	public $model;
@@ -419,6 +432,7 @@ class ModerationsResponse
 
 class MusicGenerateRequest
 {
+	public $debug;
 	public $duration;
 	public $echo_upstream_request;
 	public $elevenlabs;
@@ -435,6 +449,7 @@ class MusicGenerateResponse
 
 class OcrRequest
 {
+	public $debug;
 	public $echo_upstream_request;
 	public $image;
 	public $language;
@@ -462,6 +477,7 @@ class Provider
 class ProviderRoutingOptions
 {
 	public $ignore;
+	public $include_alpha;
 	public $only;
 	public $order;
 }
@@ -512,6 +528,7 @@ class ResponsesRequest
 {
 	public $background;
 	public $conversation;
+	public $debug;
 	public $include;
 	public $input;
 	public $input_items;

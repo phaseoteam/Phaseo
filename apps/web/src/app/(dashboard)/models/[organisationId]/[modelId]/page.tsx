@@ -5,7 +5,6 @@ import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { withUTM } from "@/lib/utm";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 import {
 	getModelIdFromParams,
 	type ModelRouteParams,
@@ -28,7 +27,7 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const model = await fetchModel(modelId, includeHidden);
 	const path = `/models/${modelId}`;
 	const imagePath = `/og/models/${modelId}`;
@@ -106,7 +105,7 @@ export default async function Page({
 }) {
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 
 	const model = await getModelOverviewCached(modelId, includeHidden);
 

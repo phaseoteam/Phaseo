@@ -54,6 +54,7 @@ interface UnifiedRequestsTableProps {
 		string,
 		{ organisationId: string; organisationName: string }
 	>;
+	providerNames: Map<string, string>;
 	onExportRef?: React.MutableRefObject<
 		((format: "csv" | "pdf") => void) | null
 	>;
@@ -91,10 +92,19 @@ function formatDateTime(date: Date, timeZone: string): string {
 	}).format(date);
 }
 
+function getModelDetailsHref(modelId: string | null): string | null {
+	if (!modelId) return null;
+	const [organisationId, ...modelParts] = modelId.split("/");
+	if (!organisationId || modelParts.length === 0) return null;
+	const routeModelId = modelParts.join("/");
+	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
+}
+
 export default function UnifiedRequestsTable({
 	timeRange,
 	appNames,
 	modelMetadata,
+	providerNames,
 	onExportRef,
 }: UnifiedRequestsTableProps) {
 	const userTimeZone =
@@ -115,6 +125,15 @@ export default function UnifiedRequestsTable({
 	const [sortDir, setSortDir] = useQueryState("dir", {
 		defaultValue: "desc",
 	});
+
+	const [relativeNowMs, setRelativeNowMs] = useState<number | null>(null);
+
+	useEffect(() => {
+		const updateNow = () => setRelativeNowMs(Date.now());
+		updateNow();
+		const interval = setInterval(updateNow, 60_000);
+		return () => clearInterval(interval);
+	}, []);
 
 	// Filters from URL
 	const [modelFilter] = useQueryState("model");
@@ -269,10 +288,13 @@ export default function UnifiedRequestsTable({
 		(format: "csv" | "pdf") => {
 			const exportData = data.map((row) => {
 				const tokens = getTokens(row.usage);
+				const providerLabel = row.provider
+					? providerNames.get(row.provider) || row.provider
+					: "-";
 				return {
 					Timestamp: new Date(row.created_at).toLocaleString(),
 					Model: row.model_id || "-",
-					Provider: row.provider || "-",
+					Provider: providerLabel,
 					App: appNames.get(row.app_id || "") || "-",
 					"Input Tokens": tokens.input,
 					"Output Tokens": tokens.output,
@@ -292,7 +314,7 @@ export default function UnifiedRequestsTable({
 				exportToPDF(exportData, filename, "Gateway Requests");
 			}
 		},
-		[data, appNames],
+		[data, appNames, providerNames],
 	);
 
 	// Expose export handler via ref
@@ -448,12 +470,20 @@ export default function UnifiedRequestsTable({
 								)}
 
 								{/* Show cached data with optional loading overlay */}
-								{data.map((row) => {
+								{data.map((row, index) => {
 									const tokens = getTokens(row.usage);
+									const rowKey = `${row.request_id}-${row.created_at}-${row.model_id ?? "no-model"}-${row.provider ?? "no-provider"}-${index}`;
+									const modelHref = getModelDetailsHref(row.model_id);
+									const modelMeta = row.model_id
+										? modelMetadata.get(row.model_id)
+										: undefined;
+									const providerLabel = row.provider
+										? providerNames.get(row.provider) || row.provider
+										: null;
 
 									return (
 										<TableRow
-											key={row.request_id}
+											key={rowKey}
 											className={cn(
 												loading && "opacity-50",
 											)}
@@ -505,11 +535,14 @@ export default function UnifiedRequestsTable({
 																	Relative
 																</div>
 																<div className="font-mono">
-																	{formatRelativeToNow(
-																		new Date(
-																			row.created_at,
-																		),
-																	)}
+																	{relativeNowMs
+																		? formatRelativeToNow(
+																				new Date(
+																					row.created_at,
+																				),
+																				relativeNowMs,
+																		  )
+																		: "-"}
 																</div>
 															</div>
 															<div className="grid grid-cols-[120px_1fr] gap-2">
@@ -532,29 +565,26 @@ export default function UnifiedRequestsTable({
 											<TableCell className="font-medium truncate max-w-[200px]">
 												{row.model_id ? (
 													<div className="flex items-center gap-2">
-														{(() => {
-															const metadata =
-																modelMetadata.get(
-																	row.model_id ||
-																		"",
-																);
-															return metadata ? (
-																<Logo
-																	id={
-																		metadata.organisationId
-																	}
-																	width={16}
-																	height={16}
-																	className="rounded flex-shrink-0"
-																/>
-															) : null;
-														})()}
-														<Link
-															href={`/models/${encodeURIComponent(row.model_id)}`}
-															className="hover:underline hover:text-primary truncate"
-														>
-															{row.model_id}
-														</Link>
+														{modelMeta ? (
+															<Logo
+																id={modelMeta.organisationId}
+																width={16}
+																height={16}
+																className="rounded flex-shrink-0"
+															/>
+														) : null}
+														{modelHref ? (
+															<Link
+																href={modelHref}
+																className="hover:underline hover:text-primary truncate"
+															>
+																{row.model_id}
+															</Link>
+														) : (
+															<span className="truncate">
+																{row.model_id}
+															</span>
+														)}
 													</div>
 												) : (
 													"-"
@@ -577,7 +607,7 @@ export default function UnifiedRequestsTable({
 																variant="outline"
 																className="hover:bg-muted cursor-pointer"
 															>
-																{row.provider}
+																{providerLabel}
 															</Badge>
 														</Link>
 													</div>

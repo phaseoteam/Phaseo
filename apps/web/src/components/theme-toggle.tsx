@@ -49,10 +49,15 @@ type ThemeSelectorProps = {
 export function ThemeSelector({ className }: ThemeSelectorProps = {}) {
 	const { theme, setTheme } = useTheme();
 	const reduceMotion = useReducedMotion();
+	const [mounted, setMounted] = React.useState(false);
 	const [showCurrent, setShowCurrent] = React.useState(false);
 	const [direction, setDirection] = React.useState<1 | -1>(1);
+	React.useEffect(() => {
+		setMounted(true);
+	}, []);
+
 	const normalizedTheme =
-		theme === "light" || theme === "dark" || theme === "system"
+		mounted && (theme === "light" || theme === "dark" || theme === "system")
 			? theme
 			: "system";
 	const order = ["light", "dark", "system"] as const;
@@ -166,17 +171,15 @@ export function ThemeSelector({ className }: ThemeSelectorProps = {}) {
 					<AnimatePresence
 						mode="wait"
 						initial={false}
-						custom={direction}
 					>
 						<motion.span
 							key={displayLabel}
-							custom={direction}
-							initial={(dir: 1 | -1) =>
+							initial={
 								reduceMotion
-									? undefined
+									? false
 									: {
 											opacity: 0,
-											y: dir > 0 ? 10 : -10,
+											y: direction > 0 ? 10 : -10,
 											filter: "blur(3px)",
 										}
 							}
@@ -190,12 +193,12 @@ export function ThemeSelector({ className }: ThemeSelectorProps = {}) {
 											transition: springTransition,
 										}
 							}
-							exit={(dir: 1 | -1) =>
+							exit={
 								reduceMotion
 									? undefined
 									: {
 											opacity: 0,
-											y: dir > 0 ? -8 : 8,
+											y: direction > 0 ? -8 : 8,
 											filter: "blur(3px)",
 											transition: exitTransition,
 										}

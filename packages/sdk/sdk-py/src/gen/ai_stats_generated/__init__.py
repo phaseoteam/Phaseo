@@ -31,27 +31,12 @@ __all__ = [
     "ActivityEntry",
     "ActivityEntryUsage",
     "AnthropicContentBlock",
-    "AnthropicContentBlockDeltaEvent",
-    "AnthropicContentBlockDeltaEventData",
-    "AnthropicContentBlockImageUrl",
-    "AnthropicContentBlockImageUrlOneOf",
     "AnthropicContentBlockSource",
-    "AnthropicContentBlockStartEvent",
-    "AnthropicContentBlockStartEventData",
-    "AnthropicContentBlockStopEvent",
-    "AnthropicContentBlockStopEventData",
     "AnthropicMessage",
     "AnthropicMessageContent",
-    "AnthropicMessageDeltaEvent",
-    "AnthropicMessageDeltaEventData",
-    "AnthropicMessageStartEvent",
-    "AnthropicMessageStartEventData",
-    "AnthropicMessageStartEventDataMessage",
-    "AnthropicMessageStopEvent",
     "AnthropicMessagesRequest",
     "AnthropicMessagesRequestSystem",
     "AnthropicMessagesResponse",
-    "AnthropicMessagesStreamEvent",
     "AnthropicTool",
     "AnthropicUsage",
     "AudioContentPart",
@@ -63,8 +48,8 @@ __all__ = [
     "BatchRequestCounts",
     "BatchResponse",
     "BenchmarkId",
-    "CacheControl",
-    "CacheControlCache",
+    "CalculatePricing200Response",
+    "CalculatePricingRequest",
     "ChatChoice",
     "ChatCompletionsRequest",
     "ChatCompletionsRequestResponseFormat",
@@ -72,17 +57,10 @@ __all__ = [
     "ChatCompletionsRequestToolChoice",
     "ChatCompletionsRequestToolsInner",
     "ChatCompletionsResponse",
-    "ChatCompletionsResponseUpstreamRequest",
-    "ChatCompletionsStreamChoice",
-    "ChatCompletionsStreamChunk",
-    "ChatCompletionsStreamDelta",
-    "ChatCompletionsStreamEvent",
     "ChatMessage",
     "ChatMessageContent",
-    "CreateProvisioningKey201Response",
-    "CreateProvisioningKeyRequest",
+    "CreateOAuthClientRequest",
     "DebugOptions",
-    "DebugResponse",
     "DeleteProvisioningKey200Response",
     "Embedding",
     "EmbeddingsRequest",
@@ -90,6 +68,7 @@ __all__ = [
     "ErrorResponse",
     "FileResponse",
     "GenerationResponse",
+    "GenerationResponseUsage",
     "GetActivity200Response",
     "GetAnalytics200Response",
     "GetAnalyticsRequest",
@@ -98,7 +77,7 @@ __all__ = [
     "GetGeneration401Response",
     "GetGeneration404Response",
     "GetProvisioningKey200Response",
-    "Health200Response",
+    "Healthz200Response",
     "Image",
     "ImageContentPart",
     "ImageContentPartImageUrl",
@@ -106,21 +85,20 @@ __all__ = [
     "ImagesEditResponse",
     "ImagesGenerationRequest",
     "ImagesGenerationResponse",
-    "InputImageContentPart",
-    "InputImageContentPartImageUrl",
-    "InputTextContentPart",
     "ListFilesResponse",
     "ListModels200Response",
     "ListModels500Response",
     "ListModelsOrganisationParameter",
+    "ListOAuthClients200Response",
+    "ListOrganisations200Response",
+    "ListOrganisations200ResponseOrganisationsInner",
+    "ListPricingModels200Response",
     "ListProviders200Response",
     "ListProvisioningKeys200Response",
+    "ListProvisioningKeysAlias200Response",
     "MessageContentPart",
     "Model",
     "ModelId",
-    "ModelPricing",
-    "ModelPricingMeter",
-    "ModelPricingMeters",
     "ModelProvidersInner",
     "ModerationCategories",
     "ModerationCategoryScores",
@@ -134,44 +112,16 @@ __all__ = [
     "MusicGenerateRequestSuno",
     "OcrRequest",
     "OrganisationId",
-    "PricingBreakdown",
     "Provider",
     "ProviderRoutingOptions",
     "ProvisioningKey",
     "ProvisioningKeyDetail",
     "ProvisioningKeyWithValue",
     "ReasoningConfig",
-    "ResponsesFunctionCallItem",
-    "ResponsesFunctionCallOutputItem",
-    "ResponsesInputAudioItem",
-    "ResponsesInputImageItem",
-    "ResponsesInputItem",
-    "ResponsesInputTextItem",
-    "ResponsesInputVideoItem",
-    "ResponsesMessageItem",
-    "ResponsesOutputContent",
-    "ResponsesOutputItem",
     "ResponsesRequest",
-    "ResponsesRequestInput",
     "ResponsesRequestPrompt",
     "ResponsesRequestReasoning",
     "ResponsesResponse",
-    "ResponsesResponseReasoning",
-    "ResponsesStreamCompletedEvent",
-    "ResponsesStreamCompletedEventData",
-    "ResponsesStreamCreatedEvent",
-    "ResponsesStreamCreatedEventData",
-    "ResponsesStreamCreatedEventDataResponse",
-    "ResponsesStreamErrorEvent",
-    "ResponsesStreamEvent",
-    "ResponsesStreamFunctionCallArgumentsDeltaEvent",
-    "ResponsesStreamFunctionCallArgumentsDeltaEventData",
-    "ResponsesStreamFunctionCallArgumentsDoneEvent",
-    "ResponsesStreamFunctionCallArgumentsDoneEventData",
-    "ResponsesStreamOutputTextDeltaEvent",
-    "ResponsesStreamOutputTextDeltaEventData",
-    "ResponsesStreamReasoningTextDeltaEvent",
-    "ResponsesStreamReasoningTextDeltaEventData",
     "Root200Response",
     "TextContentPart",
     "TextModerationInput",
@@ -182,7 +132,6 @@ __all__ = [
     "UpdateProvisioningKey200Response",
     "UpdateProvisioningKeyRequest",
     "Usage",
-    "UsageDetails",
     "VideoContentPart",
     "VideoDeleteResponse",
     "VideoGenerationRequest",
@@ -209,27 +158,12 @@ from ai_stats_generated.exceptions import ApiException as ApiException
 from ai_stats_generated.models.activity_entry import ActivityEntry as ActivityEntry
 from ai_stats_generated.models.activity_entry_usage import ActivityEntryUsage as ActivityEntryUsage
 from ai_stats_generated.models.anthropic_content_block import AnthropicContentBlock as AnthropicContentBlock
-from ai_stats_generated.models.anthropic_content_block_delta_event import AnthropicContentBlockDeltaEvent as AnthropicContentBlockDeltaEvent
-from ai_stats_generated.models.anthropic_content_block_delta_event_data import AnthropicContentBlockDeltaEventData as AnthropicContentBlockDeltaEventData
-from ai_stats_generated.models.anthropic_content_block_image_url import AnthropicContentBlockImageUrl as AnthropicContentBlockImageUrl
-from ai_stats_generated.models.anthropic_content_block_image_url_one_of import AnthropicContentBlockImageUrlOneOf as AnthropicContentBlockImageUrlOneOf
 from ai_stats_generated.models.anthropic_content_block_source import AnthropicContentBlockSource as AnthropicContentBlockSource
-from ai_stats_generated.models.anthropic_content_block_start_event import AnthropicContentBlockStartEvent as AnthropicContentBlockStartEvent
-from ai_stats_generated.models.anthropic_content_block_start_event_data import AnthropicContentBlockStartEventData as AnthropicContentBlockStartEventData
-from ai_stats_generated.models.anthropic_content_block_stop_event import AnthropicContentBlockStopEvent as AnthropicContentBlockStopEvent
-from ai_stats_generated.models.anthropic_content_block_stop_event_data import AnthropicContentBlockStopEventData as AnthropicContentBlockStopEventData
 from ai_stats_generated.models.anthropic_message import AnthropicMessage as AnthropicMessage
 from ai_stats_generated.models.anthropic_message_content import AnthropicMessageContent as AnthropicMessageContent
-from ai_stats_generated.models.anthropic_message_delta_event import AnthropicMessageDeltaEvent as AnthropicMessageDeltaEvent
-from ai_stats_generated.models.anthropic_message_delta_event_data import AnthropicMessageDeltaEventData as AnthropicMessageDeltaEventData
-from ai_stats_generated.models.anthropic_message_start_event import AnthropicMessageStartEvent as AnthropicMessageStartEvent
-from ai_stats_generated.models.anthropic_message_start_event_data import AnthropicMessageStartEventData as AnthropicMessageStartEventData
-from ai_stats_generated.models.anthropic_message_start_event_data_message import AnthropicMessageStartEventDataMessage as AnthropicMessageStartEventDataMessage
-from ai_stats_generated.models.anthropic_message_stop_event import AnthropicMessageStopEvent as AnthropicMessageStopEvent
 from ai_stats_generated.models.anthropic_messages_request import AnthropicMessagesRequest as AnthropicMessagesRequest
 from ai_stats_generated.models.anthropic_messages_request_system import AnthropicMessagesRequestSystem as AnthropicMessagesRequestSystem
 from ai_stats_generated.models.anthropic_messages_response import AnthropicMessagesResponse as AnthropicMessagesResponse
-from ai_stats_generated.models.anthropic_messages_stream_event import AnthropicMessagesStreamEvent as AnthropicMessagesStreamEvent
 from ai_stats_generated.models.anthropic_tool import AnthropicTool as AnthropicTool
 from ai_stats_generated.models.anthropic_usage import AnthropicUsage as AnthropicUsage
 from ai_stats_generated.models.audio_content_part import AudioContentPart as AudioContentPart
@@ -241,8 +175,8 @@ from ai_stats_generated.models.batch_request import BatchRequest as BatchRequest
 from ai_stats_generated.models.batch_request_counts import BatchRequestCounts as BatchRequestCounts
 from ai_stats_generated.models.batch_response import BatchResponse as BatchResponse
 from ai_stats_generated.models.benchmark_id import BenchmarkId as BenchmarkId
-from ai_stats_generated.models.cache_control import CacheControl as CacheControl
-from ai_stats_generated.models.cache_control_cache import CacheControlCache as CacheControlCache
+from ai_stats_generated.models.calculate_pricing200_response import CalculatePricing200Response as CalculatePricing200Response
+from ai_stats_generated.models.calculate_pricing_request import CalculatePricingRequest as CalculatePricingRequest
 from ai_stats_generated.models.chat_choice import ChatChoice as ChatChoice
 from ai_stats_generated.models.chat_completions_request import ChatCompletionsRequest as ChatCompletionsRequest
 from ai_stats_generated.models.chat_completions_request_response_format import ChatCompletionsRequestResponseFormat as ChatCompletionsRequestResponseFormat
@@ -250,17 +184,10 @@ from ai_stats_generated.models.chat_completions_request_response_format_one_of i
 from ai_stats_generated.models.chat_completions_request_tool_choice import ChatCompletionsRequestToolChoice as ChatCompletionsRequestToolChoice
 from ai_stats_generated.models.chat_completions_request_tools_inner import ChatCompletionsRequestToolsInner as ChatCompletionsRequestToolsInner
 from ai_stats_generated.models.chat_completions_response import ChatCompletionsResponse as ChatCompletionsResponse
-from ai_stats_generated.models.chat_completions_response_upstream_request import ChatCompletionsResponseUpstreamRequest as ChatCompletionsResponseUpstreamRequest
-from ai_stats_generated.models.chat_completions_stream_choice import ChatCompletionsStreamChoice as ChatCompletionsStreamChoice
-from ai_stats_generated.models.chat_completions_stream_chunk import ChatCompletionsStreamChunk as ChatCompletionsStreamChunk
-from ai_stats_generated.models.chat_completions_stream_delta import ChatCompletionsStreamDelta as ChatCompletionsStreamDelta
-from ai_stats_generated.models.chat_completions_stream_event import ChatCompletionsStreamEvent as ChatCompletionsStreamEvent
 from ai_stats_generated.models.chat_message import ChatMessage as ChatMessage
 from ai_stats_generated.models.chat_message_content import ChatMessageContent as ChatMessageContent
-from ai_stats_generated.models.create_provisioning_key201_response import CreateProvisioningKey201Response as CreateProvisioningKey201Response
-from ai_stats_generated.models.create_provisioning_key_request import CreateProvisioningKeyRequest as CreateProvisioningKeyRequest
+from ai_stats_generated.models.create_o_auth_client_request import CreateOAuthClientRequest as CreateOAuthClientRequest
 from ai_stats_generated.models.debug_options import DebugOptions as DebugOptions
-from ai_stats_generated.models.debug_response import DebugResponse as DebugResponse
 from ai_stats_generated.models.delete_provisioning_key200_response import DeleteProvisioningKey200Response as DeleteProvisioningKey200Response
 from ai_stats_generated.models.embedding import Embedding as Embedding
 from ai_stats_generated.models.embeddings_request import EmbeddingsRequest as EmbeddingsRequest
@@ -268,6 +195,7 @@ from ai_stats_generated.models.embeddings_response import EmbeddingsResponse as 
 from ai_stats_generated.models.error_response import ErrorResponse as ErrorResponse
 from ai_stats_generated.models.file_response import FileResponse as FileResponse
 from ai_stats_generated.models.generation_response import GenerationResponse as GenerationResponse
+from ai_stats_generated.models.generation_response_usage import GenerationResponseUsage as GenerationResponseUsage
 from ai_stats_generated.models.get_activity200_response import GetActivity200Response as GetActivity200Response
 from ai_stats_generated.models.get_analytics200_response import GetAnalytics200Response as GetAnalytics200Response
 from ai_stats_generated.models.get_analytics_request import GetAnalyticsRequest as GetAnalyticsRequest
@@ -276,7 +204,7 @@ from ai_stats_generated.models.get_credits200_response_credits import GetCredits
 from ai_stats_generated.models.get_generation401_response import GetGeneration401Response as GetGeneration401Response
 from ai_stats_generated.models.get_generation404_response import GetGeneration404Response as GetGeneration404Response
 from ai_stats_generated.models.get_provisioning_key200_response import GetProvisioningKey200Response as GetProvisioningKey200Response
-from ai_stats_generated.models.health200_response import Health200Response as Health200Response
+from ai_stats_generated.models.healthz200_response import Healthz200Response as Healthz200Response
 from ai_stats_generated.models.image import Image as Image
 from ai_stats_generated.models.image_content_part import ImageContentPart as ImageContentPart
 from ai_stats_generated.models.image_content_part_image_url import ImageContentPartImageUrl as ImageContentPartImageUrl
@@ -284,21 +212,20 @@ from ai_stats_generated.models.image_moderation_input import ImageModerationInpu
 from ai_stats_generated.models.images_edit_response import ImagesEditResponse as ImagesEditResponse
 from ai_stats_generated.models.images_generation_request import ImagesGenerationRequest as ImagesGenerationRequest
 from ai_stats_generated.models.images_generation_response import ImagesGenerationResponse as ImagesGenerationResponse
-from ai_stats_generated.models.input_image_content_part import InputImageContentPart as InputImageContentPart
-from ai_stats_generated.models.input_image_content_part_image_url import InputImageContentPartImageUrl as InputImageContentPartImageUrl
-from ai_stats_generated.models.input_text_content_part import InputTextContentPart as InputTextContentPart
 from ai_stats_generated.models.list_files_response import ListFilesResponse as ListFilesResponse
 from ai_stats_generated.models.list_models200_response import ListModels200Response as ListModels200Response
 from ai_stats_generated.models.list_models500_response import ListModels500Response as ListModels500Response
 from ai_stats_generated.models.list_models_organisation_parameter import ListModelsOrganisationParameter as ListModelsOrganisationParameter
+from ai_stats_generated.models.list_o_auth_clients200_response import ListOAuthClients200Response as ListOAuthClients200Response
+from ai_stats_generated.models.list_organisations200_response import ListOrganisations200Response as ListOrganisations200Response
+from ai_stats_generated.models.list_organisations200_response_organisations_inner import ListOrganisations200ResponseOrganisationsInner as ListOrganisations200ResponseOrganisationsInner
+from ai_stats_generated.models.list_pricing_models200_response import ListPricingModels200Response as ListPricingModels200Response
 from ai_stats_generated.models.list_providers200_response import ListProviders200Response as ListProviders200Response
 from ai_stats_generated.models.list_provisioning_keys200_response import ListProvisioningKeys200Response as ListProvisioningKeys200Response
+from ai_stats_generated.models.list_provisioning_keys_alias200_response import ListProvisioningKeysAlias200Response as ListProvisioningKeysAlias200Response
 from ai_stats_generated.models.message_content_part import MessageContentPart as MessageContentPart
 from ai_stats_generated.models.model import Model as Model
 from ai_stats_generated.models.model_id import ModelId as ModelId
-from ai_stats_generated.models.model_pricing import ModelPricing as ModelPricing
-from ai_stats_generated.models.model_pricing_meter import ModelPricingMeter as ModelPricingMeter
-from ai_stats_generated.models.model_pricing_meters import ModelPricingMeters as ModelPricingMeters
 from ai_stats_generated.models.model_providers_inner import ModelProvidersInner as ModelProvidersInner
 from ai_stats_generated.models.moderation_categories import ModerationCategories as ModerationCategories
 from ai_stats_generated.models.moderation_category_scores import ModerationCategoryScores as ModerationCategoryScores
@@ -312,44 +239,16 @@ from ai_stats_generated.models.music_generate_request_elevenlabs import MusicGen
 from ai_stats_generated.models.music_generate_request_suno import MusicGenerateRequestSuno as MusicGenerateRequestSuno
 from ai_stats_generated.models.ocr_request import OcrRequest as OcrRequest
 from ai_stats_generated.models.organisation_id import OrganisationId as OrganisationId
-from ai_stats_generated.models.pricing_breakdown import PricingBreakdown as PricingBreakdown
 from ai_stats_generated.models.provider import Provider as Provider
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions as ProviderRoutingOptions
 from ai_stats_generated.models.provisioning_key import ProvisioningKey as ProvisioningKey
 from ai_stats_generated.models.provisioning_key_detail import ProvisioningKeyDetail as ProvisioningKeyDetail
 from ai_stats_generated.models.provisioning_key_with_value import ProvisioningKeyWithValue as ProvisioningKeyWithValue
 from ai_stats_generated.models.reasoning_config import ReasoningConfig as ReasoningConfig
-from ai_stats_generated.models.responses_function_call_item import ResponsesFunctionCallItem as ResponsesFunctionCallItem
-from ai_stats_generated.models.responses_function_call_output_item import ResponsesFunctionCallOutputItem as ResponsesFunctionCallOutputItem
-from ai_stats_generated.models.responses_input_audio_item import ResponsesInputAudioItem as ResponsesInputAudioItem
-from ai_stats_generated.models.responses_input_image_item import ResponsesInputImageItem as ResponsesInputImageItem
-from ai_stats_generated.models.responses_input_item import ResponsesInputItem as ResponsesInputItem
-from ai_stats_generated.models.responses_input_text_item import ResponsesInputTextItem as ResponsesInputTextItem
-from ai_stats_generated.models.responses_input_video_item import ResponsesInputVideoItem as ResponsesInputVideoItem
-from ai_stats_generated.models.responses_message_item import ResponsesMessageItem as ResponsesMessageItem
-from ai_stats_generated.models.responses_output_content import ResponsesOutputContent as ResponsesOutputContent
-from ai_stats_generated.models.responses_output_item import ResponsesOutputItem as ResponsesOutputItem
 from ai_stats_generated.models.responses_request import ResponsesRequest as ResponsesRequest
-from ai_stats_generated.models.responses_request_input import ResponsesRequestInput as ResponsesRequestInput
 from ai_stats_generated.models.responses_request_prompt import ResponsesRequestPrompt as ResponsesRequestPrompt
 from ai_stats_generated.models.responses_request_reasoning import ResponsesRequestReasoning as ResponsesRequestReasoning
 from ai_stats_generated.models.responses_response import ResponsesResponse as ResponsesResponse
-from ai_stats_generated.models.responses_response_reasoning import ResponsesResponseReasoning as ResponsesResponseReasoning
-from ai_stats_generated.models.responses_stream_completed_event import ResponsesStreamCompletedEvent as ResponsesStreamCompletedEvent
-from ai_stats_generated.models.responses_stream_completed_event_data import ResponsesStreamCompletedEventData as ResponsesStreamCompletedEventData
-from ai_stats_generated.models.responses_stream_created_event import ResponsesStreamCreatedEvent as ResponsesStreamCreatedEvent
-from ai_stats_generated.models.responses_stream_created_event_data import ResponsesStreamCreatedEventData as ResponsesStreamCreatedEventData
-from ai_stats_generated.models.responses_stream_created_event_data_response import ResponsesStreamCreatedEventDataResponse as ResponsesStreamCreatedEventDataResponse
-from ai_stats_generated.models.responses_stream_error_event import ResponsesStreamErrorEvent as ResponsesStreamErrorEvent
-from ai_stats_generated.models.responses_stream_event import ResponsesStreamEvent as ResponsesStreamEvent
-from ai_stats_generated.models.responses_stream_function_call_arguments_delta_event import ResponsesStreamFunctionCallArgumentsDeltaEvent as ResponsesStreamFunctionCallArgumentsDeltaEvent
-from ai_stats_generated.models.responses_stream_function_call_arguments_delta_event_data import ResponsesStreamFunctionCallArgumentsDeltaEventData as ResponsesStreamFunctionCallArgumentsDeltaEventData
-from ai_stats_generated.models.responses_stream_function_call_arguments_done_event import ResponsesStreamFunctionCallArgumentsDoneEvent as ResponsesStreamFunctionCallArgumentsDoneEvent
-from ai_stats_generated.models.responses_stream_function_call_arguments_done_event_data import ResponsesStreamFunctionCallArgumentsDoneEventData as ResponsesStreamFunctionCallArgumentsDoneEventData
-from ai_stats_generated.models.responses_stream_output_text_delta_event import ResponsesStreamOutputTextDeltaEvent as ResponsesStreamOutputTextDeltaEvent
-from ai_stats_generated.models.responses_stream_output_text_delta_event_data import ResponsesStreamOutputTextDeltaEventData as ResponsesStreamOutputTextDeltaEventData
-from ai_stats_generated.models.responses_stream_reasoning_text_delta_event import ResponsesStreamReasoningTextDeltaEvent as ResponsesStreamReasoningTextDeltaEvent
-from ai_stats_generated.models.responses_stream_reasoning_text_delta_event_data import ResponsesStreamReasoningTextDeltaEventData as ResponsesStreamReasoningTextDeltaEventData
 from ai_stats_generated.models.root200_response import Root200Response as Root200Response
 from ai_stats_generated.models.text_content_part import TextContentPart as TextContentPart
 from ai_stats_generated.models.text_moderation_input import TextModerationInput as TextModerationInput
@@ -360,7 +259,6 @@ from ai_stats_generated.models.tool_call_function import ToolCallFunction as Too
 from ai_stats_generated.models.update_provisioning_key200_response import UpdateProvisioningKey200Response as UpdateProvisioningKey200Response
 from ai_stats_generated.models.update_provisioning_key_request import UpdateProvisioningKeyRequest as UpdateProvisioningKeyRequest
 from ai_stats_generated.models.usage import Usage as Usage
-from ai_stats_generated.models.usage_details import UsageDetails as UsageDetails
 from ai_stats_generated.models.video_content_part import VideoContentPart as VideoContentPart
 from ai_stats_generated.models.video_delete_response import VideoDeleteResponse as VideoDeleteResponse
 from ai_stats_generated.models.video_generation_request import VideoGenerationRequest as VideoGenerationRequest

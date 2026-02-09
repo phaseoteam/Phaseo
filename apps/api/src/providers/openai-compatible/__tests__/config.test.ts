@@ -2,8 +2,17 @@
 // Why: Encapsulates provider-specific configuration and endpoint mapping.
 // How: Exposes provider-specific helpers for routing and execution.
 
-import { describe, it, expect } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { resolveOpenAICompatRoute } from "../config";
+import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
+
+beforeAll(() => {
+	setupTestRuntime();
+});
+
+afterAll(() => {
+	teardownTestRuntime();
+});
 
 describe("resolveOpenAICompatRoute", () => {
 	it("routes openai chat-only models to chat", () => {
@@ -14,6 +23,31 @@ describe("resolveOpenAICompatRoute", () => {
 	it("routes openai legacy models to legacy completions", () => {
 		expect(resolveOpenAICompatRoute("openai", "openai/babbage-002")).toBe("legacy_completions");
 		expect(resolveOpenAICompatRoute("openai", "davinci-002")).toBe("legacy_completions");
+	});
+
+	it("routes xai aliases to responses", () => {
+		expect(resolveOpenAICompatRoute("x-ai", "grok-4")).toBe("responses");
+		expect(resolveOpenAICompatRoute("xai", "grok-4")).toBe("responses");
+	});
+
+	it("routes production provider set to expected upstream route", () => {
+		expect(resolveOpenAICompatRoute("openai", "gpt-4.1")).toBe("responses");
+		expect(resolveOpenAICompatRoute("x-ai", "grok-4")).toBe("responses");
+		expect(resolveOpenAICompatRoute("xai", "grok-4")).toBe("responses");
+
+		expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");
+		expect(resolveOpenAICompatRoute("minimax", "minimax-m2")).toBe("chat");
+		expect(resolveOpenAICompatRoute("alibaba", "qwen-plus")).toBe("chat");
+		expect(resolveOpenAICompatRoute("qwen", "qwen-plus")).toBe("chat");
+		expect(resolveOpenAICompatRoute("z-ai", "glm-4.6")).toBe("chat");
+		expect(resolveOpenAICompatRoute("zai", "glm-4.6")).toBe("chat");
+		expect(resolveOpenAICompatRoute("xiaomi", "MiMo-7B-RL")).toBe("chat");
+		expect(resolveOpenAICompatRoute("moonshotai", "kimi-k2")).toBe("chat");
+		expect(resolveOpenAICompatRoute("moonshot-ai", "kimi-k2")).toBe("chat");
+		expect(resolveOpenAICompatRoute("cerebras", "llama3.1-70b")).toBe("chat");
+		expect(resolveOpenAICompatRoute("groq", "llama-3.3-70b-versatile")).toBe("responses");
+		expect(resolveOpenAICompatRoute("amazon-bedrock", "anthropic.claude-3-5-sonnet-20240620-v1:0")).toBe("chat");
+		expect(resolveOpenAICompatRoute("google-vertex", "claude-sonnet-4@20250514")).toBe("chat");
 	});
 });
 

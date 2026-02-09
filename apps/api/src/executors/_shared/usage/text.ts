@@ -57,6 +57,7 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 	const reasoningTokens = pickFirstNumber(usageRaw, [
 		"reasoning_tokens",
 		"reasoningTokens",
+		"thoughtsTokenCount",
 		"thoughtTokenCount",
 		"output_tokens_details.reasoning_tokens",
 		"completion_tokens_details.reasoning_tokens",
@@ -107,4 +108,3 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 
 	return meters;
 }
-

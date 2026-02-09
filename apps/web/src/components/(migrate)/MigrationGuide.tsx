@@ -80,13 +80,13 @@ const SOURCE_OPTIONS: Array<{
 	},
 	{
 		id: "vercel-ai",
-		label: "Vercel AI SDK",
-		description: "Using the ai SDK in Next.js or Node.",
+		label: "Vercel AI Gateway",
+		description: "Using Vercel AI Gateway or the AI SDK provider stack.",
 	},
 	{
 		id: "openai-compatible",
-		label: "OpenAI Compatible API",
-		description: "Any OpenAI-style REST or SDK integration.",
+		label: "OpenAI Compatible Libraries",
+		description: "Any OpenAI-style SDK or REST integration.",
 	},
 	{
 		id: "getting-started",
@@ -834,7 +834,7 @@ const FLOWS: Record<SourceId, Flow> = {
 		],
 	},
 	"vercel-ai": {
-		prompt: "Which stack are you using?",
+		prompt: "How are you integrated with Vercel today?",
 		options: [
 			{
 				id: "vercel-ai-sdk",
@@ -845,7 +845,7 @@ const FLOWS: Record<SourceId, Flow> = {
 			},
 			{
 				id: "rest",
-				label: "REST",
+				label: "REST API",
 				description: "Use REST calls in any runtime.",
 				steps: [SHARED_STEPS.headers, SHARED_STEPS.baseUrl, SHARED_STEPS.payload],
 				snippet: SNIPPETS.rest,

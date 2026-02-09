@@ -190,6 +190,16 @@ export function createAnthropicToResponsesStreamTransformer(
 							name: block.name || "",
 							arguments: block.input || "",
 						});
+						emitEvent(controller, "response.output_item.done", {
+							output_index: block.outputIndex,
+							item: {
+								type: "function_call",
+								id: block.itemId,
+								call_id: block.id,
+								name: block.name || "",
+								arguments: block.input || "",
+							},
+						});
 					}
 
 				} else if (payload.type === "message_delta") {

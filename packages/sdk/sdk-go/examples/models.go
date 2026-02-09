@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 package main
 
 import (
@@ -5,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	sdk "packages/sdk/sdk-go"
+	aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
 )
 
 func main() {
@@ -14,10 +17,10 @@ func main() {
 		panic("Set AI_STATS_API_KEY")
 	}
 
-	client := sdk.New(apiKey, "https://api.phaseo.app/v1")
-	resp, _, err := client.GetModels(context.Background(), nil)
+	client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+	resp, err := client.GetModels(context.Background(), nil)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("models:", resp.Models)
+	fmt.Println("models:", resp["models"])
 }

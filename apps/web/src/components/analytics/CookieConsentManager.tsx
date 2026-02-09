@@ -58,14 +58,14 @@ function applyGaConsent(consent: AnalyticsConsent, gaMeasurementId?: string) {
 export function CookieConsentManager({
   gaMeasurementId,
 }: CookieConsentManagerProps) {
-  const [consent, setConsent] = useState<AnalyticsConsent | null>(null)
+  const [consent, setConsent] = useState<AnalyticsConsent | null | "pending">("pending")
 
   useEffect(() => {
     setConsent(readAnalyticsConsent())
   }, [])
 
   useEffect(() => {
-    if (!consent) return
+    if (consent !== "accepted" && consent !== "denied") return
     applyGaConsent(consent, gaMeasurementId)
   }, [consent, gaMeasurementId])
 
@@ -111,21 +111,22 @@ export function CookieConsentManager({
       ) : null}
 
       {consent === null ? (
-        <div className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-xl rounded-xl border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-sm text-zinc-700 dark:text-zinc-300">
+        <div className="fixed bottom-4 left-4 right-4 z-[100] sm:left-auto sm:right-4 sm:w-[360px] sm:max-w-[calc(100vw-2rem)] rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
+          <p className="text-xs text-zinc-700 dark:text-zinc-300">
             We use analytics cookies to improve AI Stats. You can accept or
             deny analytics tracking.
           </p>
-          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
             Learn more in our{" "}
             <Link className="underline" href="/privacy">
               Privacy Policy
             </Link>
             .
           </p>
-          <div className="mt-4 flex items-center gap-2">
-            <Button onClick={() => updateConsent("accepted")}>Accept</Button>
+          <div className="mt-3 flex items-center gap-2">
+            <Button className="h-8 px-3 text-xs" onClick={() => updateConsent("accepted")}>Accept</Button>
             <Button
+              className="h-8 px-3 text-xs"
               onClick={() => updateConsent("denied")}
               variant="outline"
             >

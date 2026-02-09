@@ -423,6 +423,30 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.stream).toBe(true);
 	});
 
+	it("should map speed fast to priority service tier", () => {
+		const request = {
+			model: "gpt-4",
+			input: "Hello",
+			speed: "fast",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.speed).toBe("fast");
+		expect(ir.serviceTier).toBe("priority");
+	});
+
+	it("should preserve explicit service_tier from OpenAI Responses request", () => {
+		const request = {
+			model: "gpt-4",
+			input: "Hello",
+			service_tier: "priority",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.serviceTier).toBe("priority");
+		expect(ir.speed).toBeUndefined();
+	});
+
 	it("should handle developer role as system", () => {
 		const request = {
 			model: "gpt-4",

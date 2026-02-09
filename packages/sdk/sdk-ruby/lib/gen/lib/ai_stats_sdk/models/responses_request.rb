@@ -77,6 +77,8 @@ module AIStatsSdk
 
     attr_accessor :meta
 
+    attr_accessor :debug
+
     attr_accessor :provider
 
     # Attribute mapping from ruby-style variable name to JSON key.
@@ -113,6 +115,7 @@ module AIStatsSdk
         :'user' => :'user',
         :'usage' => :'usage',
         :'meta' => :'meta',
+        :'debug' => :'debug',
         :'provider' => :'provider'
       }
     end
@@ -161,6 +164,7 @@ module AIStatsSdk
         :'user' => :'String',
         :'usage' => :'Boolean',
         :'meta' => :'Boolean',
+        :'debug' => :'DebugOptions',
         :'provider' => :'ProviderRoutingOptions'
       }
     end
@@ -319,6 +323,10 @@ module AIStatsSdk
 
       if attributes.key?(:'meta')
         self.meta = attributes[:'meta']
+      end
+
+      if attributes.key?(:'debug')
+        self.debug = attributes[:'debug']
       end
 
       if attributes.key?(:'provider')
@@ -514,6 +522,7 @@ module AIStatsSdk
           user == o.user &&
           usage == o.usage &&
           meta == o.meta &&
+          debug == o.debug &&
           provider == o.provider
     end
 
@@ -526,7 +535,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, input, input_items, conversation, include, instructions, max_output_tokens, max_tool_calls, metadata, parallel_tool_calls, previous_response_id, prompt, prompt_cache_key, prompt_cache_retention, reasoning, safety_identifier, service_tier, store, stream, stream_options, temperature, text, tool_choice, tools, top_logprobs, top_p, truncation, background, user, usage, meta, provider].hash
+      [model, input, input_items, conversation, include, instructions, max_output_tokens, max_tool_calls, metadata, parallel_tool_calls, previous_response_id, prompt, prompt_cache_key, prompt_cache_retention, reasoning, safety_identifier, service_tier, store, stream, stream_options, temperature, text, tool_choice, tools, top_logprobs, top_p, truncation, background, user, usage, meta, debug, provider].hash
     end
 
     # Builds the object from hash

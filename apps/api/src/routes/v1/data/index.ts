@@ -35,9 +35,12 @@ dataRouter.route("/audio/translations", audioTranslationRoutes);
 dataRouter.route("/images/generations", imagesGenerationsRoutes);
 dataRouter.route("/images/edits", imagesEditsRoutes);
 dataRouter.route("/videos", videosRoutes);
+dataRouter.route("/video/generations", videosRoutes);
 dataRouter.route("/ocr", ocrRoutes);
 dataRouter.route("/music/generate", musicGenerateRoutes);
+dataRouter.route("/music/generations", musicGenerateRoutes);
 dataRouter.route("/batch", batchRoutes);
+dataRouter.route("/batches", batchRoutes);
 dataRouter.route("/files", filesRoutes);
 
 

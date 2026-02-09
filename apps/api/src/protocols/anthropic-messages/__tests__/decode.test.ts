@@ -420,6 +420,31 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.stream).toBe(true);
 	});
 
+	it("should map speed fast to priority service tier", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 2048,
+			speed: "fast",
+			messages: [{ role: "user", content: "Hello" }],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+		expect(ir.speed).toBe("fast");
+		expect(ir.serviceTier).toBe("priority");
+	});
+
+	it("should preserve service_tier on decode", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 2048,
+			service_tier: "standard_only",
+			messages: [{ role: "user", content: "Hello" }],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+		expect(ir.serviceTier).toBe("standard_only");
+	});
+
 	it("should handle metadata field", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",

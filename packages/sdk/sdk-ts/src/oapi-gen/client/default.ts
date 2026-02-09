@@ -1,10 +1,59 @@
 import type { Client } from "../../runtime/client.js";
 
+export type CalculatePricingParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    endpoint: string;
+    model: string;
+    provider: string;
+    usage: {
+      [key: string]: unknown;
+    };
+  };
+};
+
+/**
+ * Calculates price for a usage payload.
+ */
+export async function calculatePricing(
+  client: Client,
+  args: CalculatePricingParams = {},
+): Promise<{
+  ok?: boolean;
+  pricing?: {
+    [key: string]: unknown;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/pricing/calculate";
+  return client.request<{
+    ok?: boolean;
+    pricing?: {
+      [key: string]: unknown;
+    };
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateAnthropicMessageParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
     max_tokens?: number;
     messages: {
       content:
@@ -32,6 +81,7 @@ export type CreateAnthropicMessageParams = {
     model: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -125,11 +175,19 @@ export type CreateBatchParams = {
   headers?: Record<string, never>;
   body?: {
     completion_window?: string;
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
     endpoint: string;
     input_file_id: string;
     metadata?: {};
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -204,11 +262,111 @@ export async function createBatch(
   });
 }
 
+export type CreateBatchAliasParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    completion_window?: string;
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
+    endpoint: string;
+    input_file_id: string;
+    metadata?: {};
+    provider?: {
+      ignore?: string[];
+      include_alpha?: boolean;
+      only?: string[];
+      order?: string[];
+    };
+  };
+};
+
+/**
+ * Alias of /batches.
+ */
+export async function createBatchAlias(
+  client: Client,
+  args: CreateBatchAliasParams = {},
+): Promise<{
+  cancelled_at?: number;
+  cancelling_at?: number;
+  completed_at?: number;
+  completion_window?: string;
+  created_at?: number;
+  endpoint?: string;
+  error_file_id?: string;
+  errors?: {};
+  expired_at?: number;
+  expires_at?: number;
+  failed_at?: number;
+  finalizing_at?: number;
+  id?: string;
+  in_progress_at?: number;
+  input_file_id?: string;
+  metadata?: {};
+  object?: string;
+  output_file_id?: string;
+  request_counts?: {
+    completed?: number;
+    failed?: number;
+    total?: number;
+  };
+  status?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batch";
+  return client.request<{
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    metadata?: {};
+    object?: string;
+    output_file_id?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    status?: string;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateChatCompletionParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
     frequency_penalty?: number;
     logit_bias?: {
       [key: string]: number;
@@ -275,6 +433,7 @@ export type CreateChatCompletionParams = {
     presence_penalty?: number;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -518,6 +677,7 @@ export type CreateImageParams = {
     prompt: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -574,6 +734,7 @@ export type CreateImageEditParams = {
     prompt: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -615,11 +776,43 @@ export async function createImageEdit(
   });
 }
 
+export type CreateKeyPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Placeholder route; currently returns not implemented.
+ */
+export async function createKeyPlaceholder(
+  client: Client,
+  args: CreateKeyPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/keys";
+  return client.request<unknown>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateModerationParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
     input:
       | string
       | {
@@ -636,6 +829,7 @@ export type CreateModerationParams = {
     model: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -724,17 +918,62 @@ export async function createModeration(
   });
 }
 
+export type CreateOAuthClientParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    description?: string;
+    homepage_url?: string;
+    logo_url?: string;
+    name: string;
+    privacy_policy_url?: string;
+    redirect_uris: string[];
+    terms_of_service_url?: string;
+  };
+};
+
+/**
+ * Creates a team-scoped OAuth client.
+ */
+export async function createOAuthClient(
+  client: Client,
+  args: CreateOAuthClientParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/oauth-clients";
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateOcrParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
     echo_upstream_request?: boolean;
     image: string;
     language?: string;
     model: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -763,58 +1002,6 @@ export async function createOcr(
   });
 }
 
-export type CreateProvisioningKeyParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    created_by: string;
-    name: string;
-    scopes?: string;
-    team_id: string;
-  };
-};
-
-/**
- * Creates a new provisioning key for a team.
- */
-export async function createProvisioningKey(
-  client: Client,
-  args: CreateProvisioningKeyParams = {},
-): Promise<{
-  key?: {
-    created_at?: string;
-    id?: string;
-    key?: string;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  };
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/provisioning/keys";
-  return client.request<{
-    key?: {
-      created_at?: string;
-      id?: string;
-      key?: string;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    };
-    ok?: boolean;
-  }>({
-    method: "POST",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type CreateResponseParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -822,6 +1009,13 @@ export type CreateResponseParams = {
   body?: {
     background?: boolean;
     conversation?: string | {};
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
     include?: string[];
     input?: {};
     input_items?: {}[];
@@ -844,6 +1038,7 @@ export type CreateResponseParams = {
     prompt_cache_retention?: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -924,6 +1119,7 @@ export type CreateSpeechParams = {
     model: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -960,6 +1156,7 @@ export type CreateTranscriptionParams = {
     model: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -1000,6 +1197,7 @@ export type CreateTranslationParams = {
     prompt?: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -1046,6 +1244,7 @@ export type CreateVideoParams = {
     prompt: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -1098,6 +1297,107 @@ export async function createVideo(
   });
 }
 
+export type CreateVideoAliasParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    aspect_ratio?: string;
+    duration?: number;
+    duration_seconds?: number;
+    input_reference?: string;
+    input_reference_mime_type?: string;
+    model: string;
+    negative_prompt?: string;
+    output_storage_uri?: string;
+    person_generation?: string;
+    prompt: string;
+    provider?: {
+      ignore?: string[];
+      include_alpha?: boolean;
+      only?: string[];
+      order?: string[];
+    };
+    ratio?: string;
+    resolution?: string;
+    sample_count?: number;
+    seconds?: number | string;
+    seed?: number;
+    size?: string;
+  };
+};
+
+/**
+ * Alias of /videos.
+ */
+export async function createVideoAlias(
+  client: Client,
+  args: CreateVideoAliasParams = {},
+): Promise<{
+  created?: number;
+  id?: string;
+  model?: string;
+  object?: string;
+  output?: {
+    id?: string;
+    type?: string;
+    url?: string;
+  }[];
+  status?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/video/generations";
+  return client.request<{
+    created?: number;
+    id?: string;
+    model?: string;
+    object?: string;
+    output?: {
+      id?: string;
+      type?: string;
+      url?: string;
+    }[];
+    status?: string;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteOAuthClientParams = {
+  path?: {
+    client_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Deletes an OAuth client and related metadata.
+ */
+export async function deleteOAuthClient(
+  client: Client,
+  args: DeleteOAuthClientParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}`;
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeleteProvisioningKeyParams = {
   path?: {
     id: string;
@@ -1108,7 +1408,7 @@ export type DeleteProvisioningKeyParams = {
 };
 
 /**
- * Permanently deletes a provisioning key.
+ * Permanently deletes a management API key.
  */
 export async function deleteProvisioningKey(
   client: Client,
@@ -1118,10 +1418,41 @@ export async function deleteProvisioningKey(
   ok?: boolean;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
     message?: string;
     ok?: boolean;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type DeleteProvisioningKeyAliasParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of management key delete endpoint.
+ */
+export async function deleteProvisioningKeyAlias(
+  client: Client,
+  args: DeleteProvisioningKeyAliasParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    [key: string]: unknown;
   }>({
     method: "DELETE",
     path: resolvedPath,
@@ -1166,11 +1497,53 @@ export async function deleteVideo(
   });
 }
 
+export type DeleteVideoAliasParams = {
+  path?: {
+    video_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /videos/{video_id}.
+ */
+export async function deleteVideoAlias(
+  client: Client,
+  args: DeleteVideoAliasParams = {},
+): Promise<{
+  deleted?: boolean;
+  id?: string;
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}`;
+  return client.request<{
+    deleted?: boolean;
+    id?: string;
+    object?: string;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GenerateMusicParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
     duration?: number;
     echo_upstream_request?: boolean;
     elevenlabs?: {
@@ -1189,6 +1562,7 @@ export type GenerateMusicParams = {
     prompt?: string;
     provider?: {
       ignore?: string[];
+      include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
@@ -1221,6 +1595,80 @@ export async function generateMusic(
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/music/generate";
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GenerateMusicAliasParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    debug?: {
+      enabled?: boolean;
+      return_upstream_request?: boolean;
+      return_upstream_response?: boolean;
+      trace?: boolean;
+      trace_level?: "summary" | "full";
+    };
+    duration?: number;
+    echo_upstream_request?: boolean;
+    elevenlabs?: {
+      composition_plan?: {};
+      force_instrumental?: boolean;
+      model_id?: string;
+      music_length_ms?: number;
+      output_format?: string;
+      prompt?: string;
+      sign_with_c2pa?: boolean;
+      store_for_inpainting?: boolean;
+      with_timestamps?: boolean;
+    };
+    format?: "mp3" | "wav" | "ogg" | "aac";
+    model: string;
+    prompt?: string;
+    provider?: {
+      ignore?: string[];
+      include_alpha?: boolean;
+      only?: string[];
+      order?: string[];
+    };
+    suno?: {
+      audioWeight?: number;
+      callBackUrl?: string;
+      customMode?: boolean;
+      instrumental?: boolean;
+      model?: string;
+      negativeTags?: string;
+      personaId?: string;
+      prompt?: string;
+      style?: string;
+      styleWeight?: number;
+      title?: string;
+      vocalGender?: "m" | "f";
+      weirdnessConstraint?: number;
+    };
+  };
+};
+
+/**
+ * Alias of /music/generate.
+ */
+export async function generateMusicAlias(
+  client: Client,
+  args: GenerateMusicAliasParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/music/generations";
   return client.request<{
     [key: string]: unknown;
   }>({
@@ -1423,7 +1871,7 @@ export async function getGeneration(
   } | null;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/generation";
+  const resolvedPath = "/generations";
   return client.request<{
     app_id?: string | null;
     byok?: boolean;
@@ -1459,6 +1907,159 @@ export async function getGeneration(
   });
 }
 
+export type GetKeyPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Placeholder route; currently returns not implemented.
+ */
+export async function getKeyPlaceholder(
+  client: Client,
+  args: GetKeyPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/key";
+  return client.request<unknown>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetMusicGenerationParams = {
+  path?: {
+    music_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Retrieves the status for a music generation request.
+ */
+export async function getMusicGeneration(
+  client: Client,
+  args: GetMusicGenerationParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/music/generate/${encodeURIComponent(String(path?.music_id))}`;
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetMusicGenerationAliasParams = {
+  path?: {
+    music_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /music/generate/{music_id}.
+ */
+export async function getMusicGenerationAlias(
+  client: Client,
+  args: GetMusicGenerationAliasParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/music/generations/${encodeURIComponent(String(path?.music_id))}`;
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetOAuthClientParams = {
+  path?: {
+    client_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns details for an OAuth client.
+ */
+export async function getOAuthClient(
+  client: Client,
+  args: GetOAuthClientParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}`;
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetProviderDerankStatusParams = {
+  path?: {
+    provider_id: string;
+  };
+  query?: {
+    fetch_limit?: number;
+    max_pairs?: number;
+    window_hours?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns breaker-based derank/recovery status for a provider.
+ */
+export async function getProviderDerankStatus(
+  client: Client,
+  args: GetProviderDerankStatusParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/health/providers/${encodeURIComponent(String(path?.provider_id))}/derank`;
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetProvisioningKeyParams = {
   path?: {
     id: string;
@@ -1469,7 +2070,7 @@ export type GetProvisioningKeyParams = {
 };
 
 /**
- * Returns details of a specific provisioning key.
+ * Returns details of a specific management API key.
  */
 export async function getProvisioningKey(
   client: Client,
@@ -1490,7 +2091,7 @@ export async function getProvisioningKey(
   ok?: boolean;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
     key?: {
       created_at?: string;
@@ -1505,6 +2106,37 @@ export async function getProvisioningKey(
       team_id?: string;
     };
     ok?: boolean;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetProvisioningKeyAliasParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of management key details endpoint.
+ */
+export async function getProvisioningKeyAlias(
+  client: Client,
+  args: GetProvisioningKeyAliasParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    [key: string]: unknown;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -1563,6 +2195,55 @@ export async function getVideo(
   });
 }
 
+export type GetVideoAliasParams = {
+  path?: {
+    video_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /videos/{video_id}.
+ */
+export async function getVideoAlias(
+  client: Client,
+  args: GetVideoAliasParams = {},
+): Promise<{
+  created?: number;
+  id?: string;
+  model?: string;
+  object?: string;
+  output?: {
+    id?: string;
+    type?: string;
+    url?: string;
+  }[];
+  status?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}`;
+  return client.request<{
+    created?: number;
+    id?: string;
+    model?: string;
+    object?: string;
+    output?: {
+      id?: string;
+      type?: string;
+      url?: string;
+    }[];
+    status?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetVideoContentParams = {
   path?: {
     video_id: string;
@@ -1590,6 +2271,33 @@ export async function getVideoContent(
   });
 }
 
+export type GetVideoContentAliasParams = {
+  path?: {
+    video_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /videos/{video_id}/content.
+ */
+export async function getVideoContentAlias(
+  client: Client,
+  args: GetVideoContentAliasParams = {},
+): Promise<Blob> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}/content`;
+  return client.request<Blob>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type HealthzParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -1607,10 +2315,66 @@ export async function healthz(
   status?: string;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/healthz";
+  const resolvedPath = "/health";
   return client.request<{
     status?: string;
   }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type InvalidateGatewayKeyCacheParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Bumps cache version for key id/kid and invalidates key cache entries.
+ */
+export async function invalidateGatewayKeyCache(
+  client: Client,
+  args: InvalidateGatewayKeyCacheParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}/invalidate`;
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListEndpointsPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Placeholder route; currently returns not implemented.
+ */
+export async function listEndpointsPlaceholder(
+  client: Client,
+  args: ListEndpointsPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/endpoints";
+  return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -1660,6 +2424,31 @@ export async function listFiles(
     }[];
     object?: string;
   }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListKeysPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Placeholder route; currently returns not implemented.
+ */
+export async function listKeysPlaceholder(
+  client: Client,
+  args: ListKeysPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/keys";
+  return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -1795,6 +2584,132 @@ export async function listModels(
   });
 }
 
+export type ListOAuthClientsParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists OAuth clients for the authenticated team.
+ */
+export async function listOAuthClients(
+  client: Client,
+  args: ListOAuthClientsParams = {},
+): Promise<{
+  data?: {
+    [key: string]: unknown;
+  }[];
+  pagination?: {
+    [key: string]: unknown;
+  };
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/oauth-clients";
+  return client.request<{
+    data?: {
+      [key: string]: unknown;
+    }[];
+    pagination?: {
+      [key: string]: unknown;
+    };
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListOrganisationsParams = {
+  path?: Record<string, never>;
+  query?: {
+    limit?: number;
+    offset?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns a list of available organisations.
+ */
+export async function listOrganisations(
+  client: Client,
+  args: ListOrganisationsParams = {},
+): Promise<{
+  limit?: number;
+  offset?: number;
+  ok?: boolean;
+  organisations?: {
+    colour?: string | null;
+    country_code?: string | null;
+    description?: string | null;
+    name?: string | null;
+    organisation_id?: string;
+  }[];
+  total?: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/organisations";
+  return client.request<{
+    limit?: number;
+    offset?: number;
+    ok?: boolean;
+    organisations?: {
+      colour?: string | null;
+      country_code?: string | null;
+      description?: string | null;
+      name?: string | null;
+      organisation_id?: string;
+    }[];
+    total?: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListPricingModelsParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns active provider/model pricing entries.
+ */
+export async function listPricingModels(
+  client: Client,
+  args: ListPricingModelsParams = {},
+): Promise<{
+  models?: {
+    [key: string]: unknown;
+  }[];
+  ok?: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/pricing/models";
+  return client.request<{
+    models?: {
+      [key: string]: unknown;
+    }[];
+    ok?: boolean;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListProvidersParams = {
   path?: Record<string, never>;
   query?: {
@@ -1859,7 +2774,7 @@ export type ListProvisioningKeysParams = {
 };
 
 /**
- * Returns all provisioning keys for a team.
+ * Returns all management API keys for a team.
  */
 export async function listProvisioningKeys(
   client: Client,
@@ -1880,7 +2795,7 @@ export async function listProvisioningKeys(
   total?: number;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/provisioning/keys";
+  const resolvedPath = "/management/keys";
   return client.request<{
     keys?: {
       created_at?: string;
@@ -1897,6 +2812,88 @@ export async function listProvisioningKeys(
     total?: number;
   }>({
     method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListProvisioningKeysAliasParams = {
+  path?: Record<string, never>;
+  query?: {
+    limit?: number;
+    offset?: number;
+    team_id: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of management keys endpoint.
+ */
+export async function listProvisioningKeysAlias(
+  client: Client,
+  args: ListProvisioningKeysAliasParams = {},
+): Promise<{
+  keys?: {
+    created_at?: string;
+    id?: string;
+    last_used_at?: string | null;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    status?: "active" | "disabled" | "revoked";
+  }[];
+  ok?: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/provisioning/keys";
+  return client.request<{
+    keys?: {
+      created_at?: string;
+      id?: string;
+      last_used_at?: string | null;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      status?: "active" | "disabled" | "revoked";
+    }[];
+    ok?: boolean;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RegenerateOAuthClientSecretParams = {
+  path?: {
+    client_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Regenerates and returns a new OAuth client secret.
+ */
+export async function regenerateOAuthClientSecret(
+  client: Client,
+  args: RegenerateOAuthClientSecretParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}/regenerate-secret`;
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,
@@ -1947,6 +2944,83 @@ export async function retrieveBatch(
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}`;
+  return client.request<{
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    metadata?: {};
+    object?: string;
+    output_file_id?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    status?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type RetrieveBatchAliasParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /batches/{batch_id}.
+ */
+export async function retrieveBatchAlias(
+  client: Client,
+  args: RetrieveBatchAliasParams = {},
+): Promise<{
+  cancelled_at?: number;
+  cancelling_at?: number;
+  completed_at?: number;
+  completion_window?: string;
+  created_at?: number;
+  endpoint?: string;
+  error_file_id?: string;
+  errors?: {};
+  expired_at?: number;
+  expires_at?: number;
+  failed_at?: number;
+  finalizing_at?: number;
+  id?: string;
+  in_progress_at?: number;
+  input_file_id?: string;
+  metadata?: {};
+  object?: string;
+  output_file_id?: string;
+  request_counts?: {
+    completed?: number;
+    failed?: number;
+    total?: number;
+  };
+  status?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
     cancelled_at?: number;
     cancelling_at?: number;
@@ -2057,6 +3131,39 @@ export async function root(
   });
 }
 
+export type UpdateOAuthClientParams = {
+  path?: {
+    client_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * Updates OAuth client metadata and redirect URIs.
+ */
+export async function updateOAuthClient(
+  client: Client,
+  args: UpdateOAuthClientParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}`;
+  return client.request<{
+    [key: string]: unknown;
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type UpdateProvisioningKeyParams = {
   path?: {
     id: string;
@@ -2071,7 +3178,7 @@ export type UpdateProvisioningKeyParams = {
 };
 
 /**
- * Updates the name, status, or blocked state of a provisioning key.
+ * Updates the name, status, or blocked state of a management API key.
  */
 export async function updateProvisioningKey(
   client: Client,
@@ -2081,10 +3188,43 @@ export async function updateProvisioningKey(
   ok?: boolean;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
+  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
     message?: string;
     ok?: boolean;
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type UpdateProvisioningKeyAliasParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * Alias of management key update endpoint.
+ */
+export async function updateProvisioningKeyAlias(
+  client: Client,
+  args: UpdateProvisioningKeyAliasParams = {},
+): Promise<{
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    [key: string]: unknown;
   }>({
     method: "PATCH",
     path: resolvedPath,

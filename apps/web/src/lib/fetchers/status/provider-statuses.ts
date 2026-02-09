@@ -1,4 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
+import { cacheLife, cacheTag } from "next/cache";
 
 export type ProviderPriority = "critical" | "high" | "medium" | "info";
 
@@ -49,6 +50,7 @@ const parser = new XMLParser({
 });
 
 const resolvedStatuses = new Set(["resolved", "operational"]);
+const STATUS_REVALIDATE_SECONDS = 60 * 10;
 
 const normalizeStatus = (value?: unknown) => {
 	if (!value) {
@@ -158,7 +160,7 @@ async function fetchOpenAIStatus(): Promise<ProviderStatus> {
 
 	try {
 		const response = await fetch(feedUrl, {
-			next: { revalidate: 60 * 60 * 24 },
+			next: { revalidate: STATUS_REVALIDATE_SECONDS },
 		});
 
 		if (!response.ok) {
@@ -197,7 +199,7 @@ async function fetchAnthropicStatus(): Promise<ProviderStatus> {
 
 	try {
 		const response = await fetch(feedUrl, {
-			next: { revalidate: 60 * 60 * 24 },
+			next: { revalidate: STATUS_REVALIDATE_SECONDS },
 		});
 
 		if (!response.ok) {
@@ -243,7 +245,7 @@ async function fetchXAIStatus(): Promise<ProviderStatus> {
 
 	try {
 		const response = await fetch(feedUrl, {
-			next: { revalidate: 60 * 60 * 24 },
+			next: { revalidate: STATUS_REVALIDATE_SECONDS },
 		});
 
 		if (!response.ok) {
@@ -276,5 +278,8 @@ async function fetchXAIStatus(): Promise<ProviderStatus> {
 }
 
 export async function getProviderStatuses() {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag("providers:status");
 	return Promise.all([fetchOpenAIStatus(), fetchAnthropicStatus(), fetchXAIStatus()]);
 }

@@ -70,7 +70,6 @@ export async function getAppDetailsCached(appId: string): Promise<AppDetails | n
 
 	cacheLife("days");
 	cacheTag("data:app_details");
-
-	console.log(`[fetch] HIT JSON for app details - ${appId}`);
+	cacheTag(`data:app_details:${appId}`);
 	return getAppDetails(appId);
 }

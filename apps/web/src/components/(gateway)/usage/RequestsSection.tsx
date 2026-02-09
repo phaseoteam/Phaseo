@@ -10,6 +10,7 @@ interface RequestsSectionProps {
 	appNames: Map<string, string>;
 	models: string[];
 	providers: string[];
+	providerNames: Map<string, string>;
 	apiKeys: { id: string; name: string | null; prefix: string | null }[];
 	modelMetadata: Map<string, { organisationId: string; organisationName: string }>;
 }
@@ -19,6 +20,7 @@ export default function RequestsSection({
 	appNames,
 	models,
 	providers,
+	providerNames,
 	apiKeys,
 	modelMetadata,
 }: RequestsSectionProps) {
@@ -35,6 +37,7 @@ export default function RequestsSection({
 			<UsageTableFilters
 				models={models}
 				providers={providers}
+				providerNames={providerNames}
 				apiKeys={apiKeys}
 				modelMetadata={modelMetadata}
 			>
@@ -47,6 +50,7 @@ export default function RequestsSection({
 				timeRange={timeRange}
 				appNames={appNames}
 				modelMetadata={modelMetadata}
+				providerNames={providerNames}
 				onExportRef={exportRef}
 			/>
 		</div>

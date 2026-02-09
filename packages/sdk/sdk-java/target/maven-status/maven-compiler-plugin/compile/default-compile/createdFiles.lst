@@ -28,6 +28,7 @@ ai\stats\gen\Models$ModerationResult.class
 ai\stats\gen\Models$AnthropicUsage.class
 ai\stats\gen\Models$GenerationResponse.class
 ai\stats\gen\Models$ProvisioningKey.class
+ai\stats\gen\Models$DebugOptions.class
 ai\stats\gen\Client.class
 ai\stats\gen\Models$ActivityEntry.class
 ai\stats\gen\Models$ResponsesRequest.class
@@ -37,7 +38,6 @@ ai\stats\gen\Models$AnthropicContentBlock.class
 ai\stats\gen\Models$AudioContentPart.class
 ai\stats\gen\Models$ModerationsRequest.class
 ai\stats\gen\Models$EmbeddingsResponse.class
-ai\stats\gen\Models$Usage.class
 ai\stats\gen\Models$ChatMessage.class
 ai\stats\gen\Models$MusicGenerateResponse.class
 ai\stats\gen\Models$TextModerationInput.class

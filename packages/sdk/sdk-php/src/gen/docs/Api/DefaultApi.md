@@ -6,41 +6,128 @@ All URIs are relative to https://api.phaseo.app/v1, except if the operation defi
 
 | Method | HTTP request | Description |
 | ------------- | ------------- | ------------- |
+| [**calculatePricing()**](DefaultApi.md#calculatePricing) | **POST** /pricing/calculate | Calculate pricing |
 | [**createAnthropicMessage()**](DefaultApi.md#createAnthropicMessage) | **POST** /messages | Create message |
 | [**createBatch()**](DefaultApi.md#createBatch) | **POST** /batches | Create batch |
+| [**createBatchAlias()**](DefaultApi.md#createBatchAlias) | **POST** /batch | Create batch (alias) |
 | [**createChatCompletion()**](DefaultApi.md#createChatCompletion) | **POST** /chat/completions | Create chat completion |
 | [**createEmbedding()**](DefaultApi.md#createEmbedding) | **POST** /embeddings | Create embeddings |
 | [**createImage()**](DefaultApi.md#createImage) | **POST** /images/generations | Create image |
 | [**createImageEdit()**](DefaultApi.md#createImageEdit) | **POST** /images/edits | Create image edit |
+| [**createKeyPlaceholder()**](DefaultApi.md#createKeyPlaceholder) | **POST** /keys | Create key (placeholder) |
 | [**createModeration()**](DefaultApi.md#createModeration) | **POST** /moderations | Create moderation |
+| [**createOAuthClient()**](DefaultApi.md#createOAuthClient) | **POST** /oauth-clients | Create OAuth client |
 | [**createOcr()**](DefaultApi.md#createOcr) | **POST** /ocr | Create OCR |
-| [**createProvisioningKey()**](DefaultApi.md#createProvisioningKey) | **POST** /provisioning/keys | Create provisioning key |
 | [**createResponse()**](DefaultApi.md#createResponse) | **POST** /responses | Create response |
 | [**createSpeech()**](DefaultApi.md#createSpeech) | **POST** /audio/speech | Generate speech |
 | [**createTranscription()**](DefaultApi.md#createTranscription) | **POST** /audio/transcriptions | Create transcription |
 | [**createTranslation()**](DefaultApi.md#createTranslation) | **POST** /audio/translations | Create translation |
 | [**createVideo()**](DefaultApi.md#createVideo) | **POST** /videos | Create video |
-| [**deleteProvisioningKey()**](DefaultApi.md#deleteProvisioningKey) | **DELETE** /provisioning/keys/{id} | Delete provisioning key |
+| [**createVideoAlias()**](DefaultApi.md#createVideoAlias) | **POST** /video/generations | Create video (alias) |
+| [**deleteOAuthClient()**](DefaultApi.md#deleteOAuthClient) | **DELETE** /oauth-clients/{client_id} | Delete OAuth client |
+| [**deleteProvisioningKey()**](DefaultApi.md#deleteProvisioningKey) | **DELETE** /management/keys/{id} | Delete management API key |
+| [**deleteProvisioningKeyAlias()**](DefaultApi.md#deleteProvisioningKeyAlias) | **DELETE** /provisioning/keys/{id} | Delete provisioning key |
 | [**deleteVideo()**](DefaultApi.md#deleteVideo) | **DELETE** /videos/{video_id} | Delete video |
+| [**deleteVideoAlias()**](DefaultApi.md#deleteVideoAlias) | **DELETE** /video/generations/{video_id} | Delete video (alias) |
 | [**generateMusic()**](DefaultApi.md#generateMusic) | **POST** /music/generate | Generate music |
+| [**generateMusicAlias()**](DefaultApi.md#generateMusicAlias) | **POST** /music/generations | Generate music (alias) |
 | [**getActivity()**](DefaultApi.md#getActivity) | **GET** /activity | Get activity |
 | [**getAnalytics()**](DefaultApi.md#getAnalytics) | **POST** /analytics | Get analytics |
 | [**getCredits()**](DefaultApi.md#getCredits) | **GET** /credits | Get remaining credits |
-| [**getGeneration()**](DefaultApi.md#getGeneration) | **GET** /generation | Get generation |
-| [**getProvisioningKey()**](DefaultApi.md#getProvisioningKey) | **GET** /provisioning/keys/{id} | Get provisioning key |
+| [**getGeneration()**](DefaultApi.md#getGeneration) | **GET** /generations | Get generation |
+| [**getKeyPlaceholder()**](DefaultApi.md#getKeyPlaceholder) | **GET** /key | Get key (placeholder) |
+| [**getMusicGeneration()**](DefaultApi.md#getMusicGeneration) | **GET** /music/generate/{music_id} | Get music generation status |
+| [**getMusicGenerationAlias()**](DefaultApi.md#getMusicGenerationAlias) | **GET** /music/generations/{music_id} | Get music generation status (alias) |
+| [**getOAuthClient()**](DefaultApi.md#getOAuthClient) | **GET** /oauth-clients/{client_id} | Get OAuth client |
+| [**getProviderDerankStatus()**](DefaultApi.md#getProviderDerankStatus) | **GET** /health/providers/{provider_id}/derank | Provider derank status |
+| [**getProvisioningKey()**](DefaultApi.md#getProvisioningKey) | **GET** /management/keys/{id} | Get management API key |
+| [**getProvisioningKeyAlias()**](DefaultApi.md#getProvisioningKeyAlias) | **GET** /provisioning/keys/{id} | Get provisioning key |
 | [**getVideo()**](DefaultApi.md#getVideo) | **GET** /videos/{video_id} | Get video status |
+| [**getVideoAlias()**](DefaultApi.md#getVideoAlias) | **GET** /video/generations/{video_id} | Get video status (alias) |
 | [**getVideoContent()**](DefaultApi.md#getVideoContent) | **GET** /videos/{video_id}/content | Get video content |
-| [**healthz()**](DefaultApi.md#healthz) | **GET** /healthz | Health check |
+| [**getVideoContentAlias()**](DefaultApi.md#getVideoContentAlias) | **GET** /video/generations/{video_id}/content | Get video content (alias) |
+| [**healthz()**](DefaultApi.md#healthz) | **GET** /health | Health check |
+| [**invalidateGatewayKeyCache()**](DefaultApi.md#invalidateGatewayKeyCache) | **POST** /keys/{id}/invalidate | Invalidate key cache |
+| [**listEndpointsPlaceholder()**](DefaultApi.md#listEndpointsPlaceholder) | **GET** /endpoints | List endpoints (placeholder) |
 | [**listFiles()**](DefaultApi.md#listFiles) | **GET** /files | List files |
+| [**listKeysPlaceholder()**](DefaultApi.md#listKeysPlaceholder) | **GET** /keys | List keys (placeholder) |
 | [**listModels()**](DefaultApi.md#listModels) | **GET** /models | List models |
+| [**listOAuthClients()**](DefaultApi.md#listOAuthClients) | **GET** /oauth-clients | List OAuth clients |
+| [**listOrganisations()**](DefaultApi.md#listOrganisations) | **GET** /organisations | List organisations |
+| [**listPricingModels()**](DefaultApi.md#listPricingModels) | **GET** /pricing/models | List pricing models |
 | [**listProviders()**](DefaultApi.md#listProviders) | **GET** /providers | List providers |
-| [**listProvisioningKeys()**](DefaultApi.md#listProvisioningKeys) | **GET** /provisioning/keys | List provisioning keys |
+| [**listProvisioningKeys()**](DefaultApi.md#listProvisioningKeys) | **GET** /management/keys | List management API keys |
+| [**listProvisioningKeysAlias()**](DefaultApi.md#listProvisioningKeysAlias) | **GET** /provisioning/keys | List provisioning keys |
+| [**regenerateOAuthClientSecret()**](DefaultApi.md#regenerateOAuthClientSecret) | **POST** /oauth-clients/{client_id}/regenerate-secret | Regenerate OAuth client secret |
 | [**retrieveBatch()**](DefaultApi.md#retrieveBatch) | **GET** /batches/{batch_id} | Retrieve batch |
+| [**retrieveBatchAlias()**](DefaultApi.md#retrieveBatchAlias) | **GET** /batch/{id} | Retrieve batch (alias) |
 | [**retrieveFile()**](DefaultApi.md#retrieveFile) | **GET** /files/{file_id} | Retrieve file |
 | [**root()**](DefaultApi.md#root) | **GET** / | Root endpoint |
-| [**updateProvisioningKey()**](DefaultApi.md#updateProvisioningKey) | **PATCH** /provisioning/keys/{id} | Update provisioning key |
+| [**updateOAuthClient()**](DefaultApi.md#updateOAuthClient) | **PATCH** /oauth-clients/{client_id} | Update OAuth client |
+| [**updateProvisioningKey()**](DefaultApi.md#updateProvisioningKey) | **PATCH** /management/keys/{id} | Update management API key |
+| [**updateProvisioningKeyAlias()**](DefaultApi.md#updateProvisioningKeyAlias) | **PATCH** /provisioning/keys/{id} | Update provisioning key |
 | [**uploadFile()**](DefaultApi.md#uploadFile) | **POST** /files | Upload file |
 
+
+## `calculatePricing()`
+
+```php
+calculatePricing($calculate_pricing_request): \AIStats\Sdk\Model\CalculatePricing200Response
+```
+
+Calculate pricing
+
+Calculates price for a usage payload.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$calculate_pricing_request = new \AIStats\Sdk\Model\CalculatePricingRequest(); // \AIStats\Sdk\Model\CalculatePricingRequest
+
+try {
+    $result = $apiInstance->calculatePricing($calculate_pricing_request);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->calculatePricing: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **calculate_pricing_request** | [**\AIStats\Sdk\Model\CalculatePricingRequest**](../Model/CalculatePricingRequest.md)|  | |
+
+### Return type
+
+[**\AIStats\Sdk\Model\CalculatePricing200Response**](../Model/CalculatePricing200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
 
 ## `createAnthropicMessage()`
 
@@ -136,6 +223,66 @@ try {
     print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->createBatch: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **batch_request** | [**\AIStats\Sdk\Model\BatchRequest**](../Model/BatchRequest.md)|  | |
+
+### Return type
+
+[**\AIStats\Sdk\Model\BatchResponse**](../Model/BatchResponse.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `createBatchAlias()`
+
+```php
+createBatchAlias($batch_request): \AIStats\Sdk\Model\BatchResponse
+```
+
+Create batch (alias)
+
+Alias of /batches.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$batch_request = new \AIStats\Sdk\Model\BatchRequest(); // \AIStats\Sdk\Model\BatchRequest
+
+try {
+    $result = $apiInstance->createBatchAlias($batch_request);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->createBatchAlias: ', $e->getMessage(), PHP_EOL;
 }
 ```
 
@@ -420,6 +567,62 @@ try {
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
+## `createKeyPlaceholder()`
+
+```php
+createKeyPlaceholder()
+```
+
+Create key (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $apiInstance->createKeyPlaceholder();
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->createKeyPlaceholder: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
 ## `createModeration()`
 
 ```php
@@ -480,6 +683,66 @@ try {
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
+## `createOAuthClient()`
+
+```php
+createOAuthClient($create_o_auth_client_request): array<string,mixed>
+```
+
+Create OAuth client
+
+Creates a team-scoped OAuth client.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$create_o_auth_client_request = new \AIStats\Sdk\Model\CreateOAuthClientRequest(); // \AIStats\Sdk\Model\CreateOAuthClientRequest
+
+try {
+    $result = $apiInstance->createOAuthClient($create_o_auth_client_request);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->createOAuthClient: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **create_o_auth_client_request** | [**\AIStats\Sdk\Model\CreateOAuthClientRequest**](../Model/CreateOAuthClientRequest.md)|  | |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
 ## `createOcr()`
 
 ```php
@@ -526,66 +789,6 @@ try {
 ### Return type
 
 **array<string,mixed>**
-
-### Authorization
-
-[BearerAuth](../../README.md#BearerAuth)
-
-### HTTP request headers
-
-- **Content-Type**: `application/json`
-- **Accept**: `application/json`
-
-[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
-[[Back to Model list]](../../README.md#models)
-[[Back to README]](../../README.md)
-
-## `createProvisioningKey()`
-
-```php
-createProvisioningKey($create_provisioning_key_request): \AIStats\Sdk\Model\CreateProvisioningKey201Response
-```
-
-Create provisioning key
-
-Creates a new provisioning key for a team.
-
-### Example
-
-```php
-<?php
-require_once(__DIR__ . '/vendor/autoload.php');
-
-
-// Configure Bearer authorization: BearerAuth
-$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
-
-
-$apiInstance = new AIStats\Sdk\Api\DefaultApi(
-    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
-    // This is optional, `GuzzleHttp\Client` will be used as default.
-    new GuzzleHttp\Client(),
-    $config
-);
-$create_provisioning_key_request = new \AIStats\Sdk\Model\CreateProvisioningKeyRequest(); // \AIStats\Sdk\Model\CreateProvisioningKeyRequest
-
-try {
-    $result = $apiInstance->createProvisioningKey($create_provisioning_key_request);
-    print_r($result);
-} catch (Exception $e) {
-    echo 'Exception when calling DefaultApi->createProvisioningKey: ', $e->getMessage(), PHP_EOL;
-}
-```
-
-### Parameters
-
-| Name | Type | Description  | Notes |
-| ------------- | ------------- | ------------- | ------------- |
-| **create_provisioning_key_request** | [**\AIStats\Sdk\Model\CreateProvisioningKeyRequest**](../Model/CreateProvisioningKeyRequest.md)|  | |
-
-### Return type
-
-[**\AIStats\Sdk\Model\CreateProvisioningKey201Response**](../Model/CreateProvisioningKey201Response.md)
 
 ### Authorization
 
@@ -920,15 +1123,15 @@ try {
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
-## `deleteProvisioningKey()`
+## `createVideoAlias()`
 
 ```php
-deleteProvisioningKey($id): \AIStats\Sdk\Model\DeleteProvisioningKey200Response
+createVideoAlias($video_generation_request): \AIStats\Sdk\Model\VideoGenerationResponse
 ```
 
-Delete provisioning key
+Create video (alias)
 
-Permanently deletes a provisioning key.
+Alias of /videos.
 
 ### Example
 
@@ -947,7 +1150,127 @@ $apiInstance = new AIStats\Sdk\Api\DefaultApi(
     new GuzzleHttp\Client(),
     $config
 );
-$id = 'id_example'; // string | The provisioning key ID
+$video_generation_request = new \AIStats\Sdk\Model\VideoGenerationRequest(); // \AIStats\Sdk\Model\VideoGenerationRequest
+
+try {
+    $result = $apiInstance->createVideoAlias($video_generation_request);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->createVideoAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **video_generation_request** | [**\AIStats\Sdk\Model\VideoGenerationRequest**](../Model/VideoGenerationRequest.md)|  | |
+
+### Return type
+
+[**\AIStats\Sdk\Model\VideoGenerationResponse**](../Model/VideoGenerationResponse.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `deleteOAuthClient()`
+
+```php
+deleteOAuthClient($client_id): array<string,mixed>
+```
+
+Delete OAuth client
+
+Deletes an OAuth client and related metadata.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$client_id = 'client_id_example'; // string
+
+try {
+    $result = $apiInstance->deleteOAuthClient($client_id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->deleteOAuthClient: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **client_id** | **string**|  | |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `deleteProvisioningKey()`
+
+```php
+deleteProvisioningKey($id): \AIStats\Sdk\Model\DeleteProvisioningKey200Response
+```
+
+Delete management API key
+
+Permanently deletes a management API key.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$id = 'id_example'; // string | The management API key ID
 
 try {
     $result = $apiInstance->deleteProvisioningKey($id);
@@ -961,11 +1284,71 @@ try {
 
 | Name | Type | Description  | Notes |
 | ------------- | ------------- | ------------- | ------------- |
-| **id** | **string**| The provisioning key ID | |
+| **id** | **string**| The management API key ID | |
 
 ### Return type
 
 [**\AIStats\Sdk\Model\DeleteProvisioningKey200Response**](../Model/DeleteProvisioningKey200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `deleteProvisioningKeyAlias()`
+
+```php
+deleteProvisioningKeyAlias($id): array<string,mixed>
+```
+
+Delete provisioning key
+
+Alias of management key delete endpoint.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$id = 'id_example'; // string
+
+try {
+    $result = $apiInstance->deleteProvisioningKeyAlias($id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->deleteProvisioningKeyAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **id** | **string**|  | |
+
+### Return type
+
+**array<string,mixed>**
 
 ### Authorization
 
@@ -1040,6 +1423,66 @@ try {
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
+## `deleteVideoAlias()`
+
+```php
+deleteVideoAlias($video_id): \AIStats\Sdk\Model\VideoDeleteResponse
+```
+
+Delete video (alias)
+
+Alias of /videos/{video_id}.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$video_id = 'video_id_example'; // string
+
+try {
+    $result = $apiInstance->deleteVideoAlias($video_id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->deleteVideoAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **video_id** | **string**|  | |
+
+### Return type
+
+[**\AIStats\Sdk\Model\VideoDeleteResponse**](../Model/VideoDeleteResponse.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
 ## `generateMusic()`
 
 ```php
@@ -1074,6 +1517,66 @@ try {
     print_r($result);
 } catch (Exception $e) {
     echo 'Exception when calling DefaultApi->generateMusic: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **music_generate_request** | [**\AIStats\Sdk\Model\MusicGenerateRequest**](../Model/MusicGenerateRequest.md)|  | |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `generateMusicAlias()`
+
+```php
+generateMusicAlias($music_generate_request): array<string,mixed>
+```
+
+Generate music (alias)
+
+Alias of /music/generate.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$music_generate_request = new \AIStats\Sdk\Model\MusicGenerateRequest(); // \AIStats\Sdk\Model\MusicGenerateRequest
+
+try {
+    $result = $apiInstance->generateMusicAlias($music_generate_request);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->generateMusicAlias: ', $e->getMessage(), PHP_EOL;
 }
 ```
 
@@ -1346,15 +1849,15 @@ try {
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
-## `getProvisioningKey()`
+## `getKeyPlaceholder()`
 
 ```php
-getProvisioningKey($id): \AIStats\Sdk\Model\GetProvisioningKey200Response
+getKeyPlaceholder()
 ```
 
-Get provisioning key
+Get key (placeholder)
 
-Returns details of a specific provisioning key.
+Placeholder route; currently returns not implemented.
 
 ### Example
 
@@ -1373,7 +1876,309 @@ $apiInstance = new AIStats\Sdk\Api\DefaultApi(
     new GuzzleHttp\Client(),
     $config
 );
-$id = 'id_example'; // string | The provisioning key ID
+
+try {
+    $apiInstance->getKeyPlaceholder();
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->getKeyPlaceholder: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `getMusicGeneration()`
+
+```php
+getMusicGeneration($music_id): array<string,mixed>
+```
+
+Get music generation status
+
+Retrieves the status for a music generation request.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$music_id = 'music_id_example'; // string | The ID of the music generation request.
+
+try {
+    $result = $apiInstance->getMusicGeneration($music_id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->getMusicGeneration: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **music_id** | **string**| The ID of the music generation request. | |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `getMusicGenerationAlias()`
+
+```php
+getMusicGenerationAlias($music_id): array<string,mixed>
+```
+
+Get music generation status (alias)
+
+Alias of /music/generate/{music_id}.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$music_id = 'music_id_example'; // string
+
+try {
+    $result = $apiInstance->getMusicGenerationAlias($music_id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->getMusicGenerationAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **music_id** | **string**|  | |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `getOAuthClient()`
+
+```php
+getOAuthClient($client_id): array<string,mixed>
+```
+
+Get OAuth client
+
+Returns details for an OAuth client.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$client_id = 'client_id_example'; // string
+
+try {
+    $result = $apiInstance->getOAuthClient($client_id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->getOAuthClient: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **client_id** | **string**|  | |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `getProviderDerankStatus()`
+
+```php
+getProviderDerankStatus($provider_id, $window_hours, $max_pairs, $fetch_limit): array<string,mixed>
+```
+
+Provider derank status
+
+Returns breaker-based derank/recovery status for a provider.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$provider_id = 'provider_id_example'; // string | Provider identifier.
+$window_hours = 56; // int | Observation window in hours.
+$max_pairs = 56; // int | Max endpoint/model tuples to inspect.
+$fetch_limit = 56; // int | Max recent requests to scan.
+
+try {
+    $result = $apiInstance->getProviderDerankStatus($provider_id, $window_hours, $max_pairs, $fetch_limit);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->getProviderDerankStatus: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **provider_id** | **string**| Provider identifier. | |
+| **window_hours** | **int**| Observation window in hours. | [optional] |
+| **max_pairs** | **int**| Max endpoint/model tuples to inspect. | [optional] |
+| **fetch_limit** | **int**| Max recent requests to scan. | [optional] |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `getProvisioningKey()`
+
+```php
+getProvisioningKey($id): \AIStats\Sdk\Model\GetProvisioningKey200Response
+```
+
+Get management API key
+
+Returns details of a specific management API key.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$id = 'id_example'; // string | The management API key ID
 
 try {
     $result = $apiInstance->getProvisioningKey($id);
@@ -1387,11 +2192,71 @@ try {
 
 | Name | Type | Description  | Notes |
 | ------------- | ------------- | ------------- | ------------- |
-| **id** | **string**| The provisioning key ID | |
+| **id** | **string**| The management API key ID | |
 
 ### Return type
 
 [**\AIStats\Sdk\Model\GetProvisioningKey200Response**](../Model/GetProvisioningKey200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `getProvisioningKeyAlias()`
+
+```php
+getProvisioningKeyAlias($id): array<string,mixed>
+```
+
+Get provisioning key
+
+Alias of management key details endpoint.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$id = 'id_example'; // string
+
+try {
+    $result = $apiInstance->getProvisioningKeyAlias($id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->getProvisioningKeyAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **id** | **string**|  | |
+
+### Return type
+
+**array<string,mixed>**
 
 ### Authorization
 
@@ -1448,6 +2313,66 @@ try {
 | Name | Type | Description  | Notes |
 | ------------- | ------------- | ------------- | ------------- |
 | **video_id** | **string**| The ID of the video generation request. | |
+
+### Return type
+
+[**\AIStats\Sdk\Model\VideoGenerationResponse**](../Model/VideoGenerationResponse.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `getVideoAlias()`
+
+```php
+getVideoAlias($video_id): \AIStats\Sdk\Model\VideoGenerationResponse
+```
+
+Get video status (alias)
+
+Alias of /videos/{video_id}.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$video_id = 'video_id_example'; // string
+
+try {
+    $result = $apiInstance->getVideoAlias($video_id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->getVideoAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **video_id** | **string**|  | |
 
 ### Return type
 
@@ -1526,6 +2451,66 @@ try {
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
+## `getVideoContentAlias()`
+
+```php
+getVideoContentAlias($video_id): \SplFileObject
+```
+
+Get video content (alias)
+
+Alias of /videos/{video_id}/content.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$video_id = 'video_id_example'; // string
+
+try {
+    $result = $apiInstance->getVideoContentAlias($video_id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->getVideoContentAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **video_id** | **string**|  | |
+
+### Return type
+
+**\SplFileObject**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/octet-stream`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
 ## `healthz()`
 
 ```php
@@ -1583,6 +2568,122 @@ This endpoint does not need any parameter.
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
+## `invalidateGatewayKeyCache()`
+
+```php
+invalidateGatewayKeyCache($id): array<string,mixed>
+```
+
+Invalidate key cache
+
+Bumps cache version for key id/kid and invalidates key cache entries.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$id = 'id_example'; // string | Gateway key ID.
+
+try {
+    $result = $apiInstance->invalidateGatewayKeyCache($id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->invalidateGatewayKeyCache: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **id** | **string**| Gateway key ID. | |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `listEndpointsPlaceholder()`
+
+```php
+listEndpointsPlaceholder()
+```
+
+List endpoints (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $apiInstance->listEndpointsPlaceholder();
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->listEndpointsPlaceholder: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
 ## `listFiles()`
 
 ```php
@@ -1626,6 +2727,62 @@ This endpoint does not need any parameter.
 ### Return type
 
 [**\AIStats\Sdk\Model\ListFilesResponse**](../Model/ListFilesResponse.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `listKeysPlaceholder()`
+
+```php
+listKeysPlaceholder()
+```
+
+List keys (placeholder)
+
+Placeholder route; currently returns not implemented.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $apiInstance->listKeysPlaceholder();
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->listKeysPlaceholder: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+void (empty response body)
 
 ### Authorization
 
@@ -1712,6 +2869,182 @@ try {
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
+## `listOAuthClients()`
+
+```php
+listOAuthClients(): \AIStats\Sdk\Model\ListOAuthClients200Response
+```
+
+List OAuth clients
+
+Lists OAuth clients for the authenticated team.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $result = $apiInstance->listOAuthClients();
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->listOAuthClients: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**\AIStats\Sdk\Model\ListOAuthClients200Response**](../Model/ListOAuthClients200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `listOrganisations()`
+
+```php
+listOrganisations($limit, $offset): \AIStats\Sdk\Model\ListOrganisations200Response
+```
+
+List organisations
+
+Returns a list of available organisations.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$limit = 50; // int | Limit the number of results
+$offset = 0; // int | Offset for pagination
+
+try {
+    $result = $apiInstance->listOrganisations($limit, $offset);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->listOrganisations: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **limit** | **int**| Limit the number of results | [optional] [default to 50] |
+| **offset** | **int**| Offset for pagination | [optional] [default to 0] |
+
+### Return type
+
+[**\AIStats\Sdk\Model\ListOrganisations200Response**](../Model/ListOrganisations200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `listPricingModels()`
+
+```php
+listPricingModels(): \AIStats\Sdk\Model\ListPricingModels200Response
+```
+
+List pricing models
+
+Returns active provider/model pricing entries.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $result = $apiInstance->listPricingModels();
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->listPricingModels: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**\AIStats\Sdk\Model\ListPricingModels200Response**](../Model/ListPricingModels200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
 ## `listProviders()`
 
 ```php
@@ -1780,9 +3113,9 @@ try {
 listProvisioningKeys($team_id, $limit, $offset): \AIStats\Sdk\Model\ListProvisioningKeys200Response
 ```
 
-List provisioning keys
+List management API keys
 
-Returns all provisioning keys for a team.
+Returns all management API keys for a team.
 
 ### Example
 
@@ -1824,6 +3157,130 @@ try {
 ### Return type
 
 [**\AIStats\Sdk\Model\ListProvisioningKeys200Response**](../Model/ListProvisioningKeys200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `listProvisioningKeysAlias()`
+
+```php
+listProvisioningKeysAlias($team_id, $limit, $offset): \AIStats\Sdk\Model\ListProvisioningKeysAlias200Response
+```
+
+List provisioning keys
+
+Alias of management keys endpoint.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$team_id = 'team_id_example'; // string | The team ID to query
+$limit = 50; // int | Maximum number of keys to return
+$offset = 0; // int | Pagination offset
+
+try {
+    $result = $apiInstance->listProvisioningKeysAlias($team_id, $limit, $offset);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->listProvisioningKeysAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **team_id** | **string**| The team ID to query | |
+| **limit** | **int**| Maximum number of keys to return | [optional] [default to 50] |
+| **offset** | **int**| Pagination offset | [optional] [default to 0] |
+
+### Return type
+
+[**\AIStats\Sdk\Model\ListProvisioningKeysAlias200Response**](../Model/ListProvisioningKeysAlias200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `regenerateOAuthClientSecret()`
+
+```php
+regenerateOAuthClientSecret($client_id): array<string,mixed>
+```
+
+Regenerate OAuth client secret
+
+Regenerates and returns a new OAuth client secret.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$client_id = 'client_id_example'; // string
+
+try {
+    $result = $apiInstance->regenerateOAuthClientSecret($client_id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->regenerateOAuthClientSecret: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **client_id** | **string**|  | |
+
+### Return type
+
+**array<string,mixed>**
 
 ### Authorization
 
@@ -1880,6 +3337,66 @@ try {
 | Name | Type | Description  | Notes |
 | ------------- | ------------- | ------------- | ------------- |
 | **batch_id** | **string**| The ID of the batch to retrieve. | |
+
+### Return type
+
+[**\AIStats\Sdk\Model\BatchResponse**](../Model/BatchResponse.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `retrieveBatchAlias()`
+
+```php
+retrieveBatchAlias($id): \AIStats\Sdk\Model\BatchResponse
+```
+
+Retrieve batch (alias)
+
+Alias of /batches/{batch_id}.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$id = 'id_example'; // string
+
+try {
+    $result = $apiInstance->retrieveBatchAlias($id);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->retrieveBatchAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **id** | **string**|  | |
 
 ### Return type
 
@@ -2015,15 +3532,15 @@ This endpoint does not need any parameter.
 [[Back to Model list]](../../README.md#models)
 [[Back to README]](../../README.md)
 
-## `updateProvisioningKey()`
+## `updateOAuthClient()`
 
 ```php
-updateProvisioningKey($id, $update_provisioning_key_request): \AIStats\Sdk\Model\UpdateProvisioningKey200Response
+updateOAuthClient($client_id, $request_body): array<string,mixed>
 ```
 
-Update provisioning key
+Update OAuth client
 
-Updates the name, status, or blocked state of a provisioning key.
+Updates OAuth client metadata and redirect URIs.
 
 ### Example
 
@@ -2042,7 +3559,69 @@ $apiInstance = new AIStats\Sdk\Api\DefaultApi(
     new GuzzleHttp\Client(),
     $config
 );
-$id = 'id_example'; // string | The provisioning key ID
+$client_id = 'client_id_example'; // string
+$request_body = NULL; // array<string,mixed>
+
+try {
+    $result = $apiInstance->updateOAuthClient($client_id, $request_body);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->updateOAuthClient: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **client_id** | **string**|  | |
+| **request_body** | [**array<string,mixed>**](../Model/mixed.md)|  | |
+
+### Return type
+
+**array<string,mixed>**
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `updateProvisioningKey()`
+
+```php
+updateProvisioningKey($id, $update_provisioning_key_request): \AIStats\Sdk\Model\UpdateProvisioningKey200Response
+```
+
+Update management API key
+
+Updates the name, status, or blocked state of a management API key.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$id = 'id_example'; // string | The management API key ID
 $update_provisioning_key_request = new \AIStats\Sdk\Model\UpdateProvisioningKeyRequest(); // \AIStats\Sdk\Model\UpdateProvisioningKeyRequest
 
 try {
@@ -2057,12 +3636,74 @@ try {
 
 | Name | Type | Description  | Notes |
 | ------------- | ------------- | ------------- | ------------- |
-| **id** | **string**| The provisioning key ID | |
+| **id** | **string**| The management API key ID | |
 | **update_provisioning_key_request** | [**\AIStats\Sdk\Model\UpdateProvisioningKeyRequest**](../Model/UpdateProvisioningKeyRequest.md)|  | |
 
 ### Return type
 
 [**\AIStats\Sdk\Model\UpdateProvisioningKey200Response**](../Model/UpdateProvisioningKey200Response.md)
+
+### Authorization
+
+[BearerAuth](../../README.md#BearerAuth)
+
+### HTTP request headers
+
+- **Content-Type**: `application/json`
+- **Accept**: `application/json`
+
+[[Back to top]](#) [[Back to API list]](../../README.md#endpoints)
+[[Back to Model list]](../../README.md#models)
+[[Back to README]](../../README.md)
+
+## `updateProvisioningKeyAlias()`
+
+```php
+updateProvisioningKeyAlias($id, $request_body): array<string,mixed>
+```
+
+Update provisioning key
+
+Alias of management key update endpoint.
+
+### Example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+
+// Configure Bearer authorization: BearerAuth
+$config = AIStats\Sdk\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');
+
+
+$apiInstance = new AIStats\Sdk\Api\DefaultApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+);
+$id = 'id_example'; // string
+$request_body = NULL; // array<string,mixed>
+
+try {
+    $result = $apiInstance->updateProvisioningKeyAlias($id, $request_body);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->updateProvisioningKeyAlias: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+| ------------- | ------------- | ------------- | ------------- |
+| **id** | **string**|  | |
+| **request_body** | [**array<string,mixed>**](../Model/mixed.md)|  | |
+
+### Return type
+
+**array<string,mixed>**
 
 ### Authorization
 

@@ -22,6 +22,18 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)
 
+	t.Run("Test DefaultAPIService CalculatePricing", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.DefaultAPI.CalculatePricing(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService CreateAnthropicMessage", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
@@ -39,6 +51,18 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 		t.Skip("skip test")  // remove to run test
 
 		resp, httpRes, err := apiClient.DefaultAPI.CreateBatch(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService CreateBatchAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.DefaultAPI.CreateBatchAlias(context.Background()).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -94,6 +118,17 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService CreateKeyPlaceholder", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		httpRes, err := apiClient.DefaultAPI.CreateKeyPlaceholder(context.Background()).Execute()
+
+		require.Nil(t, err)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService CreateModeration", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
@@ -106,11 +141,11 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test DefaultAPIService CreateOcr", func(t *testing.T) {
+	t.Run("Test DefaultAPIService CreateOAuthClient", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
-		resp, httpRes, err := apiClient.DefaultAPI.CreateOcr(context.Background()).Execute()
+		resp, httpRes, err := apiClient.DefaultAPI.CreateOAuthClient(context.Background()).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -118,11 +153,11 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
-	t.Run("Test DefaultAPIService CreateProvisioningKey", func(t *testing.T) {
+	t.Run("Test DefaultAPIService CreateOcr", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
-		resp, httpRes, err := apiClient.DefaultAPI.CreateProvisioningKey(context.Background()).Execute()
+		resp, httpRes, err := apiClient.DefaultAPI.CreateOcr(context.Background()).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -190,6 +225,32 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService CreateVideoAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.DefaultAPI.CreateVideoAlias(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService DeleteOAuthClient", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var clientId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.DeleteOAuthClient(context.Background(), clientId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService DeleteProvisioningKey", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
@@ -197,6 +258,20 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 		var id string
 
 		resp, httpRes, err := apiClient.DefaultAPI.DeleteProvisioningKey(context.Background(), id).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService DeleteProvisioningKeyAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var id string
+
+		resp, httpRes, err := apiClient.DefaultAPI.DeleteProvisioningKeyAlias(context.Background(), id).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -218,11 +293,37 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService DeleteVideoAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var videoId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.DeleteVideoAlias(context.Background(), videoId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService GenerateMusic", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		resp, httpRes, err := apiClient.DefaultAPI.GenerateMusic(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService GenerateMusicAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.DefaultAPI.GenerateMusicAlias(context.Background()).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -278,6 +379,73 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService GetKeyPlaceholder", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		httpRes, err := apiClient.DefaultAPI.GetKeyPlaceholder(context.Background()).Execute()
+
+		require.Nil(t, err)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService GetMusicGeneration", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var musicId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.GetMusicGeneration(context.Background(), musicId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService GetMusicGenerationAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var musicId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.GetMusicGenerationAlias(context.Background(), musicId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService GetOAuthClient", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var clientId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.GetOAuthClient(context.Background(), clientId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService GetProviderDerankStatus", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var providerId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.GetProviderDerankStatus(context.Background(), providerId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService GetProvisioningKey", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
@@ -285,6 +453,20 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 		var id string
 
 		resp, httpRes, err := apiClient.DefaultAPI.GetProvisioningKey(context.Background(), id).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService GetProvisioningKeyAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var id string
+
+		resp, httpRes, err := apiClient.DefaultAPI.GetProvisioningKeyAlias(context.Background(), id).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -306,6 +488,20 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService GetVideoAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var videoId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.GetVideoAlias(context.Background(), videoId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService GetVideoContent", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
@@ -313,6 +509,20 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 		var videoId string
 
 		resp, httpRes, err := apiClient.DefaultAPI.GetVideoContent(context.Background(), videoId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService GetVideoContentAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var videoId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.GetVideoContentAlias(context.Background(), videoId).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -332,6 +542,31 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService InvalidateGatewayKeyCache", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var id string
+
+		resp, httpRes, err := apiClient.DefaultAPI.InvalidateGatewayKeyCache(context.Background(), id).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService ListEndpointsPlaceholder", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		httpRes, err := apiClient.DefaultAPI.ListEndpointsPlaceholder(context.Background()).Execute()
+
+		require.Nil(t, err)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService ListFiles", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
@@ -344,11 +579,58 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService ListKeysPlaceholder", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		httpRes, err := apiClient.DefaultAPI.ListKeysPlaceholder(context.Background()).Execute()
+
+		require.Nil(t, err)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService ListModels", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
 
 		resp, httpRes, err := apiClient.DefaultAPI.ListModels(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService ListOAuthClients", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.DefaultAPI.ListOAuthClients(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService ListOrganisations", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.DefaultAPI.ListOrganisations(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService ListPricingModels", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.DefaultAPI.ListPricingModels(context.Background()).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -380,6 +662,32 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService ListProvisioningKeysAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		resp, httpRes, err := apiClient.DefaultAPI.ListProvisioningKeysAlias(context.Background()).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService RegenerateOAuthClientSecret", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var clientId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.RegenerateOAuthClientSecret(context.Background(), clientId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService RetrieveBatch", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
@@ -387,6 +695,20 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 		var batchId string
 
 		resp, httpRes, err := apiClient.DefaultAPI.RetrieveBatch(context.Background(), batchId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService RetrieveBatchAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var id string
+
+		resp, httpRes, err := apiClient.DefaultAPI.RetrieveBatchAlias(context.Background(), id).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)
@@ -420,6 +742,20 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 
 	})
 
+	t.Run("Test DefaultAPIService UpdateOAuthClient", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var clientId string
+
+		resp, httpRes, err := apiClient.DefaultAPI.UpdateOAuthClient(context.Background(), clientId).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
 	t.Run("Test DefaultAPIService UpdateProvisioningKey", func(t *testing.T) {
 
 		t.Skip("skip test")  // remove to run test
@@ -427,6 +763,20 @@ func Test_ai_stats_sdk_DefaultAPIService(t *testing.T) {
 		var id string
 
 		resp, httpRes, err := apiClient.DefaultAPI.UpdateProvisioningKey(context.Background(), id).Execute()
+
+		require.Nil(t, err)
+		require.NotNil(t, resp)
+		assert.Equal(t, 200, httpRes.StatusCode)
+
+	})
+
+	t.Run("Test DefaultAPIService UpdateProvisioningKeyAlias", func(t *testing.T) {
+
+		t.Skip("skip test")  // remove to run test
+
+		var id string
+
+		resp, httpRes, err := apiClient.DefaultAPI.UpdateProvisioningKeyAlias(context.Background(), id).Execute()
 
 		require.Nil(t, err)
 		require.NotNil(t, resp)

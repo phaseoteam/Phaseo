@@ -39,7 +39,7 @@ namespace AIStatsSdk.Model
         /// <param name="status">status</param>
         /// <param name="scopes">scopes</param>
         /// <param name="createdAt">createdAt</param>
-        /// <param name="key">The raw provisioning key. Only returned on creation.</param>
+        /// <param name="key">The raw management API key. Only returned on creation.</param>
         [JsonConstructor]
         public ProvisioningKeyWithValue(Option<Guid?> id = default, Option<string?> name = default, Option<string?> prefix = default, Option<StatusEnum?> status = default, Option<string?> scopes = default, Option<DateTime?> createdAt = default, Option<string?> key = default)
         {
@@ -159,6 +159,7 @@ namespace AIStatsSdk.Model
         /// <summary>
         /// Gets or Sets Id
         /// </summary>
+        /* <example>11111111-1111-4111-8111-111111111111</example> */
         [JsonPropertyName("id")]
         public Guid? Id { get { return this.IdOption; } set { this.IdOption = new(value); } }
 
@@ -226,9 +227,9 @@ namespace AIStatsSdk.Model
         public Option<string?> KeyOption { get; private set; }
 
         /// <summary>
-        /// The raw provisioning key. Only returned on creation.
+        /// The raw management API key. Only returned on creation.
         /// </summary>
-        /// <value>The raw provisioning key. Only returned on creation.</value>
+        /// <value>The raw management API key. Only returned on creation.</value>
         /* <example>pk_abc123xy_abc123def456...</example> */
         [JsonPropertyName("key")]
         public string? Key { get { return this.KeyOption; } set { this.KeyOption = new(value); } }

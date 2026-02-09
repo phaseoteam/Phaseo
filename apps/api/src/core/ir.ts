@@ -195,6 +195,7 @@ export type IRChatRequest = {
 	topLogprobs?: number;
 	background?: boolean;
 	serviceTier?: string;
+	speed?: string;
 	promptCacheKey?: string;
 	safetyIdentifier?: string;
 
@@ -286,6 +287,189 @@ export type IRModerationsResponse = {
 		totalTokens?: number;
 	};
 	// Debug-only fields (never logged)
+	rawResponse?: any;
+};
+
+// ============================================================================
+// IMAGE GENERATION (BASELINE)
+// ============================================================================
+
+export type IRImageGenerationRequest = {
+	model: string;
+	prompt: string;
+	image?: string;
+	mask?: string;
+	size?: string;
+	n?: number;
+	quality?: string;
+	responseFormat?: string;
+	style?: string;
+	userId?: string;
+	rawRequest?: any;
+};
+
+export type IRImageGenerationResponse = {
+	id?: string;
+	nativeId?: string;
+	created: number;
+	model: string;
+	provider: string;
+	data: Array<{
+		url?: string | null;
+		b64Json?: string | null;
+		revisedPrompt?: string | null;
+	}>;
+	usage?: IRUsage;
+	rawResponse?: any;
+};
+
+// ============================================================================
+// AUDIO (BASELINE)
+// ============================================================================
+
+export type IRAudioSpeechRequest = {
+	model: string;
+	input: string;
+	voice?: string;
+	format?: "mp3" | "wav" | "ogg" | "aac";
+	speed?: number;
+	instructions?: string;
+	userId?: string;
+	rawRequest?: any;
+};
+
+export type IRAudioSpeechResponse = {
+	id?: string;
+	nativeId?: string;
+	model: string;
+	provider: string;
+	audio?: {
+		data?: string;
+		url?: string;
+		mimeType?: string;
+	};
+	usage?: IRUsage;
+	rawResponse?: any;
+};
+
+export type IRAudioTranscriptionRequest = {
+	model: string;
+	audioUrl?: string;
+	audioBase64?: string;
+	language?: string;
+	prompt?: string;
+	temperature?: number;
+	rawRequest?: any;
+};
+
+export type IRAudioTranscriptionResponse = {
+	id?: string;
+	nativeId?: string;
+	model: string;
+	provider: string;
+	text: string;
+	segments?: any[];
+	usage?: IRUsage;
+	rawResponse?: any;
+};
+
+export type IRAudioTranslationRequest = {
+	model: string;
+	audioUrl?: string;
+	audioBase64?: string;
+	language?: string;
+	prompt?: string;
+	temperature?: number;
+	rawRequest?: any;
+};
+
+export type IRAudioTranslationResponse = {
+	id?: string;
+	nativeId?: string;
+	model: string;
+	provider: string;
+	text: string;
+	segments?: any[];
+	usage?: IRUsage;
+	rawResponse?: any;
+};
+
+// ============================================================================
+// VIDEO (BASELINE)
+// ============================================================================
+
+export type IRVideoGenerationRequest = {
+	model: string;
+	prompt: string;
+	seconds?: number | string;
+	size?: string;
+	quality?: string;
+	inputReference?: string;
+	inputReferenceMimeType?: string;
+	duration?: number;
+	durationSeconds?: number;
+	ratio?: string;
+	aspectRatio?: string;
+	resolution?: string;
+	negativePrompt?: string;
+	sampleCount?: number;
+	seed?: number;
+	personGeneration?: string;
+	outputStorageUri?: string;
+	rawRequest?: any;
+};
+
+export type IRVideoGenerationResponse = {
+	id?: string;
+	nativeId?: string;
+	model: string;
+	provider: string;
+	status?: "queued" | "in_progress" | "completed" | "failed";
+	output?: any[];
+	result?: any;
+	usage?: IRUsage;
+	rawResponse?: any;
+};
+
+// ============================================================================
+// OCR + MUSIC (BASELINE)
+// ============================================================================
+
+export type IROcrRequest = {
+	model: string;
+	image: string;
+	language?: string;
+	rawRequest?: any;
+};
+
+export type IROcrResponse = {
+	id?: string;
+	nativeId?: string;
+	model: string;
+	provider: string;
+	text: string;
+	rawResponse?: any;
+};
+
+export type IRMusicGenerateRequest = {
+	model: string;
+	prompt?: string;
+	duration?: number;
+	format?: "mp3" | "wav" | "ogg" | "aac";
+	vendor?: Record<string, any>;
+	rawRequest?: any;
+};
+
+export type IRMusicGenerateResponse = {
+	id?: string;
+	nativeId?: string;
+	model: string;
+	provider: string;
+	status?: string;
+	audioUrl?: string;
+	audioBase64?: string;
+	result?: any;
+	usage?: IRUsage;
 	rawResponse?: any;
 };
 

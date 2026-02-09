@@ -15,6 +15,7 @@
 | **tool_choice** | [**ChatCompletionsRequestToolChoice**](ChatCompletionsRequestToolChoice.md) |  | [optional] |
 | **stream** | **Boolean** |  | [optional] |
 | **metadata** | **Hash&lt;String, String&gt;** |  | [optional] |
+| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
@@ -34,6 +35,7 @@ instance = AIStatsSdk::AnthropicMessagesRequest.new(
   tool_choice: null,
   stream: null,
   metadata: null,
+  debug: null,
   provider: null
 )
 ```

@@ -37,7 +37,7 @@ async function testAnthropicCompat() {
     console.log("Test 1: Non-streaming message");
 
     const message = await client.messages.create({
-      model: "anthropic/claude-3-5-haiku-20241022",  // Use a Haiku model for faster responses
+      model: manifest.testModel,
       max_tokens: 100,
       messages: [{ role: 'user', content: 'Hi' }]
     });
@@ -54,7 +54,7 @@ async function testAnthropicCompat() {
     console.log("Test 2: Message with system prompt");
 
     const systemMessage = await client.messages.create({
-      model: "anthropic/claude-3-5-haiku-20241022",
+      model: manifest.testModel,
       max_tokens: 50,
       system: "You are a helpful assistant.",
       messages: [{ role: 'user', content: 'Say hello' }]
@@ -67,7 +67,7 @@ async function testAnthropicCompat() {
     // Test 3: Streaming message
     console.log("Test 3: Streaming message");
     const stream = await client.messages.create({
-      model: "anthropic/claude-3-5-haiku-20241022",
+      model: manifest.testModel,
       max_tokens: 50,
       messages: [{ role: 'user', content: 'Hi' }],
       stream: true
@@ -85,12 +85,14 @@ async function testAnthropicCompat() {
 
     // Test 4: Access native features
     console.log("Test 4: Access native features via .native");
-    const models = await client.native.getModels();
-    console.log("✅ Models list received:");
-    console.log("  - Total models:", models.models?.length || 0);
+    const nativeResponse = await client.native.generateResponse({
+      model: manifest.testModel,
+      input: "Native compat check"
+    } as any);
+    console.log("[OK] Native response received:");
+    console.log("  - ID:", (nativeResponse as { id?: string }).id ?? "unknown");
     console.log();
-
-    console.log("✅ All Anthropic compatibility tests passed!");
+    console.log("âœ… All Anthropic compatibility tests passed!");
     return true;
   } catch (error) {
     console.error("❌ Test failed:", error);

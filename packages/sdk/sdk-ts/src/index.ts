@@ -90,6 +90,26 @@ export class AIStats {
   private readonly headers: Record<string, string>;
   private readonly telemetry: TelemetryCapture;
 
+  readonly responses = {
+    create: async (req: ResponsesRequest): Promise<ResponsesResponse | AsyncGenerator<string>> => {
+      if ((req as { stream?: boolean }).stream) {
+        return this.streamResponse(req);
+      }
+      return this.generateResponse(req);
+    }
+  };
+
+  readonly chat = {
+    completions: {
+      create: async (req: ChatCompletionsParams): Promise<ChatCompletionsResponse | AsyncGenerator<string>> => {
+        if ((req as { stream?: boolean }).stream) {
+          return this.streamText(req);
+        }
+        return this.generateText(req);
+      }
+    }
+  };
+
   constructor(private readonly opts: Options) {
     this.basePath = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
     this.headers = { Authorization: `Bearer ${opts.apiKey}` };

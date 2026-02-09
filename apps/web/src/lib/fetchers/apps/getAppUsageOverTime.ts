@@ -32,6 +32,7 @@ export async function getAppUsageOverTime(
 
 	cacheLife("days");
 	cacheTag("data:app_usage");
+	cacheTag(`data:app_usage:${appId}`);
 	cacheTag(`data:app_usage:${appId}:${range}`);
 
 	const supabase = await createAdminClient();

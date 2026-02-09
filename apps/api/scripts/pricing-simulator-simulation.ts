@@ -2,9 +2,9 @@ import type { CLIOptions, SimulationRun } from "./pricing-simulator-types";
 import { ensureRuntimeConfigured, clearRuntime } from "./pricing-simulator-env";
 import { loadCombos } from "./pricing-simulator-combos";
 import { RandomSource, shuffleInPlace } from "./pricing-simulator-random";
-import { loadPriceCard } from "../src/lib/gateway/pricing/loader";
-import { computeBillSummary } from "../src/lib/gateway/pricing/engine";
-import { parseUsdToNanos, formatUsdFromNanosExact } from "../src/lib/gateway/pricing/money";
+import { loadPriceCard } from "../src/pipeline/pricing/loader";
+import { computeBillSummary } from "../src/pipeline/pricing/engine";
+import { parseUsdToNanos, formatUsdFromNanosExact } from "../src/pipeline/pricing/money";
 import { computeRuleSummaries, generateUsageAndContext, estimateCostFromRules } from "./pricing-simulator-pricing-utils";
 import { withPricingDebug } from "./pricing-simulator-debug";
 import { isFlaggedDiff } from "./pricing-simulator-formatting";
@@ -135,3 +135,4 @@ export async function simulate(options: CLIOptions): Promise<SimulationRun[]> {
         clearRuntime();
     }
 }
+

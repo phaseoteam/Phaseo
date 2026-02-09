@@ -20,7 +20,14 @@ export type ChatMessage = {
     meta?: Record<string, unknown> | null;
 };
 
-export type ChatSettings = {
+export type UnifiedChatEndpoint =
+    | "responses"
+    | "images.generations"
+    | "video.generation"
+    | "music.generate"
+    | "audio.speech";
+
+export type ChatModelSettings = {
     temperature: number | null;
     maxOutputTokens: number | null;
     topP?: number | null;
@@ -36,6 +43,17 @@ export type ChatSettings = {
     providerId?: string;
     reasoningEnabled?: boolean;
     reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+    endpoint?: UnifiedChatEndpoint;
+    webSearchEnabled?: boolean;
+    imageOutputEnabled?: boolean;
+    enabled?: boolean;
+    displayName?: string;
+};
+
+export type ChatSettings = ChatModelSettings & {
+    compareMode?: boolean;
+    compareModelIds?: string[];
+    modelOverridesById?: Record<string, Partial<ChatModelSettings>>;
 };
 
 export type ChatThread = {

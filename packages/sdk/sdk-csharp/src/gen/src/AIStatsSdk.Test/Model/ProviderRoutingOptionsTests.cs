@@ -79,5 +79,14 @@ namespace AIStatsSdk.Test.Model
         {
             // TODO unit test for the property 'Ignore'
         }
+
+        /// <summary>
+        /// Test the property 'IncludeAlpha'
+        /// </summary>
+        [Fact]
+        public void IncludeAlphaTest()
+        {
+            // TODO unit test for the property 'IncludeAlpha'
+        }
     }
 }

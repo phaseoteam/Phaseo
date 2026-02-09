@@ -105,4 +105,13 @@ class ProviderRoutingOptionsTest extends TestCase
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
+
+    /**
+     * Test attribute "include_alpha"
+     */
+    public function testPropertyIncludeAlpha()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
 }

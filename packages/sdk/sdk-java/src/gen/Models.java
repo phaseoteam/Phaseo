@@ -31,6 +31,7 @@ public final class Models {
 	}
 
 	public static class AnthropicMessagesRequest {
+		public Object debug;
 		public Integer max_tokens;
 		public java.util.List<Object> messages;
 		public Object metadata;
@@ -108,6 +109,7 @@ public final class Models {
 
 	public static class BatchRequest {
 		public String completion_window;
+		public Object debug;
 		public String endpoint;
 		public String input_file_id;
 		public Object metadata;
@@ -153,6 +155,7 @@ public final class Models {
 	}
 
 	public static class ChatCompletionsRequest {
+		public Object debug;
 		public Double frequency_penalty;
 		public Object logit_bias;
 		public Boolean logprobs;
@@ -195,6 +198,14 @@ public final class Models {
 		public Object role;
 		public String tool_call_id;
 		public java.util.List<Object> tool_calls;
+	}
+
+	public static class DebugOptions {
+		public Boolean enabled;
+		public Boolean return_upstream_request;
+		public Boolean return_upstream_response;
+		public Boolean trace;
+		public Object trace_level;
 	}
 
 	public static class Embedding {
@@ -369,6 +380,7 @@ public final class Models {
 	}
 
 	public static class ModerationsRequest {
+		public Object debug;
 		public Object input;
 		public Boolean meta;
 		public String model;
@@ -382,6 +394,7 @@ public final class Models {
 	}
 
 	public static class MusicGenerateRequest {
+		public Object debug;
 		public Integer duration;
 		public Boolean echo_upstream_request;
 		public Object elevenlabs;
@@ -396,6 +409,7 @@ public final class Models {
 	}
 
 	public static class OcrRequest {
+		public Object debug;
 		public Boolean echo_upstream_request;
 		public String image;
 		public String language;
@@ -422,6 +436,7 @@ public final class Models {
 
 	public static class ProviderRoutingOptions {
 		public java.util.List<String> ignore;
+		public Boolean include_alpha;
 		public java.util.List<String> only;
 		public java.util.List<String> order;
 	}
@@ -467,6 +482,7 @@ public final class Models {
 	public static class ResponsesRequest {
 		public Boolean background;
 		public Object conversation;
+		public Object debug;
 		public java.util.List<String> include;
 		public Object input;
 		public java.util.List<Object> input_items;

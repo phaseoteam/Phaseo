@@ -37,6 +37,8 @@ module AIStatsSdk
 
     attr_accessor :metadata
 
+    attr_accessor :debug
+
     attr_accessor :provider
 
     # Attribute mapping from ruby-style variable name to JSON key.
@@ -53,6 +55,7 @@ module AIStatsSdk
         :'tool_choice' => :'tool_choice',
         :'stream' => :'stream',
         :'metadata' => :'metadata',
+        :'debug' => :'debug',
         :'provider' => :'provider'
       }
     end
@@ -81,6 +84,7 @@ module AIStatsSdk
         :'tool_choice' => :'ChatCompletionsRequestToolChoice',
         :'stream' => :'Boolean',
         :'metadata' => :'Hash<String, String>',
+        :'debug' => :'DebugOptions',
         :'provider' => :'ProviderRoutingOptions'
       }
     end
@@ -159,6 +163,10 @@ module AIStatsSdk
         if (value = attributes[:'metadata']).is_a?(Hash)
           self.metadata = value
         end
+      end
+
+      if attributes.key?(:'debug')
+        self.debug = attributes[:'debug']
       end
 
       if attributes.key?(:'provider')
@@ -330,6 +338,7 @@ module AIStatsSdk
           tool_choice == o.tool_choice &&
           stream == o.stream &&
           metadata == o.metadata &&
+          debug == o.debug &&
           provider == o.provider
     end
 
@@ -342,7 +351,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, system, messages, max_tokens, temperature, top_p, top_k, tools, tool_choice, stream, metadata, provider].hash
+      [model, system, messages, max_tokens, temperature, top_p, top_k, tools, tool_choice, stream, metadata, debug, provider].hash
     end
 
     # Builds the object from hash

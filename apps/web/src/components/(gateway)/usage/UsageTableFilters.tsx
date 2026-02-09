@@ -18,6 +18,7 @@ import { Logo } from "@/components/Logo";
 interface UsageTableFiltersProps {
 	models: string[];
 	providers: string[];
+	providerNames: Map<string, string>;
 	apiKeys: { id: string; name: string | null; prefix: string | null }[];
 	modelMetadata: Map<string, { organisationId: string; organisationName: string }>;
 	children?: React.ReactNode;
@@ -26,6 +27,7 @@ interface UsageTableFiltersProps {
 export default function UsageTableFilters({
 	models,
 	providers,
+	providerNames,
 	apiKeys,
 	modelMetadata,
 	children,
@@ -109,7 +111,9 @@ export default function UsageTableFilters({
 											height={16}
 											className="rounded flex-shrink-0"
 										/>
-										<span className="truncate">{provider}</span>
+										<span className="truncate">
+											{providerNames.get(provider) || provider}
+										</span>
 									</div>
 								</SelectItem>
 							))}

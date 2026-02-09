@@ -293,6 +293,10 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
     const outputTokens = shaped.output_tokens ?? shaped.output_text_tokens ?? shaped.completion_tokens ?? 0;
     const totalTokens = shaped.total_tokens ?? inputTokens + outputTokens;
     const embeddingTokens = shaped.embedding_tokens ?? shaped.input_tokens ?? shaped.input_text_tokens;
+    const outputVideoSeconds =
+        typeof shaped.output_video_seconds === "number"
+            ? shaped.output_video_seconds
+            : undefined;
 
     const inputDetails = shaped.input_tokens_details ?? shaped.input_details ?? {};
     const outputDetails = shaped.output_tokens_details ?? shaped.completion_tokens_details ?? {};
@@ -326,6 +330,9 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
         output_tokens: outputTokens,
         total_tokens: totalTokens,
     };
+    if (outputVideoSeconds !== undefined) {
+        out.output_video_seconds = outputVideoSeconds;
+    }
     if (ctx?.endpoint === "embeddings" && embeddingTokens != null) {
         out.embedding_tokens = embeddingTokens;
     }

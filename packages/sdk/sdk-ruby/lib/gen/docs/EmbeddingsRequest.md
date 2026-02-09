@@ -11,6 +11,7 @@
 | **dimensions** | **Integer** |  | [optional] |
 | **embedding_options** | **Object** |  | [optional] |
 | **user** | **String** |  | [optional] |
+| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
@@ -26,6 +27,7 @@ instance = AIStatsSdk::EmbeddingsRequest.new(
   dimensions: null,
   embedding_options: null,
   user: null,
+  debug: null,
   provider: null
 )
 ```

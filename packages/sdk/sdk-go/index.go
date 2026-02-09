@@ -1,109 +1,87 @@
 package aistats
 
-// This is a lightweight facade over the generated Go SDK.
-// Only the models endpoint is exposed for now.
-// Generate the client with: `pnpm openapi:gen:go`
-// The generated package name is set to `ai_stats_sdk` in go.codegen.yaml.
-
 import (
 	"context"
+	"encoding/json"
 
-	gen "github.com/AI-Stats/ai-stats-go-sdk"
+	gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-// Client provides a thin, typed facade over the generated SDK.
+// Client is a thin facade over the generated Go client in src/gen.
 type Client struct {
-	Models      *gen.ModelsAPIService
-	Completions *gen.CompletionsAPIService
-	Responses   *gen.ResponsesAPIService
-	Audio       *gen.AudioAPIService
-	Images      *gen.ImagesAPIService
-	Moderations *gen.ModerationsAPIService
-	Video       *gen.VideoAPIService
-	Batch       *gen.BatchAPIService
-	Files       *gen.FilesAPIService
-	Analytics   *gen.AnalyticsAPIService
+	raw *gen.Client
 }
 
 // New creates a new API client targeting the given base URL with a bearer token.
 func New(apiKey string, baseURL string) *Client {
-	cfg := gen.NewConfiguration()
-	cfg.Servers = gen.ServerConfigurations{{URL: baseURL}}
-	cfg.AddDefaultHeader("Authorization", "Bearer "+apiKey)
-	apiClient := gen.NewAPIClient(cfg)
-	return &Client{
-		Models:      apiClient.ModelsAPI,
-		Completions: apiClient.CompletionsAPI,
-		Responses:   apiClient.ResponsesAPI,
-		Audio:       apiClient.AudioAPI,
-		Images:      apiClient.ImagesAPI,
-		Moderations: apiClient.ModerationsAPI,
-		Video:       apiClient.VideoAPI,
-		Batch:       apiClient.BatchAPI,
-		Files:       apiClient.FilesAPI,
-		Analytics:   apiClient.AnalyticsAPI,
-	}
+	raw := gen.NewClient(baseURL)
+	raw.Headers["Authorization"] = "Bearer " + apiKey
+	return &Client{raw: raw}
 }
 
-// GetModels retrieves the model catalogue with optional filters.
-func (c *Client) GetModels(ctx context.Context, params *gen.ModelsGetRequest) (gen.ModelListResponse, *gen.APIResponse, error) {
-	if params == nil {
-		params = &gen.ModelsGetRequest{}
+func decodeTo[T any](input map[string]interface{}) (T, error) {
+	var out T
+	data, err := json.Marshal(input)
+	if err != nil {
+		return out, err
 	}
-	return c.Models.ModelsGet(ctx, params)
+	if err := json.Unmarshal(data, &out); err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+// GetModels calls /models.
+func (c *Client) GetModels(_ context.Context, query map[string]string) (map[string]interface{}, error) {
+	return gen.ListModels(c.raw, nil, query, nil, nil)
 }
 
 // GenerateText calls /chat/completions.
-func (c *Client) GenerateText(ctx context.Context, req gen.ChatCompletionsRequest) (gen.ChatCompletionsResponse, *gen.APIResponse, error) {
-	return c.Completions.CreateChatCompletion(ctx).ChatCompletionsRequest(req).Execute()
+func (c *Client) GenerateText(_ context.Context, req gen.ChatCompletionsRequest) (map[string]interface{}, error) {
+	body := map[string]interface{}{
+		"model":    req.Model,
+		"messages": req.Messages,
+	}
+	if req.Stream != nil {
+		body["stream"] = *req.Stream
+	}
+	if req.Temperature != nil {
+		body["temperature"] = *req.Temperature
+	}
+	if req.MaxOutputTokens != nil {
+		body["max_output_tokens"] = *req.MaxOutputTokens
+	}
+	if req.Tools != nil {
+		body["tools"] = *req.Tools
+	}
+	if req.ToolChoice != nil {
+		body["tool_choice"] = req.ToolChoice
+	}
+	if req.ServiceTier != nil {
+		body["service_tier"] = *req.ServiceTier
+	}
+	if req.Provider != nil {
+		body["provider"] = req.Provider
+	}
+	return gen.CreateChatCompletion(c.raw, nil, nil, nil, body)
 }
 
 // GenerateResponse calls /responses.
-func (c *Client) GenerateResponse(ctx context.Context, req gen.ResponsesRequest) (gen.ResponsesResponse, *gen.APIResponse, error) {
-	return c.Responses.CreateResponse(ctx).ResponsesRequest(req).Execute()
-}
-
-// CreateBatch creates a batch job.
-func (c *Client) CreateBatch(ctx context.Context, req gen.BatchRequest) (gen.BatchResponse, *gen.APIResponse, error) {
-	return c.Batch.CreateBatch(ctx).BatchRequest(req).Execute()
-}
-
-// GetBatch retrieves a batch job by id.
-func (c *Client) GetBatch(ctx context.Context, batchID string) (gen.BatchResponse, *gen.APIResponse, error) {
-	return c.Batch.RetrieveBatch(ctx, batchID).Execute()
-}
-
-// GenerateImage calls /images/generations.
-func (c *Client) GenerateImage(ctx context.Context, req gen.ImagesGenerationRequest) (gen.ImagesGenerationResponse, *gen.APIResponse, error) {
-	return c.Images.CreateImage(ctx).ImagesGenerationRequest(req).Execute()
-}
-
-// GenerateImageEdit calls /images/edits.
-func (c *Client) GenerateImageEdit(ctx context.Context, model string, image string, prompt string, mask *string, size *string, n *int32, user *string, meta *bool, usage *bool) (gen.ImagesEditResponse, *gen.APIResponse, error) {
-	return c.Images.CreateImageEdit(ctx).Model(model).Image(image).Prompt(prompt).Mask(mask).Size(size).N(n).User(user).Meta(meta).Usage(usage).Execute()
+func (c *Client) GenerateResponse(_ context.Context, req gen.ResponsesRequest) (gen.ResponsesResponse, error) {
+	raw, err := gen.CreateResponse(c.raw, nil, nil, nil, req)
+	if err != nil {
+		var zero gen.ResponsesResponse
+		return zero, err
+	}
+	return decodeTo[gen.ResponsesResponse](raw)
 }
 
 // GenerateEmbedding calls /embeddings.
-func (c *Client) GenerateEmbedding(ctx context.Context, req gen.EmbeddingsRequest) (gen.EmbeddingsResponse, *gen.APIResponse, error) {
-	return c.Completions.CreateEmbedding(ctx).EmbeddingsRequest(req).Execute()
+func (c *Client) GenerateEmbedding(_ context.Context, req any) (map[string]interface{}, error) {
+	return gen.CreateEmbedding(c.raw, nil, nil, nil, req)
 }
 
 // GenerateModeration calls /moderations.
-func (c *Client) GenerateModeration(ctx context.Context, req gen.ModerationsRequest) (gen.ModerationsResponse, *gen.APIResponse, error) {
-	return c.Moderations.CreateModeration(ctx).ModerationsRequest(req).Execute()
-}
-
-// GenerateSpeech calls /audio/speech.
-func (c *Client) GenerateSpeech(ctx context.Context, req gen.AudioSpeechRequest) ([]byte, *gen.APIResponse, error) {
-	return c.Audio.CreateSpeech(ctx).AudioSpeechRequest(req).Execute()
-}
-
-// GenerateTranscription calls /audio/transcriptions.
-func (c *Client) GenerateTranscription(ctx context.Context, model string, audioUrl *string, audioB64 *string, language *string) (gen.AudioTranscriptionResponse, *gen.APIResponse, error) {
-	return c.Audio.CreateTranscription(ctx, model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Execute()
-}
-
-// GenerateTranslation calls /audio/translations.
-func (c *Client) GenerateTranslation(ctx context.Context, model string, audioUrl *string, audioB64 *string, language *string, prompt *string, temperature *float32) (gen.AudioTranslationResponse, *gen.APIResponse, error) {
-	return c.Audio.CreateTranslation(ctx, model).AudioUrl(audioUrl).AudioB64(audioB64).Language(language).Prompt(prompt).Temperature(temperature).Execute()
+func (c *Client) GenerateModeration(_ context.Context, req any) (map[string]interface{}, error) {
+	return gen.CreateModeration(c.raw, nil, nil, nil, req)
 }

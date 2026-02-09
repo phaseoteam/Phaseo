@@ -133,6 +133,8 @@ namespace AIStatsSdk.Client
                 return ChatCompletionsRequestToolsInner.TypeEnumToJsonValue(chatCompletionsRequestToolsInnerTypeEnum);
             if (obj is ChatMessage.RoleEnum chatMessageRoleEnum)
                 return ChatMessage.RoleEnumToJsonValue(chatMessageRoleEnum);
+            if (obj is DebugOptions.TraceLevelEnum debugOptionsTraceLevelEnum)
+                return DebugOptions.TraceLevelEnumToJsonValue(debugOptionsTraceLevelEnum);
             if (obj is ImageContentPart.TypeEnum imageContentPartTypeEnum)
                 return ImageContentPart.TypeEnumToJsonValue(imageContentPartTypeEnum);
             if (obj is ImageModerationInput.TypeEnum imageModerationInputTypeEnum)

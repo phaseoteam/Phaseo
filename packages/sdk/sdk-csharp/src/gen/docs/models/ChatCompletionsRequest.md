@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **LogitBias** | **Dictionary&lt;string, decimal&gt;** |  | [optional] 
 **MaxOutputTokens** | **int** |  | [optional] 
 **Meta** | **bool** |  | [optional] [default to false]
+**Debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **PresencePenalty** | **decimal** |  | [optional] 
 **Seed** | **long** |  | [optional] 
 **Stream** | **bool** |  | [optional] [default to false]

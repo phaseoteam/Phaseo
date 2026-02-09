@@ -1,4 +1,6 @@
-﻿import { Metadata } from "next";
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { connection } from "next/server";
 import { buildMetadata } from "@/lib/seo";
 import {
 	formatSupportWait,
@@ -7,7 +9,6 @@ import {
 } from "@/lib/support/schedule";
 import { ContactClient } from "@/components/contact/ContactClient";
 import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 
 export const metadata: Metadata = buildMetadata({
@@ -23,10 +24,9 @@ export const metadata: Metadata = buildMetadata({
 	],
 });
 
-export default async function ContactPage() {
-	await cookies();
-	const teamId = await getTeamIdFromCookie();
-	const supabase = await createClient();
+async function ContactPersonalization() {
+	await connection();
+
 	const { isOpen, minutesUntilNextWindow } = getSupportAvailability();
 	const { date } = getLondonInfo();
 	const statusLabel = isOpen ? "Available now" : "Outside hours";
@@ -47,9 +47,13 @@ export default async function ContactPage() {
 		month: "short",
 		weekday: "short",
 	});
+
+	const teamId = await getTeamIdFromCookie();
+	const supabase = await createClient();
 	const {
 		data: { user },
 	} = await supabase.auth.getUser();
+
 	let tierLabel = "";
 	let defaultInternalId = "";
 	if (teamId) {
@@ -78,5 +82,26 @@ export default async function ContactPage() {
 			tierLabel={tierLabel}
 			defaultInternalId={defaultInternalId}
 		/>
+	);
+}
+
+export default function ContactPage() {
+	return (
+		<Suspense
+			fallback={
+				<ContactClient
+					isOpen={false}
+					statusLabel="Checking availability"
+					statusTone="bg-amber-500 ring-amber-400/60"
+					waitText="Loading current support hours..."
+					londonLabel=""
+					userEmail={null}
+					tierLabel=""
+					defaultInternalId=""
+				/>
+			}
+		>
+			<ContactPersonalization />
+		</Suspense>
 	);
 }

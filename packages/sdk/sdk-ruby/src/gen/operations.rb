@@ -125,7 +125,7 @@ module AiStats
 
       def self.getGeneration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/generation"
+        resolved_path = "/generations"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

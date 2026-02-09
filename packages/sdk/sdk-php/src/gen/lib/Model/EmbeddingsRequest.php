@@ -64,6 +64,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
         'dimensions' => 'int',
         'embedding_options' => 'object',
         'user' => 'string',
+        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'provider' => '\AIStats\Sdk\Model\ProviderRoutingOptions'
     ];
 
@@ -82,6 +83,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
         'dimensions' => null,
         'embedding_options' => null,
         'user' => null,
+        'debug' => null,
         'provider' => null
     ];
 
@@ -98,6 +100,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
         'dimensions' => false,
         'embedding_options' => false,
         'user' => false,
+        'debug' => false,
         'provider' => false
     ];
 
@@ -194,6 +197,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
         'dimensions' => 'dimensions',
         'embedding_options' => 'embedding_options',
         'user' => 'user',
+        'debug' => 'debug',
         'provider' => 'provider'
     ];
 
@@ -210,6 +214,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
         'dimensions' => 'setDimensions',
         'embedding_options' => 'setEmbeddingOptions',
         'user' => 'setUser',
+        'debug' => 'setDebug',
         'provider' => 'setProvider'
     ];
 
@@ -226,6 +231,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
         'dimensions' => 'getDimensions',
         'embedding_options' => 'getEmbeddingOptions',
         'user' => 'getUser',
+        'debug' => 'getDebug',
         'provider' => 'getProvider'
     ];
 
@@ -293,6 +299,7 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
         $this->setIfExists('dimensions', $data ?? [], null);
         $this->setIfExists('embedding_options', $data ?? [], null);
         $this->setIfExists('user', $data ?? [], null);
+        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('provider', $data ?? [], null);
     }
 
@@ -546,6 +553,33 @@ class EmbeddingsRequest implements ModelInterface, ArrayAccess, \JsonSerializabl
             throw new \InvalidArgumentException('non-nullable user cannot be null');
         }
         $this->container['user'] = $user;
+
+        return $this;
+    }
+
+    /**
+     * Gets debug
+     *
+     * @return \AIStats\Sdk\Model\DebugOptions|null
+     */
+    public function getDebug()
+    {
+        return $this->container['debug'];
+    }
+
+    /**
+     * Sets debug
+     *
+     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
+     *
+     * @return self
+     */
+    public function setDebug($debug)
+    {
+        if (is_null($debug)) {
+            throw new \InvalidArgumentException('non-nullable debug cannot be null');
+        }
+        $this->container['debug'] = $debug;
 
         return $this;
     }

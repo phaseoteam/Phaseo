@@ -8,19 +8,25 @@ export const capabilityToEndpoints: Record<string, string[]> = {
     "text.embed": ["/embeddings"],
     "image.generate": ["/images/generations"],
     "images.generate": ["/images/generations"],
+    "images.generations": ["/images/generations"],
     "image.edit": ["/images/edits"],
     "images.edits": ["/images/edits"],
     "image.vary": ["/images/variations"],
+    "audio.transcription": ["/audio/transcriptions"],
     "audio.transcribe": ["/audio/transcriptions"],
+    "audio.translations": ["/audio/translations"],
     "audio.translate": ["/audio/translations"],
     "audio.speech": ["/audio/speech"],
     "audio.realtime": ["/audio/realtime"],
     "moderation": ["/moderations"],
     "moderations.create": ["/moderations"],
-    "batch": ["/batches"],
+    "batch": ["/batch", "/batches"],
     "batch.create": ["/batches"],
-    "music.generate": ["/music/generations"],
-    "video.generations": ["/video/generations"],
+    "ocr": ["/ocr"],
+    "music.generate": ["/music/generate", "/music/generations"],
+    "video.generation": ["/videos", "/video/generations"],
+    "video.generate": ["/videos", "/video/generations"],
+    "video.generations": ["/videos", "/video/generations"],
     // Add more as needed
 };
 
@@ -28,7 +34,9 @@ export const capabilityToEndpoints: Record<string, string[]> = {
 export const endpointToCapability: Record<string, string> = {};
 for (const [cap, endpoints] of Object.entries(capabilityToEndpoints)) {
     for (const ep of endpoints) {
-        endpointToCapability[ep] = cap;
+        if (!endpointToCapability[ep]) {
+            endpointToCapability[ep] = cap;
+        }
     }
 }
 
@@ -45,10 +53,11 @@ const ENDPOINT_TO_PATH: Record<string, string> = {
     "audio.transcriptions": "/audio/transcriptions",
     "audio.translations": "/audio/translations",
     "audio.realtime": "/audio/realtime",
-    "video.generation": "/video/generations",
+    "video.generation": "/videos",
     "video.generations": "/video/generations",
-    batch: "/batches",
-    "music.generate": "/music/generations",
+    batch: "/batch",
+    "music.generate": "/music/generate",
+    ocr: "/ocr",
 };
 
 export function resolveCapabilityFromEndpoint(endpoint: string): string {

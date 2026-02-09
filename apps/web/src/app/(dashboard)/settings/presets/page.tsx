@@ -1,4 +1,4 @@
-import React from "react";
+import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
 import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
@@ -11,12 +11,61 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, Store } from "lucide-react";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata = {
 	title: "Presets - Settings",
 };
 
-export default async function PresetsPage() {
+export default function PresetsPage() {
+	return (
+		<div className="space-y-6">
+			<Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/50">
+				<Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+				<AlertTitle className="text-blue-800 dark:text-blue-300">
+					Presets for request configuration
+				</AlertTitle>
+				<AlertDescription className="text-blue-700 dark:text-blue-400">
+					Presets are named configurations starting with @ that you can reference
+					in your API calls. Save your preferred model, temperature, system
+					prompts, and other settings to create reusable request templates.
+				</AlertDescription>
+			</Alert>
+
+			<div className="flex items-center justify-between">
+				<div>
+					<div className="flex items-center gap-2">
+						<h1 className="text-2xl font-bold">Presets</h1>
+						<Badge variant="outline">Beta</Badge>
+					</div>
+					<p className="text-sm text-muted-foreground mt-1">
+						Manage reusable request configurations for your API calls
+					</p>
+				</div>
+				<div className="flex items-center gap-2">
+					<Link href="/gateway/marketplace" target="_blank" rel="noreferrer">
+						<Button variant="outline" size="sm" className="flex items-center gap-2">
+							<Store className="h-4 w-4" />
+							Marketplace
+						</Button>
+					</Link>
+					<Link href="/settings/presets/new">
+						<Button variant="default" size="sm" className="flex items-center">
+							<Plus className="h-4 w-4" />
+							Create Preset
+						</Button>
+					</Link>
+				</div>
+			</div>
+
+			<Suspense fallback={<SettingsSectionFallback />}>
+				<PresetsContent />
+			</Suspense>
+		</div>
+	);
+}
+
+async function PresetsContent() {
 	const supabase = await createClient();
 
 	const {
@@ -65,51 +114,11 @@ export default async function PresetsPage() {
 		: [];
 
 	return (
-		<div className="space-y-6">
-			<Alert className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/50">
-				<Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-				<AlertTitle className="text-blue-800 dark:text-blue-300">
-					Presets for request configuration
-				</AlertTitle>
-				<AlertDescription className="text-blue-700 dark:text-blue-400">
-					Presets are named configurations starting with @ that you can reference
-					in your API calls. Save your preferred model, temperature, system prompts,
-					and other settings to create reusable request templates.
-				</AlertDescription>
-			</Alert>
-
-			<div className="flex items-center justify-between">
-				<div>
-					<div className="flex items-center gap-2">
-						<h1 className="text-2xl font-bold">Presets</h1>
-						<Badge variant="outline">Beta</Badge>
-					</div>
-					<p className="text-sm text-muted-foreground mt-1">
-						Manage reusable request configurations for your API calls
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
-					<Link href="/gateway/marketplace" target="_blank" rel="noreferrer">
-						<Button variant="outline" size="sm" className="flex items-center gap-2">
-							<Store className="h-4 w-4" />
-							Marketplace
-						</Button>
-					</Link>
-					<Link href="/settings/presets/new">
-						<Button variant="default" size="sm" className="flex items-center">
-							<Plus className="h-4 w-4" />
-							Create Preset
-						</Button>
-					</Link>
-				</div>
-			</div>
-
-			<PresetsPanel
-				teamsWithPresets={teamsWithPresets}
-				initialTeamId={initialTeamId}
-				currentUserId={user?.id}
-				providers={providers}
-			/>
-		</div>
+		<PresetsPanel
+			teamsWithPresets={teamsWithPresets}
+			initialTeamId={initialTeamId}
+			currentUserId={user?.id}
+			providers={providers}
+		/>
 	);
 }

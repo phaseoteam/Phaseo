@@ -35,6 +35,7 @@
 | **user** | **String** |  | [optional] |
 | **usage** | **Boolean** |  | [optional] |
 | **meta** | **Boolean** |  | [optional] |
+| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **provider** | [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] |
 
 ## Example
@@ -74,6 +75,7 @@ instance = AIStatsSdk::ResponsesRequest.new(
   user: null,
   usage: null,
   meta: null,
+  debug: null,
   provider: null
 )
 ```

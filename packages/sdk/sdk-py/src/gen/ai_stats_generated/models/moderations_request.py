@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.moderations_request_input import ModerationsRequestInput
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from typing import Optional, Set
@@ -30,9 +31,10 @@ class ModerationsRequest(BaseModel):
     """ # noqa: E501
     model: StrictStr
     meta: Optional[StrictBool] = False
+    debug: Optional[DebugOptions] = None
     input: ModerationsRequestInput
     provider: Optional[ProviderRoutingOptions] = None
-    __properties: ClassVar[List[str]] = ["model", "meta", "input", "provider"]
+    __properties: ClassVar[List[str]] = ["model", "meta", "debug", "input", "provider"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -73,6 +75,9 @@ class ModerationsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of debug
+        if self.debug:
+            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of input
         if self.input:
             _dict['input'] = self.input.to_dict()
@@ -93,6 +98,7 @@ class ModerationsRequest(BaseModel):
         _obj = cls.model_validate({
             "model": obj.get("model"),
             "meta": obj.get("meta") if obj.get("meta") is not None else False,
+            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "input": ModerationsRequestInput.from_dict(obj["input"]) if obj.get("input") is not None else None,
             "provider": ProviderRoutingOptions.from_dict(obj["provider"]) if obj.get("provider") is not None else None
         })

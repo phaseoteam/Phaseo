@@ -12,6 +12,7 @@
 | **suno** | [**MusicGenerateRequestSuno**](MusicGenerateRequestSuno.md) |  | [optional] |
 | **elevenlabs** | [**MusicGenerateRequestElevenlabs**](MusicGenerateRequestElevenlabs.md) |  | [optional] |
 | **echo_upstream_request** | **Boolean** |  | [optional] |
+| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 
 ## Example
 
@@ -26,7 +27,8 @@ instance = AIStatsSdk::MusicGenerateRequest.new(
   provider: null,
   suno: null,
   elevenlabs: null,
-  echo_upstream_request: null
+  echo_upstream_request: null,
+  debug: null
 )
 ```
 

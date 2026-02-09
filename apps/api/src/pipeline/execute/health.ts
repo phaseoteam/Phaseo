@@ -2,7 +2,7 @@
 // Why: Keeps stage-specific logic isolated and testable.
 // How: Exposes helpers used by before/execute/after orchestration.
 
-import { getCache } from "@/runtime/env";
+import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { HEALTH_CONSTANTS, HEALTH_KEYS } from "./health.config";
 import type { Endpoint } from "@core/types";
 
@@ -77,6 +77,62 @@ const field = (provider: string, metric: string) => `${provider}::${metric}`;
 
 const HEALTH_STATE_TTL_SECONDS = 24 * 60 * 60;
 const HALF_STATE_TTL_SECONDS = HEALTH_CONSTANTS.HALF_OPEN_TEST_SECS;
+
+type BreakerPersistPayload = {
+	endpoint: Endpoint;
+	provider: string;
+	model: string;
+	breaker: BreakerState;
+	breakerUntilMs: number;
+	reason: string;
+};
+
+function persistBreakerState(payload: BreakerPersistPayload) {
+	const nowIso = new Date().toISOString();
+	const openUntilIso =
+		payload.breakerUntilMs > 0
+			? new Date(payload.breakerUntilMs).toISOString()
+			: null;
+
+	const row = {
+		provider_id: payload.provider,
+		model_id: payload.model,
+		endpoint: payload.endpoint,
+		breaker_state: payload.breaker,
+		is_deranked: payload.breaker === "open" && payload.breakerUntilMs > Date.now(),
+		open_until_ms: payload.breakerUntilMs,
+		open_until: openUntilIso,
+		last_transition_at: nowIso,
+		updated_at: nowIso,
+		last_reason: payload.reason,
+	};
+
+	dispatchBackground(
+		getSupabaseAdmin()
+			.from("gateway_provider_health_states")
+			.upsert(row, { onConflict: "provider_id,model_id,endpoint" })
+			.then(({ error }) => {
+				if (error) {
+					console.error("[health] persist breaker state failed", {
+						provider: payload.provider,
+						model: payload.model,
+						endpoint: payload.endpoint,
+						breaker: payload.breaker,
+						error: error.message,
+					});
+				}
+			})
+			.catch((error) => {
+				console.error("[health] persist breaker state exception", {
+					provider: payload.provider,
+					model: payload.model,
+					endpoint: payload.endpoint,
+					breaker: payload.breaker,
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}),
+	);
+}
 
 function asNum(value: unknown, fallback = 0): number {
     const n = Number(value);
@@ -250,6 +306,14 @@ async function openBreaker(endpoint: Endpoint, provider: string, model: string) 
         [field(provider, "breaker_attempts")]: attempts,
         [field(provider, "breaker_until_ms")]: now + duration * 1000,
     });
+    persistBreakerState({
+        endpoint,
+        provider,
+        model,
+        breaker: "open",
+        breakerUntilMs: now + duration * 1000,
+        reason: "open_breaker",
+    });
 }
 
 async function closeBreaker(endpoint: Endpoint, provider: string, model: string) {
@@ -257,6 +321,14 @@ async function closeBreaker(endpoint: Endpoint, provider: string, model: string)
         [breakerField(provider)]: "closed",
         [field(provider, "breaker_attempts")]: 0,
         [field(provider, "breaker_until_ms")]: 0,
+    });
+    persistBreakerState({
+        endpoint,
+        provider,
+        model,
+        breaker: "closed",
+        breakerUntilMs: 0,
+        reason: "close_breaker",
     });
     await deleteHalf(endpoint, provider, model);
 }
@@ -317,6 +389,14 @@ export async function admitThroughBreaker(
         if (state === "open") {
             if (now >= snapshot.breaker_until_ms) {
                 await setHealthFields(endpoint, model, { [breakerField(provider)]: "half_open" });
+                persistBreakerState({
+                    endpoint,
+                    provider,
+                    model,
+                    breaker: "half_open",
+                    breakerUntilMs: snapshot.breaker_until_ms ?? 0,
+                    reason: "open_to_half_open",
+                });
                 state = "half_open";
             } else {
                 return "blocked";
@@ -341,6 +421,14 @@ export async function admitThroughBreaker(
         if (now >= until) {
             state = "half_open";
             await setHealthFields(endpoint, model, { [breakerField(provider)]: "half_open" });
+            persistBreakerState({
+                endpoint,
+                provider,
+                model,
+                breaker: "half_open",
+                breakerUntilMs: until,
+                reason: "open_to_half_open",
+            });
         } else {
             return "blocked";
         }

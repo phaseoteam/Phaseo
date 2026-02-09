@@ -15,6 +15,8 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 
+const ANTHROPIC_FAST_MODE_BETA = "fast-mode-2026-02-01";
+
 /**
  * Executes IR requests using Anthropic Messages API
  */
@@ -38,24 +40,26 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 		// Transform IR → Anthropic Messages format
 		const requestPayload = irToAnthropicMessages(args.ir, args.maxOutputTokens);
 
-                const requestBody = {
-                        ...requestPayload,
-                        model: args.providerModelSlug || args.ir.model,
-                        stream: true,
-                };
-                const requestPayloadJson = JSON.stringify(requestBody);
-                const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestPayloadJson : undefined;
+		const requestBody = {
+			...requestPayload,
+			model: args.providerModelSlug || args.ir.model,
+			stream: true,
+		};
+		const requestPayloadJson = JSON.stringify(requestBody);
+		const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestPayloadJson : undefined;
+		const anthropicBeta = requestBody.speed === "fast" ? ANTHROPIC_FAST_MODE_BETA : undefined;
 
-                // Execute upstream call
-                const res = await fetch("https://api.anthropic.com/v1/messages", {
-                        method: "POST",
-                        headers: {
-                                "x-api-key": keyInfo.key,
-                                "Content-Type": "application/json",
-                                "anthropic-version": "2023-06-01",
-                        },
-                        body: requestPayloadJson,
-                });
+		// Execute upstream call
+		const res = await fetch("https://api.anthropic.com/v1/messages", {
+			method: "POST",
+			headers: {
+				"x-api-key": keyInfo.key,
+				"Content-Type": "application/json",
+				"anthropic-version": "2023-06-01",
+				...(anthropicBeta ? { "anthropic-beta": anthropicBeta } : {}),
+			},
+			body: requestPayloadJson,
+		});
 
 		// Initialize billing
                 const bill: Bill = {
@@ -181,7 +185,7 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 /**
  * Transform IR request to Anthropic Messages format
  */
-function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens?: number | null): any {
+export function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens?: number | null): any {
 	const messages: any[] = [];
 	let system: string | undefined;
 
@@ -279,7 +283,78 @@ function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens?: numb
 		}
 	}
 
+	const structuredOutputInstruction = buildAnthropicStructuredOutputInstruction(ir);
+	if (structuredOutputInstruction) {
+		system = system
+			? `${system}\n\n${structuredOutputInstruction}`
+			: structuredOutputInstruction;
+		request.system = system;
+	}
+	applyAnthropicServiceControls(request, {
+		serviceTier: ir.serviceTier,
+		speed: ir.speed,
+	});
+
 	return request;
+}
+
+function buildAnthropicStructuredOutputInstruction(ir: IRChatRequest): string | undefined {
+	const format = ir.responseFormat;
+	if (!format) return undefined;
+
+	if (format.type === "json_object") {
+		return [
+			"You must respond with a valid JSON object.",
+			"Return only JSON, with no markdown fences or additional commentary.",
+		].join(" ");
+	}
+
+	if (format.type === "json_schema" && format.schema) {
+		const schemaText = (() => {
+			try {
+				return JSON.stringify(format.schema);
+			} catch {
+				return undefined;
+			}
+		})();
+		if (!schemaText) return undefined;
+		return [
+			"You must respond with JSON that strictly matches this schema:",
+			schemaText,
+			"Return only JSON, with no markdown fences or additional commentary.",
+		].join(" ");
+	}
+
+	return undefined;
+}
+
+function applyAnthropicServiceControls(
+	request: any,
+	controls: { serviceTier?: string; speed?: string },
+) {
+	const speed = typeof controls.speed === "string" ? controls.speed.toLowerCase() : undefined;
+	if (speed === "fast") {
+		request.speed = "fast";
+		// Fast mode cannot be combined with Priority Tier controls.
+		return;
+	}
+
+	if (typeof controls.serviceTier !== "string") return;
+	const tier = controls.serviceTier.toLowerCase();
+
+	if (tier === "priority") {
+		request.service_tier = "auto";
+		return;
+	}
+
+	if (tier === "standard") {
+		request.service_tier = "standard_only";
+		return;
+	}
+
+	if (tier === "auto" || tier === "default" || tier === "flex") {
+		request.service_tier = "auto";
+	}
 }
 
 /**
@@ -316,7 +391,7 @@ function mapIRContentToAnthropic(part: any): any {
  * Transform Anthropic Messages response to IR format
  * CRITICAL FIX: Properly extracts tool_use blocks!
  */
-function anthropicMessagesToIR(
+export function anthropicMessagesToIR(
 	json: any,
 	requestId: string,
 	model: string,
@@ -380,7 +455,32 @@ function anthropicMessagesToIR(
 				totalTokens: (json.usage.input_tokens || 0) + (json.usage.output_tokens || 0),
 			}
 			: undefined,
+		serviceTier: resolveAnthropicServiceTierFromResponse(json),
 	};
+}
+
+function resolveAnthropicServiceTierFromResponse(json: any): string | undefined {
+	const usageTier = typeof json?.usage?.service_tier === "string"
+		? json.usage.service_tier.toLowerCase()
+		: undefined;
+	if (usageTier === "standard_only") return "standard";
+	if (usageTier) return usageTier;
+
+	const usageSpeed = typeof json?.usage?.speed === "string"
+		? json.usage.speed.toLowerCase()
+		: undefined;
+	if (usageSpeed === "fast") return "priority";
+
+	const responseTier = typeof json?.service_tier === "string"
+		? json.service_tier.toLowerCase()
+		: undefined;
+	if (responseTier === "standard_only") return "standard";
+	if (responseTier) return responseTier;
+
+	const responseSpeed = typeof json?.speed === "string" ? json.speed.toLowerCase() : undefined;
+	if (responseSpeed === "fast") return "priority";
+
+	return undefined;
 }
 
 /**

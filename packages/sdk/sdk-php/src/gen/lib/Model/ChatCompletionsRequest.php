@@ -65,6 +65,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => 'array<string,float>',
         'max_output_tokens' => 'int',
         'meta' => 'bool',
+        'debug' => '\AIStats\Sdk\Model\DebugOptions',
         'presence_penalty' => 'float',
         'seed' => 'int',
         'stream' => 'bool',
@@ -100,6 +101,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => null,
         'max_output_tokens' => null,
         'meta' => null,
+        'debug' => null,
         'presence_penalty' => null,
         'seed' => null,
         'stream' => null,
@@ -133,6 +135,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => false,
         'max_output_tokens' => false,
         'meta' => false,
+        'debug' => false,
         'presence_penalty' => false,
         'seed' => false,
         'stream' => false,
@@ -246,6 +249,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => 'logit_bias',
         'max_output_tokens' => 'max_output_tokens',
         'meta' => 'meta',
+        'debug' => 'debug',
         'presence_penalty' => 'presence_penalty',
         'seed' => 'seed',
         'stream' => 'stream',
@@ -279,6 +283,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => 'setLogitBias',
         'max_output_tokens' => 'setMaxOutputTokens',
         'meta' => 'setMeta',
+        'debug' => 'setDebug',
         'presence_penalty' => 'setPresencePenalty',
         'seed' => 'setSeed',
         'stream' => 'setStream',
@@ -312,6 +317,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         'logit_bias' => 'getLogitBias',
         'max_output_tokens' => 'getMaxOutputTokens',
         'meta' => 'getMeta',
+        'debug' => 'getDebug',
         'presence_penalty' => 'getPresencePenalty',
         'seed' => 'getSeed',
         'stream' => 'getStream',
@@ -413,6 +419,7 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
         $this->setIfExists('logit_bias', $data ?? [], null);
         $this->setIfExists('max_output_tokens', $data ?? [], null);
         $this->setIfExists('meta', $data ?? [], false);
+        $this->setIfExists('debug', $data ?? [], null);
         $this->setIfExists('presence_penalty', $data ?? [], null);
         $this->setIfExists('seed', $data ?? [], null);
         $this->setIfExists('stream', $data ?? [], false);
@@ -783,6 +790,33 @@ class ChatCompletionsRequest implements ModelInterface, ArrayAccess, \JsonSerial
             throw new \InvalidArgumentException('non-nullable meta cannot be null');
         }
         $this->container['meta'] = $meta;
+
+        return $this;
+    }
+
+    /**
+     * Gets debug
+     *
+     * @return \AIStats\Sdk\Model\DebugOptions|null
+     */
+    public function getDebug()
+    {
+        return $this->container['debug'];
+    }
+
+    /**
+     * Sets debug
+     *
+     * @param \AIStats\Sdk\Model\DebugOptions|null $debug debug
+     *
+     * @return self
+     */
+    public function setDebug($debug)
+    {
+        if (is_null($debug)) {
+            throw new \InvalidArgumentException('non-nullable debug cannot be null');
+        }
+        $this->container['debug'] = $debug;
 
         return $this;
     }

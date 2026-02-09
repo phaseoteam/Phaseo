@@ -8,8 +8,9 @@ import type { ProviderCandidate } from "../before/types";
 import type { PriceCard } from "../pricing/types";
 import { readHealthMany, ProviderHealth } from "./health";
 import { stripPrioritySuffix } from "./utils";
+import { normalizeProviderList } from "@/lib/config/providerAliases";
 
-type Priority = "default" | "fast" | "quick";
+type Priority = "default" | "fast" | "quick" | "nitro";
 type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 type ProviderStatus = "active" | "beta" | "alpha" | "not_ready";
 
@@ -28,6 +29,8 @@ const PRESETS: Record<Priority, RoutingPreset> = {
     default: { wSucc: 0.35, wP50: 0.35, wTail: 0.15, wTPS: 0.10, wLoad: 0.05, wPrice: 0.0, noise: 0.02, L0: 800 },
     fast: { wSucc: 0.30, wP50: 0.50, wTail: 0.15, wTPS: 0.03, wLoad: 0.02, wPrice: 0.0, noise: 0.005, L0: 600 },
     quick: { wSucc: 0.25, wP50: 0.45, wTail: 0.20, wTPS: 0.08, wLoad: 0.02, wPrice: 0.0, noise: 0.015, L0: 500 },
+    // Nitro mode prioritizes peak throughput (TPS) over latency/cost.
+    nitro: { wSucc: 0.24, wP50: 0.10, wTail: 0.06, wTPS: 0.55, wLoad: 0.05, wPrice: 0.0, noise: 0.001, L0: 500 },
 };
 
 const TEXT_ENDPOINTS = new Set<Endpoint>(["responses", "chat.completions", "messages"]);
@@ -95,6 +98,9 @@ function applyRoutingMode(preset: RoutingPreset, mode: RoutingMode): RoutingPres
 
 function parsePriority(model: string): { base: string; priority: Priority; strict: boolean } {
     const lower = model.toLowerCase();
+    if (lower.endsWith(":nitro")) {
+        return { base: stripPrioritySuffix(model), priority: "nitro", strict: true };
+    }
     if (lower.endsWith(":fast")) {
         return { base: stripPrioritySuffix(model), priority: "fast", strict: true };
     }
@@ -303,16 +309,19 @@ export async function routeProviders(
         includeAlpha?: boolean;
     };
     const includeAlpha = Boolean(hints.include_alpha ?? hints.includeAlpha);
+    const onlyHints = normalizeProviderList(hints.only ?? []);
+    const ignoreHints = normalizeProviderList(hints.ignore ?? []);
+    const orderedHints = normalizeProviderList(hints.order ?? []);
     const betaChannelEnabled = Boolean(ctx.betaChannelEnabled);
     const requestedMaxTokens = getRequestedMaxTokens(ctx.body);
 
     let poolCandidates = candidates;
-    if (hints.only?.length) {
-        const allow = new Set(hints.only);
+    if (onlyHints.length) {
+        const allow = new Set(onlyHints);
         poolCandidates = poolCandidates.filter(c => allow.has(c.adapter.name));
     }
-    if (hints.ignore?.length) {
-        const deny = new Set(hints.ignore);
+    if (ignoreHints.length) {
+        const deny = new Set(ignoreHints);
         poolCandidates = poolCandidates.filter(c => !deny.has(c.adapter.name));
     }
     if (!poolCandidates.length) poolCandidates = candidates;
@@ -330,8 +339,8 @@ export async function routeProviders(
         return [];
     }
 
-    if (hints.order?.length) {
-        const order = hints.order;
+    if (orderedHints.length) {
+        const order = orderedHints;
         const byName = new Map(poolCandidates.map((c) => [c.adapter.name, c]));
         const ordered = order.map((name) => byName.get(name)).filter(Boolean) as typeof poolCandidates;
         const orderedSet = new Set(ordered.map((c) => c.adapter.name));
@@ -411,8 +420,8 @@ export async function routeProviders(
         return { candidate: v.candidate, adapter: v.adapter, health: h, score };
     });
 
-    if (hints.order?.length) {
-        const order = hints.order ?? [];
+    if (orderedHints.length) {
+        const order = orderedHints;
         const byName = new Map(scored.map((entry) => [entry.adapter.name, entry]));
         const ordered = order.map((name) => byName.get(name)).filter(Boolean) as RoutedCandidate[];
         const orderedSet = new Set(ordered.map((entry) => entry.adapter.name));

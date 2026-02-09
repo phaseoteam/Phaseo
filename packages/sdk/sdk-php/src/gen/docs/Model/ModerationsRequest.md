@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **model** | **string** |  |
 **meta** | **bool** |  | [optional] [default to false]
+**debug** | [**\AIStats\Sdk\Model\DebugOptions**](DebugOptions.md) |  | [optional]
 **input** | [**\AIStats\Sdk\Model\ModerationsRequestInput**](ModerationsRequestInput.md) |  |
 **provider** | [**\AIStats\Sdk\Model\ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional]
 

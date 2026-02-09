@@ -32,6 +32,18 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for calculate_pricing
+  # Calculate pricing
+  # Calculates price for a usage payload.
+  # @param calculate_pricing_request 
+  # @param [Hash] opts the optional parameters
+  # @return [CalculatePricing200Response]
+  describe 'calculate_pricing test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for create_anthropic_message
   # Create message
   # Creates a message using the Anthropic Messages API.
@@ -51,6 +63,18 @@ describe 'DefaultApi' do
   # @param [Hash] opts the optional parameters
   # @return [BatchResponse]
   describe 'create_batch test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for create_batch_alias
+  # Create batch (alias)
+  # Alias of /batches.
+  # @param batch_request 
+  # @param [Hash] opts the optional parameters
+  # @return [BatchResponse]
+  describe 'create_batch_alias test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -113,6 +137,17 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for create_key_placeholder
+  # Create key (placeholder)
+  # Placeholder route; currently returns not implemented.
+  # @param [Hash] opts the optional parameters
+  # @return [nil]
+  describe 'create_key_placeholder test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for create_moderation
   # Create moderation
   # Classifies if text violates OpenAI&#39;s usage policies.
@@ -125,6 +160,18 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for create_o_auth_client
+  # Create OAuth client
+  # Creates a team-scoped OAuth client.
+  # @param create_o_auth_client_request 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'create_o_auth_client test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for create_ocr
   # Create OCR
   # Extracts text from an image using the requested model.
@@ -132,18 +179,6 @@ describe 'DefaultApi' do
   # @param [Hash] opts the optional parameters
   # @return [Hash<String, Object>]
   describe 'create_ocr test' do
-    it 'should work' do
-      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
-    end
-  end
-
-  # unit tests for create_provisioning_key
-  # Create provisioning key
-  # Creates a new provisioning key for a team.
-  # @param create_provisioning_key_request 
-  # @param [Hash] opts the optional parameters
-  # @return [CreateProvisioningKey201Response]
-  describe 'create_provisioning_key test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -219,13 +254,49 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for create_video_alias
+  # Create video (alias)
+  # Alias of /videos.
+  # @param video_generation_request 
+  # @param [Hash] opts the optional parameters
+  # @return [VideoGenerationResponse]
+  describe 'create_video_alias test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for delete_o_auth_client
+  # Delete OAuth client
+  # Deletes an OAuth client and related metadata.
+  # @param client_id 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'delete_o_auth_client test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for delete_provisioning_key
-  # Delete provisioning key
-  # Permanently deletes a provisioning key.
-  # @param id The provisioning key ID
+  # Delete management API key
+  # Permanently deletes a management API key.
+  # @param id The management API key ID
   # @param [Hash] opts the optional parameters
   # @return [DeleteProvisioningKey200Response]
   describe 'delete_provisioning_key test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for delete_provisioning_key_alias
+  # Delete provisioning key
+  # Alias of management key delete endpoint.
+  # @param id 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'delete_provisioning_key_alias test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -243,6 +314,18 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for delete_video_alias
+  # Delete video (alias)
+  # Alias of /videos/{video_id}.
+  # @param video_id 
+  # @param [Hash] opts the optional parameters
+  # @return [VideoDeleteResponse]
+  describe 'delete_video_alias test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for generate_music
   # Generate music
   # Generates music using the requested model and provider settings.
@@ -250,6 +333,18 @@ describe 'DefaultApi' do
   # @param [Hash] opts the optional parameters
   # @return [Hash<String, Object>]
   describe 'generate_music test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for generate_music_alias
+  # Generate music (alias)
+  # Alias of /music/generate.
+  # @param music_generate_request 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'generate_music_alias test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -306,13 +401,87 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for get_key_placeholder
+  # Get key (placeholder)
+  # Placeholder route; currently returns not implemented.
+  # @param [Hash] opts the optional parameters
+  # @return [nil]
+  describe 'get_key_placeholder test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_music_generation
+  # Get music generation status
+  # Retrieves the status for a music generation request.
+  # @param music_id The ID of the music generation request.
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'get_music_generation test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_music_generation_alias
+  # Get music generation status (alias)
+  # Alias of /music/generate/{music_id}.
+  # @param music_id 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'get_music_generation_alias test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_o_auth_client
+  # Get OAuth client
+  # Returns details for an OAuth client.
+  # @param client_id 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'get_o_auth_client test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_provider_derank_status
+  # Provider derank status
+  # Returns breaker-based derank/recovery status for a provider.
+  # @param provider_id Provider identifier.
+  # @param [Hash] opts the optional parameters
+  # @option opts [Integer] :window_hours Observation window in hours.
+  # @option opts [Integer] :max_pairs Max endpoint/model tuples to inspect.
+  # @option opts [Integer] :fetch_limit Max recent requests to scan.
+  # @return [Hash<String, Object>]
+  describe 'get_provider_derank_status test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for get_provisioning_key
-  # Get provisioning key
-  # Returns details of a specific provisioning key.
-  # @param id The provisioning key ID
+  # Get management API key
+  # Returns details of a specific management API key.
+  # @param id The management API key ID
   # @param [Hash] opts the optional parameters
   # @return [GetProvisioningKey200Response]
   describe 'get_provisioning_key test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_provisioning_key_alias
+  # Get provisioning key
+  # Alias of management key details endpoint.
+  # @param id 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'get_provisioning_key_alias test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -330,6 +499,18 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for get_video_alias
+  # Get video status (alias)
+  # Alias of /videos/{video_id}.
+  # @param video_id 
+  # @param [Hash] opts the optional parameters
+  # @return [VideoGenerationResponse]
+  describe 'get_video_alias test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for get_video_content
   # Get video content
   # Downloads the rendered video content.
@@ -337,6 +518,18 @@ describe 'DefaultApi' do
   # @param [Hash] opts the optional parameters
   # @return [File]
   describe 'get_video_content test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for get_video_content_alias
+  # Get video content (alias)
+  # Alias of /videos/{video_id}/content.
+  # @param video_id 
+  # @param [Hash] opts the optional parameters
+  # @return [File]
+  describe 'get_video_content_alias test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -353,12 +546,46 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for invalidate_gateway_key_cache
+  # Invalidate key cache
+  # Bumps cache version for key id/kid and invalidates key cache entries.
+  # @param id Gateway key ID.
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'invalidate_gateway_key_cache test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for list_endpoints_placeholder
+  # List endpoints (placeholder)
+  # Placeholder route; currently returns not implemented.
+  # @param [Hash] opts the optional parameters
+  # @return [nil]
+  describe 'list_endpoints_placeholder test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for list_files
   # List files
   # Returns a list of files that belong to the user&#39;s organization.
   # @param [Hash] opts the optional parameters
   # @return [ListFilesResponse]
   describe 'list_files test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for list_keys_placeholder
+  # List keys (placeholder)
+  # Placeholder route; currently returns not implemented.
+  # @param [Hash] opts the optional parameters
+  # @return [nil]
+  describe 'list_keys_placeholder test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -382,6 +609,41 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for list_o_auth_clients
+  # List OAuth clients
+  # Lists OAuth clients for the authenticated team.
+  # @param [Hash] opts the optional parameters
+  # @return [ListOAuthClients200Response]
+  describe 'list_o_auth_clients test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for list_organisations
+  # List organisations
+  # Returns a list of available organisations.
+  # @param [Hash] opts the optional parameters
+  # @option opts [Integer] :limit Limit the number of results
+  # @option opts [Integer] :offset Offset for pagination
+  # @return [ListOrganisations200Response]
+  describe 'list_organisations test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for list_pricing_models
+  # List pricing models
+  # Returns active provider/model pricing entries.
+  # @param [Hash] opts the optional parameters
+  # @return [ListPricingModels200Response]
+  describe 'list_pricing_models test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for list_providers
   # List providers
   # Returns a list of available API providers.
@@ -396,14 +658,40 @@ describe 'DefaultApi' do
   end
 
   # unit tests for list_provisioning_keys
-  # List provisioning keys
-  # Returns all provisioning keys for a team.
+  # List management API keys
+  # Returns all management API keys for a team.
   # @param team_id The team ID to query
   # @param [Hash] opts the optional parameters
   # @option opts [Integer] :limit Maximum number of keys to return
   # @option opts [Integer] :offset Pagination offset
   # @return [ListProvisioningKeys200Response]
   describe 'list_provisioning_keys test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for list_provisioning_keys_alias
+  # List provisioning keys
+  # Alias of management keys endpoint.
+  # @param team_id The team ID to query
+  # @param [Hash] opts the optional parameters
+  # @option opts [Integer] :limit Maximum number of keys to return
+  # @option opts [Integer] :offset Pagination offset
+  # @return [ListProvisioningKeysAlias200Response]
+  describe 'list_provisioning_keys_alias test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for regenerate_o_auth_client_secret
+  # Regenerate OAuth client secret
+  # Regenerates and returns a new OAuth client secret.
+  # @param client_id 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'regenerate_o_auth_client_secret test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -416,6 +704,18 @@ describe 'DefaultApi' do
   # @param [Hash] opts the optional parameters
   # @return [BatchResponse]
   describe 'retrieve_batch test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for retrieve_batch_alias
+  # Retrieve batch (alias)
+  # Alias of /batches/{batch_id}.
+  # @param id 
+  # @param [Hash] opts the optional parameters
+  # @return [BatchResponse]
+  describe 'retrieve_batch_alias test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end
@@ -444,14 +744,40 @@ describe 'DefaultApi' do
     end
   end
 
+  # unit tests for update_o_auth_client
+  # Update OAuth client
+  # Updates OAuth client metadata and redirect URIs.
+  # @param client_id 
+  # @param request_body 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'update_o_auth_client test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
   # unit tests for update_provisioning_key
-  # Update provisioning key
-  # Updates the name, status, or blocked state of a provisioning key.
-  # @param id The provisioning key ID
+  # Update management API key
+  # Updates the name, status, or blocked state of a management API key.
+  # @param id The management API key ID
   # @param update_provisioning_key_request 
   # @param [Hash] opts the optional parameters
   # @return [UpdateProvisioningKey200Response]
   describe 'update_provisioning_key test' do
+    it 'should work' do
+      # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
+    end
+  end
+
+  # unit tests for update_provisioning_key_alias
+  # Update provisioning key
+  # Alias of management key update endpoint.
+  # @param id 
+  # @param request_body 
+  # @param [Hash] opts the optional parameters
+  # @return [Hash<String, Object>]
+  describe 'update_provisioning_key_alias test' do
     it 'should work' do
       # assertion here. ref: https://rspec.info/features/3-12/rspec-expectations/built-in-matchers/
     end

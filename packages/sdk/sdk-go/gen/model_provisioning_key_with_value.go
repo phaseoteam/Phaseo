@@ -26,7 +26,7 @@ type ProvisioningKeyWithValue struct {
 	Status *string `json:"status,omitempty"`
 	Scopes *string `json:"scopes,omitempty"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
-	// The raw provisioning key. Only returned on creation.
+	// The raw management API key. Only returned on creation.
 	Key *string `json:"key,omitempty"`
 }
 

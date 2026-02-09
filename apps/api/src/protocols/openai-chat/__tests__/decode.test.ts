@@ -136,6 +136,31 @@ describe("decodeOpenAIChatRequest", () => {
 		});
 	});
 
+	it("should decode video content", () => {
+		const request = {
+			model: "gpt-4.1",
+			messages: [
+				{
+					role: "user",
+					content: [
+						{
+							type: "input_video",
+							video_url: "https://example.com/video.mp4",
+						},
+					],
+				},
+			],
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+
+		expect(ir.messages[0].content[0]).toEqual({
+			type: "video",
+			source: "url",
+			url: "https://example.com/video.mp4",
+		});
+	});
+
 	it("should decode tool definitions", () => {
 		const request = {
 			model: "gpt-4",
@@ -310,6 +335,32 @@ describe("decodeOpenAIChatRequest", () => {
 		expect(ir.presencePenalty).toBe(0.3);
 		expect(ir.stop).toEqual(["END"]);
 		expect(ir.stream).toBe(true);
+	});
+
+	it("should map speed fast to priority service tier", () => {
+		const request = {
+			model: "gpt-4",
+			messages: [{ role: "user", content: "Hello" }],
+			speed: "fast",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+
+		expect(ir.speed).toBe("fast");
+		expect(ir.serviceTier).toBe("priority");
+	});
+
+	it("should preserve explicit service_tier from OpenAI request", () => {
+		const request = {
+			model: "gpt-4",
+			messages: [{ role: "user", content: "Hello" }],
+			service_tier: "priority",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+
+		expect(ir.serviceTier).toBe("priority");
+		expect(ir.speed).toBeUndefined();
 	});
 
 	it("should decode user metadata", () => {

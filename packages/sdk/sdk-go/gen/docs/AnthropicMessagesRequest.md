@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **ToolChoice** | Pointer to [**ChatCompletionsRequestToolChoice**](ChatCompletionsRequestToolChoice.md) |  | [optional] 
 **Stream** | Pointer to **bool** |  | [optional] 
 **Metadata** | Pointer to **map[string]string** |  | [optional] 
+**Debug** | Pointer to [**DebugOptions**](DebugOptions.md) |  | [optional] 
 **Provider** | Pointer to [**ProviderRoutingOptions**](ProviderRoutingOptions.md) |  | [optional] 
 
 ## Methods
@@ -300,6 +301,31 @@ SetMetadata sets Metadata field to given value.
 `func (o *AnthropicMessagesRequest) HasMetadata() bool`
 
 HasMetadata returns a boolean if a field has been set.
+
+### GetDebug
+
+`func (o *AnthropicMessagesRequest) GetDebug() DebugOptions`
+
+GetDebug returns the Debug field if non-nil, zero value otherwise.
+
+### GetDebugOk
+
+`func (o *AnthropicMessagesRequest) GetDebugOk() (*DebugOptions, bool)`
+
+GetDebugOk returns a tuple with the Debug field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetDebug
+
+`func (o *AnthropicMessagesRequest) SetDebug(v DebugOptions)`
+
+SetDebug sets Debug field to given value.
+
+### HasDebug
+
+`func (o *AnthropicMessagesRequest) HasDebug() bool`
+
+HasDebug returns a boolean if a field has been set.
 
 ### GetProvider
 

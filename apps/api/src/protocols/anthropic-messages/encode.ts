@@ -160,7 +160,7 @@ function encodeUsage(
 	usage: IRChatResponse["usage"] | undefined,
 	serviceTier: IRChatResponse["serviceTier"] | undefined,
 ): AnthropicMessagesResponse["usage"] {
-	const anyUsage = usage as any;
+	const anyUsage = (usage ?? {}) as any;
 	const inputTokens = anyUsage.inputTokens ?? anyUsage.promptTokens;
 	const outputTokens = anyUsage.outputTokens ?? anyUsage.completionTokens;
 	const tier =

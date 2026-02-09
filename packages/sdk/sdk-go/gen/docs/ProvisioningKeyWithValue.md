@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **Status** | Pointer to **string** |  | [optional] 
 **Scopes** | Pointer to **string** |  | [optional] 
 **CreatedAt** | Pointer to **time.Time** |  | [optional] 
-**Key** | Pointer to **string** | The raw provisioning key. Only returned on creation. | [optional] 
+**Key** | Pointer to **string** | The raw management API key. Only returned on creation. | [optional] 
 
 ## Methods
 

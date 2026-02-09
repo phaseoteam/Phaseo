@@ -27,7 +27,7 @@ module AIStatsSdk
 
     attr_accessor :created_at
 
-    # The raw provisioning key. Only returned on creation.
+    # The raw management API key. Only returned on creation.
     attr_accessor :key
 
     class EnumAttributeValidator

@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { revalidateTag } from "next/cache";
+import { revalidateModelDataTags } from "@/lib/cache/revalidateDataTags";
 
 export interface CreateModelInput {
 	modelId: string;
@@ -56,8 +56,10 @@ export async function createModel(input: CreateModelInput) {
 	}
 
 	// Revalidate caches
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag("data:models", { expire: 0 });
+	revalidateModelDataTags({
+		modelId: input.modelId,
+		organisationIds: [input.organisationId ?? null],
+	});
 
 	return { success: true };
 }
@@ -137,9 +139,10 @@ export async function updateModel(input: UpdateModelInput) {
 	}
 
 	// Revalidate caches
-	revalidateTag("audit-models", { expire: 0 });
-	revalidateTag("data:models", { expire: 0 });
-	revalidateTag(`data:models:${input.modelId}`, { expire: 0 });
+	revalidateModelDataTags({
+		modelId: input.modelId,
+		organisationIds: [input.organisationId ?? null],
+	});
 
 	return { success: true };
 }

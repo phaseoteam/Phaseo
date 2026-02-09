@@ -121,9 +121,17 @@ function anthropicToOpenAI(params: MessageCreateParams): ChatCompletionsRequest 
  */
 function openAIToAnthropic(response: ChatCompletionsResponse): Message {
   const choice = response.choices?.[0];
-  const content = typeof choice?.message?.content === 'string'
-    ? choice.message.content
-    : '';
+  const rawContent = choice?.message?.content;
+  const content = typeof rawContent === "string"
+    ? rawContent
+    : Array.isArray(rawContent)
+      ? rawContent
+          .map((part) =>
+            typeof part === "string" ? part : (part as { text?: string }).text ?? ""
+          )
+          .filter(Boolean)
+          .join("\n")
+      : "";
 
   return {
     id: response.id || 'msg_' + Date.now(),

@@ -32,6 +32,7 @@ type AnthropicMessagesRequest struct {
 	ToolChoice *ChatCompletionsRequestToolChoice `json:"tool_choice,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
 	Metadata *map[string]string `json:"metadata,omitempty"`
+	Debug *DebugOptions `json:"debug,omitempty"`
 	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
 
@@ -392,6 +393,38 @@ func (o *AnthropicMessagesRequest) SetMetadata(v map[string]string) {
 	o.Metadata = &v
 }
 
+// GetDebug returns the Debug field value if set, zero value otherwise.
+func (o *AnthropicMessagesRequest) GetDebug() DebugOptions {
+	if o == nil || IsNil(o.Debug) {
+		var ret DebugOptions
+		return ret
+	}
+	return *o.Debug
+}
+
+// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *AnthropicMessagesRequest) GetDebugOk() (*DebugOptions, bool) {
+	if o == nil || IsNil(o.Debug) {
+		return nil, false
+	}
+	return o.Debug, true
+}
+
+// HasDebug returns a boolean if a field has been set.
+func (o *AnthropicMessagesRequest) HasDebug() bool {
+	if o != nil && !IsNil(o.Debug) {
+		return true
+	}
+
+	return false
+}
+
+// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
+func (o *AnthropicMessagesRequest) SetDebug(v DebugOptions) {
+	o.Debug = &v
+}
+
 // GetProvider returns the Provider field value if set, zero value otherwise.
 func (o *AnthropicMessagesRequest) GetProvider() ProviderRoutingOptions {
 	if o == nil || IsNil(o.Provider) {
@@ -462,6 +495,9 @@ func (o AnthropicMessagesRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Metadata) {
 		toSerialize["metadata"] = o.Metadata
+	}
+	if !IsNil(o.Debug) {
+		toSerialize["debug"] = o.Debug
 	}
 	if !IsNil(o.Provider) {
 		toSerialize["provider"] = o.Provider

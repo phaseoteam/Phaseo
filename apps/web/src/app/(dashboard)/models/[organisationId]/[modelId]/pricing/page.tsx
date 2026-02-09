@@ -7,7 +7,6 @@ import {
 	getModelIdFromParams,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
@@ -26,7 +25,7 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const model = await fetchModel(modelId, includeHidden);
 	const path = `/models/${modelId}/pricing`;
 	const imagePath = `/og/models/${modelId}`;
@@ -79,7 +78,7 @@ export default async function Page({
 }) {
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="pricing" includeHidden={includeHidden}>

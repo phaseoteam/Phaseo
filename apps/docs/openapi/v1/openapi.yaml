@@ -29,7 +29,7 @@ paths:
                                     timestamp:
                                         type: string
                                         format: date-time
-    /healthz:
+    /health:
         get:
             x-beta: true
             operationId: healthz
@@ -194,7 +194,7 @@ paths:
                                         type: string
                                     message:
                                         type: string
-    /generation:
+    /generations:
         get:
             x-beta: true
             operationId: getGeneration
@@ -548,6 +548,26 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/MusicGenerateResponse"
+    /music/generate/{music_id}:
+        get:
+            x-beta: true
+            operationId: getMusicGeneration
+            summary: Get music generation status
+            description: Retrieves the status for a music generation request.
+            parameters:
+                - name: music_id
+                  in: path
+                  required: true
+                  description: The ID of the music generation request.
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Music generation status response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/MusicGenerateResponse"
     /files:
         post:
             x-beta: true
@@ -860,60 +880,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-        post:
-            x-beta: true
-            operationId: createProvisioningKey
-            summary: Create management API key
-            description: Creates a new management API key for a team.
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            required:
-                                - team_id
-                                - name
-                                - created_by
-                            properties:
-                                team_id:
-                                    type: string
-                                    description: The team ID this key belongs to
-                                name:
-                                    type: string
-                                    description: A descriptive name for the key
-                                scopes:
-                                    type: string
-                                    description: Comma-separated list of scopes
-                                    default: "read,write"
-                                created_by:
-                                    type: string
-                                    description: The user ID creating this key
-            responses:
-                "201":
-                    description: Created management API key
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    ok:
-                                        type: boolean
-                                        example: true
-                                    key:
-                                        $ref: "#/components/schemas/ProvisioningKeyWithValue"
-                "400":
-                    description: Bad request
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ErrorResponse"
-                "500":
-                    description: Server error
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ErrorResponse"
     /management/keys/{id}:
         get:
             x-beta: true
@@ -1049,6 +1015,784 @@ paths:
                                 $ref: "#/components/schemas/ErrorResponse"
                 "500":
                     description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /organisations:
+        get:
+            x-beta: true
+            operationId: listOrganisations
+            summary: List organisations
+            description: Returns a list of available organisations.
+            parameters:
+                - name: limit
+                  in: query
+                  description: Limit the number of results
+                  schema:
+                      type: integer
+                      default: 50
+                      minimum: 1
+                      maximum: 250
+                - name: offset
+                  in: query
+                  description: Offset for pagination
+                  schema:
+                      type: integer
+                      default: 0
+                      minimum: 0
+            responses:
+                "200":
+                    description: List of organisations
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                        example: true
+                                    limit:
+                                        type: integer
+                                        example: 50
+                                    offset:
+                                        type: integer
+                                        example: 0
+                                    total:
+                                        type: integer
+                                        example: 10
+                                    organisations:
+                                        type: array
+                                        items:
+                                            type: object
+                                            properties:
+                                                organisation_id:
+                                                    type: string
+                                                name:
+                                                    type: string
+                                                    nullable: true
+                                                country_code:
+                                                    type: string
+                                                    nullable: true
+                                                description:
+                                                    type: string
+                                                    nullable: true
+                                                colour:
+                                                    type: string
+                                                    nullable: true
+                "500":
+                    description: Error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /pricing/models:
+        get:
+            x-beta: true
+            operationId: listPricingModels
+            summary: List pricing models
+            description: Returns active provider/model pricing entries.
+            responses:
+                "200":
+                    description: Pricing model list
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    models:
+                                        type: array
+                                        items:
+                                            type: object
+                                            additionalProperties: true
+                "500":
+                    description: Error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /pricing/calculate:
+        post:
+            x-beta: true
+            operationId: calculatePricing
+            summary: Calculate pricing
+            description: Calculates price for a usage payload.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - provider
+                                - model
+                                - endpoint
+                                - usage
+                            properties:
+                                provider:
+                                    type: string
+                                model:
+                                    type: string
+                                endpoint:
+                                    type: string
+                                usage:
+                                    type: object
+                                    additionalProperties: true
+            responses:
+                "200":
+                    description: Pricing calculation result
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    pricing:
+                                        type: object
+                                        additionalProperties: true
+                "400":
+                    description: Missing required fields
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "404":
+                    description: Pricing not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Calculation error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /health/providers/{provider_id}/derank:
+        get:
+            x-beta: true
+            operationId: getProviderDerankStatus
+            summary: Provider derank status
+            description: Returns breaker-based derank/recovery status for a provider.
+            parameters:
+                - name: provider_id
+                  in: path
+                  required: true
+                  description: Provider identifier.
+                  schema:
+                      type: string
+                - name: window_hours
+                  in: query
+                  description: Observation window in hours.
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 168
+                - name: max_pairs
+                  in: query
+                  description: Max endpoint/model tuples to inspect.
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                - name: fetch_limit
+                  in: query
+                  description: Max recent requests to scan.
+                  schema:
+                      type: integer
+                      minimum: 50
+                      maximum: 2000
+            responses:
+                "200":
+                    description: Provider derank snapshot
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                "400":
+                    description: Invalid provider id
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Invalid control secret
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "503":
+                    description: Control secret not configured
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /provisioning/keys:
+        get:
+            x-beta: true
+            operationId: listProvisioningKeysAlias
+            summary: List provisioning keys
+            description: Alias of management keys endpoint.
+            parameters:
+                - name: team_id
+                  in: query
+                  description: The team ID to query
+                  required: true
+                  schema:
+                      type: string
+                - name: limit
+                  in: query
+                  description: Maximum number of keys to return
+                  schema:
+                      type: integer
+                      default: 50
+                      minimum: 1
+                      maximum: 250
+                - name: offset
+                  in: query
+                  description: Pagination offset
+                  schema:
+                      type: integer
+                      default: 0
+                      minimum: 0
+            responses:
+                "200":
+                    description: List of provisioning keys
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    keys:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/ProvisioningKey"
+    /provisioning/keys/{id}:
+        get:
+            x-beta: true
+            operationId: getProvisioningKeyAlias
+            summary: Get provisioning key
+            description: Alias of management key details endpoint.
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Provisioning key details
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+        patch:
+            x-beta: true
+            operationId: updateProvisioningKeyAlias
+            summary: Update provisioning key
+            description: Alias of management key update endpoint.
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            additionalProperties: true
+            responses:
+                "200":
+                    description: Provisioning key updated
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+        delete:
+            x-beta: true
+            operationId: deleteProvisioningKeyAlias
+            summary: Delete provisioning key
+            description: Alias of management key delete endpoint.
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Provisioning key deleted
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+    /keys/{id}/invalidate:
+        post:
+            x-beta: true
+            operationId: invalidateGatewayKeyCache
+            summary: Invalidate key cache
+            description: Bumps cache version for key id/kid and invalidates key cache entries.
+            parameters:
+                - name: id
+                  in: path
+                  description: Gateway key ID.
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Key cache invalidated
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                "400":
+                    description: Invalid key ID
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Invalid control secret
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "404":
+                    description: Key not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "503":
+                    description: Control secret not configured
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /oauth-clients:
+        post:
+            x-beta: true
+            operationId: createOAuthClient
+            summary: Create OAuth client
+            description: Creates a team-scoped OAuth client.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - name
+                                - redirect_uris
+                            properties:
+                                name:
+                                    type: string
+                                description:
+                                    type: string
+                                homepage_url:
+                                    type: string
+                                    format: uri
+                                redirect_uris:
+                                    type: array
+                                    items:
+                                        type: string
+                                        format: uri
+                                logo_url:
+                                    type: string
+                                    format: uri
+                                privacy_policy_url:
+                                    type: string
+                                    format: uri
+                                terms_of_service_url:
+                                    type: string
+                                    format: uri
+            responses:
+                "201":
+                    description: OAuth client created
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                "400":
+                    description: Validation error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "401":
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+        get:
+            x-beta: true
+            operationId: listOAuthClients
+            summary: List OAuth clients
+            description: Lists OAuth clients for the authenticated team.
+            responses:
+                "200":
+                    description: OAuth clients list
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            type: object
+                                            additionalProperties: true
+                                    pagination:
+                                        type: object
+                                        additionalProperties: true
+                "401":
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /oauth-clients/{client_id}:
+        get:
+            x-beta: true
+            operationId: getOAuthClient
+            summary: Get OAuth client
+            description: Returns details for an OAuth client.
+            parameters:
+                - name: client_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: OAuth client details
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                "404":
+                    description: OAuth app not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+        patch:
+            x-beta: true
+            operationId: updateOAuthClient
+            summary: Update OAuth client
+            description: Updates OAuth client metadata and redirect URIs.
+            parameters:
+                - name: client_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            additionalProperties: true
+            responses:
+                "200":
+                    description: OAuth client updated
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                "400":
+                    description: Validation error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "404":
+                    description: OAuth app not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+        delete:
+            x-beta: true
+            operationId: deleteOAuthClient
+            summary: Delete OAuth client
+            description: Deletes an OAuth client and related metadata.
+            parameters:
+                - name: client_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: OAuth client deleted
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                "404":
+                    description: OAuth app not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /oauth-clients/{client_id}/regenerate-secret:
+        post:
+            x-beta: true
+            operationId: regenerateOAuthClientSecret
+            summary: Regenerate OAuth client secret
+            description: Regenerates and returns a new OAuth client secret.
+            parameters:
+                - name: client_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: OAuth client secret regenerated
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                "404":
+                    description: OAuth app not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /video/generations:
+        post:
+            x-beta: true
+            operationId: createVideoAlias
+            summary: Create video (alias)
+            description: Alias of /videos.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/VideoGenerationRequest"
+            responses:
+                "200":
+                    description: Video response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/VideoGenerationResponse"
+    /video/generations/{video_id}:
+        get:
+            x-beta: true
+            operationId: getVideoAlias
+            summary: Get video status (alias)
+            description: Alias of /videos/{video_id}.
+            parameters:
+                - name: video_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Video status response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/VideoGenerationResponse"
+        delete:
+            x-beta: true
+            operationId: deleteVideoAlias
+            summary: Delete video (alias)
+            description: Alias of /videos/{video_id}.
+            parameters:
+                - name: video_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Video deletion response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/VideoDeleteResponse"
+    /video/generations/{video_id}/content:
+        get:
+            x-beta: true
+            operationId: getVideoContentAlias
+            summary: Get video content (alias)
+            description: Alias of /videos/{video_id}/content.
+            parameters:
+                - name: video_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Video content
+                    content:
+                        application/octet-stream:
+                            schema:
+                                type: string
+                                format: binary
+    /music/generations:
+        post:
+            x-beta: true
+            operationId: generateMusicAlias
+            summary: Generate music (alias)
+            description: Alias of /music/generate.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/MusicGenerateRequest"
+            responses:
+                "200":
+                    description: Music generation response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/MusicGenerateResponse"
+    /music/generations/{music_id}:
+        get:
+            x-beta: true
+            operationId: getMusicGenerationAlias
+            summary: Get music generation status (alias)
+            description: Alias of /music/generate/{music_id}.
+            parameters:
+                - name: music_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Music generation status response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/MusicGenerateResponse"
+    /batch:
+        post:
+            x-beta: true
+            operationId: createBatchAlias
+            summary: Create batch (alias)
+            description: Alias of /batches.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/BatchRequest"
+            responses:
+                "200":
+                    description: Batch response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/BatchResponse"
+    /batch/{id}:
+        get:
+            x-beta: true
+            operationId: retrieveBatchAlias
+            summary: Retrieve batch (alias)
+            description: Alias of /batches/{batch_id}.
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Batch information
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/BatchResponse"
+    /endpoints:
+        get:
+            x-beta: true
+            operationId: listEndpointsPlaceholder
+            summary: List endpoints (placeholder)
+            description: Placeholder route; currently returns not implemented.
+            responses:
+                "501":
+                    description: Not implemented
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /keys:
+        get:
+            x-beta: true
+            operationId: listKeysPlaceholder
+            summary: List keys (placeholder)
+            description: Placeholder route; currently returns not implemented.
+            responses:
+                "501":
+                    description: Not implemented
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+        post:
+            x-beta: true
+            operationId: createKeyPlaceholder
+            summary: Create key (placeholder)
+            description: Placeholder route; currently returns not implemented.
+            responses:
+                "501":
+                    description: Not implemented
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+    /key:
+        get:
+            x-beta: true
+            operationId: getKeyPlaceholder
+            summary: Get key (placeholder)
+            description: Placeholder route; currently returns not implemented.
+            responses:
+                "501":
+                    description: Not implemented
                     content:
                         application/json:
                             schema:
@@ -3282,7 +4026,7 @@ components:
                 id:
                     type: string
                     format: uuid
-                    example: "pk_uuid_here"
+                    example: "11111111-1111-4111-8111-111111111111"
                 name:
                     type: string
                     example: "Production Key"
@@ -3314,7 +4058,7 @@ components:
                 id:
                     type: string
                     format: uuid
-                    example: "pk_uuid_here"
+                    example: "11111111-1111-4111-8111-111111111111"
                 name:
                     type: string
                     example: "My New Key"
@@ -3345,11 +4089,11 @@ components:
                 id:
                     type: string
                     format: uuid
-                    example: "pk_uuid_here"
+                    example: "11111111-1111-4111-8111-111111111111"
                 team_id:
                     type: string
                     format: uuid
-                    example: "team_uuid_here"
+                    example: "22222222-2222-4222-8222-222222222222"
                 name:
                     type: string
                     example: "Production Key"
@@ -3369,7 +4113,7 @@ components:
                 created_by:
                     type: string
                     format: uuid
-                    example: "user_uuid_here"
+                    example: "33333333-3333-4333-8333-333333333333"
                 created_at:
                     type: string
                     format: date-time

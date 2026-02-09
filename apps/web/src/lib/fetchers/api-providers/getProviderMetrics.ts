@@ -1,6 +1,7 @@
 "use server";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type RawGatewayRequest = {
@@ -240,13 +241,16 @@ export async function getProviderMetrics(
 	providerId: string,
 	hours = HOURS_DEFAULT
 ): Promise<ProviderMetrics> {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag("data:gateway_requests");
+	cacheTag(`data:gateway_requests:provider:${providerId}`);
+
 	const now = new Date();
 	const client = createAdminClient();
 
 	try {
 		const rows = await fetchProviderRequests(client, providerId, hours, now);
-
-		console.log(`Fetched ${rows.length} gateway requests for provider ${providerId}`);
 
 		if (!rows.length) {
 			// Return empty metrics if no data

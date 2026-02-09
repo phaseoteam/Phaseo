@@ -126,6 +126,15 @@ namespace AIStatsSdk.Test.Model
         }
 
         /// <summary>
+        /// Test the property 'Debug'
+        /// </summary>
+        [Fact]
+        public void DebugTest()
+        {
+            // TODO unit test for the property 'Debug'
+        }
+
+        /// <summary>
         /// Test the property 'PresencePenalty'
         /// </summary>
         [Fact]

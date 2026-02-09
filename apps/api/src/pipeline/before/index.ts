@@ -14,6 +14,7 @@ import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoint
 import { validateCapabilities } from "./capabilityValidation";
 import { isDebugAllowed } from "../debug";
 import { isProviderCapabilityEnabled, normalizeCapability } from "@/executors";
+import { adapterFor } from "@/providers/index";
 
 /**
  * BEFORE STAGE
@@ -133,9 +134,25 @@ export async function beforeRequest(
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
     const filteredProviders = capabilityValidation.providers;
     const normalizedCapability = normalizeCapability(capability);
-    const enabledProviders = filteredProviders.filter((provider) =>
-        isProviderCapabilityEnabled(provider.providerId, normalizedCapability)
-    );
+    const executorManagedCapabilities = new Set<string>([
+        "text.generate",
+        "embeddings",
+        "moderations",
+        "image.generate",
+        "image.edit",
+        "audio.speech",
+        "audio.transcription",
+        "audio.translations",
+        "video.generate",
+        "ocr",
+        "music.generate",
+    ]);
+    const enabledProviders = filteredProviders.filter((provider) => {
+        if (executorManagedCapabilities.has(normalizedCapability)) {
+            return isProviderCapabilityEnabled(provider.providerId, normalizedCapability);
+        }
+        return Boolean(adapterFor(provider.providerId, endpoint));
+    });
     if (!enabledProviders.length) {
         return {
             ok: false,

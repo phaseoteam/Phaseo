@@ -1,14 +1,26 @@
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialog";
 import KeysPanel from "@/components/(gateway)/settings/keys/KeysPanel";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata = {
 	title: "API Keys - Settings",
 };
 
-export default async function KeysPage() {
+export default function KeysPage() {
+	return (
+		<div className="space-y-6">
+			<h1 className="text-2xl font-bold">API Keys</h1>
+			<Suspense fallback={<SettingsSectionFallback />}>
+				<KeysContent />
+			</Suspense>
+		</div>
+	);
+}
+
+async function KeysContent() {
 	const supabase = await createClient();
 
 	// get current user
@@ -50,25 +62,18 @@ export default async function KeysPage() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-bold">API Keys</h1>
-				<div className="flex items-center gap-2">
-					<CreateKeyDialog
-						currentUserId={user?.id}
-						currentTeamId={initialTeamId}
-						teams={teams}
-					/>
-				</div>
-			</div>
-
-			{/* Keys panel - client component for managing/per-key actions */}
-			<Suspense fallback={<div>Loading keys...</div>}>
-				<KeysPanel
-					teamsWithKeys={teamsWithKeys}
-					initialTeamId={initialTeamId}
+			<div className="flex items-center justify-end">
+				<CreateKeyDialog
 					currentUserId={user?.id}
+					currentTeamId={initialTeamId}
+					teams={teams}
 				/>
-			</Suspense>
+			</div>
+			<KeysPanel
+				teamsWithKeys={teamsWithKeys}
+				initialTeamId={initialTeamId}
+				currentUserId={user?.id}
+			/>
 		</div>
 	);
 }

@@ -24,16 +24,19 @@ export const metadata: Metadata = {
 };
 
 export default async function GatewayMarketingPage() {
-	const [gatewayMetrics, tokenMetrics] = await Promise.all([
+	const [gatewayMetrics, tokenMetrics, popularModels] = await Promise.all([
 		getGatewayMarketingMetrics(1),
 		getGatewayMarketingMetrics(12),
+		getModelCardsByIdsCached(
+			[
+				"openai/gpt-5-2-2025-12-11",
+				"anthropic/claude-opus-4-5-2025-11-24",
+				"google/gemini-3-pro-preview-2025-11-18",
+				"minimax/minimax-m2-1-2025-12-23",
+			],
+			false
+		),
 	]);
-	const popularModels = await getModelCardsByIdsCached([
-		"openai/gpt-5-2-2025-12-11",
-		"anthropic/claude-opus-4-5-2025-11-24",
-		"google/gemini-3-pro-preview-2025-11-18",
-		"minimax/minimax-m2-1-2025-12-23",
-	], false);
 
 	return (
 		<div className="container mx-auto flex flex-col items-center pt-16 sm:pt-20">

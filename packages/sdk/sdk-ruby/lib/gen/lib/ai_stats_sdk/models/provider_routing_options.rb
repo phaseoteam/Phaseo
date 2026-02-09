@@ -22,12 +22,16 @@ module AIStatsSdk
 
     attr_accessor :ignore
 
+    # Include alpha providers in routing (off by default).
+    attr_accessor :include_alpha
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'order' => :'order',
         :'only' => :'only',
-        :'ignore' => :'ignore'
+        :'ignore' => :'ignore',
+        :'include_alpha' => :'include_alpha'
       }
     end
 
@@ -46,7 +50,8 @@ module AIStatsSdk
       {
         :'order' => :'Array<String>',
         :'only' => :'Array<String>',
-        :'ignore' => :'Array<String>'
+        :'ignore' => :'Array<String>',
+        :'include_alpha' => :'Boolean'
       }
     end
 
@@ -89,6 +94,10 @@ module AIStatsSdk
           self.ignore = value
         end
       end
+
+      if attributes.key?(:'include_alpha')
+        self.include_alpha = attributes[:'include_alpha']
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -113,7 +122,8 @@ module AIStatsSdk
       self.class == o.class &&
           order == o.order &&
           only == o.only &&
-          ignore == o.ignore
+          ignore == o.ignore &&
+          include_alpha == o.include_alpha
     end
 
     # @see the `==` method
@@ -125,7 +135,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [order, only, ignore].hash
+      [order, only, ignore, include_alpha].hash
     end
 
     # Builds the object from hash

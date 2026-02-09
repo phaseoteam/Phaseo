@@ -12,7 +12,6 @@ import {
 	normaliseIso,
 } from "@/lib/fetchers/countries/getCountrySummary";
 import { buildMetadata } from "@/lib/seo";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 async function loadCountry(isoInput: string, includeHidden: boolean) {
 	const iso = normaliseIso(isoInput);
@@ -26,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 	const { iso: isoParamRaw } = await params;
 	const isoParam = normaliseIso(isoParamRaw);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const country = await loadCountry(isoParam, includeHidden);
 	const pathIso = isoParam.toLowerCase();
 	const path = `/countries/${pathIso}`;
@@ -73,7 +72,7 @@ export default async function CountryDetailPage({
 }) {
 	const { iso: isoParamRaw } = await params;
 	const iso = normaliseIso(isoParamRaw);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const country = await loadCountry(iso, includeHidden);
 
 	if (!country) {

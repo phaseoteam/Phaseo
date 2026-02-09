@@ -37,7 +37,19 @@ export default function Header() {
 						</Link>
 						<div className="hidden lg:block h-6 w-px bg-zinc-200/70 dark:bg-zinc-800" />
 						<div className="hidden lg:block max-w-full">
-							<MainNav />
+							<Suspense
+								fallback={
+									<div className="flex items-center gap-1.5">
+										<Skeleton className="h-10 w-16 rounded-lg" />
+										<Skeleton className="h-10 w-24 rounded-lg" />
+										<Skeleton className="h-10 w-16 rounded-lg" />
+										<Skeleton className="h-10 w-24 rounded-lg" />
+										<Skeleton className="h-10 w-28 rounded-lg" />
+									</div>
+								}
+							>
+								<MainNav />
+							</Suspense>
 						</div>
 
 						{/* keep space for alignment - Search moved to right actions on desktop */}

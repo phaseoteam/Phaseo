@@ -24,6 +24,7 @@
     "models/ChatCompletionsRequest.ts",
     "models/ChatCompletionsResponse.ts",
     "models/ChatMessage.ts",
+    "models/DebugOptions.ts",
     "models/Embedding.ts",
     "models/EmbeddingsRequest.ts",
     "models/EmbeddingsResponse.ts",
@@ -72,5 +73,5 @@
     "models/VideoGenerationRequest.ts",
     "models/VideoGenerationResponse.ts"
   ],
-  "generatedAt": "2026-02-06T16:07:55.268Z"
+  "generatedAt": "2026-02-09T11:37:37.276Z"
 }

@@ -24,6 +24,7 @@ from ai_stats_generated.models.chat_completions_request_response_format import C
 from ai_stats_generated.models.chat_completions_request_tool_choice import ChatCompletionsRequestToolChoice
 from ai_stats_generated.models.chat_completions_request_tools_inner import ChatCompletionsRequestToolsInner
 from ai_stats_generated.models.chat_message import ChatMessage
+from ai_stats_generated.models.debug_options import DebugOptions
 from ai_stats_generated.models.provider_routing_options import ProviderRoutingOptions
 from ai_stats_generated.models.reasoning_config import ReasoningConfig
 from typing import Optional, Set
@@ -41,6 +42,7 @@ class ChatCompletionsRequest(BaseModel):
     logit_bias: Optional[Dict[str, Union[StrictFloat, StrictInt]]] = None
     max_output_tokens: Optional[Annotated[int, Field(strict=True, ge=1)]] = None
     meta: Optional[StrictBool] = False
+    debug: Optional[DebugOptions] = None
     presence_penalty: Optional[Union[Annotated[float, Field(le=2, strict=True, ge=-2)], Annotated[int, Field(le=2, strict=True, ge=-2)]]] = None
     seed: Optional[Annotated[int, Field(le=9223372036854776000, strict=True, ge=-9223372036854776000)]] = None
     stream: Optional[StrictBool] = False
@@ -58,7 +60,7 @@ class ChatCompletionsRequest(BaseModel):
     provider: Optional[ProviderRoutingOptions] = None
     user_id: Optional[StrictStr] = None
     service_tier: Optional[StrictStr] = 'standard'
-    __properties: ClassVar[List[str]] = ["model", "system", "messages", "reasoning", "frequency_penalty", "logit_bias", "max_output_tokens", "meta", "presence_penalty", "seed", "stream", "temperature", "tools", "max_tool_calls", "parallel_tool_calls", "tool_choice", "top_k", "logprobs", "top_logprobs", "top_p", "response_format", "usage", "provider", "user_id", "service_tier"]
+    __properties: ClassVar[List[str]] = ["model", "system", "messages", "reasoning", "frequency_penalty", "logit_bias", "max_output_tokens", "meta", "debug", "presence_penalty", "seed", "stream", "temperature", "tools", "max_tool_calls", "parallel_tool_calls", "tool_choice", "top_k", "logprobs", "top_logprobs", "top_p", "response_format", "usage", "provider", "user_id", "service_tier"]
 
     @field_validator('service_tier')
     def service_tier_validate_enum(cls, value):
@@ -119,6 +121,9 @@ class ChatCompletionsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of reasoning
         if self.reasoning:
             _dict['reasoning'] = self.reasoning.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of debug
+        if self.debug:
+            _dict['debug'] = self.debug.to_dict()
         # override the default output from pydantic by calling `to_dict()` of each item in tools (list)
         _items = []
         if self.tools:
@@ -155,6 +160,7 @@ class ChatCompletionsRequest(BaseModel):
             "logit_bias": obj.get("logit_bias"),
             "max_output_tokens": obj.get("max_output_tokens"),
             "meta": obj.get("meta") if obj.get("meta") is not None else False,
+            "debug": DebugOptions.from_dict(obj["debug"]) if obj.get("debug") is not None else None,
             "presence_penalty": obj.get("presence_penalty"),
             "seed": obj.get("seed"),
             "stream": obj.get("stream") if obj.get("stream") is not None else False,

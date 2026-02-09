@@ -4,7 +4,6 @@ import OrganisationDetailShell from "@/components/(data)/organisation/Organisati
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { getOrganisationDataCached } from "@/lib/fetchers/organisations/getOrganisation";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 async function fetchOrganisation(organisationId: string, includeHidden: boolean) {
 	try {
@@ -22,7 +21,7 @@ export async function generateMetadata(props: {
 	params: Promise<{ organisationId: string }>;
 }): Promise<Metadata> {
 	const { organisationId } = await props.params;
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const organisation = await fetchOrganisation(organisationId, includeHidden);
 	const path = `/organisations/${organisationId}/models`;
 	const imagePath = `/og/organisations/${organisationId}`;
@@ -77,7 +76,7 @@ export default async function Page({
 }) {
 	const { organisationId } = await params;
 
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const models = await getOrganisationModelsCached(organisationId, includeHidden);
 
 	return (

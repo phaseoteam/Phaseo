@@ -44,9 +44,10 @@ namespace AIStatsSdk.Model
         /// <param name="toolChoice">toolChoice</param>
         /// <param name="stream">stream</param>
         /// <param name="metadata">metadata</param>
+        /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public AnthropicMessagesRequest(string model, List<AnthropicMessage> messages, Option<AnthropicMessagesRequestSystem?> @system = default, Option<int?> maxTokens = default, Option<decimal?> temperature = default, Option<decimal?> topP = default, Option<int?> topK = default, Option<List<AnthropicTool>?> tools = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<bool?> stream = default, Option<Dictionary<string, string>?> metadata = default, Option<ProviderRoutingOptions?> provider = default)
+        public AnthropicMessagesRequest(string model, List<AnthropicMessage> messages, Option<AnthropicMessagesRequestSystem?> @system = default, Option<int?> maxTokens = default, Option<decimal?> temperature = default, Option<decimal?> topP = default, Option<int?> topK = default, Option<List<AnthropicTool>?> tools = default, Option<ChatCompletionsRequestToolChoice?> toolChoice = default, Option<bool?> stream = default, Option<Dictionary<string, string>?> metadata = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
         {
             Model = model;
             Messages = messages;
@@ -59,6 +60,7 @@ namespace AIStatsSdk.Model
             ToolChoiceOption = toolChoice;
             StreamOption = stream;
             MetadataOption = metadata;
+            DebugOption = debug;
             ProviderOption = provider;
             OnCreated();
         }
@@ -195,6 +197,19 @@ namespace AIStatsSdk.Model
         public Dictionary<string, string>? Metadata { get { return this.MetadataOption; } set { this.MetadataOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Debug
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<DebugOptions?> DebugOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Debug
+        /// </summary>
+        [JsonPropertyName("debug")]
+        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
+
+        /// <summary>
         /// Used to track the state of Provider
         /// </summary>
         [JsonIgnore]
@@ -226,6 +241,7 @@ namespace AIStatsSdk.Model
             sb.Append("  ToolChoice: ").Append(ToolChoice).Append("\n");
             sb.Append("  Stream: ").Append(Stream).Append("\n");
             sb.Append("  Metadata: ").Append(Metadata).Append("\n");
+            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("  Provider: ").Append(Provider).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -311,6 +327,7 @@ namespace AIStatsSdk.Model
             Option<ChatCompletionsRequestToolChoice?> toolChoice = default;
             Option<bool?> stream = default;
             Option<Dictionary<string, string>?> metadata = default;
+            Option<DebugOptions?> debug = default;
             Option<ProviderRoutingOptions?> provider = default;
 
             while (utf8JsonReader.Read())
@@ -361,6 +378,9 @@ namespace AIStatsSdk.Model
                         case "metadata":
                             metadata = new Option<Dictionary<string, string>?>(JsonSerializer.Deserialize<Dictionary<string, string>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
+                        case "debug":
+                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         case "provider":
                             provider = new Option<ProviderRoutingOptions?>(JsonSerializer.Deserialize<ProviderRoutingOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
@@ -409,10 +429,13 @@ namespace AIStatsSdk.Model
             if (metadata.IsSet && metadata.Value == null)
                 throw new ArgumentNullException(nameof(metadata), "Property is not nullable for class AnthropicMessagesRequest.");
 
+            if (debug.IsSet && debug.Value == null)
+                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class AnthropicMessagesRequest.");
+
             if (provider.IsSet && provider.Value == null)
                 throw new ArgumentNullException(nameof(provider), "Property is not nullable for class AnthropicMessagesRequest.");
 
-            return new AnthropicMessagesRequest(model.Value!, messages.Value!, varSystem, maxTokens, temperature, topP, topK, tools, toolChoice, stream, metadata, provider);
+            return new AnthropicMessagesRequest(model.Value!, messages.Value!, varSystem, maxTokens, temperature, topP, topK, tools, toolChoice, stream, metadata, debug, provider);
         }
 
         /// <summary>
@@ -457,6 +480,9 @@ namespace AIStatsSdk.Model
             if (anthropicMessagesRequest.MetadataOption.IsSet && anthropicMessagesRequest.Metadata == null)
                 throw new ArgumentNullException(nameof(anthropicMessagesRequest.Metadata), "Property is required for class AnthropicMessagesRequest.");
 
+            if (anthropicMessagesRequest.DebugOption.IsSet && anthropicMessagesRequest.Debug == null)
+                throw new ArgumentNullException(nameof(anthropicMessagesRequest.Debug), "Property is required for class AnthropicMessagesRequest.");
+
             if (anthropicMessagesRequest.ProviderOption.IsSet && anthropicMessagesRequest.Provider == null)
                 throw new ArgumentNullException(nameof(anthropicMessagesRequest.Provider), "Property is required for class AnthropicMessagesRequest.");
 
@@ -498,6 +524,11 @@ namespace AIStatsSdk.Model
             {
                 writer.WritePropertyName("metadata");
                 JsonSerializer.Serialize(writer, anthropicMessagesRequest.Metadata, jsonSerializerOptions);
+            }
+            if (anthropicMessagesRequest.DebugOption.IsSet)
+            {
+                writer.WritePropertyName("debug");
+                JsonSerializer.Serialize(writer, anthropicMessagesRequest.Debug, jsonSerializerOptions);
             }
             if (anthropicMessagesRequest.ProviderOption.IsSet)
             {

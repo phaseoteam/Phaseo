@@ -12,5 +12,6 @@ Name | Type | Description | Notes
 **suno** | [**\AIStats\Sdk\Model\MusicGenerateRequestSuno**](MusicGenerateRequestSuno.md) |  | [optional]
 **elevenlabs** | [**\AIStats\Sdk\Model\MusicGenerateRequestElevenlabs**](MusicGenerateRequestElevenlabs.md) |  | [optional]
 **echo_upstream_request** | **bool** |  | [optional]
+**debug** | [**\AIStats\Sdk\Model\DebugOptions**](DebugOptions.md) |  | [optional]
 
 [[Back to Model list]](../../README.md#models) [[Back to API list]](../../README.md#endpoints) [[Back to README]](../../README.md)

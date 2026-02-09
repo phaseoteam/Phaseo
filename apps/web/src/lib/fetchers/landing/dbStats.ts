@@ -1,6 +1,7 @@
 // lib/fetchers/landing/dbStats.ts
-import { createClient } from "@/utils/supabase/server";
-import { applyHiddenFilter, resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import { cacheLife, cacheTag } from "next/cache";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
 export type DbStats = {
     models: number;
@@ -21,8 +22,17 @@ function getCount(res: { count: number | null; error: any }) {
 }
 
 export default async function getDbStats(): Promise<DbStats> {
-    const supabase = await createClient(); // must allow read via RLS for these tables
-    const includeHidden = await resolveIncludeHidden();
+    "use cache";
+
+    cacheLife("hours");
+    cacheTag("landing:db-stats");
+    cacheTag("data:models");
+    cacheTag("data:organisations");
+    cacheTag("data:benchmarks");
+    cacheTag("data:api_providers");
+
+    const supabase = createAdminClient();
+    const includeHidden = false;
 
     // Use a HEAD count to avoid transferring rows
     const [

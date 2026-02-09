@@ -68,6 +68,7 @@ export const ResponsesSchema = z.object({
     }).optional(),
     safety_identifier: z.string().nullable().optional(),
     service_tier: z.string().optional(),
+    speed: z.string().optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
     stream_options: z.record(z.any()).optional(),
@@ -282,6 +283,7 @@ export const ChatCompletionsSchema = z.object({
 
     // Will be implemented in future, for now, standard tier only
     service_tier: z.enum(["flex", "standard", "priority"]).optional().default("standard"),
+    speed: z.string().optional(),
     provider: ProviderRoutingSchema,
 });
 
@@ -357,6 +359,8 @@ export const AnthropicMessagesSchema = z.object({
     tools: z.array(AnthropicToolSchema).optional(),
     tool_choice: AnthropicToolChoiceSchema.optional(),
     metadata: z.record(z.any()).optional(),
+    service_tier: z.string().optional(),
+    speed: z.string().optional(),
     modalities: z.array(z.enum(["text", "image"])).optional(),
     stop_sequences: z.array(z.string()).optional(),
     // Gateway-only flags (not forwarded upstream)
@@ -442,6 +446,8 @@ export const AudioSpeechSchema = z.object({
     input: z.string().min(1),
     voice: z.string().optional(),
     format: z.enum(["mp3", "wav", "ogg", "aac"]).optional(),
+    speed: z.number().positive().optional(),
+    instructions: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
@@ -454,9 +460,14 @@ export const AudioTranscriptionSchema = z.object({
     audio_url: z.string().url().optional(),
     audio_b64: z.string().optional(),
     language: z.string().optional(),
+    prompt: z.string().optional(),
+    temperature: z.number().min(0).max(2).optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
+}).refine((obj) => obj.audio_url != null || obj.audio_b64 != null, {
+    message: "audio_url or audio_b64 is required",
+    path: ["audio_url"],
 });
 export type AudioTranscriptionRequest = z.infer<typeof AudioTranscriptionSchema>;
 
@@ -471,6 +482,9 @@ export const AudioTranslationSchema = z.object({
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
+}).refine((obj) => obj.audio_url != null || obj.audio_b64 != null, {
+    message: "audio_url or audio_b64 is required",
+    path: ["audio_url"],
 });
 export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
 
@@ -481,6 +495,7 @@ export const VideoGenerationSchema = z.object({
     // OpenAI Sora fields
     seconds: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
     size: z.string().optional(),
+    quality: z.string().optional(),
     input_reference: z.string().optional(),
     input_reference_mime_type: z.string().optional(),
 

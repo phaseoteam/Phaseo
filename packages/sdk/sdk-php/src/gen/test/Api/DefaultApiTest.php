@@ -72,6 +72,18 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for calculatePricing
+     *
+     * Calculate pricing.
+     *
+     */
+    public function testCalculatePricing()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for createAnthropicMessage
      *
      * Create message.
@@ -90,6 +102,18 @@ class DefaultApiTest extends TestCase
      *
      */
     public function testCreateBatch()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for createBatchAlias
+     *
+     * Create batch (alias).
+     *
+     */
+    public function testCreateBatchAlias()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -144,6 +168,18 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for createKeyPlaceholder
+     *
+     * Create key (placeholder).
+     *
+     */
+    public function testCreateKeyPlaceholder()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for createModeration
      *
      * Create moderation.
@@ -156,24 +192,24 @@ class DefaultApiTest extends TestCase
     }
 
     /**
-     * Test case for createOcr
+     * Test case for createOAuthClient
      *
-     * Create OCR.
+     * Create OAuth client.
      *
      */
-    public function testCreateOcr()
+    public function testCreateOAuthClient()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
 
     /**
-     * Test case for createProvisioningKey
+     * Test case for createOcr
      *
-     * Create provisioning key.
+     * Create OCR.
      *
      */
-    public function testCreateProvisioningKey()
+    public function testCreateOcr()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -240,12 +276,48 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for createVideoAlias
+     *
+     * Create video (alias).
+     *
+     */
+    public function testCreateVideoAlias()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for deleteOAuthClient
+     *
+     * Delete OAuth client.
+     *
+     */
+    public function testDeleteOAuthClient()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for deleteProvisioningKey
+     *
+     * Delete management API key.
+     *
+     */
+    public function testDeleteProvisioningKey()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for deleteProvisioningKeyAlias
      *
      * Delete provisioning key.
      *
      */
-    public function testDeleteProvisioningKey()
+    public function testDeleteProvisioningKeyAlias()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -264,12 +336,36 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for deleteVideoAlias
+     *
+     * Delete video (alias).
+     *
+     */
+    public function testDeleteVideoAlias()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for generateMusic
      *
      * Generate music.
      *
      */
     public function testGenerateMusic()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for generateMusicAlias
+     *
+     * Generate music (alias).
+     *
+     */
+    public function testGenerateMusicAlias()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -324,12 +420,84 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for getKeyPlaceholder
+     *
+     * Get key (placeholder).
+     *
+     */
+    public function testGetKeyPlaceholder()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getMusicGeneration
+     *
+     * Get music generation status.
+     *
+     */
+    public function testGetMusicGeneration()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getMusicGenerationAlias
+     *
+     * Get music generation status (alias).
+     *
+     */
+    public function testGetMusicGenerationAlias()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getOAuthClient
+     *
+     * Get OAuth client.
+     *
+     */
+    public function testGetOAuthClient()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getProviderDerankStatus
+     *
+     * Provider derank status.
+     *
+     */
+    public function testGetProviderDerankStatus()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for getProvisioningKey
+     *
+     * Get management API key.
+     *
+     */
+    public function testGetProvisioningKey()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getProvisioningKeyAlias
      *
      * Get provisioning key.
      *
      */
-    public function testGetProvisioningKey()
+    public function testGetProvisioningKeyAlias()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -348,12 +516,36 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for getVideoAlias
+     *
+     * Get video status (alias).
+     *
+     */
+    public function testGetVideoAlias()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for getVideoContent
      *
      * Get video content.
      *
      */
     public function testGetVideoContent()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for getVideoContentAlias
+     *
+     * Get video content (alias).
+     *
+     */
+    public function testGetVideoContentAlias()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -372,6 +564,30 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for invalidateGatewayKeyCache
+     *
+     * Invalidate key cache.
+     *
+     */
+    public function testInvalidateGatewayKeyCache()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for listEndpointsPlaceholder
+     *
+     * List endpoints (placeholder).
+     *
+     */
+    public function testListEndpointsPlaceholder()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for listFiles
      *
      * List files.
@@ -384,12 +600,60 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for listKeysPlaceholder
+     *
+     * List keys (placeholder).
+     *
+     */
+    public function testListKeysPlaceholder()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for listModels
      *
      * List models.
      *
      */
     public function testListModels()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for listOAuthClients
+     *
+     * List OAuth clients.
+     *
+     */
+    public function testListOAuthClients()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for listOrganisations
+     *
+     * List organisations.
+     *
+     */
+    public function testListOrganisations()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for listPricingModels
+     *
+     * List pricing models.
+     *
+     */
+    public function testListPricingModels()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -410,10 +674,34 @@ class DefaultApiTest extends TestCase
     /**
      * Test case for listProvisioningKeys
      *
-     * List provisioning keys.
+     * List management API keys.
      *
      */
     public function testListProvisioningKeys()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for listProvisioningKeysAlias
+     *
+     * List provisioning keys.
+     *
+     */
+    public function testListProvisioningKeysAlias()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for regenerateOAuthClientSecret
+     *
+     * Regenerate OAuth client secret.
+     *
+     */
+    public function testRegenerateOAuthClientSecret()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -426,6 +714,18 @@ class DefaultApiTest extends TestCase
      *
      */
     public function testRetrieveBatch()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for retrieveBatchAlias
+     *
+     * Retrieve batch (alias).
+     *
+     */
+    public function testRetrieveBatchAlias()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');
@@ -456,12 +756,36 @@ class DefaultApiTest extends TestCase
     }
 
     /**
+     * Test case for updateOAuthClient
+     *
+     * Update OAuth client.
+     *
+     */
+    public function testUpdateOAuthClient()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
      * Test case for updateProvisioningKey
+     *
+     * Update management API key.
+     *
+     */
+    public function testUpdateProvisioningKey()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
+
+    /**
+     * Test case for updateProvisioningKeyAlias
      *
      * Update provisioning key.
      *
      */
-    public function testUpdateProvisioningKey()
+    public function testUpdateProvisioningKeyAlias()
     {
         // TODO: implement
         self::markTestIncomplete('Not implemented');

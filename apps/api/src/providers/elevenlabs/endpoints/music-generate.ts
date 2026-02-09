@@ -10,6 +10,55 @@ import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
 import { computeBill } from "@pipeline/pricing/engine";
 
+function toBase64(buffer: ArrayBuffer): string {
+	const bytes = new Uint8Array(buffer);
+	let binary = "";
+	const chunk = 0x8000;
+	for (let i = 0; i < bytes.length; i += chunk) {
+		const slice = bytes.subarray(i, i + chunk);
+		binary += String.fromCharCode(...slice);
+	}
+	return btoa(binary);
+}
+
+function normalizeStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+	const status = String(value ?? "").toLowerCase();
+	if (status === "completed" || status === "succeeded" || status === "success") return "completed";
+	if (status === "failed" || status === "error") return "failed";
+	if (status === "queued" || status === "pending") return "queued";
+	if (status === "running" || status === "in_progress" || status === "processing") return "in_progress";
+	return "completed";
+}
+
+function normalizeMusicPayload(json: any, modelId: string, fallbackId: string | null, usage?: any) {
+	const id = json?.id ?? json?.track_id ?? json?.request_id ?? fallbackId;
+	const audioUrl = json?.audio_url ?? json?.audioUrl ?? json?.url ?? null;
+	const streamUrl = json?.stream_audio_url ?? json?.streamAudioUrl ?? null;
+	const imageUrl = json?.image_url ?? json?.imageUrl ?? null;
+	const durationSeconds =
+		(typeof json?.duration_seconds === "number" ? json.duration_seconds : undefined) ??
+		(typeof json?.duration === "number" ? json.duration : undefined);
+	return {
+		id: id ?? null,
+		object: "music",
+		status: normalizeStatus(json?.status),
+		provider: "elevenlabs",
+		model: modelId,
+		nativeResponseId: id ?? null,
+		output: [
+			{
+				index: 0,
+				audio_url: audioUrl,
+				stream_audio_url: streamUrl,
+				image_url: imageUrl,
+				duration: typeof durationSeconds === "number" ? durationSeconds : null,
+			},
+		],
+		result: json,
+		...(usage ? { usage } : {}),
+	};
+}
+
 /**
  * ElevenLabs Music/Sound Generation API
  * Docs: https://elevenlabs.io/docs/api-reference/sound-generation
@@ -49,8 +98,10 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         elevenParams.output_format ??
         (typedPayload.format ? "mp3_44100_128" : undefined);
     const query = outputFormat ? `?output_format=${encodeURIComponent(outputFormat)}` : "";
+    const bindings = getBindings() as any;
+    const baseUrl = String(bindings.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");
 
-    const res = await fetch(`https://api.elevenlabs.io/v1/music/detailed${query}`, {
+    const res = await fetch(`${baseUrl}/v1/music/detailed${query}`, {
         method: "POST",
         headers: {
             "xi-api-key": keyInfo.key,
@@ -73,20 +124,47 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         const contentType = res.headers.get("content-type") || "";
         if (contentType.includes("application/json")) {
             const json = await res.clone().json().catch(() => null);
-            normalized = json;
-            if (json?.usage) {
-                const pricedUsage = computeBill(json.usage, args.pricingCard);
+            const usageMeters = {
+                requests: 1,
+                ...(json?.usage && typeof json.usage === "object" ? json.usage : {}),
+            };
+            normalized = normalizeMusicPayload(
+                json,
+                requestBody.model_id,
+                bill.upstream_id ?? null,
+                usageMeters,
+            );
+            if (args.pricingCard) {
+                const pricedUsage = computeBill(usageMeters, args.pricingCard, {
+                    model: requestBody.model_id,
+                });
                 bill.cost_cents = pricedUsage.pricing.total_cents;
                 bill.currency = pricedUsage.pricing.currency;
                 bill.usage = pricedUsage;
             }
         } else {
             const audioBuffer = await res.clone().arrayBuffer();
-            const base64Audio = Buffer.from(audioBuffer).toString("base64");
+            const base64Audio = toBase64(audioBuffer);
+            const usageMeters = { requests: 1 };
             normalized = {
+                id: bill.upstream_id ?? null,
+                object: "music",
+                status: "completed",
+                provider: "elevenlabs",
+                model: requestBody.model_id,
+                nativeResponseId: bill.upstream_id ?? null,
                 audio_base64: base64Audio,
                 content_type: contentType,
+                usage: usageMeters,
             };
+            if (args.pricingCard) {
+                const pricedUsage = computeBill(usageMeters, args.pricingCard, {
+                    model: requestBody.model_id,
+                });
+                bill.cost_cents = pricedUsage.pricing.total_cents;
+                bill.currency = pricedUsage.pricing.currency;
+                bill.usage = pricedUsage;
+            }
         }
     }
 

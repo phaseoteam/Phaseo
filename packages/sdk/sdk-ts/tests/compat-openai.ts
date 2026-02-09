@@ -69,12 +69,14 @@ async function testOpenAICompat() {
 
     // Test 3: Access native features
     console.log("Test 3: Access native features via .native");
-    const models = await client.native.getModels();
-    console.log("✅ Models list received:");
-    console.log("  - Total models:", models.models?.length || 0);
+    const nativeResponse = await client.native.generateResponse({
+      model: chatPayload.model,
+      input: "Native compat check"
+    } as any);
+    console.log("[OK] Native response received:");
+    console.log("  - ID:", (nativeResponse as { id?: string }).id ?? "unknown");
     console.log();
-
-    console.log("✅ All OpenAI compatibility tests passed!");
+    console.log("âœ… All OpenAI compatibility tests passed!");
     return true;
   } catch (error) {
     console.error("❌ Test failed:", error);

@@ -99,38 +99,20 @@ export default function MetricChartCard({
 			className="cursor-pointer hover:shadow-md transition-shadow relative group"
 			onClick={onClick}
 		>
-			<CardHeader className="pb-3">
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2">
-						<Icon className="h-5 w-5 text-muted-foreground" />
-						<h3 className="font-semibold text-sm">{title}</h3>
+			<CardHeader className="pb-2 space-y-2">
+				<div className="flex items-center justify-between gap-2">
+					<div className="flex items-center gap-2 min-w-0">
+						<Icon className="h-5 w-5 text-muted-foreground shrink-0" />
+						<h3 className="font-semibold text-sm truncate">{title}</h3>
 					</div>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-						onClick={(e) => {
-							e.stopPropagation();
-							onClick();
-						}}
-					>
-						<Maximize2 className="h-4 w-4" />
-					</Button>
-				</div>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				{/* Main Metrics */}
-				<div className="space-y-2">
-					{/* Value and Badge on same line */}
-					<div className="flex items-baseline gap-2 flex-wrap">
-						<div className="text-3xl font-bold">{format(currentValue)}</div>
+					<div className="relative h-8 min-w-[116px] shrink-0">
 						{percentChange !== 0 && (
 							<div
 								className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium ${
 									percentChange > 0
-										? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-										: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-								}`}
+										? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+										: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+								} absolute right-0 top-1/2 -translate-y-1/2 z-10 transition-transform duration-200 ease-out group-hover:-translate-x-[40px] group-focus-within:-translate-x-[40px]`}
 							>
 								{percentChange > 0 ? (
 									<>
@@ -145,16 +127,36 @@ export default function MetricChartCard({
 								)}
 							</div>
 						)}
+						<div
+							className="absolute right-0 top-1/2 -translate-y-1/2 z-20 opacity-0 translate-x-[6px] scale-[0.96] pointer-events-none transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-x-0 group-focus-within:scale-100 group-focus-within:pointer-events-auto"
+						>
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-8 w-8 p-0"
+								onClick={(e) => {
+									e.stopPropagation();
+									onClick();
+								}}
+							>
+								<Maximize2 className="h-4 w-4" />
+							</Button>
+						</div>
 					</div>
-
-					{/* Average */}
+				</div>
+				<div className="flex items-end justify-between gap-3 flex-wrap">
+					<div className="text-3xl font-bold">{format(currentValue)}</div>
 					<div className="text-sm text-muted-foreground">
-						Avg: <span className="font-mono font-medium text-foreground">
-							{metricType === "currency" ? format(avgValue) : Math.round(avgValue).toLocaleString()}
+						Avg:{" "}
+						<span className="font-mono font-medium text-foreground">
+							{metricType === "currency"
+								? format(avgValue)
+								: Math.round(avgValue).toLocaleString()}
 						</span>
 					</div>
 				</div>
-
+			</CardHeader>
+			<CardContent className="pt-0">
 				{/* Mini Chart - Taller */}
 				<div className="h-[220px]">
 					<ChartContainer config={chartConfig} className="h-full w-full">

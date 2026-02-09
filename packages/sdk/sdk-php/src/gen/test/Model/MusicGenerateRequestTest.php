@@ -150,4 +150,13 @@ class MusicGenerateRequestTest extends TestCase
         // TODO: implement
         self::markTestIncomplete('Not implemented');
     }
+
+    /**
+     * Test attribute "debug"
+     */
+    public function testPropertyDebug()
+    {
+        // TODO: implement
+        self::markTestIncomplete('Not implemented');
+    }
 }

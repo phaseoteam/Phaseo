@@ -5,13 +5,14 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
 	title: "Migrate to the AI Stats Gateway",
 	description:
-		"Interactive migration guide to move from OpenAI, Anthropic, OpenRouter, or Vercel AI SDK to the AI Stats Gateway.",
+		"Interactive migration guide to move from OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, and OpenAI-compatible libraries to the AI Stats Gateway.",
 	path: "/migrate",
 	keywords: [
 		"AI gateway migration",
 		"migrate to AI Stats",
 		"OpenAI migration",
 		"Anthropic migration",
+		"Vercel AI Gateway migration",
 		"AI Stats",
 	],
 });

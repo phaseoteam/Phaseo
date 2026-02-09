@@ -29,6 +29,7 @@ type MusicGenerateRequest struct {
 	Suno *MusicGenerateRequestSuno `json:"suno,omitempty"`
 	Elevenlabs *MusicGenerateRequestElevenlabs `json:"elevenlabs,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Debug *DebugOptions `json:"debug,omitempty"`
 }
 
 type _MusicGenerateRequest MusicGenerateRequest
@@ -299,6 +300,38 @@ func (o *MusicGenerateRequest) SetEchoUpstreamRequest(v bool) {
 	o.EchoUpstreamRequest = &v
 }
 
+// GetDebug returns the Debug field value if set, zero value otherwise.
+func (o *MusicGenerateRequest) GetDebug() DebugOptions {
+	if o == nil || IsNil(o.Debug) {
+		var ret DebugOptions
+		return ret
+	}
+	return *o.Debug
+}
+
+// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *MusicGenerateRequest) GetDebugOk() (*DebugOptions, bool) {
+	if o == nil || IsNil(o.Debug) {
+		return nil, false
+	}
+	return o.Debug, true
+}
+
+// HasDebug returns a boolean if a field has been set.
+func (o *MusicGenerateRequest) HasDebug() bool {
+	if o != nil && !IsNil(o.Debug) {
+		return true
+	}
+
+	return false
+}
+
+// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
+func (o *MusicGenerateRequest) SetDebug(v DebugOptions) {
+	o.Debug = &v
+}
+
 func (o MusicGenerateRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -330,6 +363,9 @@ func (o MusicGenerateRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.EchoUpstreamRequest) {
 		toSerialize["echo_upstream_request"] = o.EchoUpstreamRequest
+	}
+	if !IsNil(o.Debug) {
+		toSerialize["debug"] = o.Debug
 	}
 	return toSerialize, nil
 }

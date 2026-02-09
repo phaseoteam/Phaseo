@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { cacheLife, cacheTag } from "next/cache";
 
 export interface ReleaseSharePoint {
 	monthStart: string;
@@ -33,6 +34,11 @@ export async function getCountryReleaseShare(
 	iso: string,
 	months = 12
 ): Promise<ReleaseSharePoint[]> {
+	"use cache";
+	cacheLife("hours");
+	cacheTag("countries:release-share");
+	cacheTag(`countries:release-share:${iso.toUpperCase()}`);
+
 	const client = createAdminClient();
 	const { data, error } = await client.rpc("get_country_release_share", {
 		p_iso: iso,
@@ -54,6 +60,10 @@ export async function getCountryReleaseShare(
 export async function getMonthlyReleaseShareAll(
 	months = 12
 ): Promise<MonthlyReleaseShare[]> {
+	"use cache";
+	cacheLife("hours");
+	cacheTag("countries:release-share:all");
+
 	const client = createAdminClient();
 	const { data, error } = await client.rpc(
 		"get_monthly_release_share_all",
@@ -77,6 +87,11 @@ export async function getMonthlyReleaseShareAll(
 export async function getReleaseGapsByOrg(
 	iso?: string | null
 ): Promise<ReleaseGapByOrg[]> {
+	"use cache";
+	cacheLife("hours");
+	cacheTag("countries:release-gaps");
+	if (iso) cacheTag(`countries:release-gaps:${iso.toUpperCase()}`);
+
 	const client = createAdminClient();
 	const { data, error } = await client.rpc("get_release_gaps_by_org", {
 		p_iso: iso ?? null,

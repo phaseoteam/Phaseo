@@ -5,6 +5,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 type ActiveGatewayModelRow = {
     api_model_id: string | null;
     api_provider_id: string | null;
+    capability_ids?: string[] | null;
     is_active_gateway?: boolean | null;
     effective_from?: string | null;
     effective_to?: string | null;
@@ -37,6 +38,9 @@ type ActiveGatewayModelRowRaw = Omit<ActiveGatewayModelRow, "provider" | "model"
 export type GatewaySupportedModel = {
     modelId: string;
     providerId: string;
+    capabilities: string[];
+    effectiveFrom: string | null;
+    effectiveTo: string | null;
     providerName: string | null;
     modelName: string | null;
     modelStatus: string | null;
@@ -67,19 +71,27 @@ async function fetchActiveGatewayModels(
         .filter((id): id is string => Boolean(id));
 
     let capabilitySet: Set<string> | null = null;
+    const capabilityMap = new Map<string, Set<string>>();
     if (providerModelIds.length > 0) {
         const { data: capabilities, error: capabilitiesError } = await client
             .from("data_api_provider_model_capabilities")
-            .select("provider_api_model_id, status")
+            .select("provider_api_model_id, capability_id, status")
             .in("provider_api_model_id", providerModelIds);
 
         if (!capabilitiesError && (capabilities ?? []).length > 0) {
-            capabilitySet = new Set(
-                (capabilities ?? [])
-                    .filter((row) => row.status !== "disabled")
-                    .map((row) => row.provider_api_model_id)
-                    .filter(Boolean)
-            );
+            for (const row of capabilities ?? []) {
+                if (
+                    row.status === "disabled" ||
+                    !row.provider_api_model_id ||
+                    !row.capability_id
+                ) {
+                    continue;
+                }
+                const set = capabilityMap.get(row.provider_api_model_id) ?? new Set<string>();
+                set.add(row.capability_id);
+                capabilityMap.set(row.provider_api_model_id, set);
+            }
+            capabilitySet = new Set(capabilityMap.keys());
         }
     }
 
@@ -128,6 +140,9 @@ async function fetchActiveGatewayModels(
         rows.push({
             api_model_id: row.api_model_id ?? null,
             api_provider_id: row.provider_id ?? null,
+            capability_ids: Array.from(
+                capabilityMap.get(row.provider_api_model_id) ?? []
+            ),
             is_active_gateway: row.is_active_gateway ?? null,
             effective_from: row.effective_from ?? null,
             effective_to: row.effective_to ?? null,
@@ -174,6 +189,9 @@ export async function getGatewaySupportedModels(
         models.push({
             modelId: row.api_model_id,
             providerId: row.api_provider_id,
+            capabilities: Array.from(new Set(row.capability_ids ?? [])),
+            effectiveFrom: row.effective_from ?? null,
+            effectiveTo: row.effective_to ?? null,
             providerName: row.provider?.api_provider_name ?? null,
             modelName: row.model?.name ?? null,
             modelStatus: status,

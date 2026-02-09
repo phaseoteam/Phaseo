@@ -31,6 +31,8 @@ module AIStatsSdk
 
     attr_accessor :echo_upstream_request
 
+    attr_accessor :debug
+
     class EnumAttributeValidator
       attr_reader :datatype
       attr_reader :allowable_values
@@ -63,7 +65,8 @@ module AIStatsSdk
         :'provider' => :'provider',
         :'suno' => :'suno',
         :'elevenlabs' => :'elevenlabs',
-        :'echo_upstream_request' => :'echo_upstream_request'
+        :'echo_upstream_request' => :'echo_upstream_request',
+        :'debug' => :'debug'
       }
     end
 
@@ -87,7 +90,8 @@ module AIStatsSdk
         :'provider' => :'ProviderRoutingOptions',
         :'suno' => :'MusicGenerateRequestSuno',
         :'elevenlabs' => :'MusicGenerateRequestElevenlabs',
-        :'echo_upstream_request' => :'Boolean'
+        :'echo_upstream_request' => :'Boolean',
+        :'debug' => :'DebugOptions'
       }
     end
 
@@ -146,6 +150,10 @@ module AIStatsSdk
       if attributes.key?(:'echo_upstream_request')
         self.echo_upstream_request = attributes[:'echo_upstream_request']
       end
+
+      if attributes.key?(:'debug')
+        self.debug = attributes[:'debug']
+      end
     end
 
     # Show invalid properties with the reasons. Usually used together with valid?
@@ -202,7 +210,8 @@ module AIStatsSdk
           provider == o.provider &&
           suno == o.suno &&
           elevenlabs == o.elevenlabs &&
-          echo_upstream_request == o.echo_upstream_request
+          echo_upstream_request == o.echo_upstream_request &&
+          debug == o.debug
     end
 
     # @see the `==` method
@@ -214,7 +223,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, prompt, duration, format, provider, suno, elevenlabs, echo_upstream_request].hash
+      [model, prompt, duration, format, provider, suno, elevenlabs, echo_upstream_request, debug].hash
     end
 
     # Builds the object from hash

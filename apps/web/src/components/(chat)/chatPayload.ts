@@ -120,10 +120,42 @@ const extractImagesFromOutputItems = (output: any): ExtractedImage[] => {
 	return images;
 };
 
+const extractImagesFromDataArray = (data: any): ExtractedImage[] => {
+	if (!Array.isArray(data)) return [];
+	const images: ExtractedImage[] = [];
+	for (const entry of data) {
+		if (!entry || typeof entry !== "object") continue;
+		const b64 =
+			typeof entry.b64_json === "string"
+				? entry.b64_json
+				: typeof entry.data === "string"
+					? entry.data
+					: null;
+		const url =
+			typeof entry.url === "string"
+				? entry.url
+				: typeof entry.image_url === "string"
+					? entry.image_url
+					: null;
+		if (!b64 && !url) continue;
+		images.push({
+			url: url ?? (b64 ? `data:image/png;base64,${b64}` : undefined),
+			data: b64 ?? undefined,
+			mimeType:
+				typeof entry.mime_type === "string"
+					? entry.mime_type
+					: "image/png",
+		});
+	}
+	return images;
+};
+
 export const extractResponseImages = (payload: any): ExtractedImage[] => {
 	const images: ExtractedImage[] = [];
 	images.push(...extractImagesFromOutputItems(payload?.output));
 	images.push(...extractImagesFromOutputItems(payload?.response?.output));
+	images.push(...extractImagesFromDataArray(payload?.data));
+	images.push(...extractImagesFromDataArray(payload?.response?.data));
 	const content = payload?.choices?.[0]?.message?.content;
 	if (Array.isArray(content)) {
 		images.push(...extractImagesFromContent(content));

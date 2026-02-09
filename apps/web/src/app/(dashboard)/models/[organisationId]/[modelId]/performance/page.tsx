@@ -10,7 +10,6 @@ import {
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import { Suspense } from "react";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 async function fetchModelOverview(modelId: string, includeHidden: boolean) {
 	try {
@@ -29,7 +28,7 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 	const model = await fetchModelOverview(modelId, includeHidden);
 	const path = `/models/${modelId}/performance`;
 	const imagePath = `/og/models/${modelId}`;
@@ -77,7 +76,7 @@ export default async function Page({
 }) {
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
-	const includeHidden = await resolveIncludeHidden();
+	const includeHidden = false;
 
 	console.log(`[perf] modelId=${modelId}`);
 

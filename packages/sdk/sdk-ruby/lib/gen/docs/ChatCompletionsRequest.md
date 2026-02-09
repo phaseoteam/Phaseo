@@ -12,6 +12,7 @@
 | **logit_bias** | **Hash&lt;String, Float&gt;** |  | [optional] |
 | **max_output_tokens** | **Integer** |  | [optional] |
 | **meta** | **Boolean** |  | [optional][default to false] |
+| **debug** | [**DebugOptions**](DebugOptions.md) |  | [optional] |
 | **presence_penalty** | **Float** |  | [optional] |
 | **seed** | **Integer** |  | [optional] |
 | **stream** | **Boolean** |  | [optional][default to false] |
@@ -44,6 +45,7 @@ instance = AIStatsSdk::ChatCompletionsRequest.new(
   logit_bias: null,
   max_output_tokens: null,
   meta: null,
+  debug: null,
   presence_penalty: null,
   seed: null,
   stream: null,

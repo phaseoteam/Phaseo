@@ -1,13 +1,14 @@
 import TierOverview from "@/components/(gateway)/credits/TierOverview";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import { Metadata } from "next";
+import { Suspense } from "react";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata: Metadata = {
 	title: "Pricing & Tiers - Settings",
 };
 
-export default async function Page() {
-	const teamId = await getTeamIdFromCookie();
+export default function Page() {
 	return (
 		<div className="space-y-6">
 			<div>
@@ -17,7 +18,14 @@ export default async function Page() {
 				</p>
 			</div>
 
-			<TierOverview teamId={teamId} />
+			<Suspense fallback={<SettingsSectionFallback />}>
+				<TierOverviewContent />
+			</Suspense>
 		</div>
 	);
+}
+
+async function TierOverviewContent() {
+	const teamId = await getTeamIdFromCookie();
+	return <TierOverview teamId={teamId} />;
 }

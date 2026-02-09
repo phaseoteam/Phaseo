@@ -5,9 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UsageHeader from "@/components/(gateway)/usage/UsageHeader/UsageHeader";
 import DeprecationWarnings from "@/components/(gateway)/usage/DeprecationWarnings/DeprecationWarnings";
 import MetricsOverview from "@/components/(gateway)/usage/MetricsOverview";
-import UnifiedRequestsTable from "@/components/(gateway)/usage/UnifiedRequestsTable";
 import RequestsSection from "@/components/(gateway)/usage/RequestsSection";
-import { fetchOrganizationColors, fetchAppNames, fetchModelMetadata } from "./server-actions";
+import {
+	fetchOrganizationColors,
+	fetchAppNames,
+	fetchModelMetadata,
+	fetchProviderNames,
+} from "./server-actions";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
@@ -153,6 +157,7 @@ export default async function Page({
 	// Fetch organization colors, model metadata, and app names
 	const colorMap = await fetchOrganizationColors(uniqueModels);
 	const modelMetadata = await fetchModelMetadata(uniqueModels);
+	const providerNames = await fetchProviderNames(uniqueProviders);
 	const appNames = await fetchAppNames(uniqueAppIds);
 
 	// previous window (same duration before 'from')
@@ -444,6 +449,7 @@ export default async function Page({
 						appNames={appNames}
 						models={uniqueModels}
 						providers={uniqueProviders}
+						providerNames={providerNames}
 						apiKeys={availableKeys}
 						modelMetadata={modelMetadata}
 					/>

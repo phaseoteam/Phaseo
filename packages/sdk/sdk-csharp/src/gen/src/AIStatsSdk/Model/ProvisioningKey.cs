@@ -159,6 +159,7 @@ namespace AIStatsSdk.Model
         /// <summary>
         /// Gets or Sets Id
         /// </summary>
+        /* <example>11111111-1111-4111-8111-111111111111</example> */
         [JsonPropertyName("id")]
         public Guid? Id { get { return this.IdOption; } set { this.IdOption = new(value); } }
 

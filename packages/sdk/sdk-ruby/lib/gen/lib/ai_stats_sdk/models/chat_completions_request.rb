@@ -31,6 +31,8 @@ module AIStatsSdk
 
     attr_accessor :meta
 
+    attr_accessor :debug
+
     attr_accessor :presence_penalty
 
     attr_accessor :seed
@@ -98,6 +100,7 @@ module AIStatsSdk
         :'logit_bias' => :'logit_bias',
         :'max_output_tokens' => :'max_output_tokens',
         :'meta' => :'meta',
+        :'debug' => :'debug',
         :'presence_penalty' => :'presence_penalty',
         :'seed' => :'seed',
         :'stream' => :'stream',
@@ -139,6 +142,7 @@ module AIStatsSdk
         :'logit_bias' => :'Hash<String, Float>',
         :'max_output_tokens' => :'Integer',
         :'meta' => :'Boolean',
+        :'debug' => :'DebugOptions',
         :'presence_penalty' => :'Float',
         :'seed' => :'Integer',
         :'stream' => :'Boolean',
@@ -221,6 +225,10 @@ module AIStatsSdk
         self.meta = attributes[:'meta']
       else
         self.meta = false
+      end
+
+      if attributes.key?(:'debug')
+        self.debug = attributes[:'debug']
       end
 
       if attributes.key?(:'presence_penalty')
@@ -608,6 +616,7 @@ module AIStatsSdk
           logit_bias == o.logit_bias &&
           max_output_tokens == o.max_output_tokens &&
           meta == o.meta &&
+          debug == o.debug &&
           presence_penalty == o.presence_penalty &&
           seed == o.seed &&
           stream == o.stream &&
@@ -636,7 +645,7 @@ module AIStatsSdk
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [model, system, messages, reasoning, frequency_penalty, logit_bias, max_output_tokens, meta, presence_penalty, seed, stream, temperature, tools, max_tool_calls, parallel_tool_calls, tool_choice, top_k, logprobs, top_logprobs, top_p, response_format, usage, provider, user_id, service_tier].hash
+      [model, system, messages, reasoning, frequency_penalty, logit_bias, max_output_tokens, meta, debug, presence_penalty, seed, stream, temperature, tools, max_tool_calls, parallel_tool_calls, tool_choice, top_k, logprobs, top_logprobs, top_p, response_format, usage, provider, user_id, service_tier].hash
     end
 
     # Builds the object from hash

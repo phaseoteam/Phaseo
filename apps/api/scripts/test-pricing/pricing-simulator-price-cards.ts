@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from "../../src/runtime/env";
-import type { PriceCard, PriceRule } from "../../src/lib/gateway/pricing/types";
+import type { PriceCard, PriceRule } from "../../src/pipeline/pricing/types";
 import type { Combo } from "./pricing-simulator-types";
 
 type RawPricingRow = {
@@ -141,3 +141,4 @@ export async function loadPriceCardsForCombos(combos: Combo[]): Promise<Map<stri
 
     return cards;
 }
+

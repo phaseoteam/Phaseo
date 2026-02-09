@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,8 @@ class ProviderRoutingOptions(BaseModel):
     order: Optional[List[StrictStr]] = None
     only: Optional[List[StrictStr]] = None
     ignore: Optional[List[StrictStr]] = None
-    __properties: ClassVar[List[str]] = ["order", "only", "ignore"]
+    include_alpha: Optional[StrictBool] = Field(default=None, description="Include alpha providers in routing (off by default).")
+    __properties: ClassVar[List[str]] = ["order", "only", "ignore", "include_alpha"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -84,7 +85,8 @@ class ProviderRoutingOptions(BaseModel):
         _obj = cls.model_validate({
             "order": obj.get("order"),
             "only": obj.get("only"),
-            "ignore": obj.get("ignore")
+            "ignore": obj.get("ignore"),
+            "include_alpha": obj.get("include_alpha")
         })
         return _obj
 

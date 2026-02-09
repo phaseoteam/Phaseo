@@ -6,7 +6,7 @@
 // Documentation: https://ai.google.dev/gemini-api/docs/text-generation
 // Uses Google's native Gemini API format (NOT OpenAI-compatible)
 
-import type { IRChatRequest, IRChatResponse, IRContentPart, IRMessage, IRChoice, IRStreamChunk, IRStreamDelta } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice, IRStreamChunk, IRStreamDelta } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import type { ProviderExecutor } from "../../types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
@@ -14,6 +14,9 @@ import { computeBill } from "@pipeline/pricing/engine";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
+import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { withNormalizedReasoning } from "./normalize-reasoning";
+import { irPartsToGeminiParts } from "../../google/shared/media";
 
 /**
  * Transform IR request to Google Gemini format
@@ -25,35 +28,52 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
  * - `generationConfig` for parameters
  * - Model in URL path, not request body
  */
-function irToGemini(ir: IRChatRequest): any {
+async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
 	const contents: any[] = [];
 	let systemInstruction: any = null;
+	const toolNamesById = new Map<string, string>();
+
+	for (const msg of ir.messages) {
+		if (msg.role !== "assistant" || !Array.isArray(msg.toolCalls)) continue;
+		for (const toolCall of msg.toolCalls) {
+			if (!toolCall?.id || !toolCall?.name) continue;
+			toolNamesById.set(toolCall.id, toolCall.name);
+		}
+	}
 
 	// Process messages
 	for (const msg of ir.messages) {
 		if (msg.role === "system") {
 			// System messages go in systemInstruction, not contents
-			const parts = msg.content.map(irPartToGeminiPart);
+			const parts = await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true });
 			systemInstruction = { parts };
 		} else if (msg.role === "user") {
 			contents.push({
 				role: "user",
-				parts: msg.content.map(irPartToGeminiPart),
+				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true }),
 			});
 		} else if (msg.role === "assistant") {
 			contents.push({
 				role: "model", // Google uses "model" not "assistant"
-				parts: msg.content.map(irPartToGeminiPart),
+				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true }),
 			});
 		} else if (msg.role === "tool") {
 			// Tool results
 			for (const toolResult of msg.toolResults) {
+				let responsePayload: any = toolResult.content;
+				if (typeof toolResult.content === "string") {
+					try {
+						responsePayload = JSON.parse(toolResult.content);
+					} catch {
+						responsePayload = { content: toolResult.content };
+					}
+				}
 				contents.push({
-					role: "function",
+					role: "user",
 					parts: [{
 						functionResponse: {
-							name: toolResult.toolCallId, // TODO: Need to track function name
-							response: JSON.parse(toolResult.content),
+							name: toolNamesById.get(toolResult.toolCallId) ?? toolResult.toolCallId,
+							response: responsePayload,
 						},
 					}],
 				});
@@ -86,7 +106,8 @@ function irToGemini(ir: IRChatRequest): any {
 			includeThoughts: true
 		};
 
-		const isGemini3 = ir.model.startsWith("gemini-3");
+		const modelName = modelOverride ?? ir.model;
+		const isGemini3 = typeof modelName === "string" && modelName.startsWith("gemini-3");
 
 		// Gemini 3+ Thinking Level
 		if (ir.reasoning?.effort && isGemini3) {
@@ -172,65 +193,6 @@ function irToGemini(ir: IRChatRequest): any {
 }
 
 /**
- * Convert IR content part to Google Gemini part
- */
-function irPartToGeminiPart(part: IRContentPart): any {
-	if (part.type === "reasoning_text") {
-		return {
-			text: part.text,
-			thought: true,
-			thought_signature: part.thoughtSignature
-		};
-	}
-
-	if (part.type === "text") {
-		return { text: part.text };
-	}
-
-	if (part.type === "image") {
-		if (part.source === "url") {
-			// Google doesn't support URLs directly - need to fetch and convert to base64
-			// For now, return as inline_data with URL (caller should pre-fetch)
-			return {
-				inline_data: {
-					mime_type: part.mimeType || "image/jpeg",
-					data: part.data, // Assume already base64
-				},
-			};
-		} else {
-			// Base64 data
-			return {
-				inline_data: {
-					mime_type: part.mimeType || "image/jpeg",
-					data: part.data,
-				},
-			};
-		}
-	}
-
-	if (part.type === "audio") {
-		return {
-			inline_data: {
-				mime_type: `audio/${part.format || "wav"}`,
-				data: part.data,
-			},
-		};
-	}
-
-	if (part.type === "video") {
-		return {
-			inline_data: {
-				mime_type: "video/mp4",
-				data: part.url, // TODO: Should be base64
-			},
-		};
-	}
-
-	// Fallback
-	return { text: String(part) };
-}
-
-/**
  * Transform Google Gemini response to IR format
  */
 function geminiToIR(
@@ -285,8 +247,11 @@ function geminiToIR(
 			}
 		}
 
-		// Map finish reason
-		const finishReason = mapGeminiFinishReason(candidate.finishReason);
+		// Map finish reason (tool calls should surface as tool_calls, not stop)
+		let finishReason = mapGeminiFinishReason(candidate.finishReason);
+		if (finishReason === "stop" && toolCalls.length > 0) {
+			finishReason = "tool_calls";
+		}
 
 		choices.push({
 			index: candidate.index || 0,
@@ -305,6 +270,7 @@ function geminiToIR(
 		outputTokens: json.usageMetadata.candidatesTokenCount || 0,
 		totalTokens: json.usageMetadata.totalTokenCount || 0,
 		cachedInputTokens: json.usageMetadata.cachedContentTokenCount,
+		reasoningTokens: json.usageMetadata.thoughtsTokenCount ?? json.usageMetadata.thoughtTokenCount,
 	} : undefined;
 
 	return {
@@ -351,11 +317,11 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
  * Execute Google AI Studio request
  */
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	const { ir, providerId, providerModelSlug, requestId, byokMeta, pricingCard, meta } = args;
+	const { ir, providerId, providerModelSlug, requestId, pricingCard, meta } = args;
+	const bindings = getBindings() as any;
 
 	// Resolve API key: prefer decrypted BYOK for this provider, else use gateway keys.
 	const keyInfo = resolveProviderKey(args, () => {
-		const bindings = getBindings() as any;
 		return bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY;
 	});
 
@@ -363,17 +329,28 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const model = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
 
 	// Transform IR to Google format
-	const geminiRequest = irToGemini(ir);
+	const geminiRequest = await irToGemini(ir, model);
 
-	// Google AI Studio base URL
-	const baseUrl = "https://generativelanguage.googleapis.com/v1beta";
+	// Google AI Studio base URL (allow env override for proxy/self-host routing)
+	const baseRoot = String(
+		bindings.GOOGLE_AI_STUDIO_BASE_URL ||
+		bindings.GOOGLE_BASE_URL ||
+		"https://generativelanguage.googleapis.com",
+	).replace(/\/+$/, "");
+	const baseUrl = /\/v1beta$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
 
 	// Determine endpoint based on streaming
 	const endpoint = ir.stream
-		? `${baseUrl}/models/${model}:streamGenerateContent?alt=sse`
-		: `${baseUrl}/models/${model}:generateContent`;
+		? `${baseUrl}/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`
+		: `${baseUrl}/models/${encodeURIComponent(model)}:generateContent`;
 
-	const upstreamStartMs = Date.now();
+	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
+	const mappedRequest = (
+		meta.echoUpstreamRequest ||
+		meta.returnUpstreamRequest ||
+		meta.debug?.return_upstream_request ||
+		meta.debug?.trace
+	) ? JSON.stringify(geminiRequest) : undefined;
 
 	try {
 		const response = await fetch(endpoint, {
@@ -393,6 +370,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				bill: { cost_cents: 0, currency: "USD" },
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
+				mappedRequest,
 			};
 		}
 
@@ -405,6 +383,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				upstream: response,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
+				mappedRequest,
 				usageFinalizer: async () => null,
 			};
 		}
@@ -436,6 +415,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			bill,
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
+			mappedRequest,
 			timing: {
 				latencyMs: undefined,
 				generationMs: totalMs,
@@ -450,8 +430,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				headers: { "Content-Type": "application/json" },
 			}),
 			bill: { cost_cents: 0, currency: "USD" },
-			keySource: "gateway",
-			byokKeyId: null,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
 		};
 	}
 }
@@ -478,12 +459,18 @@ export function transformStream(
 	const decoder = new TextDecoder();
 	const encoder = new TextEncoder();
 	let buf = "";
+	type StreamToolState = {
+		id: string;
+		argumentsSoFar: string;
+		emittedName: boolean;
+	};
+	const toolStates = new Map<string, StreamToolState>();
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
 	const provider = args.providerId || "google-ai-studio";
 
-	return new ReadableStream<Uint8Array>({
+	const openAIStream = new ReadableStream<Uint8Array>({
 		async start(controller) {
 			try {
 				while (true) {
@@ -495,11 +482,14 @@ export function transformStream(
 					buf = lines.pop() ?? "";
 
 					for (const block of lines) {
-						// Extract data line
-						const dataMatch = block.match(/^data: (.*)/m);
-						if (!dataMatch) continue;
-
-						const dataStr = dataMatch[1].trim();
+						// Extract data payload; Gemini SSE can include multiple data: lines.
+						const dataStr = block
+							.split(/\r?\n/)
+							.map((line) => line.replace(/\r$/, ""))
+							.filter((line) => line.startsWith("data:"))
+							.map((line) => line.slice(5).trimStart())
+							.join("")
+							.trim();
 						if (!dataStr || dataStr === "[DONE]") continue;
 
 						let payload: any;
@@ -529,8 +519,15 @@ export function transformStream(
 								// Accumulate content from parts
 								let content = "";
 								let reasoning = "";
+								const toolCalls: Array<{
+									index: number;
+									id?: string;
+									name?: string;
+									arguments?: string;
+								}> = [];
+								let functionCallIndex = 0;
 
-								for (const part of parts) {
+								for (const [partIdx, part] of parts.entries()) {
 									if (part.text) {
 										// Check if it's a thought part (Google's reasoning format)
 										if (part.thought) {
@@ -540,6 +537,56 @@ export function transformStream(
 											// For now, we'll just accumulate reasoning text.
 										} else {
 											content += part.text;
+										}
+									} else if (part.functionCall) {
+										const toolIndex = functionCallIndex++;
+										const stateKey = `${index}:${partIdx}:${part.functionCall.name || "tool"}`;
+										let state = toolStates.get(stateKey);
+										if (!state) {
+											state = {
+												id: `call_${args.requestId}_${index}_${partIdx}`,
+												argumentsSoFar: "",
+												emittedName: false,
+											};
+											toolStates.set(stateKey, state);
+										}
+
+										const partialArgs = typeof part.functionCall.partialArgs === "string"
+											? part.functionCall.partialArgs
+											: "";
+										const hasPartialArgs = partialArgs.length > 0;
+										const nextArguments = hasPartialArgs
+											? `${state.argumentsSoFar}${partialArgs}`
+											: JSON.stringify(part.functionCall.args || {});
+										let argumentsDelta = "";
+										if (hasPartialArgs) {
+											argumentsDelta = partialArgs;
+										} else if (!state.argumentsSoFar) {
+											argumentsDelta = nextArguments;
+										} else if (nextArguments.startsWith(state.argumentsSoFar)) {
+											argumentsDelta = nextArguments.slice(state.argumentsSoFar.length);
+										} else if (nextArguments !== state.argumentsSoFar) {
+											// If Gemini sends a non-prefix update, emit current snapshot.
+											argumentsDelta = nextArguments;
+										}
+
+										const functionDelta: { name?: string; arguments?: string } = {};
+										if (!state.emittedName && part.functionCall.name) {
+											functionDelta.name = part.functionCall.name;
+											state.emittedName = true;
+										}
+										if (argumentsDelta) {
+											functionDelta.arguments = argumentsDelta;
+											state.argumentsSoFar = nextArguments;
+										}
+
+										if (Object.keys(functionDelta).length > 0) {
+											toolCalls.push({
+												index: toolIndex,
+												id: state.id,
+												name: functionDelta.name,
+												arguments: functionDelta.arguments,
+											});
 										}
 									}
 								}
@@ -559,17 +606,25 @@ export function transformStream(
 								// IRStreamDelta has 'contentParts'.
 								// But to be safe and match OpenAI output, we might want to put it in contentParts.
 
-								const finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
+								let finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
+								if (finishReason === "stop" && toolCalls.length > 0) {
+									finishReason = "tool_calls";
+								}
 
-								if (Object.keys(delta).length > 0 || finishReason) {
-									irChunk.choices.push({
-										index,
-										delta: {
-											role: "assistant",
-											...delta,
-										},
-										finishReason,
-									});
+								const choice: any = {
+									index,
+									delta: {
+										role: "assistant",
+										...delta,
+									},
+									finishReason,
+								};
+								if (toolCalls.length > 0) {
+									choice.delta.toolCalls = toolCalls;
+								}
+
+								if (Object.keys(choice.delta).length > 0 || finishReason) {
+									irChunk.choices.push(choice);
 								}
 							}
 						}
@@ -579,7 +634,7 @@ export function transformStream(
 								inputTokens: payload.usageMetadata.promptTokenCount || 0,
 								outputTokens: payload.usageMetadata.candidatesTokenCount || 0,
 								totalTokens: payload.usageMetadata.totalTokenCount || 0,
-								reasoningTokens: payload.usageMetadata.thoughtTokenCount,
+								reasoningTokens: payload.usageMetadata.thoughtsTokenCount ?? payload.usageMetadata.thoughtTokenCount,
 							};
 						}
 
@@ -597,6 +652,17 @@ export function transformStream(
 			}
 		},
 	});
+
+	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
+	if (protocol === "openai.chat.completions") {
+		return openAIStream;
+	}
+
+	return resolveStreamForProtocol(
+		new Response(openAIStream),
+		args,
+		"chat",
+	);
 }
 
 /**
@@ -617,6 +683,17 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 					delta.content = (delta.content || "") + part.text;
 				}
 			}
+		}
+		if (Array.isArray(c.delta.toolCalls) && c.delta.toolCalls.length > 0) {
+			delta.tool_calls = c.delta.toolCalls.map((tc) => ({
+				index: tc.index,
+				...(tc.id ? { id: tc.id } : {}),
+				type: "function",
+				function: {
+					...(tc.name ? { name: tc.name } : {}),
+					...(typeof tc.arguments === "string" ? { arguments: tc.arguments } : {}),
+				},
+			}));
 		}
 
 		return {
@@ -651,7 +728,15 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 }
 
 export const executor: ProviderExecutor = buildTextExecutor({
-	preprocess,
+	preprocess: (ir, args) =>
+		preprocess(
+			withNormalizedReasoning(
+				ir,
+				args.capabilityParams,
+				args.providerModelSlug ?? ir.model,
+			),
+			args,
+		),
 	execute,
 	postprocess,
 	transformStream,

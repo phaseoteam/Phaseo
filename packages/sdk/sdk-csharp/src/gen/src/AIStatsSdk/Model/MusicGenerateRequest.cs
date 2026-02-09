@@ -41,8 +41,9 @@ namespace AIStatsSdk.Model
         /// <param name="suno">suno</param>
         /// <param name="elevenlabs">elevenlabs</param>
         /// <param name="echoUpstreamRequest">echoUpstreamRequest</param>
+        /// <param name="debug">debug</param>
         [JsonConstructor]
-        public MusicGenerateRequest(string model, Option<string?> prompt = default, Option<int?> duration = default, Option<FormatEnum?> format = default, Option<ProviderRoutingOptions?> provider = default, Option<MusicGenerateRequestSuno?> suno = default, Option<MusicGenerateRequestElevenlabs?> elevenlabs = default, Option<bool?> echoUpstreamRequest = default)
+        public MusicGenerateRequest(string model, Option<string?> prompt = default, Option<int?> duration = default, Option<FormatEnum?> format = default, Option<ProviderRoutingOptions?> provider = default, Option<MusicGenerateRequestSuno?> suno = default, Option<MusicGenerateRequestElevenlabs?> elevenlabs = default, Option<bool?> echoUpstreamRequest = default, Option<DebugOptions?> debug = default)
         {
             Model = model;
             PromptOption = prompt;
@@ -52,6 +53,7 @@ namespace AIStatsSdk.Model
             SunoOption = suno;
             ElevenlabsOption = elevenlabs;
             EchoUpstreamRequestOption = echoUpstreamRequest;
+            DebugOption = debug;
             OnCreated();
         }
 
@@ -249,6 +251,19 @@ namespace AIStatsSdk.Model
         public bool? EchoUpstreamRequest { get { return this.EchoUpstreamRequestOption; } set { this.EchoUpstreamRequestOption = new(value); } }
 
         /// <summary>
+        /// Used to track the state of Debug
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<DebugOptions?> DebugOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Debug
+        /// </summary>
+        [JsonPropertyName("debug")]
+        public DebugOptions? Debug { get { return this.DebugOption; } set { this.DebugOption = new(value); } }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -264,6 +279,7 @@ namespace AIStatsSdk.Model
             sb.Append("  Suno: ").Append(Suno).Append("\n");
             sb.Append("  Elevenlabs: ").Append(Elevenlabs).Append("\n");
             sb.Append("  EchoUpstreamRequest: ").Append(EchoUpstreamRequest).Append("\n");
+            sb.Append("  Debug: ").Append(Debug).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -309,6 +325,7 @@ namespace AIStatsSdk.Model
             Option<MusicGenerateRequestSuno?> suno = default;
             Option<MusicGenerateRequestElevenlabs?> elevenlabs = default;
             Option<bool?> echoUpstreamRequest = default;
+            Option<DebugOptions?> debug = default;
 
             while (utf8JsonReader.Read())
             {
@@ -351,6 +368,9 @@ namespace AIStatsSdk.Model
                         case "echo_upstream_request":
                             echoUpstreamRequest = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
+                        case "debug":
+                            debug = new Option<DebugOptions?>(JsonSerializer.Deserialize<DebugOptions>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         default:
                             break;
                     }
@@ -384,7 +404,10 @@ namespace AIStatsSdk.Model
             if (echoUpstreamRequest.IsSet && echoUpstreamRequest.Value == null)
                 throw new ArgumentNullException(nameof(echoUpstreamRequest), "Property is not nullable for class MusicGenerateRequest.");
 
-            return new MusicGenerateRequest(model.Value!, prompt, duration, format, provider, suno, elevenlabs, echoUpstreamRequest);
+            if (debug.IsSet && debug.Value == null)
+                throw new ArgumentNullException(nameof(debug), "Property is not nullable for class MusicGenerateRequest.");
+
+            return new MusicGenerateRequest(model.Value!, prompt, duration, format, provider, suno, elevenlabs, echoUpstreamRequest, debug);
         }
 
         /// <summary>
@@ -426,6 +449,9 @@ namespace AIStatsSdk.Model
             if (musicGenerateRequest.ElevenlabsOption.IsSet && musicGenerateRequest.Elevenlabs == null)
                 throw new ArgumentNullException(nameof(musicGenerateRequest.Elevenlabs), "Property is required for class MusicGenerateRequest.");
 
+            if (musicGenerateRequest.DebugOption.IsSet && musicGenerateRequest.Debug == null)
+                throw new ArgumentNullException(nameof(musicGenerateRequest.Debug), "Property is required for class MusicGenerateRequest.");
+
             writer.WriteString("model", musicGenerateRequest.Model);
 
             if (musicGenerateRequest.PromptOption.IsSet)
@@ -453,6 +479,12 @@ namespace AIStatsSdk.Model
             }
             if (musicGenerateRequest.EchoUpstreamRequestOption.IsSet)
                 writer.WriteBoolean("echo_upstream_request", musicGenerateRequest.EchoUpstreamRequestOption.Value!.Value);
+
+            if (musicGenerateRequest.DebugOption.IsSet)
+            {
+                writer.WritePropertyName("debug");
+                JsonSerializer.Serialize(writer, musicGenerateRequest.Debug, jsonSerializerOptions);
+            }
         }
     }
 }

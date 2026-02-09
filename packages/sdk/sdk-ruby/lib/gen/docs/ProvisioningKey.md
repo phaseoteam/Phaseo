@@ -18,7 +18,7 @@
 require 'ai_stats_sdk'
 
 instance = AIStatsSdk::ProvisioningKey.new(
-  id: null,
+  id: 11111111-1111-4111-8111-111111111111,
   name: Production Key,
   prefix: pk_abc123,
   status: active,

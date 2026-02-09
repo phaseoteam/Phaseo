@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { revalidateAppDataTags } from "@/lib/cache/revalidateDataTags";
 
 const PROTECTED_APP_TITLES = new Set([
 	"ai stats chat",
@@ -119,6 +120,7 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 		throw new Error(error.message ?? "Failed to update app");
 	}
 
+	revalidateAppDataTags([appId]);
 	revalidatePath("/settings/apps");
 	revalidatePath(`/apps/${appId}`);
 
@@ -184,6 +186,7 @@ export async function mergeAppsAction(
 		throw new Error(deleteError.message ?? "Failed to remove source app");
 	}
 
+	revalidateAppDataTags([sourceAppId, targetAppId]);
 	revalidatePath("/settings/apps");
 	revalidatePath(`/apps/${sourceAppId}`);
 	revalidatePath(`/apps/${targetAppId}`);

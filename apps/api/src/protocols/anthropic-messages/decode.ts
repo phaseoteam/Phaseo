@@ -30,6 +30,8 @@ export type AnthropicMessagesRequest = {
 	tools?: AnthropicTool[];
 	tool_choice?: AnthropicToolChoice;
 	metadata?: Record<string, any>;
+	service_tier?: string;
+	speed?: string;
 	stop_sequences?: string[];
 	thinking?: {
 		type: "enabled" | "disabled";
@@ -200,6 +202,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
+		speed: typeof req.speed === "string" ? req.speed : undefined,
+		serviceTier: resolveRequestedServiceTier(req),
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 	};
 }
@@ -286,5 +290,11 @@ function normalizeAnthropicToolChoice(choice: any): IRChatRequest["toolChoice"] 
 	}
 
 	return undefined;
+}
+
+function resolveRequestedServiceTier(req: AnthropicMessagesRequest): string | undefined {
+	const speed = typeof req.speed === "string" ? req.speed.toLowerCase() : undefined;
+	if (speed === "fast") return "priority";
+	return typeof req.service_tier === "string" ? req.service_tier : undefined;
 }
 

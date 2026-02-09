@@ -25,6 +25,7 @@ type OcrRequest struct {
 	Image string `json:"image"`
 	Language *string `json:"language,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Debug *DebugOptions `json:"debug,omitempty"`
 	Provider *ProviderRoutingOptions `json:"provider,omitempty"`
 }
 
@@ -161,6 +162,38 @@ func (o *OcrRequest) SetEchoUpstreamRequest(v bool) {
 	o.EchoUpstreamRequest = &v
 }
 
+// GetDebug returns the Debug field value if set, zero value otherwise.
+func (o *OcrRequest) GetDebug() DebugOptions {
+	if o == nil || IsNil(o.Debug) {
+		var ret DebugOptions
+		return ret
+	}
+	return *o.Debug
+}
+
+// GetDebugOk returns a tuple with the Debug field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *OcrRequest) GetDebugOk() (*DebugOptions, bool) {
+	if o == nil || IsNil(o.Debug) {
+		return nil, false
+	}
+	return o.Debug, true
+}
+
+// HasDebug returns a boolean if a field has been set.
+func (o *OcrRequest) HasDebug() bool {
+	if o != nil && !IsNil(o.Debug) {
+		return true
+	}
+
+	return false
+}
+
+// SetDebug gets a reference to the given DebugOptions and assigns it to the Debug field.
+func (o *OcrRequest) SetDebug(v DebugOptions) {
+	o.Debug = &v
+}
+
 // GetProvider returns the Provider field value if set, zero value otherwise.
 func (o *OcrRequest) GetProvider() ProviderRoutingOptions {
 	if o == nil || IsNil(o.Provider) {
@@ -210,6 +243,9 @@ func (o OcrRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.EchoUpstreamRequest) {
 		toSerialize["echo_upstream_request"] = o.EchoUpstreamRequest
+	}
+	if !IsNil(o.Debug) {
+		toSerialize["debug"] = o.Debug
 	}
 	if !IsNil(o.Provider) {
 		toSerialize["provider"] = o.Provider

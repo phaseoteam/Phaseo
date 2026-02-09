@@ -1,4 +1,4 @@
-import React from "react";
+import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
 import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
@@ -10,25 +10,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import PresetForm from "@/components/(gateway)/settings/presets/PresetForm";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata = {
 	title: "Create Preset - Settings",
 };
 
-export default async function NewPresetPage() {
-	const supabase = await createClient();
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	const initialTeamId = await getTeamIdFromCookie();
-
-	const [models, providers] = await Promise.all([
-		getAllModelsCached(await resolveIncludeHidden()),
-		getAllAPIProvidersCached(),
-	]);
-
+export default function NewPresetPage() {
 	return (
 		<div className="space-y-6">
 			<Link
@@ -46,8 +34,8 @@ export default async function NewPresetPage() {
 				</AlertTitle>
 				<AlertDescription className="text-blue-700 dark:text-blue-400">
 					Presets are named configurations starting with @ that you can reference
-					in your API calls. Save your preferred model, system prompt, and parameters
-					to create reusable request templates.
+					in your API calls. Save your preferred model, system prompt, and
+					parameters to create reusable request templates.
 				</AlertDescription>
 			</Alert>
 
@@ -63,12 +51,33 @@ export default async function NewPresetPage() {
 				</div>
 			</div>
 
-			<PresetForm
-				models={models}
-				providers={providers}
-				currentUserId={user?.id}
-				currentTeamId={initialTeamId}
-			/>
+			<Suspense fallback={<SettingsSectionFallback />}>
+				<NewPresetContent />
+			</Suspense>
 		</div>
+	);
+}
+
+async function NewPresetContent() {
+	const supabase = await createClient();
+
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+
+	const initialTeamId = await getTeamIdFromCookie();
+
+	const [models, providers] = await Promise.all([
+		getAllModelsCached(await resolveIncludeHidden()),
+		getAllAPIProvidersCached(),
+	]);
+
+	return (
+		<PresetForm
+			models={models}
+			providers={providers}
+			currentUserId={user?.id}
+			currentTeamId={initialTeamId}
+		/>
 	);
 }

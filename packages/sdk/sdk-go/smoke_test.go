@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	gen "github.com/AI-Stats/ai-stats-go-sdk"
+	gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
 type operation struct {
@@ -28,7 +28,7 @@ type manifest struct {
 
 func loadManifest(t *testing.T) manifest {
 	t.Helper()
-	path := filepath.Clean(filepath.Join("..", "..", "smoke-manifest.json"))
+	path := filepath.Clean(filepath.Join("..", "smoke-manifest.json"))
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read manifest: %v", err)
@@ -79,11 +79,12 @@ func TestSmokeSuite(t *testing.T) {
 		t.Fatalf("health status missing")
 	}
 
-	models, _, err := client.GetModels(ctx, nil)
+	models, err := client.GetModels(ctx, nil)
 	if err != nil {
 		t.Fatalf("models failed: %v", err)
 	}
-	if len(models.Models) == 0 {
+	modelList, ok := models["models"].([]interface{})
+	if !ok || len(modelList) == 0 {
 		t.Fatalf("models list empty")
 	}
 
@@ -92,11 +93,12 @@ func TestSmokeSuite(t *testing.T) {
 	if err := json.Unmarshal(chatOp.Body, &chatReq); err != nil {
 		t.Fatalf("parse chat body: %v", err)
 	}
-	chatResp, _, err := client.GenerateText(ctx, chatReq)
+	chatResp, err := client.GenerateText(ctx, chatReq)
 	if err != nil {
 		t.Fatalf("chat failed: %v", err)
 	}
-	if len(chatResp.Choices) == 0 {
+	choices, ok := chatResp["choices"].([]interface{})
+	if !ok || len(choices) == 0 {
 		t.Fatalf("chat choices empty")
 	}
 

@@ -276,7 +276,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta },
-		() => getBindings().X_AI_API_KEY,
+		() => (getBindings() as any).X_AI_API_KEY || (getBindings() as any).XAI_API_KEY,
 	);
 
 	const modelForRoutingRaw = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
