@@ -14,6 +14,7 @@ import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 
 const ANTHROPIC_FAST_MODE_BETA = "fast-mode-2026-02-01";
 
@@ -144,42 +145,187 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 }
 
 async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: number): Promise<{ message: any; firstFrameMs: number | null; totalMs: number | null }> {
-        if (!res.body) throw new Error("anthropic_stream_missing_body");
-        const reader = res.body.getReader();
-        const dec = new TextDecoder();
-        let buf = "";
-        let final: any = null;
-        let firstFrameMs: number | null = null;
+	if (!res.body) throw new Error("anthropic_stream_missing_body");
+	const reader = res.body.getReader();
+	const dec = new TextDecoder();
+	let buf = "";
+	let firstFrameMs: number | null = null;
+	let finished = false;
 
-        while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                if (firstFrameMs === null) {
-                        // Measure latency from upstream request start to first frame
-                        firstFrameMs = Date.now() - upstreamStartMs;
-                }
-                buf += dec.decode(value, { stream: true });
-                const frames = buf.split(/\n\n/);
-                buf = frames.pop() ?? "";
-                for (const raw of frames) {
-                        const lines = raw.split("\n");
-                        let data = "";
-                        for (const line of lines) {
-                                const l = line.replace(/\r$/, "");
-                                if (l.startsWith("data:")) data += l.slice(5).trimStart();
-                        }
-                        if (!data || data === "[DONE]") continue;
-                        let payload: any;
-                        try { payload = JSON.parse(data); } catch { continue; }
-                        if (payload?.type === "message_stop" || payload?.type === "message") {
-                                final = payload?.message ?? payload;
-                        }
-                }
-        }
+	type AnthropicBlock = {
+		type: string;
+		text?: string;
+		id?: string;
+		name?: string;
+		input?: any;
+		_partialInputJson?: string;
+		[key: string]: any;
+	};
 
-        if (!final) throw new Error("anthropic_stream_missing_completion");
-        const totalMs = Math.max(0, Date.now() - upstreamStartMs);
-        return { message: final, firstFrameMs, totalMs };
+	const message: any = {
+		content: [],
+		usage: {},
+	};
+
+	const getBlock = (index: number): AnthropicBlock => {
+		if (!message.content[index]) {
+			message.content[index] = { type: "text", text: "" };
+		}
+		return message.content[index];
+	};
+
+	const applyUsage = (usage: any) => {
+		if (!usage || typeof usage !== "object") return;
+		message.usage = {
+			...(message.usage ?? {}),
+			...usage,
+		};
+	};
+
+	const parsePartialJson = (value: string): any => {
+		try {
+			return JSON.parse(value);
+		} catch {
+			return undefined;
+		}
+	};
+
+	while (true) {
+		const { value, done } = await reader.read();
+		if (done) break;
+		if (firstFrameMs === null) {
+			firstFrameMs = Date.now() - upstreamStartMs;
+		}
+		buf += dec.decode(value, { stream: true });
+		const frames = buf.split(/\n\n/);
+		buf = frames.pop() ?? "";
+
+		for (const raw of frames) {
+			const lines = raw.split("\n");
+			let data = "";
+			for (const line of lines) {
+				const l = line.replace(/\r$/, "");
+				if (l.startsWith("data:")) data += l.slice(5).trimStart();
+			}
+			if (!data || data === "[DONE]") continue;
+
+			let payload: any;
+			try {
+				payload = JSON.parse(data);
+			} catch {
+				continue;
+			}
+
+			const type = payload?.type;
+			if (!type) continue;
+
+			if (type === "message_start") {
+				const started = payload?.message ?? {};
+				message.id = started.id ?? message.id;
+				message.type = started.type ?? "message";
+				message.role = started.role ?? "assistant";
+				message.model = started.model ?? message.model;
+				message.stop_reason = started.stop_reason ?? message.stop_reason;
+				message.stop_sequence = started.stop_sequence ?? message.stop_sequence;
+				message.content = Array.isArray(started.content) ? [...started.content] : [];
+				applyUsage(started.usage);
+				continue;
+			}
+
+			if (type === "content_block_start") {
+				const index = Number(payload?.index ?? 0);
+				const block = payload?.content_block ?? {};
+				message.content[index] = {
+					...block,
+					...(block?.type === "tool_use" ? { _partialInputJson: "" } : {}),
+				};
+				continue;
+			}
+
+			if (type === "content_block_delta") {
+				const index = Number(payload?.index ?? 0);
+				const delta = payload?.delta ?? {};
+				const block = getBlock(index);
+
+				if (delta?.type === "text_delta" && typeof delta?.text === "string") {
+					block.type = block.type ?? "text";
+					block.text = `${block.text ?? ""}${delta.text}`;
+				} else if (delta?.type === "input_json_delta" && typeof delta?.partial_json === "string") {
+					block.type = "tool_use";
+					block._partialInputJson = `${block._partialInputJson ?? ""}${delta.partial_json}`;
+				} else if (delta?.type === "thinking_delta" && typeof delta?.thinking === "string") {
+					// Keep reasoning-like deltas as text in-place for non-stream buffered responses.
+					block.type = block.type ?? "text";
+					block.text = `${block.text ?? ""}${delta.thinking}`;
+				}
+				continue;
+			}
+
+			if (type === "content_block_stop") {
+				const index = Number(payload?.index ?? 0);
+				const block = getBlock(index);
+				if (block?.type === "tool_use" && typeof block._partialInputJson === "string") {
+					const parsed = parsePartialJson(block._partialInputJson);
+					if (parsed !== undefined) {
+						block.input = parsed;
+					} else if (block.input == null) {
+						block.input = {};
+					}
+				}
+				continue;
+			}
+
+			if (type === "message_delta") {
+				const delta = payload?.delta ?? {};
+				if (typeof delta?.stop_reason === "string" || delta?.stop_reason === null) {
+					message.stop_reason = delta.stop_reason;
+				}
+				if (typeof delta?.stop_sequence === "string" || delta?.stop_sequence === null) {
+					message.stop_sequence = delta.stop_sequence;
+				}
+				applyUsage(payload?.usage);
+				continue;
+			}
+
+			if (type === "message_stop") {
+				const stopped = payload?.message;
+				if (stopped && typeof stopped === "object") {
+					Object.assign(message, stopped);
+					if (Array.isArray(stopped.content)) {
+						message.content = [...stopped.content];
+					}
+					applyUsage(stopped.usage);
+				}
+				finished = true;
+				continue;
+			}
+
+			if (type === "message") {
+				// Some variants emit a full message object directly.
+				const whole = payload?.message ?? payload;
+				Object.assign(message, whole);
+				if (!Array.isArray(message.content)) message.content = [];
+				applyUsage(whole?.usage);
+			}
+		}
+	}
+
+	if (!finished && !message.id && (!Array.isArray(message.content) || message.content.length === 0)) {
+		throw new Error("anthropic_stream_missing_completion");
+	}
+
+	for (const block of message.content ?? []) {
+		if (block?.type === "tool_use" && block?._partialInputJson && block?.input == null) {
+			const parsed = parsePartialJson(block._partialInputJson);
+			block.input = parsed ?? {};
+		}
+		if (block && typeof block === "object" && "_partialInputJson" in block) {
+			delete block._partialInputJson;
+		}
+	}
+
+	const totalMs = Math.max(0, Date.now() - upstreamStartMs);
+	return { message, firstFrameMs, totalMs };
 }
 
 /**
@@ -270,16 +416,31 @@ export function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens
 	if (ir.stop) request.stop_sequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
 	if (ir.metadata) request.metadata = ir.metadata;
 	if (ir.reasoning) {
-		const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number"
-			? ir.reasoning.maxTokens
-			: maxTokens;
-		if (ir.reasoning.enabled === false) {
+		const isReasoningDisabled = ir.reasoning.enabled === false || ir.reasoning.effort === "none";
+		const hasThinkingControl =
+			isReasoningDisabled ||
+			ir.reasoning.enabled === true ||
+			typeof ir.reasoning.maxTokens === "number";
+
+		if (isReasoningDisabled) {
 			request.thinking = { type: "disabled" };
-		} else if (reasoningMaxTokens > 0) {
-			// Mirror max_tokens into Anthropic thinking budget when reasoning is enabled.
-			request.thinking = { type: "enabled", budget_tokens: reasoningMaxTokens };
-		} else if (ir.reasoning.enabled === true) {
-			request.thinking = { type: "enabled" };
+		} else if (hasThinkingControl) {
+			const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number"
+				? ir.reasoning.maxTokens
+				: undefined;
+			if (typeof reasoningMaxTokens === "number" && reasoningMaxTokens > 0) {
+				request.thinking = { type: "enabled", budget_tokens: reasoningMaxTokens };
+			} else if (ir.reasoning.enabled === true) {
+				request.thinking = { type: "enabled" };
+			}
+		}
+
+		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning.effort);
+		if (!isReasoningDisabled && anthropicEffort) {
+			request.output_config = {
+				...(request.output_config ?? {}),
+				effort: anthropicEffort,
+			};
 		}
 	}
 

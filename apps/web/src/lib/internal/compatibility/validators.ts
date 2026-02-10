@@ -19,23 +19,38 @@ type ValidatorMap = Record<CompatibilityTarget, ValidateFunction>;
 let cachedValidators: ValidatorMap | null = null;
 
 const OPENAI_SPEC_PATH = "apps/api/openapi.openai.yml";
-const ANTHROPIC_SPEC_PATH = "apps/api/openapi.anthropic.json";
 
-async function readFromRepo(relPath: string): Promise<string> {
-	const candidates = [
-		path.resolve(process.cwd(), relPath),
-		path.resolve(process.cwd(), "..", relPath),
-		path.resolve(process.cwd(), "../..", relPath),
-	];
-	let lastError: unknown = null;
+let cachedRepoRoot: string | null = null;
+
+async function resolveRepoRoot(): Promise<string> {
+	if (cachedRepoRoot) {
+		return cachedRepoRoot;
+	}
+	const cwd = process.cwd();
+	const candidates = [cwd, path.resolve(cwd, ".."), path.resolve(cwd, "../..")];
 	for (const candidate of candidates) {
+		const openaiSpec = path.join(candidate, OPENAI_SPEC_PATH);
 		try {
-			return await fs.readFile(candidate, "utf8");
-		} catch (err) {
-			lastError = err;
+			await fs.access(openaiSpec);
+			cachedRepoRoot = candidate;
+			return candidate;
+		} catch {
+			// Try next candidate.
 		}
 	}
-	throw lastError ?? new Error(`Failed to read ${relPath}`);
+	throw new Error("Failed to resolve repository root for compatibility validators");
+}
+
+async function readOpenAiSpecFromRepo(): Promise<string> {
+	const repoRoot = await resolveRepoRoot();
+	const filePath = path.join(repoRoot, "apps", "api", "openapi.openai.yml");
+	return fs.readFile(filePath, "utf8");
+}
+
+async function readAnthropicSpecFromRepo(): Promise<string> {
+	const repoRoot = await resolveRepoRoot();
+	const filePath = path.join(repoRoot, "apps", "api", "openapi.anthropic.json");
+	return fs.readFile(filePath, "utf8");
 }
 
 function encodeJsonPointer(value: string): string {
@@ -82,7 +97,7 @@ function buildAjv(): Ajv {
 }
 
 async function loadOpenAiSpec(): Promise<Record<string, any>> {
-	const raw = await readFromRepo(OPENAI_SPEC_PATH);
+	const raw = await readOpenAiSpecFromRepo();
 	const parsed = yamlLoad(raw);
 	if (!parsed || typeof parsed !== "object") {
 		throw new Error("Failed to parse OpenAI OpenAPI spec");
@@ -91,7 +106,7 @@ async function loadOpenAiSpec(): Promise<Record<string, any>> {
 }
 
 async function loadAnthropicSpec(): Promise<Record<string, any>> {
-	const raw = await readFromRepo(ANTHROPIC_SPEC_PATH);
+	const raw = await readAnthropicSpecFromRepo();
 	const parsed = JSON.parse(raw);
 	if (!parsed || typeof parsed !== "object") {
 		throw new Error("Failed to parse Anthropic OpenAPI spec");

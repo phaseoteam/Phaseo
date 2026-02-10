@@ -14,7 +14,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "response_format",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "seed",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "structured_outputs",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "tool_choice",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "tools",
+            "notes": "inferred_from_provider_defaults"
+          }
+        ]
       }
     ]
   },
@@ -33,7 +58,44 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -52,7 +114,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "response_format",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "seed",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "structured_outputs",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "tool_choice",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "tools",
+            "notes": "inferred_from_provider_defaults"
+          }
+        ]
       }
     ]
   },
@@ -71,7 +158,50 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -90,7 +220,50 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -109,7 +282,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -128,7 +326,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -147,7 +370,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -166,7 +414,50 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -185,7 +476,50 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -204,7 +538,53 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          },
+          {
+            "param_id": "web_search_options"
+          }
+        ]
       }
     ]
   },
@@ -223,7 +603,53 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          },
+          {
+            "param_id": "web_search_options"
+          }
+        ]
       }
     ]
   },
@@ -242,7 +668,53 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          },
+          {
+            "param_id": "web_search_options"
+          }
+        ]
       }
     ]
   },
@@ -261,7 +733,53 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          },
+          {
+            "param_id": "web_search_options"
+          }
+        ]
       }
     ]
   },
@@ -280,7 +798,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -299,7 +842,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -318,7 +886,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -337,7 +924,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -356,7 +968,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -375,7 +1012,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -394,7 +1056,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -413,7 +1100,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -432,7 +1138,50 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          }
+        ]
       }
     ]
   },
@@ -451,7 +1200,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -470,7 +1244,20 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          }
+        ]
       }
     ]
   },
@@ -489,7 +1276,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -508,7 +1320,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -527,7 +1364,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -546,7 +1408,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -565,7 +1452,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -584,7 +1490,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          }
+        ]
       }
     ]
   },
@@ -603,7 +1528,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -622,7 +1572,56 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -641,7 +1640,26 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -660,7 +1678,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -679,7 +1722,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -698,7 +1766,56 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "logit_bias"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -710,14 +1827,19 @@
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": "text",
+    "output_modalities": "moderation",
     "effective_from": "2024-09-26T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "text.generate",
+        "capability_id": "text.moderate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "input",
+            "notes": "OpenAI Moderations API input payload (text or image)"
+          }
+        ]
       }
     ]
   },
@@ -1272,7 +2394,24 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "notes": "inferred_from_family:o1"
+          },
+          {
+            "param_id": "response_format",
+            "notes": "inferred_from_family:o1"
+          },
+          {
+            "param_id": "seed",
+            "notes": "inferred_from_family:o1"
+          },
+          {
+            "param_id": "structured_outputs",
+            "notes": "inferred_from_family:o1"
+          }
+        ]
       }
     ]
   }

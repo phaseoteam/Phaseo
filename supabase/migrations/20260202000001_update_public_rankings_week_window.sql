@@ -130,7 +130,6 @@ BEGIN
   ORDER BY rc.rk;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_market_share
 -- =========================
@@ -212,7 +211,6 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_trending_models
 -- =========================

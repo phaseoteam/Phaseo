@@ -20,13 +20,10 @@ set ref_id = cl.ref_id || '#dup-' || left(cl.id::text, 8)
 from ranked r
 where cl.id = r.id
   and r.rn > 1;
-
 create unique index if not exists credit_ledger_ref_type_ref_id_key
     on public.credit_ledger (ref_type, ref_id);
-
 create index if not exists wallets_stripe_customer_id_idx
     on public.wallets (stripe_customer_id);
-
 create or replace function public.wallet_apply_delta(
     p_team_id uuid,
     p_delta_nanos bigint
@@ -54,6 +51,5 @@ begin
     return query select v_before, v_after;
 end;
 $$;
-
 revoke all on function public.wallet_apply_delta(uuid, bigint) from public;
 grant execute on function public.wallet_apply_delta(uuid, bigint) to service_role;

@@ -48,7 +48,6 @@ export default function RedirectUriManager({
 			return;
 		}
 
-		// TODO: Call server action to update OAuth client
 		setRedirectUris([...redirectUris, trimmedUri]);
 		setNewUri("");
 		setError(null);
@@ -57,7 +56,6 @@ export default function RedirectUriManager({
 	};
 
 	const removeUri = (uri: string) => {
-		// TODO: Call server action to update OAuth client
 		setRedirectUris(redirectUris.filter((u) => u !== uri));
 
 		toast.success("Redirect URI removed successfully");

@@ -1,4 +1,8 @@
-import type { EmbeddingModelV3 } from '@ai-sdk/provider';
+import type {
+  EmbeddingModelV3,
+  EmbeddingModelV3CallOptions,
+  EmbeddingModelV3Result,
+} from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
@@ -28,20 +32,22 @@ export class AIStatsEmbeddingModel implements EmbeddingModelV3 {
   /**
    * Generate embeddings for the provided values
    */
-  async doEmbed(options: {
-    values: Array<string>;
-    abortSignal?: AbortSignal;
-    headers?: Record<string, string | undefined>;
-  }) {
-    const { values, abortSignal, headers } = options;
+  async doEmbed(options: EmbeddingModelV3CallOptions): Promise<EmbeddingModelV3Result> {
+    const { values, abortSignal, headers, providerOptions } = options;
 
     // Build request payload
-    const payload = {
+    const payload: Record<string, unknown> = {
       model: this.modelId,
       input: values,
       encoding_format: 'float', // Request full precision
       ...(this.settings.user && { user: this.settings.user }),
     };
+
+    if (providerOptions) {
+      for (const providerConfig of Object.values(providerOptions)) {
+        Object.assign(payload, providerConfig);
+      }
+    }
 
     // Make the API request
     const url = `${this.config.baseURL}/embeddings`;
@@ -83,9 +89,10 @@ export class AIStatsEmbeddingModel implements EmbeddingModelV3 {
     return {
       embeddings,
       usage,
-      rawResponse: {
+      response: {
         headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
       },
+      warnings: [],
     };
   }
 }

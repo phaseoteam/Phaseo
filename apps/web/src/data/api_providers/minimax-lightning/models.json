@@ -10,6 +10,37 @@
     "output_modalities": "text",
     "effective_from": "2025-12-23T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
+      }
+    ]
   }
 ]

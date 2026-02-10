@@ -13,6 +13,7 @@ import type {
 	IRToolResult,
 	IRTool,
 } from "@core/ir";
+import { mapAnthropicEffortToIr } from "@core/reasoningEffort";
 
 /**
  * Anthropic Messages request type
@@ -34,8 +35,15 @@ export type AnthropicMessagesRequest = {
 	speed?: string;
 	stop_sequences?: string[];
 	thinking?: {
-		type: "enabled" | "disabled";
+		type: "enabled" | "disabled" | "adaptive";
 		budget_tokens?: number;
+		effort?: "low" | "medium" | "high" | "max" | "xhigh";
+	};
+	output_config?: {
+		effort?: "low" | "medium" | "high" | "max" | "xhigh";
+	};
+	reasoning?: {
+		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 	};
 };
 
@@ -182,7 +190,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		stream: req.stream ?? false,
 
 		// Generation parameters
-		maxTokens: req.max_tokens,
+		maxTokens: req.max_tokens ?? (req as any).max_output_tokens,
 		temperature: req.temperature,
 		topP: req.top_p,
 		topK: req.top_k,
@@ -192,12 +200,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		toolChoice,
 
 		// Reasoning / thinking
-		reasoning: req.thinking
-			? {
-				enabled: req.thinking.type === "enabled",
-				maxTokens: req.thinking.budget_tokens,
-			}
-			: undefined,
+		reasoning: resolveRequestedReasoning(req),
 
 		// Advanced parameters
 		stop: req.stop_sequences,
@@ -205,6 +208,25 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		speed: typeof req.speed === "string" ? req.speed : undefined,
 		serviceTier: resolveRequestedServiceTier(req),
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
+	};
+}
+
+function resolveRequestedReasoning(req: AnthropicMessagesRequest): IRChatRequest["reasoning"] {
+	const outputConfigEffort = req.output_config?.effort;
+	const anthropicReasoningEffort = req.reasoning?.effort;
+	const thinkingEffort = req.thinking?.effort;
+	const effort = mapAnthropicEffortToIr(outputConfigEffort ?? anthropicReasoningEffort ?? thinkingEffort);
+	const enabled = req.thinking ? req.thinking.type === "enabled" : undefined;
+	const maxTokens = req.thinking?.budget_tokens;
+
+	if (effort === undefined && enabled === undefined && maxTokens === undefined) {
+		return undefined;
+	}
+
+	return {
+		effort,
+		enabled,
+		maxTokens,
 	};
 }
 

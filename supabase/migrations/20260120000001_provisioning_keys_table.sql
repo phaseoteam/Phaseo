@@ -19,12 +19,9 @@ create table if not exists public.provisioning_keys (
   constraint provisioning_keys_created_by_fkey foreign key (created_by) references public.users(user_id),
   constraint provisioning_keys_team_id_fkey foreign key (team_id) references public.teams(id)
 );
-
 create index if not exists provisioning_keys_team_id_idx
   on public.provisioning_keys (team_id);
-
 create index if not exists provisioning_keys_hash_idx
   on public.provisioning_keys (hash);
-
 create index if not exists provisioning_keys_prefix_idx
   on public.provisioning_keys (prefix);

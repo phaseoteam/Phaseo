@@ -6,11 +6,8 @@ begin
     create type public.data_api_provider_capability_status as enum ('active', 'deranked', 'disabled');
   end if;
 end $$;
-
 alter table if exists public.data_api_provider_model_capabilities
   add column if not exists status public.data_api_provider_capability_status not null default 'active';
-
 alter table if exists public.data_api_provider_model_capabilities
   alter column params set default '{}'::jsonb;
-
 drop table if exists public.data_api_provider_capabilities_param;

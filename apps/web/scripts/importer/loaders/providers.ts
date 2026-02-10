@@ -14,6 +14,26 @@ const toTextArray = (value?: string[] | string | null): string[] | null => {
     return null;
 };
 
+const compactNullish = (value: unknown): unknown => {
+    if (value === null || value === undefined) return undefined;
+    if (Array.isArray(value)) {
+        const next = value
+            .map((item) => compactNullish(item))
+            .filter((item) => item !== undefined);
+        return next;
+    }
+    if (value && typeof value === "object") {
+        const out: Record<string, unknown> = {};
+        for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+            const compacted = compactNullish(child);
+            if (compacted === undefined) continue;
+            out[key] = compacted;
+        }
+        return out;
+    }
+    return value;
+};
+
 const squashCapabilityParams = (value: unknown): Record<string, unknown> => {
     if (Array.isArray(value)) {
         const out: Record<string, unknown> = {};
@@ -22,27 +42,42 @@ const squashCapabilityParams = (value: unknown): Record<string, unknown> => {
                 const obj = entry as Record<string, unknown>;
                 const paramId = typeof obj.param_id === "string" ? obj.param_id : null;
                 if (!paramId) continue;
-                out[paramId] = {
+                const metadata = compactNullish({
                     provider_min: obj.provider_min ?? null,
                     provider_max: obj.provider_max ?? null,
                     provider_default: obj.provider_default ?? null,
                     notes: obj.notes ?? null,
-                };
+                }) as Record<string, unknown> | undefined;
+                out[paramId] = metadata ?? {};
             } else if (typeof entry === "string" && entry.trim()) {
-                out[entry.trim()] = {
-                    provider_min: null,
-                    provider_max: null,
-                    provider_default: null,
-                    notes: null,
-                };
+                out[entry.trim()] = {};
             }
         }
         return out;
     }
     if (value && typeof value === "object") {
-        return value as Record<string, unknown>;
+        return (compactNullish(value) as Record<string, unknown>) ?? {};
     }
     return {};
+};
+
+const loadExistingModelIds = async (supa: ReturnType<typeof client>): Promise<Set<string>> => {
+    const modelIds = new Set<string>();
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+        const res = await supa
+            .from("data_models")
+            .select("model_id")
+            .range(offset, offset + pageSize - 1);
+        const rows = assertOk(res, "select data_models (model_id)") as Array<{ model_id?: string | null }>;
+        for (const row of rows) {
+            if (typeof row?.model_id === "string" && row.model_id) {
+                modelIds.add(row.model_id);
+            }
+        }
+        if (rows.length < pageSize) break;
+    }
+    return modelIds;
 };
 
 export async function loadProviders(
@@ -53,6 +88,14 @@ export async function loadProviders(
     const modelFilter = opts?.modelId ?? null;
     const dirs = await listDirs(DIR_PROVIDERS);
     const supa = client();
+    const knownModelIds = await loadExistingModelIds(supa);
+    const invalidInternalModelRefs: Array<{
+        provider_id: string;
+        source_file: string;
+        provider_api_model_id: string;
+        api_model_id: string;
+        internal_model_id: string;
+    }> = [];
     const providerIds = new Set<string>();
     const providerModelIds = new Set<string>();
     const capabilityKeys = new Set<string>();
@@ -119,7 +162,20 @@ export async function loadProviders(
 
             for (const model of models ?? []) {
                 if (!model?.provider_api_model_id || !model?.api_model_id) continue;
-                if (modelFilter && model.internal_model_id !== modelFilter) continue;
+                const requestedInternalModelId =
+                    typeof model.internal_model_id === "string" && model.internal_model_id.trim()
+                        ? model.internal_model_id.trim()
+                        : null;
+                if (modelFilter && requestedInternalModelId !== modelFilter) continue;
+                if (requestedInternalModelId && !knownModelIds.has(requestedInternalModelId)) {
+                    invalidInternalModelRefs.push({
+                        provider_id: j.api_provider_id,
+                        source_file: modelsPath,
+                        provider_api_model_id: model.provider_api_model_id,
+                        api_model_id: model.api_model_id,
+                        internal_model_id: requestedInternalModelId,
+                    });
+                }
                 const provider_api_model_id = model.provider_api_model_id;
                 providerModelIds.add(provider_api_model_id);
                 providerModelsToUpsert.push({
@@ -127,7 +183,7 @@ export async function loadProviders(
                     provider_id: j.api_provider_id,
                     api_model_id: model.api_model_id,
                     provider_model_slug: model.provider_model_slug ?? null,
-                    internal_model_id: model.internal_model_id ?? null,
+                    internal_model_id: requestedInternalModelId,
                     is_active_gateway: !!model.is_active_gateway,
                     input_modalities: toTextArray(model.input_modalities),
                     output_modalities: toTextArray(model.output_modalities),
@@ -154,6 +210,26 @@ export async function loadProviders(
         } catch {
             // ignore missing models.json
         }
+    }
+
+    if (invalidInternalModelRefs.length > 0) {
+        const details = invalidInternalModelRefs
+            .slice(0, 50)
+            .map(
+                (row) =>
+                    `- provider=${row.provider_id} provider_api_model_id=${row.provider_api_model_id} ` +
+                    `api_model_id=${row.api_model_id} internal_model_id=${row.internal_model_id} ` +
+                    `source=${row.source_file}`
+            )
+            .join("\n");
+        const suffix =
+            invalidInternalModelRefs.length > 50
+                ? `\n...and ${invalidInternalModelRefs.length - 50} more invalid rows.`
+                : "";
+        throw new Error(
+            `Invalid provider model mappings: ${invalidInternalModelRefs.length} row(s) reference ` +
+            `internal_model_id values that do not exist in public.data_models.\n${details}${suffix}`
+        );
     }
 
     const deletions = tracker.getDeleted(DIR_PROVIDERS);

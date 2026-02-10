@@ -2,9 +2,7 @@
 
 alter table if exists public.data_api_providers
   add column if not exists colour text;
-
 drop function if exists public.get_public_usage_timeseries(text, text, integer);
-
 create or replace function public.get_public_usage_timeseries(
   p_time_range text default 'week',
   p_bucket_size text default 'hour',
@@ -115,7 +113,6 @@ begin
   order by bd.time_bucket, bd.tok_count desc;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_market_share_timeseries(
   p_dimension text default 'organization',
   p_time_range text default 'year',

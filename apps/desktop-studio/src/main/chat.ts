@@ -1,10 +1,15 @@
-import type { ChatMessage } from "@shared/types";
-import type { AppSettings } from "@shared/types";
+import type { ChatMessage, ProviderProfile } from "@shared/types";
 
 interface ProviderResponse {
   model: string;
   content: string;
 }
+
+const DESKTOP_IDENTITY_HEADERS: Record<string, string> = {
+  "x-title": "AI Stats Desktop",
+  "http-referer": "https://ai-stats.phaseo.app/desktop",
+  "x-ai-stats-client": "desktop-studio"
+};
 
 function extractOpenAiText(payload: any): string {
   const firstChoice = payload?.choices?.[0];
@@ -41,26 +46,27 @@ function toOpenAiMessages(messages: ChatMessage[]): Array<{ role: string; conten
 }
 
 async function generateFromOpenAiCompatible(
-  settings: AppSettings,
+  provider: ProviderProfile,
+  model: string,
   messages: ChatMessage[]
 ): Promise<ProviderResponse> {
-  if (!settings.openAiApiKey.trim()) {
-    return {
-      model: settings.openAiModel,
-      content:
-        "No API key configured. Add an API key in Settings and set provider to openai-compatible to use hosted models."
-    };
+  const baseUrl = (provider.baseUrl || "https://api.openai.com/v1").replace(/\/+$/, "");
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...DESKTOP_IDENTITY_HEADERS
+  };
+
+  if (provider.apiKey.trim()) {
+    const key = provider.apiKey.trim();
+    headers.Authorization = `Bearer ${key}`;
   }
 
-  const baseUrl = settings.openAiBaseUrl.replace(/\/+$/, "");
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${settings.openAiApiKey}`
-    },
+    headers,
     body: JSON.stringify({
-      model: settings.openAiModel,
+      model,
       messages: toOpenAiMessages(messages),
       stream: false
     })
@@ -74,19 +80,19 @@ async function generateFromOpenAiCompatible(
   const payload = await response.json();
   const content = extractOpenAiText(payload);
   return {
-    model: payload?.model ?? settings.openAiModel,
+    model: payload?.model ?? model,
     content: content || "The provider returned an empty response."
   };
 }
 
-function generateMockResponse(messages: ChatMessage[]): ProviderResponse {
+function generateMockResponse(provider: ProviderProfile, model: string, messages: ChatMessage[]): ProviderResponse {
   const prompt = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
   return {
-    model: "mock-local-model",
+    model,
     content: [
-      "Mock assistant response (local mode).",
+      `Mock assistant response from ${provider.name}.`,
       "",
-      "To connect a real model, switch provider to openai-compatible and configure base URL, key, and model.",
+      "To connect a real model, use an OpenAI-compatible provider profile.",
       "",
       `Your latest prompt was:\n${prompt.slice(0, 800)}`
     ].join("\n")
@@ -94,12 +100,13 @@ function generateMockResponse(messages: ChatMessage[]): ProviderResponse {
 }
 
 export async function generateAssistantReply(
-  settings: AppSettings,
+  provider: ProviderProfile,
+  model: string,
   messages: ChatMessage[]
 ): Promise<ProviderResponse> {
-  if (settings.provider === "openai-compatible") {
-    return generateFromOpenAiCompatible(settings, messages);
+  if (provider.kind === "openai-compatible") {
+    return generateFromOpenAiCompatible(provider, model, messages);
   }
 
-  return generateMockResponse(messages);
+  return generateMockResponse(provider, model, messages);
 }

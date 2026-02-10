@@ -7,20 +7,20 @@
     {
       "frequency": "monthly",
       "usd_price": 0.0,
-      "link": null,
+      "link": "https://claude.com/pricing",
       "other_info": null
     },
     {
       "frequency": "yearly",
       "usd_price": 0.0,
-      "link": null,
+      "link": "https://claude.com/pricing",
       "other_info": null
     }
   ],
   "features": [],
   "models": [
     {
-      "model_id": "anthropic/claude-sonnet-4-2025-05-21",
+      "model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
       "model_info": null,
       "rate_limit": null,
       "other_info": null

@@ -1,357 +1,246 @@
-import React from "react";
-import { AlertTriangle, ArrowRight, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
-import { getDeprecationWarningsForTeam } from "@/lib/fetchers/usage/deprecationWarnings";
+import {
+	type DeprecationWarning,
+	getDeprecationWarningsForTeam,
+} from "@/lib/fetchers/usage/deprecationWarnings";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
 
-type Warning = {
-	modelId: string;
-	daysUntil: number;
-	deprecationDate?: string;
-	retirementDate?: string;
-	successorModelId?: string;
+type ModelLifecycle = DeprecationWarning & {
+	nearestDays: number;
 };
 
-function fmtDate(d?: string) {
-	if (!d) return "—";
-	return new Date(d).toLocaleDateString(undefined, {
-		year: "numeric",
+function formatDate(value: string) {
+	return new Date(value).toLocaleDateString(undefined, {
 		month: "short",
 		day: "numeric",
+		year: "numeric",
 	});
 }
 
-function getSeverity(days: number) {
-	if (days <= 7)
-		return {
-			key: "critical" as const,
-			label: "Critical",
-			dot: "bg-red-500",
-			text: "text-red-700",
-		};
-	if (days <= 30)
-		return {
-			key: "high" as const,
-			label: "High",
-			dot: "bg-amber-500",
-			text: "text-amber-700",
-		};
-	if (days <= 90)
-		return {
-			key: "medium" as const,
-			label: "Medium",
-			dot: "bg-blue-500",
-			text: "text-blue-700",
-		};
-	return {
-		key: "low" as const,
-		label: "Low",
-		dot: "bg-slate-400",
-		text: "text-slate-700",
-	};
+function formatDays(days: number) {
+	if (days < 0) return `${Math.abs(days)}d overdue`;
+	if (days === 0) return "today";
+	return `${days}d`;
 }
 
-function daysUntilFrom(date?: string) {
-	if (!date) return Infinity;
-	const then = new Date(date).getTime();
-	const now = Date.now();
-	return Math.max(0, Math.ceil((then - now) / (1000 * 60 * 60 * 24)));
+function getUrgencyClasses(days: number) {
+	if (days < 0) {
+		return "border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300";
+	}
+	if (days <= 7) {
+		return "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300";
+	}
+	if (days <= 30) {
+		return "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300";
+	}
+	return "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300";
 }
 
-type ItemWithMeta = Warning & { displayDays: number };
-
-function countBySeverity(items: ItemWithMeta[]) {
-	const acc = { critical: 0, high: 0, medium: 0, low: 0 };
-	for (const it of items) acc[getSeverity(it.displayDays).key]++;
-	return acc;
+function deriveOrganisationId(
+	modelId: string,
+	organisationId: string | null,
+): string | null {
+	if (organisationId) return organisationId;
+	const [firstSegment] = modelId.split("/");
+	return firstSegment || null;
 }
 
-function SevChip({
+function ModelLink({
+	modelId,
+	modelName,
+	organisationId,
+	className,
+}: {
+	modelId: string;
+	modelName: string | null;
+	organisationId: string | null;
+	className?: string;
+}) {
+	const resolvedOrganisationId = deriveOrganisationId(modelId, organisationId);
+	const href = getModelDetailsHref(resolvedOrganisationId, modelId);
+	const label = modelName?.trim() || modelId;
+
+	if (!href) return <span className={className}>{label}</span>;
+
+	return (
+		<Link href={href} className={cn("hover:underline", className)}>
+			{label}
+		</Link>
+	);
+}
+
+function EventChip({
 	label,
-	count,
-	dotClass,
-}: {
-	label: string;
-	count: number;
-	dotClass: string;
-}) {
-	if (!count) return null;
-	return (
-		<span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-5">
-			<span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
-			<span className="opacity-80">{label}</span>
-			<span className="font-mono tabular-nums opacity-70">{count}</span>
-		</span>
-	);
-}
-
-function MiniItem({
-	id,
 	days,
-	succ,
+	date,
 }: {
-	id: string;
+	label: "Dep" | "Ret";
 	days: number;
-	succ?: string;
+	date: string;
 }) {
 	return (
-		<span className="inline-flex items-center gap-2 rounded-md border bg-card px-2 py-1 text-[11px] leading-5 whitespace-nowrap">
-			<span className="max-w-[170px] truncate font-medium">{id}</span>
-			{succ && (
-				<>
-					<ArrowRight className="h-3 w-3 opacity-60 shrink-0" />
-					<span className="max-w-[140px] truncate">{succ}</span>
-				</>
+		<Badge
+			variant="outline"
+			className={cn(
+				"h-5 gap-1 px-1.5 text-[11px] font-mono tabular-nums",
+				getUrgencyClasses(days),
 			)}
-			<span className="ml-1 rounded border px-1 py-0.5 font-mono tabular-nums">
-				{days}d
-			</span>
-		</span>
+		>
+			<span className="font-semibold">{label}</span>
+			<span>{formatDays(days)}</span>
+			<span className="opacity-70">{formatDate(date)}</span>
+		</Badge>
 	);
 }
 
-function DetailsTable({
-	items,
-	dateKey,
-}: {
-	items: ItemWithMeta[];
-	dateKey: "deprecationDate" | "retirementDate";
-}) {
+function LifecycleRow({ row }: { row: ModelLifecycle }) {
+	const hasReadableName =
+		Boolean(row.modelName?.trim()) && row.modelName?.trim() !== row.modelId;
+
 	return (
-		<div className="mt-2 overflow-x-auto rounded-lg border">
-			<table className="w-full text-[12px]">
-				<thead className="text-muted-foreground">
-					<tr className="border-b">
-						<th className="px-2 py-1 text-left font-medium">
-							Model
-						</th>
-						<th className="px-2 py-1 text-left font-medium">
-							Date
-						</th>
-						<th className="px-2 py-1 text-left font-medium">In</th>
-						<th className="px-2 py-1 text-left font-medium">
-							Successor
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((w) => {
-						const tone = getSeverity(w.displayDays);
-						return (
-							<tr
-								key={`${w.modelId}-${w.displayDays}`}
-								className="border-b last:border-0 hover:bg-muted/40"
-							>
-								<td className="px-2 py-1">
-									<div className="flex items-center gap-2 min-w-0">
-										<span
-											className={`h-1.5 w-1.5 rounded-full ${tone.dot}`}
-										/>
-										<span className="truncate">
-											{w.modelId}
-										</span>
-									</div>
-								</td>
-								<td className="px-2 py-1 text-muted-foreground">
-									{fmtDate(w[dateKey])}
-								</td>
-								<td className="px-2 py-1">
-									<Badge
-										variant="outline"
-										className="text-[11px] px-1.5 py-0.5 font-mono tabular-nums"
-									>
-										{w.displayDays}d
-									</Badge>
-								</td>
-								<td className="px-2 py-1">
-									{w.successorModelId ? (
-										<div className="flex items-center gap-1.5 min-w-0">
-											<ArrowRight className="h-3 w-3 opacity-60 shrink-0" />
-											<span className="truncate">
-												{w.successorModelId}
-											</span>
-										</div>
-									) : (
-										"—"
-									)}
-								</td>
-							</tr>
-						);
-					})}
-				</tbody>
-			</table>
+		<div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5">
+			<div className="min-w-0 flex-1">
+				<div className="flex min-w-0 items-center gap-2">
+					<span
+						className={cn(
+							"h-1.5 w-1.5 shrink-0 rounded-full",
+							row.nearestDays <= 7 ? "bg-rose-500" : "bg-amber-500",
+						)}
+					/>
+					<ModelLink
+						modelId={row.modelId}
+						modelName={row.modelName}
+						organisationId={row.organisationId}
+						className="truncate text-sm font-medium"
+					/>
+				</div>
+				{hasReadableName ? (
+					<div className="mt-0.5 truncate text-[11px] font-mono text-muted-foreground">
+						{row.modelId}
+					</div>
+				) : null}
+				{row.replacementModelId ? (
+					<div className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+						<ArrowRight className="h-3 w-3 shrink-0" />
+						<span className="shrink-0">Replace with</span>
+						<ModelLink
+							modelId={row.replacementModelId}
+							modelName={null}
+							organisationId={deriveOrganisationId(row.replacementModelId, null)}
+							className="truncate font-medium text-foreground"
+						/>
+					</div>
+				) : null}
+			</div>
+
+			<div className="flex flex-wrap items-center gap-1.5">
+				{row.deprecationDate && row.deprecationDaysUntil !== null ? (
+					<EventChip
+						label="Dep"
+						days={row.deprecationDaysUntil}
+						date={row.deprecationDate}
+					/>
+				) : null}
+				{row.retirementDate && row.retirementDaysUntil !== null ? (
+					<EventChip
+						label="Ret"
+						days={row.retirementDaysUntil}
+						date={row.retirementDate}
+					/>
+				) : null}
+			</div>
 		</div>
 	);
 }
 
-function Banner({
-	title,
-	iconTone = "text-amber-600",
-	items,
-	dateKey,
-}: {
-	title: string;
-	iconTone?: string;
-	items: ItemWithMeta[];
-	dateKey: "deprecationDate" | "retirementDate";
-}) {
-	if (!items.length) return null;
-
-	const priority: Record<string, number> = {
-		critical: 0,
-		high: 1,
-		medium: 2,
-		low: 3,
-	};
-	const sorted = items.slice().sort((a, b) => {
-		const pa = priority[getSeverity(a.displayDays).key];
-		const pb = priority[getSeverity(b.displayDays).key];
-		if (pa !== pb) return pa - pb;
-		return a.displayDays - b.displayDays;
-	});
-
-	const next = sorted[0];
-	const sev = countBySeverity(sorted);
-
-	return (
-		<div className="rounded-xl border bg-muted/40 p-2 sm:p-2">
-			{/* Single condensed row */}
-			<div className="flex flex-wrap items-center gap-2">
-				<div className="flex items-center gap-2 shrink-0">
-					<AlertTriangle className={`h-4 w-4 ${iconTone}`} />
-					<span className="font-medium">{title}</span>
-					<Badge
-						variant="secondary"
-						className="ml-1 h-5 px-1.5 text-[11px] leading-5"
-					>
-						{sorted.length}
-					</Badge>
-				</div>
-
-				<div className="flex items-center gap-1 sm:gap-2 text-[11px] leading-5">
-					<SevChip
-						label="Critical"
-						count={sev.critical}
-						dotClass="bg-red-500"
-					/>
-					<SevChip
-						label="High"
-						count={sev.high}
-						dotClass="bg-amber-500"
-					/>
-					<SevChip
-						label="Medium"
-						count={sev.medium}
-						dotClass="bg-blue-500"
-					/>
-					<SevChip
-						label="Low"
-						count={sev.low}
-						dotClass="bg-slate-400"
-					/>
-				</div>
-
-				{/* Next pill */}
-				<div className="ml-auto">
-					<span className="inline-flex items-center gap-2 rounded-full border bg-card px-2 py-0.5 text-[11px] leading-5">
-						<span className="text-muted-foreground">Next:</span>
-						<span className="max-w-[220px] truncate font-medium">
-							{next.modelId}
-						</span>
-						<Badge
-							variant="outline"
-							className="px-1.5 py-0.5 text-[11px] font-mono tabular-nums"
-						>
-							{next.displayDays}d
-						</Badge>
-						<span className="hidden md:inline text-muted-foreground">
-							{fmtDate(next[dateKey])}
-						</span>
-					</span>
-				</div>
-			</div>
-
-			{/* Quick peek chips */}
-			<div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-				{sorted.slice(0, 6).map((w) => (
-					<MiniItem
-						key={`${title}-${w.modelId}-${w.displayDays}`}
-						id={w.modelId}
-						days={w.displayDays}
-						succ={w.successorModelId}
-					/>
-				))}
-			</div>
-
-			{/* Details → compact table */}
-			<details className="mt-1 group">
-				<summary className="flex items-center gap-1 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-					<ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-					Show details
-				</summary>
-				<DetailsTable items={sorted} dateKey={dateKey} />
-			</details>
-		</div>
-	);
+function toLifecycleRows(warnings: DeprecationWarning[]): ModelLifecycle[] {
+	return warnings
+		.map((warning) => {
+			const candidates = [warning.deprecationDaysUntil, warning.retirementDaysUntil]
+				.filter((value): value is number => Number.isFinite(value));
+			const nearestDays = candidates.length ? Math.min(...candidates) : 9999;
+			return {
+				...warning,
+				nearestDays,
+			};
+		})
+		.sort((a, b) => a.nearestDays - b.nearestDays);
 }
 
 export default async function DeprecationWarnings() {
 	const teamId = await getTeamIdFromCookie();
 	if (!teamId) return null;
 
-	const warnings = (await getDeprecationWarningsForTeam(teamId)) as
-		| Warning[]
-		| undefined;
-	if (!warnings?.length) return null;
+	const warnings = await getDeprecationWarningsForTeam(teamId);
+	if (!warnings.length) return null;
 
-	const sorted = warnings.slice().sort((a, b) => a.daysUntil - b.daysUntil);
-	const priority: Record<string, number> = {
-		critical: 0,
-		high: 1,
-		medium: 2,
-		low: 3,
-	};
-	const flattened = sorted.slice().sort((a, b) => {
-		const pa = priority[getSeverity(a.daysUntil).key];
-		const pb = priority[getSeverity(b.daysUntil).key];
-		if (pa !== pb) return pa - pb;
-		return a.daysUntil - b.daysUntil;
-	});
+	const rows = toLifecycleRows(warnings);
+	const visibleRows = rows.slice(0, 5);
+	const hiddenRows = rows.slice(5);
 
-	const deprecations: ItemWithMeta[] = flattened
-		.map((w) => ({ ...w, displayDays: daysUntilFrom(w.deprecationDate) }))
-		.filter((w) => w.deprecationDate && Number.isFinite(w.displayDays));
-
-	const retirements: ItemWithMeta[] = flattened
-		.map((w) => ({ ...w, displayDays: daysUntilFrom(w.retirementDate) }))
-		.filter((w) => w.retirementDate && Number.isFinite(w.displayDays));
+	const overdueCount = rows.filter((row) => row.nearestDays < 0).length;
+	const next7DaysCount = rows.filter(
+		(row) => row.nearestDays >= 0 && row.nearestDays <= 7,
+	).length;
 
 	return (
-		<div className="mt-4 space-y-3">
+		<div className="mt-4 space-y-2">
 			<div className="flex items-center gap-2">
-				<h3 className="text-base font-semibold">
-					Model Deprecations & Retirements
-				</h3>
+				<h3 className="text-base font-semibold">Lifecycle Alerts</h3>
 				<Separator className="flex-1" />
 			</div>
 
-			{deprecations.length > 0 && (
-				<Banner
-					title="Deprecations"
-					iconTone="text-amber-600"
-					items={deprecations}
-					dateKey="deprecationDate"
-				/>
-			)}
-			{retirements.length > 0 && (
-				<Banner
-					title="Retirements"
-					iconTone="text-red-600"
-					items={retirements}
-					dateKey="retirementDate"
-				/>
-			)}
+			<section className="overflow-hidden rounded-xl border bg-card">
+				<div className="flex flex-wrap items-center gap-1.5 border-b px-3 py-2.5">
+					<div className="mr-1 flex items-center gap-1.5">
+						<AlertTriangle className="h-4 w-4 text-amber-600" />
+						<span className="text-sm font-medium">Recently used models</span>
+					</div>
+					<Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
+						{rows.length}
+					</Badge>
+					{next7DaysCount > 0 ? (
+						<Badge
+							variant="outline"
+							className="h-5 border-rose-300 bg-rose-50 px-1.5 text-[11px] text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300"
+						>
+							{next7DaysCount} in 7d
+						</Badge>
+					) : null}
+					{overdueCount > 0 ? (
+						<Badge
+							variant="outline"
+							className="h-5 border-red-300 bg-red-50 px-1.5 text-[11px] text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
+						>
+							{overdueCount} overdue
+						</Badge>
+					) : null}
+				</div>
+
+				<div className="divide-y">
+					{visibleRows.map((row) => (
+						<LifecycleRow key={row.modelId} row={row} />
+					))}
+				</div>
+
+				{hiddenRows.length > 0 ? (
+					<details className="border-t">
+						<summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
+							Show {hiddenRows.length} more
+						</summary>
+						<div className="divide-y border-t">
+							{hiddenRows.map((row) => (
+								<LifecycleRow key={`${row.modelId}-more`} row={row} />
+							))}
+						</div>
+					</details>
+				) : null}
+			</section>
 		</div>
 	);
 }

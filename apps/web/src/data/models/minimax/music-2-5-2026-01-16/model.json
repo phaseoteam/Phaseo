@@ -3,7 +3,7 @@
   "organisation_id": "minimax",
   "name": "Music 2.5",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "minimax/music-2-0-2025-10-29",
   "announced_date": "2026-01-16T00:00:00",
   "release_date": "2026-01-16T00:00:00",
   "deprecation_date": null,

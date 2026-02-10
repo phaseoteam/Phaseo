@@ -4,11 +4,9 @@
 -- NOTE: This rebuilds the table; run during low traffic.
 
 alter table public.gateway_requests rename to gateway_requests_old;
-
 -- Drop old PK constraint so the new table can reuse the name.
 alter table public.gateway_requests_old
   drop constraint if exists gateway_requests_pkey;
-
 create table public.gateway_requests (
   id uuid not null default gen_random_uuid(),
   created_at timestamp with time zone not null default now(),
@@ -38,7 +36,6 @@ create table public.gateway_requests (
   constraint gateway_requests_key_id_fkey foreign key (key_id) references public.keys (id) on delete set null,
   constraint gateway_requests_team_id_fkey foreign key (team_id) references public.teams (id) on delete cascade
 ) partition by range (created_at);
-
 do $$
 declare
   start_ts timestamptz;
@@ -72,10 +69,8 @@ begin
     cur_ts + interval '1 month'
   );
 end $$;
-
 create table if not exists public.gateway_requests_default
   partition of public.gateway_requests default;
-
 insert into public.gateway_requests (
   id,
   created_at,
@@ -128,14 +123,10 @@ select
   throughput,
   location
 from public.gateway_requests_old;
-
 create index if not exists gateway_requests_created_idx
   on public.gateway_requests (created_at);
-
 create index if not exists gateway_requests_team_created_idx
   on public.gateway_requests (team_id, created_at);
-
 create index if not exists gateway_requests_key_created_idx
   on public.gateway_requests (key_id, created_at);
-
 drop table public.gateway_requests_old;

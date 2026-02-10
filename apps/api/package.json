@@ -12,7 +12,9 @@
 		"simulate:pricing": "tsx scripts/pricing-simulator.tsx --all",
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
 		"test": "bunx vitest run",
-		"test:live": "bunx vitest run tests/integration/openai-gpt5-nano.live.spec.ts"
+		"test:live": "bunx vitest run tests/integration/openai-gpt5-nano.live.spec.ts",
+		"test:live:active": "bunx vitest run tests/integration/active-providers.live.spec.ts",
+		"test:live:nano-banana": "bunx vitest run tests/integration/nano-banana-image.live.spec.ts"
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.56.1",

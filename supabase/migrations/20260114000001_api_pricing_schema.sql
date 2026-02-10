@@ -1,7 +1,7 @@
 -- =========================
--- data_api_provider_models
+-- api_provider_models
 -- =========================
-create table if not exists public.data_api_provider_models (
+create table if not exists public.api_provider_models (
   provider_api_model_id text primary key,
   provider_id           text not null,
   api_model_id          text not null,
@@ -20,19 +20,16 @@ create table if not exists public.data_api_provider_models (
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
 );
-
-create index if not exists data_api_provider_models_lookup_idx
-  on public.data_api_provider_models (api_model_id, provider_id);
-
-create index if not exists data_api_provider_models_active_idx
-  on public.data_api_provider_models (api_model_id)
+create index if not exists api_provider_models_lookup_idx
+  on public.api_provider_models (api_model_id, provider_id);
+create index if not exists api_provider_models_active_idx
+  on public.api_provider_models (api_model_id)
   where is_active_gateway = true;
-
 -- =========================
--- data_api_provider_model_capabilities
+-- api_provider_model_capabilities
 -- =========================
-create table if not exists public.data_api_provider_model_capabilities (
-  provider_api_model_id text not null references public.data_api_provider_models(provider_api_model_id) on delete cascade,
+create table if not exists public.api_provider_model_capabilities (
+  provider_api_model_id text not null references public.api_provider_models(provider_api_model_id) on delete cascade,
   capability_id         text not null,
 
   max_input_tokens      integer null,
@@ -49,21 +46,17 @@ create table if not exists public.data_api_provider_model_capabilities (
 
   primary key (provider_api_model_id, capability_id)
 );
-
-create index if not exists data_api_provider_model_capabilities_cap_idx
-  on public.data_api_provider_model_capabilities (capability_id);
-
-create index if not exists data_api_provider_model_capabilities_effective_idx
-  on public.data_api_provider_model_capabilities (provider_api_model_id, capability_id, effective_from, effective_to);
-
-create index if not exists data_api_provider_model_capabilities_params_gin
-  on public.data_api_provider_model_capabilities
+create index if not exists api_provider_model_capabilities_cap_idx
+  on public.api_provider_model_capabilities (capability_id);
+create index if not exists api_provider_model_capabilities_effective_idx
+  on public.api_provider_model_capabilities (provider_api_model_id, capability_id, effective_from, effective_to);
+create index if not exists api_provider_model_capabilities_params_gin
+  on public.api_provider_model_capabilities
   using gin (params);
-
 -- =========================
--- data_api_model_aliases
+-- api_model_aliases
 -- =========================
-create table if not exists public.data_api_model_aliases (
+create table if not exists public.api_model_aliases (
   alias_slug  text primary key,
   api_model_id text not null,
   channel     text null,
@@ -72,15 +65,13 @@ create table if not exists public.data_api_model_aliases (
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
-
-create index if not exists data_api_model_aliases_target_idx
-  on public.data_api_model_aliases (api_model_id)
+create index if not exists api_model_aliases_target_idx
+  on public.api_model_aliases (api_model_id)
   where is_enabled = true;
-
 -- =========================
--- data_api_pricing_rules
+-- api_pricing_rules
 -- =========================
-create table if not exists public.data_api_pricing_rules (
+create table if not exists public.api_pricing_rules (
   rule_id        bigint generated always as identity primary key,
   key            text null,
 
@@ -106,19 +97,16 @@ create table if not exists public.data_api_pricing_rules (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
-
-create index if not exists data_api_pricing_rules_lookup_idx
-  on public.data_api_pricing_rules (provider_id, api_model_id, capability_id);
-
-create index if not exists data_api_pricing_rules_lookup_meter_idx
-  on public.data_api_pricing_rules (provider_id, api_model_id, capability_id, meter);
-
+create index if not exists api_pricing_rules_lookup_idx
+  on public.api_pricing_rules (provider_id, api_model_id, capability_id);
+create index if not exists api_pricing_rules_lookup_meter_idx
+  on public.api_pricing_rules (provider_id, api_model_id, capability_id, meter);
 -- =========================
--- data_api_pricing_conditions
+-- api_pricing_conditions
 -- =========================
-create table if not exists public.data_api_pricing_conditions (
+create table if not exists public.api_pricing_conditions (
   condition_id  bigint generated always as identity primary key,
-  rule_id       bigint not null references public.data_api_pricing_rules(rule_id) on delete cascade,
+  rule_id       bigint not null references public.api_pricing_rules(rule_id) on delete cascade,
 
   or_group      integer not null default 0,
   and_index     integer not null default 0,
@@ -133,6 +121,5 @@ create table if not exists public.data_api_pricing_conditions (
   note          text null,
   created_at    timestamptz not null default now()
 );
-
-create index if not exists data_api_pricing_conditions_rule_idx
-  on public.data_api_pricing_conditions (rule_id, or_group, and_index);
+create index if not exists api_pricing_conditions_rule_idx
+  on public.api_pricing_conditions (rule_id, or_group, and_index);

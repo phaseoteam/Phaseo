@@ -7,7 +7,17 @@ export default [
 	...next,
 	...tseslint.configs.recommended,
 	{
-		files: ["**/*.{ts,tsx,js,jsx}"],
+		ignores: [
+			".next/**",
+			"dist/**",
+			"build/**",
+			"node_modules/**",
+			"coverage/**",
+			"playwright.config.ts",
+		],
+	},
+	{
+		files: ["**/*.{ts,tsx}"],
 		languageOptions: {
 			parserOptions: {
 				project: [path.resolve(import.meta.dirname, "./tsconfig.json")],
@@ -17,16 +27,34 @@ export default [
 			},
 		},
 		rules: {
+			"max-lines": [
+				"warn",
+				{ max: 300, skipBlankLines: true, skipComments: true },
+			],
 			"@typescript-eslint/no-explicit-any": "off",
 			"@typescript-eslint/no-unused-vars": [
 				"warn",
 				{ argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
 			],
+			"react/no-unescaped-entities": "warn",
 			"no-case-declarations": "off",
 			"no-console": "warn",
 			"no-mixed-spaces-and-tabs": "warn",
 			"@next/next/no-img-element": "warn",
+			"react-hooks/rules-of-hooks": "warn",
+			"react-hooks/set-state-in-effect": "warn",
+			"react-hooks/immutability": "warn",
+			"react-hooks/static-components": "warn",
+			"react-hooks/purity": "warn",
+			"react-hooks/error-boundaries": "warn",
+			"react-hooks/preserve-manual-memoization": "warn",
 		},
-		ignores: [".next/**", "dist/**", "build/**", "node_modules/**"],
+	},
+	{
+		files: ["**/*.{js,jsx,mjs,cjs}"],
+		rules: {
+			"max-lines": "off",
+			"@typescript-eslint/no-require-imports": "off",
+		},
 	},
 ];

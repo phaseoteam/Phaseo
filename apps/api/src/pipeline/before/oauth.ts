@@ -129,6 +129,8 @@ export async function authenticateOAuth(
 			console.error("SUPABASE_URL not configured");
 			return { authenticated: false, error: "OAuth not configured" };
 		}
+		const supabaseBase = `${supabaseUrl}`.replace(/\/+$/, "").replace(/\/auth\/v1$/, "");
+		const expectedIssuer = `${supabaseBase}/auth/v1`;
 
 		// Get JWKS (with caching)
 		let jwks = await getJWKSWithCache(supabaseUrl, c.env.KV || null);
@@ -137,7 +139,7 @@ export async function authenticateOAuth(
 		let validation = await validateOAuthToken(
 			token,
 			jwks.keys,
-			supabaseUrl,
+			expectedIssuer,
 			"authenticated" // Expected audience
 		);
 
@@ -148,7 +150,7 @@ export async function authenticateOAuth(
 			validation = await validateOAuthToken(
 				token,
 				jwks.keys,
-				supabaseUrl,
+				expectedIssuer,
 				"authenticated"
 			);
 		}

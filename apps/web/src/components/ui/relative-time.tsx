@@ -7,6 +7,8 @@ import {
 	useEffect,
 } from "react";
 import { cn } from "@/lib/utils";
+
+const STABLE_DEFAULT_TIME = new Date(0);
 const formatDate = (
 	date: Date,
 	timeZone: string,
@@ -39,7 +41,7 @@ type RelativeTimeContextType = {
 	timeFormatOptions?: Intl.DateTimeFormatOptions;
 };
 const RelativeTimeContext = createContext<RelativeTimeContextType>({
-	time: new Date(),
+	time: STABLE_DEFAULT_TIME,
 	dateFormatOptions: {
 		dateStyle: "long",
 	},
@@ -57,7 +59,7 @@ export type RelativeTimeProps = HTMLAttributes<HTMLDivElement> & {
 };
 export const RelativeTime = ({
 	time: controlledTime,
-	defaultTime = new Date(),
+	defaultTime = STABLE_DEFAULT_TIME,
 	onTimeChange,
 	dateFormatOptions,
 	timeFormatOptions,

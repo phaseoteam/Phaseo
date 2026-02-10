@@ -9,6 +9,7 @@ import { convertToGatewayChatRequest } from './convert-to-gateway-chat.js';
 import { mapGatewayResponse } from './map-gateway-response.js';
 import { parseSSEStream } from './utils/parse-sse-stream.js';
 import { mapGatewayFinishReason } from './map-gateway-finish-reason.js';
+import { mapGatewayUsage } from './map-gateway-usage.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
 /**
@@ -118,18 +119,16 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
       throw (await errorHandler({ url, requestBodyValues: gatewayRequest, response })).value;
     }
 
-    // Parse SSE stream and emit AI SDK events
-    const warnings: any[] = [];
-    let finishReason: LanguageModelV3FinishReason = 'other';
-    let usage: { promptTokens: number; completionTokens: number } = {
-      promptTokens: 0,
-      completionTokens: 0,
-    };
+    let finishReason: LanguageModelV3FinishReason = mapGatewayFinishReason(undefined);
+    let usage = mapGatewayUsage({});
+    const textPartId = 'text-0';
+    let textPartStarted = false;
 
     const toolCalls: Array<{
-      toolCallId: string;
+      id: string;
       toolName: string;
-      args: string;
+      input: string;
+      started: boolean;
     }> = [];
 
     const requestBodyJson = JSON.stringify({
@@ -142,6 +141,21 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
       stream: parseSSEStream(response).pipeThrough(
         new TransformStream<any, LanguageModelV3StreamPart>({
           transform(chunk, controller) {
+            if (chunk?.error) {
+              controller.enqueue({
+                type: 'error',
+                error: chunk.error,
+              });
+              return;
+            }
+
+            if (chunk?.object === 'chat.completion.chunk') {
+              controller.enqueue({
+                type: 'raw',
+                rawValue: chunk,
+              });
+            }
+
             // Handle stream chunk
             if (chunk.choices && chunk.choices.length > 0) {
               const choice = chunk.choices[0];
@@ -149,9 +163,18 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
 
               // Emit text deltas
               if (delta?.content) {
+                if (!textPartStarted) {
+                  textPartStarted = true;
+                  controller.enqueue({
+                    type: 'text-start',
+                    id: textPartId,
+                  });
+                }
+
                 controller.enqueue({
                   type: 'text-delta',
-                  textDelta: delta.content,
+                  id: textPartId,
+                  delta: delta.content,
                 });
               }
 
@@ -159,37 +182,39 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
               if (delta?.tool_calls) {
                 for (const toolCall of delta.tool_calls) {
                   const index = toolCall.index ?? 0;
+                  const toolId = toolCall.id ?? toolCalls[index]?.id ?? `tool-${index}`;
+                  const toolName = toolCall.function?.name ?? toolCalls[index]?.toolName ?? '';
 
-                  // Initialize tool call if first chunk
-                  if (toolCall.id) {
+                  if (!toolCalls[index]) {
                     toolCalls[index] = {
-                      toolCallId: toolCall.id,
-                      toolName: toolCall.function?.name ?? '',
-                      args: '',
+                      id: toolId,
+                      toolName,
+                      input: '',
+                      started: false,
                     };
+                  } else {
+                    toolCalls[index].id = toolId;
+                    if (toolName) {
+                      toolCalls[index].toolName = toolName;
+                    }
+                  }
 
+                  if (!toolCalls[index].started) {
+                    toolCalls[index].started = true;
                     controller.enqueue({
-                      type: 'tool-call-delta',
-                      toolCallType: 'function',
-                      toolCallId: toolCall.id,
-                      toolName: toolCall.function?.name ?? '',
-                      argsTextDelta: '',
+                      type: 'tool-input-start',
+                      id: toolCalls[index].id,
+                      toolName: toolCalls[index].toolName,
                     });
                   }
 
-                  // Append arguments
                   if (toolCall.function?.arguments) {
-                    const args = toolCall.function.arguments;
-                    if (toolCalls[index]) {
-                      toolCalls[index].args += args;
-                    }
+                    toolCalls[index].input += toolCall.function.arguments;
 
                     controller.enqueue({
-                      type: 'tool-call-delta',
-                      toolCallType: 'function',
-                      toolCallId: toolCalls[index]?.toolCallId ?? '',
-                      toolName: toolCalls[index]?.toolName ?? '',
-                      argsTextDelta: args,
+                      type: 'tool-input-delta',
+                      id: toolCalls[index].id,
+                      delta: toolCall.function.arguments,
                     });
                   }
                 }
@@ -203,35 +228,53 @@ export class AIStatsLanguageModel implements LanguageModelV3 {
 
             // Handle usage in final chunk
             if (chunk.usage) {
-              usage = {
-                promptTokens: chunk.usage.prompt_tokens ?? 0,
-                completionTokens: chunk.usage.completion_tokens ?? 0,
-              };
+              usage = mapGatewayUsage(chunk.usage);
             }
           },
 
           flush(controller) {
+            if (textPartStarted) {
+              controller.enqueue({
+                type: 'text-end',
+                id: textPartId,
+              });
+            }
+
+            for (const toolCall of toolCalls) {
+              if (!toolCall) {
+                continue;
+              }
+
+              if (toolCall.started) {
+                controller.enqueue({
+                  type: 'tool-input-end',
+                  id: toolCall.id,
+                });
+              }
+
+              controller.enqueue({
+                type: 'tool-call',
+                toolCallId: toolCall.id,
+                toolName: toolCall.toolName,
+                input: toolCall.input,
+              });
+            }
+
             // Emit finish event
             controller.enqueue({
               type: 'finish',
               finishReason,
               usage,
-              logprobs: undefined,
             });
           },
         })
       ),
-      rawCall: {
-        rawPrompt: gatewayRequest.messages,
-        rawSettings: gatewayRequest,
-      },
-      rawResponse: {
+      response: {
         headers: Object.fromEntries(Array.from(response.headers as any) as [string, string][]),
       },
       request: {
         body: requestBodyJson,
       },
-      warnings,
     };
   }
 }

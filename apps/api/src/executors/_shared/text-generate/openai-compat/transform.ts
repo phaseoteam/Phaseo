@@ -421,11 +421,11 @@ export function openAIResponsesToIR(
 					text: reasoningText,
 				});
 			}
-		} else if (item.type === "function_call") {
+		} else if (item.type === "function_call" || item.type === "tool_call") {
 			// Tool call from assistant
 			choice.message.toolCalls = choice.message.toolCalls || [];
 			choice.message.toolCalls.push({
-				id: item.call_id,
+				id: item.call_id || item.id || `call_${requestId}_${index}_${choice.message.toolCalls.length}`,
 				name: item.name,
 				arguments: item.arguments || "{}",
 			});

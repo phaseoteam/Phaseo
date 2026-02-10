@@ -168,7 +168,6 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	zai: { "text.generate": zaiText },
 	xiaomi: { "text.generate": xiaomiText },
 	mistral: { "text.generate": mistralText },
-	moonshotai: { "text.generate": moonshotText },
 	"moonshot-ai": { "text.generate": moonshotText },
 	"moonshot-ai-turbo": { "text.generate": moonshotText },
 	"aion-labs": { "text.generate": aionLabsText },

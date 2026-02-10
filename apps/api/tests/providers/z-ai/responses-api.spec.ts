@@ -49,7 +49,7 @@ describe("Z.AI - Responses API (Reasoning)", () => {
 						content: [{ type: "input_text", text: "What is 5 + 3? Think step by step." }],
 					},
 				],
-				reasoning: { effort: "medium" },
+				reasoning: { enabled: true },
 			});
 
 			console.log("\n=== Z.AI Responses API Response ===");

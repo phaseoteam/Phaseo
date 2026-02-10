@@ -64,7 +64,6 @@ BEGIN
   ORDER BY bd.time_bucket, bd.req_count DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_market_share_timeseries(
   p_dimension text DEFAULT 'organization',
   p_time_range text DEFAULT 'year',

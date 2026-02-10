@@ -11,6 +11,16 @@ export type PreparedAttachment = {
 	dataUrl: string;
 	isImage: boolean;
 	isAudio: boolean;
+	isVideo: boolean;
+};
+
+export type InlineAttachmentPreview = {
+	name: string;
+	mimeType: string;
+	dataUrl: string;
+	isImage: boolean;
+	isAudio: boolean;
+	isVideo: boolean;
 };
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -43,6 +53,34 @@ export async function prepareAttachments(
 				dataUrl,
 				isImage: mimeType.startsWith("image/"),
 				isAudio: mimeType.startsWith("audio/"),
+				isVideo: mimeType.startsWith("video/"),
+			};
+		}),
+	);
+}
+
+export async function prepareInlineAttachmentPreviews(
+	files: File[],
+): Promise<InlineAttachmentPreview[]> {
+	const inlinePreviewFiles = files.filter((file) => {
+		const mimeType = file.type || "";
+		return (
+			mimeType.startsWith("image/") ||
+			mimeType.startsWith("audio/") ||
+			mimeType.startsWith("video/")
+		);
+	});
+	if (!inlinePreviewFiles.length) return [];
+	return Promise.all(
+		inlinePreviewFiles.map(async (file) => {
+			const mimeType = file.type || "application/octet-stream";
+			return {
+				name: file.name,
+				mimeType,
+				dataUrl: await readFileAsDataUrl(file),
+				isImage: mimeType.startsWith("image/"),
+				isAudio: mimeType.startsWith("audio/"),
+				isVideo: mimeType.startsWith("video/"),
 			};
 		}),
 	);

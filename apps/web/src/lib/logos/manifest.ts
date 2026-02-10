@@ -74,6 +74,10 @@ export const logoManifest = {
 	cohere: {
 		color: "/logos/cohere.svg",
 	},
+	cursor: {
+		light: "/logos/cursor_light.svg",
+		dark: "/logos/cursor_dark.svg",
+	},
 	deepinfra: {
 		color: "/logos/deepinfra.svg",
 	},

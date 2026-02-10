@@ -3,7 +3,7 @@
   "organisation_id": "google",
   "name": "Gemma 3 27B",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "google/gemma-2-27b-2024-06-27",
   "announced_date": "2025-03-12T00:00:00",
   "release_date": "2025-03-12T00:00:00",
   "deprecation_date": null,

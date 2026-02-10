@@ -21,16 +21,17 @@ import type { GatewayCompletionsResponse, GatewayReasoningDetail, GatewayUsage }
  */
 export function encodeOpenAIChatResponse(
 	ir: IRChatResponse,
-	requestId: string,
+	requestId?: string,
 ): GatewayCompletionsResponse {
+	const resolvedRequestId = requestId ?? ir.id;
 	return {
-		id: requestId,
+		id: resolvedRequestId,
 		object: "chat.completion",
 		nativeResponseId: ir.nativeId,
 		created: ir.created ?? Math.floor(Date.now() / 1000),
 		model: ir.model,
 		provider: ir.provider,
-		choices: ir.choices.map((choice) => encodeChoice(choice, requestId)),
+		choices: ir.choices.map((choice) => encodeChoice(choice, resolvedRequestId)),
 		usage: encodeUsage(ir.usage),
 	} as GatewayCompletionsResponse;
 }
@@ -44,7 +45,7 @@ function encodeChoice(
 	choice: IRChoice,
 	requestId: string,
 ): GatewayCompletionsResponse["choices"][0] {
-	const { text, reasoningParts } = splitContentParts(choice.message.content as IRContentPart[]);
+	const { text, reasoningParts, imageParts } = splitContentParts(choice.message.content as IRContentPart[]);
 	const reasoningContent = reasoningParts.join("");
 	const reasoningDetails: GatewayReasoningDetail[] = reasoningParts.map((textPart, index) => ({
 		id: `${requestId}-reasoning-${choice.index}-${index + 1}`,
@@ -52,12 +53,23 @@ function encodeChoice(
 		type: "text",
 		text: textPart,
 	}));
+	const images = imageParts.map((part) => ({
+		type: "image_url" as const,
+		image_url: {
+			url:
+				part.source === "data"
+					? `data:${part.mimeType || "image/png"};base64,${part.data}`
+					: part.data,
+		},
+		...(part.mimeType ? { mime_type: part.mimeType } : {}),
+	}));
 
 	return {
 		index: choice.index,
 		message: {
 			role: "assistant",
 			content: text,
+			...(images.length > 0 ? { images } : {}),
 			tool_calls: choice.message.toolCalls?.map((tc) => ({
 				id: tc.id,
 				type: "function" as const,
@@ -76,8 +88,12 @@ function encodeChoice(
 	};
 }
 
-function splitContentParts(parts: IRContentPart[]): { text: string; reasoningParts: string[] } {
-	if (!Array.isArray(parts)) return { text: "", reasoningParts: [] };
+function splitContentParts(parts: IRContentPart[]): {
+	text: string;
+	reasoningParts: string[];
+	imageParts: Array<Extract<IRContentPart, { type: "image" }>>;
+} {
+	if (!Array.isArray(parts)) return { text: "", reasoningParts: [], imageParts: [] };
 	const text = parts
 		.filter((part) => part.type === "text")
 		.map((part) => part.text)
@@ -85,7 +101,10 @@ function splitContentParts(parts: IRContentPart[]): { text: string; reasoningPar
 	const reasoningParts = parts
 		.filter((part) => part.type === "reasoning_text")
 		.map((part) => part.text);
-	return { text, reasoningParts };
+	const imageParts = parts.filter((part) => part.type === "image") as Array<
+		Extract<IRContentPart, { type: "image" }>
+	>;
+	return { text, reasoningParts, imageParts };
 }
 
 /**

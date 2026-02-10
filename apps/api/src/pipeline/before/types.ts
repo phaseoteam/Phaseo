@@ -199,6 +199,28 @@ export type ProviderCandidate = {
     maxOutputTokens?: number | null;
 };
 
+export type ParamRoutingDiagnostics = {
+    requestedParams: string[];
+    unknownParams: string[];
+    providerCountBefore: number;
+    providerCountAfter: number;
+    perParamSupport: Array<{
+        param: string;
+        supportedProviders: string[];
+        unsupportedProviders: string[];
+    }>;
+    droppedProviders: Array<{
+        providerId: string;
+        unsupportedParams: string[];
+    }>;
+    filteringStages: Array<{
+        stage: "param_support" | "provider_docs" | "response_format" | "structured_outputs" | "token_limits";
+        beforeCount: number;
+        afterCount: number;
+        droppedProviders: string[];
+    }>;
+};
+
 /**
  * The main context object passed through the entire pipeline
  * Contains all information needed for request processing
@@ -218,6 +240,7 @@ export type PipelineContext = {
     strictness?: "off" | "warn" | "error";
     requestPath?: string;
     requestedParams?: string[];
+    paramRoutingDiagnostics?: ParamRoutingDiagnostics;
     providers: ProviderCandidate[];
     pricing: Record<string, PriceCard>;
     gating: {

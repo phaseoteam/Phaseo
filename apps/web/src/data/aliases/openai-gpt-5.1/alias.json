@@ -1,7 +1,0 @@
-{
-  "alias_slug": "openai/gpt-5.1",
-  "resolved_api_model_id": "openai/gpt-5-1-2025-11-12",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": null
-}

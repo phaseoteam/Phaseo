@@ -14,7 +14,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -46,7 +80,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -65,7 +133,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -84,7 +186,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -103,7 +239,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -112,7 +282,7 @@
     "provider_api_model_id": "mistral:mistral/ministral-3-3b",
     "provider_model_slug": "ministral-3b-2512",
     "internal_model_id": "mistral/ministral-3-0-3b-2025-12-02",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -122,7 +292,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -141,7 +345,52 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "max_tokens",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "presence_penalty",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "response_format",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "seed",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "stop",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "structured_outputs",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "temperature",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "tool_choice",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "tools",
+            "notes": "inferred_from_provider_defaults"
+          },
+          {
+            "param_id": "top_p",
+            "notes": "inferred_from_provider_defaults"
+          }
+        ]
       }
     ]
   },
@@ -160,7 +409,52 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "max_tokens",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "presence_penalty",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "response_format",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "seed",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "stop",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "structured_outputs",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "temperature",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "tool_choice",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "tools",
+            "notes": "inferred_from_family:magistral"
+          },
+          {
+            "param_id": "top_p",
+            "notes": "inferred_from_family:magistral"
+          }
+        ]
       }
     ]
   },
@@ -217,7 +511,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -255,7 +583,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -293,7 +655,14 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -325,7 +694,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -344,7 +747,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -382,7 +819,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -401,7 +872,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -420,7 +925,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -439,7 +978,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "seed"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },

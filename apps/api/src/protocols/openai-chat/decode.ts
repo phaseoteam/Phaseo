@@ -201,7 +201,7 @@ function normalizeResponseFormat(format: any): IRChatRequest["responseFormat"] {
 		if (format.type === "json_schema") {
 			return {
 				type: "json_schema",
-				schema: format.schema || format.json_schema?.schema,
+				schema: format.schema || format.json_schema?.schema || format.json_schema?.schema_,
 				name: format.name || format.json_schema?.name,
 				strict: format.strict || format.json_schema?.strict,
 			};

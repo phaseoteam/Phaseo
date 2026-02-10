@@ -8,12 +8,17 @@ begin
       and table_name = 'data_api_providers'
       and column_name = 'status'
   ) then
-    update public.data_api_providers
-    set status = 'Active'
-    where status is null;
-
     alter table public.data_api_providers
       drop constraint if exists data_api_providers_status_check;
+
+    update public.data_api_providers
+    set status = case
+      when status is null then 'Active'
+      when lower(trim(status)) in ('active', 'stable', 'ga', 'prod', 'production') then 'Active'
+      when lower(trim(status)) = 'beta' then 'Beta'
+      when lower(trim(status)) = 'alpha' then 'Alpha'
+      else 'NotReady'
+    end;
 
     alter table public.data_api_providers
       add constraint data_api_providers_status_check

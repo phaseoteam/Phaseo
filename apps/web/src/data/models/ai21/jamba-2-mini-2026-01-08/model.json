@@ -3,7 +3,7 @@
   "organisation_id": "ai21",
   "name": "Jamba 2 Mini",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "ai21/jamba-mini-1-7-2025-07-03",
   "announced_date": "2026-01-08T00:00:00",
   "release_date": "2026-01-08T00:00:00",
   "deprecation_date": null,

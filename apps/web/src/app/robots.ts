@@ -15,7 +15,6 @@ export default function robots(): MetadataRoute.Robots {
 					"/settings/",
 					"/internal/",
 					"/gateway/usage",
-					"/apps/",
 					"/_next/",
 				],
 			},

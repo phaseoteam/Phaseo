@@ -30,6 +30,25 @@ interface OAuthAppDetailPanelProps {
 	currentUserId: string;
 }
 
+function parseRedirectUris(value: unknown): string[] {
+	if (Array.isArray(value)) {
+		return value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+	}
+	if (typeof value === "string") {
+		try {
+			const parsed = JSON.parse(value);
+			if (Array.isArray(parsed)) {
+				return parsed.filter(
+					(entry): entry is string => typeof entry === "string" && entry.length > 0
+				);
+			}
+		} catch {
+			return value.length > 0 ? [value] : [];
+		}
+	}
+	return [];
+}
+
 export default function OAuthAppDetailPanel({
 	oauthApp,
 	authorizations,
@@ -38,6 +57,7 @@ export default function OAuthAppDetailPanel({
 }: OAuthAppDetailPanelProps) {
 	const [copiedId, setCopiedId] = useState(false);
 	const router = useRouter();
+	const appRedirectUris = parseRedirectUris(oauthApp.redirect_uris);
 
 	const copyClientId = () => {
 		navigator.clipboard.writeText(oauthApp.client_id);
@@ -188,7 +208,7 @@ export default function OAuthAppDetailPanel({
 						</div>
 						<Card className="p-3 bg-muted">
 							<code className="text-xs text-muted-foreground">
-								••••••••••••••••••••••••••••
+								****************************
 							</code>
 						</Card>
 						<p className="text-xs text-muted-foreground mt-1">
@@ -209,7 +229,7 @@ export default function OAuthAppDetailPanel({
 				<CardContent>
 					<RedirectUriManager
 						clientId={oauthApp.client_id}
-						initialRedirectUris={[]} // TODO: Fetch from Supabase OAuth client
+						initialRedirectUris={appRedirectUris}
 					/>
 				</CardContent>
 			</Card>
@@ -285,3 +305,4 @@ export default function OAuthAppDetailPanel({
 		</div>
 	);
 }
+

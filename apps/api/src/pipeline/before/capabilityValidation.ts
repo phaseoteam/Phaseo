@@ -3,15 +3,104 @@
 // How: Validates token limits, parameter support, and filters incompatible providers.
 
 import type { Endpoint } from "@core/types";
-import type { ProviderCandidate } from "./types";
+import type { ParamRoutingDiagnostics, ProviderCandidate } from "./types";
 import { err } from "./http";
-import { providerSupportsParam, extractRequestedParams } from "./paramCapabilities";
+import { providerSupportsParam, extractRequestedParams, getUnknownTopLevelParams } from "./paramCapabilities";
 import { isParamSupported, getResponseFormatConfig } from "./paramConfig";
 import { validateProviderDocsCompliance } from "./providerDocsValidation";
 
 type ValidationResult =
+	| {
+		ok: true;
+		providers: ProviderCandidate[];
+		body: any;
+		requestedParams: string[];
+		paramRoutingDiagnostics: ParamRoutingDiagnostics;
+	}
+	| { ok: false; response: Response };
+
+type StageValidationResult =
 	| { ok: true; providers: ProviderCandidate[]; body: any }
 	| { ok: false; response: Response };
+
+type ProviderSupportInfo = {
+	providerId: string;
+	supported: boolean;
+};
+
+type ParameterSupportResult =
+	| {
+		ok: true;
+		providers: ProviderCandidate[];
+		body: any;
+		requestedParams: string[];
+		supportMap: Record<string, ProviderSupportInfo[]>;
+	}
+	| { ok: false; response: Response };
+
+type FilteringStage = ParamRoutingDiagnostics["filteringStages"][number]["stage"];
+
+function uniqueProviderIds(providers: ProviderCandidate[]): string[] {
+	const seen = new Set<string>();
+	const ids: string[] = [];
+	for (const provider of providers) {
+		if (!provider?.providerId || seen.has(provider.providerId)) continue;
+		seen.add(provider.providerId);
+		ids.push(provider.providerId);
+	}
+	return ids;
+}
+
+function buildDroppedProviders(args: {
+	initialProviders: ProviderCandidate[];
+	finalProviders: ProviderCandidate[];
+	requestedParams: string[];
+	supportMap: Record<string, ProviderSupportInfo[]>;
+}): ParamRoutingDiagnostics["droppedProviders"] {
+	const finalSet = new Set(uniqueProviderIds(args.finalProviders));
+	const uniqueInitial = uniqueProviderIds(args.initialProviders);
+	return uniqueInitial
+		.filter((providerId) => !finalSet.has(providerId))
+		.map((providerId) => {
+			const unsupportedParams = args.requestedParams.filter((param) => {
+				const supportRow = args.supportMap[param] ?? [];
+				const info = supportRow.find((entry) => entry.providerId === providerId);
+				return info ? !info.supported : false;
+			});
+			return { providerId, unsupportedParams };
+		});
+}
+
+function buildPerParamSupport(
+	supportMap: Record<string, ProviderSupportInfo[]>
+): ParamRoutingDiagnostics["perParamSupport"] {
+	return Object.entries(supportMap).map(([param, supportRows]) => ({
+		param,
+		supportedProviders: supportRows
+			.filter((entry) => entry.supported)
+			.map((entry) => entry.providerId),
+		unsupportedProviders: supportRows
+			.filter((entry) => !entry.supported)
+			.map((entry) => entry.providerId),
+	}));
+}
+
+function pushFilteringStage(
+	stages: ParamRoutingDiagnostics["filteringStages"],
+	stage: FilteringStage,
+	beforeProviders: ProviderCandidate[],
+	afterProviders: ProviderCandidate[]
+) {
+	const beforeIds = uniqueProviderIds(beforeProviders);
+	const afterIds = uniqueProviderIds(afterProviders);
+	const afterSet = new Set(afterIds);
+	stages.push({
+		stage,
+		beforeCount: beforeIds.length,
+		afterCount: afterIds.length,
+		droppedProviders: beforeIds.filter((id) => !afterSet.has(id)),
+	});
+}
 
 /**
  * Gets the max_tokens value from the request body, checking both field names
@@ -32,27 +121,55 @@ function getRequestedMaxTokens(body: any): number | null {
 function validateParameterSupport(args: {
 	endpoint: Endpoint;
 	rawBody: any;
+	body: any;
 	requestId: string;
 	teamId: string;
 	providers: ProviderCandidate[];
 	model: string;
-}): ValidationResult {
+}): ParameterSupportResult {
+	const unknownParams = getUnknownTopLevelParams(args.endpoint, args.rawBody);
+	if (unknownParams.length > 0) {
+		const details = unknownParams.map((param) => ({
+			message: `Unknown parameter: ${param}`,
+			path: [param],
+			keyword: "unknown_param",
+			params: { param, model: args.model },
+		}));
+		return {
+			ok: false,
+			response: err("validation_error", {
+				details,
+				request_id: args.requestId,
+				team_id: args.teamId,
+			}),
+		};
+	}
+
 	const requested = extractRequestedParams(args.endpoint, args.rawBody);
 	if (!requested.length) {
-		return { ok: true, providers: args.providers, body: args.rawBody };
+		return {
+			ok: true,
+			providers: args.providers,
+			body: args.body,
+			requestedParams: [],
+			supportMap: {},
+		};
 	}
 
 	const isAlwaysSupported = (param: string): boolean =>
-		args.endpoint === "messages" && param === "max_tokens";
+		(args.endpoint === "messages" && param === "max_tokens") ||
+		// `modalities` is enforced by modality-aware routing in execute stage
+		// using provider input/output modality metadata, not per-param capability keys.
+		param === "modalities";
 
 	// Build support map for each parameter
-	const supportMap: Record<string, { providerId: string; supported: boolean }[]> = {};
+	const supportMap: Record<string, ProviderSupportInfo[]> = {};
 	for (const param of requested) {
 		supportMap[param] = args.providers.map((provider) => ({
 			providerId: provider.providerId,
 			supported:
 				isAlwaysSupported(param) ||
-				providerSupportsParam(provider, param, { assumeSupportedOnMissingConfig: true }),
+				providerSupportsParam(provider, param, { assumeSupportedOnMissingConfig: false }),
 		}));
 	}
 
@@ -83,7 +200,7 @@ function validateParameterSupport(args: {
 		requested.every(
 			(param) =>
 				isAlwaysSupported(param) ||
-				providerSupportsParam(provider, param, { assumeSupportedOnMissingConfig: true }),
+				providerSupportsParam(provider, param, { assumeSupportedOnMissingConfig: false }),
 		)
 	);
 
@@ -105,7 +222,13 @@ function validateParameterSupport(args: {
 		};
 	}
 
-	return { ok: true, providers: filtered, body: args.rawBody };
+	return {
+		ok: true,
+		providers: filtered,
+		body: args.body,
+		requestedParams: requested,
+		supportMap,
+	};
 }
 
 /**
@@ -117,7 +240,7 @@ function validateResponseFormat(args: {
 	requestId: string;
 	teamId: string;
 	model: string;
-}): ValidationResult {
+}): StageValidationResult {
 	const responseFormat = args.body.response_format;
 	if (!responseFormat) {
 		return { ok: true, providers: args.providers, body: args.body };
@@ -171,7 +294,7 @@ function filterProvidersByTokenLimits(args: {
 	requestId: string;
 	teamId: string;
 	model: string;
-}): ValidationResult {
+}): StageValidationResult {
 	const requestedMaxTokens = getRequestedMaxTokens(args.body);
 
 	// If no max_tokens specified, pass all providers through
@@ -217,7 +340,7 @@ function validateStructuredOutputs(args: {
 	requestId: string;
 	teamId: string;
 	model: string;
-}): ValidationResult {
+}): StageValidationResult {
 	// Check if structured outputs requested
 	const hasStructuredOutputs =
 		args.body.structured_outputs === true ||
@@ -231,7 +354,9 @@ function validateStructuredOutputs(args: {
 	const filtered = args.providers.filter((provider) => {
 		const params = provider.capabilityParams;
 		const formatConfig = getResponseFormatConfig(params);
-		return formatConfig.supported && formatConfig.structuredOutputs === true;
+		// If metadata is missing, treat support as unknown and allow through.
+		// Explicit false remains a hard block.
+		return formatConfig.supported && formatConfig.structuredOutputs !== false;
 	});
 
 	if (!filtered.length) {
@@ -266,18 +391,21 @@ export function validateCapabilities(args: {
 	providers: ProviderCandidate[];
 	model: string;
 }): ValidationResult {
-	const requested = extractRequestedParams(args.endpoint, args.rawBody);
+	const filteringStages: ParamRoutingDiagnostics["filteringStages"] = [];
+	const initialProviders = args.providers;
 
 	// Step 1: Basic parameter support (always active)
 	const paramResult = validateParameterSupport({
 		endpoint: args.endpoint,
 		rawBody: args.rawBody,
+		body: args.body,
 		requestId: args.requestId,
 		teamId: args.teamId,
 		providers: args.providers,
 		model: args.model,
 	});
 	if (!paramResult.ok) return paramResult;
+	pushFilteringStage(filteringStages, "param_support", initialProviders, paramResult.providers);
 
 	// Step 1.5: Provider docs validation (hard constraints from provider API docs)
 	const docsResult = validateProviderDocsCompliance({
@@ -287,9 +415,10 @@ export function validateCapabilities(args: {
 		teamId: args.teamId,
 		model: args.model,
 		providers: paramResult.providers,
-		requestedParams: requested,
+		requestedParams: paramResult.requestedParams,
 	});
 	if (!docsResult.ok) return docsResult;
+	pushFilteringStage(filteringStages, "provider_docs", paramResult.providers, docsResult.providers);
 
 	// Step 2: Response format validation
 	const formatResult = validateResponseFormat({
@@ -300,27 +429,52 @@ export function validateCapabilities(args: {
 		model: args.model,
 	});
 	if (!formatResult.ok) return formatResult;
+	pushFilteringStage(filteringStages, "response_format", docsResult.providers, formatResult.providers);
 
 	// Step 3: Structured outputs validation
 	const structuredResult = validateStructuredOutputs({
-		body: args.body,
+		body: formatResult.body,
 		providers: formatResult.providers,
 		requestId: args.requestId,
 		teamId: args.teamId,
 		model: args.model,
 	});
 	if (!structuredResult.ok) return structuredResult;
+	pushFilteringStage(filteringStages, "structured_outputs", formatResult.providers, structuredResult.providers);
 
 	// Step 4: Token limits (if max_tokens is provided)
 	const tokenResult = filterProvidersByTokenLimits({
-		body: args.body,
+		body: structuredResult.body,
 		providers: structuredResult.providers,
 		requestId: args.requestId,
 		teamId: args.teamId,
 		model: args.model,
 	});
 	if (!tokenResult.ok) return tokenResult;
+	pushFilteringStage(filteringStages, "token_limits", structuredResult.providers, tokenResult.providers);
+
+	const requestedParams = paramResult.requestedParams;
+	const diagnostics: ParamRoutingDiagnostics = {
+		requestedParams,
+		unknownParams: [],
+		providerCountBefore: uniqueProviderIds(initialProviders).length,
+		providerCountAfter: uniqueProviderIds(tokenResult.providers).length,
+		perParamSupport: buildPerParamSupport(paramResult.supportMap),
+		droppedProviders: buildDroppedProviders({
+			initialProviders,
+			finalProviders: tokenResult.providers,
+			requestedParams,
+			supportMap: paramResult.supportMap,
+		}),
+		filteringStages,
+	};
 
 	// Return filtered providers (body unchanged)
-	return { ok: true, providers: tokenResult.providers, body: args.body };
+	return {
+		ok: true,
+		providers: tokenResult.providers,
+		body: tokenResult.body,
+		requestedParams,
+		paramRoutingDiagnostics: diagnostics,
+	};
 }

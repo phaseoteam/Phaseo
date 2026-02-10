@@ -150,21 +150,12 @@ export function getPrimaryUnifiedCapability(
 
 export function inferUnifiedEndpoint(args: {
 	modelId: string;
-	prompt: string;
-	attachments: Array<{ isImage: boolean }>;
 	defaultCapability?: UnifiedChatEndpoint;
 }): UnifiedChatEndpoint {
-	const prompt = args.prompt.toLowerCase();
-	const hasImageAttachment = args.attachments.some(
-		(attachment) => attachment.isImage,
-	);
 	const modelCapability =
 		args.defaultCapability ?? inferModelCapabilityEndpoint(args.modelId);
 
-	if (
-		modelCapability === "video.generation" ||
-		(hasImageAttachment && /(video|animate|cinematic|clip)/.test(prompt))
-	) {
+	if (modelCapability === "video.generation") {
 		return "video.generation";
 	}
 	if (modelCapability !== "responses") {

@@ -7,7 +7,6 @@ drop table if exists public.data_api_provider_capabilities_param;
 drop table if exists public.data_api_provider_model_capabilities;
 drop table if exists public.data_api_provider_models;
 drop table if exists public.data_api_model_aliases;
-
 -- =========================
 -- data_api_provider_models
 -- =========================
@@ -30,14 +29,11 @@ create table if not exists public.data_api_provider_models (
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
 );
-
 create index if not exists data_api_provider_models_lookup_idx
   on public.data_api_provider_models (api_model_id, provider_id);
-
 create index if not exists data_api_provider_models_active_idx
   on public.data_api_provider_models (api_model_id)
   where is_active_gateway = true;
-
 -- =========================
 -- data_api_provider_model_capabilities
 -- =========================
@@ -59,17 +55,13 @@ create table if not exists public.data_api_provider_model_capabilities (
 
   primary key (provider_api_model_id, capability_id)
 );
-
 create index if not exists data_api_provider_model_capabilities_cap_idx
   on public.data_api_provider_model_capabilities (capability_id);
-
 create index if not exists data_api_provider_model_capabilities_effective_idx
   on public.data_api_provider_model_capabilities (provider_api_model_id, capability_id, effective_from, effective_to);
-
 create index if not exists data_api_provider_model_capabilities_params_gin
   on public.data_api_provider_model_capabilities
   using gin (params);
-
 -- =========================
 -- data_api_provider_capabilities_param
 -- =========================
@@ -87,13 +79,10 @@ create table if not exists public.data_api_provider_capabilities_param (
     references public.data_api_provider_model_capabilities(provider_api_model_id, capability_id)
     on delete cascade
 );
-
 create index if not exists data_api_provider_capabilities_param_cap_idx
   on public.data_api_provider_capabilities_param (capability_id);
-
 create index if not exists data_api_provider_capabilities_param_key_idx
   on public.data_api_provider_capabilities_param (param_key);
-
 -- =========================
 -- data_api_model_aliases
 -- =========================
@@ -106,11 +95,9 @@ create table if not exists public.data_api_model_aliases (
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
-
 create index if not exists data_api_model_aliases_target_idx
   on public.data_api_model_aliases (api_model_id)
   where is_enabled = true;
-
 -- =========================
 -- data_api_pricing_rules
 -- =========================
@@ -140,13 +127,10 @@ create table if not exists public.data_api_pricing_rules (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
-
 create index if not exists data_api_pricing_rules_lookup_idx
   on public.data_api_pricing_rules (provider_id, api_model_id, capability_id);
-
 create index if not exists data_api_pricing_rules_lookup_meter_idx
   on public.data_api_pricing_rules (provider_id, api_model_id, capability_id, meter);
-
 -- =========================
 -- data_api_pricing_conditions
 -- =========================
@@ -167,6 +151,5 @@ create table if not exists public.data_api_pricing_conditions (
   note          text null,
   created_at    timestamptz not null default now()
 );
-
 create index if not exists data_api_pricing_conditions_rule_idx
   on public.data_api_pricing_conditions (rule_id, or_group, and_index);

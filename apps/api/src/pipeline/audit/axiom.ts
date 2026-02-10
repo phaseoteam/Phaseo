@@ -45,6 +45,7 @@ export type AxiomArgs = {
     success: boolean;
     errorCode?: string | null;        // use for failure paths if you log them here
     errorMessage?: string | null;
+    errorType?: "system" | "user" | null;
 
     // Timings (ms)
     // End-to-end (redundant but handy)
@@ -58,6 +59,11 @@ export type AxiomArgs = {
         input_text_tokens?: number | null;
         output_text_tokens?: number | null;
         total_tokens?: number | null;
+        request_tool_count?: number | null;
+        request_tool_result_count?: number | null;
+        output_tool_call_count?: number | null;
+        tool_call_count?: number | null;
+        tool_result_count?: number | null;
         cached_read_text_tokens?: number | null;
         reasoning_tokens?: number | null;
         input_audio_tokens?: number | null;
@@ -152,6 +158,11 @@ export type AxiomArgs = {
         failure_reasons?: string[] | null;
         circuit_breaker_open?: boolean | null;
         was_probe?: boolean | null;
+        requested_params_count?: number | null;
+        requested_params?: string[] | null;
+        param_provider_count_before?: number | null;
+        param_provider_count_after?: number | null;
+        param_dropped_provider_count?: number | null;
     } | null;
 
     // Misc
@@ -242,6 +253,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
         success: !!a.success,
         error_code: a.errorCode ?? null,
         error_message: a.errorMessage ?? null,
+        error_type: a.errorType ?? null,
         request_method: a.requestMethod ?? null,
         request_path: a.requestPath ?? null,
         request_url: a.requestUrl ?? null,
@@ -268,6 +280,9 @@ export function buildAxiomEvent(a: AxiomArgs) {
         usage_tokens_in: tokensIn,
         usage_tokens_out: tokensOut,
         usage_tokens_total: tokensTot,
+        usage_request_tool_count: a.usage?.request_tool_count ?? null,
+        usage_request_tool_result_count: a.usage?.request_tool_result_count ?? a.usage?.tool_result_count ?? null,
+        usage_output_tool_call_count: a.usage?.output_tool_call_count ?? a.usage?.tool_call_count ?? null,
         usage_cached_tokens: a.usage?.cached_read_text_tokens ?? null,
         usage_reasoning_tokens: a.usage?.reasoning_tokens ?? null,
         usage_audio_tokens_in: a.usage?.input_audio_tokens ?? null,
@@ -369,6 +384,11 @@ export function buildAxiomEvent(a: AxiomArgs) {
         routing_failure_reasons: a.routingContext?.failure_reasons ?? null,
         routing_circuit_breaker_open: a.routingContext?.circuit_breaker_open ?? null,
         routing_was_probe: a.routingContext?.was_probe ?? null,
+        routing_requested_params_count: a.routingContext?.requested_params_count ?? null,
+        routing_requested_params: a.routingContext?.requested_params ?? null,
+        routing_param_provider_count_before: a.routingContext?.param_provider_count_before ?? null,
+        routing_param_provider_count_after: a.routingContext?.param_provider_count_after ?? null,
+        routing_param_dropped_provider_count: a.routingContext?.param_dropped_provider_count ?? null,
 
         // ====================================================================
         // MISC
@@ -409,7 +429,8 @@ export async function sendAxiomEvent(args: AxiomArgs) {
     const token = args.token ?? bindings.AXIOM_API_KEY;
 
     if (!dataset || !token) {
-        throw new Error(`[ERROR Axiom] Missing configuration for requestId ${args.requestId}: dataset=${!!dataset}, token=${!!token}`);
+        // Non-blocking by design: silently skip when Axiom is not configured.
+        return;
     }
 
     const event = buildAxiomEvent(args);
@@ -435,14 +456,19 @@ export async function sendAxiomEvent(args: AxiomArgs) {
             const error = new Error(`[ERROR Axiom] Ingest failed for requestId ${args.requestId}: status ${res.status} ${res.statusText}`);
             (error as any).response = responseText.substring(0, 500);
             (error as any).status = res.status;
+            (error as any).code = "axiom_http_error";
             throw error;
         }
     } catch (err) {
         if (err instanceof Error && err.name === "AbortError") {
-            throw new Error(`[ERROR Axiom] Request timeout for requestId ${args.requestId}`);
+            const timeoutError = new Error(`[ERROR Axiom] Request timeout for requestId ${args.requestId}`);
+            (timeoutError as any).code = "axiom_timeout";
+            throw timeoutError;
         }
         if (err instanceof Error) throw err;
-        throw new Error(`[ERROR Axiom] Ingest error for requestId ${args.requestId}: ${String(err)}`);
+        const wrapped = new Error(`[ERROR Axiom] Ingest error for requestId ${args.requestId}: ${String(err)}`);
+        (wrapped as any).code = "axiom_ingest_error";
+        throw wrapped;
     } finally {
         clearTimeout(timeoutId);
     }

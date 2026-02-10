@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { buildMetadata } from "@/lib/seo";
 import PricingCalculator from "@/components/(tools)/PricingCalculator";
 import { getPricingModelsCached } from "@/lib/fetchers/pricing/getPricingModels";
@@ -70,6 +71,18 @@ export default async function PricingCalculatorPage({
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+	return (
+		<Suspense fallback={<PricingCalculator initialModels={[]} totalModelsCount={0} providersCount={0} />}>
+			<PricingCalculatorPageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function PricingCalculatorPageContent({
+	searchParams,
+}: {
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
 	const includeHidden = await resolveIncludeHidden();
 	const models = await getPricingModelsCached(includeHidden);
 	const resolvedSearchParams = await searchParams;
@@ -86,16 +99,14 @@ export default async function PricingCalculatorPage({
 	const providers = Array.from(new Set(models.map((m) => m.provider))).sort();
 
 	return (
-		<>
-			<PricingCalculator
-				initialModels={models}
-				initialModel={parsedParams.model || undefined}
-				initialEndpoint={parsedParams.endpoint || undefined}
-				initialProvider={parsedParams.provider || undefined}
-				initialPlan={parsedParams.plan || undefined}
-				totalModelsCount={modelNames.length}
-				providersCount={providers.length}
-			/>
-		</>
+		<PricingCalculator
+			initialModels={models}
+			initialModel={parsedParams.model || undefined}
+			initialEndpoint={parsedParams.endpoint || undefined}
+			initialProvider={parsedParams.provider || undefined}
+			initialPlan={parsedParams.plan || undefined}
+			totalModelsCount={modelNames.length}
+			providersCount={providers.length}
+		/>
 	);
 }

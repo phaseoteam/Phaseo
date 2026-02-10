@@ -14,7 +14,32 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -33,7 +58,29 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -52,7 +99,29 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -71,7 +140,29 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -90,7 +181,29 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -109,7 +222,29 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          },
+          {
+            "param_id": "reasoning.enabled"
+          }
+        ]
       }
     ]
   },
@@ -128,7 +263,29 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          },
+          {
+            "param_id": "reasoning.enabled"
+          }
+        ]
       }
     ]
   },
@@ -143,7 +300,29 @@
     "output_modalities": "text",
     "effective_from": "2025-04-14T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
+      }
+    ]
   },
   {
     "api_model_id": "z-ai/glm-4-7-flash:free",
@@ -160,7 +339,29 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          },
+          {
+            "param_id": "reasoning.enabled"
+          }
+        ]
       }
     ]
   },

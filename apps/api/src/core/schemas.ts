@@ -198,7 +198,15 @@ const ResponseFormatSchema = z.union([
     z.object({
         type: z.string(),
         schema: z.any().optional(),
-    }),
+        name: z.string().optional(),
+        strict: z.boolean().optional(),
+        json_schema: z.object({
+            name: z.string().optional(),
+            strict: z.boolean().optional(),
+            schema: z.any().optional(),
+            schema_: z.any().optional(),
+        }).optional(),
+    }).passthrough(),
 ]);
 
 const ToolCallSchema = z.object({
@@ -250,6 +258,7 @@ export const ChatCompletionsSchema = z.object({
     frequency_penalty: z.number().min(-2).max(2).optional(),
     logit_bias: z.record(z.number()).optional(),
     max_output_tokens: z.number().int().positive().optional(),
+    max_tokens: z.number().int().positive().optional(),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
@@ -280,6 +289,7 @@ export const ChatCompletionsSchema = z.object({
     modalities: z.array(z.enum(["text", "image"])).optional(),
     // This is used as the safety identifer/userid across providers
     user_id: z.string().optional(),
+    user: z.string().optional(),
 
     // Will be implemented in future, for now, standard tier only
     service_tier: z.enum(["flex", "standard", "priority"]).optional().default("standard"),
@@ -351,7 +361,8 @@ export const AnthropicMessagesSchema = z.object({
         })
     ).min(1),
     system: z.union([z.string(), z.array(AnthropicContentBlockSchema)]).optional(),
-    max_tokens: z.number().int().positive(),
+    max_tokens: z.number().int().positive().optional(),
+    max_output_tokens: z.number().int().positive().optional(),
     temperature: z.number().min(0).max(1).optional(),
     top_p: z.number().min(0).max(1).optional(),
     top_k: z.number().int().positive().optional(),
@@ -361,6 +372,17 @@ export const AnthropicMessagesSchema = z.object({
     metadata: z.record(z.any()).optional(),
     service_tier: z.string().optional(),
     speed: z.string().optional(),
+    thinking: z.object({
+        type: z.enum(["enabled", "disabled", "adaptive"]),
+        budget_tokens: z.number().int().nonnegative().optional(),
+        effort: z.enum(["low", "medium", "high", "max", "xhigh"]).optional(),
+    }).optional(),
+    output_config: z.object({
+        effort: z.enum(["low", "medium", "high", "max", "xhigh"]).optional(),
+    }).optional(),
+    reasoning: z.object({
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
+    }).optional(),
     modalities: z.array(z.enum(["text", "image"])).optional(),
     stop_sequences: z.array(z.string()).optional(),
     // Gateway-only flags (not forwarded upstream)
@@ -368,7 +390,18 @@ export const AnthropicMessagesSchema = z.object({
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,
-}).passthrough();
+}).passthrough()
+    .refine((obj) => obj.max_tokens != null || obj.max_output_tokens != null, {
+        message: "max_tokens or max_output_tokens is required",
+        path: ["max_tokens"],
+    })
+    .transform((obj) => {
+        const next: any = { ...obj };
+        if (next.max_tokens == null && next.max_output_tokens != null) {
+            next.max_tokens = next.max_output_tokens;
+        }
+        return next;
+    });
 
 export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesSchema>;
 

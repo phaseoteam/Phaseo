@@ -43,6 +43,7 @@ type PricingJSON = {
     api_provider_id: string;          // NOTE: matches providers table
     provider_slug: string;            // not stored
     model_id: string;
+    api_model_id?: string;
     capability_id?: string;
     endpoint?: string;
     capability?: Record<string, unknown>;
@@ -117,13 +118,20 @@ export async function loadPricing(
             for (const mPath of modelDirs) {
                 const fp = join(mPath, "pricing.json");
                 const { data: j, hash } = await readJsonWithHash<PricingJSON>(fp);
-                if (modelId && j.model_id !== modelId) continue;
+                const modelIdFromFile = j.model_id ?? j.api_model_id;
+                if (!modelIdFromFile) {
+                    throw new Error(`pricing.json missing model_id/api_model_id: ${fp}`);
+                }
+                if (modelId && modelIdFromFile !== modelId) continue;
                 const capability_id = j.capability_id ?? j.endpoint ?? capabilityFallback;
-                const computedKey = j.key && j.key.trim() ? j.key : `${j.api_provider_id}:${j.model_id}:${capability_id}`;
+                const computedKey =
+                    j.key && j.key.trim()
+                        ? j.key
+                        : `${j.api_provider_id}:${modelIdFromFile}:${capability_id}`;
                 const change = tracker.track(fp, hash, {
                     api_provider_id: j.api_provider_id,
                     capability_id,
-                    model_id: j.model_id,
+                    model_id: modelIdFromFile,
                     model_key: computedKey,
                 });
 
@@ -144,7 +152,7 @@ export async function loadPricing(
                 for (const r of ruleRows) {
                     const prio = r.priority ?? 100;
                     const digest = digestRule(r);
-                    const bucket = `${j.api_provider_id}|${j.model_id}|${capability_id}|${r.meter}|${prio}|${digest}`;
+                    const bucket = `${j.api_provider_id}|${modelIdFromFile}|${capability_id}|${r.meter}|${prio}|${digest}`;
                     const occur = (seenBuckets.get(bucket) ?? 0) + 1;
                     seenBuckets.set(bucket, occur);
 
@@ -171,7 +179,7 @@ export async function loadPricing(
                     });
                 }
 
-                if (change.status !== "unchanged") {
+                if (modelId || change.status !== "unchanged") {
                     capabilityState.ruleReplacements.push({ model_key: computedKey, rows: desiredRules });
                     hasChanges = true;
                 }
@@ -181,7 +189,7 @@ export async function loadPricing(
         }
     }
 
-    const deleted = tracker.getDeleted(DIR_PRICING);
+    const deleted = modelId ? [] : tracker.getDeleted(DIR_PRICING);
     if (deleted.length) hasChanges = true;
     const deletedByCapability = new Map<string, Array<{ model_key?: string }>>();
     for (const d of deleted) {
@@ -245,11 +253,13 @@ export async function loadPricing(
 
     if (!hasChanges) return;
 
-    await pruneRowsByColumn(
-        supa,
-        "data_api_pricing_rules",
-        "model_key",
-        pricingRuleKeys,
-        "data_api_pricing_rules"
-    );
+    if (!modelId) {
+        await pruneRowsByColumn(
+            supa,
+            "data_api_pricing_rules",
+            "model_key",
+            pricingRuleKeys,
+            "data_api_pricing_rules"
+        );
+    }
 }

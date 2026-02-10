@@ -1,5 +1,6 @@
 -- Include app_id in public top apps RPC and order by token usage
 
+DROP FUNCTION IF EXISTS public.get_public_top_apps(integer, text);
 CREATE OR REPLACE FUNCTION public.get_public_top_apps(
   p_limit integer DEFAULT 20,
   p_time_range text DEFAULT 'week'

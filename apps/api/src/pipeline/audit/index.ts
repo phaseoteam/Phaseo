@@ -15,6 +15,10 @@ function supaAdmin() {
 
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 250;
+const AXIOM_RETRY_ATTEMPTS = 1;
+const AXIOM_RETRY_DELAY_MS = 0;
+const AXIOM_LOG_THROTTLE_MS = 60_000;
+const axiomLogThrottle = new Map<string, number>();
 
 async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -98,6 +102,57 @@ function stripPricingFromUsage(usage: any): any {
     if (!usage || typeof usage !== 'object') return usage;
     const { pricing: _omit, ...rest } = usage;
     return rest;
+}
+
+function formatAxiomError(err: unknown): string {
+    if (err instanceof Error) return err.message;
+    if (typeof err === "string") return err;
+    return "unknown_error";
+}
+
+function logAxiomNonBlocking(label: string, err: unknown) {
+    const message = formatAxiomError(err);
+    // Remove volatile requestId suffixes to keep throttling effective.
+    const normalized = message.replace(/requestId\s+[A-Za-z0-9_\-]+/g, "requestId <redacted>");
+    const key = `${label}:${normalized}`;
+    const now = Date.now();
+    const last = axiomLogThrottle.get(key) ?? 0;
+    if (now - last < AXIOM_LOG_THROTTLE_MS) return;
+    axiomLogThrottle.set(key, now);
+    console.warn(`[audit] Axiom ingest failed (non-blocking): ${normalized}`);
+}
+
+function classifyAuditErrorType(errorCode: string | null | undefined, statusCode: number | null | undefined): "system" | "user" {
+    const code = String(errorCode ?? "").toLowerCase();
+    const raw = code.includes(":") ? code.split(":").slice(1).join(":") : code;
+    const status = Number(statusCode ?? 0);
+
+    const userHints = ["validation", "invalid_json", "unsupported_param", "unsupported_model_or_endpoint", "unsupported_modalities"];
+    const systemHints = [
+        "no_key",
+        "missing_api_key",
+        "provider_key",
+        "unauthorized",
+        "forbidden",
+        "timeout",
+        "overload",
+        "rate_limit",
+        "upstream",
+        "internal",
+        "executor",
+        "routing",
+        "breaker",
+    ];
+    if (systemHints.some((hint) => raw.includes(hint))) return "system";
+    if (userHints.some((hint) => raw.includes(hint))) return "user";
+
+    if (code.startsWith("user:")) return "user";
+    if (code.startsWith("upstream:")) return "system";
+
+    if (status >= 500) return "system";
+    if (status === 429 || status === 408 || status === 401 || status === 403) return "system";
+    if (status >= 400) return "user";
+    return "system";
 }
 
 export async function auditSuccess(args: {
@@ -201,6 +256,7 @@ export async function auditSuccess(args: {
                 success: true,
                 errorCode: null,
                 errorMessage: null,
+                errorType: null,
                 generationMs: args.generationMs ?? null,
                 latencyMs: args.latencyMs ?? null,
                 internalLatencyMs: args.internalLatencyMs ?? null,
@@ -223,9 +279,9 @@ export async function auditSuccess(args: {
                 keyEnrichment: args.keyEnrichment ?? null,
                 requestEnrichment: args.requestEnrichment ?? null,
                 routingContext: args.routingContext ?? null,
-            }), "axiom_audit_success_ingest");
+            }), "axiom_audit_success_ingest", AXIOM_RETRY_ATTEMPTS, AXIOM_RETRY_DELAY_MS);
         } catch (err) {
-            console.error("[audit] Axiom ingest failed (non-blocking)", err);
+            logAxiomNonBlocking("axiom_audit_success_ingest", err);
         }
 
         if (supabaseError) throw supabaseError;
@@ -303,9 +359,9 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         };
         const runAxiom = async (payload: Parameters<typeof sendAxiomEvent>[0], label: string) => {
             try {
-                await retryWithBackoff(() => sendAxiomEvent(payload), label);
+                await retryWithBackoff(() => sendAxiomEvent(payload), label, AXIOM_RETRY_ATTEMPTS, AXIOM_RETRY_DELAY_MS);
             } catch (err) {
-                console.error("[audit] Axiom ingest failed (non-blocking)", err);
+                logAxiomNonBlocking(label, err);
             }
         };
 
@@ -372,6 +428,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 success: false,
                 errorCode: args.errorCode,
                 errorMessage: args.errorMessage ?? null,
+                errorType: classifyAuditErrorType(args.errorCode, args.statusCode),
                 generationMs: null,
                 latencyMs: args.latencyMs ?? null,
                 internalLatencyMs: args.internalLatencyMs ?? null,
@@ -451,6 +508,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             success: false,
             errorCode: args.errorCode,
             errorMessage: args.errorMessage ?? null,
+            errorType: classifyAuditErrorType(args.errorCode, args.statusCode),
             generationMs: args.generationMs ?? null,
             latencyMs: args.latencyMs ?? null,
             internalLatencyMs: args.internalLatencyMs ?? null,

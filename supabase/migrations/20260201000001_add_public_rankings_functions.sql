@@ -7,16 +7,12 @@
 -- Add indexes for performance
 CREATE INDEX IF NOT EXISTS idx_gateway_requests_model_created
   ON public.gateway_requests(model_id, created_at) WHERE model_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_gateway_requests_provider_created
   ON public.gateway_requests(provider, created_at) WHERE provider IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_gateway_requests_app_created
   ON public.gateway_requests(app_id, created_at) WHERE app_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_gateway_requests_success_created
   ON public.gateway_requests(success, created_at);
-
 -- =========================
 -- Function: get_public_model_rankings
 -- Returns: Top models by metric (tokens, requests, cost) for time range
@@ -147,7 +143,6 @@ BEGIN
   ORDER BY rc.rk;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_usage_timeseries
 -- Returns: Time-bucketed usage for charting
@@ -218,7 +213,6 @@ BEGIN
   ORDER BY bd.time_bucket, bd.req_count DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_model_performance
 -- Returns: Cost, throughput, latency for scatter chart (last 24h)
@@ -265,7 +259,6 @@ BEGIN
   ORDER BY requests DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_market_share
 -- Returns: Organization/provider market share
@@ -347,7 +340,6 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_trending_models
 -- Returns: Models with highest velocity (rate of change over time)
@@ -400,7 +392,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_top_apps
 -- Returns: Top applications by usage (anonymized)
@@ -442,7 +433,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_reliability_metrics
 -- Returns: Success rates and error distributions
@@ -517,7 +507,6 @@ BEGIN
   ORDER BY success_rate ASC, total_requests DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_geographic_distribution
 -- Returns: Request distribution by country (for bar chart)
@@ -564,7 +553,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_multimodal_breakdown
 -- Returns: Token distribution by modality
@@ -616,7 +604,6 @@ BEGIN
   ORDER BY (text_tokens + audio_tokens + video_tokens) DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_summary_stats
 -- Returns: Overall gateway statistics
@@ -643,7 +630,6 @@ BEGIN
   WHERE created_at >= now() - interval '24 hours';
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- Add comments for documentation
 COMMENT ON FUNCTION public.get_public_model_rankings IS 'Public rankings of models by usage metrics with trend indicators';
 COMMENT ON FUNCTION public.get_public_usage_timeseries IS 'Time-series usage data for top N models with bucketing';

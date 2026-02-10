@@ -1,13 +1,10 @@
 -- Add public visibility flag and metadata for apps
 alter table public.api_apps
   add column if not exists is_public boolean not null default false;
-
 alter table public.api_apps
   add column if not exists image_url text;
-
 create index if not exists idx_api_apps_public_active
   on public.api_apps (is_public, is_active);
-
 -- Aggregate total tokens/requests for an app
 create or replace function public.get_app_totals(
   p_app_id uuid
@@ -23,7 +20,6 @@ returns table (
   where gr.app_id = p_app_id
     and gr.success = true;
 $$ language sql stable;
-
 -- Aggregate usage by day + model for an app
 create or replace function public.get_app_usage_timeseries(
   p_app_id uuid,
@@ -47,7 +43,6 @@ returns table (
   group by 1, 2
   order by 1, 2;
 $$ language sql stable;
-
 -- Top models for an app within a window
 create or replace function public.get_app_top_models(
   p_app_id uuid,
@@ -73,7 +68,6 @@ returns table (
   order by tokens desc, requests desc
   limit p_limit;
 $$ language sql stable;
-
 -- Top model (all time) for an app
 create or replace function public.get_app_top_model_all_time(
   p_app_id uuid
@@ -94,7 +88,6 @@ returns table (
   order by tokens desc
   limit 1;
 $$ language sql stable;
-
 -- Rising model in the last week vs previous week
 create or replace function public.get_app_rising_model(
   p_app_id uuid,

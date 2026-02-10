@@ -347,5 +347,43 @@ describe("encodeOpenAIChatResponse", () => {
 		expect(response.choices[0].message.reasoning_details?.[0].type).toBe("text");
 		expect(response.choices[0].message.reasoning_details?.[0].text).toBe("Thinking...");
 	});
+
+	it("should encode image parts onto message.images", () => {
+		const ir: IRChatResponse = {
+			id: "req-123",
+			nativeId: "chatcmpl-abc123",
+			model: "google/gemini-3-pro-image-preview",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "text", text: "Here is your image." },
+							{
+								type: "image",
+								source: "data",
+								data: "ZmFrZS1pbWFnZS1kYXRh",
+								mimeType: "image/png",
+							},
+						],
+					},
+					finishReason: "stop",
+				},
+			],
+		};
+
+		const response = encodeOpenAIChatResponse(ir, "req-123");
+		const images = response.choices[0].message.images ?? [];
+
+		expect(images).toHaveLength(1);
+		expect(images[0]).toEqual({
+			type: "image_url",
+			image_url: {
+				url: "data:image/png;base64,ZmFrZS1pbWFnZS1kYXRh",
+			},
+			mime_type: "image/png",
+		});
+	});
 });
 

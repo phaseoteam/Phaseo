@@ -28,11 +28,8 @@ left join public.oauth_authorizations oa on oa.client_id = oam.client_id
 left join public.gateway_requests gr on gr.oauth_client_id = oam.client_id
 where oam.status = 'active'
 group by oam.id;
-
 grant select on public.oauth_apps_with_stats to authenticated;
-
 comment on view public.oauth_apps_with_stats is 'OAuth apps with authorization and usage statistics. SECURITY INVOKER - respects RLS policies on underlying tables.';
-
 -- Recreate user_authorized_apps as SECURITY INVOKER
 drop view if exists public.user_authorized_apps;
 create view public.user_authorized_apps
@@ -57,18 +54,14 @@ join public.teams t on t.id = oa.team_id
 where oa.revoked_at is null
   and oam.status = 'active'
 order by oa.last_used_at desc nulls last;
-
 grant select on public.user_authorized_apps to authenticated;
-
 comment on view public.user_authorized_apps is 'Active OAuth authorizations for the current user with app details. SECURITY INVOKER - respects RLS policies on underlying tables.';
-
 -- =========================
 -- Ensure RLS on teams table
 -- =========================
 -- The teams table must have RLS enabled for the views to be secure
 
 alter table public.teams enable row level security;
-
 -- Policy: Users can view teams they are members of
 drop policy if exists teams_select_member on public.teams;
 create policy teams_select_member
@@ -76,7 +69,6 @@ create policy teams_select_member
   for select
   to authenticated
   using (public.is_team_member(id));
-
 -- Policy: Users can update teams they are members of (for team settings)
 drop policy if exists teams_update_member on public.teams;
 create policy teams_update_member
@@ -85,14 +77,12 @@ create policy teams_update_member
   to authenticated
   using (public.is_team_member(id))
   with check (public.is_team_member(id));
-
 -- =========================
 -- Ensure RLS on gateway_requests table
 -- =========================
 -- Gateway requests should only be viewable by team members
 
 alter table public.gateway_requests enable row level security;
-
 -- Policy: Team members can view their team's gateway requests
 drop policy if exists gateway_requests_select_own_team on public.gateway_requests;
 create policy gateway_requests_select_own_team
@@ -100,7 +90,6 @@ create policy gateway_requests_select_own_team
   for select
   to authenticated
   using (public.is_team_member(team_id));
-
 -- Policy: Service role can insert gateway requests (for audit logging from API)
 drop policy if exists gateway_requests_insert_service on public.gateway_requests;
 create policy gateway_requests_insert_service
@@ -108,7 +97,6 @@ create policy gateway_requests_insert_service
   for insert
   to service_role
   with check (true);
-
 -- =========================
 -- Grant service role bypass
 -- =========================
@@ -125,7 +113,6 @@ grant select, insert, update on public.gateway_requests to service_role;
 grant select, update on public.oauth_authorizations to service_role;
 grant select on public.oauth_app_metadata to service_role;
 grant select on public.teams to service_role;
-
 -- =========================
 -- Verification
 -- =========================

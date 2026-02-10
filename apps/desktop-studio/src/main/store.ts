@@ -5,19 +5,38 @@ import type {
   AppSettings,
   BootstrapData,
   ChatMessage,
+  ModeModelSelection,
+  ProviderProfile,
   Session,
   StoreShape,
+  ThemePreference,
   StudioMode
 } from "@shared/types";
 
 const STORE_FILENAME = "studio-store-v1.json";
 
+const DEFAULT_GATEWAY_PROVIDER: ProviderProfile = {
+  id: "provider-ai-stats-gateway",
+  name: "AI Stats Gateway",
+  kind: "openai-compatible",
+  baseUrl: "https://api.phaseo.app/v1",
+  apiKey: "",
+  models: ["gpt-5-mini", "gpt-5"],
+  defaultModel: "gpt-5-mini"
+};
+
 const DEFAULT_SETTINGS: AppSettings = {
-  provider: "mock",
-  openAiBaseUrl: "https://api.openai.com/v1",
-  openAiApiKey: "",
-  openAiModel: "gpt-5-mini",
-  commandSafetyPrompt: true
+  providers: [DEFAULT_GATEWAY_PROVIDER],
+  chatSelection: {
+    providerId: DEFAULT_GATEWAY_PROVIDER.id,
+    model: DEFAULT_GATEWAY_PROVIDER.defaultModel
+  },
+  codeSelection: {
+    providerId: DEFAULT_GATEWAY_PROVIDER.id,
+    model: DEFAULT_GATEWAY_PROVIDER.defaultModel
+  },
+  commandSafetyPrompt: true,
+  theme: "system"
 };
 
 const DEFAULT_STORE: StoreShape = {
@@ -30,6 +49,155 @@ const DEFAULT_STORE: StoreShape = {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function uniqueNonEmpty(values: string[]): string[] {
+  const seen = new Set<string>();
+  const output: string[] = [];
+  for (const value of values) {
+    const trimmed = value.trim();
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+    seen.add(trimmed);
+    output.push(trimmed);
+  }
+  return output;
+}
+
+function cloneSettings(settings: AppSettings): AppSettings {
+  return {
+    providers: settings.providers.map((provider) => ({
+      ...provider,
+      models: [...provider.models]
+    })),
+    chatSelection: { ...settings.chatSelection },
+    codeSelection: { ...settings.codeSelection },
+    commandSafetyPrompt: settings.commandSafetyPrompt,
+    theme: settings.theme
+  };
+}
+
+function normalizeThemePreference(value: unknown): ThemePreference {
+  if (value === "light" || value === "dark" || value === "system") {
+    return value;
+  }
+
+  return "system";
+}
+
+function normalizeProvider(input: any): ProviderProfile {
+  const kind = "openai-compatible";
+  const models = uniqueNonEmpty(
+    Array.isArray(input?.models)
+      ? input.models.map((value: unknown) => String(value))
+      : String(input?.defaultModel ?? DEFAULT_GATEWAY_PROVIDER.defaultModel).split(",")
+  );
+
+  const fallbackModel =
+    String(input?.defaultModel ?? DEFAULT_GATEWAY_PROVIDER.defaultModel).trim() ||
+    DEFAULT_GATEWAY_PROVIDER.defaultModel;
+
+  if (models.length === 0) {
+    models.push(fallbackModel);
+  }
+
+  const defaultModel =
+    String(input?.defaultModel ?? models[0] ?? fallbackModel).trim() || models[0] || fallbackModel;
+
+  if (!models.includes(defaultModel)) {
+    models.unshift(defaultModel);
+  }
+
+  return {
+    id: String(input?.id ?? DEFAULT_GATEWAY_PROVIDER.id).trim() || DEFAULT_GATEWAY_PROVIDER.id,
+    name: String(input?.name ?? DEFAULT_GATEWAY_PROVIDER.name).trim() || DEFAULT_GATEWAY_PROVIDER.name,
+    kind,
+    baseUrl: DEFAULT_GATEWAY_PROVIDER.baseUrl,
+    apiKey: String(input?.apiKey ?? ""),
+    models,
+    defaultModel
+  };
+}
+
+function normalizeSelection(
+  selection: Partial<ModeModelSelection> | undefined,
+  providers: ProviderProfile[],
+  fallbackProviderId: string
+): ModeModelSelection {
+  const providerId = selection?.providerId && providers.some((provider) => provider.id === selection.providerId)
+    ? selection.providerId
+    : fallbackProviderId;
+
+  const provider = providers.find((item) => item.id === providerId) ?? providers[0];
+  const model = selection?.model?.trim();
+
+  if (!provider) {
+    return {
+      providerId: fallbackProviderId,
+      model: ""
+    };
+  }
+
+  if (model && provider.models.includes(model)) {
+    return {
+      providerId,
+      model
+    };
+  }
+
+  return {
+    providerId,
+    model: provider.defaultModel || provider.models[0] || ""
+  };
+}
+
+function normalizeSettings(raw: any): AppSettings {
+  const legacyModel = String(raw?.openAiModel ?? DEFAULT_GATEWAY_PROVIDER.defaultModel);
+  const legacyApiKey = String(raw?.openAiApiKey ?? "");
+
+  const providersRaw: unknown[] = Array.isArray(raw?.providers) && raw.providers.length > 0
+    ? raw.providers
+    : [{
+      ...DEFAULT_GATEWAY_PROVIDER,
+      apiKey: legacyApiKey,
+      defaultModel: legacyModel,
+      models: uniqueNonEmpty([legacyModel, ...DEFAULT_GATEWAY_PROVIDER.models])
+    }];
+
+  const selectedGatewaySource =
+    providersRaw.find(
+      (provider) => provider && typeof provider === "object" && (provider as ProviderProfile).kind === "openai-compatible"
+    ) ??
+    {
+      ...DEFAULT_GATEWAY_PROVIDER,
+      apiKey: legacyApiKey,
+      defaultModel: legacyModel,
+      models: uniqueNonEmpty([legacyModel, ...DEFAULT_GATEWAY_PROVIDER.models])
+    };
+
+  const gatewayProvider: ProviderProfile = {
+    ...normalizeProvider(selectedGatewaySource),
+    id: DEFAULT_GATEWAY_PROVIDER.id,
+    name: DEFAULT_GATEWAY_PROVIDER.name
+  };
+
+  const providers: ProviderProfile[] = [gatewayProvider];
+  const defaultLegacySelection: Partial<ModeModelSelection> = {
+    providerId: gatewayProvider.id,
+    model: legacyModel
+  };
+
+  const chatSelection = normalizeSelection(raw?.chatSelection ?? defaultLegacySelection, providers, gatewayProvider.id);
+  const codeSelection = normalizeSelection(raw?.codeSelection ?? defaultLegacySelection, providers, gatewayProvider.id);
+
+  return {
+    providers,
+    chatSelection,
+    codeSelection,
+    commandSafetyPrompt: raw?.commandSafetyPrompt !== false,
+    theme: normalizeThemePreference(raw?.theme)
+  };
 }
 
 export class StudioStore {
@@ -45,23 +213,21 @@ export class StudioStore {
   private load(): StoreShape {
     try {
       if (!existsSync(this.filePath)) {
-        return { ...DEFAULT_STORE, settings: { ...DEFAULT_SETTINGS } };
+        return { ...DEFAULT_STORE, settings: cloneSettings(DEFAULT_SETTINGS) };
       }
 
       const raw = readFileSync(this.filePath, "utf8");
       const parsed = JSON.parse(raw) as Partial<StoreShape>;
+
       return {
         sessions: parsed.sessions ?? [],
         messages: parsed.messages ?? [],
-        settings: {
-          ...DEFAULT_SETTINGS,
-          ...(parsed.settings ?? {})
-        },
+        settings: normalizeSettings(parsed.settings ?? {}),
         activeSessionId: parsed.activeSessionId ?? null,
         workspacePath: parsed.workspacePath ?? null
       };
     } catch {
-      return { ...DEFAULT_STORE, settings: { ...DEFAULT_SETTINGS } };
+      return { ...DEFAULT_STORE, settings: cloneSettings(DEFAULT_SETTINGS) };
     }
   }
 
@@ -73,7 +239,7 @@ export class StudioStore {
   bootstrap(): BootstrapData {
     return {
       sessions: [...this.data.sessions].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-      settings: { ...this.data.settings },
+      settings: cloneSettings(this.data.settings),
       activeSessionId: this.data.activeSessionId,
       workspacePath: this.data.workspacePath
     };
@@ -176,16 +342,26 @@ export class StudioStore {
   }
 
   updateSettings(partial: Partial<AppSettings>): AppSettings {
-    this.data.settings = {
+    const candidate: Partial<AppSettings> = {
       ...this.data.settings,
-      ...partial
+      ...partial,
+      chatSelection: {
+        ...this.data.settings.chatSelection,
+        ...(partial.chatSelection ?? {})
+      },
+      codeSelection: {
+        ...this.data.settings.codeSelection,
+        ...(partial.codeSelection ?? {})
+      }
     };
+
+    this.data.settings = normalizeSettings(candidate);
     this.persist();
-    return this.data.settings;
+    return cloneSettings(this.data.settings);
   }
 
   getSettings(): AppSettings {
-    return { ...this.data.settings };
+    return cloneSettings(this.data.settings);
   }
 
   setWorkspace(path: string | null): void {

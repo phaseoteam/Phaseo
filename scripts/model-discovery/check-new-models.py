@@ -275,7 +275,7 @@ def fetch_together_models() -> list[str]:
         return []
 
 def fetch_moonshot_ai_models() -> list[str]:
-    api_key = os.getenv('MOONSHOT_API_KEY')
+    api_key = os.getenv('MOONSHOT_AI_API_KEY')
     if not api_key:
         return []
     try:

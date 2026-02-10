@@ -1,4 +1,4 @@
-import type { ImageModelV1, ImageModelV1CallOptions } from '@ai-sdk/provider';
+import type { ImageModelV3, ImageModelV3CallOptions } from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
@@ -6,8 +6,8 @@ import { createAIStatsErrorHandler } from './utils/error-handler.js';
  * AI Stats Image Model implementation for Vercel AI SDK v1
  * Supports image generation via /v1/images/generations
  */
-export class AIStatsImageModel implements ImageModelV1 {
-  readonly specificationVersion = 'v2' as const;
+export class AIStatsImageModel implements ImageModelV3 {
+  readonly specificationVersion = 'v3' as const;
   readonly provider = 'ai-stats' as const;
   readonly modelId: string;
   readonly maxImagesPerCall: number | undefined = 10;
@@ -28,15 +28,18 @@ export class AIStatsImageModel implements ImageModelV1 {
   /**
    * Generate images from a text prompt
    */
-  async doGenerate(options: ImageModelV1CallOptions) {
-    const { prompt, n, size, abortSignal, aspectRatio, providerOptions } = options;
+  async doGenerate(options: ImageModelV3CallOptions) {
+    const { prompt, n, size, abortSignal, aspectRatio, providerOptions, headers } = options;
 
     // Build request payload
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       model: this.modelId,
-      prompt,
       n: n ?? 1,
     };
+
+    if (prompt) {
+      payload.prompt = prompt;
+    }
 
     // Handle size or aspect ratio
     if (size) {
@@ -53,7 +56,9 @@ export class AIStatsImageModel implements ImageModelV1 {
 
     // Add provider-specific options
     if (providerOptions) {
-      Object.assign(payload, providerOptions);
+      for (const providerConfig of Object.values(providerOptions)) {
+        Object.assign(payload, providerConfig);
+      }
     }
 
     // Add user if provided
@@ -71,6 +76,7 @@ export class AIStatsImageModel implements ImageModelV1 {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.config.apiKey}`,
         ...this.config.headers,
+        ...headers,
       },
       body: JSON.stringify(payload),
       signal: abortSignal,

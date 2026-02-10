@@ -7,13 +7,13 @@
     {
       "frequency": "monthly",
       "usd_price": 19.99,
-      "link": null,
+      "link": "https://gemini.google/subscriptions/",
       "other_info": null
     },
     {
       "frequency": "yearly",
       "usd_price": 199.99,
-      "link": null,
+      "link": "https://gemini.google/subscriptions/",
       "other_info": null
     }
   ],
@@ -59,7 +59,7 @@
     {
       "model_id": "google/gemini-3-pro-preview-2025-11-18",
       "model_info": null,
-      "rate_limit": "100 Messages / Day",
+      "rate_limit": "Up To 100 Messages / Day",
       "other_info": null
     }
   ]

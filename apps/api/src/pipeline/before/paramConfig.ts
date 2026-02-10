@@ -78,6 +78,7 @@ export function isParamSupported(
 	paramName: string
 ): boolean {
 	if (!params || typeof params !== "object") return false;
+	if (Object.keys(params).length === 0) return true;
 	return paramName in params;
 }
 
@@ -109,6 +110,10 @@ export function getResponseFormatConfig(params: ParameterConfig | undefined | nu
 	types?: string[];
 	structuredOutputs?: boolean;
 } {
+	if (params && typeof params === "object" && Object.keys(params).length === 0) {
+		return { supported: true };
+	}
+
 	if (!params || !params.response_format) {
 		return { supported: false };
 	}

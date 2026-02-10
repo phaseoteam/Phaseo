@@ -14,7 +14,44 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -33,7 +70,44 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "logprobs"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_logprobs"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -52,7 +126,44 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -71,7 +182,38 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty"
+          },
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "presence_penalty"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   }

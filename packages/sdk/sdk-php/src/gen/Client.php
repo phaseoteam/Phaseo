@@ -38,11 +38,19 @@ class Client
 		}
 		$response = curl_exec($ch);
 		$status = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+		if ($response === false) {
+			$error = curl_error($ch);
+			curl_close($ch);
+			throw new \RuntimeException("Request transport error: {$error}");
+		}
 		curl_close($ch);
+		if ($status === 0) {
+			throw new \RuntimeException("Request failed: status=0");
+		}
 		if ($status >= 400) {
 			throw new \RuntimeException("Request failed: {$status}");
 		}
-		if ($response === false || $response === null || $response === "") {
+		if ($response === null || $response === "") {
 			return null;
 		}
 		$decoded = json_decode($response, true);

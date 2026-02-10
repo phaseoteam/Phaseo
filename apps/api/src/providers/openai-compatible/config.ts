@@ -244,27 +244,21 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/v1",
         apiKeyEnv: "MISTRAL_API_KEY",
         baseUrlEnv: "MISTRAL_BASE_URL",
-    },
-    moonshotai: {
-        providerId: "moonshotai",
-        baseUrl: "https://api.moonshot.cn",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MOONSHOT_API_KEY",
-        baseUrlEnv: "MOONSHOT_BASE_URL",
+        supportsResponses: false,
     },
     "moonshot-ai": {
         providerId: "moonshot-ai",
-        baseUrl: "https://api.moonshot.cn",
+        baseUrl: "https://api.moonshot.ai",
         pathPrefix: "/v1",
-        apiKeyEnv: "MOONSHOT_API_KEY",
-        baseUrlEnv: "MOONSHOT_BASE_URL",
+        apiKeyEnv: "MOONSHOT_AI_API_KEY",
+        baseUrlEnv: "MOONSHOT_AI_BASE_URL",
     },
     "moonshot-ai-turbo": {
         providerId: "moonshot-ai-turbo",
-        baseUrl: "https://api.moonshot.cn",
+        baseUrl: "https://api.moonshot.ai",
         pathPrefix: "/v1",
-        apiKeyEnv: "MOONSHOT_API_KEY",
-        baseUrlEnv: "MOONSHOT_BASE_URL",
+        apiKeyEnv: "MOONSHOT_AI_API_KEY",
+        baseUrlEnv: "MOONSHOT_AI_BASE_URL",
     },
     morph: {
         providerId: "morph",
@@ -496,7 +490,23 @@ export function isOpenAICompatProvider(providerId: string): boolean {
 export function openAICompatUrl(providerId: string, path: string): string {
     const config = resolveOpenAICompatConfig(providerId);
     const base = config.baseUrl?.replace(/\/+$/, "") ?? "";
-    const prefix = normalizePathSegment(config.pathPrefix ?? "/v1");
+    const configuredPrefix = normalizePathSegment(config.pathPrefix ?? "/v1");
+    let prefix = configuredPrefix;
+
+    // Many provider docs specify a base URL that already includes a path prefix
+    // (for example, `/v1` or `/compatible-mode/v1`). Avoid duplicating that path.
+    if (configuredPrefix) {
+        try {
+            const parsed = new URL(base);
+            const basePath = parsed.pathname.replace(/\/+$/, "");
+            if (basePath === configuredPrefix || basePath.endsWith(configuredPrefix)) {
+                prefix = "";
+            }
+        } catch {
+            // Ignore parse failures; fallback keeps existing behavior.
+        }
+    }
+
     const suffix = normalizePathSegment(path);
     return `${base}${prefix}${suffix}`;
 }

@@ -1366,11 +1366,11 @@
       }
     },
     "src/data/models/ai21/jamba-2-mini-2026-01-08/model.json": {
-      "hash": "056fcfc687534a6bd75eb7c3a57daa39",
+      "hash": "e9426df48fc9de00f63101a06402888f",
       "meta": {
         "model_id": "ai21/jamba-2-mini-2026-01-08",
         "organisation_id": "ai21",
-        "previous_model_id": null
+        "previous_model_id": "ai21/jamba-mini-1-7-2025-07-03"
       }
     },
     "src/data/models/ai21/jamba-large-1-5-2024-08-22/model.json": {
@@ -1526,11 +1526,11 @@
       }
     },
     "src/data/models/amazon/nova-2-sonic-2025-12-02/model.json": {
-      "hash": "f137719c533d9002c360a6668c3dfc82",
+      "hash": "cc9e96c2611c02ddf1f515dc9cb91c52",
       "meta": {
         "model_id": "amazon/nova-2-sonic-2025-12-02",
         "organisation_id": "amazon",
-        "previous_model_id": "amazon/nova-sonic"
+        "previous_model_id": "amazon/nova-sonic-2025-04-08"
       }
     },
     "src/data/models/amazon/nova-canvas-2024-12-03/model.json": {
@@ -1710,7 +1710,7 @@
       }
     },
     "src/data/models/anthropic/claude-instant-1-0-2023-03-14/model.json": {
-      "hash": "3fee371323581290145511b94bdc37fb",
+      "hash": "28d020babe7f9a4378c61fc40fdf8e94",
       "meta": {
         "model_id": "anthropic/claude-instant-1-0-2023-03-14",
         "organisation_id": "anthropic",
@@ -1718,7 +1718,7 @@
       }
     },
     "src/data/models/anthropic/claude-instant-1-1/model.json": {
-      "hash": "b93e3738ca4eafc7bd4df4dc45ba4e0a",
+      "hash": "557d7bc9237a0e99463350e928c905c8",
       "meta": {
         "model_id": "anthropic/claude-instant-1-1",
         "organisation_id": "anthropic",
@@ -1726,7 +1726,7 @@
       }
     },
     "src/data/models/anthropic/claude-instant-1-2-2023-08-09/model.json": {
-      "hash": "5e4c74170cdfb7046936615fc2f10607",
+      "hash": "1e968a44acc0c6dd19994eaf10a189dc",
       "meta": {
         "model_id": "anthropic/claude-instant-1-2-2023-08-09",
         "organisation_id": "anthropic",
@@ -1771,14 +1771,6 @@
         "model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
         "organisation_id": "anthropic",
         "previous_model_id": "anthropic/claude-sonnet-4-2025-05-21"
-      }
-    },
-    "src/data/models/anthropic/claude-sonnet-4-7/model.json": {
-      "hash": "c7885613d28148d480f0db5a4aa55922",
-      "meta": {
-        "model_id": "anthropic/claude-sonnet-4-7",
-        "organisation_id": "anthropic",
-        "previous_model_id": null
       }
     },
     "src/data/models/arcee-ai/trinity-mini-2025-12-01/model.json": {
@@ -2302,11 +2294,11 @@
       }
     },
     "src/data/models/deepseek/deepseek-v3-2025-03-25/model.json": {
-      "hash": "cb11793481c849800406d49e8bbf0baa",
+      "hash": "6263cdce1c562637e65d684a700e1160",
       "meta": {
         "model_id": "deepseek/deepseek-v3-2025-03-25",
         "organisation_id": "deepseek",
-        "previous_model_id": null
+        "previous_model_id": "deepseek/deepseek-v3-2024-12-26"
       }
     },
     "src/data/models/deepseek/deepseek-v4/model.json": {
@@ -2822,7 +2814,7 @@
       }
     },
     "src/data/models/google/gemini-3-flash-preview-2025-12-17/model.json": {
-      "hash": "0c9a56c39122fead2902ec7fb30223e2",
+      "hash": "d60b44cd1109cfc37b3d29126374d093",
       "meta": {
         "model_id": "google/gemini-3-flash-preview-2025-12-17",
         "organisation_id": "google",
@@ -2830,7 +2822,7 @@
       }
     },
     "src/data/models/google/gemini-3-pro-image-preview-2025-11-20/model.json": {
-      "hash": "d700cefcd661d2a0d8df3f0d31cd34b0",
+      "hash": "7b79cd60111c22305e8760ea78817699",
       "meta": {
         "model_id": "google/gemini-3-pro-image-preview-2025-11-20",
         "organisation_id": "google",
@@ -2966,11 +2958,11 @@
       }
     },
     "src/data/models/google/gemma-3-27b-2025-03-12/model.json": {
-      "hash": "bae3b109198feaabbe64c10e71f8ca3a",
+      "hash": "8a4a91163678018737f5aaa4c2e4e702",
       "meta": {
         "model_id": "google/gemma-3-27b-2025-03-12",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/gemma-2-27b-2024-06-27"
       }
     },
     "src/data/models/google/gemma-3-4b-2025-03-12/model.json": {
@@ -3006,19 +2998,19 @@
       }
     },
     "src/data/models/google/image-generation-005-2023-11-22/model.json": {
-      "hash": "28ce93e134797ed03a0e3cfcbefc39a5",
+      "hash": "8bb1e2cf6fc9af6974cb357da330620a",
       "meta": {
         "model_id": "google/image-generation-005-2023-11-22",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/image-generation-002-2023-08-17"
       }
     },
     "src/data/models/google/image-generation-006-2024-03-27/model.json": {
-      "hash": "12b8ed6df2ca376a6731ea5844fdbad1",
+      "hash": "5af90ec199c3c73dcd7a386eebad1817",
       "meta": {
         "model_id": "google/image-generation-006-2024-03-27",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/image-generation-005-2023-11-22"
       }
     },
     "src/data/models/google/image-text-2023-06-07/model.json": {
@@ -3038,11 +3030,11 @@
       }
     },
     "src/data/models/google/imagen-3-0-generate-002-2025-01-29/model.json": {
-      "hash": "7edf9d6ea0434dbb24a5901f9d232d5a",
+      "hash": "655e79e0ca47e5dcd7916ca06ef55abc",
       "meta": {
         "model_id": "google/imagen-3-0-generate-002-2025-01-29",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/imagen-3-0-generate-002-2025-01-29"
       }
     },
     "src/data/models/google/imagen-4-0-fast-generate-001-2025-08-14/model.json": {
@@ -3158,11 +3150,11 @@
       }
     },
     "src/data/models/google/text-embedding-005-2024-11-18/model.json": {
-      "hash": "e011bff2c3e23ab37d189b0531b5ad05",
+      "hash": "5dfce3273e9b8bdcd7a10c567eeb75d4",
       "meta": {
         "model_id": "google/text-embedding-005-2024-11-18",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/text-embedding-005-2024-11-18"
       }
     },
     "src/data/models/google/text-embedding-gecko-001-2023-06-07/model.json": {
@@ -3174,19 +3166,19 @@
       }
     },
     "src/data/models/google/text-embedding-gecko-002-2023-11-02/model.json": {
-      "hash": "2ec6327046953a81dcbd918d94e9a6f1",
+      "hash": "9c7529f23ac95889511218ea469bd764",
       "meta": {
         "model_id": "google/text-embedding-gecko-002-2023-11-02",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/text-embedding-gecko-001-2023-06-07"
       }
     },
     "src/data/models/google/text-embedding-gecko-003-2023-12-12/model.json": {
-      "hash": "f85e4e93d5307ab3bf53070a310cc380",
+      "hash": "a8f6a5df105743f1b584c4ea96cf4c6d",
       "meta": {
         "model_id": "google/text-embedding-gecko-003-2023-12-12",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/text-embedding-gecko-002-2023-11-02"
       }
     },
     "src/data/models/google/text-embedding-gecko-multilingual-001-2023-11-02/model.json": {
@@ -3246,19 +3238,19 @@
       }
     },
     "src/data/models/google/veo-3-2025-09-09/model.json": {
-      "hash": "4fe970630f501eef8b636ca90b847502",
+      "hash": "4c8cccea5769a3634f9ed881a7c04f5f",
       "meta": {
         "model_id": "google/veo-3-2025-09-09",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/veo-3-0-generate-preview-2025-07-17"
       }
     },
     "src/data/models/google/veo-3-fast-2025-09-09/model.json": {
-      "hash": "196c6e4e73e649bd6f990f9057afcea1",
+      "hash": "1f8ee4459a2fbaf6db84b7c063ce1371",
       "meta": {
         "model_id": "google/veo-3-fast-2025-09-09",
         "organisation_id": "google",
-        "previous_model_id": null
+        "previous_model_id": "google/veo-3-0-fast-generate-preview-2025-07-17"
       }
     },
     "src/data/models/google/veo-4/model.json": {
@@ -4582,11 +4574,11 @@
       }
     },
     "src/data/models/moonshot-ai/kimi-k2-2025-07-11/model.json": {
-      "hash": "a53119a42e0e81effc8d8812c01d5cac",
+      "hash": "5d3349d4cfba17278ba5fac8ed001e05",
       "meta": {
         "model_id": "moonshot-ai/kimi-k2-2025-07-11",
         "organisation_id": "moonshot-ai",
-        "previous_model_id": null
+        "previous_model_id": "moonshot-ai/kimi-k1-5-2025-01-20"
       }
     },
     "src/data/models/moonshot-ai/kimi-k2-2025-09-05/model.json": {
@@ -5174,7 +5166,7 @@
       }
     },
     "src/data/models/openai/gpt-4-turbo-2023-03-14/model.json": {
-      "hash": "04f2ffd7c6db6a04d2f399407535f26b",
+      "hash": "e2804e061becbae081b5101905a9be75",
       "meta": {
         "model_id": "openai/gpt-4-turbo-2023-03-14",
         "organisation_id": "openai",
@@ -5182,19 +5174,19 @@
       }
     },
     "src/data/models/openai/gpt-4-turbo-2023-11-06/model.json": {
-      "hash": "b1bff8948e73400465dbb9cc32e1153c",
+      "hash": "44d7c6acab6b8057ff5622f31c5ef485",
       "meta": {
         "model_id": "openai/gpt-4-turbo-2023-11-06",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-4-turbo-2023-03-14"
       }
     },
     "src/data/models/openai/gpt-4-turbo-2024-01-25/model.json": {
-      "hash": "a3726396bbc2eb5b43acca010c15d0fb",
+      "hash": "c3bef33d10e75ef5c09c99aec8113225",
       "meta": {
         "model_id": "openai/gpt-4-turbo-2024-01-25",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-4-turbo-2023-11-06"
       }
     },
     "src/data/models/openai/gpt-4o-2024-05-13/model.json": {
@@ -5446,11 +5438,11 @@
       }
     },
     "src/data/models/openai/gpt-5-pro-2025-08-07/model.json": {
-      "hash": "c82d7bf39d41ae23aa69d8eadcbc8565",
+      "hash": "b647c62263dde24d0aff704df1c0a359",
       "meta": {
         "model_id": "openai/gpt-5-pro-2025-08-07",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/o1-pro-2025-03-19"
       }
     },
     "src/data/models/openai/gpt-5-search-api-2025-10-14/model.json": {
@@ -5494,7 +5486,7 @@
       }
     },
     "src/data/models/openai/gpt-audio-mini-2025-10-06/model.json": {
-      "hash": "2c80ce5a19442b0170096cc08c1c706f",
+      "hash": "3609e6bb253d0f0aa1101120186743c2",
       "meta": {
         "model_id": "openai/gpt-audio-mini-2025-10-06",
         "organisation_id": "openai",
@@ -5502,11 +5494,11 @@
       }
     },
     "src/data/models/openai/gpt-audio-mini-2025-12-15/model.json": {
-      "hash": "e71e1c5e89e865ea7b936c0e17f32fd2",
+      "hash": "66fbe9f2542d9e873704a60d290392d1",
       "meta": {
         "model_id": "openai/gpt-audio-mini-2025-12-15",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/gpt-audio-mini-2025-10-06"
       }
     },
     "src/data/models/openai/gpt-image-1-5-2025-12-16/model.json": {
@@ -5558,7 +5550,7 @@
       }
     },
     "src/data/models/openai/gpt-realtime-mini-2025-10-06/model.json": {
-      "hash": "fb6e68d5d23b3f5295a7eac66b755558",
+      "hash": "0d0adb9df89c8524120f040682eb3a7b",
       "meta": {
         "model_id": "openai/gpt-realtime-mini-2025-10-06",
         "organisation_id": "openai",
@@ -5654,11 +5646,11 @@
       }
     },
     "src/data/models/openai/o4-mini-deep-research-2025-06-26/model.json": {
-      "hash": "0b8cd4ba5e01b6f590fa117eafe17a14",
+      "hash": "a15d361a292b1f6f70dbf72f397b313e",
       "meta": {
         "model_id": "openai/o4-mini-deep-research-2025-06-26",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/o3-deep-research-2025-06-26"
       }
     },
     "src/data/models/openai/omni-moderation-2024-09-26/model.json": {
@@ -6381,84 +6373,6 @@
         "previous_model_id": null
       }
     },
-    "src/data/aliases/anthropic-claude-opus-4.1/alias.json": {
-      "hash": "e75ca4b840d790b7c8165c248f150578",
-      "meta": {
-        "alias_slug": "anthropic/claude-opus-4.1"
-      }
-    },
-    "src/data/aliases/anthropic-claude-opus-4.5/alias.json": {
-      "hash": "8af6b7786e03c7ad6b2bba05575f13f0",
-      "meta": {
-        "alias_slug": "anthropic/claude-opus-4.5"
-      }
-    },
-    "src/data/aliases/anthropic-claude-sonnet-4.5/alias.json": {
-      "hash": "08e0c45838fead782e730d34afe705b8",
-      "meta": {
-        "alias_slug": "anthropic/claude-sonnet-4.5"
-      }
-    },
-    "src/data/aliases/google-gemini-2.5-flash/alias.json": {
-      "hash": "2c2021dde3f6aab77a2b4daa436c18ed",
-      "meta": {
-        "alias_slug": "google/gemini-2.5-flash"
-      }
-    },
-    "src/data/aliases/google-gemini-2.5-flash-latest/alias.json": {
-      "hash": "0614f29391c866be56e00e0229116482",
-      "meta": {
-        "alias_slug": "google/gemini-2.5-flash-latest"
-      }
-    },
-    "src/data/aliases/google-gemini-2.5-flash-preview-latest/alias.json": {
-      "hash": "d86f50fd699a2063b34113dc8c1f6c1a",
-      "meta": {
-        "alias_slug": "google/gemini-2.5-flash-preview-latest"
-      }
-    },
-    "src/data/aliases/google-gemini-2.5-pro/alias.json": {
-      "hash": "99498ee9a68719c49c6c869311062efb",
-      "meta": {
-        "alias_slug": "google/gemini-2.5-pro"
-      }
-    },
-    "src/data/aliases/google-gemini-3-flash/alias.json": {
-      "hash": "3d9b002fad34bd19a2e488376388610e",
-      "meta": {
-        "alias_slug": "google/gemini-3-flash"
-      }
-    },
-    "src/data/aliases/google-gemini-3.0-pro/alias.json": {
-      "hash": "cf9fe2f079e3cd7c7304c7bf301c2b07",
-      "meta": {
-        "alias_slug": "google/gemini-3.0-pro"
-      }
-    },
-    "src/data/aliases/openai-gpt-5/alias.json": {
-      "hash": "9f08d1c633a293c524e0cc08ff904b61",
-      "meta": {
-        "alias_slug": "openai/gpt-5"
-      }
-    },
-    "src/data/aliases/openai-gpt-5-mini/alias.json": {
-      "hash": "268d6c37ad5d80a7a6fa082288265a6d",
-      "meta": {
-        "alias_slug": "openai/gpt-5-mini"
-      }
-    },
-    "src/data/aliases/openai-gpt-5.1/alias.json": {
-      "hash": "e69aa582b50e749042ab568b5bbe84c1",
-      "meta": {
-        "alias_slug": "openai/gpt-5.1"
-      }
-    },
-    "src/data/aliases/openai-gpt-5.2/alias.json": {
-      "hash": "58977da35e160806c0ca5ef3891ecaa2",
-      "meta": {
-        "alias_slug": "openai/gpt-5.2"
-      }
-    },
     "src/data/aliases/openai-gpt-chat/alias.json": {
       "hash": "43041e35b5dadc9a229988513e86b638",
       "meta": {
@@ -6510,7 +6424,7 @@
       }
     },
     "src/data/api_providers/anthropic/models.json": {
-      "hash": "28d96e42edcc8b17292235e50604abeb",
+      "hash": "9edafbb692bf1083fa86d4b010372479",
       "meta": {
         "api_provider_id": "anthropic",
         "kind": "provider_models"
@@ -6602,7 +6516,7 @@
       }
     },
     "src/data/api_providers/deepseek/models.json": {
-      "hash": "2e98ba5a87426d3cec3fdbce0b268a5e",
+      "hash": "aefda96089fddd4ac06414226c3aaf7d",
       "meta": {
         "api_provider_id": "deepseek",
         "kind": "provider_models"
@@ -6639,7 +6553,7 @@
       }
     },
     "src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "8d2292abb0a4c2b7248c255093e7ca14",
+      "hash": "8b45cf5a07fe294c2a6352e759b9b126",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -6700,7 +6614,7 @@
       }
     },
     "src/data/api_providers/minimax/models.json": {
-      "hash": "4c7215687dee09153756f37cb6bc7256",
+      "hash": "bbdd295a71605cde49f0f29820325ecd",
       "meta": {
         "api_provider_id": "minimax",
         "kind": "provider_models"
@@ -6713,7 +6627,7 @@
       }
     },
     "src/data/api_providers/minimax-lightning/models.json": {
-      "hash": "d2fbb616dc99eb8df20be8eb4c844625",
+      "hash": "ad4e1061a61c9a3f09373cf38349eb1a",
       "meta": {
         "api_provider_id": "minimax-lightning",
         "kind": "provider_models"
@@ -6732,7 +6646,7 @@
       }
     },
     "src/data/api_providers/moonshot-ai/models.json": {
-      "hash": "204a4c1b2dd0cebdf32629ffacfd0ae2",
+      "hash": "0f8ca927facf729b32ec4334d7d4551b",
       "meta": {
         "api_provider_id": "moonshot-ai",
         "kind": "provider_models"
@@ -6745,7 +6659,7 @@
       }
     },
     "src/data/api_providers/moonshot-ai-turbo/models.json": {
-      "hash": "f5ca0e8ad6188ce7ceb7ede0829e817d",
+      "hash": "8693dd5769676a4fc8c5f82504a2ffb9",
       "meta": {
         "api_provider_id": "moonshot-ai-turbo",
         "kind": "provider_models"
@@ -6776,7 +6690,7 @@
       }
     },
     "src/data/api_providers/openai/models.json": {
-      "hash": "acb847b67c0a1ec270925bb38670a8b6",
+      "hash": "2a1bb88bbcf0af21cd3c4ed2de45c18b",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -6862,7 +6776,7 @@
       }
     },
     "src/data/api_providers/x-ai/models.json": {
-      "hash": "bfd534f4dbc42309513446f60091de19",
+      "hash": "e32b23c79dd0b14c3b2dc856ef51178c",
       "meta": {
         "api_provider_id": "x-ai",
         "kind": "provider_models"
@@ -6875,7 +6789,7 @@
       }
     },
     "src/data/api_providers/xiaomi/models.json": {
-      "hash": "417053843a252ead65ec6e79cab4f3e8",
+      "hash": "49a4a9eadab255391519ba4717e08673",
       "meta": {
         "api_provider_id": "xiaomi",
         "kind": "provider_models"
@@ -6888,7 +6802,7 @@
       }
     },
     "src/data/api_providers/z-ai/models.json": {
-      "hash": "72f27d239e63b60663f59419cd0c29c9",
+      "hash": "60a4b9277cade124d06c892d3831296e",
       "meta": {
         "api_provider_id": "z-ai",
         "kind": "provider_models"
@@ -6951,112 +6865,112 @@
       }
     },
     "src/data/subscription_plans/chatgpt-free/plan.json": {
-      "hash": "e10831f6cb703d05ac7050a02d83c8a0",
+      "hash": "31d2d32a2037e782053fd6b82c870449",
       "meta": {
         "plan_id": "chatgpt-free",
         "organisation_id": "openai"
       }
     },
     "src/data/subscription_plans/chatgpt-plus/plan.json": {
-      "hash": "d580023f530f8a598b18f032d4eaedb8",
+      "hash": "d957d7e746869f35fa3c37398261e1f8",
       "meta": {
         "plan_id": "chatgpt-plus",
         "organisation_id": "openai"
       }
     },
     "src/data/subscription_plans/chatgpt-pro/plan.json": {
-      "hash": "743fdb31d70e7cea73d57794ac28c6c8",
+      "hash": "aec9be75da6cb6a5b9f9748092ce16d5",
       "meta": {
         "plan_id": "chatgpt-pro",
         "organisation_id": "openai"
       }
     },
     "src/data/subscription_plans/claude-free/plan.json": {
-      "hash": "1774513b7dc18d0cbc2092c5659d35f7",
+      "hash": "96e5ab949b3dbc4677cf6f5d62e641d4",
       "meta": {
         "plan_id": "claude-free",
         "organisation_id": "anthropic"
       }
     },
     "src/data/subscription_plans/claude-max-20x/plan.json": {
-      "hash": "da95c08cf850911641e6595a0b368c8b",
+      "hash": "27688ebc23beb6fe4ec1be5e3b3e1fe3",
       "meta": {
         "plan_id": "claude-max-20x",
         "organisation_id": "anthropic"
       }
     },
     "src/data/subscription_plans/claude-max-5x/plan.json": {
-      "hash": "7db5f6b4dd235d17873e05c7fc420f7f",
+      "hash": "866d92459e399696f4e0d3cd6887b539",
       "meta": {
         "plan_id": "claude-max-5x",
         "organisation_id": "anthropic"
       }
     },
     "src/data/subscription_plans/claude-pro/plan.json": {
-      "hash": "7c1395bfb876712950ffa4ac8ba5079d",
+      "hash": "5816c4f498fa7744aee4df43b13f077b",
       "meta": {
         "plan_id": "claude-pro",
         "organisation_id": "anthropic"
       }
     },
     "src/data/subscription_plans/google-ai-free/plan.json": {
-      "hash": "899daf16aa24f3fdbede78b236338c5c",
+      "hash": "b0ee7088864c8db6d654a456da847e92",
       "meta": {
         "plan_id": "google-ai-free",
         "organisation_id": "google"
       }
     },
     "src/data/subscription_plans/google-ai-pro/plan.json": {
-      "hash": "a4146c9f2d3746ef2efd54634cb8f752",
+      "hash": "9550a2826cd0df187a68fd0d3fd4ae1e",
       "meta": {
         "plan_id": "google-ai-pro",
         "organisation_id": "google"
       }
     },
     "src/data/subscription_plans/google-ai-ultra/plan.json": {
-      "hash": "1daa3275fc548256cbd6f4123ec4a0f0",
+      "hash": "c1febbf7ad96f125003b397829485408",
       "meta": {
         "plan_id": "google-ai-ultra",
         "organisation_id": "google"
       }
     },
     "src/data/subscription_plans/perplexity-free/plan.json": {
-      "hash": "eb56bf41f62206be6ede62e398246d9a",
+      "hash": "bb918d145901b5e450fe4f91f65f9e9b",
       "meta": {
         "plan_id": "perplexity-free",
         "organisation_id": "perplexity"
       }
     },
     "src/data/subscription_plans/perplexity-max/plan.json": {
-      "hash": "5f9cbf4d965147751dbc06c07307b995",
+      "hash": "ad26eaa352a045cae54ad67c3331da6e",
       "meta": {
         "plan_id": "perplexity-max",
         "organisation_id": "perplexity"
       }
     },
     "src/data/subscription_plans/perplexity-pro/plan.json": {
-      "hash": "7b56aea4ee410012921e42bd0f98959c",
+      "hash": "dd82a752f8d239284d53b3cc700b0eb2",
       "meta": {
         "plan_id": "perplexity-pro",
         "organisation_id": "perplexity"
       }
     },
     "src/data/subscription_plans/supergrok/plan.json": {
-      "hash": "589b0debe4d3000f64713a478e938baf",
+      "hash": "b3798112234023cfc04a868b4e181016",
       "meta": {
         "plan_id": "supergrok",
         "organisation_id": "x-ai"
       }
     },
     "src/data/subscription_plans/supergrok-basic/plan.json": {
-      "hash": "7b2fd8f34f8ad51ccd1547d4d21d8f3e",
+      "hash": "05fbdf653e83d7e19f2bb6ed2a38bc76",
       "meta": {
         "plan_id": "supergrok-basic",
         "organisation_id": "x-ai"
       }
     },
     "src/data/subscription_plans/supergrok-heavy/plan.json": {
-      "hash": "819172902c2b75c0db2b13a945664e4c",
+      "hash": "30b654da4984ad7dd70e11541c7c4d55",
       "meta": {
         "plan_id": "supergrok-heavy",
         "organisation_id": "x-ai"
@@ -7098,38 +7012,6 @@
       "hash": "e3dca28966ec19dee860de292796df44",
       "meta": {
         "organisation_id": "aion-labs"
-      }
-    },
-    "src/data/models/aion-labs/aion-1-0/model.json": {
-      "hash": "b6b01c0ea12d7ebe7a75c159f30688a9",
-      "meta": {
-        "model_id": "aion-labs/aion-1-0",
-        "organisation_id": "aion-labs",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/aion-labs/aion-1-0-mini/model.json": {
-      "hash": "89348f0b295bfec57f91af619875563b",
-      "meta": {
-        "model_id": "aion-labs/aion-1-0-mini",
-        "organisation_id": "aion-labs",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/aion-labs/aion-2-0/model.json": {
-      "hash": "692c9b2fe45f9a05a491bbfcb7e26a1f",
-      "meta": {
-        "model_id": "aion-labs/aion-2-0",
-        "organisation_id": "aion-labs",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/aion-labs/aion-rp-llama-3-1-8b/model.json": {
-      "hash": "1184c61aa1b1b4f27ce7e3a4fb4bd767",
-      "meta": {
-        "model_id": "aion-labs/aion-rp-llama-3-1-8b",
-        "organisation_id": "aion-labs",
-        "previous_model_id": null
       }
     },
     "src/data/models/black-forest-labs/flux-2-klein-4b-2026-01-15/model.json": {
@@ -7181,11 +7063,11 @@
       }
     },
     "src/data/models/openai/sora-2-2025-12-08/model.json": {
-      "hash": "27105162eed15133b2f00282c2504962",
+      "hash": "4f62b4b20dee0cb15e08007675b920ec",
       "meta": {
         "model_id": "openai/sora-2-2025-12-08",
         "organisation_id": "openai",
-        "previous_model_id": null
+        "previous_model_id": "openai/sora-2-2025-09-30"
       }
     },
     "src/data/api_providers/aion-labs/api_provider.json": {
@@ -7195,7 +7077,7 @@
       }
     },
     "src/data/api_providers/aion-labs/models.json": {
-      "hash": "62e7563930b9a61c2dd92aa091b8f447",
+      "hash": "c211cbd9d4c562af46020a49abbc9136",
       "meta": {
         "api_provider_id": "aion-labs",
         "kind": "provider_models"
@@ -7510,11 +7392,11 @@
       }
     },
     "src/data/models/moonshot-ai/kimi-k2-5-2026-01-27/model.json": {
-      "hash": "a8701427fc946e87744136d2b9221083",
+      "hash": "3decbd268c288f1983c8156d3f1eed4b",
       "meta": {
         "model_id": "moonshot-ai/kimi-k2-5-2026-01-27",
         "organisation_id": "moonshot-ai",
-        "previous_model_id": null
+        "previous_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06"
       }
     },
     "src/data/models/qwen/qwen-3-max-thinking-2026-01-26/model.json": {
@@ -8108,7 +7990,7 @@
       }
     },
     "src/data/api_providers/arcee-ai/models.json": {
-      "hash": "a4480340ff2872854282cd4bab59aada",
+      "hash": "4ff29caa5bc6e5ae3daf20361b8607d8",
       "meta": {
         "api_provider_id": "arcee-ai",
         "kind": "provider_models"
@@ -8697,7 +8579,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-flash-image-preview-2025-08-25/model.json": {
-      "hash": "c92bc7126dbd91c716f0eda319bc6cf8",
+      "hash": "0497fea6bcd326f168d953c19a880575",
       "meta": {
         "model_id": "google/gemini-2-5-flash-image-preview-2025-08-25",
         "organisation_id": "google",
@@ -8705,11 +8587,11 @@
       }
     },
     "src/data/models/minimax/music-2-5-2026-01-16/model.json": {
-      "hash": "12ae9c87a64cd25a0034a31eb682e2a6",
+      "hash": "ae5c8c18c6bb8d8d18e26242bc3f98be",
       "meta": {
         "model_id": "minimax/music-2-5-2026-01-16",
         "organisation_id": "minimax",
-        "previous_model_id": null
+        "previous_model_id": "minimax/music-2-0-2025-10-29"
       }
     },
     "src/data/models/upstage/solar-pro/model.json": {
@@ -8846,6 +8728,144 @@
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
         "model_key": "google-ai-studio:google/gemini-2-5-flash-image-preview:text.generate"
+      }
+    },
+    "src/data/api_providers/mistral/models.json": {
+      "hash": "217b2ea26bc63be2dc77da295e1f40d7",
+      "meta": {
+        "api_provider_id": "mistral",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/organisations/stepfun/organisation.json": {
+      "hash": "0f9aa82b95797ae591ab42a74d67e2cf",
+      "meta": {
+        "organisation_id": "stepfun"
+      }
+    },
+    "src/data/models/aion-labs/aion-1-0-2025-01-29/model.json": {
+      "hash": "9da0b390b9c381552494d6caecff1497",
+      "meta": {
+        "model_id": "aion-labs/aion-1-0-2025-01-29",
+        "organisation_id": "aion-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/aion-labs/aion-1-0-mini-2025-01-29/model.json": {
+      "hash": "d0ddf2918ab3824841d15d3840226f49",
+      "meta": {
+        "model_id": "aion-labs/aion-1-0-mini-2025-01-29",
+        "organisation_id": "aion-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/aion-labs/aion-2-0-2025-12-21/model.json": {
+      "hash": "b9f0a825b7215f9e150067077bd9b8cc",
+      "meta": {
+        "model_id": "aion-labs/aion-2-0-2025-12-21",
+        "organisation_id": "aion-labs",
+        "previous_model_id": "aion-labs/aion-1-0-2025-01-29"
+      }
+    },
+    "src/data/models/aion-labs/aion-rp-llama-3-1-8b-2024-11-30/model.json": {
+      "hash": "6200c992831687e2b8031c586a929e23",
+      "meta": {
+        "model_id": "aion-labs/aion-rp-llama-3-1-8b-2024-11-30",
+        "organisation_id": "aion-labs",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/anthropic/claude-opus-4-6-2026-02-05/model.json": {
+      "hash": "4e9a698a4689911c574b5936a8e13975",
+      "meta": {
+        "model_id": "anthropic/claude-opus-4-6-2026-02-05",
+        "organisation_id": "anthropic",
+        "previous_model_id": "anthropic/claude-opus-4-5-2025-11-24"
+      }
+    },
+    "src/data/models/anthropic/claude-sonnet-5/model.json": {
+      "hash": "bc359111d6efef277da0c5bdde39be47",
+      "meta": {
+        "model_id": "anthropic/claude-sonnet-5",
+        "organisation_id": "anthropic",
+        "previous_model_id": "anthropic/claude-sonnet-4-5-2025-09-29"
+      }
+    },
+    "src/data/models/mistral/voxtral-mini-transcribe-2-2026-02-04/model.json": {
+      "hash": "59fdc739355761a19828612f66ac1aaf",
+      "meta": {
+        "model_id": "mistral/voxtral-mini-transcribe-2-2026-02-04",
+        "organisation_id": "mistral",
+        "previous_model_id": "mistral/voxtral-mini-transcribe-2025-07-15"
+      }
+    },
+    "src/data/models/mistral/voxtral-mini-transcribe-2025-07-15/model.json": {
+      "hash": "d2dcc1e41297ef9208f4bf1c25c03b5a",
+      "meta": {
+        "model_id": "mistral/voxtral-mini-transcribe-2025-07-15",
+        "organisation_id": "mistral",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-5-3-codex-2026-02-05/model.json": {
+      "hash": "a076f8b4d8b05f2551a9358e483c78d5",
+      "meta": {
+        "model_id": "openai/gpt-5-3-codex-2026-02-05",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-5-2-codex-2025-12-18"
+      }
+    },
+    "src/data/models/z-ai/glm-5/model.json": {
+      "hash": "fa8f69b6c615194121857de305b50568",
+      "meta": {
+        "model_id": "z-ai/glm-5",
+        "organisation_id": "z-ai",
+        "previous_model_id": "z-ai/glm-4-7-2025-12-22"
+      }
+    },
+    "src/data/aliases/nan/alias.json": {
+      "hash": "ce00cb86e4a7d15da398d4067f7c85c9",
+      "meta": {
+        "alias_slug": "nan"
+      }
+    },
+    "src/data/pricing/anthropic/anthropic-claude-opus-4.6/text.generate/pricing.json": {
+      "hash": "fa4196c77ba94d777cde41e0979e3bae",
+      "meta": {
+        "api_provider_id": "anthropic",
+        "capability_id": "text.generate",
+        "model_key": "anthropic:anthropic/claude-opus-4.6:text.generate"
+      }
+    },
+    "src/data/subscription_plans/chatgpt-go/plan.json": {
+      "hash": "370a5d4983e1838d316c9d4a6b495fee",
+      "meta": {
+        "plan_id": "chatgpt-go",
+        "organisation_id": "openai"
+      }
+    },
+    "src/data/subscription_plans/google-ai-plus/plan.json": {
+      "hash": "e77fff7c6b31dd48bd18cfd69b8fc245",
+      "meta": {
+        "plan_id": "google-ai-plus",
+        "organisation_id": "google"
+      }
+    },
+    "src/data/models/google/gemini-2-5-flash-image-2026-02-10/model.json": {
+      "hash": "0db5f45f56bfc67eb005c9267ce6a333",
+      "meta": {
+        "model_id": "google/gemini-2-5-flash-image-2026-02-10",
+        "organisation_id": "google",
+        "previous_model_id": "google/gemini-2-5-flash-image-preview-2025-08-25"
+      }
+    },
+    "src/data/pricing/google-ai-studio/google-gemini-2-5-flash-image/text.generate/pricing.json": {
+      "hash": "2068c8f4036d51cf5be910bd0fe85805",
+      "meta": {
+        "api_provider_id": "google-ai-studio",
+        "capability_id": "text.generate",
+        "model_id": "google/gemini-2-5-flash-image",
+        "model_key": "google-ai-studio:google/gemini-2-5-flash-image:text.generate"
       }
     }
   }

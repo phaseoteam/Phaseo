@@ -5,6 +5,7 @@
   "description": "AI Stats Ruby SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
-    "smoke:chat": "dotenv -e .env.local -- ruby tests/smoke_chat.rb"
+    "smoke:chat": "dotenv -e .env.local -- ruby tests/smoke_chat.rb",
+    "smoke:responses": "dotenv -e .env.local -- ruby tests/smoke_responses.rb"
   }
 }

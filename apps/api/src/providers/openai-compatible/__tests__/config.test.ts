@@ -3,8 +3,8 @@
 // How: Exposes provider-specific helpers for routing and execution.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { resolveOpenAICompatRoute } from "../config";
-import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
+import { openAICompatUrl, resolveOpenAICompatRoute } from "../config";
+import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 
 beforeAll(() => {
 	setupTestRuntime();
@@ -42,12 +42,25 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("z-ai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("zai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("xiaomi", "MiMo-7B-RL")).toBe("chat");
-		expect(resolveOpenAICompatRoute("moonshotai", "kimi-k2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("moonshot-ai", "kimi-k2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("cerebras", "llama3.1-70b")).toBe("chat");
 		expect(resolveOpenAICompatRoute("groq", "llama-3.3-70b-versatile")).toBe("responses");
 		expect(resolveOpenAICompatRoute("amazon-bedrock", "anthropic.claude-3-5-sonnet-20240620-v1:0")).toBe("chat");
 		expect(resolveOpenAICompatRoute("google-vertex", "claude-sonnet-4@20250514")).toBe("chat");
+	});
+});
+
+describe("openAICompatUrl", () => {
+	it("does not duplicate the configured prefix when base URL already includes it", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			OPENAI_API_KEY: "test-openai-key",
+			OPENAI_BASE_URL: "https://api.openai.com/v1",
+		} as any);
+
+		expect(openAICompatUrl("openai", "/chat/completions")).toBe(
+			"https://api.openai.com/v1/chat/completions",
+		);
 	});
 });
 

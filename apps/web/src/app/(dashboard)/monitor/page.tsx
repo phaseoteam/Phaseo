@@ -58,10 +58,10 @@ const filterHistory = (
 };
 
 type MonitorPageProps = {
-	searchParams?: {
+	searchParams?: Promise<{
 		type?: string;
 		entity?: string;
-	};
+	}>;
 };
 
 function MonitorHistorySkeleton() {
@@ -91,8 +91,16 @@ async function MonitorHistorySection({
 	return <MonitorHistoryClient data={filteredData} />;
 }
 
-export default async function MonitorPage({ searchParams }: MonitorPageProps) {
-	const params = await searchParams;
+export default function MonitorPage({ searchParams }: MonitorPageProps) {
+	return (
+		<Suspense fallback={<MonitorHistorySkeleton />}>
+			<MonitorPageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function MonitorPageContent({ searchParams }: MonitorPageProps) {
+	const params = (await searchParams) ?? {};
 	const typeParam = params?.type;
 	const entityParam = params?.entity;
 

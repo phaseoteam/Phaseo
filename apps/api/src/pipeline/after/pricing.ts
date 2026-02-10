@@ -9,6 +9,27 @@ import type { PriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
 
+function derivePricingPlan(body: any, usage: any): string {
+    const explicit = typeof body?.pricing_plan === "string" ? body.pricing_plan.trim().toLowerCase() : "";
+    if (explicit) return explicit;
+
+    const speed = typeof body?.speed === "string" ? body.speed.trim().toLowerCase() : "";
+    if (speed === "fast") return "priority";
+
+    const tierRaw =
+        (typeof body?.service_tier === "string" ? body.service_tier : undefined) ??
+        (typeof body?.serviceTier === "string" ? body.serviceTier : undefined) ??
+        (typeof usage?.service_tier === "string" ? usage.service_tier : undefined) ??
+        (typeof usage?.serviceTier === "string" ? usage.serviceTier : undefined);
+    const tier = typeof tierRaw === "string" ? tierRaw.trim().toLowerCase() : "";
+
+    if (tier === "priority") return "priority";
+    if (tier === "batch") return "batch";
+    if (tier === "flex") return "flex";
+
+    return "standard";
+}
+
 export async function loadProviderPricing(
     ctx: PipelineContext,
     result: RequestResult
@@ -46,8 +67,14 @@ export function calculatePricing(
 
     if (card) {
         try {
+            const pricingPlan = derivePricingPlan(body, usage);
+            const requestOptions = {
+                ...(body ?? {}),
+                pricing_plan: pricingPlan,
+            };
+
             // Step 1: Calculate base pricing (provider costs)
-            pricedUsage = computeBill(usage ?? {}, card, body ?? {});
+            pricedUsage = computeBill(usage ?? {}, card, requestOptions, pricingPlan);
 
             // Step 2: Apply tier-based markup (Basic 7%, Enterprise 5%)
             // This applies the markup to all pricing calculations

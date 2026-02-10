@@ -54,12 +54,10 @@ create table if not exists public.oauth_app_metadata (
   -- Indexes will be created below
   constraint oauth_app_metadata_name_check check (char_length(name) >= 3 and char_length(name) <= 100)
 );
-
 -- Indexes for oauth_app_metadata
 create index if not exists oauth_app_metadata_team_id_idx on public.oauth_app_metadata(team_id);
 create index if not exists oauth_app_metadata_created_by_idx on public.oauth_app_metadata(created_by);
 create index if not exists oauth_app_metadata_status_idx on public.oauth_app_metadata(status) where status = 'active';
-
 -- Trigger to update updated_at timestamp
 create or replace function public.update_oauth_app_metadata_updated_at()
 returns trigger
@@ -70,12 +68,10 @@ begin
   return new;
 end;
 $$;
-
 create trigger update_oauth_app_metadata_updated_at_trigger
   before update on public.oauth_app_metadata
   for each row
   execute function public.update_oauth_app_metadata_updated_at();
-
 -- =========================
 -- Table: oauth_authorizations
 -- =========================
@@ -107,18 +103,15 @@ create table if not exists public.oauth_authorizations (
   -- Unique constraint: one authorization per user+client+team combination
   constraint oauth_authorizations_user_client_team_unique unique(user_id, client_id, team_id)
 );
-
 -- Indexes for oauth_authorizations
 create index if not exists oauth_authorizations_user_id_idx on public.oauth_authorizations(user_id) where revoked_at is null;
 create index if not exists oauth_authorizations_client_id_idx on public.oauth_authorizations(client_id) where revoked_at is null;
 create index if not exists oauth_authorizations_team_id_idx on public.oauth_authorizations(team_id) where revoked_at is null;
 create index if not exists oauth_authorizations_last_used_idx on public.oauth_authorizations(last_used_at desc) where revoked_at is null;
-
 -- Composite index for fast token validation lookup
 create index if not exists oauth_authorizations_validation_idx
   on public.oauth_authorizations(user_id, client_id, team_id)
   where revoked_at is null;
-
 -- =========================
 -- Extend: gateway_requests
 -- =========================
@@ -128,19 +121,16 @@ alter table public.gateway_requests
   add column if not exists auth_method text default 'api_key' check (auth_method in ('api_key', 'oauth')),
   add column if not exists oauth_client_id text,
   add column if not exists oauth_user_id uuid;
-
 -- Indexes for OAuth audit queries
 create index if not exists gateway_requests_auth_method_idx on public.gateway_requests(auth_method) where auth_method = 'oauth';
 create index if not exists gateway_requests_oauth_client_idx on public.gateway_requests(oauth_client_id) where oauth_client_id is not null;
 create index if not exists gateway_requests_oauth_user_idx on public.gateway_requests(oauth_user_id) where oauth_user_id is not null;
-
 -- =========================
 -- RLS: oauth_app_metadata
 -- =========================
 -- Team members can fully manage OAuth apps for their team
 
 alter table public.oauth_app_metadata enable row level security;
-
 -- SELECT: Team members can view their team's OAuth apps
 drop policy if exists oauth_app_metadata_select_own_team on public.oauth_app_metadata;
 create policy oauth_app_metadata_select_own_team
@@ -148,7 +138,6 @@ create policy oauth_app_metadata_select_own_team
   for select
   to authenticated
   using (public.is_team_member(team_id));
-
 -- INSERT: Team members can create OAuth apps for their team
 drop policy if exists oauth_app_metadata_insert_own_team on public.oauth_app_metadata;
 create policy oauth_app_metadata_insert_own_team
@@ -159,7 +148,6 @@ create policy oauth_app_metadata_insert_own_team
     public.is_team_member(team_id)
     and created_by = auth.uid()
   );
-
 -- UPDATE: Team members can update their team's OAuth apps
 drop policy if exists oauth_app_metadata_update_own_team on public.oauth_app_metadata;
 create policy oauth_app_metadata_update_own_team
@@ -168,7 +156,6 @@ create policy oauth_app_metadata_update_own_team
   to authenticated
   using (public.is_team_member(team_id))
   with check (public.is_team_member(team_id));
-
 -- DELETE: Team members can delete their team's OAuth apps (soft delete via status)
 drop policy if exists oauth_app_metadata_delete_own_team on public.oauth_app_metadata;
 create policy oauth_app_metadata_delete_own_team
@@ -176,7 +163,6 @@ create policy oauth_app_metadata_delete_own_team
   for delete
   to authenticated
   using (public.is_team_member(team_id));
-
 -- =========================
 -- RLS: oauth_authorizations
 -- =========================
@@ -184,7 +170,6 @@ create policy oauth_app_metadata_delete_own_team
 -- Team members can view authorizations for their team's OAuth apps (analytics)
 
 alter table public.oauth_authorizations enable row level security;
-
 -- SELECT: Users can view their own authorizations
 drop policy if exists oauth_authorizations_select_own on public.oauth_authorizations;
 create policy oauth_authorizations_select_own
@@ -192,7 +177,6 @@ create policy oauth_authorizations_select_own
   for select
   to authenticated
   using (user_id = auth.uid());
-
 -- SELECT: Team members can view authorizations for their team's OAuth apps (for analytics)
 drop policy if exists oauth_authorizations_select_team_apps on public.oauth_authorizations;
 create policy oauth_authorizations_select_team_apps
@@ -207,7 +191,6 @@ create policy oauth_authorizations_select_team_apps
         and public.is_team_member(oam.team_id)
     )
   );
-
 -- INSERT: System only (authorizations created via OAuth flow, not directly)
 -- No insert policy - authorizations are created server-side during OAuth consent
 
@@ -219,7 +202,6 @@ create policy oauth_authorizations_update_own
   to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
-
 -- DELETE: Users can delete their own authorizations (hard delete)
 drop policy if exists oauth_authorizations_delete_own on public.oauth_authorizations;
 create policy oauth_authorizations_delete_own
@@ -227,7 +209,6 @@ create policy oauth_authorizations_delete_own
   for delete
   to authenticated
   using (user_id = auth.uid());
-
 -- =========================
 -- Views: OAuth Analytics
 -- =========================
@@ -245,10 +226,8 @@ left join public.oauth_authorizations oa on oa.client_id = oam.client_id
 left join public.gateway_requests gr on gr.oauth_client_id = oam.client_id
 where oam.status = 'active'
 group by oam.id;
-
 -- Grant access to authenticated users (RLS will filter by team)
 grant select on public.oauth_apps_with_stats to authenticated;
-
 -- View: User's authorized apps with last usage
 create or replace view public.user_authorized_apps as
 select
@@ -270,10 +249,8 @@ join public.teams t on t.id = oa.team_id
 where oa.revoked_at is null
   and oam.status = 'active'
 order by oa.last_used_at desc nulls last;
-
 -- Grant access to authenticated users (RLS will filter by user_id)
 grant select on public.user_authorized_apps to authenticated;
-
 -- =========================
 -- Comments
 -- =========================

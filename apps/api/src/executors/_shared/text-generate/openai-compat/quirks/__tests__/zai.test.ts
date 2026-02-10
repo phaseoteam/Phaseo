@@ -4,9 +4,35 @@
 
 // Z.AI Quirks Tests
 import { describe, expect, it } from "vitest";
-import { zaiQuirks } from "../zai";
+import { zaiQuirks } from "../../providers/z-ai/quirks";
 
 describe("Z.AI Quirks", () => {
+	describe("transformRequest", () => {
+		it("enables thinking when reasoning.enabled=true", () => {
+			const request: Record<string, any> = {};
+			zaiQuirks.transformRequest!({
+				request,
+				ir: { reasoning: { enabled: true } } as any,
+			});
+			expect(request.thinking).toEqual({
+				type: "enabled",
+				clear_thinking: false,
+			});
+		});
+
+		it("disables thinking when reasoning.enabled=false", () => {
+			const request: Record<string, any> = {};
+			zaiQuirks.transformRequest!({
+				request,
+				ir: { reasoning: { enabled: false } } as any,
+			});
+			expect(request.thinking).toEqual({
+				type: "disabled",
+				clear_thinking: false,
+			});
+		});
+	});
+
 	describe("normalizeResponse", () => {
 		it("should convert first message to reasoning when there are 2+ messages", () => {
 			const response = {

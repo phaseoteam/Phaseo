@@ -17,6 +17,5 @@ as $$
       and tm.user_id = auth.uid()
   );
 $$;
-
 -- Grant execute permission to authenticated users
 grant execute on function public.is_team_member(uuid) to authenticated;

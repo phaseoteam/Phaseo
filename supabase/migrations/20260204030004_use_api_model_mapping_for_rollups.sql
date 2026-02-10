@@ -94,7 +94,6 @@ begin
   group by 1, 2;
 end;
 $$;
-
 create or replace function public.get_public_usage_timeseries(
   p_time_range text default 'week',
   p_bucket_size text default 'hour',
@@ -221,7 +220,6 @@ begin
   order by bd.time_bucket, bd.tok_count desc;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_market_share_timeseries(
   p_dimension text default 'organization',
   p_time_range text default 'year',
@@ -426,5 +424,4 @@ begin
   end if;
 end;
 $$ language plpgsql stable;
-
 select public.refresh_public_usage_rollups();

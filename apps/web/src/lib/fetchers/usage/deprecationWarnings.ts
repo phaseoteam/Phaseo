@@ -1,115 +1,176 @@
-import { createClient } from '@/utils/supabase/server';
-import { applyHiddenFilter, resolveIncludeHidden } from '@/lib/fetchers/models/visibility';
+import { createClient } from "@/utils/supabase/server";
+import {
+	applyHiddenFilter,
+	resolveIncludeHidden,
+} from "@/lib/fetchers/models/visibility";
+
+const RECENT_USAGE_WINDOW_DAYS = 14;
+const UPCOMING_WINDOW_DAYS = 90;
+const RECENTLY_PASSED_WINDOW_DAYS = 30;
 
 export type DeprecationWarning = {
-    modelId: string;
-    deprecationDate: string | null;
-    retirementDate: string | null;
-    successorModelId?: string | null;
-    daysUntil: number;
+	modelId: string;
+	modelName: string | null;
+	organisationId: string | null;
+	deprecationDate: string | null;
+	retirementDate: string | null;
+	deprecationDaysUntil: number | null;
+	retirementDaysUntil: number | null;
+	replacementModelId: string | null;
+	previousModelId: string | null;
 };
 
-function calculateDaysUntil(dateStr: string | null): number {
-    if (!dateStr) return Infinity;
-    const targetDate = new Date(dateStr);
-    const now = new Date();
-    const utcTarget = Date.UTC(
-        targetDate.getFullYear(),
-        targetDate.getMonth(),
-        targetDate.getDate()
-    );
-    const utcNow = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-    const diffTime = utcTarget - utcNow;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+function calculateDaysUntil(dateStr: string | null): number | null {
+	if (!dateStr) return null;
+	const targetDate = new Date(dateStr);
+	if (!Number.isFinite(targetDate.getTime())) return null;
+
+	const now = new Date();
+	const utcTarget = Date.UTC(
+		targetDate.getUTCFullYear(),
+		targetDate.getUTCMonth(),
+		targetDate.getUTCDate(),
+	);
+	const utcNow = Date.UTC(
+		now.getUTCFullYear(),
+		now.getUTCMonth(),
+		now.getUTCDate(),
+	);
+	const diffTime = utcTarget - utcNow;
+	return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+function isWithinActionWindow(daysUntil: number | null) {
+	if (daysUntil === null) return false;
+	return (
+		daysUntil <= UPCOMING_WINDOW_DAYS &&
+		daysUntil >= -RECENTLY_PASSED_WINDOW_DAYS
+	);
+}
+
+function getUrgencyDays(warning: DeprecationWarning) {
+	const candidates = [warning.deprecationDaysUntil, warning.retirementDaysUntil]
+		.filter((value): value is number => Number.isFinite(value));
+	if (!candidates.length) return Number.POSITIVE_INFINITY;
+	return Math.min(...candidates);
 }
 
 export async function getDeprecationWarningsForTeam(
-    teamId: string
+	teamId: string,
 ): Promise<DeprecationWarning[]> {
-    const supabase = await createClient();
-    const includeHidden = await resolveIncludeHidden();
+	const supabase = await createClient();
+	const includeHidden = await resolveIncludeHidden();
 
-    // 1) Fetch distinct models used in last 14 days for this team
-    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
-        .toISOString();
+	const recentUsageCutoff = new Date(
+		Date.now() - RECENT_USAGE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+	).toISOString();
 
-    const { data: recentModels, error: recentErr, status: recentStatus } = await supabase
-        .from('gateway_requests')
-        .select('model_id', { count: 'exact' })
-        .eq('team_id', teamId)
-        .gte('created_at', fourteenDaysAgo)
-        // Ensure model_id is not null/empty. `.is('model_id', null)` was filtering FOR nulls.
-        .not('model_id', 'is', null)
-        .neq('model_id', '') // ensure non-empty string
-        .limit(1000);
+	const { data: recentModels, error: recentErr } = await supabase
+		.from("gateway_requests")
+		.select("model_id")
+		.eq("team_id", teamId)
+		.gte("created_at", recentUsageCutoff)
+		.not("model_id", "is", null)
+		.neq("model_id", "")
+		.limit(1000);
 
-    console.log('Recent models fetch status:', recentStatus);
-    console.log('Recent models fetch error:', recentErr);
-    console.log('Recent models raw response length:', recentModels?.length);
+	if (recentErr) {
+		console.error("Failed to fetch recent model usage:", recentErr);
+		return [];
+	}
 
-    // If we got no results, run a less restrictive debug query to help investigate
-    if ((!recentModels || recentModels.length === 0) && !recentErr) {
-        console.log('No recent models found with non-null model_id. Running fallback debug query (no model_id filters)...');
-        const { data: debugModels, error: debugErr, status: debugStatus } = await supabase
-            .from('gateway_requests')
-            .select('model_id, created_at', { count: 'exact' })
-            .eq('team_id', teamId)
-            .gte('created_at', fourteenDaysAgo)
-            .limit(50);
+	const modelIds = Array.from(
+		new Set(
+			(recentModels ?? [])
+				.map((row: any) =>
+					typeof row?.model_id === "string" ? row.model_id : null,
+				)
+				.filter((value): value is string => Boolean(value)),
+		),
+	).slice(0, 500);
 
-        console.log('Fallback debug query status:', debugStatus);
-        console.log('Fallback debug query error:', debugErr);
-        console.log('Fallback debug raw count:', debugModels?.length);
+	if (!modelIds.length) return [];
 
-        if (debugModels && debugModels.length > 0) {
-            // If fallback returns rows but earlier query didn't, show a sample to help debug filtering
-            console.log('Fallback sample rows:', debugModels.slice(0, 10));
-        }
-    }
+	const { data: modelsData, error: modelsErr } = await applyHiddenFilter(
+		supabase
+			.from("data_models")
+			.select(
+				"model_id,name,organisation_id,deprecation_date,retirement_date,previous_model_id",
+			)
+			.in("model_id", modelIds),
+		includeHidden,
+	);
 
-    // If the previous query returned null or error, try again without the null check
-    let modelIds: string[] = [];
+	if (modelsErr) {
+		console.error("Failed to fetch model lifecycle metadata:", modelsErr);
+		return [];
+	}
 
-    modelIds = (recentModels ?? [])
-        .map((r: any) => r.model_id)
-        .filter(Boolean);
+	const { data: replacementRows, error: replacementErr } =
+		await applyHiddenFilter(
+			supabase
+				.from("data_models")
+				.select("model_id,previous_model_id")
+				.in("previous_model_id", modelIds),
+			includeHidden,
+		);
 
-    // Deduplicate and limit
-    modelIds = Array.from(new Set(modelIds)).slice(0, 500);
+	if (replacementErr) {
+		console.error("Failed to fetch model replacements:", replacementErr);
+	}
 
-    if (modelIds.length === 0) {
-        return [];
-    }
+	const replacementByPreviousModel = new Map<string, string>();
+	for (const row of replacementRows ?? []) {
+		const previousModelId =
+			typeof (row as any)?.previous_model_id === "string"
+				? (row as any).previous_model_id
+				: null;
+		const replacementModelId =
+			typeof (row as any)?.model_id === "string"
+				? (row as any).model_id
+				: null;
 
-    // 2) Query data_models for these model_ids
-    const { data: modelsData, error: modelsErr } = await applyHiddenFilter(
-        supabase
-            .from('data_models')
-            .select('model_id,deprecation_date,retirement_date,previous_model_id')
-            .in('model_id', modelIds),
-        includeHidden
-    );
+		if (
+			!previousModelId ||
+			!replacementModelId ||
+			replacementByPreviousModel.has(previousModelId)
+		) {
+			continue;
+		}
 
-    if (modelsErr) {
-        console.error('deprecation fetch error:', modelsErr);
-        return [];
-    }
+		replacementByPreviousModel.set(previousModelId, replacementModelId);
+	}
 
-    const warnings: DeprecationWarning[] = (modelsData ?? [])
-        .map((m: any) => {
-            const dep = m.deprecation_date ?? null;
-            const ret = m.retirement_date ?? null;
-            const daysUntil = calculateDaysUntil(dep);
-            return {
-                modelId: m.model_id,
-                deprecationDate: dep,
-                retirementDate: ret,
-                successorModelId: m.previous_model_id ?? null,
-                daysUntil,
-            } as DeprecationWarning;
-        })
-        .filter((w: DeprecationWarning) => Number.isFinite(w.daysUntil) && w.daysUntil >= 0 && w.daysUntil <= 90)
-        .sort((a: DeprecationWarning, b: DeprecationWarning) => a.daysUntil - b.daysUntil);
+	const warnings: DeprecationWarning[] = (modelsData ?? [])
+		.map((model: any) => {
+			const deprecationDate = model?.deprecation_date ?? null;
+			const retirementDate = model?.retirement_date ?? null;
+			const deprecationDaysUntil = calculateDaysUntil(deprecationDate);
+			const retirementDaysUntil = calculateDaysUntil(retirementDate);
 
-    return warnings;
+			return {
+				modelId: model?.model_id ?? "",
+				modelName: model?.name ?? null,
+				organisationId: model?.organisation_id ?? null,
+				deprecationDate,
+				retirementDate,
+				deprecationDaysUntil,
+				retirementDaysUntil,
+				replacementModelId:
+					replacementByPreviousModel.get(model?.model_id ?? "") ?? null,
+				previousModelId: model?.previous_model_id ?? null,
+			} satisfies DeprecationWarning;
+		})
+		.filter((warning: DeprecationWarning) => Boolean(warning.modelId))
+		.filter(
+			(warning: DeprecationWarning) =>
+				isWithinActionWindow(warning.deprecationDaysUntil) ||
+				isWithinActionWindow(warning.retirementDaysUntil),
+		)
+		.sort(
+			(a: DeprecationWarning, b: DeprecationWarning) =>
+				getUrgencyDays(a) - getUrgencyDays(b),
+		);
+
+	return warnings;
 }

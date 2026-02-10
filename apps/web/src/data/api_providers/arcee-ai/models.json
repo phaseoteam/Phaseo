@@ -14,7 +14,72 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "include_reasoning",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "logit_bias",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "max_tokens",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "min_p",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "presence_penalty",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "reasoning",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "repetition_penalty",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "response_format",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "stop",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "structured_outputs",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "temperature",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "tool_choice",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "tools",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "top_k",
+            "notes": "inferred_from_family:trinity"
+          },
+          {
+            "param_id": "top_p",
+            "notes": "inferred_from_family:trinity"
+          }
+        ]
       }
     ]
   },
@@ -33,7 +98,72 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "frequency_penalty",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "include_reasoning",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "logit_bias",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "max_tokens",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "min_p",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "presence_penalty",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "reasoning",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "repetition_penalty",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "response_format",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "stop",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "structured_outputs",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "temperature",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "tool_choice",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "tools",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "top_k",
+            "notes": "sourced_from_or_global_model"
+          },
+          {
+            "param_id": "top_p",
+            "notes": "sourced_from_or_global_model"
+          }
+        ]
       }
     ]
   },

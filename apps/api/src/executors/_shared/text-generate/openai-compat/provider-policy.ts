@@ -64,6 +64,27 @@ export function sanitizeOpenAICompatRequest(args: {
 	}
 
 	switch (args.providerId) {
+		case "mistral":
+			// Mistral chat schema uses random_seed and does not define OpenAI stream_options/user fields.
+			// Source: https://docs.mistral.ai/openapi.yaml (ChatCompletionRequest).
+			if ("seed" in request) {
+				if (request.random_seed == null) {
+					request.random_seed = request.seed;
+				}
+				delete request.seed;
+				dropped.push("seed");
+			}
+			if ("stream_options" in request) {
+				delete request.stream_options;
+				dropped.push("stream_options");
+			}
+			if ("user" in request) {
+				delete request.user;
+				dropped.push("user");
+			}
+			// Mistral temperature upper bound is 1.5.
+			deleteIfOutOfRange(request, "temperature", 0, 1.5, dropped);
+			break;
 		case "groq":
 			// Groq OpenAI compatibility docs list these as unsupported.
 			for (const key of ["logprobs", "logit_bias", "top_logprobs"]) {

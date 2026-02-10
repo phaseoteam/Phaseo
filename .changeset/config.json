@@ -3,7 +3,7 @@
 	"changelog": [
 		"@changesets/changelog-github",
 		{
-			"repo": "DanielButler1/AI-Stats"
+			"repo": "AI-Stats/AI-Stats"
 		}
 	],
 	"commit": false,

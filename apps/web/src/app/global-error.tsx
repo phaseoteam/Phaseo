@@ -1,8 +1,6 @@
 // app/global-error.tsx
 "use client";
 
-// TODO: MAKE THIS WORK
-
 /**
  * Global error boundary for the App Router.
  * Renders when the root layout fails, so we can't rely on providers or layout styles.
@@ -20,6 +18,7 @@ import {
 	RefreshCcw,
 	Github,
 } from "lucide-react";
+import { reportClientError } from "@/lib/clientErrorReporting";
 
 // If your global styles are only imported in layout.tsx, uncomment the next line:
 // import "./globals.css";
@@ -33,6 +32,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const [copied, setCopied] = useState(false);
+	const [nowIso, setNowIso] = useState("");
 	const [showDetails, setShowDetails] = useState(
 		process.env.NODE_ENV !== "production"
 	);
@@ -51,12 +51,21 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 	useEffect(() => {
 		// eslint-disable-next-line no-console
 		console.error("[global-error]", error);
-		// Example Sentry hook:
-		// import * as Sentry from "@sentry/nextjs";
-		// Sentry.captureException(error);
+		reportClientError({
+			source: "global-error-boundary",
+			message: error?.message ?? "Unknown global error",
+			stack: error?.stack ?? null,
+			fatal: true,
+			handled: true,
+			context: {
+				digest: error?.digest ?? null,
+			},
+		});
 	}, [error]);
 
-	const nowIso = useMemo(() => new Date().toISOString(), []);
+	useEffect(() => {
+		setNowIso(new Date().toISOString());
+	}, []);
 	const pathWithQuery = useMemo(() => {
 		const q = searchParams?.toString();
 		return q ? `${pathname}?${q}` : pathname || "/";
@@ -97,7 +106,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 			].join("\n")
 		);
 		// Change to your repo URL
-		return `https://github.com/your-org/ai-stats/issues/new?title=${title}&body=${body}`;
+		return `https://github.com/AI-Stats/AI-Stats/issues/new?title=${title}&body=${body}`;
 	}, [details, error?.digest, error?.message]);
 
 	const copy = async () => {

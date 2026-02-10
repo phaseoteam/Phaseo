@@ -1,6 +1,22 @@
 export type StudioMode = "chat" | "code";
 
 export type ProviderKind = "mock" | "openai-compatible";
+export type ThemePreference = "system" | "light" | "dark";
+
+export interface ProviderProfile {
+  id: string;
+  name: string;
+  kind: ProviderKind;
+  baseUrl: string;
+  apiKey: string;
+  models: string[];
+  defaultModel: string;
+}
+
+export interface ModeModelSelection {
+  providerId: string;
+  model: string;
+}
 
 export interface Session {
   id: string;
@@ -27,11 +43,11 @@ export interface WorkspaceFile {
 }
 
 export interface AppSettings {
-  provider: ProviderKind;
-  openAiBaseUrl: string;
-  openAiApiKey: string;
-  openAiModel: string;
+  providers: ProviderProfile[];
+  chatSelection: ModeModelSelection;
+  codeSelection: ModeModelSelection;
   commandSafetyPrompt: boolean;
+  theme: ThemePreference;
 }
 
 export interface CommandRun {
@@ -61,6 +77,23 @@ export interface ChatDoneEvent {
   messageId: string;
   status: "done" | "error";
   error?: string;
+}
+
+export interface GitStatusEntry {
+  path: string;
+  indexStatus: string;
+  workTreeStatus: string;
+  originalPath?: string;
+}
+
+export interface GitDiffRequest {
+  workspacePath: string;
+  relativePath?: string;
+}
+
+export interface GitPatchApplyResult {
+  applied: boolean;
+  output: string;
 }
 
 export interface BootstrapData {
@@ -93,12 +126,16 @@ export interface DesktopApi {
   listMessages: (sessionId: string) => Promise<ChatMessage[]>;
   sendMessage: (input: SendMessageInput) => Promise<SendMessageResult>;
   updateSettings: (settings: Partial<AppSettings>) => Promise<AppSettings>;
+  fetchProviderModels: (providerId: string) => Promise<string[]>;
   pickWorkspace: () => Promise<string | null>;
   listWorkspaceFiles: (workspacePath: string) => Promise<WorkspaceFile[]>;
   readWorkspaceFile: (workspacePath: string, relativePath: string) => Promise<string>;
   writeWorkspaceFile: (workspacePath: string, relativePath: string, content: string) => Promise<void>;
   runCommand: (request: CommandRunRequest) => Promise<CommandRun>;
   stopCommand: (runId: string) => Promise<void>;
+  listGitStatus: (workspacePath: string) => Promise<GitStatusEntry[]>;
+  getGitDiff: (request: GitDiffRequest) => Promise<string>;
+  applyGitPatch: (workspacePath: string, patch: string) => Promise<GitPatchApplyResult>;
   onChatChunk: (listener: (event: ChatChunkEvent) => void) => () => void;
   onChatDone: (listener: (event: ChatDoneEvent) => void) => () => void;
   onCommandOutput: (listener: (event: CommandOutputChunk) => void) => () => void;

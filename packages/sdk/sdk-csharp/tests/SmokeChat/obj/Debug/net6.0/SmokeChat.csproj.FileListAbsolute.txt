@@ -18,7 +18,6 @@ Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\bin\Debug\net6.0\Smok
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\bin\Debug\net6.0\SmokeChat.runtimeconfig.json
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\bin\Debug\net6.0\SmokeChat.dll
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\bin\Debug\net6.0\SmokeChat.pdb
-Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\SmokeChat.csproj.AssemblyReference.cache
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\SmokeChat.GeneratedMSBuildEditorConfig.editorconfig
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\SmokeChat.AssemblyInfoInputs.cache
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\SmokeChat.AssemblyInfo.cs
@@ -28,3 +27,4 @@ Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\refi
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\SmokeChat.pdb
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\SmokeChat.genruntimeconfig.cache
 Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\ref\SmokeChat.dll
+Z:\ai-stats-public\packages\sdk\sdk-csharp\tests\SmokeChat\obj\Debug\net6.0\SmokeChat.sourcelink.json

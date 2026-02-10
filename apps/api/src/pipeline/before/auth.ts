@@ -176,6 +176,9 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
     // 2. Route to OAuth or API key authentication
     // Check if token is a JWT (3 dot-separated parts, not starting with aistats_)
     if (isJWTFormat(token)) {
+        if (!isGatewayOAuthJwt(token)) {
+            return { ok: false, reason: "invalid_key_format" };
+        }
         return await authenticateOAuth(token);
     }
 
@@ -282,6 +285,8 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
         console.error("SUPABASE_URL not configured for OAuth");
         return { ok: false, reason: "oauth_not_configured" };
     }
+    const supabaseBase = `${supabaseUrl}`.replace(/\/+$/, "").replace(/\/auth\/v1$/, "");
+    const expectedIssuer = `${supabaseBase}/auth/v1`;
 
     try {
         // Import OAuth utilities dynamically to avoid circular dependencies
@@ -300,7 +305,7 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
         let validation = await validateOAuthToken(
             token,
             jwks.keys,
-            supabaseUrl,
+            expectedIssuer,
             "authenticated" // Expected audience
         );
 
@@ -310,7 +315,7 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
             validation = await validateOAuthToken(
                 token,
                 jwks.keys,
-                supabaseUrl,
+                expectedIssuer,
                 "authenticated"
             );
         }
@@ -371,7 +376,11 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
             internal: false,
         } as AuthSuccess;
     } catch (error: any) {
-        console.error("OAuth authentication error:", error);
+        const message = String(error?.message ?? "");
+        if (message.includes("JWKS")) {
+            return { ok: false, reason: "oauth_jwks_unavailable" };
+        }
+        console.error("OAuth authentication error:", message);
         return { ok: false, reason: "oauth_authentication_failed" };
     }
 }
@@ -381,6 +390,30 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
  */
 function isJWTFormat(token: string): boolean {
     return token.split(".").length === 3 && !token.startsWith("aistats_");
+}
+
+function tryDecodeJwtPayload(token: string): Record<string, any> | null {
+    try {
+        const parts = token.split(".");
+        if (parts.length !== 3) return null;
+        const payload = parts[1];
+        const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+        const parsed = JSON.parse(json);
+        if (!parsed || typeof parsed !== "object") return null;
+        return parsed as Record<string, any>;
+    } catch {
+        return null;
+    }
+}
+
+function isGatewayOAuthJwt(token: string): boolean {
+    const payload = tryDecodeJwtPayload(token);
+    if (!payload) return false;
+    return (
+        typeof payload.user_id === "string" &&
+        typeof payload.team_id === "string" &&
+        typeof payload.client_id === "string"
+    );
 }
 
 

@@ -120,7 +120,6 @@ BEGIN
   ORDER BY rc.rk;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_model_performance(
   p_hours integer DEFAULT 24,
   p_min_requests integer DEFAULT 0
@@ -161,7 +160,6 @@ BEGIN
   ORDER BY requests DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_trending_models(
   p_limit integer DEFAULT 20,
   p_min_requests integer DEFAULT 0

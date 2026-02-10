@@ -321,7 +321,16 @@ async function attemptProviderWithIR(
 		const isTextGenerate = normalizedCapability === "text.generate";
 
 		const normalizedIr = isTextGenerate
-			? normalizeIRForProvider(ir as IRChatRequest, candidate.providerId, ctx.protocol as any)
+			? normalizeIRForProvider(
+				ir as IRChatRequest,
+				candidate.providerId,
+				ctx.protocol as any,
+				{
+					capabilityParams: candidate.capabilityParams,
+					providerMaxOutputTokens: candidate.maxOutputTokens,
+					modelForReasoning: candidate.providerModelSlug ?? baseModel,
+				},
+			)
 			: ir;
 		const buildExecutorArgs = (forceGatewayKey: boolean, byokMeta: any[]) =>
 			({
@@ -450,6 +459,7 @@ async function attemptProviderWithIR(
 				endpoint: ctx.endpoint,
 				provider: candidate.providerId,
 				upstreamStatus: executorResult.upstream.status,
+				upstreamUrl: executorResult.upstream.url || null,
 				mappedRequest: typeof mappedRequestValue === "string"
 					? previewValue(mappedRequestValue)
 					: mappedRequestValue,

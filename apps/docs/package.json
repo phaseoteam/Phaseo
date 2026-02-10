@@ -4,13 +4,13 @@
 	"private": true,
 	"scripts": {
 		"dev": "mintlify dev --port 3101 --no-open",
-		"build": "mintlify build",
-		"check:links": "mintlify broken-links",
+		"build": "pnpm dlx mint validate",
+		"check:links": "pnpm dlx mint broken-links",
 		"preview": "mintlify preview",
 		"clean": "rimraf .mint"
 	},
 	"dependencies": {
-		"mintlify": "^4.2.240"
+		"mintlify": "^4.2.334"
 	},
 	"devDependencies": {
 		"typescript": "^5.9.3"

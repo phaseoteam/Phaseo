@@ -3,7 +3,7 @@
   "organisation_id": "google",
   "name": "Veo 3 Fast",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "google/veo-3-0-fast-generate-preview-2025-07-17",
   "announced_date": null,
   "release_date": "2025-09-09T00:00:00",
   "deprecation_date": null,

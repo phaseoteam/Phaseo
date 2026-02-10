@@ -56,7 +56,6 @@ begin
   group by 1, 2;
 end;
 $$;
-
 create or replace function public.get_public_market_share_timeseries(
   p_dimension text default 'organization',
   p_time_range text default 'year',
@@ -238,5 +237,4 @@ begin
   end if;
 end;
 $$ language plpgsql stable;
-
 select public.refresh_public_usage_rollups();

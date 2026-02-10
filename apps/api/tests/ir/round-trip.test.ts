@@ -255,7 +255,7 @@ describe("Round-trip Transformations", () => {
 						index: 0,
 						message: {
 							role: "assistant",
-							content: "Hello! How can I help you today?",
+							content: [{ type: "text", text: "Hello! How can I help you today?" }],
 						},
 						finishReason: "stop",
 					},
@@ -274,8 +274,8 @@ describe("Round-trip Transformations", () => {
 			expect(encoded.choices).toHaveLength(1);
 			expect(encoded.choices[0].message.content).toBe("Hello! How can I help you today?");
 			expect(encoded.choices[0].finish_reason).toBe("stop");
-			expect(encoded.usage?.input_tokens).toBe(10);
-			expect(encoded.usage?.output_tokens).toBe(8);
+			expect(encoded.usage?.prompt_tokens).toBe(10);
+			expect(encoded.usage?.completion_tokens).toBe(8);
 			expect(encoded.usage?.total_tokens).toBe(18);
 		});
 
@@ -290,7 +290,7 @@ describe("Round-trip Transformations", () => {
 						index: 0,
 						message: {
 							role: "assistant",
-							content: "",
+							content: [],
 							toolCalls: [
 								{
 									id: "call_xyz789",
@@ -361,7 +361,9 @@ describe("Round-trip Transformations", () => {
 			const ir = decodeOpenAIChatRequest(originalRequest);
 
 			expect(ir.messages[0].role).toBe("assistant");
-			expect(ir.messages[0].content).toHaveLength(0);
+			expect(ir.messages[0].content).toHaveLength(1);
+			expect(ir.messages[0].content[0].type).toBe("text");
+			expect((ir.messages[0].content[0] as any).text).toBe("");
 			expect(ir.messages[0].toolCalls).toHaveLength(1);
 		});
 	});

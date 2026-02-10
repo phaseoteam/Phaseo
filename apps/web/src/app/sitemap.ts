@@ -1,5 +1,10 @@
 import { MetadataRoute } from "next";
 import manifestData from "@/data/manifest.json";
+import {
+	getHelpArticleParams,
+	getHelpCategoryParams,
+} from "@/lib/content/helpCenter";
+import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 
 type ManifestFile = {
     organisations?: string[];
@@ -55,6 +60,7 @@ const staticRoutes: Array<{
         { path: "/tools/json-formatter", changeFrequency: "monthly", priority: 0.55 },
         { path: "/tools/markdown-preview", changeFrequency: "monthly", priority: 0.55 },
         { path: "/tools/request-builder", changeFrequency: "monthly", priority: 0.55 },
+        { path: "/help", changeFrequency: "weekly", priority: 0.6 },
         { path: "/updates", changeFrequency: "weekly", priority: 0.65 },
         { path: "/updates/models", changeFrequency: "weekly", priority: 0.55 },
         { path: "/updates/web", changeFrequency: "weekly", priority: 0.55 },
@@ -98,6 +104,10 @@ const PLAN_SUFFIXES: RouteSuffix[] = [
 
 const BENCHMARK_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.7 },
+];
+
+const APP_SUFFIXES: RouteSuffix[] = [
+	{ suffix: "", changeFrequency: "weekly", priority: 0.55 },
 ];
 
 function buildRouteUrl(route: string): string {
@@ -188,18 +198,87 @@ function generateItems(
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const lastModified = new Date().toISOString();
-    const staticItems = staticRoutes.map((route) =>
-        createItem(route.path, route.changeFrequency, route.priority, lastModified),
-    );
+	const lastModified = new Date().toISOString();
+	const staticItems = staticRoutes.map((route) =>
+		createItem(route.path, route.changeFrequency, route.priority, lastModified),
+	);
 
-    const dynamicItems = [
-        ...generateItems(() => getModelSlugs(manifest.models), "/models", MODEL_SUFFIXES, lastModified),
-        ...generateItems(() => normalizeSlugs(manifest.api_providers), "/api-providers", PROVIDER_SUFFIXES, lastModified),
-        ...generateItems(() => normalizeSlugs(manifest.organisations), "/organisations", ORGANISATION_SUFFIXES, lastModified),
-        ...generateItems(() => normalizeSlugs(manifest.benchmarks), "/benchmarks", BENCHMARK_SUFFIXES, lastModified),
-        ...generateItems(() => normalizeSlugs(manifest.subscription_plans), "/subscription-plans", PLAN_SUFFIXES, lastModified),
-    ];
+	const dynamicItems = [
+		...generateItems(
+			() => getModelSlugs(manifest.models),
+			"/models",
+			MODEL_SUFFIXES,
+			lastModified,
+		),
+		...generateItems(
+			() => normalizeSlugs(manifest.api_providers),
+			"/api-providers",
+			PROVIDER_SUFFIXES,
+			lastModified,
+		),
+		...generateItems(
+			() => normalizeSlugs(manifest.organisations),
+			"/organisations",
+			ORGANISATION_SUFFIXES,
+			lastModified,
+		),
+		...generateItems(
+			() => normalizeSlugs(manifest.benchmarks),
+			"/benchmarks",
+			BENCHMARK_SUFFIXES,
+			lastModified,
+		),
+		...generateItems(
+			() => normalizeSlugs(manifest.subscription_plans),
+			"/subscription-plans",
+			PLAN_SUFFIXES,
+			lastModified,
+		),
+	];
 
-    return [...staticItems, ...dynamicItems];
+	const publicAppIds = await getPublicAppIdsCached();
+	const appItems = applySuffixes("/apps", publicAppIds, APP_SUFFIXES, lastModified);
+
+	const [helpCategoryParams, helpArticleParams] = await Promise.all([
+		getHelpCategoryParams(),
+		getHelpArticleParams(),
+	]);
+	const helpCategoryItems = helpCategoryParams
+		.filter(
+			(entry) =>
+				entry.category &&
+				entry.category !== "__placeholder__",
+		)
+		.map((entry) =>
+			createItem(
+				`/help/${entry.category}`,
+				"weekly",
+				0.55,
+				lastModified,
+			),
+		);
+	const helpArticleItems = helpArticleParams
+		.filter(
+			(entry) =>
+				entry.category &&
+				entry.slug &&
+				entry.category !== "__placeholder__" &&
+				entry.slug !== "__placeholder__",
+		)
+		.map((entry) =>
+			createItem(
+				`/help/${entry.category}/${entry.slug}`,
+				"monthly",
+				0.5,
+				lastModified,
+			),
+		);
+
+	return [
+		...staticItems,
+		...helpCategoryItems,
+		...helpArticleItems,
+		...dynamicItems,
+		...appItems,
+	];
 }

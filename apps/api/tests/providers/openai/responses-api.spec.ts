@@ -16,7 +16,7 @@ import {
 
 const CONFIG: ProviderTestConfig = {
 	providerId: "openai",
-	baseModel: "openai/gpt-5-nano-2025-08-07",
+	baseModel: "openai/gpt-4.1-nano",
 	capabilities: {
 		chatCompletions: true,
 		responsesApi: true,
@@ -27,6 +27,7 @@ const CONFIG: ProviderTestConfig = {
 		vision: true,
 	},
 };
+const REASONING_MODEL = "openai/gpt-5-nano";
 
 const context = createTestContext();
 
@@ -257,7 +258,7 @@ describe("OpenAI - Responses API", () => {
 	describe("Reasoning", () => {
 		it("should handle reasoning with extended thinking", async () => {
 			const response: any = await runProtocol(CONFIG, "/responses", {
-				model: CONFIG.baseModel,
+				model: REASONING_MODEL,
 				input: [
 					{
 						type: "message",
@@ -285,7 +286,7 @@ describe("OpenAI - Responses API", () => {
 
 		it("should verify reasoning output format", async () => {
 			const response: any = await runProtocol(CONFIG, "/responses", {
-				model: CONFIG.baseModel,
+				model: REASONING_MODEL,
 				input: [
 					{
 						type: "message",
@@ -351,6 +352,14 @@ describe("OpenAI - Responses API", () => {
 			);
 
 			expectStreamFrames(result.frames, context);
+			const toolEventTypes = result.frames
+				.filter((frame: any) => frame && typeof frame === "object")
+				.map((frame: any) => frame.type)
+				.filter((type: any) => typeof type === "string");
+			expect(toolEventTypes).toContain("response.output_item.added");
+			expect(toolEventTypes).toContain("response.function_call_arguments.delta");
+			expect(toolEventTypes).toContain("response.function_call_arguments.done");
+			expect(toolEventTypes).toContain("response.output_item.done");
 		});
 
 		it("should handle streaming with reasoning", async () => {
@@ -358,7 +367,7 @@ describe("OpenAI - Responses API", () => {
 				CONFIG,
 				"/responses",
 				{
-					model: CONFIG.baseModel,
+					model: REASONING_MODEL,
 					input: [
 						{
 							type: "message",

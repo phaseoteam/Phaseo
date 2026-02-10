@@ -3,7 +3,7 @@
   "organisation_id": "deepseek",
   "name": "DeepSeek V3 (2025-03-24)",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "deepseek/deepseek-v3-2024-12-26",
   "announced_date": "2025-03-25T00:00:00",
   "release_date": "2025-03-25T00:00:00",
   "deprecation_date": null,

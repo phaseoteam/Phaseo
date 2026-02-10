@@ -3,7 +3,7 @@
   "organisation_id": "openai",
   "name": "GPT 5 Pro",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "openai/o1-pro-2025-03-19",
   "announced_date": "2025-08-07T00:00:00",
   "release_date": "2025-08-07T00:00:00",
   "deprecation_date": null,

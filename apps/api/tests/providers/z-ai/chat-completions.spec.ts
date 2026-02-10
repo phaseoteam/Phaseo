@@ -140,11 +140,11 @@ describe("Z.AI - Chat Completions", () => {
 	});
 
 	describe("Reasoning (Thinking Mode)", () => {
-		it("should activate thinking mode with reasoning effort", async () => {
+		it("should activate thinking mode with reasoning.enabled=true", async () => {
 			const response: any = await runProtocol(CONFIG, "/chat/completions", {
 				model: CONFIG.baseModel,
 				messages: [{ role: "user", content: "What is 25 * 47? Think step by step." }],
-				reasoning: { effort: "high" },
+				reasoning: { enabled: true },
 			});
 
 			expect(response.choices[0].message.content).toBeDefined();
@@ -159,11 +159,11 @@ describe("Z.AI - Chat Completions", () => {
 			expectUsageTokens(response, context);
 		});
 
-		it("should NOT activate thinking with effort=none", async () => {
+		it("should NOT activate thinking with reasoning.enabled=false", async () => {
 			const response: any = await runProtocol(CONFIG, "/chat/completions", {
 				model: CONFIG.baseModel,
 				messages: [{ role: "user", content: "What is 12 + 15?" }],
-				reasoning: { effort: "none" },
+				reasoning: { enabled: false },
 			});
 
 			expect(response.choices[0].message.content).toBeDefined();
@@ -178,7 +178,7 @@ describe("Z.AI - Chat Completions", () => {
 			const response: any = await runProtocol(CONFIG, "/chat/completions", {
 				model: CONFIG.baseModel,
 				messages: [{ role: "user", content: "Solve: If I have 3 apples and buy 2 more, how many do I have?" }],
-				reasoning: { effort: "medium" },
+				reasoning: { enabled: true },
 			});
 
 			expect(response.choices[0].message.content).toBeDefined();
@@ -211,7 +211,7 @@ describe("Z.AI - Chat Completions", () => {
 					{ role: "assistant", content: "Okay, you have 5 cookies." },
 					{ role: "user", content: "If I eat 2, how many do I have left? Think carefully." },
 				],
-				reasoning: { effort: "low" },
+				reasoning: { enabled: true },
 			});
 
 			expect(response.choices[0].message.content).toBeDefined();
@@ -251,7 +251,7 @@ describe("Z.AI - Chat Completions", () => {
 				{
 					model: CONFIG.baseModel,
 					messages: [{ role: "user", content: "What is 12 + 15?" }],
-					reasoning: { effort: "low" },
+					reasoning: { enabled: true },
 				},
 				{ stream: true }
 			);

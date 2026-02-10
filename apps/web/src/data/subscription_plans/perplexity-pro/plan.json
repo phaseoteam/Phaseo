@@ -7,13 +7,13 @@
     {
       "frequency": "monthly",
       "usd_price": 20.0,
-      "link": null,
+      "link": "https://www.perplexity.ai/",
       "other_info": null
     },
     {
       "frequency": "yearly",
       "usd_price": 200.0,
-      "link": null,
+      "link": "https://www.perplexity.ai/",
       "other_info": null
     }
   ],

@@ -5,6 +5,7 @@
   "description": "AI Stats Go SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
-    "smoke:chat": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v"
+    "smoke:chat": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v",
+    "smoke:responses": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v"
   }
 }

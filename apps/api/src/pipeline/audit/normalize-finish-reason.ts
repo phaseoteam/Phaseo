@@ -97,7 +97,7 @@ export function normalizeFinishReason(
 	}
 
 	// Moonshot
-	if (provider === "moonshotai" || provider === "moonshot-ai" || provider === "moonshot-ai-turbo") {
+	if (provider === "moonshot-ai" || provider === "moonshot-ai-turbo") {
 		if (lower === "stop") return "stop";
 		if (lower === "length") return "length";
 		if (lower === "tool_calls") return "tool_calls";

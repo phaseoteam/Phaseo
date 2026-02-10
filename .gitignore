@@ -16,3 +16,4 @@ turbo-*.log
 /.cache
 /internal
 # /supabase
+guides/private/

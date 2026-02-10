@@ -8,6 +8,8 @@ import type { PipelineContext } from "@pipeline/before/types";
 import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { getEdgeMeta } from "./edge";
+import { sanitizeForAxiom, stringifyForAxiom } from "@observability/privacy";
+import { emitGatewayRequestEvent } from "@observability/events";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -130,6 +132,178 @@ export function classifyAttribution({ stage, status, errorCode, body }: { stage:
     return "upstream";
 }
 
+type UpstreamUnsupportedParamSignal = {
+    internalCode: "UPSTREAM_UNSUPPORTED_PARAM" | "UPSTREAM_UNSUPPORTED_PARAM_COMBO";
+    param: string | null;
+    path: string | null;
+    keyword: string | null;
+};
+
+function asPathString(value: unknown): string | null {
+    if (Array.isArray(value)) {
+        const parts = value
+            .map((part) => (typeof part === "string" || typeof part === "number" ? String(part).trim() : ""))
+            .filter(Boolean);
+        return parts.length ? parts.join(".") : null;
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+        return value.trim();
+    }
+    return null;
+}
+
+function extractParamFromMessage(message: string): string | null {
+    const quoted = message.match(/["']([a-zA-Z0-9_.-]+)["']/);
+    if (quoted?.[1]) return quoted[1];
+    const named = message.match(/\bparameter[:\s]+([a-zA-Z0-9_.-]+)/i);
+    if (named?.[1]) return named[1];
+    const field = message.match(/\bfield[:\s]+([a-zA-Z0-9_.-]+)/i);
+    if (field?.[1]) return field[1];
+    return null;
+}
+
+function looksLikeUnsupportedParamMessage(message: string): boolean {
+    const m = message.toLowerCase();
+    return (
+        (m.includes("unsupported") && (m.includes("parameter") || m.includes("field"))) ||
+        m.includes("does not support") ||
+        m.includes("not supported") ||
+        m.includes("unknown parameter") ||
+        m.includes("unknown field")
+    );
+}
+
+export function extractUpstreamUnsupportedParamSignal(args: {
+    stage: "before" | "execute";
+    body: any;
+}): UpstreamUnsupportedParamSignal | null {
+    if (args.stage !== "execute") return null;
+    const body = args.body;
+    if (!body || typeof body !== "object") return null;
+
+    const detailArrays: unknown[] = [];
+    if (Array.isArray(body.details)) detailArrays.push(body.details);
+    if (Array.isArray((body as any)?.error?.details)) detailArrays.push((body as any).error.details);
+    if (Array.isArray((body as any)?.error?.errors)) detailArrays.push((body as any).error.errors);
+
+    for (const list of detailArrays) {
+        for (const rawDetail of list as any[]) {
+            if (!rawDetail || typeof rawDetail !== "object") continue;
+            const detail = rawDetail as Record<string, any>;
+            const keyword = typeof detail.keyword === "string" ? detail.keyword.toLowerCase() : null;
+            const message = typeof detail.message === "string" ? detail.message : "";
+            const path = asPathString(detail.path);
+            const param =
+                (typeof detail?.params?.param === "string" && detail.params.param.trim()) ||
+                path ||
+                extractParamFromMessage(message) ||
+                null;
+
+            if (keyword === "unsupported_param_combo") {
+                return {
+                    internalCode: "UPSTREAM_UNSUPPORTED_PARAM_COMBO",
+                    param,
+                    path,
+                    keyword,
+                };
+            }
+
+            if (
+                keyword === "unsupported_param" ||
+                keyword === "unsupported_parameter" ||
+                looksLikeUnsupportedParamMessage(message)
+            ) {
+                return {
+                    internalCode: "UPSTREAM_UNSUPPORTED_PARAM",
+                    param,
+                    path,
+                    keyword,
+                };
+            }
+        }
+    }
+
+    const topLevelCode = String(
+        (body as any)?.error?.code ??
+        (body as any)?.code ??
+        (body as any)?.error_code ??
+        "",
+    ).toLowerCase();
+    const topLevelMessage = String(
+        (body as any)?.error?.message ??
+        (body as any)?.message ??
+        (body as any)?.description ??
+        "",
+    );
+    if (
+        topLevelCode.includes("unsupported_param") ||
+        topLevelCode.includes("unsupported_parameter") ||
+        looksLikeUnsupportedParamMessage(topLevelMessage)
+    ) {
+        return {
+            internalCode: topLevelCode.includes("combo")
+                ? "UPSTREAM_UNSUPPORTED_PARAM_COMBO"
+                : "UPSTREAM_UNSUPPORTED_PARAM",
+            param: extractParamFromMessage(topLevelMessage),
+            path: null,
+            keyword: null,
+        };
+    }
+
+    return null;
+}
+
+// Classify errors into user vs system ownership for operations triage.
+// system: gateway/provider issues we should act on.
+// user: request payload/parameter issues the caller should fix.
+export function classifyErrorType(args: {
+    stage: "before" | "execute";
+    status?: number | null;
+    errorCode?: string | null;
+    body?: any;
+}): "system" | "user" {
+    const code = String(args.errorCode ?? "").toLowerCase();
+    const status = Number(args.status ?? 0);
+
+    if (code.startsWith("user:")) return "user";
+    if (code.startsWith("upstream:")) return "system";
+
+    const userHints = [
+        "invalid_json",
+        "validation",
+        "unsupported_param",
+        "unsupported_model_or_endpoint",
+        "unsupported_modalities",
+        "bad_request",
+        "missing_required",
+    ];
+    if (userHints.some((hint) => code.includes(hint))) return "user";
+
+    // Treat auth/key/rate/upstream failures as system issues per gateway ops policy.
+    const systemHints = [
+        "no_key",
+        "missing_api_key",
+        "provider_key",
+        "unauthorized",
+        "forbidden",
+        "timeout",
+        "overload",
+        "rate_limit",
+        "upstream",
+        "internal",
+        "executor",
+        "routing",
+        "breaker",
+    ];
+    if (systemHints.some((hint) => code.includes(hint))) return "system";
+
+    if (status >= 500) return "system";
+    if (status === 429 || status === 408 || status === 401 || status === 403) return "system";
+    if (status >= 400) return "user";
+
+    return "system";
+}
+
 // Helper to safely parse JSON from a Response
 export async function safeJson(res: Response): Promise<any> {
     try { return await res.clone().json(); } catch { return {}; }
@@ -175,7 +349,15 @@ export async function handleError({
             debugRequested);
     const errCode = extractErrorCode(body, stage === "before" ? "before_error" : "upstream_error");
     const description = extractErrorDescription(body);
-    const attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
+    const upstreamUnsupportedParamSignal = extractUpstreamUnsupportedParamSignal({ stage, body });
+    let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
+    let errorType = classifyErrorType({ stage, status: res.status, errorCode: errCode, body });
+    if (upstreamUnsupportedParamSignal) {
+        // Unsupported-param failures returned by upstream are generally a gateway/provider
+        // capability-mapping issue, not caller behavior.
+        attribution = "upstream";
+        errorType = "system";
+    }
     headers.set("X-Gateway-Error-Attribution", attribution);
 
     const attributionHeaders = req ? readAttributionHeaders(req) : { referer: null, appTitle: null };
@@ -237,6 +419,8 @@ export async function handleError({
         errorCode: errCode,
         description: description ?? null,
         status: statusCode,
+        internalCode: upstreamUnsupportedParamSignal?.internalCode ?? null,
+        unsupportedParam: upstreamUnsupportedParamSignal?.param ?? null,
     });
     if (debugEnabled) {
         void logDebugEvent("error.upstream", {
@@ -255,6 +439,7 @@ export async function handleError({
         generation_id: generationId,
         status_code: statusCode,
         error: errCode,
+        error_type: errorType,
         description: fallbackDescription,
     };
     if (errCode === "validation_error" && Array.isArray(body?.details)) {
@@ -269,7 +454,7 @@ export async function handleError({
     // Audit failure
     const auditExtraJson = (() => {
         try {
-            return JSON.stringify({
+            return stringifyForAxiom({
                 stage,
                 request: requestMeta,
                 timing: ctx ? (ctx as any)?.timing ?? null : body?.timing ?? null,
@@ -279,6 +464,15 @@ export async function handleError({
                     byok_keys: p.byokMeta?.length ?? 0,
                     has_pricing: Boolean(p.pricingCard),
                 })),
+                transform: {
+                    protocol: ctx?.protocol ?? null,
+                    endpoint,
+                    model: ctx?.model ?? body?.model ?? null,
+                    request_surface_sanitized: sanitizeForAxiom(ctx?.rawBody ?? ctx?.body ?? null),
+                    requested_params: sanitizeForAxiom(ctx?.requestedParams ?? null),
+                    param_routing_diagnostics: sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null),
+                },
+                internal_reporting: sanitizeForAxiom(upstreamUnsupportedParamSignal ?? null),
             });
         } catch {
             return null;
@@ -334,6 +528,25 @@ export async function handleError({
         auditArgs.provider = providerForAudit;
     }
     await auditFailure(auditArgs);
+    await emitGatewayRequestEvent({
+        ctx,
+        result: undefined,
+        requestId: auditArgs.requestId,
+        teamId: auditArgs.teamId ?? "unknown",
+        endpoint,
+        model: ctx?.model ?? body?.model ?? null,
+        statusCode,
+        success: false,
+        errorCode: `${attribution}:${errCode}`,
+        errorMessage: description ?? fallbackDescription,
+        errorType,
+        errorStage: stage,
+        internalReason: errCode,
+        internalCode: upstreamUnsupportedParamSignal?.internalCode ?? null,
+        unsupportedParam: upstreamUnsupportedParamSignal?.param ?? null,
+        unsupportedParamPath: upstreamUnsupportedParamSignal?.path ?? null,
+        errorDetails: body,
+    });
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
 

@@ -6,6 +6,9 @@
 import { auditSuccess, auditFailure } from "../audit";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
+import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "@observability/privacy";
+import { emitGatewayRequestEvent } from "@observability/events";
+import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 
 // ============================================================================
 // REQUEST & ROUTING ENRICHMENT (Wide Event Context)
@@ -83,6 +86,8 @@ function extractRequestEnrichment(ctx: PipelineContext): any {
 function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): any {
     try {
         const candidates = ctx.providers ?? [];
+        const paramDiagnostics = ctx.paramRoutingDiagnostics ?? null;
+        const requestedParams = Array.isArray(ctx.requestedParams) ? ctx.requestedParams : [];
         const attemptErrors: any[] = Array.isArray((ctx as any).attemptErrors)
             ? (ctx as any).attemptErrors
             : [];
@@ -115,11 +120,40 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
             failure_reasons: failure_reasons.length > 0 ? failure_reasons : null,
             circuit_breaker_open: circuitBreakerOpenFromSnapshot || circuitBreakerBlocked,
             was_probe: Boolean(healthContext?.isProbe),
+            requested_params_count: requestedParams.length || null,
+            requested_params: requestedParams.length ? requestedParams : null,
+            param_provider_count_before: paramDiagnostics?.providerCountBefore ?? null,
+            param_provider_count_after: paramDiagnostics?.providerCountAfter ?? null,
+            param_dropped_provider_count: paramDiagnostics?.droppedProviders?.length ?? null,
         };
     } catch (err) {
         console.error("extractRoutingContext error", err);
         return null;
     }
+}
+
+function buildTransformSnapshot(ctx: PipelineContext, result?: RequestResult) {
+	const attemptErrors = Array.isArray((ctx as any).attemptErrors) ? (ctx as any).attemptErrors : null;
+	const routingSnapshot = Array.isArray((ctx as any).routingSnapshot) ? (ctx as any).routingSnapshot : null;
+	const requestedParams = Array.isArray(ctx.requestedParams) ? ctx.requestedParams : null;
+	const paramRoutingDiagnostics = ctx.paramRoutingDiagnostics ? sanitizeForAxiom(ctx.paramRoutingDiagnostics) : null;
+	const sanitizedGatewayRequest = sanitizeForAxiom(ctx.rawBody ?? ctx.body ?? null);
+	const sanitizedUpstreamRequest = sanitizeJsonStringForAxiom(result?.mappedRequest ?? null);
+
+	return {
+		protocol: ctx.protocol ?? null,
+		endpoint: ctx.endpoint,
+		model: ctx.model,
+		provider: result?.provider ?? null,
+		stream: ctx.stream,
+		request_surface_sanitized: sanitizedGatewayRequest,
+		upstream_request_sanitized: sanitizedUpstreamRequest,
+		upstream_request_present: Boolean(result?.mappedRequest),
+		requested_params: requestedParams,
+		param_routing_diagnostics: paramRoutingDiagnostics,
+		attempt_errors: sanitizeForAxiom(attemptErrors),
+		routing_snapshot: sanitizeForAxiom(routingSnapshot),
+	};
 }
 
 export async function handleFailureAudit(
@@ -128,7 +162,8 @@ export async function handleFailureAudit(
     upstreamStatus: number,
     attribution: string,
     errorCode: string,
-    errorMessage: string
+    errorMessage: string,
+    errorDetails?: unknown
 ) {
     const beforeMs = (ctx as any)?.timing?.before?.total_ms ?? 0;
     const execMs = (ctx as any)?.timing?.execute?.total_ms ?? 0;
@@ -141,7 +176,7 @@ export async function handleFailureAudit(
 
     const extraJson = (() => {
         try {
-            return JSON.stringify({
+            return stringifyForAxiom({
                 stage: "execute",
                 request: {
                     method: ctx.meta.requestMethod ?? null,
@@ -165,6 +200,8 @@ export async function handleFailureAudit(
                     byok_keys: p.byokMeta?.length ?? 0,
                     has_pricing: Boolean(p.pricingCard),
                 })),
+                transform: buildTransformSnapshot(ctx, result),
+                error_details: sanitizeForAxiom(errorDetails ?? null),
             });
         } catch {
             return null;
@@ -203,6 +240,18 @@ export async function handleFailureAudit(
             edgeAsn: ctx.meta.edgeAsn ?? null,
             extraJson,
         });
+        await emitGatewayRequestEvent({
+            ctx,
+            result,
+            statusCode: upstreamStatus,
+            success: false,
+            errorCode: `${attribution}:${errorCode}`,
+            errorMessage,
+            errorStage: "execute",
+            internalReason: errorCode,
+            mappedRequest: result.mappedRequest ?? null,
+            errorDetails,
+        });
     } catch (auditErr) {
         console.error("auditFailure failed", auditErr);
     }
@@ -231,7 +280,7 @@ export async function handleSuccessAudit(
         : Math.round(execTiming?.total_ms ?? generationMs));
 
     // Enrich usage with multimodal signals visible at the gateway layer (e.g., image/audio/video inputs).
-    const usageWithMultimodal = enrichUsageWithMultimodal(ctx, usagePriced);
+    const usageWithMultimodal = enrichUsageWithMultimodal(ctx, result, usagePriced);
 
     // Calculate throughput (tokens/sec) using output tokens only to reflect generation speed.
     if (ctx.meta.throughput_tps === undefined && generationMs > 0) {
@@ -252,7 +301,7 @@ export async function handleSuccessAudit(
 
     const extraJson = (() => {
         try {
-            return JSON.stringify({
+            return stringifyForAxiom({
                 stage: "execute",
                 request: {
                     method: ctx.meta.requestMethod ?? null,
@@ -277,6 +326,7 @@ export async function handleSuccessAudit(
                     has_pricing: Boolean(p.pricingCard),
                 })),
                 gating: ctx.gating ?? null,
+                transform: buildTransformSnapshot(ctx, result),
             });
         } catch {
             return null;
@@ -334,9 +384,17 @@ export async function handleSuccessAudit(
     }
 }
 
-function enrichUsageWithMultimodal(ctx: PipelineContext, usagePriced: any): any {
+function enrichUsageWithMultimodal(ctx: PipelineContext, result: RequestResult, usagePriced: any): any {
     try {
-        const base = usagePriced && typeof usagePriced === "object" ? { ...usagePriced } : {};
+        let base = usagePriced && typeof usagePriced === "object" ? { ...usagePriced } : {};
+        base = attachToolUsageMetrics(
+            base,
+            summarizeToolUsage({
+                body: ctx.body,
+                ir: result.ir,
+                payload: result.rawResponse,
+            }),
+        );
 
         if (ctx.endpoint === "chat.completions") {
             const body: any = ctx.body ?? {};

@@ -11,15 +11,30 @@ var baseUrl = Environment.GetEnvironmentVariable("AI_STATS_BASE_URL") ?? "https:
 var headers = new Dictionary<string, string> { { "Authorization", $"Bearer {apiKey}" } };
 var client = new Client(baseUrl, headers: headers);
 
-var payload = new Dictionary<string, object>
-{
-    ["model"] = "openai/gpt-5-nano-2025-08-07",
-    ["messages"] = new[]
-    {
-        new Dictionary<string, object> { ["role"] = "user", ["content"] = "Hi" }
-    }
-};
+var mode = args.Length > 0 ? args[0].Trim().ToLowerInvariant() : "chat";
 
-var result = await Operations.CreateChatCompletionAsync(client, body: payload);
+Dictionary<string, object>? result;
+if (mode == "responses")
+{
+    var payload = new Dictionary<string, object>
+    {
+        ["model"] = "openai/gpt-5-nano",
+        ["input"] = "Hi"
+    };
+    result = await Operations.CreateResponseAsync(client, body: payload);
+}
+else
+{
+    var payload = new Dictionary<string, object>
+    {
+        ["model"] = "openai/gpt-5-nano-2025-08-07",
+        ["messages"] = new[]
+        {
+            new Dictionary<string, object> { ["role"] = "user", ["content"] = "Hi" }
+        }
+    };
+    result = await Operations.CreateChatCompletionAsync(client, body: payload);
+}
+
 var json = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
 Console.WriteLine(json);

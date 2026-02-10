@@ -6,11 +6,12 @@
     "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "strict": true,
+    "skipLibCheck": true,
     "noUncheckedIndexedAccess": true,
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "types": ["node", "vite/client", "electron"],
+    "types": ["node", "electron"],
     "baseUrl": ".",
     "paths": {
       "@renderer/*": ["src/renderer/src/*"],

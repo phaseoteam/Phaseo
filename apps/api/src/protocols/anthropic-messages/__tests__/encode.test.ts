@@ -501,5 +501,58 @@ describe("encodeAnthropicMessagesResponse", () => {
 			});
 		}
 	});
+
+	it("should encode image parts as Anthropic image content blocks", () => {
+		const ir: IRChatResponse = {
+			id: "req-123",
+			nativeId: "msg_abc123",
+			model: "google/gemini-3-pro-image-preview",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "text", text: "Here are images." },
+							{
+								type: "image",
+								source: "data",
+								data: "ZmFrZS1pbWFnZS1kYXRh",
+								mimeType: "image/png",
+							},
+							{
+								type: "image",
+								source: "url",
+								data: "https://example.com/generated.png",
+								mimeType: "image/png",
+							},
+						],
+					},
+					finishReason: "stop",
+				},
+			],
+		};
+
+		const response = encodeAnthropicMessagesResponse(ir);
+		const imageBlocks = response.content.filter((block) => block.type === "image");
+
+		expect(imageBlocks).toHaveLength(2);
+		expect(imageBlocks[0]).toEqual({
+			type: "image",
+			source: {
+				type: "base64",
+				media_type: "image/png",
+				data: "ZmFrZS1pbWFnZS1kYXRh",
+			},
+		});
+		expect(imageBlocks[1]).toEqual({
+			type: "image",
+			source: {
+				type: "url",
+				media_type: "image/png",
+				url: "https://example.com/generated.png",
+			},
+		});
+	});
 });
 

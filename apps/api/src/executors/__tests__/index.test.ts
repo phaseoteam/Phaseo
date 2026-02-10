@@ -62,7 +62,6 @@ describe("resolveProviderExecutor", () => {
 			"cohere",
 			"crusoe",
 			"google",
-			"moonshotai",
 			"qwen",
 		];
 		for (const provider of providers) {

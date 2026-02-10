@@ -7,7 +7,7 @@
     {
       "frequency": "monthly",
       "usd_price": 200.0,
-      "link": null,
+      "link": "https://claude.com/pricing",
       "other_info": null
     }
   ],
@@ -20,37 +20,37 @@
       "other_info": null
     },
     {
-      "model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
       "model_id": "anthropic/claude-3-opus-2024-03-04",
       "model_info": null,
       "rate_limit": null,
       "other_info": null
     },
     {
-      "model_id": "anthropic/claude-opus-4-2025-05-21",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
-      "model_id": "anthropic/claude-sonnet-4-2025-05-21",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
-      "model_id": "anthropic/claude-sonnet-4-2025-05-21",
+      "model_id": "anthropic/claude-haiku-4-5-2025-10-15",
       "model_info": null,
       "rate_limit": null,
       "other_info": null
     },
     {
       "model_id": "anthropic/claude-opus-4-5-2025-11-24",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-opus-4-6-2026-02-05",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4-5-2025-09-29",
       "model_info": null,
       "rate_limit": null,
       "other_info": null

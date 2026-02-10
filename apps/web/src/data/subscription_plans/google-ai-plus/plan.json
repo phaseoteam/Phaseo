@@ -1,0 +1,29 @@
+{
+  "plan_id": "google-ai-plus",
+  "name": "Gemini Plus",
+  "organisation_id": "google",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 8.0,
+      "link": "https://gemini.google/subscriptions/",
+      "other_info": null
+    }
+  ],
+  "features": [],
+  "models": [
+    {
+      "model_id": "google/gemini-3-flash-preview-2025-12-17",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "google/gemini-3-pro-preview-2025-11-18",
+      "model_info": null,
+      "rate_limit": "Up To 30 Messages / Day",
+      "other_info": null
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "model_id": "anthropic/claude-opus-4-6-2026-02-05",
+  "organisation_id": "anthropic",
+  "name": "Claude Opus 4.6",
+  "status": "Available",
+  "previous_model_id": "anthropic/claude-opus-4-5-2025-11-24",
+  "announced_date": "2026-02-05T00:00:00",
+  "release_date": "2026-02-05T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

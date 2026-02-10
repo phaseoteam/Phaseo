@@ -1,7 +1,5 @@
 "use client";
 
-// TODO: Implement Tools (tools array, tool_choice, and richer tool editing UI)
-
 import { useMemo, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -850,7 +848,6 @@ print(response.json()["choices"][0]["message"]["content"])`;
 												</div>
 											</div>
 										</div>
-										{/* TODO: Implement Tools (tools array and tool_choice UI) */}
 										<div className="space-y-2">
 											<div className="flex items-center justify-between">
 												<Label

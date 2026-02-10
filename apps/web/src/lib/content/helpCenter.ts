@@ -8,6 +8,8 @@ import { cache } from "react";
 const CATEGORY_FILE_NAME = "_category.md";
 const MARKDOWN_EXTENSION = ".md";
 const DEFAULT_ORDER = Number.MAX_SAFE_INTEGER;
+const FALLBACK_CATEGORY_PARAM = "__placeholder__";
+const FALLBACK_ARTICLE_PARAM = "__placeholder__";
 
 type MarkdownFrontmatter = {
 	title?: unknown;
@@ -118,7 +120,7 @@ function parseMarkdownDocument(raw: string): {
 	return { frontmatter, content };
 }
 
-async function resolveHelpContentRoot(): Promise<string> {
+async function resolveHelpContentRoot(): Promise<string | null> {
 	const candidates = [
 		path.join(process.cwd(), "src", "content", "help"),
 		path.join(process.cwd(), "apps", "web", "src", "content", "help"),
@@ -134,14 +136,17 @@ async function resolveHelpContentRoot(): Promise<string> {
 			// Try the next candidate.
 		}
 	}
-
-	throw new Error(
-		`Unable to locate help content directory from cwd: ${process.cwd()}`
-	);
+	return null;
 }
 
 const loadHelpCenter = cache(async (): Promise<HelpCenterData> => {
 	const helpRoot = await resolveHelpContentRoot();
+	if (!helpRoot) {
+		return {
+			categories: [],
+			articleLookup: new Map<string, HelpArticle>(),
+		};
+	}
 	const entries = await fs.readdir(helpRoot, { withFileTypes: true });
 	const categoryDirectories = entries
 		.filter((entry) => entry.isDirectory())
@@ -282,6 +287,9 @@ export async function getHelpArticle(
 
 export async function getHelpCategoryParams(): Promise<Array<{ category: string }>> {
 	const categories = await getHelpCategories();
+	if (!categories.length) {
+		return [{ category: FALLBACK_CATEGORY_PARAM }];
+	}
 	return categories.map((category) => ({ category: category.slug }));
 }
 
@@ -289,10 +297,19 @@ export async function getHelpArticleParams(): Promise<
 	Array<{ category: string; slug: string }>
 > {
 	const categories = await getHelpCategories();
-	return categories.flatMap((category) =>
+	const params = categories.flatMap((category) =>
 		category.articles.map((article) => ({
 			category: category.slug,
 			slug: article.slug,
 		}))
 	);
+	if (!params.length) {
+		return [
+			{
+				category: FALLBACK_CATEGORY_PARAM,
+				slug: FALLBACK_ARTICLE_PARAM,
+			},
+		];
+	}
+	return params;
 }

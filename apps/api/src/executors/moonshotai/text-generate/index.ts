@@ -1,4 +1,4 @@
-// Purpose: Executor for moonshotai / text-generate.
+// Purpose: Executor for moonshot-ai / text-generate.
 // Why: Isolates provider-specific behavior per capability.
 // How: Transforms IR and calls the provider API for this capability.
 

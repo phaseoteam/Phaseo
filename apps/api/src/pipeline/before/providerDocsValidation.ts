@@ -57,81 +57,6 @@ const UNSUPPORTED_TEXT_PARAMS: Record<string, Set<string>> = {
 	]),
 };
 
-function inRange(value: unknown, min: number, max: number): boolean {
-	return typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
-}
-
-function getMaxTokens(body: any): number | undefined {
-	if (typeof body?.max_tokens === "number") return body.max_tokens;
-	if (typeof body?.max_output_tokens === "number") return body.max_output_tokens;
-	return undefined;
-}
-
-function validateNumericRanges(
-	providerId: string,
-	body: any,
-): ValidationDetail[] {
-	const details: ValidationDetail[] = [];
-
-	const temperatureMax = providerId === "anthropic" ? 1 : 2;
-	if (body?.temperature != null && !inRange(body.temperature, 0, temperatureMax)) {
-		details.push({
-			message: `Provider "${providerId}" requires temperature between 0 and ${temperatureMax}.`,
-			path: ["temperature"],
-			keyword: "invalid_range",
-			params: { provider: providerId, min: 0, max: temperatureMax },
-		});
-	}
-
-	if (body?.top_p != null && !inRange(body.top_p, 0, 1)) {
-		details.push({
-			message: `Provider "${providerId}" requires top_p between 0 and 1.`,
-			path: ["top_p"],
-			keyword: "invalid_range",
-			params: { provider: providerId, min: 0, max: 1 },
-		});
-	}
-
-	if (body?.frequency_penalty != null && !inRange(body.frequency_penalty, -2, 2)) {
-		details.push({
-			message: `Provider "${providerId}" requires frequency_penalty between -2 and 2.`,
-			path: ["frequency_penalty"],
-			keyword: "invalid_range",
-			params: { provider: providerId, min: -2, max: 2 },
-		});
-	}
-
-	if (body?.presence_penalty != null && !inRange(body.presence_penalty, -2, 2)) {
-		details.push({
-			message: `Provider "${providerId}" requires presence_penalty between -2 and 2.`,
-			path: ["presence_penalty"],
-			keyword: "invalid_range",
-			params: { provider: providerId, min: -2, max: 2 },
-		});
-	}
-
-	if (body?.top_logprobs != null && !inRange(body.top_logprobs, 0, 20)) {
-		details.push({
-			message: `Provider "${providerId}" requires top_logprobs between 0 and 20.`,
-			path: ["top_logprobs"],
-			keyword: "invalid_range",
-			params: { provider: providerId, min: 0, max: 20 },
-		});
-	}
-
-	const maxTokens = getMaxTokens(body);
-	if (maxTokens != null && (!Number.isInteger(maxTokens) || maxTokens <= 0)) {
-		details.push({
-			message: `Provider "${providerId}" requires max_tokens/max_output_tokens as a positive integer.`,
-			path: ["max_tokens"],
-			keyword: "invalid_value",
-			params: { provider: providerId },
-		});
-	}
-
-	return details;
-}
-
 function validateProviderSpecific(
 	providerId: string,
 	endpoint: Endpoint,
@@ -197,7 +122,6 @@ export function validateProviderDocsCompliance(args: {
 
 	for (const provider of args.providers) {
 		const details = [
-			...validateNumericRanges(provider.providerId, args.body),
 			...validateProviderSpecific(
 				provider.providerId,
 				args.endpoint,

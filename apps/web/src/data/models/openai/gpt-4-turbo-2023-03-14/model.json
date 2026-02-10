@@ -1,7 +1,7 @@
 {
   "model_id": "openai/gpt-4-turbo-2023-03-14",
   "organisation_id": "openai",
-  "name": "GPT 4 Turbo",
+  "name": "GPT 4 Turbo (2023-03-14)",
   "status": "Available",
   "previous_model_id": null,
   "announced_date": null,

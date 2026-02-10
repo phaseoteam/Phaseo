@@ -3,7 +3,7 @@
 // How: Maps IR to OpenAI formats and normalizes streaming events.
 
 import { describe, expect, it } from "vitest";
-import { xiaomiQuirks } from "../xiaomi";
+import { xiaomiQuirks } from "../../providers/xiaomi/quirks";
 
 describe("Xiaomi quirks", () => {
 	it("adds chat_template_kwargs.enable_thinking when reasoning is enabled", () => {

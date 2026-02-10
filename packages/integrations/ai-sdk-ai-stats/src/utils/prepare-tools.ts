@@ -1,12 +1,18 @@
-import type { LanguageModelV1ToolChoice, LanguageModelV1FunctionTool, LanguageModelV1ProviderDefinedTool } from '@ai-sdk/provider';
+import type {
+  LanguageModelV3ToolChoice,
+  LanguageModelV3FunctionTool,
+  LanguageModelV3ProviderTool,
+} from '@ai-sdk/provider';
 
 /**
  * Converts AI SDK tools to AI Stats Gateway format
  */
-export function prepareTools(tools: Array<LanguageModelV1FunctionTool | LanguageModelV1ProviderDefinedTool>): any[] {
+export function prepareTools(
+  tools: Array<LanguageModelV3FunctionTool | LanguageModelV3ProviderTool>
+): any[] {
   return tools.map((tool) => {
-    if (tool.type === 'provider-defined') {
-      // For provider-defined tools, we just pass through the configuration
+    if (tool.type === 'provider') {
+      // Provider tools are gateway/provider-specific and passed through as-is.
       return tool;
     }
     // For function tools
@@ -15,7 +21,7 @@ export function prepareTools(tools: Array<LanguageModelV1FunctionTool | Language
       function: {
         name: tool.name,
         description: tool.description,
-        parameters: tool.parameters, // Already JSON Schema format
+        parameters: tool.inputSchema,
       },
     };
   });
@@ -24,7 +30,7 @@ export function prepareTools(tools: Array<LanguageModelV1FunctionTool | Language
 /**
  * Converts AI SDK tool choice to gateway format
  */
-export function convertToolChoice(toolChoice: LanguageModelV1ToolChoice): any {
+export function convertToolChoice(toolChoice: LanguageModelV3ToolChoice): any {
   switch (toolChoice.type) {
     case 'auto':
       return 'auto';

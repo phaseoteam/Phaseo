@@ -1,4 +1,7 @@
-import type { TranscriptionModelV1, TranscriptionModelV1CallOptions } from '@ai-sdk/provider';
+import type {
+  TranscriptionModelV3,
+  TranscriptionModelV3CallOptions,
+} from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
@@ -6,8 +9,8 @@ import { createAIStatsErrorHandler } from './utils/error-handler.js';
  * AI Stats Transcription Model implementation for Vercel AI SDK v1
  * Supports audio transcription via /v1/audio/transcriptions
  */
-export class AIStatsTranscriptionModel implements TranscriptionModelV1 {
-  readonly specificationVersion = 'v2' as const;
+export class AIStatsTranscriptionModel implements TranscriptionModelV3 {
+  readonly specificationVersion = 'v3' as const;
   readonly provider = 'ai-stats' as const;
   readonly modelId: string;
 
@@ -27,7 +30,7 @@ export class AIStatsTranscriptionModel implements TranscriptionModelV1 {
   /**
    * Transcribe audio to text
    */
-  async doGenerate(options: TranscriptionModelV1CallOptions) {
+  async doGenerate(options: TranscriptionModelV3CallOptions) {
     const { audio, mediaType, abortSignal, providerOptions, headers } = options;
 
     // Build FormData for multipart upload
@@ -49,7 +52,7 @@ export class AIStatsTranscriptionModel implements TranscriptionModelV1 {
 
     // Add provider-specific options
     if (providerOptions) {
-      for (const [, providerSettings] of Object.entries(providerOptions)) {
+      for (const providerSettings of Object.values(providerOptions)) {
         for (const [key, value] of Object.entries(providerSettings)) {
           if (value !== undefined && value !== null) {
             formData.append(key, String(value));

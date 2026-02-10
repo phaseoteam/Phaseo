@@ -34,4 +34,19 @@ describe("StudioStore", () => {
     expect(messages).toHaveLength(1);
     expect(messages[0]?.content).toBe("hello");
   });
+
+  it("creates provider settings for chat and code surfaces", () => {
+    const dir = mkdtempSync(join(tmpdir(), "studio-store-settings-"));
+    tempDirs.push(dir);
+
+    const store = new StudioStore(dir);
+    const settings = store.getSettings();
+
+    expect(settings.providers).toHaveLength(1);
+    expect(settings.providers[0]?.id).toBe("provider-ai-stats-gateway");
+    expect(settings.providers[0]?.kind).toBe("openai-compatible");
+    expect(settings.chatSelection.providerId).toBe("provider-ai-stats-gateway");
+    expect(settings.codeSelection.providerId).toBe("provider-ai-stats-gateway");
+    expect(settings.theme).toBe("system");
+  });
 });

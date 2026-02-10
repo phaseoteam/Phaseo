@@ -124,7 +124,6 @@ BEGIN
   ORDER BY rc.rk;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_model_performance(
   p_hours integer DEFAULT 24,
   p_min_requests integer DEFAULT 0
@@ -167,7 +166,6 @@ BEGIN
   ORDER BY requests DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_market_share(
   p_dimension text DEFAULT 'organization',
   p_time_range text DEFAULT 'week'
@@ -244,7 +242,6 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_trending_models(
   p_limit integer DEFAULT 20,
   p_min_requests integer DEFAULT 0
@@ -292,7 +289,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_top_apps(
   p_limit integer DEFAULT 20,
   p_time_range text DEFAULT 'week'
@@ -329,7 +325,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_reliability_metrics(
   p_time_range text DEFAULT 'week',
   p_min_requests integer DEFAULT 0
@@ -400,7 +395,6 @@ BEGIN
   ORDER BY success_rate ASC, total_requests DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_geographic_distribution(
   p_time_range text DEFAULT 'week',
   p_limit integer DEFAULT 20
@@ -442,7 +436,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 CREATE OR REPLACE FUNCTION public.get_public_multimodal_breakdown(
   p_time_range text DEFAULT 'week'
 )

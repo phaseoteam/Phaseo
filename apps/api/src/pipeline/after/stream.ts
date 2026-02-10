@@ -18,6 +18,12 @@ import { getBaseModel } from "../execute/utils";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
+import {
+    attachToolUsageMetrics,
+    countOutputToolCallsFromPayload,
+    countRequestedTools,
+    countRequestedToolResults,
+} from "./tool-usage";
 
 export async function handleStreamResponse(
     ctx: PipelineContext,
@@ -36,6 +42,9 @@ export async function handleStreamResponse(
     // Cache native ID from first chunk to avoid checking every frame
     let cachedNativeId: string | undefined;
     let cachedFinishReason: string | null = null;
+    const requestedToolCount = countRequestedTools(ctx.body);
+    const requestedToolResultCount = countRequestedToolResults(ctx.body);
+    let cachedOutputToolCallCount: number | null = null;
     if (ctx.meta?.debug) {
         void logDebugEvent("stream.start", {
             requestId: ctx.requestId,
@@ -189,6 +198,10 @@ export async function handleStreamResponse(
                 extractFinishReason(payload),
                 result.provider
             );
+            const outputToolCalls = countOutputToolCallsFromPayload(payload);
+            if (outputToolCalls > 0) {
+                cachedOutputToolCallCount = outputToolCalls;
+            }
             if (finishReason) {
                 cachedFinishReason = finishReason;
                 result.bill.finish_reason = finishReason;
@@ -206,7 +219,13 @@ export async function handleStreamResponse(
                 });
             }
             // console.log("[DEBUG After Stream] Final usage from stream:", usageRaw);
-            const shapedUsage = shapeUsageForClient(usageRaw, { endpoint: ctx.endpoint, body: ctx.body });
+            const shapedUsage = attachToolUsageMetrics(
+                shapeUsageForClient(usageRaw, { endpoint: ctx.endpoint, body: ctx.body }),
+                {
+                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+                    output_tool_call_count: cachedOutputToolCallCount,
+                }
+            );
             const baseModel = getBaseModel(ctx.model);
             const healthContext = (result as any).healthContext ?? null;
             const isProbe = Boolean(healthContext?.isProbe);
@@ -243,7 +262,14 @@ export async function handleStreamResponse(
                 if (!bill) return false;
                 result.bill.cost_cents = bill.cost_cents;
                 result.bill.currency = bill.currency;
-                result.bill.usage = bill.usage ?? shapedUsage ?? result.bill.usage;
+                result.bill.usage = attachToolUsageMetrics(
+                    bill.usage ?? shapedUsage ?? result.bill.usage,
+                    {
+                        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+                        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
+                        output_tool_call_count: cachedOutputToolCallCount,
+                    }
+                );
                 result.bill.finish_reason = bill.finish_reason ?? result.bill.finish_reason;
 
                 // Normalize finish reason for consistent storage
@@ -280,6 +306,7 @@ export async function handleStreamResponse(
                         total_nanos: totalNanosOverride,
                         currency: bill.currency ?? null,
                     },
+                    mappedRequest: result.mappedRequest ?? null,
                 });
 
                 try {
@@ -309,7 +336,11 @@ export async function handleStreamResponse(
                     ctx,
                     result,
                     true,
-                    null,
+                    attachToolUsageMetrics(null, {
+                        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+                        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
+                        output_tool_call_count: cachedOutputToolCallCount,
+                    }),
                     0,
                     0,
                     result.bill.currency ?? card?.currency ?? "USD",
@@ -329,6 +360,7 @@ export async function handleStreamResponse(
                         total_nanos: 0,
                         currency: result.bill.currency ?? card?.currency ?? "USD",
                     },
+                    mappedRequest: result.mappedRequest ?? null,
                 });
                 return;
             }
@@ -354,14 +386,18 @@ export async function handleStreamResponse(
 
             result.bill.cost_cents = totalCents;
             result.bill.currency = currency;
-            result.bill.usage = pricedUsage;
+            result.bill.usage = attachToolUsageMetrics(pricedUsage, {
+                request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+                request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
+                output_tool_call_count: cachedOutputToolCallCount,
+            });
             result.bill.finish_reason = cachedFinishReason ?? result.bill.finish_reason;
 
             await handleSuccessAudit(
                 ctx,
                 result,
                 true,
-                pricedUsage,
+                result.bill.usage,
                 totalCents,
                 totalNanos,
                 currency,
@@ -381,6 +417,7 @@ export async function handleStreamResponse(
                     total_nanos: totalNanos,
                     currency,
                 },
+                mappedRequest: result.mappedRequest ?? null,
             });
 
             try {

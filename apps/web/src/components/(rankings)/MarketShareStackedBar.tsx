@@ -19,6 +19,7 @@ type MarketShareStackedBarProps = {
 };
 
 type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
+const STABLE_REFERENCE_DATE = new Date(0);
 
 function formatBucketLabel(value: string) {
 	const date = new Date(value);
@@ -131,7 +132,12 @@ export function MarketShareStackedBar({
 		);
 	}
 
-	const endWeek = startOfWeek(new Date());
+	const existingBucketTs = Array.from(bucketMap.keys());
+	const endWeekTs =
+		existingBucketTs.length > 0
+			? Math.max(...existingBucketTs)
+			: startOfWeek(STABLE_REFERENCE_DATE).getTime();
+	const endWeek = startOfWeek(new Date(endWeekTs));
 	for (let i = 51; i >= 0; i -= 1) {
 		const ts = endWeek.getTime() - i * WEEK_MS;
 		if (!bucketMap.has(ts)) {

@@ -53,7 +53,6 @@ const PROVIDER_ALIAS_MAP: Record<string, string> = {
 	minimax: "minimax",
 	"minimax-lightning": "minimax-lightning",
 	mistral: "mistral",
-	moonshotai: "moonshot-ai",
 	"moonshot-ai": "moonshot-ai",
 	"moonshot-ai-turbo": "moonshot-ai-turbo",
 	morph: "morph",

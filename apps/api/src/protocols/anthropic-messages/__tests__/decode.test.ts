@@ -433,6 +433,52 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.serviceTier).toBe("priority");
 	});
 
+	it("should decode output_config.effort=max into IR reasoning effort xhigh", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 2048,
+			output_config: {
+				effort: "max",
+			},
+			messages: [{ role: "user", content: "Hello" }],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+		expect(ir.reasoning?.effort).toBe("xhigh");
+	});
+
+	it("should decode reasoning.effort=xhigh on Anthropic messages surface", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 2048,
+			reasoning: {
+				effort: "xhigh",
+			},
+			messages: [{ role: "user", content: "Hello" }],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+		expect(ir.reasoning?.effort).toBe("xhigh");
+	});
+
+	it("should decode thinking.effort values and preserve thinking budget", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 2048,
+			thinking: {
+				type: "enabled",
+				budget_tokens: 512,
+				effort: "high",
+			},
+			messages: [{ role: "user", content: "Hello" }],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+		expect(ir.reasoning?.effort).toBe("high");
+		expect(ir.reasoning?.enabled).toBe(true);
+		expect(ir.reasoning?.maxTokens).toBe(512);
+	});
+
 	it("should preserve service_tier on decode", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",

@@ -145,7 +145,6 @@ const SCENARIOS: Partial<Record<Endpoint, Scenario>> = {
 const PROVIDERS = allProviderNames();
 const PROVIDER_ALIASES: Record<string, string> = {
     atlascloud: "atlas-cloud",
-    "moonshot-ai": "moonshotai",
 };
 
 function resolveProviderId(providerId: string) {

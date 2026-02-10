@@ -71,6 +71,40 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.service_tier).toBeUndefined();
 	});
 
+	it("maps OpenAI xhigh reasoning effort to Anthropic output_config.effort=max", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-3-7-sonnet",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { effort: "xhigh" },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.output_config?.effort).toBe("max");
+	});
+
+	it("maps OpenAI high reasoning effort straight through to Anthropic", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-3-7-sonnet",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { effort: "high" },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.output_config?.effort).toBe("high");
+	});
+
+	it("maps none reasoning effort to thinking disabled", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-3-7-sonnet",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { effort: "none" },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "disabled" });
+		expect(payload.output_config).toBeUndefined();
+	});
+
 	it("adds JSON object structured-output instruction to system prompt", () => {
 		const request = createBaseRequest();
 		request.responseFormat = { type: "json_object" };

@@ -24,7 +24,44 @@ interface ConsentPageProps {
 	}>;
 }
 
-export default async function ConsentPage({ searchParams }: ConsentPageProps) {
+function parseRedirectUris(value: unknown): string[] {
+	if (Array.isArray(value)) {
+		return value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+	}
+	if (typeof value === "string") {
+		try {
+			const parsed = JSON.parse(value);
+			if (Array.isArray(parsed)) {
+				return parsed.filter(
+					(entry): entry is string => typeof entry === "string" && entry.length > 0
+				);
+			}
+		} catch {
+			return value.length > 0 ? [value] : [];
+		}
+	}
+	return [];
+}
+
+export default function ConsentPage({ searchParams }: ConsentPageProps) {
+	return (
+		<Suspense
+			fallback={
+				<div className="container max-w-2xl mx-auto py-12">
+					<Card className="p-8">
+						<div className="text-center text-muted-foreground">
+							Loading authorization request...
+						</div>
+					</Card>
+				</div>
+			}
+		>
+			<ConsentPageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 	const params = await searchParams;
 	const supabase = await createClient();
 
@@ -123,9 +160,6 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 		);
 	}
 
-	// Verify redirect URI is registered
-	// TODO: Fetch registered redirect URIs from Supabase OAuth client
-	// For now, we'll trust the redirect_uri parameter
 	if (!params.redirect_uri) {
 		return (
 			<div className="container max-w-2xl mx-auto py-12">
@@ -134,6 +168,25 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
 							<strong>Invalid Request:</strong> Missing redirect_uri parameter
+						</AlertDescription>
+					</Alert>
+				</Card>
+			</div>
+		);
+	}
+	const registeredRedirectUris = parseRedirectUris((oauthApp as any).redirect_uris);
+	if (
+		registeredRedirectUris.length > 0 &&
+		!registeredRedirectUris.includes(params.redirect_uri)
+	) {
+		return (
+			<div className="container max-w-2xl mx-auto py-12">
+				<Card className="p-8">
+					<Alert variant="destructive">
+						<AlertTriangle className="h-4 w-4" />
+						<AlertDescription>
+							<strong>Invalid Request:</strong> redirect_uri is not registered for this
+							application
 						</AlertDescription>
 					</Alert>
 				</Card>
@@ -190,27 +243,17 @@ export default async function ConsentPage({ searchParams }: ConsentPageProps) {
 
 	return (
 		<div className="container max-w-2xl mx-auto py-12">
-			<Suspense
-				fallback={
-					<Card className="p-8">
-						<div className="text-center text-muted-foreground">
-							Loading authorization request...
-						</div>
-					</Card>
-				}
-			>
-				<ConsentForm
-					oauthApp={oauthApp}
-					user={user}
-					teams={teams}
-					requestedScopes={requestedScopes}
-					clientId={params.client_id}
-					redirectUri={params.redirect_uri}
-					state={params.state}
-					codeChallenge={params.code_challenge}
-					codeChallengeMethod={params.code_challenge_method}
-				/>
-			</Suspense>
+			<ConsentForm
+				oauthApp={oauthApp}
+				user={user}
+				teams={teams}
+				requestedScopes={requestedScopes}
+				clientId={params.client_id}
+				redirectUri={params.redirect_uri}
+				state={params.state}
+				codeChallenge={params.code_challenge}
+				codeChallengeMethod={params.code_challenge_method}
+			/>
 		</div>
 	);
 }

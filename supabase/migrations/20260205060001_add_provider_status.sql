@@ -1,8 +1,7 @@
--- Add status flag to API providers (Active/Beta/Alpha)
+-- Add status flag to API providers (Active/Beta/Alpha/Unverified)
 
 alter table if exists public.data_api_providers
-  add column if not exists status text not null default 'Active';
-
+  add column if not exists status text not null default 'Unverified';
 do $$
 begin
   if not exists (
@@ -12,6 +11,6 @@ begin
   ) then
     alter table public.data_api_providers
       add constraint data_api_providers_status_check
-      check (status in ('Active', 'Beta', 'Alpha'));
+      check (status in ('Active', 'Beta', 'Alpha', 'Unverified'));
   end if;
 end $$;

@@ -1,10 +1,10 @@
 import type {
-  LanguageModelV1,
-  ProviderV1,
-  EmbeddingModelV1,
-  ImageModelV1,
-  TranscriptionModelV1,
-  SpeechModelV1,
+  LanguageModelV3,
+  ProviderV3,
+  EmbeddingModelV3,
+  ImageModelV3,
+  TranscriptionModelV3,
+  SpeechModelV3,
 } from '@ai-sdk/provider';
 import { AIStatsLanguageModel } from './ai-stats-language-model.js';
 import { AIStatsEmbeddingModel } from './ai-stats-embedding-model.js';
@@ -17,6 +17,11 @@ import type { AIStatsSettings, AIStatsModelSettings } from './ai-stats-settings.
  * Default base URL for the AI Stats Gateway API
  */
 const DEFAULT_BASE_URL = 'https://api.phaseo.app/v1';
+
+export type AIStatsProvider = ProviderV3 & ((
+  modelId: string,
+  modelSettings?: AIStatsModelSettings
+) => LanguageModelV3);
 
 /**
  * Creates an AI Stats provider instance for use with Vercel AI SDK.
@@ -39,7 +44,7 @@ const DEFAULT_BASE_URL = 'https://api.phaseo.app/v1';
  * });
  * ```
  */
-export function createAIStats(settings: AIStatsSettings = {}): ProviderV1 {
+export function createAIStats(settings: AIStatsSettings = {}): AIStatsProvider {
   // Resolve API key from settings or environment variable
   const apiKey = settings.apiKey ?? process.env.AI_STATS_API_KEY;
 
@@ -57,7 +62,7 @@ export function createAIStats(settings: AIStatsSettings = {}): ProviderV1 {
   const provider = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): LanguageModelV1 => {
+  ): LanguageModelV3 => {
     return new AIStatsLanguageModel(
       modelId,
       {
@@ -71,14 +76,16 @@ export function createAIStats(settings: AIStatsSettings = {}): ProviderV1 {
   };
 
   // Set the provider ID for debugging
+  provider.specificationVersion = 'v3' as const;
+
   provider.languageModel = (modelId: string, modelSettings?: AIStatsModelSettings) => {
     return provider(modelId, modelSettings);
   };
 
-  provider.textEmbeddingModel = (
+  provider.embeddingModel = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): EmbeddingModelV1<string> => {
+  ): EmbeddingModelV3 => {
     return new AIStatsEmbeddingModel(
       modelId,
       {
@@ -91,10 +98,15 @@ export function createAIStats(settings: AIStatsSettings = {}): ProviderV1 {
     );
   };
 
+  provider.textEmbeddingModel = (
+    modelId: string,
+    modelSettings?: AIStatsModelSettings
+  ): EmbeddingModelV3 => provider.embeddingModel(modelId, modelSettings);
+
   provider.imageModel = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): ImageModelV1 => {
+  ): ImageModelV3 => {
     return new AIStatsImageModel(
       modelId,
       {
@@ -110,7 +122,7 @@ export function createAIStats(settings: AIStatsSettings = {}): ProviderV1 {
   provider.transcriptionModel = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): TranscriptionModelV1 => {
+  ): TranscriptionModelV3 => {
     return new AIStatsTranscriptionModel(
       modelId,
       {
@@ -126,7 +138,7 @@ export function createAIStats(settings: AIStatsSettings = {}): ProviderV1 {
   provider.speechModel = (
     modelId: string,
     modelSettings?: AIStatsModelSettings
-  ): SpeechModelV1 => {
+  ): SpeechModelV3 => {
     return new AIStatsSpeechModel(
       modelId,
       {
@@ -139,5 +151,5 @@ export function createAIStats(settings: AIStatsSettings = {}): ProviderV1 {
     );
   };
 
-  return provider;
+  return provider as AIStatsProvider;
 }

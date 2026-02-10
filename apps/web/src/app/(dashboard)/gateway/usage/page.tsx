@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,7 +63,34 @@ function fromForRange(key: RangeKey): Date {
 	return d;
 }
 
-export default async function Page({
+export default function Page(props: {
+	searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+	return (
+		<Suspense
+			fallback={
+				<main className="flex min-h-screen flex-col">
+					<div className="container mx-auto px-4 py-8">
+						<Card>
+							<CardHeader>
+								<CardTitle>Usage</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<p className="text-sm text-muted-foreground">
+									Loading usage data...
+								</p>
+							</CardContent>
+						</Card>
+					</div>
+				</main>
+			}
+		>
+			<UsagePageContent searchParams={props.searchParams} />
+		</Suspense>
+	);
+}
+
+async function UsagePageContent({
 	searchParams,
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;

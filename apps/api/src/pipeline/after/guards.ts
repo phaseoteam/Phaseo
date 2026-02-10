@@ -70,7 +70,8 @@ export async function guardUpstreamStatus(
             upstreamStatus,
             attribution,
             errCode,
-            description
+            description,
+            body
         );
 
         const generationId = ctx.requestId ?? body?.generation_id ?? body?.request_id ?? body?.requestId ?? "unknown";

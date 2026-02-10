@@ -1,131 +1,92 @@
-# 🤝 Contributing to AI Stats
+# Contributing to AI Stats
 
-Thank you for your interest in contributing!  
-AI Stats is a community-driven project — built in public, by people who believe that AI should be **open**, **transparent**, and **accessible** to everyone.
+Thanks for your interest in contributing to AI Stats.
 
-This guide explains how you can get involved.
+AI Stats is built in public. We welcome contributions across the web app, gateway API, SDKs, docs, and data.
 
----
+## Ways to contribute
 
-## 🧠 Our Philosophy
+- Code improvements (features, bug fixes, refactors, tests)
+- Data improvements (model metadata, provider mappings, benchmark updates)
+- Documentation improvements (guides, examples, API docs, broken links)
+- Issue triage, reproduction reports, and developer feedback
 
-AI is reshaping the world — but access to it is increasingly closed off behind paywalls, restrictions, and vendor lock-ins.  
-AI Stats exists to change that, by providing an **open, unified layer** that connects to every model, everywhere.
+Good starting point: [Good First Issues](https://github.com/AI-Stats/AI-Stats/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 
-Whether you write code, improve docs, share ideas, or report bugs — you are helping keep AI open.
-
----
-
-## 🛠️ Ways to Contribute
-
-There are many ways to help — big or small:
-
-### 🧩 1. Code Contributions
-
--   Fix a bug or refactor an existing function.
--   Add new routes, features, or utilities to the Gateway.
--   Improve the frontend or data visualisations on the website.
--   Write tests or performance improvements.
-
-> 💡 Start with “good first issue” tags in [Issues](https://github.com/AI-Stats/AI-Stats/issues).
-
----
-
-### 🧾 2. Data Contributions
-
--   Add or update **model metadata** (JSON files).
--   Contribute benchmark results or new provider integrations.
--   Help verify or validate existing data for accuracy.
-
----
-
-### 🖋️ 3. Documentation
-
--   Improve clarity, add examples, or write new guides.
--   Translate or simplify sections for wider understanding.
--   Fix typos, broken links, or structure issues in Mintlify docs.
-
----
-
-### 💬 4. Community & Ideas
-
--   Share feature suggestions or feedback in [Discussions](https://github.com/AI-Stats/AI-Stats/discussions).
--   Help onboard new contributors.
--   Spread awareness about the mission of AI openness.
-
----
-
-## 🧰 Project Structure
-
-```
-ai-stats/
-├── apps/
-│ ├── web/ → Public Next.js website
-│ ├── docs/ → Mintlify documentation
-│ └── api/ → Cloudflare Workers Gateway
-├── packages/ → Shared libraries & configs
-└── data/ → JSON model and benchmark data
-```
-
-Each folder contains its own README with relevant context.
-
----
-
-## ⚙️ Development Basics
-
-To work on the project locally:
+## Development setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/AI-Stats/AI-Stats.git
 cd AI-Stats
-
-# Install dependencies
 pnpm install
-
-# Run all apps
 pnpm dev
 ```
 
-> You don’t need to run everything at once — work on the part that excites you most.
+Useful scoped commands:
 
----
+```bash
+pnpm --filter @ai-stats/web dev
+pnpm --filter @ai-stats/gateway-api dev
+pnpm --filter @ai-stats/docs dev
+```
 
-## ✅ Pull Request Guidelines
+## Quality bar before requesting review
 
-Fork the repository and create a new branch:
-git checkout -b feature/my-improvement
+Before you mark a PR "ready for review", run checks relevant to your changes and ensure they pass locally:
 
-Make your changes.
+```bash
+pnpm lint
+pnpm typecheck
+pnpm build
+```
 
-Write clear commit messages and PR descriptions.
+Additional checks by area:
 
-Reference any related issues.
+- Web/data changes: `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`, and relevant tests.
+- Docs changes: `pnpm docs:links` and `pnpm docs:build`.
+- API/SDK/OpenAPI changes: run generation/validation steps required by the touched area.
 
-Open a PR for review.
+If checks fail, fix them before requesting review.
 
-We prefer small, focused PRs over giant ones ― they’re easier to review and merge.
+## Pull request guidelines
 
----
+- Keep PRs focused and reasonably small.
+- Use clear commit messages and PR descriptions.
+- Link related issues (for example: `Closes #123`).
+- Include migration notes, rollout notes, or screenshots when relevant.
+- If you change behavior, add or update tests.
 
-## Release workflow
+## Review SLAs
 
-The monorepo now uses [changesets](https://github.com/changesets/changesets) to track releases for the SDK packages, the gateway API, and the web UI. To publish a release:
+For ready PRs with passing checks and clear scope:
 
--   Run `pnpm changeset` and select the workspaces you want to release (for example `@ai-stats/ts-sdk`, `@ai-stats/gateway-api`, `@ai-stats/web`, or `@ai-stats/py-sdk`). The Python workspace exists solely for tooling and stays private.
-    -   Run `pnpm changeset:version` to bump every affected `package.json`, emit changelog entries, and automatically sync `pyproject.toml`. The Mintlify docs site uses its own version selector, so `apps/docs/docs.json` (and its `api.version` entry) are maintained separately.
--   Use `pnpm sdk-py:sync-version` whenever you need to resync `pyproject.toml` (for example if you roll back a change or edit the file manually) before publishing to PyPI.
+- Initial maintainer review target: within 4 calendar days.
+- Follow-up review target after requested updates: within 2 business days.
+
+Notes:
+
+- SLA targets apply to complete PRs. Missing context or failing checks may pause review.
+- Complex or high-risk changes may take longer.
+- Review does not guarantee merge; maintainers may request changes, re-scoping, or deferment.
+
+## Release workflow (changesets)
+
+This monorepo uses Changesets for versioning and changelogs.
+
+- Create changeset entries with `pnpm changeset`.
+- Version packages with `pnpm changeset:version`.
+- Sync Python package version when needed with `pnpm sdk-py:sync-version`.
+
+For full release mechanics, see `CHANGESETS.md`.
 
 ## Code of Conduct
 
-AI Stats follows the Contributor Covenant
-.
-Be kind, respectful, and open-minded. This project thrives on good intent and shared curiosity.
+By participating, you agree to follow the project Code of Conduct:
 
-## 🌍 Built in Public
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
 
-Every line of code, every discussion, and every idea contributes to a movement:
-keeping AI accessible, understandable, and transparent for all.
+## Security reporting
 
-Thank you for being part of it.
-— The AI Stats Team
+Do not open public issues for vulnerabilities.
+
+- Follow: [SECURITY.md](./SECURITY.md)

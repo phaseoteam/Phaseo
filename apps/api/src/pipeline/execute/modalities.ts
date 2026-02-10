@@ -12,6 +12,22 @@ type ModalityRequirements = {
 	output: Set<Modality>;
 };
 
+function isGoogleImagePreviewModel(candidate: ProviderCandidate, modelId: string): boolean {
+	if (candidate.providerId !== "google-ai-studio" && candidate.providerId !== "google") {
+		return false;
+	}
+	const haystack = `${modelId} ${candidate.providerModelSlug ?? ""}`.toLowerCase();
+	return (
+		haystack.includes("gemini-2-5-flash-image-preview") ||
+		haystack.includes("gemini-2-5-flash-image") ||
+		haystack.includes("gemini-2.5-flash-image") ||
+		haystack.includes("gemini-3-pro-image-preview") ||
+		haystack.includes("gemini-3-flash-image") ||
+		haystack.includes("image-preview") ||
+		haystack.includes("flash-image")
+	);
+}
+
 function normalizeModalities(values?: string[] | null): Set<Modality> {
 	if (!values || values.length === 0) return new Set();
 	const normalized = new Set<Modality>();
@@ -92,8 +108,15 @@ export function filterCandidatesByModalities(
 	const needsNonTextOutput = Array.from(requirements.output).some((m) => m !== "text");
 
 	return candidates.filter((candidate) => {
-		const input = normalizeModalities(candidate.inputModalities ?? undefined);
-		const output = normalizeModalities(candidate.outputModalities ?? undefined);
+		let input = normalizeModalities(candidate.inputModalities ?? undefined);
+		let output = normalizeModalities(candidate.outputModalities ?? undefined);
+
+		// Fallback for Google Nano Banana image-preview models where modality
+		// metadata can be temporarily missing/stale in provider rows.
+		if (isGoogleImagePreviewModel(candidate, ir.model)) {
+			if (input.size === 0) input = new Set<Modality>(["text", "image"]);
+			if (output.size === 0) output = new Set<Modality>(["text", "image"]);
+		}
 
 		const inputOk = supportsRequiredModalities(
 			requirements.input,

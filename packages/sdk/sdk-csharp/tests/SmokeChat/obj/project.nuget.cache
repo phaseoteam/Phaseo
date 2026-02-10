@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "zND8thtjJWLzQUrS2m+gUqF8dIuyeXiebFjXevmxEQT5Q5bIJ99KpZJpujo/GWnTHKctGs+TfuywcHKlgVy+NA==",
+  "dgSpecHash": "1vdw42HT6ms=",
   "success": true,
   "projectFilePath": "Z:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\tests\\SmokeChat\\SmokeChat.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\danie\\.nuget\\packages\\microsoft.netcore.app.ref\\6.0.36\\microsoft.netcore.app.ref.6.0.36.nupkg.sha512",
+    "C:\\Users\\danie\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\6.0.36\\microsoft.windowsdesktop.app.ref.6.0.36.nupkg.sha512",
+    "C:\\Users\\danie\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\6.0.36\\microsoft.aspnetcore.app.ref.6.0.36.nupkg.sha512",
+    "C:\\Users\\danie\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\6.0.36\\microsoft.netcore.app.host.win-x64.6.0.36.nupkg.sha512"
+  ],
   "logs": []
 }

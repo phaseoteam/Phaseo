@@ -32,9 +32,6 @@ export default function Page(props: {
 }) {
 	return (
 		<div className="space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold">Credits</h1>
-			</div>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<CreditsSettingsContent searchParams={props.searchParams} />
 			</Suspense>
@@ -265,7 +262,8 @@ async function CreditsSettingsContent(props: {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex justify-end">
+			<div className="flex items-center justify-between gap-3">
+				<h1 className="text-2xl font-bold">Credits</h1>
 				<TierBadge
 					href="/settings/tiers"
 					tierName={current.name}

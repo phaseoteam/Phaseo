@@ -2,7 +2,6 @@
 
 drop table if exists public.data_api_pricing_conditions;
 drop table if exists public.data_api_pricing_rules;
-
 create table if not exists public.data_api_pricing_rules (
   rule_id        bigint generated always as identity primary key,
   model_key      text not null,               -- provider:model:capability_id
@@ -25,9 +24,7 @@ create table if not exists public.data_api_pricing_rules (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
-
 create index if not exists data_api_pricing_rules_model_key_idx
   on public.data_api_pricing_rules (model_key);
-
 create index if not exists data_api_pricing_rules_model_key_meter_idx
   on public.data_api_pricing_rules (model_key, meter);

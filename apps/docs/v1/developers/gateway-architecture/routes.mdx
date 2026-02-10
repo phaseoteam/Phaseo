@@ -9,17 +9,15 @@ The gateway uses Hono to register protocol-accurate routes. The routes call into
 
 `apps/api/src/routes` is the entry point for API endpoints:
 
-- `index.ts` registers all route groups.
-- `main-endpoints.ts` wires OpenAI and Anthropic compatible endpoints.
-- `healthz-route.ts`, `models-route.ts`, `analytics-route.ts` cover utility endpoints.
-- `files-routes.ts` and `batches-routes.ts` handle file and batch endpoints.
+- `root.ts` and `v1/index.ts` register route groups.
+- `v1/data/*` wires OpenAI- and Anthropic-compatible data surfaces (chat, responses, messages, files, media).
+- `v1/control/health.ts`, `v1/control/models.ts`, and `v1/control/analytics.ts` cover control/utility endpoints.
 
 ## Pipeline stages
 
-`apps/api/src/lib/gateway` contains the core pipeline:
+`apps/api/src/pipeline` contains the core pipeline:
 
 - `before/` handles auth, JSON parsing, validation, and context fetches.
 - `execute/` selects providers and performs upstream calls.
 - `after/` normalizes responses, handles streaming, and records billing data.
-- `pipeline.ts` ties the stages together for legacy endpoints.
-- `ir-handler.ts` drives the IR-based pipeline for protocol-compatible routes.
+- `index.ts` ties stages together for the IR-first execution path.

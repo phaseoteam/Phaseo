@@ -123,6 +123,45 @@ describe("sanitizeOpenAICompatRequest", () => {
 		expect(dropped).toEqual(expect.arrayContaining(["frequency_penalty", "presence_penalty", "logit_bias"]));
 	});
 
+	it("normalizes Mistral chat payload fields", () => {
+		const { request, dropped } = sanitizeOpenAICompatRequest({
+			providerId: "mistral",
+			route: "chat",
+			model: "mistral-large-latest",
+			request: {
+				model: "mistral-large-latest",
+				seed: 7,
+				stream_options: { include_usage: true },
+				user: "user_123",
+				temperature: 1.3,
+				messages: [{ role: "user", content: "hello" }],
+			},
+		});
+
+		expect(request.seed).toBeUndefined();
+		expect(request.random_seed).toBe(7);
+		expect(request.stream_options).toBeUndefined();
+		expect(request.user).toBeUndefined();
+		expect(request.temperature).toBe(1.3);
+		expect(dropped).toEqual(expect.arrayContaining(["seed", "stream_options", "user"]));
+	});
+
+	it("drops out-of-range Mistral temperature", () => {
+		const { request, dropped } = sanitizeOpenAICompatRequest({
+			providerId: "mistral",
+			route: "chat",
+			model: "mistral-large-latest",
+			request: {
+				model: "mistral-large-latest",
+				temperature: 1.7,
+				messages: [{ role: "user", content: "hello" }],
+			},
+		});
+
+		expect(request.temperature).toBeUndefined();
+		expect(dropped).toContain("temperature");
+	});
+
 	it("drops Anthropic-incompatible controls for bedrock/vertex gateways", () => {
 		for (const providerId of ["amazon-bedrock", "google-vertex"]) {
 			const { request, dropped } = sanitizeOpenAICompatRequest({

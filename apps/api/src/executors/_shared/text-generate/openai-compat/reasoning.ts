@@ -38,7 +38,7 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 		return { mode: "effort", field: "reasoning" };
 	}
 	// Xiaomi uses a special format: chat_template_kwargs.enable_thinking
-	// This is handled entirely in the Xiaomi provider quirks (quirks/xiaomi.ts)
+	// This is handled entirely in the Xiaomi provider quirks (providers/xiaomi/quirks.ts)
 	// Do not add a config here - the quirk has full control
 
 	// Note: Google is no longer OpenAI-compatible - it uses native implementation
@@ -114,6 +114,7 @@ export function applyReasoningParams(args: {
 	const effortKey = config.effortKey ?? "effort";
 	const summaryKey = config.summaryKey ?? "summary";
 	const maxKey = config.maxTokensKey;
+	const isOpenAI = String(args.providerId ?? "").toLowerCase() === "openai";
 
 	if (typeof reasoning.effort === "string") {
 		target[effortKey] = reasoning.effort;
@@ -123,8 +124,11 @@ export function applyReasoningParams(args: {
 		target[effortKey] = "medium";
 	}
 
+	// OpenAI: default summary mode to "auto" only when caller did not provide one.
 	if (reasoning.summary !== undefined) {
 		target[summaryKey] = reasoning.summary;
+	} else if (isOpenAI) {
+		target[summaryKey] = "auto";
 	}
 
 	if (typeof reasoning.maxTokens === "number" && maxKey) {

@@ -16,53 +16,31 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "max_tokens"
           },
           {
-            "param_id": "stop",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "response_format"
           },
           {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "stop"
           },
           {
-            "param_id": "tool_choice",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "structured_outputs"
           },
           {
-            "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "temperature"
           },
           {
-            "param_id": "top_k",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "tool_choice"
           },
           {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_k"
+          },
+          {
+            "param_id": "top_p"
           }
         ]
       }
@@ -85,60 +63,34 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "include_reasoning"
           },
           {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "max_tokens"
           },
           {
-            "param_id": "reasoning",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "reasoning"
           },
           {
-            "param_id": "stop",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "response_format"
           },
           {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "stop"
           },
           {
-            "param_id": "tool_choice",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "structured_outputs"
           },
           {
-            "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "temperature"
           },
           {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
           }
         ]
       }
@@ -159,7 +111,35 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_k"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -178,7 +158,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_k"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -197,7 +211,38 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -216,7 +261,35 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          }
+        ]
       }
     ]
   },
@@ -235,7 +308,38 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "verbosity"
+          }
+        ]
       }
     ]
   },
@@ -254,7 +358,38 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -273,7 +408,41 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_k"
+          },
+          {
+            "param_id": "top_p"
+          }
+        ]
       }
     ]
   },
@@ -291,21 +460,55 @@
     "capabilities": []
   },
   {
-    "api_model_id": "anthropic/claude-sonnet-5",
-    "provider_api_model_id": "anthropic:anthropic/claude-sonnet-5",
-    "provider_model_slug": "claude-sonnet-5-20260203",
-    "internal_model_id": "anthropic/claude-sonnet-5-2026-02-04",
-    "is_active_gateway": false,
+    "api_model_id": "anthropic/claude-opus-4.6",
+    "provider_api_model_id": "anthropic:anthropic/claude-opus-4.6",
+    "provider_model_slug": "claude-opus-4-6",
+    "internal_model_id": "anthropic/claude-opus-4-6-2026-02-05",
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "effective_from": "2026-02-04T00:00:00",
+    "effective_from": "2026-02-05T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "include_reasoning"
+          },
+          {
+            "param_id": "max_tokens"
+          },
+          {
+            "param_id": "reasoning"
+          },
+          {
+            "param_id": "response_format"
+          },
+          {
+            "param_id": "stop"
+          },
+          {
+            "param_id": "structured_outputs"
+          },
+          {
+            "param_id": "temperature"
+          },
+          {
+            "param_id": "tool_choice"
+          },
+          {
+            "param_id": "tools"
+          },
+          {
+            "param_id": "top_p"
+          },
+          {
+            "param_id": "verbosity"
+          }
+        ]
       }
     ]
   }

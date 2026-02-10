@@ -62,6 +62,8 @@ type ExtractedImage = {
 	mimeType?: string;
 };
 
+const IMAGE_BLOCK_TYPES = new Set(["output_image", "image", "image_url"]);
+
 const coerceImageUrl = (value: any): string | null => {
 	if (!value) return null;
 	if (typeof value === "string") return value;
@@ -83,7 +85,7 @@ const extractImagesFromContent = (content: any): ExtractedImage[] => {
 	for (const part of content) {
 		if (!part || typeof part !== "object") continue;
 		const type = part.type;
-		if (type === "output_image" || type === "image" || type === "image_url") {
+		if (IMAGE_BLOCK_TYPES.has(type)) {
 			const url = coerceImageUrl(part.image_url ?? part.url);
 			const data = coerceImageData(part);
 			if (url || data) {
@@ -103,6 +105,17 @@ const extractImagesFromOutputItems = (output: any): ExtractedImage[] => {
 	const images: ExtractedImage[] = [];
 	for (const item of output) {
 		if (!item || typeof item !== "object") continue;
+		if (IMAGE_BLOCK_TYPES.has(item.type)) {
+			const url = coerceImageUrl(item.image_url ?? item.url);
+			const data = coerceImageData(item);
+			if (url || data) {
+				images.push({
+					url: url ?? (data ? `data:${item.mime_type || "image/png"};base64,${data}` : undefined),
+					data: data ?? undefined,
+					mimeType: item.mime_type ?? item.mimeType ?? undefined,
+				});
+			}
+		}
 		if (item.type === "message" && Array.isArray(item.content)) {
 			images.push(...extractImagesFromContent(item.content));
 		}
@@ -150,17 +163,46 @@ const extractImagesFromDataArray = (data: any): ExtractedImage[] => {
 	return images;
 };
 
+const extractImagesFromChatChoices = (choices: any): ExtractedImage[] => {
+	if (!Array.isArray(choices)) return [];
+	const images: ExtractedImage[] = [];
+	for (const choice of choices) {
+		const message = choice?.message;
+		if (!message || typeof message !== "object") continue;
+		if (Array.isArray(message.content)) {
+			images.push(...extractImagesFromContent(message.content));
+		}
+		if (Array.isArray(message.images)) {
+			images.push(...extractImagesFromContent(message.images));
+		}
+	}
+	return images;
+};
+
+const dedupeImages = (images: ExtractedImage[]) => {
+	const seen = new Set<string>();
+	return images.filter((image) => {
+		const key = image.url ?? image.data ?? "";
+		if (!key) return false;
+		if (seen.has(key)) return false;
+		seen.add(key);
+		return true;
+	});
+};
+
 export const extractResponseImages = (payload: any): ExtractedImage[] => {
 	const images: ExtractedImage[] = [];
 	images.push(...extractImagesFromOutputItems(payload?.output));
 	images.push(...extractImagesFromOutputItems(payload?.response?.output));
 	images.push(...extractImagesFromDataArray(payload?.data));
 	images.push(...extractImagesFromDataArray(payload?.response?.data));
+	images.push(...extractImagesFromChatChoices(payload?.choices));
+	images.push(...extractImagesFromChatChoices(payload?.response?.choices));
 	const content = payload?.choices?.[0]?.message?.content;
 	if (Array.isArray(content)) {
 		images.push(...extractImagesFromContent(content));
 	}
-	return images;
+	return dedupeImages(images);
 };
 
 export const appendImagesToText = (text: string, images: ExtractedImage[]) => {

@@ -11,52 +11,56 @@ export function convertToGatewayChatRequest(
   settings: AIStatsModelSettings,
   options: LanguageModelV3CallOptions
 ): any {
-  // Convert messages - prompt is an array of messages
-  const messages = prompt.map((message) => {
-    switch (message.role) {
-      case 'system':
-        return {
-          role: 'system',
-          content: convertContent(message.content),
-        };
+  const messages = prompt
+    .map((message) => {
+      switch (message.role) {
+        case 'system':
+          return {
+            role: 'system',
+            content: message.content,
+          };
 
-      case 'user':
-        return {
-          role: 'user',
-          content: convertContent(message.content),
-        };
+        case 'user':
+          return {
+            role: 'user',
+            content: convertContent(message.content),
+          };
 
-      case 'assistant':
-        const assistantMessage: any = {
-          role: 'assistant',
-          content: convertContent(message.content),
-        };
+        case 'assistant': {
+          const assistantMessage: any = {
+            role: 'assistant',
+            content: convertContent(message.content),
+          };
 
-        // Add tool calls if present
-        if (message.content.some((part) => part.type === 'tool-call')) {
-          assistantMessage.tool_calls = message.content
+          const toolCalls = message.content
             .filter((part): part is Extract<typeof part, { type: 'tool-call' }> => part.type === 'tool-call')
             .map((toolCall) => ({
               id: toolCall.toolCallId,
               type: 'function',
               function: {
                 name: toolCall.toolName,
-                arguments: JSON.stringify(toolCall.args),
+                arguments: JSON.stringify(toolCall.input ?? {}),
               },
             }));
+
+          if (toolCalls.length > 0) {
+            assistantMessage.tool_calls = toolCalls;
+          }
+
+          return assistantMessage;
         }
 
-        return assistantMessage;
-
-      case 'tool':
-        // Map tool results to gateway format
-        return message.content.map((toolResult) => ({
-          role: 'tool',
-          tool_call_id: toolResult.toolCallId,
-          content: JSON.stringify(toolResult.result),
-        }));
-    }
-  }).flat(); // Flatten because tool messages can expand to multiple messages
+        case 'tool':
+          return message.content
+            .filter((part): part is Extract<typeof part, { type: 'tool-result' }> => part.type === 'tool-result')
+            .map((toolResult) => ({
+              role: 'tool',
+              tool_call_id: toolResult.toolCallId,
+              content: serializeToolOutput(toolResult.output),
+            }));
+      }
+    })
+    .flat();
 
   // Prepare request body
   const body: any = {
@@ -128,65 +132,42 @@ export function convertToGatewayChatRequest(
  * Converts AI SDK content parts to gateway format
  */
 function convertContent(content: any): string | any[] {
-  // Handle string content
   if (typeof content === 'string') {
     return content;
   }
 
-  // Handle array of content parts
   if (!Array.isArray(content)) {
     return '';
   }
 
-  // If only text content, return as string
-  const textParts = content.filter((part: any) => part.type === 'text');
-  const hasOnlyText = textParts.length === content.length;
-
-  if (hasOnlyText && textParts.length === 1) {
-    return textParts[0].text;
-  }
-
-  // Otherwise, return as array of content parts
-  return content
-    .filter((part) => part.type !== 'tool-call') // Filter out tool calls (handled separately)
-    .map((part) => {
+  const normalized = content
+    .filter((part: any) => part.type !== 'tool-call' && part.type !== 'tool-result')
+    .map((part: any) => {
       switch (part.type) {
         case 'text':
           return {
             type: 'text',
             text: part.text,
           };
-
-        case 'image':
-          if (part.image instanceof URL) {
+        case 'reasoning':
+          return {
+            type: 'text',
+            text: part.text,
+          };
+        case 'file':
+          if (typeof part.mediaType === 'string' && part.mediaType.startsWith('image/')) {
             return {
               type: 'image_url',
               image_url: {
-                url: part.image.toString(),
-              },
-            };
-          } else {
-            // Base64 or Buffer
-            const base64 = part.image instanceof Uint8Array
-              ? Buffer.from(part.image).toString('base64')
-              : part.image.toString('base64');
-
-            return {
-              type: 'image_url',
-              image_url: {
-                url: `data:${part.mimeType ?? 'image/jpeg'};base64,${base64}`,
+                url: toImageUrl(part.data, part.mediaType),
               },
             };
           }
 
-        case 'file':
-          // Files are not directly supported by the gateway chat API
-          // Return as text reference
           return {
             type: 'text',
-            text: `[File: ${part.mimeType}]`,
+            text: `[File: ${part.mediaType}]`,
           };
-
         default:
           return {
             type: 'text',
@@ -194,6 +175,56 @@ function convertContent(content: any): string | any[] {
           };
       }
     });
+
+  const textParts = normalized.filter((part: any) => part.type === 'text');
+  const hasOnlyText = textParts.length === normalized.length;
+
+  if (hasOnlyText && textParts.length === 1) {
+    return textParts[0].text;
+  }
+
+  return normalized;
+}
+
+function toImageUrl(data: unknown, mediaType: string): string {
+  if (data instanceof URL) {
+    return data.toString();
+  }
+
+  if (data instanceof Uint8Array) {
+    return `data:${mediaType};base64,${Buffer.from(data).toString('base64')}`;
+  }
+
+  if (typeof data === 'string') {
+    if (data.startsWith('http://') || data.startsWith('https://') || data.startsWith('data:')) {
+      return data;
+    }
+
+    return `data:${mediaType};base64,${data}`;
+  }
+
+  return '';
+}
+
+function serializeToolOutput(output: any): string {
+  if (!output || typeof output !== 'object') {
+    return JSON.stringify(output ?? null);
+  }
+
+  switch (output.type) {
+    case 'text':
+    case 'error-text':
+      return String(output.value ?? '');
+    case 'json':
+    case 'error-json':
+      return JSON.stringify(output.value ?? null);
+    case 'execution-denied':
+      return JSON.stringify({ type: 'execution-denied', reason: output.reason });
+    case 'content':
+      return JSON.stringify(output.value ?? []);
+    default:
+      return JSON.stringify(output);
+  }
 }
 
 /**

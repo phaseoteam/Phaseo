@@ -124,9 +124,6 @@ export default function Page() {
 				</Suspense>
 				<PartnerLogos />
 			</div>
-
-			{/* TODO: Build on this and add a detailed trends/analysis section */}
-			{/* <TrendsStrip /> */}
 		</div>
 	);
 }

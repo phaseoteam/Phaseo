@@ -1,7 +1,7 @@
 {
   "model_id": "openai/gpt-realtime-mini-2025-10-06",
   "organisation_id": "openai",
-  "name": "GPT Realtime Mini",
+  "name": "GPT Realtime Mini (2025-10-06)",
   "status": "Available",
   "previous_model_id": null,
   "announced_date": "2025-10-06T00:00:00",

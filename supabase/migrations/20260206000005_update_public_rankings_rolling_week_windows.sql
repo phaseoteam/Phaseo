@@ -1,5 +1,13 @@
 -- Normalize public rankings functions to use rolling 7-day windows for "week"
 
+-- Drop existing definitions first so return type changes do not fail.
+DROP FUNCTION IF EXISTS public.get_public_model_rankings(text, text, integer);
+DROP FUNCTION IF EXISTS public.get_public_market_share(text, text);
+DROP FUNCTION IF EXISTS public.get_public_trending_models(integer, integer);
+DROP FUNCTION IF EXISTS public.get_public_top_apps(integer, text);
+DROP FUNCTION IF EXISTS public.get_public_reliability_metrics(text, integer);
+DROP FUNCTION IF EXISTS public.get_public_geographic_distribution(text, integer);
+DROP FUNCTION IF EXISTS public.get_public_multimodal_breakdown(text);
 -- =========================
 -- Function: get_public_model_rankings
 -- =========================
@@ -129,7 +137,6 @@ BEGIN
   ORDER BY rc.rk;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_market_share
 -- =========================
@@ -210,7 +217,6 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_trending_models
 -- =========================
@@ -261,7 +267,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_top_apps
 -- =========================
@@ -302,7 +307,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_reliability_metrics
 -- =========================
@@ -376,7 +380,6 @@ BEGIN
   ORDER BY success_rate ASC, total_requests DESC;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_geographic_distribution
 -- =========================
@@ -422,7 +425,6 @@ BEGIN
   LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 -- =========================
 -- Function: get_public_multimodal_breakdown
 -- =========================

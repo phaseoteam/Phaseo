@@ -17,6 +17,8 @@ import { recordUsageAndCharge } from "../pricing/persist";
 import { shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
+import { emitGatewayRequestEvent } from "@observability/events";
+import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 
 function decodeBase64ToBytes(value: string): Uint8Array {
 	const binary = atob(value);
@@ -88,6 +90,11 @@ async function handleNonStreamResponse(
     // Enrich payload
     const payload = await ctx.timer.span("after_enrich_payload", () => enrichSuccessPayload(ctx, result));
     const usageNormalized = payload?.usage ?? {};
+    const toolUsage = summarizeToolUsage({
+        body: ctx.body,
+        ir: result.ir,
+        payload: payload,
+    });
 
     // console.log("[DEBUG handleNonStreamResponse] usageNormalized:", usageNormalized);
 
@@ -95,7 +102,10 @@ async function handleNonStreamResponse(
     const card = await ctx.timer.span("after_load_pricing", () => loadProviderPricing(ctx, result));
 
     // Calculate pricing (with tier-based markup)
-    const shapedUsage = shapeUsageForClient(usageNormalized, { endpoint: ctx.endpoint, body: ctx.body });
+    const shapedUsage = attachToolUsageMetrics(
+        shapeUsageForClient(usageNormalized, { endpoint: ctx.endpoint, body: ctx.body }),
+        toolUsage
+    );
     const tier = ctx.teamEnrichment?.tier ?? 'basic';
     const { pricedUsage, totalCents, totalNanos, currency } = await ctx.timer.span("after_calculate_pricing", () => calculatePricing(
         shapedUsage,
@@ -162,6 +172,20 @@ async function handleNonStreamResponse(
             nativeResponseId ?? null
         )
     );
+    await emitGatewayRequestEvent({
+        ctx,
+        result,
+        statusCode: result.upstream.status,
+        success: true,
+        finishReason,
+        usage: payload.usage ?? null,
+        pricing: {
+            total_cents: totalCents,
+            total_nanos: totalNanos,
+            currency,
+        },
+        mappedRequest: result.mappedRequest ?? null,
+    });
     // Record usage and charge wallet
     await ctx.timer.span("after_record_usage_charge", async () => {
         try {

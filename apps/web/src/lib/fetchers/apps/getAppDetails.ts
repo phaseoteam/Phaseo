@@ -73,3 +73,34 @@ export async function getAppDetailsCached(appId: string): Promise<AppDetails | n
 	cacheTag(`data:app_details:${appId}`);
 	return getAppDetails(appId);
 }
+
+export async function getPublicAppIds(): Promise<string[]> {
+	const supabase = createAdminClient();
+
+	try {
+		const { data, error } = await supabase
+			.from("api_apps")
+			.select("id")
+			.eq("is_public", true);
+
+		if (error) {
+			console.error("Error fetching public app IDs:", error);
+			return [];
+		}
+
+		return (data ?? [])
+			.map((row) => String(row.id ?? "").trim())
+			.filter(Boolean);
+	} catch (err) {
+		console.error("Unexpected error fetching public app IDs:", err);
+		return [];
+	}
+}
+
+export async function getPublicAppIdsCached(): Promise<string[]> {
+	"use cache";
+
+	cacheLife("days");
+	cacheTag("data:public_apps");
+	return getPublicAppIds();
+}

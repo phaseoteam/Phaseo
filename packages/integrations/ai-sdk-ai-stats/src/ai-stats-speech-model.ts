@@ -1,4 +1,4 @@
-import type { SpeechModelV1, SpeechModelV1CallOptions } from '@ai-sdk/provider';
+import type { SpeechModelV3, SpeechModelV3CallOptions } from '@ai-sdk/provider';
 import type { AIStatsConfig, AIStatsModelSettings } from './ai-stats-settings.js';
 import { createAIStatsErrorHandler } from './utils/error-handler.js';
 
@@ -6,8 +6,8 @@ import { createAIStatsErrorHandler } from './utils/error-handler.js';
  * AI Stats Speech Model implementation for Vercel AI SDK v1
  * Supports text-to-speech via /v1/audio/speech
  */
-export class AIStatsSpeechModel implements SpeechModelV1 {
-  readonly specificationVersion = 'v2' as const;
+export class AIStatsSpeechModel implements SpeechModelV3 {
+  readonly specificationVersion = 'v3' as const;
   readonly provider = 'ai-stats' as const;
   readonly modelId: string;
 
@@ -27,7 +27,7 @@ export class AIStatsSpeechModel implements SpeechModelV1 {
   /**
    * Generate speech from text
    */
-  async doGenerate(options: SpeechModelV1CallOptions) {
+  async doGenerate(options: SpeechModelV3CallOptions) {
     const { text, abortSignal, voice, speed, outputFormat, providerOptions, headers, instructions } = options;
 
     // Build request payload
@@ -56,7 +56,7 @@ export class AIStatsSpeechModel implements SpeechModelV1 {
 
     // Add provider-specific options
     if (providerOptions) {
-      for (const [, providerSettings] of Object.entries(providerOptions)) {
+      for (const providerSettings of Object.values(providerOptions)) {
         Object.assign(payload, providerSettings);
       }
     }

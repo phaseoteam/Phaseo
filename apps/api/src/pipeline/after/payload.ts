@@ -70,7 +70,10 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult) {
     const now = Math.floor(Date.now() / 1000);
     const status = raw?.status ?? deriveResponsesStatus(ir);
     const usage = raw?.usage ?? (ir?.usage ? encodeResponsesUsage(ir.usage) : undefined);
-    const output = ir ? buildResponsesOutput(ir, ctx.requestId) : (raw?.output ?? raw?.output_items ?? []);
+    const hasRawOutput = Array.isArray(raw?.output) || Array.isArray(raw?.output_items);
+    const output = hasRawOutput
+        ? (Array.isArray(raw?.output) ? raw.output : raw?.output_items)
+        : (ir ? buildResponsesOutput(ir, ctx.requestId) : []);
     const resolvedId = ctx.requestId ?? raw?.id ?? (ctx.requestId ? `resp_${ctx.requestId.replace(/^req_/, "")}` : ctx.requestId);
     // Separate native response ID (from response body) and upstream request ID (from headers)
     const nativeResponseId = raw?.id ?? raw?.nativeResponseId ?? null;
@@ -385,18 +388,29 @@ function buildChatCompletionsPayload(
                 // Extract text and reasoning content
                 const textParts = choice.message.content.filter((p) => p.type === "text");
                 const reasoningParts = choice.message.content.filter((p) => p.type === "reasoning_text");
+                const imageParts = choice.message.content.filter((p) => p.type === "image");
 
                 // Combine all text parts for content field
                 const content = textParts.map((p) => p.text).join("");
 
                 // Add reasoning_content if present (for Z.AI compatibility)
                 const reasoningContent = reasoningParts.map((p) => p.text).join("");
+                const images = imageParts.map((p: any) => ({
+                    type: "image_url",
+                    image_url: {
+                        url: p.source === "data"
+                            ? `data:${p.mimeType || "image/png"};base64,${p.data}`
+                            : p.data,
+                    },
+                    ...(p.mimeType ? { mime_type: p.mimeType } : {}),
+                }));
 
                 return {
                     index: choice.index ?? 0,
                     message: {
                         role: "assistant",
                         content,
+                        ...(images.length > 0 ? { images } : {}),
                         ...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
                         tool_calls: choice.message.toolCalls?.map((tc) => ({
                             id: tc.id,

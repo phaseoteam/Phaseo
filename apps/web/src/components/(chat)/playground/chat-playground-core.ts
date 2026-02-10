@@ -241,12 +241,23 @@ export function formatOrgLabel(orgId: string) {
 	return orgId.replace(/-/g, " ");
 }
 
-export function buildDefaultSystemPrompt(modelId: string) {
+function normalizeNickname(nickname?: string | null) {
+	if (!nickname) return "";
+	return nickname.trim();
+}
+
+export function buildDefaultSystemPrompt(
+	modelId: string,
+	nickname?: string | null,
+) {
 	const safeModelId = modelId || "AI model";
-	const modelLabel = formatModelLabel(safeModelId);
 	const orgLabel = formatOrgLabel(getOrgId(safeModelId));
+	const normalizedNickname = normalizeNickname(nickname);
+	const identityLine = normalizedNickname
+		? `You are ${safeModelId}, known as: ${normalizedNickname}, a large language model from ${orgLabel}.`
+		: `You are ${safeModelId}, a large language model from ${orgLabel}.`;
 	return [
-		`You are ${modelLabel}, a large language model from ${orgLabel}.`,
+		identityLine,
 		"",
 		"Formatting Rules:",
 		"- Use Markdown for lists, tables, and styling.",
@@ -279,6 +290,8 @@ export function getEffectiveModelSettings(
 	thread: ChatThread,
 	modelId: string,
 ): ChatModelSettings {
+	const modelDisplayName =
+		thread.settings.modelOverridesById?.[modelId]?.displayName ?? "";
 	const defaults: ChatModelSettings = {
 		temperature: DEFAULT_SETTINGS.temperature,
 		maxOutputTokens: DEFAULT_SETTINGS.maxOutputTokens,
@@ -290,7 +303,7 @@ export function getEffectiveModelSettings(
 		frequencyPenalty: DEFAULT_SETTINGS.frequencyPenalty,
 		repetitionPenalty: DEFAULT_SETTINGS.repetitionPenalty,
 		seed: DEFAULT_SETTINGS.seed,
-		systemPrompt: buildDefaultSystemPrompt(modelId),
+		systemPrompt: buildDefaultSystemPrompt(modelId, modelDisplayName),
 		stream: DEFAULT_SETTINGS.stream,
 		providerId: DEFAULT_SETTINGS.providerId,
 		reasoningEnabled: DEFAULT_SETTINGS.reasoningEnabled,
@@ -327,7 +340,10 @@ export function ensureModelOverridesForIds(
 		}
 		nextOverrides[modelId] = {
 			...(existingOverride ?? {}),
-			systemPrompt: buildDefaultSystemPrompt(modelId),
+			systemPrompt: buildDefaultSystemPrompt(
+				modelId,
+				existingOverride?.displayName,
+			),
 		};
 	}
 	return nextOverrides ?? currentOverrides;

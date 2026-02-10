@@ -1,72 +1,97 @@
-import { Suspense, lazy, startTransition, useEffect, useMemo, useState } from "react";
-import type {
-  AppSettings,
-  ChatDoneEvent,
-  ChatMessage,
-  CommandOutputChunk,
-  CommandRun,
-  Session,
-  StudioMode,
-  WorkspaceFile
-} from "@shared/types";
+import { startTransition, useEffect, useMemo, useState } from "react";
+import type { AppSettings, ChatDoneEvent, ChatMessage, Session } from "@shared/types";
 import { ChatPane } from "./components/ChatPane";
 import { Sidebar } from "./components/Sidebar";
 
-const CodePane = lazy(async () => {
-  const mod = await import("./components/CodePane");
-  return { default: mod.CodePane };
-});
-
 const EMPTY_SETTINGS: AppSettings = {
-  provider: "mock",
-  openAiBaseUrl: "https://api.openai.com/v1",
-  openAiApiKey: "",
-  openAiModel: "gpt-5-mini",
-  commandSafetyPrompt: true
+  providers: [
+    {
+      id: "provider-ai-stats-gateway",
+      name: "AI Stats Gateway",
+      kind: "openai-compatible",
+      baseUrl: "https://api.phaseo.app/v1",
+      apiKey: "",
+      models: ["gpt-5-mini", "gpt-5"],
+      defaultModel: "gpt-5-mini"
+    }
+  ],
+  chatSelection: {
+    providerId: "provider-ai-stats-gateway",
+    model: "gpt-5-mini"
+  },
+  codeSelection: {
+    providerId: "provider-ai-stats-gateway",
+    model: "gpt-5-mini"
+  },
+  commandSafetyPrompt: true,
+  theme: "system"
 };
 
 export function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [mode, setMode] = useState<StudioMode>("chat");
+  const [bootError, setBootError] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messagesBySession, setMessagesBySession] = useState<Record<string, ChatMessage[]>>({});
   const [isSending, setIsSending] = useState(false);
-
   const [settings, setSettings] = useState<AppSettings>(EMPTY_SETTINGS);
-  const [workspacePath, setWorkspacePath] = useState<string | null>(null);
-  const [workspaceFiles, setWorkspaceFiles] = useState<WorkspaceFile[]>([]);
-  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
-  const [fileContent, setFileContent] = useState("");
-  const [isFileDirty, setIsFileDirty] = useState(false);
 
-  const [commandRuns, setCommandRuns] = useState<CommandRun[]>([]);
-  const [commandOutputByRun, setCommandOutputByRun] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (settings.theme === "light") {
+      root.setAttribute("data-theme", "light");
+      return;
+    }
+
+    if (settings.theme === "dark") {
+      root.setAttribute("data-theme", "dark");
+      return;
+    }
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const applySystemTheme = (): void => {
+      root.setAttribute("data-theme", media.matches ? "dark" : "light");
+    };
+
+    applySystemTheme();
+    media.addEventListener("change", applySystemTheme);
+    return () => {
+      media.removeEventListener("change", applySystemTheme);
+    };
+  }, [settings.theme]);
 
   useEffect(() => {
     void (async () => {
-      const data = await window.desktop.bootstrap();
-      setSessions(data.sessions);
-      setSettings(data.settings);
-      setActiveSessionId(data.activeSessionId);
-      setWorkspacePath(data.workspacePath);
+      try {
+        if (!window.desktop) {
+          throw new Error("Desktop bridge unavailable. Preload script failed to initialize.");
+        }
 
-      const active = data.sessions.find((session) => session.id === data.activeSessionId);
-      if (active) {
-        setMode(active.mode);
+        const data = await window.desktop.bootstrap();
+        const chatSessions = data.sessions.filter((session) => session.mode === "chat");
+        const preferredActiveId =
+          data.activeSessionId && chatSessions.some((session) => session.id === data.activeSessionId)
+            ? data.activeSessionId
+            : chatSessions[0]?.id ?? null;
+
+        setSessions(chatSessions);
+        setSettings(data.settings);
+        setActiveSessionId(preferredActiveId);
+
+        if (preferredActiveId && preferredActiveId !== data.activeSessionId) {
+          await window.desktop.setActiveSession(preferredActiveId);
+        }
+      } catch (error) {
+        setBootError(error instanceof Error ? error.message : "Failed to initialize Desktop Studio.");
+      } finally {
+        setIsLoading(false);
       }
-
-      if (data.workspacePath) {
-        const files = await window.desktop.listWorkspaceFiles(data.workspacePath);
-        setWorkspaceFiles(files);
-      }
-
-      setIsLoading(false);
     })();
   }, []);
 
   useEffect(() => {
-    if (!activeSessionId || messagesBySession[activeSessionId]) {
+    if (!window.desktop || !activeSessionId || messagesBySession[activeSessionId]) {
       return;
     }
 
@@ -80,6 +105,11 @@ export function App() {
   }, [activeSessionId, messagesBySession]);
 
   useEffect(() => {
+    if (!window.desktop) {
+      setBootError((prev) => prev ?? "Desktop bridge unavailable. Preload script failed to initialize.");
+      return;
+    }
+
     const removeChunk = window.desktop.onChatChunk((event) => {
       startTransition(() => {
         setMessagesBySession((prev) => {
@@ -110,22 +140,9 @@ export function App() {
       });
     });
 
-    const removeOutput = window.desktop.onCommandOutput((event: CommandOutputChunk) => {
-      setCommandOutputByRun((prev) => ({
-        ...prev,
-        [event.runId]: `${prev[event.runId] ?? ""}${event.chunk}`
-      }));
-    });
-
-    const removeCommandDone = window.desktop.onCommandDone((run) => {
-      setCommandRuns((prev) => prev.map((entry) => (entry.id === run.id ? run : entry)));
-    });
-
     return () => {
       removeChunk();
       removeDone();
-      removeOutput();
-      removeCommandDone();
     };
   }, []);
 
@@ -137,11 +154,15 @@ export function App() {
     return messagesBySession[activeSessionId] ?? [];
   }, [activeSessionId, messagesBySession]);
 
-  const createSession = async (targetMode: StudioMode): Promise<string> => {
-    const session = await window.desktop.createSession(targetMode);
-    setSessions((prev) => [session, ...prev]);
+  const chatSessions = useMemo(
+    () => sessions.filter((session) => session.mode === "chat"),
+    [sessions]
+  );
+
+  const createChatSession = async (): Promise<string> => {
+    const session = await window.desktop.createSession("chat");
+    setSessions((prev) => [session, ...prev.filter((entry) => entry.id !== session.id)]);
     setActiveSessionId(session.id);
-    setMode(targetMode);
     await window.desktop.setActiveSession(session.id);
     setMessagesBySession((prev) => ({ ...prev, [session.id]: [] }));
     return session.id;
@@ -149,7 +170,6 @@ export function App() {
 
   const handleSessionSelect = async (session: Session): Promise<void> => {
     setActiveSessionId(session.id);
-    setMode(session.mode);
     await window.desktop.setActiveSession(session.id);
 
     if (!messagesBySession[session.id]) {
@@ -162,33 +182,37 @@ export function App() {
   };
 
   const handleSend = async (content: string): Promise<void> => {
-    const sessionId = activeSessionId ?? (await createSession(mode));
+    const currentSession = sessions.find((session) => session.id === activeSessionId && session.mode === "chat");
+    const sessionId = currentSession?.id ?? (await createChatSession());
+
     setIsSending(true);
 
-    const result = await window.desktop.sendMessage({
-      sessionId,
-      content,
-      mode
-    });
+    try {
+      const result = await window.desktop.sendMessage({
+        sessionId,
+        content,
+        mode: "chat"
+      });
 
-    setMessagesBySession((prev) => ({
-      ...prev,
-      [sessionId]: [...(prev[sessionId] ?? []), result.userMessage, result.assistantMessage]
-    }));
+      setMessagesBySession((prev) => ({
+        ...prev,
+        [sessionId]: [...(prev[sessionId] ?? []), result.userMessage, result.assistantMessage]
+      }));
 
-    setSessions((prev) =>
-      prev.map((session) =>
-        session.id === sessionId
-          ? {
-              ...session,
-              title: content.slice(0, 64),
-              updatedAt: new Date().toISOString()
-            }
-          : session
-      )
-    );
-
-    setIsSending(false);
+      setSessions((prev) =>
+        prev.map((session) =>
+          session.id === sessionId
+            ? {
+                ...session,
+                title: content.slice(0, 64),
+                updatedAt: new Date().toISOString()
+              }
+            : session
+        )
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleSettingsChange = async (partial: Partial<AppSettings>): Promise<void> => {
@@ -196,124 +220,35 @@ export function App() {
     setSettings(next);
   };
 
-  const refreshWorkspaceFiles = async (path = workspacePath): Promise<void> => {
-    if (!path) {
-      setWorkspaceFiles([]);
-      return;
-    }
-
-    const files = await window.desktop.listWorkspaceFiles(path);
-    setWorkspaceFiles(files);
-  };
-
-  const handlePickWorkspace = async (): Promise<void> => {
-    const selected = await window.desktop.pickWorkspace();
-    if (!selected) {
-      return;
-    }
-
-    setWorkspacePath(selected);
-    await refreshWorkspaceFiles(selected);
-    setSelectedFilePath(null);
-    setFileContent("");
-    setIsFileDirty(false);
-  };
-
-  const handleOpenFile = async (relativePath: string): Promise<void> => {
-    if (!workspacePath) {
-      return;
-    }
-
-    const content = await window.desktop.readWorkspaceFile(workspacePath, relativePath);
-    setSelectedFilePath(relativePath);
-    setFileContent(content);
-    setIsFileDirty(false);
-  };
-
-  const handleSaveFile = async (): Promise<void> => {
-    if (!workspacePath || !selectedFilePath) {
-      return;
-    }
-
-    await window.desktop.writeWorkspaceFile(workspacePath, selectedFilePath, fileContent);
-    setIsFileDirty(false);
-  };
-
-  const handleRunCommand = async (command: string): Promise<void> => {
-    if (!workspacePath) {
-      return;
-    }
-
-    if (settings.commandSafetyPrompt && !window.confirm(`Run command?\n\n${command}`)) {
-      return;
-    }
-
-    const run = await window.desktop.runCommand({ workspacePath, command });
-    setCommandRuns((prev) => [run, ...prev]);
-    setCommandOutputByRun((prev) => ({ ...prev, [run.id]: "" }));
-  };
-
-  const handleStopCommand = async (runId: string): Promise<void> => {
-    await window.desktop.stopCommand(runId);
-  };
-
   if (isLoading) {
-    return <div className="boot-screen">Loading Desktop Studio...</div>;
+    return <div className="boot-screen">Loading AI Stats Chat...</div>;
+  }
+
+  if (bootError) {
+    return <div className="boot-screen">Startup Error: {bootError}</div>;
   }
 
   return (
     <div className="app-shell">
       <Sidebar
-        mode={mode}
-        sessions={sessions}
+        sessions={chatSessions}
         activeSessionId={activeSessionId}
-        workspacePath={workspacePath}
-        settings={settings}
-        onModeChange={setMode}
-        onCreateSession={(targetMode) => {
-          void createSession(targetMode);
+        onCreateSession={() => {
+          void createChatSession();
         }}
         onSelectSession={(session) => {
           void handleSessionSelect(session);
         }}
-        onPickWorkspace={() => {
-          void handlePickWorkspace();
-        }}
-        onSettingsChange={(partial) => {
-          void handleSettingsChange(partial);
-        }}
       />
 
       <main className="main-pane">
-        {mode === "chat" ? (
-          <ChatPane messages={activeMessages} isSending={isSending} onSend={handleSend} />
-        ) : (
-          <Suspense fallback={<div className="boot-screen">Loading Code Mode...</div>}>
-            <CodePane
-              workspacePath={workspacePath}
-              files={workspaceFiles}
-              selectedFilePath={selectedFilePath}
-              fileContent={fileContent}
-              isDirty={isFileDirty}
-              commandRuns={commandRuns}
-              commandOutputByRun={commandOutputByRun}
-              onPickWorkspace={() => {
-                void handlePickWorkspace();
-              }}
-              onRefreshFiles={() => {
-                void refreshWorkspaceFiles();
-              }}
-              onOpenFile={handleOpenFile}
-              onChangeFileContent={(next) => {
-                setFileContent(next);
-                setIsFileDirty(true);
-              }}
-              onSaveFile={handleSaveFile}
-              onRunCommand={handleRunCommand}
-              onStopCommand={handleStopCommand}
-            />
-          </Suspense>
-        )}
+        <ChatPane
+          messages={activeMessages}
+          isSending={isSending}
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+          onSend={handleSend}
+        />
       </main>
     </div>
   );

@@ -7,8 +7,8 @@ import type {
   CommandRun,
   CommandRunRequest,
   DesktopApi,
+  GitDiffRequest,
   SendMessageInput,
-  Session,
   StudioMode
 } from "@shared/types";
 
@@ -19,6 +19,7 @@ const api: DesktopApi = {
   listMessages: (sessionId: string) => ipcRenderer.invoke("message:list", sessionId),
   sendMessage: (input: SendMessageInput) => ipcRenderer.invoke("chat:send", input),
   updateSettings: (settings: Partial<AppSettings>) => ipcRenderer.invoke("settings:update", settings),
+  fetchProviderModels: (providerId: string) => ipcRenderer.invoke("provider:fetch-models", providerId),
   pickWorkspace: () => ipcRenderer.invoke("workspace:pick"),
   listWorkspaceFiles: (workspacePath: string) => ipcRenderer.invoke("workspace:list-files", workspacePath),
   readWorkspaceFile: (workspacePath: string, relativePath: string) =>
@@ -27,6 +28,10 @@ const api: DesktopApi = {
     ipcRenderer.invoke("workspace:write-file", { workspacePath, relativePath, content }),
   runCommand: (request: CommandRunRequest) => ipcRenderer.invoke("command:run", request),
   stopCommand: (runId: string) => ipcRenderer.invoke("command:stop", runId),
+  listGitStatus: (workspacePath: string) => ipcRenderer.invoke("git:status", workspacePath),
+  getGitDiff: (request: GitDiffRequest) => ipcRenderer.invoke("git:diff", request),
+  applyGitPatch: (workspacePath: string, patch: string) =>
+    ipcRenderer.invoke("git:apply-patch", { workspacePath, patch }),
   onChatChunk: (listener: (event: ChatChunkEvent) => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, data: ChatChunkEvent) => listener(data);
     ipcRenderer.on("chat:chunk", wrapped);

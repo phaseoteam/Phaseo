@@ -147,21 +147,13 @@ export async function POST(req: Request) {
                 console.log(`[stripe-webhook] Team ${wallet.team_id} tier: ${tier}, fee: ${feePct}%`);
 
                 const { netNanos, feeNanos } = computeNetAndFeeFromGross(grossNanos, feePct);
-                // console.log(`[DEBUG] Net nanos: ${netNanos}, Fee nanos: ${feeNanos}`);
-                console.log(
-                    `[DEBUG] Net dollars: $${(netNanos / 1_000_000_000).toFixed(2)}, Fee dollars: $${(
-                        feeNanos / 1_000_000_000
-                    ).toFixed(2)}`
-                );
-                console.log(
-                    `[DEBUG] Original amount (before fees): $${(netNanos / 1_000_000_000).toFixed(2)}`
-                );
-
                 const beforeBalanceNanos = Number(wallet.balance_nanos ?? 0);
                 const afterBalanceNanos = beforeBalanceNanos + netNanos;
 
                 console.log(
-                    `[DEBUG] Balance before: $${(beforeBalanceNanos / 1_000_000_000).toFixed(2)}, Balance after: $${(
+                    `[stripe-webhook] Payment credited net=$${(netNanos / 1_000_000_000).toFixed(2)} fee=$${(
+                        feeNanos / 1_000_000_000
+                    ).toFixed(2)} balance_before=$${(beforeBalanceNanos / 1_000_000_000).toFixed(2)} balance_after=$${(
                         afterBalanceNanos / 1_000_000_000
                     ).toFixed(2)}`
                 );

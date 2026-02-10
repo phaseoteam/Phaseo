@@ -40,6 +40,7 @@ import {
 import {
 	buildUserMessageContent,
 	prepareAttachments,
+	prepareInlineAttachmentPreviews,
 	type PreparedAttachment,
 } from "@/components/(chat)/playground/attachment-utils";
 import {
@@ -100,6 +101,9 @@ type ChatUser = {
 	name: string;
 	avatarUrl: string | null;
 };
+
+const CHAT_BETA_ISSUES_HREF =
+	"https://github.com/AI-Stats/AI-Stats/issues/new/choose";
 
 function ChatPlaygroundContent({
 	models,
@@ -1019,14 +1023,18 @@ function ChatPlaygroundContent({
 			const endpoint: UnifiedChatEndpoint = isUnified
 				? inferUnifiedEndpoint({
 						modelId: effectiveModelId,
-						prompt: latestUserPrompt,
-						attachments: preparedAttachments,
 						defaultCapability:
 							getPrimaryCapabilityForModel(effectiveModelId),
 					})
 				: "responses";
+			const wantsImageModalities =
+				endpoint === "responses" &&
+				(thread.settings.imageOutputEnabled ||
+					shouldRequestImageModalities(effectiveModelId));
 			const streamEnabled =
-				endpoint === "responses" && Boolean(thread.settings.stream);
+				endpoint === "responses" &&
+				Boolean(thread.settings.stream) &&
+				!wantsImageModalities;
 			const input = payloadMessages
 				.filter((message) => message.content.trim().length > 0)
 				.map((message, index) => {
@@ -1092,10 +1100,7 @@ function ChatPlaygroundContent({
 			if (endpoint === "responses") {
 				requestBody.input = input;
 				requestBody.stream = streamEnabled;
-				if (
-					thread.settings.imageOutputEnabled ||
-					shouldRequestImageModalities(effectiveModelId)
-				) {
+				if (wantsImageModalities) {
 					requestBody.modalities = ["text", "image"];
 				}
 				if (
@@ -1549,13 +1554,23 @@ function ChatPlaygroundContent({
 							firstTokenAt = performance.now();
 						}
 						const lines = frame.split(/\r?\n/);
+						let frameEventType = "";
+						const frameDataLines: string[] = [];
 						for (const line of lines) {
 							const trimmed = line.trim();
-							if (!trimmed.startsWith("data:")) continue;
-							const data = trimmed.slice(5).trim();
-							if (!data || data === "[DONE]") continue;
-							try {
-								const parsed = JSON.parse(data);
+							if (!trimmed) continue;
+							if (trimmed.startsWith("event:")) {
+								frameEventType = trimmed.slice(6).trim();
+								continue;
+							}
+							if (trimmed.startsWith("data:")) {
+								frameDataLines.push(trimmed.slice(5).trimStart());
+							}
+						}
+						const data = frameDataLines.join("").trim();
+						if (!data || data === "[DONE]") continue;
+						try {
+							const parsed = JSON.parse(data);
 								if (parsed?.usage || parsed?.response?.usage) {
 									finalUsage =
 										parsed?.usage ??
@@ -1625,7 +1640,7 @@ function ChatPlaygroundContent({
 										.filter(Boolean)
 										.join("\n\n");
 								};
-								const frameType = parsed?.type;
+								const frameType = parsed?.type ?? frameEventType;
 								if (
 									frameType === "response.output_text.delta"
 								) {
@@ -1633,7 +1648,8 @@ function ChatPlaygroundContent({
 										delta = parsed.delta;
 									}
 								} else if (
-									frameType === "response.reasoning.delta"
+									frameType === "response.reasoning.delta" ||
+									frameType === "response.reasoning_text.delta"
 								) {
 									if (typeof parsed?.delta === "string") {
 										reasoningDelta = parsed.delta;
@@ -1799,9 +1815,8 @@ function ChatPlaygroundContent({
 										: undefined;
 									scheduleUpdate(metaPartial);
 								}
-							} catch {
-								// ignore malformed chunks
-							}
+						} catch {
+							// ignore malformed chunks
 						}
 					}
 				}
@@ -1950,12 +1965,29 @@ function ChatPlaygroundContent({
 				setModelPickerOpen(true);
 				return;
 			}
+			let inlineAttachmentPreviews: Awaited<
+				ReturnType<typeof prepareInlineAttachmentPreviews>
+			> = [];
+			if (payload.attachments.length) {
+				try {
+					inlineAttachmentPreviews = await prepareInlineAttachmentPreviews(
+						payload.attachments,
+					);
+				} catch {
+					inlineAttachmentPreviews = [];
+				}
+			}
 
 			const userMessage: ChatMessage = {
 				id: generateId(),
 				role: "user",
 				content,
 				createdAt: nowIso(),
+				meta: inlineAttachmentPreviews.length
+					? {
+							attachment_previews: inlineAttachmentPreviews,
+						}
+					: undefined,
 			};
 
 			const nextTitle = activeThread.titleLocked
@@ -1989,14 +2021,23 @@ function ChatPlaygroundContent({
 			const inferredEndpoint = isUnified
 				? inferUnifiedEndpoint({
 						modelId: updatedThread.modelId,
-						prompt: payload.content,
-						attachments: payload.attachments.map((file) => ({
-							isImage: file.type.startsWith("image/"),
-						})),
 						defaultCapability:
 							getPrimaryCapabilityForModel(updatedThread.modelId),
 					})
 				: "responses";
+			if (
+				isUnified &&
+				!isModelCapabilityCompatible(
+					updatedThread.modelId,
+					inferredEndpoint,
+				)
+			) {
+				setError(
+					"The selected model does not support this output modality. Pick a model that supports this endpoint.",
+				);
+				setModelPickerOpen(true);
+				return;
+			}
 			const hasAudioAttachment = payload.attachments.some((file) =>
 				file.type.startsWith("audio/"),
 			);
@@ -2026,6 +2067,12 @@ function ChatPlaygroundContent({
 				);
 				if (modelSettings.enabled === false) return false;
 				if (
+					isUnified &&
+					!isModelCapabilityCompatible(modelId, inferredEndpoint)
+				) {
+					return false;
+				}
+				if (
 					hasAudioAttachment &&
 					!supportsModelAudioInput(modelId)
 				) {
@@ -2037,7 +2084,7 @@ function ChatPlaygroundContent({
 				setError(
 					hasAudioAttachment
 						? "No selected models can accept audio input. Select at least one audio-input compatible model."
-						: "All selected models are turned off. Enable at least one model in per-model settings.",
+						: "No selected models match the current output modality or they are all turned off.",
 				);
 				setModelSettingsTargetModelId(updatedThread.modelId);
 				setModelSettingsOpen(true);
@@ -2080,6 +2127,7 @@ function ChatPlaygroundContent({
 			buildThreadForModel,
 			executeCompletion,
 			getPrimaryCapabilityForModel,
+			isModelCapabilityCompatible,
 			isUnified,
 			isSending,
 			isAuthenticated,
@@ -2250,8 +2298,16 @@ function ChatPlaygroundContent({
 		(modelId: string) => {
 			if (!activeThread) return;
 			const requiredCapability = getPrimaryCapabilityForModel(modelId);
+			const currentModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					activeThread.modelId
+				]?.displayName ?? "";
+			const nextModelDisplayName =
+				activeThread.settings.modelOverridesById?.[modelId]
+					?.displayName ?? "";
 			const previousDefault = buildDefaultSystemPrompt(
 				activeThread.modelId,
+				currentModelDisplayName,
 			);
 			const nextCompareModelIds = Array.from(
 				new Set(
@@ -2270,7 +2326,7 @@ function ChatPlaygroundContent({
 			const nextSystemPrompt =
 				!activeThread.settings.systemPrompt ||
 				activeThread.settings.systemPrompt === previousDefault
-					? buildDefaultSystemPrompt(modelId)
+					? buildDefaultSystemPrompt(modelId, nextModelDisplayName)
 					: activeThread.settings.systemPrompt;
 			const nextModelOverrides = ensureModelOverridesForIds(
 				activeThread.settings,
@@ -2624,12 +2680,8 @@ function ChatPlaygroundContent({
 					model.organisationName ??
 					model.providerName ??
 					formatOrgLabel(orgId);
-				const displayName =
-					activeThread?.settings.modelOverridesById?.[
-						model.modelId
-					]?.displayName?.trim();
-				const baseLabel =
-					displayName || model.modelName || formatModelLabel(model.modelId);
+				// Keep selector labels canonical; nicknames are display-only in chat UI.
+				const baseLabel = model.modelName || formatModelLabel(model.modelId);
 				const isDisabled =
 					activeThread?.settings.modelOverridesById?.[
 						model.modelId
@@ -2700,6 +2752,9 @@ function ChatPlaygroundContent({
 	const dialogModelSettings: ChatModelSettings = useMemo(() => {
 		if (activeModelSettings) return activeModelSettings;
 		const fallbackModelId = modelSettingsModelId ?? activeThread?.modelId ?? "";
+		const fallbackDisplayName =
+			activeThread?.settings.modelOverridesById?.[fallbackModelId]
+				?.displayName ?? "";
 		return {
 			temperature: DEFAULT_SETTINGS.temperature,
 			maxOutputTokens: DEFAULT_SETTINGS.maxOutputTokens,
@@ -2711,7 +2766,10 @@ function ChatPlaygroundContent({
 			frequencyPenalty: DEFAULT_SETTINGS.frequencyPenalty,
 			repetitionPenalty: DEFAULT_SETTINGS.repetitionPenalty,
 			seed: DEFAULT_SETTINGS.seed,
-			systemPrompt: buildDefaultSystemPrompt(fallbackModelId),
+			systemPrompt: buildDefaultSystemPrompt(
+				fallbackModelId,
+				fallbackDisplayName,
+			),
 			stream: DEFAULT_SETTINGS.stream,
 			providerId: DEFAULT_SETTINGS.providerId,
 			reasoningEnabled: DEFAULT_SETTINGS.reasoningEnabled,
@@ -2722,7 +2780,12 @@ function ChatPlaygroundContent({
 			enabled: true,
 			displayName: "",
 		};
-	}, [activeModelSettings, activeThread?.modelId, modelSettingsModelId]);
+	}, [
+		activeModelSettings,
+		activeThread?.modelId,
+		activeThread?.settings.modelOverridesById,
+		modelSettingsModelId,
+	]);
 	const temperatureValue = activeModelSettings?.temperature ?? 0.7;
 	const maxTokensValue = activeModelSettings?.maxOutputTokens ?? 800;
 	const topPValue = activeModelSettings?.topP ?? 1;
@@ -2737,9 +2800,38 @@ function ChatPlaygroundContent({
 		(partial: Partial<ChatModelSettings>) => {
 			if (!activeThread || !modelSettingsModelId) return;
 			const currentOverrides = activeThread.settings.modelOverridesById ?? {};
+			const existingModelOverrides = currentOverrides[modelSettingsModelId] ?? {};
+			const nextPartial = { ...partial };
+			if (typeof partial.displayName === "string" && partial.systemPrompt === undefined) {
+				const previousDisplayName =
+					typeof existingModelOverrides.displayName === "string"
+						? existingModelOverrides.displayName
+						: "";
+				const nextDisplayName = partial.displayName;
+				const previousDefaultPrompt = buildDefaultSystemPrompt(
+					modelSettingsModelId,
+					previousDisplayName,
+				);
+				const nextDefaultPrompt = buildDefaultSystemPrompt(
+					modelSettingsModelId,
+					nextDisplayName,
+				);
+				const currentEffectiveSystemPrompt = getEffectiveModelSettings(
+					activeThread,
+					modelSettingsModelId,
+				).systemPrompt;
+				const hasExplicitModelPrompt =
+					existingModelOverrides.systemPrompt !== undefined;
+				const isStillOnDefaultTemplate =
+					(currentEffectiveSystemPrompt ?? "").trim() ===
+					previousDefaultPrompt.trim();
+				if (!hasExplicitModelPrompt || isStillOnDefaultTemplate) {
+					nextPartial.systemPrompt = nextDefaultPrompt;
+				}
+			}
 			const nextModelOverrides = {
-				...(currentOverrides[modelSettingsModelId] ?? {}),
-				...partial,
+				...existingModelOverrides,
+				...nextPartial,
 			};
 			const nextThread: ChatThread = {
 				...activeThread,
@@ -2895,19 +2987,36 @@ function ChatPlaygroundContent({
 					requiredCapability={activeModelCapability}
 					requireAudioInput={composerRequiresAudioInput}
 				/>
-				{!isUnified ? (
+				{isUnified ? (
+					<div className="border-b border-border bg-amber-50/40 px-4 py-2 md:px-8 dark:bg-amber-950/20">
+						<p className="text-xs text-muted-foreground">
+							<span className="font-medium text-foreground">Beta:</span>{" "}
+							The unified chat playground is in beta. Please report any issues on{" "}
+							<Link
+								href={CHAT_BETA_ISSUES_HREF}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-primary"
+							>
+								GitHub
+							</Link>
+							.
+						</p>
+					</div>
+				) : (
 					<div className="border-b border-border px-4 py-2 md:px-8">
 						<p className="text-xs text-muted-foreground">
-							Try the new unified chat experience for multimodal endpoints and side-by-side model comparisons.{" "}
+							Try the unified chat experience for multimodal endpoints and side-by-side model comparisons.{" "}
 							<Link
 								href="/chat/unified"
 								className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-primary"
 							>
 								Open unified playground
 							</Link>
+							.
 						</p>
 					</div>
-				) : null}
+				)}
 				<ChatConversation
 					activeThread={activeThread}
 					isSending={isSending}

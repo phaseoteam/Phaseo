@@ -42,6 +42,15 @@ export type AnthropicMessagesResponse = {
 
 export type AnthropicResponseContent =
 	| { type: "text"; text: string; citations: any[] | null }
+	| {
+		type: "image";
+		source: {
+			type: "base64" | "url";
+			media_type?: string;
+			data?: string;
+			url?: string;
+		};
+	}
 	| { type: "thinking"; thinking: string; signature: string }
 	| { type: "tool_use"; id: string; name: string; input: Record<string, any> };
 
@@ -76,7 +85,7 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 	}
 
 	const hasToolCalls = (mainChoice.message.toolCalls?.length ?? 0) > 0;
-	const { text, reasoningParts } = splitContentParts(mainChoice.message.content as IRContentPart[]);
+	const { text, reasoningParts, imageParts } = splitContentParts(mainChoice.message.content as IRContentPart[]);
 	const contentText = mainChoice.message.refusal ?? text;
 
 	if (typeof contentText === "string") {
@@ -90,6 +99,31 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 				type: "text",
 				text: contentText,
 				citations: null,
+			});
+		}
+	}
+
+	if (imageParts.length > 0) {
+		for (const imagePart of imageParts) {
+			if (imagePart.source === "data") {
+				content.push({
+					type: "image",
+					source: {
+						type: "base64",
+						media_type: imagePart.mimeType,
+						data: imagePart.data,
+					},
+				});
+				continue;
+			}
+
+			content.push({
+				type: "image",
+				source: {
+					type: "url",
+					media_type: imagePart.mimeType,
+					url: imagePart.data,
+				},
 			});
 		}
 	}
@@ -189,8 +223,12 @@ function safeParseToolArguments(raw: string): Record<string, any> {
 
 function splitContentParts(
 	parts: IRContentPart[],
-): { text: string; reasoningParts: Array<{ text: string; signature?: string }> } {
-	if (!Array.isArray(parts)) return { text: "", reasoningParts: [] };
+): {
+	text: string;
+	reasoningParts: Array<{ text: string; signature?: string }>;
+	imageParts: Array<Extract<IRContentPart, { type: "image" }>>;
+} {
+	if (!Array.isArray(parts)) return { text: "", reasoningParts: [], imageParts: [] };
 	const text = parts
 		.filter((part) => part.type === "text")
 		.map((part) => part.text)
@@ -201,6 +239,9 @@ function splitContentParts(
 			text: part.text,
 			signature: part.thoughtSignature,
 		}));
-	return { text, reasoningParts };
+	const imageParts = parts.filter((part) => part.type === "image") as Array<
+		Extract<IRContentPart, { type: "image" }>
+	>;
+	return { text, reasoningParts, imageParts };
 }
 

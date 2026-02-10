@@ -3,7 +3,7 @@
   "organisation_id": "moonshot-ai",
   "name": "Kimi K2.5",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
   "announced_date": "2026-01-27T00:00:00",
   "release_date": "2026-01-27T00:00:00",
   "deprecation_date": null,

@@ -132,6 +132,7 @@ export async function beforeRequest(
         })
     );
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
+    mergedBody = capabilityValidation.body;
     const filteredProviders = capabilityValidation.providers;
     const normalizedCapability = normalizeCapability(capability);
     const executorManagedCapabilities = new Set<string>([
@@ -221,6 +222,8 @@ export async function beforeRequest(
         teamId,
         stream,
         requestPath: requestPath ?? undefined,
+        requestedParams: capabilityValidation.requestedParams,
+        paramRoutingDiagnostics: capabilityValidation.paramRoutingDiagnostics,
         providers: enabledProviders,
         providerCapabilitiesBeta: betaCapabilities,
         pricing: context.pricing,

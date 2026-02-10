@@ -9,7 +9,7 @@ This section documents how the gateway codebase is organized. It is written to h
 
 | Folder | Purpose | Key files |
 | --- | --- | --- |
-| `apps/api/src/routes` | HTTP routing and endpoint registration. | `index.ts`, `main-endpoints.ts`, `healthz-route.ts`, `models-route.ts` |
+| `apps/api/src/routes` | HTTP routing and endpoint registration. | `root.ts`, `v1/index.ts`, `v1/control/health.ts`, `v1/control/models.ts` |
 | `apps/api/src/lib/gateway` | Request pipeline, adapters, pricing, and telemetry. | `pipeline.ts`, `execute/`, `before/`, `after/` |
 | `apps/api/src/ir` | Intermediate representation (IR) for normalized requests/responses. | `types.ts`, `streaming.ts` |
 | `apps/api/src/protocols` | Protocol-specific parsing and emitters. | `openai/`, `anthropic/` |

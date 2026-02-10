@@ -2,7 +2,6 @@
 
 alter table if exists public.public_usage_weekly_organisations
   add column if not exists organisation_colour text;
-
 create or replace function public.refresh_public_usage_rollups(
   p_since timestamptz default now() - interval '1 year'
 )
@@ -56,9 +55,7 @@ begin
   group by 1, 2;
 end;
 $$;
-
 select public.refresh_public_usage_rollups();
-
 create or replace function public.get_public_usage_timeseries(
   p_time_range text default 'week',
   p_bucket_size text default 'hour',
@@ -156,9 +153,7 @@ begin
   order by bd.time_bucket, bd.tok_count desc;
 end;
 $$ language plpgsql stable;
-
 drop function if exists public.get_public_market_share_timeseries(text, text, text, integer);
-
 create or replace function public.get_public_market_share_timeseries(
   p_dimension text default 'organization',
   p_time_range text default 'year',

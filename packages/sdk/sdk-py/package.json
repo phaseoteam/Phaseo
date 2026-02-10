@@ -4,6 +4,7 @@
 	"private": true,
 	"scripts": {
 		"build": "python -m hatchling build -t sdist -t wheel",
-		"smoke:chat": "dotenv -e .env.local -- python tests/smoke_chat.py"
+		"smoke:chat": "dotenv -e .env.local -- python tests/smoke_chat.py",
+		"smoke:responses": "dotenv -e .env.local -- python tests/smoke_responses.py"
 	}
 }

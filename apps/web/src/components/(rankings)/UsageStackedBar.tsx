@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { TimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
@@ -19,6 +19,7 @@ type UsageStackedBarProps = {
 
 type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
 const TOP_MODELS = 10;
+const STABLE_REFERENCE_DATE = new Date(0);
 
 function formatBucketLabel(value: string) {
 	const date = new Date(value);
@@ -66,6 +67,11 @@ export function UsageStackedBar({
 	nameMap = {},
 }: UsageStackedBarProps) {
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+	const [nowMs, setNowMs] = useState<number | null>(null);
+
+	useEffect(() => {
+		setNowMs(Date.now());
+	}, []);
 
 	if (!data.length) {
 		return (
@@ -128,7 +134,12 @@ export function UsageStackedBar({
 		);
 	}
 
-	const endWeek = startOfWeek(new Date());
+	const existingBucketTs = Array.from(bucketMap.keys());
+	const endWeekTs =
+		existingBucketTs.length > 0
+			? Math.max(...existingBucketTs)
+			: startOfWeek(STABLE_REFERENCE_DATE).getTime();
+	const endWeek = startOfWeek(new Date(endWeekTs));
 	for (let i = 51; i >= 0; i -= 1) {
 		const ts = endWeek.getTime() - i * WEEK_MS;
 		if (!bucketMap.has(ts)) {
@@ -199,15 +210,21 @@ export function UsageStackedBar({
 				keys.reduce((sum, key) => sum + Number(row[key] ?? 0), 0);
 			const currentWeekRow = data[lastIndex];
 			const currentTotal = sumForRow(currentWeekRow);
-			const elapsedMs = Math.max(1, Date.now() - currentWeekStartTs);
-			const elapsedRatio = Math.min(1, Math.max(0, elapsedMs / WEEK_MS));
-			const projectedTotal =
-				elapsedRatio > 0 && elapsedRatio < 1
-					? Math.max(currentTotal, currentTotal / elapsedRatio)
-					: currentTotal;
-			const projectedDelta = Math.max(0, projectedTotal - currentTotal);
-			currentWeekRow.projected_pace = projectedDelta;
-			currentWeekRow.__isCurrentWeek = true;
+			const isCurrentWeek =
+				nowMs !== null &&
+				nowMs >= currentWeekStartTs &&
+				nowMs < currentWeekStartTs + WEEK_MS;
+			if (isCurrentWeek) {
+				const elapsedMs = Math.max(1, nowMs - currentWeekStartTs);
+				const elapsedRatio = Math.min(1, Math.max(0, elapsedMs / WEEK_MS));
+				const projectedTotal =
+					elapsedRatio > 0 && elapsedRatio < 1
+						? Math.max(currentTotal, currentTotal / elapsedRatio)
+						: currentTotal;
+				const projectedDelta = Math.max(0, projectedTotal - currentTotal);
+				currentWeekRow.projected_pace = projectedDelta;
+				currentWeekRow.__isCurrentWeek = true;
+			}
 		}
 
 		return { chartData: data, seriesKeys: keys, seriesStyle: style };
@@ -218,6 +235,7 @@ export function UsageStackedBar({
 		hasOther,
 		modelOrder,
 		nameMap,
+		nowMs,
 		overflowModels,
 		topModels,
 	]);

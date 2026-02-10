@@ -152,6 +152,33 @@ function extractChangelogSection(changelogPath: string, version: string): string
     return section.length ? section : null;
 }
 
+function extractContributorHandles(markdown: string): string[] {
+    const handles = new Set<string>();
+    const matches = markdown.matchAll(/\[@([a-zA-Z0-9-]+)\]\(https?:\/\/github\.com\/[^\)]+\)/g);
+
+    for (const match of matches) {
+        handles.add(match[1]);
+    }
+
+    return [...handles];
+}
+
+function formatContributorList(handles: string[]): string {
+    const linked = handles.map((handle) => `[@${handle}](https://github.com/${handle})`);
+    if (linked.length === 0) return "";
+    if (linked.length === 1) return linked[0];
+    if (linked.length === 2) return `${linked[0]} and ${linked[1]}`;
+    return `${linked.slice(0, -1).join(", ")}, and ${linked[linked.length - 1]}`;
+}
+
+function appendCredits(body: string): string {
+    const contributors = extractContributorHandles(body);
+    if (contributors.length === 0) return body;
+
+    const credits = `## Credits\n\nHuge thanks to ${formatContributorList(contributors)} for helping!`;
+    return `${body.trim()}\n\n---\n\n${credits}`;
+}
+
 function releaseExists(tag: string): boolean {
     try {
         execSync(`gh release view "${tag}"`, { stdio: "ignore" });
@@ -193,9 +220,10 @@ function main() {
             continue;
         }
 
-        const body =
+        const changelogSection =
             extractChangelogSection(pkg.changelogPath, current) ??
             `See CHANGELOG for ${pkg.name} v${current}.`;
+        const body = appendCredits(changelogSection);
 
         const tmpPath = path.join(
             ".changeset",

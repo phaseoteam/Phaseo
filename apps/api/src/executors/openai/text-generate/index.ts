@@ -39,12 +39,15 @@ const REASONING_EFFORT_TO_PERCENT: Record<ReasoningEffort, number> = {
 };
 
 const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
-	"gpt-5-pro": new Set(["high"]),
-	"gpt-5-pro-preview": new Set(["high"]),
-	"gpt-5.1": new Set(["none", "low", "medium", "high"]),
-	"gpt-5.1-codex-max": new Set(["none", "low", "medium", "high", "xhigh"]),
-	"gpt-5.2": new Set(["none", "low", "medium", "high", "xhigh"]),
-	"gpt-5.2-codex": new Set(["none", "low", "medium", "high", "xhigh"]),
+	"gpt-5": new Set(["minimal", "low", "medium", "high"]),
+	"gpt-5-pro": new Set(["minimal", "low", "medium", "high"]),
+	"gpt-5-pro-preview": new Set(["minimal", "low", "medium", "high"]),
+	"gpt-5.1": new Set(["none", "minimal", "low", "medium", "high"]),
+	"gpt-5.1-codex-max": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.2": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.2-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.3": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.3-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),
 	"o1-mini": new Set(["low", "medium", "high"]),

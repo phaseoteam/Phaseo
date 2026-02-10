@@ -1,7 +1,6 @@
 -- Add previous-period token totals to public rankings for % change display
 
 DROP FUNCTION IF EXISTS public.get_public_model_rankings(text, text, integer);
-
 CREATE OR REPLACE FUNCTION public.get_public_model_rankings(
   p_time_range text DEFAULT 'week',
   p_metric text DEFAULT 'tokens',

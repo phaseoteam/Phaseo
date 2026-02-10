@@ -23,9 +23,7 @@ func TestSmokeChat(t *testing.T) {
 
 	body := map[string]any{
 		"model": "openai/gpt-5-nano",
-		"messages": []map[string]string{
-			{"role": "user", "content": "Hi"},
-		},
+		"input": "Hi",
 	}
 
 	raw, err := client.Request("POST", "/responses", nil, nil, body)

@@ -3,11 +3,9 @@ alter table public.credit_ledger
     add column if not exists refund_claim_reason text,
     add column if not exists refund_claimed_at timestamptz,
     add column if not exists refund_claimed_by_user_id uuid;
-
 create index if not exists credit_ledger_refund_claim_state_idx
     on public.credit_ledger (refund_claim_state)
     where ref_type = 'Stripe_Payment_Intent';
-
 create or replace function public.stripe_claim_self_serve_refund(
     p_team_id uuid,
     p_payment_intent_id text,
@@ -111,6 +109,5 @@ begin
     return query select true, null::text, v_purchase.amount_nanos, v_purchase.before_balance_nanos, v_purchase.event_time;
 end;
 $$;
-
 revoke all on function public.stripe_claim_self_serve_refund(uuid, text, uuid) from public;
 grant execute on function public.stripe_claim_self_serve_refund(uuid, text, uuid) to service_role;

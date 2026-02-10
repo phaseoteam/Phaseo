@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Stats Gateway"
+  short_description: "Build reliable AI Stats REST + SDK integrations."
+  default_prompt: "Use $ai-stats-gateway to implement or migrate this integration to AI Stats."

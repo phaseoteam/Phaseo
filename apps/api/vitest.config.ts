@@ -21,7 +21,7 @@ export default defineConfig({
         testTimeout: 60000,
         hookTimeout: 60000,
         maxConcurrency: 1,
-        include: ["tests/**/*.spec.ts", "src/**/*.test.ts"],
+        include: ["tests/**/*.spec.ts", "tests/**/*.test.ts", "src/**/*.test.ts"],
         setupFiles: [path.join(rootDir, "tests", "setup.ts")],
         reporters: [
             "default",

@@ -7,10 +7,8 @@ create table if not exists public.public_usage_weekly_models (
   tokens bigint not null,
   primary key (bucket, model_id)
 );
-
 create index if not exists idx_public_usage_weekly_models_bucket
   on public.public_usage_weekly_models (bucket);
-
 create table if not exists public.public_usage_weekly_providers (
   bucket timestamptz not null,
   provider text not null,
@@ -18,10 +16,8 @@ create table if not exists public.public_usage_weekly_providers (
   tokens bigint not null,
   primary key (bucket, provider)
 );
-
 create index if not exists idx_public_usage_weekly_providers_bucket
   on public.public_usage_weekly_providers (bucket);
-
 create table if not exists public.public_usage_weekly_organisations (
   bucket timestamptz not null,
   organisation_name text not null,
@@ -29,10 +25,8 @@ create table if not exists public.public_usage_weekly_organisations (
   tokens bigint not null,
   primary key (bucket, organisation_name)
 );
-
 create index if not exists idx_public_usage_weekly_organisations_bucket
   on public.public_usage_weekly_organisations (bucket);
-
 create or replace function public.refresh_public_usage_rollups(
   p_since timestamptz default now() - interval '1 year'
 )
@@ -79,6 +73,5 @@ begin
   group by 1, 2;
 end;
 $$;
-
 -- Initial backfill for the last year
 select public.refresh_public_usage_rollups();

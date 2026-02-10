@@ -130,6 +130,13 @@ export type GatewayCompletionsChoice = {
     message: {
         role: "assistant";
         content: string;
+        images?: Array<{
+            type: "image_url";
+            image_url: {
+                url: string;
+            };
+            mime_type?: string;
+        }>;
         tool_calls?: Array<{
             id: string;
             type: "function";

@@ -93,13 +93,14 @@ export type GatewayBindings = {
     MINIMAX_API_KEY?: string;
     MINIMAX_BASE_URL?: string;
     MISTRAL_API_KEY?: string;
+    MISTRAL_AI_API_KEY?: string;
     MISTRAL_BASE_URL?: string;
     ELEVENLABS_API_KEY?: string;
     ELEVENLABS_BASE_URL?: string;
     SUNO_API_KEY?: string;
     SUNO_BASE_URL?: string;
-    MOONSHOT_API_KEY?: string;
-    MOONSHOT_BASE_URL?: string;
+    MOONSHOT_AI_API_KEY?: string;
+    MOONSHOT_AI_BASE_URL?: string;
     MORPH_API_KEY?: string;
     MORPH_BASE_URL?: string;
     MORPHEUS_API_KEY?: string;
@@ -242,13 +243,14 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "MINIMAX_API_KEY",
     "MINIMAX_BASE_URL",
     "MISTRAL_API_KEY",
+    "MISTRAL_AI_API_KEY",
     "MISTRAL_BASE_URL",
     "ELEVENLABS_API_KEY",
     "ELEVENLABS_BASE_URL",
     "SUNO_API_KEY",
     "SUNO_BASE_URL",
-    "MOONSHOT_API_KEY",
-    "MOONSHOT_BASE_URL",
+    "MOONSHOT_AI_API_KEY",
+    "MOONSHOT_AI_BASE_URL",
     "MORPH_API_KEY",
     "MORPH_BASE_URL",
     "MORPHEUS_API_KEY",
@@ -319,7 +321,9 @@ function snapshotBindings(env: GatewayBindings): GatewayBindings {
     if (!snap.XAI_API_KEY && env.X_AI_API_KEY) {
         snap.XAI_API_KEY = `${env.X_AI_API_KEY}`;
     }
-
+    if (!snap.MISTRAL_API_KEY && env.MISTRAL_AI_API_KEY) {
+        snap.MISTRAL_API_KEY = `${env.MISTRAL_AI_API_KEY}`;
+    }
     return Object.freeze(snap) as GatewayBindings;
 }
 

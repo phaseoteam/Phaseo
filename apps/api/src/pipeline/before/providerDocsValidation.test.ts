@@ -6,6 +6,27 @@ function candidate(providerId: string): any {
 }
 
 describe("validateProviderDocsCompliance", () => {
+	it("does not reject out-of-range numeric params at preflight (normalized later)", () => {
+		const result = validateProviderDocsCompliance({
+			endpoint: "responses",
+			body: {
+				model: "anthropic/claude-sonnet-4",
+				temperature: 1.8,
+				input: "hello",
+			},
+			requestId: "req_test",
+			teamId: "team_test",
+			model: "anthropic/claude-sonnet-4",
+			providers: [candidate("anthropic")],
+			requestedParams: ["temperature"],
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.providers.map((p) => p.providerId)).toEqual(["anthropic"]);
+		}
+	});
+
 	it("keeps anthropic provider when service_tier is requested", () => {
 		const result = validateProviderDocsCompliance({
 			endpoint: "responses",

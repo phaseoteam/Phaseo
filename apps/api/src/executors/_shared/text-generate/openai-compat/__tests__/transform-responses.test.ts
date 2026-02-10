@@ -4,7 +4,7 @@
 
 // Unit tests for Responses API transformations
 import { describe, expect, it } from "vitest";
-import { openAIResponsesToIR } from "../transform";
+import { irToOpenAIResponses, openAIResponsesToIR } from "../transform";
 
 describe("openAIResponsesToIR", () => {
 	describe("Z.AI Reasoning Format", () => {
@@ -199,6 +199,45 @@ describe("openAIResponsesToIR", () => {
 			expect(ir.choices[0].message.content[0].text).toBe("Hello from OpenAI");
 			expect(ir.provider).toBe("openai");
 		});
+	});
+});
+
+describe("irToOpenAIResponses", () => {
+	it("preserves caller-provided OpenAI reasoning.summary", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "low",
+				summary: "detailed",
+			},
+		} as any, "gpt-5-nano", "openai");
+
+		expect(request.reasoning).toBeDefined();
+		expect(request.reasoning.effort).toBe("low");
+		expect(request.reasoning.summary).toBe("detailed");
+	});
+
+	it("defaults OpenAI reasoning.summary to auto when omitted", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "low",
+			},
+		} as any, "gpt-5-nano", "openai");
+
+		expect(request.reasoning).toBeDefined();
+		expect(request.reasoning.effort).toBe("low");
+		expect(request.reasoning.summary).toBe("auto");
 	});
 });
 

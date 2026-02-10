@@ -1,13 +1,18 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu } from "electron";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type {
   AppSettings,
   CommandRunRequest,
+  GitDiffRequest,
   SendMessageInput,
+  StudioMode,
   WorkspaceFile
 } from "@shared/types";
 import { generateAssistantReply } from "./chat";
 import { CommandRunner } from "./commands";
+import { applyGitPatch, getGitDiff, listGitStatus } from "./git";
+import { fetchProviderModels } from "./providers";
 import { StudioStore } from "./store";
 import {
   listWorkspaceFiles,
@@ -20,6 +25,14 @@ let mainWindow: BrowserWindow | null = null;
 let store: StudioStore;
 
 const commandRunner = new CommandRunner();
+const appDataPath = join(app.getPath("appData"), "AI Stats Desktop Studio");
+const sessionDataPath = join(appDataPath, "session-data");
+
+mkdirSync(sessionDataPath, { recursive: true });
+app.setPath("userData", appDataPath);
+app.setPath("sessionData", sessionDataPath);
+app.commandLine.appendSwitch("disable-gpu-shader-disk-cache");
+app.commandLine.appendSwitch("disk-cache-dir", join(sessionDataPath, "cache"));
 
 function chunkText(text: string, chunkSize = 48): string[] {
   const chunks: string[] = [];
@@ -39,27 +52,78 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function resolveProviderAndModel(settings: AppSettings, mode: StudioMode) {
+  const selection = mode === "code" ? settings.codeSelection : settings.chatSelection;
+  const provider = settings.providers.find((item) => item.id === selection.providerId) ?? settings.providers[0];
+
+  if (!provider) {
+    throw new Error("No providers configured. Add a provider in the sidebar settings.");
+  }
+
+  const model = provider.models.includes(selection.model)
+    ? selection.model
+    : provider.defaultModel || provider.models[0] || "";
+
+  if (!model) {
+    throw new Error(`Provider \"${provider.name}\" has no configured models.`);
+  }
+
+  return {
+    provider,
+    model
+  };
+}
+
 async function createMainWindow(): Promise<void> {
+  const preloadMjs = join(__dirname, "../preload/index.mjs");
+  const preloadPath = existsSync(preloadMjs) ? preloadMjs : join(__dirname, "../preload/index.js");
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 920,
     minWidth: 1024,
     minHeight: 700,
     backgroundColor: "#0c1119",
+    autoHideMenuBar: true,
     webPreferences: {
-      preload: join(__dirname, "../preload/index.js"),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false
     }
   });
 
-  const devServerUrl = process.env.VITE_DEV_SERVER_URL;
-  if (devServerUrl) {
-    await mainWindow.loadURL(devServerUrl);
-  } else {
-    await mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+  const devServerUrl = process.env.ELECTRON_RENDERER_URL;
+  const loadRenderer = async () => {
+    if (devServerUrl) {
+      await mainWindow?.loadURL(devServerUrl);
+      return;
+    }
+
+    await mainWindow?.loadFile(join(__dirname, "../renderer/index.html"));
+  };
+
+  mainWindow.webContents.on("did-finish-load", () => {
+    console.info("[desktop-studio] renderer loaded");
+  });
+
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(
+      `[desktop-studio] renderer failed to load (${errorCode}) ${errorDescription}: ${validatedURL}`
+    );
+  });
+
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    console.error("[desktop-studio] renderer process gone", details);
+  });
+
+  if (process.platform === "win32" || process.platform === "linux") {
+    Menu.setApplicationMenu(null);
+    mainWindow.removeMenu();
+    mainWindow.setMenuBarVisibility(false);
   }
+
+  await loadRenderer();
 
   mainWindow.on("closed", () => {
     mainWindow = null;
@@ -79,22 +143,17 @@ function registerIpcHandlers(): void {
 
   ipcMain.handle("chat:send", async (_event, input: SendMessageInput) => {
     const userMessage = store.addMessage(input.sessionId, "user", input.content);
-    const assistantMessage = store.addMessage(
-      input.sessionId,
-      "assistant",
-      "",
-      store.getSettings().openAiModel,
-      "streaming"
-    );
+
+    const { provider, model } = resolveProviderAndModel(store.getSettings(), input.mode);
+    const assistantMessage = store.addMessage(input.sessionId, "assistant", "", model, "streaming");
 
     void (async () => {
       try {
-        const settings = store.getSettings();
         const conversation = store
           .listMessages(input.sessionId)
           .filter((message) => message.id !== assistantMessage.id);
 
-        const response = await generateAssistantReply(settings, conversation);
+        const response = await generateAssistantReply(provider, model, conversation);
         for (const chunk of chunkText(response.content)) {
           store.appendToMessage(assistantMessage.id, chunk);
           emit("chat:chunk", {
@@ -131,6 +190,14 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle("settings:update", (_event, settings: Partial<AppSettings>) => store.updateSettings(settings));
+  ipcMain.handle("provider:fetch-models", async (_event, providerId: string) => {
+    const provider = store.getSettings().providers.find((item) => item.id === providerId);
+    if (!provider) {
+      throw new Error("Provider not found.");
+    }
+
+    return fetchProviderModels(provider);
+  });
 
   ipcMain.handle("workspace:pick", async () => {
     const path = await pickWorkspaceFolder();
@@ -168,6 +235,16 @@ function registerIpcHandlers(): void {
   ipcMain.handle("command:stop", (_event, runId: string) => {
     commandRunner.stop(runId);
   });
+
+  ipcMain.handle("git:status", (_event, workspacePath: string) => listGitStatus(workspacePath));
+
+  ipcMain.handle("git:diff", (_event, request: GitDiffRequest) =>
+    getGitDiff(request.workspacePath, request.relativePath)
+  );
+
+  ipcMain.handle("git:apply-patch", (_event, payload: { workspacePath: string; patch: string }) =>
+    applyGitPatch(payload.workspacePath, payload.patch)
+  );
 }
 
 app.whenReady().then(async () => {

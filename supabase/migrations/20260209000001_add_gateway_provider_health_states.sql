@@ -17,9 +17,7 @@ create table if not exists public.gateway_provider_health_states (
   constraint gateway_provider_health_states_breaker_state_chk
     check (breaker_state in ('closed', 'open', 'half_open'))
 );
-
 create index if not exists gateway_provider_health_states_provider_updated_idx
   on public.gateway_provider_health_states (provider_id, updated_at desc);
-
 create index if not exists gateway_provider_health_states_deranked_idx
   on public.gateway_provider_health_states (provider_id, is_deranked, updated_at desc);

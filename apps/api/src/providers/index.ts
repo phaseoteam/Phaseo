@@ -58,12 +58,11 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     mancer: createOpenAICompatibleAdapter("mancer"),
     minimax: createOpenAICompatibleAdapter("minimax"),
     "minimax-lightning": createOpenAICompatibleAdapter("minimax-lightning"),
-    moonshotai: createOpenAICompatibleAdapter("moonshotai"),
     "moonshot-ai-turbo": createOpenAICompatibleAdapter("moonshot-ai-turbo"),
     morph: createOpenAICompatibleAdapter("morph"),
     "z-ai": createOpenAICompatibleAdapter("z-ai"),
     zai: createOpenAICompatibleAdapter("zai"),
-    "moonshot-ai": createOpenAICompatibleAdapter("moonshotai"), // Alias for database naming
+    "moonshot-ai": createOpenAICompatibleAdapter("moonshot-ai"),
     novitaai: createOpenAICompatibleAdapter("novitaai"),
     parasail: createOpenAICompatibleAdapter("parasail"),
     phala: createOpenAICompatibleAdapter("phala"),
@@ -172,6 +171,11 @@ export function allProviderNames(): string[] {
 export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdapter | null {
     const override = ADAPTERS_BY_CAPABILITY[endpoint]?.[providerId];
     return override ?? ADAPTERS[providerId] ?? null;
+}
+
+// Backward-compat shim for legacy tests/tools that resolve adapters by provider only.
+export function adapterById(providerId: string): ProviderAdapter | null {
+    return ADAPTERS[providerId] ?? null;
 }
 
 
