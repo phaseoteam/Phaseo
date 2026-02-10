@@ -17,19 +17,12 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import { Orb } from "@/components/ui/orb";
 import {
 	MediaPlayer,
+	MediaPlayerAudio,
 	MediaPlayerControls,
 	MediaPlayerControlsOverlay,
 	MediaPlayerDownload,
@@ -60,6 +53,7 @@ import type {
 } from "@/lib/indexeddb/chats";
 import {
 	Brain,
+	Check,
 	ChevronLeft,
 	ChevronRight,
 	Copy,
@@ -140,6 +134,46 @@ function extensionForAudioMimeType(mimeType: string) {
 	return "webm";
 }
 
+function extensionForMimeType(mimeType: string) {
+	const normalized = mimeType.toLowerCase();
+	if (normalized.includes("png")) return "png";
+	if (normalized.includes("jpeg") || normalized.includes("jpg")) return "jpg";
+	if (normalized.includes("webp")) return "webp";
+	if (normalized.includes("gif")) return "gif";
+	if (normalized.includes("mp4")) return "mp4";
+	if (normalized.includes("webm")) return "webm";
+	if (normalized.includes("ogg")) return "ogg";
+	if (normalized.includes("mpeg")) return "mp3";
+	if (normalized.includes("wav")) return "wav";
+	return "bin";
+}
+
+function normalizeClipboardFiles(files: File[]) {
+	return files.map((file, index) => {
+		if (file.name && file.name.trim()) return file;
+		const mimeType = file.type || "application/octet-stream";
+		const extension = extensionForMimeType(mimeType);
+		const category = mimeType.split("/")[0] || "file";
+		return new File([file], `pasted-${category}-${Date.now()}-${index}.${extension}`, {
+			type: mimeType,
+		});
+	});
+}
+
+function extractClipboardFiles(clipboardData: DataTransfer | null) {
+	if (!clipboardData) return [];
+	const files: File[] = [];
+	for (const item of Array.from(clipboardData.items ?? [])) {
+		if (item.kind !== "file") continue;
+		const file = item.getAsFile();
+		if (file) files.push(file);
+	}
+	if (!files.length && clipboardData.files?.length) {
+		files.push(...Array.from(clipboardData.files));
+	}
+	return normalizeClipboardFiles(files);
+}
+
 function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
 	return org || "ai-stats";
@@ -157,10 +191,6 @@ function buildModelLink(modelId: string) {
 	return `/models/${org}/${modelSlug}`;
 }
 
-function escapeRegExp(value: string) {
-	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function extractGeneratedVideoUrl(content: string): string | null {
 	const markdownMatch = content.match(
 		/\[[^\]]*(generated video|open generated video|video result|open result)[^\]]*\]\((https?:\/\/[^)\s]+)\)/i,
@@ -175,12 +205,70 @@ function extractGeneratedVideoUrl(content: string): string | null {
 	return null;
 }
 
-function stripMarkdownLink(content: string, url: string): string {
-	const pattern = new RegExp(
-		`\\[[^\\]]*\\]\\(${escapeRegExp(url)}\\)`,
-		"i",
+function extractGeneratedAudioUrl(content: string): string | null {
+	const markdownMatch = content.match(
+		/\[[^\]]*(generated audio|open generated audio|generated music|open generated music|music result|audio result|open result)[^\]]*\]\((https?:\/\/[^)\s]+)\)/i,
 	);
-	return content.replace(pattern, "").trim();
+	if (markdownMatch?.[2]) return markdownMatch[2];
+
+	const directUrlMatch = content.match(
+		/(https?:\/\/[^\s)]+?\.(mp3|wav|ogg|m4a|aac|flac|opus|mpga)(\?[^\s)]*)?)/i,
+	);
+	if (directUrlMatch?.[1]) return directUrlMatch[1];
+
+	return null;
+}
+
+function extractGeneratedImageUrl(content: string): string | null {
+	const markdownImageMatch = content.match(/!\[[^\]]*\]\(([^)\s]+)\)/i);
+	if (markdownImageMatch?.[1]) return markdownImageMatch[1];
+
+	const markdownLinkMatch = content.match(
+		/\[[^\]]*(generated image|open generated image|image result|open result)[^\]]*\]\((https?:\/\/[^)\s]+)\)/i,
+	);
+	if (markdownLinkMatch?.[2]) return markdownLinkMatch[2];
+
+	const directUrlMatch = content.match(
+		/(https?:\/\/[^\s)]+?\.(png|jpe?g|webp|gif)(\?[^\s)]*)?)/i,
+	);
+	if (directUrlMatch?.[1]) return directUrlMatch[1];
+
+	return null;
+}
+
+function inferAudioMimeType(url: string) {
+	const normalized = url.toLowerCase();
+	if (normalized.includes(".wav")) return "audio/wav";
+	if (normalized.includes(".ogg")) return "audio/ogg";
+	if (normalized.includes(".m4a")) return "audio/mp4";
+	if (normalized.includes(".aac")) return "audio/aac";
+	if (normalized.includes(".flac")) return "audio/flac";
+	if (normalized.includes(".opus")) return "audio/opus";
+	return "audio/mpeg";
+}
+
+function stripMarkdownLink(content: string, url: string): string {
+	if (!content || !url) return content.trim();
+	const target = url.trim();
+	if (!target) return content.trim();
+
+	// Avoid dynamic regex built from huge data URLs (e.g. base64 images).
+	// Match markdown links statically, then compare captured URL literally.
+	const withoutMarkdown = content.replace(
+		/!?\[[^\]]*\]\(([^)\s]+)\)/g,
+		(fullMatch, matchedUrl: string) =>
+			matchedUrl === target ? "" : fullMatch,
+	);
+	if (withoutMarkdown !== content) {
+		return withoutMarkdown.trim();
+	}
+
+	// Fallback for plain URL occurrences.
+	if (content.includes(target)) {
+		return content.split(target).join("").trim();
+	}
+
+	return content.trim();
 }
 
 function ensureVariants(message: ChatMessage) {
@@ -197,6 +285,64 @@ function ensureVariants(message: ChatMessage) {
 	];
 }
 
+type InlineAttachmentPreview = {
+	name: string;
+	mimeType: string | undefined;
+	dataUrl: string;
+	isImage: boolean;
+	isAudio: boolean;
+	isVideo: boolean;
+};
+
+const ATTACHMENT_PLACEHOLDER_PATTERN = /^\[(Attachment|Attachments)\]/i;
+
+function getInlineAttachmentPreviewsFromMeta(
+	meta: ChatMessage["meta"],
+): InlineAttachmentPreview[] {
+	if (!meta || typeof meta !== "object") return [];
+	const previews = (meta as Record<string, unknown>).attachment_previews;
+	if (!Array.isArray(previews)) return [];
+	return previews
+		.map((entry) => {
+			if (!entry || typeof entry !== "object") return null;
+			const item = entry as Record<string, unknown>;
+			const dataUrl =
+				typeof item.dataUrl === "string" ? item.dataUrl : null;
+			if (!dataUrl) return null;
+			const mimeType =
+				typeof item.mimeType === "string" && item.mimeType.trim()
+					? item.mimeType
+					: dataUrl.startsWith("data:")
+						? (dataUrl.slice(5).split(";")[0] ?? undefined)
+						: undefined;
+			const isImage =
+				(typeof item.isImage === "boolean" && item.isImage) ||
+				Boolean(mimeType?.startsWith("image/")) ||
+				dataUrl.startsWith("data:image/");
+			const isAudio =
+				(typeof item.isAudio === "boolean" && item.isAudio) ||
+				Boolean(mimeType?.startsWith("audio/")) ||
+				dataUrl.startsWith("data:audio/");
+			const isVideo =
+				(typeof item.isVideo === "boolean" && item.isVideo) ||
+				Boolean(mimeType?.startsWith("video/")) ||
+				dataUrl.startsWith("data:video/");
+			if (!isImage && !isAudio && !isVideo) return null;
+			return {
+				name:
+					typeof item.name === "string" && item.name.trim()
+						? item.name
+						: "image",
+				mimeType,
+				dataUrl,
+				isImage,
+				isAudio,
+				isVideo,
+			} satisfies InlineAttachmentPreview;
+		})
+		.filter((entry): entry is InlineAttachmentPreview => Boolean(entry));
+}
+
 const SAMPLE_QUESTIONS = [
 	"Why do we get bugs in production but not locally?",
 	"What is the best way to handle errors in async code?",
@@ -208,6 +354,19 @@ const SAMPLE_QUESTIONS = [
 	"What's the cleanest way to handle null and undefined?",
 	"Why did my API call return 403 when it worked yesterday?",
 	"How do I debug code that only fails in production?",
+];
+
+const REASONING_OPTIONS: Array<{
+	value: "off" | NonNullable<ChatSettings["reasoningEffort"]>;
+	label: string;
+}> = [
+	{ value: "off", label: "Off" },
+	{ value: "none", label: "None" },
+	{ value: "minimal", label: "Minimal" },
+	{ value: "low", label: "Low" },
+	{ value: "medium", label: "Medium" },
+	{ value: "high", label: "High" },
+	{ value: "xhigh", label: "X-High" },
 ];
 
 function getRandomPlaceholder() {
@@ -255,6 +414,7 @@ export function ChatConversation({
 	const [recordingSupported, setRecordingSupported] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
 	const [isStartingRecording, setIsStartingRecording] = useState(false);
+	const [reasoningPickerOpen, setReasoningPickerOpen] = useState(false);
 	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 	const mediaStreamRef = useRef<MediaStream | null>(null);
 	const recordingChunksRef = useRef<Blob[]>([]);
@@ -263,6 +423,17 @@ export function ChatConversation({
 	const placeholder = useMemo(() => {
 		return getRandomPlaceholder();
 	}, [activeThread?.id]);
+	const reasoningSelection: "off" | NonNullable<ChatSettings["reasoningEffort"]> =
+		reasoningEnabled ? (reasoningEffort ?? "medium") : "off";
+	const attachmentPreviewUrls = useMemo(
+		() =>
+			attachments.map((file) =>
+				file.type.startsWith("image/")
+					? URL.createObjectURL(file)
+					: null,
+			),
+		[attachments],
+	);
 
 	const latestMessageContent =
 		activeThread?.messages[activeThread.messages.length - 1]?.content ?? "";
@@ -395,6 +566,14 @@ export function ChatConversation({
 	}, []);
 
 	useEffect(() => {
+		return () => {
+			for (const url of attachmentPreviewUrls) {
+				if (url) URL.revokeObjectURL(url);
+			}
+		};
+	}, [attachmentPreviewUrls]);
+
+	useEffect(() => {
 		if (!presetPrompt) return;
 		if (appliedPresetRef.current === presetPrompt) return;
 		setComposer(presetPrompt);
@@ -438,21 +617,43 @@ export function ChatConversation({
 				),
 			);
 			if (overlayOpen) return;
-			if (
+			const pastedFiles = extractClipboardFiles(event.clipboardData ?? null);
+			const pastedText = event.clipboardData?.getData("text") ?? "";
+			const isEditableTarget = Boolean(
 				event.target &&
-				(event.target as HTMLElement).closest(
-					"input, textarea, [contenteditable='true']",
-				)
+					(event.target as HTMLElement).closest(
+						"input, textarea, [contenteditable='true']",
+					),
+			);
+			if (
+				isEditableTarget &&
+				pastedFiles.length === 0
 			) {
 				return;
 			}
-			const text = event.clipboardData?.getData("text") ?? "";
-			if (!text) return;
-			const textarea = textareaRef.current;
-			if (!textarea) return;
-			textarea.focus();
-			setComposer((prev) => `${prev}${text}`);
-			event.preventDefault();
+			if (!pastedFiles.length && !pastedText) return;
+			if (pastedFiles.length > 0) {
+				setAttachments((prev) => prev.concat(pastedFiles));
+			}
+			if (pastedText) {
+				if (isEditableTarget) {
+					const textarea = textareaRef.current;
+					if (textarea) {
+						textarea.focus();
+						setComposer((prev) => `${prev}${pastedText}`);
+					}
+				} else {
+					const textarea = textareaRef.current;
+					if (!textarea) return;
+					textarea.focus();
+					setComposer((prev) => `${prev}${pastedText}`);
+				}
+			} else if (!isEditableTarget) {
+				textareaRef.current?.focus();
+			}
+			if (!isEditableTarget || pastedFiles.length > 0) {
+				event.preventDefault();
+			}
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		window.addEventListener("paste", handlePaste);
@@ -570,8 +771,21 @@ export function ChatConversation({
 			const activeVariant = variants[activeVariantIndex] ?? variants[0];
 			const content = activeVariant?.content ?? message.content;
 			const videoUrl = isUser ? null : extractGeneratedVideoUrl(content);
-			const contentWithoutVideoLink =
-				videoUrl ? stripMarkdownLink(content, videoUrl) : content;
+			const contentWithoutVideoLink = videoUrl
+				? stripMarkdownLink(content, videoUrl)
+				: content;
+			const audioUrl = isUser
+				? null
+				: extractGeneratedAudioUrl(contentWithoutVideoLink);
+			const contentWithoutAudioLink = audioUrl
+				? stripMarkdownLink(contentWithoutVideoLink, audioUrl)
+				: contentWithoutVideoLink;
+			const imageUrl = isUser
+				? null
+				: extractGeneratedImageUrl(contentWithoutAudioLink);
+			const contentWithoutMediaLinks = imageUrl
+				? stripMarkdownLink(contentWithoutAudioLink, imageUrl)
+				: contentWithoutAudioLink;
 			const reasoningText =
 				(activeVariant?.meta as any)?.reasoning_text ??
 				(activeVariant?.meta as any)?.reasoning ??
@@ -584,6 +798,24 @@ export function ChatConversation({
 			const orgName = orgNameById[orgId] ?? orgId;
 			const modelLink = buildModelLink(modelId);
 			const isEditing = editingId === message.id;
+			const userInlineAttachmentPreviews = isUser
+				? getInlineAttachmentPreviewsFromMeta(message.meta)
+				: [];
+			const userImageAttachmentPreviews = userInlineAttachmentPreviews.filter(
+				(attachment) => attachment.isImage,
+			);
+			const userAudioAttachmentPreviews = userInlineAttachmentPreviews.filter(
+				(attachment) => attachment.isAudio,
+			);
+			const userVideoAttachmentPreviews = userInlineAttachmentPreviews.filter(
+				(attachment) => attachment.isVideo,
+			);
+			const hideAttachmentPlaceholderText =
+				isUser &&
+				userInlineAttachmentPreviews.length > 0 &&
+				ATTACHMENT_PLACEHOLDER_PATTERN.test(
+					message.content.trim(),
+				);
 			const hasAccent = Boolean(accentColor);
 			const userBubbleStyle =
 				isUser && hasAccent
@@ -664,7 +896,100 @@ export function ChatConversation({
 									</div>
 								</div>
 							) : (
-								message.content
+								<div className="grid gap-2">
+									{hideAttachmentPlaceholderText ? null : (
+										<span className="whitespace-pre-wrap">
+											{message.content}
+										</span>
+									)}
+									{userImageAttachmentPreviews.length ? (
+										<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+											{userImageAttachmentPreviews.map((attachment) => (
+												<img
+													key={`${message.id}-${attachment.dataUrl}`}
+													src={attachment.dataUrl}
+													alt={attachment.name}
+													className="max-h-[360px] w-auto max-w-full rounded-lg border border-border object-contain"
+													loading="lazy"
+												/>
+											))}
+										</div>
+									) : null}
+									{userAudioAttachmentPreviews.length ? (
+										<div className="grid gap-2">
+											{userAudioAttachmentPreviews.map((attachment) => (
+												<MediaPlayer
+													key={`${message.id}-${attachment.dataUrl}`}
+													className="w-full"
+												>
+													<MediaPlayerAudio>
+														<source
+															src={attachment.dataUrl}
+															type={
+																attachment.mimeType ||
+																"audio/mpeg"
+															}
+														/>
+													</MediaPlayerAudio>
+													<MediaPlayerLoading />
+													<MediaPlayerError />
+													<MediaPlayerVolumeIndicator />
+													<MediaPlayerControls>
+														<MediaPlayerControlsOverlay />
+														<MediaPlayerSeek />
+														<div className="flex flex-wrap items-center gap-1">
+															<MediaPlayerPlay />
+															<MediaPlayerSeekBackward />
+															<MediaPlayerSeekForward />
+															<MediaPlayerVolume className="mr-1" />
+															<MediaPlayerTime className="mr-auto" />
+															<MediaPlayerDownload />
+															<MediaPlayerSettings />
+														</div>
+													</MediaPlayerControls>
+												</MediaPlayer>
+											))}
+										</div>
+									) : null}
+									{userVideoAttachmentPreviews.length ? (
+										<div className="grid gap-2">
+											{userVideoAttachmentPreviews.map((attachment) => (
+												<MediaPlayer
+													key={`${message.id}-${attachment.dataUrl}`}
+													className="w-full"
+												>
+													<MediaPlayerVideo>
+														<source
+															src={attachment.dataUrl}
+															type={
+																attachment.mimeType ||
+																"video/mp4"
+															}
+														/>
+													</MediaPlayerVideo>
+													<MediaPlayerLoading />
+													<MediaPlayerError />
+													<MediaPlayerVolumeIndicator />
+													<MediaPlayerControls>
+														<MediaPlayerControlsOverlay />
+														<MediaPlayerSeek />
+														<div className="flex flex-wrap items-center gap-1">
+															<MediaPlayerPlay />
+															<MediaPlayerSeekBackward />
+															<MediaPlayerSeekForward />
+															<MediaPlayerVolume className="mr-1" />
+															<MediaPlayerTime className="mr-auto" />
+															<MediaPlayerPiP />
+															<MediaPlayerFullscreen />
+															<MediaPlayerDownload />
+															<MediaPlayerSettings />
+														</div>
+													</MediaPlayerControls>
+												</MediaPlayer>
+											))}
+										</div>
+									) : null}
+								</div>
 							)
 						) : isSending &&
 						  (!content || content === "Generating...") ? (
@@ -688,8 +1013,61 @@ export function ChatConversation({
 										</ReasoningContent>
 									</Reasoning>
 								) : null}
-								{contentWithoutVideoLink ? (
-									<Streamdown>{contentWithoutVideoLink}</Streamdown>
+								{contentWithoutMediaLinks ? (
+									<Streamdown>{contentWithoutMediaLinks}</Streamdown>
+								) : null}
+								{imageUrl ? (
+									<div className="not-prose mt-3 grid gap-2">
+										<img
+											src={imageUrl}
+											alt="Generated image"
+											className="max-h-[420px] w-auto max-w-full rounded-lg border border-border object-contain"
+										/>
+										<Link
+											href={imageUrl}
+											target="_blank"
+											rel="noreferrer"
+											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+										>
+											Open image in new tab
+										</Link>
+									</div>
+								) : null}
+								{audioUrl ? (
+									<div className="not-prose mt-3 grid gap-2">
+										<MediaPlayer className="w-full">
+											<MediaPlayerAudio>
+												<source
+													src={audioUrl}
+													type={inferAudioMimeType(audioUrl)}
+												/>
+											</MediaPlayerAudio>
+											<MediaPlayerLoading />
+											<MediaPlayerError />
+											<MediaPlayerVolumeIndicator />
+											<MediaPlayerControls>
+												<MediaPlayerControlsOverlay />
+												<MediaPlayerSeek />
+												<div className="flex flex-wrap items-center gap-1">
+													<MediaPlayerPlay />
+													<MediaPlayerSeekBackward />
+													<MediaPlayerSeekForward />
+													<MediaPlayerVolume className="mr-1" />
+													<MediaPlayerTime className="mr-auto" />
+													<MediaPlayerDownload />
+													<MediaPlayerSettings />
+												</div>
+											</MediaPlayerControls>
+										</MediaPlayer>
+										<Link
+											href={audioUrl}
+											target="_blank"
+											rel="noreferrer"
+											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+										>
+											Open audio in new tab
+										</Link>
+									</div>
 								) : null}
 								{videoUrl ? (
 									<div className="not-prose mt-3 grid gap-2">
@@ -976,6 +1354,20 @@ export function ChatConversation({
 		totalTokens,
 	]);
 
+	const applyReasoningSelection = useCallback(
+		(value: "off" | NonNullable<ChatSettings["reasoningEffort"]>) => {
+			if (value === "off") {
+				onReasoningEnabledChange?.(false);
+				setReasoningPickerOpen(false);
+				return;
+			}
+			onReasoningEnabledChange?.(true);
+			onReasoningEffortChange?.(value);
+			setReasoningPickerOpen(false);
+		},
+		[onReasoningEffortChange, onReasoningEnabledChange],
+	);
+
 	const handleSubmit = () => {
 		const text = composer.trim();
 		if (!text && attachments.length === 0) return;
@@ -1020,15 +1412,11 @@ export function ChatConversation({
 									onClick={toggleRecording}
 									disabled={isStartingRecording}
 									aria-label="Stop recording"
-									className="relative h-14 w-14 shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+									className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
 								>
-									<Orb
-										agentState="listening"
-										className="h-full w-full"
-										colors={["#8BB8FF", "#5E8DD6"]}
-									/>
-									<span className="pointer-events-none absolute inset-0 flex items-center justify-center text-primary-foreground">
-										<Square className="h-4 w-4 fill-current text-foreground/85" />
+									<span className="pointer-events-none absolute inset-0 rounded-full bg-destructive/10 animate-pulse" />
+									<span className="pointer-events-none relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-destructive/20">
+										<Square className="h-4 w-4 fill-current" />
 									</span>
 								</button>
 								<div className="min-w-0">
@@ -1083,13 +1471,20 @@ export function ChatConversation({
 									<button
 										key={`${file.name}-${file.size}-${index}`}
 										type="button"
-										className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+										className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
 										onClick={() =>
 											setAttachments((prev) =>
 												prev.filter((_, i) => i !== index),
 											)
 										}
 									>
+										{attachmentPreviewUrls[index] ? (
+											<img
+												src={attachmentPreviewUrls[index] ?? undefined}
+												alt={file.name}
+												className="h-5 w-5 rounded object-cover shrink-0"
+											/>
+										) : null}
 										<span className="max-w-[180px] truncate">
 											{file.name}
 										</span>
@@ -1212,62 +1607,60 @@ export function ChatConversation({
 											: "Available in unified chat"}
 									</TooltipContent>
 								</Tooltip>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className={cn(
-												"h-8 w-8",
-												reasoningEnabled
-													? "bg-muted text-foreground"
-													: "",
-											)}
-											onClick={() =>
-												onReasoningEnabledChange?.(
-													!reasoningEnabled,
-												)
-											}
-										>
-											<Brain className="h-4 w-4" />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent>
-										{reasoningEnabled
-											? "Disable reasoning"
-											: "Enable reasoning"}
-									</TooltipContent>
-								</Tooltip>
-								{reasoningEnabled ? (
-									<Select
-										value={reasoningEffort ?? "medium"}
-										onValueChange={(value) =>
-											onReasoningEffortChange?.(
-												value as NonNullable<ChatSettings["reasoningEffort"]>,
-											)
-										}
+								<Popover
+									open={reasoningPickerOpen}
+									onOpenChange={setReasoningPickerOpen}
+								>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<PopoverTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon"
+													className={cn(
+														"h-8 w-8",
+														reasoningEnabled
+															? "bg-muted text-foreground"
+															: "",
+													)}
+												>
+													<Brain className="h-4 w-4" />
+												</Button>
+											</PopoverTrigger>
+										</TooltipTrigger>
+										<TooltipContent>
+											Reasoning:{" "}
+											{REASONING_OPTIONS.find(
+												(option) => option.value === reasoningSelection,
+											)?.label ?? "Off"}
+										</TooltipContent>
+									</Tooltip>
+									<PopoverContent
+										align="start"
+										className="w-40 p-1"
 									>
-										<SelectTrigger className="h-8 w-[104px]">
-											<SelectValue placeholder="Effort" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="none">None</SelectItem>
-											<SelectItem value="minimal">
-												Minimal
-											</SelectItem>
-											<SelectItem value="low">Low</SelectItem>
-											<SelectItem value="medium">
-												Medium
-											</SelectItem>
-											<SelectItem value="high">
-												High
-											</SelectItem>
-											<SelectItem value="xhigh">
-												X-High
-											</SelectItem>
-										</SelectContent>
-									</Select>
-								) : null}
+										<div className="grid gap-0.5">
+											{REASONING_OPTIONS.map((option) => (
+												<Button
+													key={option.value}
+													type="button"
+													variant="ghost"
+													className="h-8 justify-between px-2 text-xs"
+													onClick={() =>
+														applyReasoningSelection(
+															option.value,
+														)
+													}
+												>
+													<span>{option.label}</span>
+													{reasoningSelection === option.value ? (
+														<Check className="h-3.5 w-3.5" />
+													) : null}
+												</Button>
+											))}
+										</div>
+									</PopoverContent>
+								</Popover>
 							</div>
 							<Button
 								size="icon"
