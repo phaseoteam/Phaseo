@@ -378,15 +378,16 @@ function geminiToIR(
 
 		if (candidate.content?.parts) {
 			for (const part of candidate.content.parts) {
+				const inlineData = normalizeGeminiInlineData(part);
 				if (part.text) {
 					contentParts.push({ type: "text", text: part.text });
-				} else if (part.inline_data) {
+				} else if (inlineData?.data) {
 					contentParts.push({
 						type: "image",
 						source: "data",
-						data: part.inline_data.data,
-						mimeType: part.inline_data.mime_type,
-						thoughtSignature: part.inline_data.thought_signature,
+						data: inlineData.data,
+						mimeType: inlineData.mime_type,
+						thoughtSignature: inlineData.thought_signature,
 					});
 				} else if (part.functionCall) {
 					toolCalls.push({
@@ -446,6 +447,26 @@ function mapGeminiFinishReason(reason: string | undefined): IRChoice["finishReas
 		default:
 			return "stop";
 	}
+}
+
+function normalizeGeminiInlineData(part: any): {
+	data?: string;
+	mime_type?: string;
+	thought_signature?: string;
+} | null {
+	if (part?.inline_data && typeof part.inline_data === "object") {
+		return part.inline_data;
+	}
+	if (part?.inlineData && typeof part.inlineData === "object") {
+		return {
+			data: part.inlineData.data,
+			mime_type: part.inlineData.mimeType ?? part.inlineData.mime_type,
+			thought_signature:
+				part.inlineData.thoughtSignature ??
+				part.inlineData.thought_signature,
+		};
+	}
+	return null;
 }
 
 async function resolveVertexAccessToken(rawKey: string): Promise<string> {

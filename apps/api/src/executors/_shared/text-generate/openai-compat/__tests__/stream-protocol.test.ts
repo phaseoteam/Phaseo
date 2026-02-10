@@ -18,6 +18,26 @@ async function readStreamText(stream: ReadableStream<Uint8Array>): Promise<strin
 	return await new Response(stream).text();
 }
 
+function parseSseJsonFrames(text: string): any[] {
+	const out: any[] = [];
+	for (const frame of text.split(/\n\n/)) {
+		if (!frame.trim()) continue;
+		let data = "";
+		for (const line of frame.split(/\r?\n/)) {
+			if (line.startsWith("data:")) {
+				data += line.slice(5).trim();
+			}
+		}
+		if (!data || data === "[DONE]") continue;
+		try {
+			out.push(JSON.parse(data));
+		} catch {
+			// Ignore non-JSON frames in tests.
+		}
+	}
+	return out;
+}
+
 function baseArgs(overrides?: Record<string, any>): any {
 	return {
 		ir: {
@@ -164,7 +184,7 @@ describe("resolveStreamForProtocol", () => {
 			{
 				event: "response.function_call_arguments.delta",
 				data: {
-					item_id: "call_weather_1",
+					item_id: "fc_item_1",
 					output_index: 0,
 					delta: "{\"city\":\"SF\"}",
 				},
@@ -172,7 +192,7 @@ describe("resolveStreamForProtocol", () => {
 			{
 				event: "response.function_call_arguments.done",
 				data: {
-					item_id: "call_weather_1",
+					item_id: "fc_item_1",
 					output_index: 0,
 					name: "get_weather",
 					arguments: "{\"city\":\"SF\"}",
@@ -212,8 +232,14 @@ describe("resolveStreamForProtocol", () => {
 		);
 
 		const output = await readStreamText(stream);
-		expect(output).toContain("\"tool_calls\"");
-		expect(output).toContain("\"name\":\"get_weather\"");
+		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
+		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
+		expect(toolChunks.length).toBeGreaterThan(0);
+		for (const chunk of toolChunks) {
+			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
+			expect(tc?.id).toBe("call_weather_1");
+			expect(tc?.function?.name).toBe("get_weather");
+		}
 		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
 	});
 
@@ -280,5 +306,123 @@ describe("resolveStreamForProtocol", () => {
 		expect(output).toContain("event: response.function_call_arguments.delta");
 		expect(output).toContain("event: response.function_call_arguments.done");
 		expect(output).toContain("event: response.output_item.done");
+	});
+
+	it("normalizes MiniMax XML interleaving into reasoning + function_call events", async () => {
+		const upstream = makeSseResponse([
+			{
+				data: {
+					id: "chatcmpl_mm_1",
+					object: "chat.completion.chunk",
+					created: 1710000004,
+					model: "minimax-m2",
+					choices: [{
+						index: 0,
+						delta: {
+							content: "<think>plan the tool call</think>",
+						},
+					}],
+				},
+			},
+			{
+				data: {
+					id: "chatcmpl_mm_1",
+					object: "chat.completion.chunk",
+					created: 1710000004,
+					model: "minimax-m2",
+					choices: [{
+						index: 0,
+						delta: {
+							content: "<invoke name=\"get_weather\"><parameter name=\"city\">London</parameter></invoke>",
+						},
+						finish_reason: "stop",
+					}],
+					usage: { prompt_tokens: 4, completion_tokens: 3, total_tokens: 7 },
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				providerId: "minimax",
+				endpoint: "responses",
+				protocol: "openai.responses",
+				ir: {
+					messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+					model: "minimax/minimax-m2",
+					stream: true,
+					tools: [{ name: "get_weather", description: "Get weather", parameters: { type: "object" } }],
+					toolChoice: { name: "get_weather" },
+				},
+			}),
+			"chat",
+		);
+
+		const output = await readStreamText(stream);
+		expect(output).toContain("event: response.reasoning_text.delta");
+		expect(output).toContain("event: response.output_item.added");
+		expect(output).toContain("event: response.function_call_arguments.done");
+		expect(output).toContain("\"name\":\"get_weather\"");
+		expect(output).not.toContain("<invoke");
+	});
+
+	it("preserves image output when converting chat stream to responses stream", async () => {
+		const upstream = makeSseResponse([
+			{
+				data: {
+					id: "chatcmpl_img_1",
+					object: "chat.completion.chunk",
+					created: 1710000005,
+					model: "gemini-2.5-flash-image",
+					choices: [{ index: 0, delta: { content: "Done." } }],
+				},
+			},
+			{
+				data: {
+					id: "chatcmpl_img_1",
+					object: "chat.completion",
+					created: 1710000005,
+					model: "gemini-2.5-flash-image",
+					choices: [{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "Done.",
+							images: [{
+								type: "image_url",
+								image_url: { url: "data:image/png;base64,ZmFrZS1pbWFnZQ==" },
+							}],
+						},
+						finish_reason: "stop",
+					}],
+					usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				providerId: "google-ai-studio",
+				endpoint: "responses",
+				protocol: "openai.responses",
+			}),
+			"chat",
+		);
+
+		const output = await readStreamText(stream);
+		const frames = parseSseJsonFrames(output);
+		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const outputItems = completed?.response?.output ?? [];
+		const messageItem = outputItems.find((item: any) => item?.type === "message");
+		const imageBlock = Array.isArray(messageItem?.content)
+			? messageItem.content.find((part: any) => part?.type === "output_image")
+			: null;
+
+		expect(imageBlock).toBeDefined();
+		expect(typeof imageBlock?.image_url?.url === "string" || typeof imageBlock?.b64_json === "string").toBe(true);
 	});
 });

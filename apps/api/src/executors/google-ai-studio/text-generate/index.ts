@@ -17,6 +17,7 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../../google/shared/media";
+import { resolveGoogleModelCandidates } from "../../google/shared/model";
 
 /**
  * Transform IR request to Google Gemini format
@@ -143,6 +144,25 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 		} else if (ir.responseFormat.type === "json_schema") {
 			generationConfig.responseMimeType = "application/json";
 			generationConfig.responseSchema = ir.responseFormat.schema;
+
+			// Reinforce schema adherence for models that treat responseSchema as soft guidance.
+			const schemaText = (() => {
+				try {
+					return JSON.stringify(ir.responseFormat?.schema ?? {});
+				} catch {
+					return "";
+				}
+			})();
+			if (schemaText) {
+				const schemaInstruction =
+					`Return only valid JSON that matches this schema exactly: ${schemaText}. ` +
+					"Do not include markdown or any extra text.";
+				if (!systemInstruction) {
+					systemInstruction = { parts: [{ text: schemaInstruction }] };
+				} else if (Array.isArray(systemInstruction.parts)) {
+					systemInstruction.parts.push({ text: schemaInstruction });
+				}
+			}
 		}
 	}
 
@@ -211,6 +231,7 @@ function geminiToIR(
 		// Extract parts from candidate.content.parts
 		if (candidate.content?.parts) {
 			for (const part of candidate.content.parts) {
+				const inlineData = normalizeGeminiInlineData(part);
 				if (part.text) {
 					// Check if it's a reasoning part
 					if (part.thought) {
@@ -227,14 +248,14 @@ function geminiToIR(
 							text: part.text,
 						});
 					}
-				} else if (part.inline_data) {
+				} else if (inlineData?.data) {
 					// Image part (Nano Banana models)
 					contentParts.push({
 						type: "image",
 						source: "data",
-						data: part.inline_data.data,
-						mimeType: part.inline_data.mime_type,
-						thoughtSignature: part.inline_data.thought_signature,
+						data: inlineData.data,
+						mimeType: inlineData.mime_type,
+						thoughtSignature: inlineData.thought_signature,
 					});
 				} else if (part.functionCall) {
 					// Tool call
@@ -325,11 +346,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		return bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY;
 	});
 
-	// Determine model (must be in URL, not body)
-	const model = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
-
-	// Transform IR to Google format
-	const geminiRequest = await irToGemini(ir, model);
+	// Determine model candidates (must be in URL, not body)
+	const requestedModel = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
+	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
+	let model = modelCandidates[0] || "gemini-2.0-flash-exp";
 
 	// Google AI Studio base URL (allow env override for proxy/self-host routing)
 	const baseRoot = String(
@@ -337,30 +357,41 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		bindings.GOOGLE_BASE_URL ||
 		"https://generativelanguage.googleapis.com",
 	).replace(/\/+$/, "");
-	const baseUrl = /\/v1beta$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
-
-	// Determine endpoint based on streaming
-	const endpoint = ir.stream
-		? `${baseUrl}/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`
-		: `${baseUrl}/models/${encodeURIComponent(model)}:generateContent`;
+	const baseUrl = /\/v1(beta)?$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
 
 	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
-	const mappedRequest = (
-		meta.echoUpstreamRequest ||
-		meta.returnUpstreamRequest ||
-		meta.debug?.return_upstream_request ||
-		meta.debug?.trace
-	) ? JSON.stringify(geminiRequest) : undefined;
+
+	const makeEndpoint = (candidateModel: string) =>
+		ir.stream
+			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
+			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
 
 	try {
-		const response = await fetch(endpoint, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"x-goog-api-key": keyInfo.key,
-			},
-			body: JSON.stringify(geminiRequest),
-		});
+		const doRequest = async (candidateModel: string) => {
+			const requestBody = await irToGemini(ir, candidateModel);
+			const endpoint = makeEndpoint(candidateModel);
+			const response = await fetch(endpoint, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"x-goog-api-key": keyInfo.key,
+				},
+				body: JSON.stringify(requestBody),
+			});
+			return { candidateModel, requestBody, response };
+		};
+
+		const attempted = await doRequest(model);
+
+		model = attempted.candidateModel;
+		const geminiRequest = attempted.requestBody;
+		const response = attempted.response;
+		const mappedRequest = (
+			meta.echoUpstreamRequest ||
+			meta.returnUpstreamRequest ||
+			meta.debug?.return_upstream_request ||
+			meta.debug?.trace
+		) ? JSON.stringify(geminiRequest) : undefined;
 
 		if (!response.ok) {
 			return {
@@ -422,6 +453,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			},
 		};
 	} catch (error: any) {
+		const mappedRequest = (
+			meta.echoUpstreamRequest ||
+			meta.returnUpstreamRequest ||
+			meta.debug?.return_upstream_request ||
+			meta.debug?.trace
+		) ? JSON.stringify({ model }) : undefined;
 		return {
 			kind: "completed",
 			ir: undefined,
@@ -435,6 +472,26 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			mappedRequest,
 		};
 	}
+}
+
+function normalizeGeminiInlineData(part: any): {
+	data?: string;
+	mime_type?: string;
+	thought_signature?: string;
+} | null {
+	if (part?.inline_data && typeof part.inline_data === "object") {
+		return part.inline_data;
+	}
+	if (part?.inlineData && typeof part.inlineData === "object") {
+		return {
+			data: part.inlineData.data,
+			mime_type: part.inlineData.mimeType ?? part.inlineData.mime_type,
+			thought_signature:
+				part.inlineData.thoughtSignature ??
+				part.inlineData.thought_signature,
+		};
+	}
+	return null;
 }
 
 /**
@@ -519,6 +576,7 @@ export function transformStream(
 								// Accumulate content from parts
 								let content = "";
 								let reasoning = "";
+								const imageParts: IRContentPart[] = [];
 								const toolCalls: Array<{
 									index: number;
 									id?: string;
@@ -588,6 +646,17 @@ export function transformStream(
 												arguments: functionDelta.arguments,
 											});
 										}
+									} else {
+										const inlineData = normalizeGeminiInlineData(part);
+										if (inlineData?.data) {
+											imageParts.push({
+												type: "image",
+												source: "data",
+												data: inlineData.data,
+												mimeType: inlineData.mime_type,
+												thoughtSignature: inlineData.thought_signature,
+											} as any);
+										}
 									}
 								}
 
@@ -595,16 +664,20 @@ export function transformStream(
 								const delta: IRStreamDelta = {};
 								if (content) delta.content = content;
 								// Map reasoning to contentParts for IR
+								const deltaContentParts: any[] = [];
 								if (reasoning) {
-									// In streaming, we might not have the signature yet, but we'll pass the text
-									delta.contentParts = [{
+									// In streaming, we might not have the signature yet, but we'll pass the text.
+									deltaContentParts.push({
 										type: "reasoning_text",
 										text: reasoning
-									} as any];
+									} as any);
 								}
-								// Also support legacy reasoning_content field if needed by encoder?
-								// IRStreamDelta has 'contentParts'.
-								// But to be safe and match OpenAI output, we might want to put it in contentParts.
+								if (imageParts.length > 0) {
+									deltaContentParts.push(...imageParts);
+								}
+								if (deltaContentParts.length > 0) {
+									delta.contentParts = deltaContentParts;
+								}
 
 								let finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
 								if (finishReason === "stop" && toolCalls.length > 0) {
@@ -681,6 +754,18 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 					delta.reasoning_content = part.text;
 				} else if (part.type === "text") {
 					delta.content = (delta.content || "") + part.text;
+				} else if (part.type === "image") {
+					const imageUrl = part.source === "data"
+						? `data:${part.mimeType || "image/png"};base64,${part.data}`
+						: part.data;
+					if (!Array.isArray(delta.images)) {
+						delta.images = [];
+					}
+					delta.images.push({
+						type: "image_url",
+						image_url: { url: imageUrl },
+						...(part.mimeType ? { mime_type: part.mimeType } : {}),
+					});
 				}
 			}
 		}

@@ -110,4 +110,29 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("event: response.output_item.done");
 		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
 	});
+
+	it("emits image deltas when Gemini stream returns inlineData image parts", async () => {
+		const upstream = makeGeminiSseStream([
+			{
+				candidates: [{
+					index: 0,
+					content: {
+						parts: [{
+							inlineData: {
+								mimeType: "image/png",
+								data: "ZmFrZS1pbWFnZQ==",
+							},
+						}],
+					},
+					finishReason: "STOP",
+				}],
+			},
+		]);
+
+		const stream = transformStream(upstream, baseArgs());
+		const output = await readStreamText(stream);
+		expect(output).toContain("\"images\"");
+		expect(output).toContain("\"image_url\"");
+		expect(output).toContain("data:image/png;base64,ZmFrZS1pbWFnZQ==");
+	});
 });

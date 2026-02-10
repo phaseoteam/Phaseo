@@ -17,6 +17,7 @@ import { getBindings } from "@/runtime/env";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../shared/media";
+import { resolveGoogleModelCandidates } from "../shared/model";
 
 /**
  * Transform IR request to Google Gemini format
@@ -203,20 +204,21 @@ function geminiToIR(
 		// Extract parts from candidate.content.parts
 		if (candidate.content?.parts) {
 			for (const part of candidate.content.parts) {
+				const inlineData = normalizeGeminiInlineData(part);
 				if (part.text) {
 					// Regular text part
 					contentParts.push({
 						type: "text",
 						text: part.text,
 					});
-				} else if (part.inline_data) {
+				} else if (inlineData?.data) {
 					// Image part (Nano Banana models)
 					contentParts.push({
 						type: "image",
 						source: "data",
-						data: part.inline_data.data,
-						mimeType: part.inline_data.mime_type,
-						thoughtSignature: part.inline_data.thought_signature,
+						data: inlineData.data,
+						mimeType: inlineData.mime_type,
+						thoughtSignature: inlineData.thought_signature,
 					});
 				} else if (part.functionCall) {
 					// Tool call
@@ -303,39 +305,47 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		return bindings.GOOGLE_API_KEY || bindings.GOOGLE_AI_STUDIO_API_KEY;
 	});
 
-	// Determine model (must be in URL, not body)
-	const model = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
-
-	// Transform IR to Google format
-	const geminiRequest = await irToGemini(ir, model);
+	// Determine model candidates (must be in URL, not body)
+	const requestedModel = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
+	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
+	let model = modelCandidates[0] || "gemini-2.0-flash-exp";
 	const baseRoot = String(bindings.GOOGLE_BASE_URL || "https://generativelanguage.googleapis.com").replace(/\/+$/, "");
-	const baseUrl = /\/v1beta$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
-
-	// Determine endpoint based on streaming
-	// Note: We MUST append ?alt=sse for streaming to get Server-Sent Events
-	const endpoint = ir.stream
-		? `${baseUrl}/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`
-		: `${baseUrl}/models/${encodeURIComponent(model)}:generateContent`;
+	const baseUrl = /\/v1(beta)?$/i.test(baseRoot) ? baseRoot : `${baseRoot}/v1beta`;
 
 	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
-	const mappedRequest = (
-		meta.echoUpstreamRequest ||
-		meta.returnUpstreamRequest ||
-		meta.debug?.return_upstream_request ||
-		meta.debug?.trace
-	)
-		? JSON.stringify(geminiRequest)
-		: undefined;
+	const makeEndpoint = (candidateModel: string) =>
+		ir.stream
+			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
+			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
 
 	try {
-		const response = await fetch(endpoint, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"x-goog-api-key": keyInfo.key,
-			},
-			body: JSON.stringify(geminiRequest),
-		});
+		const doRequest = async (candidateModel: string) => {
+			const requestBody = await irToGemini(ir, candidateModel);
+			const endpoint = makeEndpoint(candidateModel);
+			const response = await fetch(endpoint, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"x-goog-api-key": keyInfo.key,
+				},
+				body: JSON.stringify(requestBody),
+			});
+			return { candidateModel, requestBody, response };
+		};
+
+		const attempted = await doRequest(model);
+
+		model = attempted.candidateModel;
+		const geminiRequest = attempted.requestBody;
+		const response = attempted.response;
+		const mappedRequest = (
+			meta.echoUpstreamRequest ||
+			meta.returnUpstreamRequest ||
+			meta.debug?.return_upstream_request ||
+			meta.debug?.trace
+		)
+			? JSON.stringify(geminiRequest)
+			: undefined;
 
 		if (!response.ok) {
 			return {
@@ -397,6 +407,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			},
 		};
 	} catch (error: any) {
+		const mappedRequest = (
+			meta.echoUpstreamRequest ||
+			meta.returnUpstreamRequest ||
+			meta.debug?.return_upstream_request ||
+			meta.debug?.trace
+		) ? JSON.stringify({ model }) : undefined;
 		return {
 			kind: "completed",
 			ir: undefined,
@@ -410,6 +426,26 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			mappedRequest,
 		};
 	}
+}
+
+function normalizeGeminiInlineData(part: any): {
+	data?: string;
+	mime_type?: string;
+	thought_signature?: string;
+} | null {
+	if (part?.inline_data && typeof part.inline_data === "object") {
+		return part.inline_data;
+	}
+	if (part?.inlineData && typeof part.inlineData === "object") {
+		return {
+			data: part.inlineData.data,
+			mime_type: part.inlineData.mimeType ?? part.inlineData.mime_type,
+			thought_signature:
+				part.inlineData.thoughtSignature ??
+				part.inlineData.thought_signature,
+		};
+	}
+	return null;
 }
 
 /**
@@ -482,22 +518,39 @@ export function transformStream(
 								// Accumulate content from parts
 								let content = "";
 								let reasoning = "";
+								const imageParts: any[] = [];
 								
 								for (const part of parts) {
+									const inlineData = normalizeGeminiInlineData(part);
 									if (part.text) {
 										if (part.thought) {
 											reasoning += part.text;
 										} else {
 											content += part.text;
 										}
+									} else if (inlineData?.data) {
+										imageParts.push({
+											type: "image",
+											source: "data",
+											data: inlineData.data,
+											mimeType: inlineData.mime_type,
+											thoughtSignature: inlineData.thought_signature,
+										});
 									}
 								}
 
 								// Construct delta
 								const delta: IRStreamDelta = {};
 								if (content) delta.content = content;
+								const deltaContentParts: any[] = [];
 								if (reasoning) {
-									delta.contentParts = [{ type: "reasoning_text", text: reasoning }];
+									deltaContentParts.push({ type: "reasoning_text", text: reasoning });
+								}
+								if (imageParts.length > 0) {
+									deltaContentParts.push(...imageParts);
+								}
+								if (deltaContentParts.length > 0) {
+									delta.contentParts = deltaContentParts as any;
 								}
 
 								const finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
@@ -566,6 +619,18 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 					delta.reasoning_content = part.text;
 				} else if (part.type === "text") {
 					delta.content = (delta.content || "") + part.text;
+				} else if (part.type === "image") {
+					const imageUrl = part.source === "data"
+						? `data:${part.mimeType || "image/png"};base64,${part.data}`
+						: part.data;
+					if (!Array.isArray(delta.images)) {
+						delta.images = [];
+					}
+					delta.images.push({
+						type: "image_url",
+						image_url: { url: imageUrl },
+						...(part.mimeType ? { mime_type: part.mimeType } : {}),
+					});
 				}
 			}
 		}

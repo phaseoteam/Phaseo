@@ -6,7 +6,7 @@
 // Transforms IR <-> OpenAI Chat Completions upstream format
 
 import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart } from "@core/ir";
-import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks";
+import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
 
@@ -75,7 +75,6 @@ export function irToOpenAIChat(
 	if (ir.topP !== undefined) request.top_p = ir.topP;
 
 	applyReasoningParams({ ir, request, providerId });
-	applyChatRequestQuirks({ ir, providerId, model, request });
 
 	// Tools
 	if (ir.tools && ir.tools.length > 0) {
@@ -98,6 +97,10 @@ export function irToOpenAIChat(
 				function: { name: ir.toolChoice.name },
 			};
 		}
+	}
+
+	if (ir.parallelToolCalls !== undefined) {
+		request.parallel_tool_calls = ir.parallelToolCalls;
 	}
 
 	// Response format
@@ -128,6 +131,9 @@ export function irToOpenAIChat(
 	if (ir.stop) request.stop = ir.stop;
 	if (ir.seed !== undefined) request.seed = ir.seed;
 	if (ir.userId !== undefined) request.user = ir.userId;
+
+	// Apply provider-specific request transformations after base params are set.
+	applyChatRequestQuirks({ ir, providerId, model, request });
 
 	return request;
 }
@@ -188,6 +194,66 @@ export function openAIChatToIR(
 		quirks.normalizeResponse({ response: json, ir: null as any });
 	}
 
+	const toInlineImagePart = (value: any): IRContentPart | null => {
+		if (!value || typeof value !== "object") return null;
+		const type = String(value.type ?? "").toLowerCase();
+		const isImageType =
+			type === "output_image" ||
+			type === "image" ||
+			type === "image_url" ||
+			type === "input_image";
+		if (!isImageType) return null;
+
+		const b64 =
+			typeof value.b64_json === "string"
+				? value.b64_json
+				: typeof value.data === "string"
+					? value.data
+					: null;
+		const mimeType =
+			typeof value.mime_type === "string"
+				? value.mime_type
+				: typeof value.mimeType === "string"
+					? value.mimeType
+					: undefined;
+
+		if (b64) {
+			return {
+				type: "image",
+				source: "data",
+				data: b64,
+				...(mimeType ? { mimeType } : {}),
+			} as IRContentPart;
+		}
+
+		const urlValue =
+			typeof value.image_url === "string"
+				? value.image_url
+				: typeof value.image_url?.url === "string"
+					? value.image_url.url
+					: typeof value.url === "string"
+						? value.url
+						: null;
+		if (!urlValue) return null;
+
+		return {
+			type: "image",
+			source: "url",
+			data: urlValue,
+			...(mimeType ? { mimeType } : {}),
+		} as IRContentPart;
+	};
+
+	const extractInlineImages = (value: any): IRContentPart[] => {
+		if (!Array.isArray(value)) return [];
+		const out: IRContentPart[] = [];
+		for (const part of value) {
+			const imagePart = toInlineImagePart(part);
+			if (imagePart) out.push(imagePart);
+		}
+		return out;
+	};
+
 	const extractChoiceContent = (content: any): string => {
 		if (typeof content === "string") return content;
 		if (Array.isArray(content)) {
@@ -214,7 +280,7 @@ export function openAIChatToIR(
 
 		if (choice.message?._contentParts && Array.isArray(choice.message._contentParts)) {
 			// Use the pre-parsed content parts directly
-			contentParts = choice.message._contentParts;
+			contentParts = [...choice.message._contentParts];
 		} else {
 			// Regular content processing
 			const rawContent = extractChoiceContent(choice.message?.content);
@@ -238,6 +304,8 @@ export function openAIChatToIR(
 				});
 			}
 		}
+		contentParts.push(...extractInlineImages(choice.message?.content));
+		contentParts.push(...extractInlineImages(choice.message?.images));
 
 		choices.push({
 			index: choice.index || 0,

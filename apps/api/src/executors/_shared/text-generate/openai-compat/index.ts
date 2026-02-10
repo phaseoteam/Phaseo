@@ -19,7 +19,9 @@ import {
 import { computeBill } from "@pipeline/pricing/engine";
 import { irToOpenAICompletions, openAICompletionsToIR } from "./transform-legacy";
 import { getProviderQuirks } from "./quirks";
+import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
 
@@ -35,7 +37,8 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = args.providerModelSlug ?? args.ir.model;
-	const route = resolveOpenAICompatRoute(args.providerId, modelForRouting);
+	const defaultRoute = resolveOpenAICompatRoute(args.providerId, modelForRouting);
+	const route = resolvePreferredRoute(args, defaultRoute);
 	const useResponses = route === "responses";
 	const isLegacyCompletions = route === "legacy_completions";
 	const endpoint = useResponses ? "/responses" : (isLegacyCompletions ? "/completions" : "/chat/completions");
@@ -271,6 +274,24 @@ export function resolveStreamForProtocol(
 	return res.body;
 }
 
+function resolvePreferredRoute(
+	args: ExecutorExecuteArgs,
+	defaultRoute: "responses" | "chat" | "legacy_completions",
+): "responses" | "chat" | "legacy_completions" {
+	// xAI compatibility currently has stricter /responses validation for structured output.
+	// Route structured requests via chat/completions for better interoperability.
+	if (
+		(args.providerId === "x-ai" || args.providerId === "xai") &&
+		defaultRoute === "responses" &&
+		args.ir?.responseFormat &&
+		args.ir.responseFormat.type !== "text"
+	) {
+		return "chat";
+	}
+
+	return defaultRoute;
+}
+
 function transformChatStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
@@ -339,8 +360,31 @@ function transformResponsesStreamToChat(
 	let nativeResponseId: string | null = null;
 	let created = Math.floor(Date.now() / 1000);
 	let finalResponse: any = null;
-	// Buffer tool calls across deltas (Responses API sends tool calls incrementally)
-	const toolBuffer = new Map<string, { arguments: string; name?: string; output_index: number }>();
+	// Buffer tool calls across deltas (Responses API sends tool calls incrementally).
+	// OpenAI often uses item_id (fc_*) in argument-delta events and call_id (call_*) in output-item events.
+	// We alias both to a canonical tool id (prefer call_id) so chat deltas stay consistent.
+	const toolBuffer = new Map<string, { arguments: string; name?: string; output_index: number; tool_index: number }>();
+	const toolAlias = new Map<string, string>();
+	const toolIndexById = new Map<string, number>();
+	let nextToolIndex = 0;
+
+	const ensureToolIndex = (id: string): number => {
+		const existing = toolIndexById.get(id);
+		if (typeof existing === "number") return existing;
+		const idx = nextToolIndex++;
+		toolIndexById.set(id, idx);
+		return idx;
+	};
+
+	const aliasToolId = (rawId: unknown, canonicalId: string) => {
+		if (typeof rawId !== "string" || !rawId) return;
+		toolAlias.set(rawId, canonicalId);
+	};
+
+	const canonicalToolId = (rawId: unknown): string | null => {
+		if (typeof rawId !== "string" || !rawId) return null;
+		return toolAlias.get(rawId) ?? rawId;
+	};
 
 	const emit = async (payload: any, controller: ReadableStreamDefaultController<Uint8Array>) => {
 		applyStreamQuirks(payload, state, args.providerId);
@@ -411,17 +455,22 @@ function transformResponsesStreamToChat(
 								}
 								break;
 							case "response.function_call_arguments.delta": {
-								const itemId = payload?.item_id;
-								if (!itemId) break;
-								const entry = toolBuffer.get(itemId) ?? { arguments: "", output_index: payload?.output_index ?? 0 };
+								const resolvedId = canonicalToolId(payload?.item_id);
+								if (!resolvedId) break;
+								const entry = toolBuffer.get(resolvedId) ?? {
+									arguments: "",
+									output_index: payload?.output_index ?? 0,
+									tool_index: ensureToolIndex(resolvedId),
+								};
 								if (typeof payload?.delta === "string") {
 									entry.arguments += payload.delta;
 								}
-								toolBuffer.set(itemId, entry);
+								toolBuffer.set(resolvedId, entry);
 								await emitDelta({
 									role: "assistant",
 									tool_calls: [{
-										id: itemId,
+										index: entry.tool_index,
+										id: resolvedId,
 										type: "function",
 										function: {
 											name: entry.name ?? "",
@@ -436,20 +485,31 @@ function transformResponsesStreamToChat(
 								const item = payload?.item;
 								const itemType = String(item?.type ?? "").toLowerCase();
 								if (itemType !== "function_call" && itemType !== "tool_call") break;
-								const itemId = item?.call_id ?? item?.id ?? payload?.item_id;
-								if (!itemId) break;
-								const entry = toolBuffer.get(itemId) ?? { arguments: "", output_index: payload?.output_index ?? 0 };
+								const canonicalId =
+									canonicalToolId(item?.call_id) ??
+									canonicalToolId(item?.id) ??
+									canonicalToolId(payload?.item_id);
+								if (!canonicalId) break;
+								aliasToolId(item?.call_id, canonicalId);
+								aliasToolId(item?.id, canonicalId);
+								aliasToolId(payload?.item_id, canonicalId);
+								const entry = toolBuffer.get(canonicalId) ?? {
+									arguments: "",
+									output_index: payload?.output_index ?? 0,
+									tool_index: ensureToolIndex(canonicalId),
+								};
 								if (typeof item?.name === "string") {
 									entry.name = item.name;
 								}
 								if (typeof item?.arguments === "string") {
 									entry.arguments = item.arguments;
 								}
-								toolBuffer.set(itemId, entry);
+								toolBuffer.set(canonicalId, entry);
 								await emitDelta({
 									role: "assistant",
 									tool_calls: [{
-										id: itemId,
+										index: entry.tool_index,
+										id: canonicalId,
 										type: "function",
 										function: {
 											name: entry.name ?? "",
@@ -460,20 +520,25 @@ function transformResponsesStreamToChat(
 								break;
 							}
 							case "response.function_call_arguments.done": {
-								const itemId = payload?.item_id;
-								if (!itemId) break;
-								const entry = toolBuffer.get(itemId) ?? { arguments: "", output_index: payload?.output_index ?? 0 };
+								const resolvedId = canonicalToolId(payload?.item_id);
+								if (!resolvedId) break;
+								const entry = toolBuffer.get(resolvedId) ?? {
+									arguments: "",
+									output_index: payload?.output_index ?? 0,
+									tool_index: ensureToolIndex(resolvedId),
+								};
 								if (typeof payload?.arguments === "string") {
 									entry.arguments = payload.arguments;
 								}
 								if (typeof payload?.name === "string") {
 									entry.name = payload.name;
 								}
-								toolBuffer.set(itemId, entry);
+								toolBuffer.set(resolvedId, entry);
 								await emitDelta({
 									role: "assistant",
 									tool_calls: [{
-										id: itemId,
+										index: entry.tool_index,
+										id: resolvedId,
 										type: "function",
 										function: {
 											name: entry.name ?? "",
@@ -561,6 +626,11 @@ function transformChatStreamToResponses(
 	let model = args.providerModelSlug ?? args.ir.model;
 	let finalResponse: any = null;
 	let nextOutputIndex = 0;
+	const isMiniMaxToolInterop =
+		(args.providerId === "minimax" || args.providerId === "minimax-lightning") &&
+		((Array.isArray(args.ir.tools) && args.ir.tools.length > 0) ||
+			typeof args.ir.toolChoice === "object" ||
+			args.ir.toolChoice === "required");
 
 	const choiceStates = new Map<number, ResponsesStreamChoiceState>();
 
@@ -704,13 +774,15 @@ function transformChatStreamToResponses(
 								const deltaContent = choice?.delta?.content;
 								if (typeof deltaContent === "string" && deltaContent.length > 0) {
 									entry.text += deltaContent;
-									entry.emittedText = true;
-									const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
-									await emitEvent("response.output_text.delta", {
-										delta: deltaContent,
-										output_index: outputIndex,
-										item_id: itemId,
-									}, controller);
+									if (!isMiniMaxToolInterop) {
+										entry.emittedText = true;
+										const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
+										await emitEvent("response.output_text.delta", {
+											delta: deltaContent,
+											output_index: outputIndex,
+											item_id: itemId,
+										}, controller);
+									}
 								}
 
 								const deltaReasoning = choice?.delta?.reasoning_content;
@@ -803,6 +875,26 @@ function transformChatStreamToResponses(
 				}
 
 				if (mode === "chat") {
+					// MiniMax can emit XML-style tool invocations (<invoke ...>) in text.
+					// For tool requests, parse text at the end so /responses stream emits canonical function_call events.
+					if (isMiniMaxToolInterop) {
+						for (const [choiceIndex, entry] of choiceStates.entries()) {
+							const parsed = parseMinimaxInterleavedText(entry.text);
+							entry.text = parsed.main;
+							if (entry.reasoning.length === 0 && parsed.reasoning.length > 0) {
+								entry.reasoning = parsed.reasoning.join("");
+							}
+							if (entry.toolCalls.size === 0 && parsed.toolCalls.length > 0) {
+								parsed.toolCalls.forEach((toolCall, toolIndex) => {
+									const tool = ensureToolCallState(choiceIndex, toolIndex, entry);
+									tool.name = toolCall.name;
+									tool.arguments = toolCall.arguments;
+								});
+								entry.finishReason = entry.finishReason ?? "tool_calls";
+							}
+						}
+					}
+
 					for (const [choiceIndex, entry] of choiceStates.entries()) {
 						if (entry.text.length > 0 && !entry.emittedText) {
 							const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
@@ -869,7 +961,11 @@ function transformChatStreamToResponses(
 						const ir = openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
 						const usage = encodeResponsesUsageFromIR(ir.usage);
 						const completion = deriveResponsesCompletionFromFinish(ir.choices?.[0]?.finishReason);
-						const output = buildResponsesOutputFromState(choiceStates, args.requestId);
+						const encoded = encodeOpenAIResponsesResponse(ir, args.requestId);
+						const output =
+							Array.isArray(encoded.output) && encoded.output.length > 0
+								? encoded.output
+								: buildResponsesOutputFromState(choiceStates, args.requestId);
 						const response = {
 							id: args.requestId,
 							object: "response",
@@ -1474,12 +1570,19 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 
 		if (chunk.message) {
 			const message = chunk.message;
+			const previousMessage = choice.message ?? { role: "assistant", content: "" };
 			choice.message = {
-				role: message.role || choice.message?.role || "assistant",
-				content: message.content ?? choice.message?.content ?? "",
+				role: message.role || previousMessage.role || "assistant",
+				content: message.content ?? previousMessage.content ?? "",
 				...(message.tool_calls ? { tool_calls: message.tool_calls } : {}),
-				...(message.reasoning_content ? { reasoning_content: message.reasoning_content } : {}),
-				...(message.reasoning ? { reasoning: message.reasoning } : {}),
+				...(message.reasoning_content ? { reasoning_content: message.reasoning_content } : previousMessage.reasoning_content ? { reasoning_content: previousMessage.reasoning_content } : {}),
+				...(message.reasoning ? { reasoning: message.reasoning } : previousMessage.reasoning ? { reasoning: previousMessage.reasoning } : {}),
+				...(Array.isArray(message.images) ? { images: message.images } : Array.isArray(previousMessage.images) ? { images: previousMessage.images } : {}),
+				...(Array.isArray(message._contentParts)
+					? { _contentParts: message._contentParts }
+					: Array.isArray(previousMessage._contentParts)
+						? { _contentParts: previousMessage._contentParts }
+						: {}),
 			};
 		}
 
@@ -1511,6 +1614,12 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 				if (tcDelta.function?.name) tc.function.name += tcDelta.function.name;
 				if (tcDelta.function?.arguments) tc.function.arguments += tcDelta.function.arguments;
 			}
+		}
+		if (Array.isArray(chunk.delta?.images) && chunk.delta.images.length > 0) {
+			if (!Array.isArray(choice.message.images)) {
+				choice.message.images = [];
+			}
+			choice.message.images.push(...chunk.delta.images);
 		}
 		if (chunk.finish_reason) {
 			choice.finish_reason = chunk.finish_reason;

@@ -4,7 +4,7 @@
 
 // Unit tests for Chat Completions transformations
 import { describe, expect, it } from "vitest";
-import { openAIChatToIR } from "../transform-chat";
+import { irToOpenAIChat, openAIChatToIR } from "../transform-chat";
 
 describe("openAIChatToIR", () => {
 	describe("Z.AI Reasoning Extraction", () => {
@@ -185,6 +185,82 @@ describe("openAIChatToIR", () => {
 			expect(ir.provider).toBe("openai");
 		});
 
+		it("parses output_image blocks from structured message content", () => {
+			const response = {
+				id: "chatcmpl_img_1",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "gemini-2.5-flash-image",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: [
+								{ type: "output_text", text: "Here is your image." },
+								{
+									type: "output_image",
+									b64_json: "ZmFrZS1pbWFnZQ==",
+									mime_type: "image/png",
+								},
+							],
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 5,
+					completion_tokens: 4,
+					total_tokens: 9,
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_img_1", "gemini-2.5-flash-image", "google-ai-studio");
+			const imagePart = ir.choices[0].message.content.find((p) => p.type === "image") as any;
+			expect(imagePart).toBeDefined();
+			expect(imagePart.source).toBe("data");
+			expect(imagePart.mimeType).toBe("image/png");
+			expect(imagePart.data).toBe("ZmFrZS1pbWFnZQ==");
+		});
+
+		it("parses message.images blocks into IR image parts", () => {
+			const response = {
+				id: "chatcmpl_img_2",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "gemini-2.5-flash-image",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "Generated",
+							images: [
+								{
+									type: "image_url",
+									image_url: {
+										url: "https://example.com/generated.png",
+									},
+								},
+							],
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 5,
+					completion_tokens: 4,
+					total_tokens: 9,
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_img_2", "gemini-2.5-flash-image", "google-ai-studio");
+			const imagePart = ir.choices[0].message.content.find((p) => p.type === "image") as any;
+			expect(imagePart).toBeDefined();
+			expect(imagePart.source).toBe("url");
+			expect(imagePart.data).toBe("https://example.com/generated.png");
+		});
+
 		it("should handle tool calls", () => {
 			const response = {
 				id: "chatcmpl_tools",
@@ -226,6 +302,59 @@ describe("openAIChatToIR", () => {
 			expect(ir.choices[0].message.toolCalls?.[0].name).toBe("get_weather");
 			expect(ir.choices[0].finishReason).toBe("tool_calls");
 		});
+	});
+});
+
+describe("irToOpenAIChat", () => {
+	it("maps parallel tool call control for chat providers", () => {
+		const request = irToOpenAIChat({
+			model: "mistral/mistral-large-2-1-2024-11-18",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			parallelToolCalls: false,
+		} as any, "mistral-large-latest", "mistral");
+
+		expect(request.parallel_tool_calls).toBe(false);
+	});
+
+	it("preserves caller-provided OpenAI reasoning.summary", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-5-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "high",
+				summary: "detailed",
+			},
+		} as any, "gpt-5-nano", "openai");
+
+		expect(request.reasoning).toBeDefined();
+		expect(request.reasoning.effort).toBe("high");
+		expect(request.reasoning.summary).toBe("detailed");
+	});
+
+	it("defaults OpenAI reasoning.summary to auto when omitted", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-5-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "high",
+			},
+		} as any, "gpt-5-nano", "openai");
+
+		expect(request.reasoning).toBeDefined();
+		expect(request.reasoning.effort).toBe("high");
+		expect(request.reasoning.summary).toBe("auto");
 	});
 });
 
