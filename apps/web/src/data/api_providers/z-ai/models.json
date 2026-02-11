@@ -733,11 +733,11 @@
     "provider_api_model_id": "z-ai:z-ai/glm-5-code",
     "provider_model_slug": "glm-5-code",
     "internal_model_id": "z-ai/glm-5-code",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "effective_from": "2026-02-11T00:00:00",
+    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {
