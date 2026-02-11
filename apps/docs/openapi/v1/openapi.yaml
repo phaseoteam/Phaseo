@@ -5,14 +5,23 @@ info:
         A gateway API for accessing various AI models with OpenAI-compatible
         endpoints.
     version: 1.0.0
+    contact:
+        name: AI Stats
+        url: https://docs.ai-stats.phaseo.app
+        email: danielbutler500@gmail.com
 servers:
     - url: https://api.phaseo.app/v1
 security:
     - BearerAuth: []
+tags:
+    - name: Gateway
+      description: Core AI Stats Gateway operations.
 paths:
     /:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: root
             summary: Root endpoint
             description: Returns a welcome message.
@@ -32,6 +41,8 @@ paths:
     /health:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: healthz
             summary: Health check
             description: Returns the health status of the API.
@@ -49,6 +60,8 @@ paths:
     /models:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listModels
             summary: List models
             description: Returns a list of available models.
@@ -139,6 +152,8 @@ paths:
     /providers:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listProviders
             summary: List providers
             description: Returns a list of available API providers.
@@ -197,6 +212,8 @@ paths:
     /generations:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getGeneration
             summary: Get generation
             description: Retrieve a specific generation by ID.
@@ -240,6 +257,8 @@ paths:
                                         type: string
     /chat/completions:
         post:
+            tags:
+                - Gateway
             operationId: createChatCompletion
             summary: Create chat completion
             description: Creates a completion for the chat message.
@@ -258,6 +277,8 @@ paths:
                                 $ref: "#/components/schemas/ChatCompletionsResponse"
     /responses:
         post:
+            tags:
+                - Gateway
             operationId: createResponse
             summary: Create response
             description: Creates a response using the Responses API.
@@ -276,6 +297,8 @@ paths:
                                 $ref: "#/components/schemas/ResponsesResponse"
     /messages:
         post:
+            tags:
+                - Gateway
             operationId: createAnthropicMessage
             summary: Create message
             description: Creates a message using the Anthropic Messages API.
@@ -298,6 +321,8 @@ paths:
     /embeddings:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createEmbedding
             summary: Create embeddings
             description: Creates an embedding vector representing the input text.
@@ -317,6 +342,8 @@ paths:
     /moderations:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createModeration
             summary: Create moderation
             description: Classifies if text violates OpenAI's usage policies.
@@ -336,6 +363,8 @@ paths:
     /audio/speech:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createSpeech
             summary: Generate speech
             description: Generates audio from the input text.
@@ -356,6 +385,8 @@ paths:
     /audio/transcriptions:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createTranscription
             summary: Create transcription
             description: Transcribes audio into the input language.
@@ -375,6 +406,8 @@ paths:
     /audio/translations:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createTranslation
             summary: Create translation
             description: Translates audio into English.
@@ -394,6 +427,8 @@ paths:
     /images/generations:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createImage
             summary: Create image
             description: Creates an image given a prompt.
@@ -413,6 +448,8 @@ paths:
     /images/edits:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createImageEdit
             summary: Create image edit
             description: >-
@@ -434,6 +471,8 @@ paths:
     /videos:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createVideo
             summary: Create video
             description: Creates a video from a prompt.
@@ -453,6 +492,8 @@ paths:
     /videos/{video_id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getVideo
             summary: Get video status
             description: Retrieves the status for a video generation request.
@@ -472,6 +513,8 @@ paths:
                                 $ref: "#/components/schemas/VideoGenerationResponse"
         delete:
             x-beta: true
+            tags:
+                - Gateway
             operationId: deleteVideo
             summary: Delete video
             description: Deletes a video generation request.
@@ -492,6 +535,8 @@ paths:
     /videos/{video_id}/content:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getVideoContent
             summary: Get video content
             description: Downloads the rendered video content.
@@ -513,6 +558,8 @@ paths:
     /ocr:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createOcr
             summary: Create OCR
             description: Extracts text from an image using the requested model.
@@ -532,6 +579,8 @@ paths:
     /music/generate:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: generateMusic
             summary: Generate music
             description: Generates music using the requested model and provider settings.
@@ -551,6 +600,8 @@ paths:
     /music/generate/{music_id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getMusicGeneration
             summary: Get music generation status
             description: Retrieves the status for a music generation request.
@@ -571,6 +622,8 @@ paths:
     /files:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: uploadFile
             summary: Upload file
             description: Upload a file that can be used across various endpoints.
@@ -589,6 +642,8 @@ paths:
                                 $ref: "#/components/schemas/FileResponse"
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listFiles
             summary: List files
             description: Returns a list of files that belong to the user's organization.
@@ -602,6 +657,8 @@ paths:
     /files/{file_id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: retrieveFile
             summary: Retrieve file
             description: Returns information about a specific file.
@@ -622,6 +679,8 @@ paths:
     /batches:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createBatch
             summary: Create batch
             description: Creates a batch of API requests.
@@ -641,6 +700,8 @@ paths:
     /batches/{batch_id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: retrieveBatch
             summary: Retrieve batch
             description: Retrieves a batch.
@@ -661,6 +722,8 @@ paths:
     /analytics:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getAnalytics
             summary: Get analytics
             description: Returns aggregated analytics data.
@@ -673,6 +736,8 @@ paths:
                             properties:
                                 access_token:
                                     type: string
+                                benchmark_id:
+                                    $ref: "#/components/schemas/BenchmarkId"
             responses:
                 "200":
                     description: Analytics data
@@ -690,6 +755,8 @@ paths:
     /credits:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getCredits
             summary: Get remaining credits
             description: Returns the remaining credits and usage statistics for a team.
@@ -741,6 +808,8 @@ paths:
     /activity:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getActivity
             summary: Get activity
             description: Returns recent API activity for a team.
@@ -819,6 +888,8 @@ paths:
     /management/keys:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listProvisioningKeys
             summary: List management API keys
             description: Returns all management API keys for a team.
@@ -883,6 +954,8 @@ paths:
     /management/keys/{id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getProvisioningKey
             summary: Get management API key
             description: Returns details of a specific management API key.
@@ -920,6 +993,8 @@ paths:
                                 $ref: "#/components/schemas/ErrorResponse"
         patch:
             x-beta: true
+            tags:
+                - Gateway
             operationId: updateProvisioningKey
             summary: Update management API key
             description: Updates the name, status, or blocked state of a management API key.
@@ -984,6 +1059,8 @@ paths:
                                 $ref: "#/components/schemas/ErrorResponse"
         delete:
             x-beta: true
+            tags:
+                - Gateway
             operationId: deleteProvisioningKey
             summary: Delete management API key
             description: Permanently deletes a management API key.
@@ -1022,6 +1099,8 @@ paths:
     /organisations:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listOrganisations
             summary: List organisations
             description: Returns a list of available organisations.
@@ -1089,6 +1168,8 @@ paths:
     /pricing/models:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listPricingModels
             summary: List pricing models
             description: Returns active provider/model pricing entries.
@@ -1116,6 +1197,8 @@ paths:
     /pricing/calculate:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: calculatePricing
             summary: Calculate pricing
             description: Calculates price for a usage payload.
@@ -1174,6 +1257,8 @@ paths:
     /health/providers/{provider_id}/derank:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getProviderDerankStatus
             summary: Provider derank status
             description: Returns breaker-based derank/recovery status for a provider.
@@ -1240,6 +1325,8 @@ paths:
     /provisioning/keys:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listProvisioningKeysAlias
             summary: List provisioning keys
             description: Alias of management keys endpoint.
@@ -1282,6 +1369,8 @@ paths:
     /provisioning/keys/{id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getProvisioningKeyAlias
             summary: Get provisioning key
             description: Alias of management key details endpoint.
@@ -1301,6 +1390,8 @@ paths:
                                 additionalProperties: true
         patch:
             x-beta: true
+            tags:
+                - Gateway
             operationId: updateProvisioningKeyAlias
             summary: Update provisioning key
             description: Alias of management key update endpoint.
@@ -1327,6 +1418,8 @@ paths:
                                 additionalProperties: true
         delete:
             x-beta: true
+            tags:
+                - Gateway
             operationId: deleteProvisioningKeyAlias
             summary: Delete provisioning key
             description: Alias of management key delete endpoint.
@@ -1347,6 +1440,8 @@ paths:
     /keys/{id}/invalidate:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: invalidateGatewayKeyCache
             summary: Invalidate key cache
             description: Bumps cache version for key id/kid and invalidates key cache entries.
@@ -1398,6 +1493,8 @@ paths:
     /oauth-clients:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createOAuthClient
             summary: Create OAuth client
             description: Creates a team-scoped OAuth client.
@@ -1454,6 +1551,8 @@ paths:
                                 $ref: "#/components/schemas/ErrorResponse"
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listOAuthClients
             summary: List OAuth clients
             description: Lists OAuth clients for the authenticated team.
@@ -1482,6 +1581,8 @@ paths:
     /oauth-clients/{client_id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getOAuthClient
             summary: Get OAuth client
             description: Returns details for an OAuth client.
@@ -1507,6 +1608,8 @@ paths:
                                 $ref: "#/components/schemas/ErrorResponse"
         patch:
             x-beta: true
+            tags:
+                - Gateway
             operationId: updateOAuthClient
             summary: Update OAuth client
             description: Updates OAuth client metadata and redirect URIs.
@@ -1545,6 +1648,8 @@ paths:
                                 $ref: "#/components/schemas/ErrorResponse"
         delete:
             x-beta: true
+            tags:
+                - Gateway
             operationId: deleteOAuthClient
             summary: Delete OAuth client
             description: Deletes an OAuth client and related metadata.
@@ -1571,6 +1676,8 @@ paths:
     /oauth-clients/{client_id}/regenerate-secret:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: regenerateOAuthClientSecret
             summary: Regenerate OAuth client secret
             description: Regenerates and returns a new OAuth client secret.
@@ -1597,6 +1704,8 @@ paths:
     /video/generations:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createVideoAlias
             summary: Create video (alias)
             description: Alias of /videos.
@@ -1616,6 +1725,8 @@ paths:
     /video/generations/{video_id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getVideoAlias
             summary: Get video status (alias)
             description: Alias of /videos/{video_id}.
@@ -1634,6 +1745,8 @@ paths:
                                 $ref: "#/components/schemas/VideoGenerationResponse"
         delete:
             x-beta: true
+            tags:
+                - Gateway
             operationId: deleteVideoAlias
             summary: Delete video (alias)
             description: Alias of /videos/{video_id}.
@@ -1653,6 +1766,8 @@ paths:
     /video/generations/{video_id}/content:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getVideoContentAlias
             summary: Get video content (alias)
             description: Alias of /videos/{video_id}/content.
@@ -1673,6 +1788,8 @@ paths:
     /music/generations:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: generateMusicAlias
             summary: Generate music (alias)
             description: Alias of /music/generate.
@@ -1692,6 +1809,8 @@ paths:
     /music/generations/{music_id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getMusicGenerationAlias
             summary: Get music generation status (alias)
             description: Alias of /music/generate/{music_id}.
@@ -1711,6 +1830,8 @@ paths:
     /batch:
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createBatchAlias
             summary: Create batch (alias)
             description: Alias of /batches.
@@ -1730,6 +1851,8 @@ paths:
     /batch/{id}:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: retrieveBatchAlias
             summary: Retrieve batch (alias)
             description: Alias of /batches/{batch_id}.
@@ -1749,10 +1872,29 @@ paths:
     /endpoints:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listEndpointsPlaceholder
             summary: List endpoints (placeholder)
             description: Placeholder route; currently returns not implemented.
             responses:
+                "200":
+                    description: Endpoint metadata
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    endpoints:
+                                        type: array
+                                        items:
+                                            type: string
+                                    sample_models:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/ModelId"
                 "501":
                     description: Not implemented
                     content:
@@ -1762,10 +1904,25 @@ paths:
     /keys:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: listKeysPlaceholder
             summary: List keys (placeholder)
             description: Placeholder route; currently returns not implemented.
             responses:
+                "200":
+                    description: Keys list
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    keys:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/ProvisioningKey"
                 "501":
                     description: Not implemented
                     content:
@@ -1774,10 +1931,18 @@ paths:
                                 $ref: "#/components/schemas/ErrorResponse"
         post:
             x-beta: true
+            tags:
+                - Gateway
             operationId: createKeyPlaceholder
             summary: Create key (placeholder)
             description: Placeholder route; currently returns not implemented.
             responses:
+                "200":
+                    description: Created key
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ProvisioningKeyWithValue"
                 "501":
                     description: Not implemented
                     content:
@@ -1787,10 +1952,23 @@ paths:
     /key:
         get:
             x-beta: true
+            tags:
+                - Gateway
             operationId: getKeyPlaceholder
             summary: Get key (placeholder)
             description: Placeholder route; currently returns not implemented.
             responses:
+                "200":
+                    description: Key information
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    key:
+                                        $ref: "#/components/schemas/ProvisioningKey"
                 "501":
                     description: Not implemented
                     content:
