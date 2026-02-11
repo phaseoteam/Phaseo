@@ -5453,38 +5453,6 @@
         "previous_model_id": "openai/gpt-4o-search-preview"
       }
     },
-    "src/data/models/openai/gpt-6/model.json": {
-      "hash": "03c26ea483ccef91133ff8db56bc7d70",
-      "meta": {
-        "model_id": "openai/gpt-6",
-        "organisation_id": "openai",
-        "previous_model_id": "openai/gpt-5-2025-08-07"
-      }
-    },
-    "src/data/models/openai/gpt-6-mini/model.json": {
-      "hash": "c74635cab56a7616691534381c929fd6",
-      "meta": {
-        "model_id": "openai/gpt-6-mini",
-        "organisation_id": "openai",
-        "previous_model_id": "openai/gpt-5-mini-2025-08-07"
-      }
-    },
-    "src/data/models/openai/gpt-6-nano/model.json": {
-      "hash": "d8730ec578ea8878baedf1a9ff85a849",
-      "meta": {
-        "model_id": "openai/gpt-6-nano",
-        "organisation_id": "openai",
-        "previous_model_id": "openai/gpt-5-nano-2025-08-07"
-      }
-    },
-    "src/data/models/openai/gpt-6-pro/model.json": {
-      "hash": "861993b78938d88d62ee807b0c103990",
-      "meta": {
-        "model_id": "openai/gpt-6-pro",
-        "organisation_id": "openai",
-        "previous_model_id": "openai/gpt-5-pro-2025-08-07"
-      }
-    },
     "src/data/models/openai/gpt-audio-mini-2025-10-06/model.json": {
       "hash": "3609e6bb253d0f0aa1101120186743c2",
       "meta": {
@@ -6374,13 +6342,13 @@
       }
     },
     "src/data/aliases/openai-gpt-chat/alias.json": {
-      "hash": "43041e35b5dadc9a229988513e86b638",
+      "hash": "9e3ad2f2a6bcb368cfc2e69f72cd2897",
       "meta": {
         "alias_slug": "openai/gpt-chat"
       }
     },
     "src/data/aliases/openai-gpt-latest/alias.json": {
-      "hash": "5c03d718138b35ed05e5a547507a344c",
+      "hash": "1568cac4171daa5bb4bc89b111776368",
       "meta": {
         "alias_slug": "openai/gpt-latest"
       }
@@ -6802,7 +6770,7 @@
       }
     },
     "src/data/api_providers/z-ai/models.json": {
-      "hash": "968f13602411bf68c2f29c809e6da78f",
+      "hash": "ddc08bbab08385eb00fc91498a2715a8",
       "meta": {
         "api_provider_id": "z-ai",
         "kind": "provider_models"
@@ -8938,19 +8906,11 @@
       }
     },
     "src/data/models/z-ai/glm-5-2026-02-11/model.json": {
-      "hash": "599a6d0595697a191c0034d68d70c7a4",
+      "hash": "58e90cf2077083f51967efd06b8bcf70",
       "meta": {
         "model_id": "z-ai/glm-5-2026-02-11",
         "organisation_id": "z-ai",
         "previous_model_id": "z-ai/glm-4-7-2025-12-22"
-      }
-    },
-    "src/data/models/z-ai/glm-5-code-2026-02-11/model.json": {
-      "hash": "b96ae4e976a58ff556f4668e3c8953b9",
-      "meta": {
-        "model_id": "z-ai/glm-5-code-2026-02-11",
-        "organisation_id": "z-ai",
-        "previous_model_id": null
       }
     },
     "src/data/pricing/z-ai/z-ai-glm-5/text.generate/pricing.json": {
@@ -8969,6 +8929,20 @@
         "capability_id": "text.generate",
         "model_id": "z-ai/glm-5-code",
         "model_key": "z-ai:z-ai/glm-5-code:text.generate"
+      }
+    },
+    "src/data/families/openai-gpt-5-1/family.json": {
+      "hash": "30d76a29a69c4318f522e1f78a49df18",
+      "meta": {
+        "family_id": "openai/gpt-5-1"
+      }
+    },
+    "src/data/models/z-ai/glm-5-code/model.json": {
+      "hash": "52efa2a0ac5dc8fa463e072785bc2b9d",
+      "meta": {
+        "model_id": "z-ai/glm-5-code",
+        "organisation_id": "z-ai",
+        "previous_model_id": null
       }
     }
   }
