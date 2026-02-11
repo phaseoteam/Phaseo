@@ -122,16 +122,16 @@ func CreateImageEdit(client *Client, path map[string]string, query map[string]st
 	return out, nil
 }
 
-func CreateKeyPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+func CreateKeyPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/keys"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
-	var out interface{}
+	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil
@@ -437,16 +437,16 @@ func GetGeneration(client *Client, path map[string]string, query map[string]stri
 	return out, nil
 }
 
-func GetKeyPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+func GetKeyPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/key"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
-	var out interface{}
+	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil
@@ -632,16 +632,16 @@ func InvalidateGatewayKeyCache(client *Client, path map[string]string, query map
 	return out, nil
 }
 
-func ListEndpointsPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+func ListEndpointsPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/endpoints"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
-	var out interface{}
+	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil
@@ -662,16 +662,16 @@ func ListFiles(client *Client, path map[string]string, query map[string]string, 
 	return out, nil
 }
 
-func ListKeysPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+func ListKeysPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/keys"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
-	var out interface{}
+	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil

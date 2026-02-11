@@ -115,7 +115,7 @@ def createKeyPlaceholder(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/keys"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -388,7 +388,7 @@ def getKeyPlaceholder(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/key"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -557,7 +557,7 @@ def listEndpointsPlaceholder(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/endpoints"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -583,7 +583,7 @@ def listKeysPlaceholder(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/keys"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)

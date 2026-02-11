@@ -57,7 +57,7 @@ function emitClients(operations: IROperation[]): RawFile[] {
 
 	const indexExports: string[] = [];
 	for (const [tag, ops] of Array.from(byTag.entries()).sort(([a], [b]) => a.localeCompare(b))) {
-		const fileName = toFileName(tag);
+		const fileName = byTag.size === 1 ? "default" : toFileName(tag);
 		const contents = [
 			`import type { Client } from "../../runtime/client.js";`,
 			"",

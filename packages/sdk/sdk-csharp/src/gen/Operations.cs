@@ -102,7 +102,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> CreateKeyPlaceholderAsync(
+	public static Task<Dictionary<string, object>?> CreateKeyPlaceholderAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -111,7 +111,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/keys";
-		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> CreateModerationAsync(
@@ -354,7 +354,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> GetKeyPlaceholderAsync(
+	public static Task<Dictionary<string, object>?> GetKeyPlaceholderAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -363,7 +363,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/key";
-		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> GetMusicGenerationAsync(
@@ -510,7 +510,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> ListEndpointsPlaceholderAsync(
+	public static Task<Dictionary<string, object>?> ListEndpointsPlaceholderAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -519,7 +519,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/endpoints";
-		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> ListFilesAsync(
@@ -534,7 +534,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> ListKeysPlaceholderAsync(
+	public static Task<Dictionary<string, object>?> ListKeysPlaceholderAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -543,7 +543,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/keys";
-		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> ListModelsAsync(

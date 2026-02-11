@@ -23,7 +23,7 @@ import type {
   VideoGenerationRequest,
   VideoGenerationResponse
 } from "./oapi-gen/models/index.js";
-import * as ops from "./oapi-gen/client/default.js";
+import * as ops from "./oapi-gen/client/index.js";
 import { Client } from "./runtime/client.js";
 import { TelemetryCapture, extractChatMetadata, extractImageMetadata } from "./devtools/telemetry.js";
 import type { DevToolsConfig } from "@ai-stats/devtools-core";
