@@ -132,6 +132,75 @@ function dedupeImports(filePath: string): boolean {
     changed = true;
   }
 
+  // Normalize primitive union typeof checks to deterministic ordering so
+  // generator output is stable across platforms/runner environments.
+  const normalizePrimitiveTypeofBlocks = (source: string, varName: "json" | "value"): string => {
+    const blockRegex = new RegExp(
+      `((?:\\s*if \\(typeof ${varName} === '[^']+'\\) {\\s*return ${varName};\\s*}\\s*){2,})`,
+      "g",
+    );
+
+    return source.replace(blockRegex, (block) => {
+      const entryRegex = new RegExp(
+        `\\s*if \\(typeof ${varName} === '([^']+)'\\) {\\s*return ${varName};\\s*}\\s*`,
+        "g",
+      );
+      const seen = new Set<string>();
+      const types: string[] = [];
+      let match: RegExpExecArray | null = null;
+      while ((match = entryRegex.exec(block)) !== null) {
+        const t = match[1];
+        if (!seen.has(t)) {
+          seen.add(t);
+          types.push(t);
+        }
+      }
+      if (types.length < 2) return block;
+
+      const rank = (t: string) => {
+        switch (t) {
+          case "number":
+            return 0;
+          case "string":
+            return 1;
+          case "boolean":
+            return 2;
+          case "bigint":
+            return 3;
+          case "symbol":
+            return 4;
+          case "function":
+            return 5;
+          case "undefined":
+            return 6;
+          case "object":
+            return 7;
+          default:
+            return 99;
+        }
+      };
+
+      const sorted = [...types].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+      if (sorted.join("|") === types.join("|")) return block;
+
+      const indentMatch = block.match(/^(\s*)if /);
+      const indent = indentMatch ? indentMatch[1] : "    ";
+      const rebuilt = sorted
+        .map((t) => `${indent}if (typeof ${varName} === '${t}') {\n${indent}    return ${varName};\n${indent}}\n`)
+        .join("");
+      return rebuilt;
+    });
+  };
+
+  const normalizedTypeof = normalizePrimitiveTypeofBlocks(
+    normalizePrimitiveTypeofBlocks(content, "json"),
+    "value",
+  );
+  if (normalizedTypeof !== content) {
+    content = normalizedTypeof;
+    changed = true;
+  }
+
   dedupeImportBlocks();
   if (filePath.includes(`${path.sep}models${path.sep}`)) {
     appendMissingInstanceOfGuards();
