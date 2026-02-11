@@ -89,7 +89,7 @@ export function applyTierMarkup(
         markup_percentage: getTierMarkupPercentage(tier),
         base_cost_usd: pricingResult.cost_usd,
         base_cost_cents: pricingResult.cost_cents,
-    };
+    } as PricingResult;
 }
 
 /**

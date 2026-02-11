@@ -68,7 +68,7 @@ function mapGatewayToAI21Chat(body: ChatCompletionsRequest) {
         max_tokens: body.max_output_tokens,
         temperature: body.temperature,
         top_p: body.top_p,
-        stop: body.stop,
+        stop: (body as any).stop,
         stream: Boolean(body.stream),
         tools: body.tools,
     };

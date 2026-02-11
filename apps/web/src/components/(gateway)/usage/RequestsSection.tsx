@@ -4,12 +4,14 @@ import React, { useRef } from "react";
 import UsageTableFilters from "./UsageTableFilters";
 import UnifiedRequestsTable from "./UnifiedRequestsTable";
 import ExportDropdown from "./ExportDropdown";
+import InvestigateGeneration from "./UsageHeader/InvestigateGeneration";
 
 interface RequestsSectionProps {
 	timeRange: { from: string; to: string };
 	appNames: Map<string, string>;
 	models: string[];
 	providers: string[];
+	modelProviders: Map<string, string[]>;
 	providerNames: Map<string, string>;
 	apiKeys: { id: string; name: string | null; prefix: string | null }[];
 	modelMetadata: Map<string, { organisationId: string; organisationName: string }>;
@@ -20,6 +22,7 @@ export default function RequestsSection({
 	appNames,
 	models,
 	providers,
+	modelProviders,
 	providerNames,
 	apiKeys,
 	modelMetadata,
@@ -37,9 +40,11 @@ export default function RequestsSection({
 			<UsageTableFilters
 				models={models}
 				providers={providers}
+				modelProviders={modelProviders}
 				providerNames={providerNames}
 				apiKeys={apiKeys}
 				modelMetadata={modelMetadata}
+				leftActions={<InvestigateGeneration iconOnly />}
 			>
 				<ExportDropdown
 					onExportCSV={() => handleExport("csv")}

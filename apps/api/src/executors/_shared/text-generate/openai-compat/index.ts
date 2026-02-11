@@ -457,7 +457,8 @@ function transformResponsesStreamToChat(
 							case "response.function_call_arguments.delta": {
 								const resolvedId = canonicalToolId(payload?.item_id);
 								if (!resolvedId) break;
-								const entry = toolBuffer.get(resolvedId) ?? {
+								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
+									toolBuffer.get(resolvedId) ?? {
 									arguments: "",
 									output_index: payload?.output_index ?? 0,
 									tool_index: ensureToolIndex(resolvedId),
@@ -493,7 +494,8 @@ function transformResponsesStreamToChat(
 								aliasToolId(item?.call_id, canonicalId);
 								aliasToolId(item?.id, canonicalId);
 								aliasToolId(payload?.item_id, canonicalId);
-								const entry = toolBuffer.get(canonicalId) ?? {
+								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
+									toolBuffer.get(canonicalId) ?? {
 									arguments: "",
 									output_index: payload?.output_index ?? 0,
 									tool_index: ensureToolIndex(canonicalId),
@@ -522,7 +524,8 @@ function transformResponsesStreamToChat(
 							case "response.function_call_arguments.done": {
 								const resolvedId = canonicalToolId(payload?.item_id);
 								if (!resolvedId) break;
-								const entry = toolBuffer.get(resolvedId) ?? {
+								const entry: { arguments: string; name?: string; output_index: number; tool_index: number } =
+									toolBuffer.get(resolvedId) ?? {
 									arguments: "",
 									output_index: payload?.output_index ?? 0,
 									tool_index: ensureToolIndex(resolvedId),

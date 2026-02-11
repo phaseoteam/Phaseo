@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin, getCache, getBindings } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
-import { json } from "@/routes/utils";
+import { json, withRuntime } from "@/routes/utils";
 import { setKeyVersion } from "@/core/kv";
 
 function timingSafeEqual(a: string, b: string): boolean {
@@ -114,4 +114,4 @@ async function handleInvalidateKey(req: Request) {
 
 export const keysRoutes = new Hono<Env>();
 
-keysRoutes.post("/:id/invalidate", handleInvalidateKey);
+keysRoutes.post("/:id/invalidate", withRuntime(handleInvalidateKey));

@@ -404,7 +404,7 @@ export function validateCapabilities(args: {
 		providers: args.providers,
 		model: args.model,
 	});
-	if (!paramResult.ok) return paramResult;
+	if ("response" in paramResult) return { ok: false, response: paramResult.response };
 	pushFilteringStage(filteringStages, "param_support", initialProviders, paramResult.providers);
 
 	// Step 1.5: Provider docs validation (hard constraints from provider API docs)
@@ -417,7 +417,7 @@ export function validateCapabilities(args: {
 		providers: paramResult.providers,
 		requestedParams: paramResult.requestedParams,
 	});
-	if (!docsResult.ok) return docsResult;
+	if ("response" in docsResult) return { ok: false, response: docsResult.response };
 	pushFilteringStage(filteringStages, "provider_docs", paramResult.providers, docsResult.providers);
 
 	// Step 2: Response format validation
@@ -428,7 +428,7 @@ export function validateCapabilities(args: {
 		teamId: args.teamId,
 		model: args.model,
 	});
-	if (!formatResult.ok) return formatResult;
+	if ("response" in formatResult) return { ok: false, response: formatResult.response };
 	pushFilteringStage(filteringStages, "response_format", docsResult.providers, formatResult.providers);
 
 	// Step 3: Structured outputs validation
@@ -439,7 +439,7 @@ export function validateCapabilities(args: {
 		teamId: args.teamId,
 		model: args.model,
 	});
-	if (!structuredResult.ok) return structuredResult;
+	if ("response" in structuredResult) return { ok: false, response: structuredResult.response };
 	pushFilteringStage(filteringStages, "structured_outputs", formatResult.providers, structuredResult.providers);
 
 	// Step 4: Token limits (if max_tokens is provided)
@@ -450,7 +450,7 @@ export function validateCapabilities(args: {
 		teamId: args.teamId,
 		model: args.model,
 	});
-	if (!tokenResult.ok) return tokenResult;
+	if ("response" in tokenResult) return { ok: false, response: tokenResult.response };
 	pushFilteringStage(filteringStages, "token_limits", structuredResult.providers, tokenResult.providers);
 
 	const requestedParams = paramResult.requestedParams;

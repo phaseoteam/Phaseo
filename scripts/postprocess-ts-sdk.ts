@@ -16,9 +16,71 @@ function walk(dir: string): string[] {
 }
 
 function dedupeImports(filePath: string): boolean {
+  if (path.basename(filePath) === "runtime.ts") {
+    return false;
+  }
+
   const original = fs.readFileSync(filePath, "utf8");
   let content = original;
   let changed = false;
+
+  const appendMissingInstanceOfGuards = () => {
+    const typeRegex = /export type (\w+) = ([^;]+);/g;
+    let typeMatch: RegExpExecArray | null = null;
+    while ((typeMatch = typeRegex.exec(content)) !== null) {
+      const typeName = typeMatch[1];
+      const typeBody = typeMatch[2];
+      const guardName = `instanceOf${typeName}`;
+      if (content.includes(`export function ${guardName}(`)) continue;
+
+      const unionMembers = typeBody
+        .split("|")
+        .map((p) => p.trim())
+        .filter(Boolean);
+      const memberGuards = unionMembers
+        .map((member) => member.replace(/\[\]$/, ""))
+        .filter((member) => /^[A-Z]\w+$/.test(member))
+        .map((member) => `instanceOf${member}(value as any)`)
+        .filter((guard) => content.includes(guard.replace("(value as any)", "")));
+      const guardExpr = memberGuards.length > 0 ? memberGuards.join(" || ") : "true";
+      const guardFn = `\n\nexport function ${guardName}(value: any): value is ${typeName} {\n    return ${guardExpr};\n}`;
+      content = content.replace(typeMatch[0], `${typeMatch[0]}${guardFn}`);
+      changed = true;
+    }
+  };
+
+  const dedupeImportBlocks = () => {
+    const lines = content.split(/\r?\n/);
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("import")) {
+        out.push(line);
+        continue;
+      }
+
+      const block: string[] = [line];
+      while (i + 1 < lines.length && !lines[i].includes(";")) {
+        i += 1;
+        block.push(lines[i]);
+      }
+      const blockText = block.join("\n");
+      if (/from ['"]\.\/string['"]/.test(blockText)) {
+        changed = true;
+        continue;
+      }
+      const key = blockText.trim();
+      if (seen.has(key)) {
+        changed = true;
+        continue;
+      }
+      seen.add(key);
+      out.push(...block);
+    }
+    content = out.join("\n");
+  };
 
   // Fix HTML entities in imports and code
   const htmlEntityFixes = [
@@ -50,45 +112,33 @@ function dedupeImports(filePath: string): boolean {
     changed = true;
   }
 
-  // Dedupe imports
-  const lines = content.split(/\r?\n/);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  let inMultilineImport = false;
+  // Fix array mapper variable shadowing in certain generated union serializers.
+  const valueMapCastPattern = /return value\.map\(value => (\w+ToJSON)\(value as (\w+)\)\);/g;
+  if (valueMapCastPattern.test(content)) {
+    content = content.replace(
+      valueMapCastPattern,
+      "return value.map((item) => $1(item as $2));",
+    );
+    changed = true;
+  }
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
+  // Fix enum-cast strictness issue in generated union serializers.
+  const enumUnionCastPattern = /OrganisationIdToJSON\(([^)]+) as OrganisationId\)/g;
+  if (enumUnionCastPattern.test(content)) {
+    content = content.replace(
+      enumUnionCastPattern,
+      "OrganisationIdToJSON($1 as unknown as OrganisationId)",
+    );
+    changed = true;
+  }
 
-    // Track if we're in a multi-line import statement
-    if (trimmed.startsWith("import")) {
-      if (trimmed.includes("{") && !trimmed.includes("}")) {
-        inMultilineImport = true;
-      }
-    }
-
-    if (inMultilineImport) {
-      out.push(line);
-      if (trimmed.includes("}")) {
-        inMultilineImport = false;
-      }
-      continue;
-    }
-
-    // Only dedupe single-line import statements
-    if (trimmed.startsWith("import") && trimmed.includes(";")) {
-      if (seen.has(trimmed)) {
-        changed = true;
-        continue;
-      }
-      seen.add(trimmed);
-    }
-
-    out.push(line);
+  dedupeImportBlocks();
+  if (filePath.includes(`${path.sep}models${path.sep}`)) {
+    appendMissingInstanceOfGuards();
   }
 
   if (changed) {
-    fs.writeFileSync(filePath, out.join("\n"), "utf8");
+    fs.writeFileSync(filePath, content, "utf8");
   }
   return changed;
 }

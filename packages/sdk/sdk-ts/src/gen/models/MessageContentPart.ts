@@ -56,7 +56,7 @@ import {
 export type MessageContentPart = AudioContentPart | ImageContentPart | TextContentPart | ToolCallContentPart | VideoContentPart;
 
 export function instanceOfMessageContentPart(value: any): value is MessageContentPart {
-    return typeof value === 'object' && value !== null;
+    return instanceOfAudioContentPart(value as any) || instanceOfImageContentPart(value as any) || instanceOfTextContentPart(value as any) || instanceOfToolCallContentPart(value as any) || instanceOfVideoContentPart(value as any);
 }
 
 export function MessageContentPartFromJSON(json: any): MessageContentPart {
@@ -116,3 +116,4 @@ export function MessageContentPartToJSONTyped(value?: MessageContentPart | null,
     }
     return {};
 }
+

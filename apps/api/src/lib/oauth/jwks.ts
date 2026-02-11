@@ -87,9 +87,9 @@ export async function getJWKSWithCache(
 				throw new Error(`JWKS temporarily unavailable: ${cachedError}`);
 			}
 
-			const cached = await kv.get(JWKS_CACHE_KEY, "json");
-			if (cached && cached.keys && Array.isArray(cached.keys)) {
-				return cached as JWKS;
+			const cached = (await kv.get(JWKS_CACHE_KEY, "json")) as JWKS | null;
+			if (cached && Array.isArray(cached.keys)) {
+				return cached;
 			}
 		} catch (error) {
 			// Propagate explicit JWKS unavailable markers; otherwise continue to fetch.

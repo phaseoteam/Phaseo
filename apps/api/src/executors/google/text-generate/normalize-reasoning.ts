@@ -45,7 +45,7 @@ function normalizeGoogleReasoning(
 	}
 
 	if (normalized.maxTokens === undefined && normalized.effort && !maxTokens) {
-		normalized.enabled = normalized.effort !== "none";
+		normalized.enabled = true;
 	}
 
 	delete normalized.effort;

@@ -14,7 +14,13 @@ import { toast } from "sonner";
 import { Search } from "lucide-react";
 import { investigateGeneration } from "@/app/(dashboard)/gateway/usage/server-actions";
 
-export default function InvestigateGeneration() {
+interface InvestigateGenerationProps {
+	iconOnly?: boolean;
+}
+
+export default function InvestigateGeneration({
+	iconOnly = false,
+}: InvestigateGenerationProps) {
 	const [open, setOpen] = React.useState(false);
 	const [id, setId] = React.useState("");
 	const [loading, setLoading] = React.useState(false);
@@ -51,9 +57,14 @@ export default function InvestigateGeneration() {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button variant="outline">
-					<Search className="mr-2" />
-					Investigate Generation
+				<Button
+					variant="outline"
+					size={iconOnly ? "icon" : "default"}
+					aria-label="Investigate generation"
+					title="Investigate generation"
+				>
+					<Search className={iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+					{iconOnly ? null : "Investigate Generation"}
 				</Button>
 			</DialogTrigger>
 			<DialogContent

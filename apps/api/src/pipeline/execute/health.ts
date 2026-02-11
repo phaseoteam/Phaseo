@@ -108,9 +108,11 @@ function persistBreakerState(payload: BreakerPersistPayload) {
 	};
 
 	dispatchBackground(
-		getSupabaseAdmin()
+		Promise.resolve(
+			getSupabaseAdmin()
 			.from("gateway_provider_health_states")
-			.upsert(row, { onConflict: "provider_id,model_id,endpoint" })
+			.upsert(row, { onConflict: "provider_id,model_id,endpoint" }),
+		)
 			.then(({ error }) => {
 				if (error) {
 					console.error("[health] persist breaker state failed", {
@@ -169,7 +171,8 @@ async function updateMap(
     ttlSeconds = HEALTH_STATE_TTL_SECONDS
 ): Promise<Record<string, string>> {
     const map = await loadMapByKey(key);
-    const updated = updater(map) ?? map;
+    const next = updater(map);
+    const updated: Record<string, string> = next && typeof next === "object" ? next : map;
     await saveMap(key, updated, ttlSeconds);
     return updated;
 }

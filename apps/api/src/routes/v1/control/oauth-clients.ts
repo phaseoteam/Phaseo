@@ -17,11 +17,18 @@
  */
 
 import { Hono } from "hono";
-import type { HonoBindings } from "@/runtime/types";
+import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { z } from "zod";
 
-const app = new Hono<{ Bindings: HonoBindings }>();
+const app = new Hono<Env>();
+
+function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { teamId: string | null; userId: string | null } {
+	return {
+		teamId: typeof ctx?.teamId === "string" ? ctx.teamId : null,
+		userId: typeof ctx?.userId === "string" ? ctx.userId : null,
+	};
+}
 
 // Validation schemas
 const createOAuthClientSchema = z.object({
@@ -52,8 +59,8 @@ const updateOAuthClientSchema = z.object({
 app.post("/", async (c) => {
 	try {
 		// Get authenticated context from middleware
-		const ctx = c.get("ctx");
-		if (!ctx?.teamId) {
+		const authCtx = readAuthContext(c.get("ctx"));
+		if (!authCtx.teamId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -75,7 +82,8 @@ app.post("/", async (c) => {
 
 		// Create OAuth client using Supabase Admin SDK
 		const supabase = getSupabaseAdmin();
-		const { data: oauthClient, error: clientError } = await supabase.auth.admin.oauth.createClient({
+		const oauthAdmin = (supabase.auth.admin as any).oauth;
+		const { data: oauthClient, error: clientError } = await oauthAdmin.createClient({
 			name: input.name,
 			redirect_uris: input.redirect_uris,
 		});
@@ -93,14 +101,14 @@ app.post("/", async (c) => {
 			.from("oauth_app_metadata")
 			.insert({
 				client_id: oauthClient.client_id,
-				team_id: ctx.teamId,
+				team_id: authCtx.teamId,
 				name: input.name,
 				description: input.description,
 				homepage_url: input.homepage_url,
 				logo_url: input.logo_url,
 				privacy_policy_url: input.privacy_policy_url,
 				terms_of_service_url: input.terms_of_service_url,
-				created_by: ctx.userId,
+				created_by: authCtx.userId,
 				status: "active",
 			})
 			.select()
@@ -108,7 +116,7 @@ app.post("/", async (c) => {
 
 		if (metadataError) {
 			// Rollback: delete OAuth client if metadata insert failed
-			await supabase.auth.admin.oauth.deleteClient(oauthClient.client_id);
+			await oauthAdmin.deleteClient(oauthClient.client_id);
 			console.error("Error storing OAuth metadata:", metadataError);
 			return c.json(
 				{ error: `Failed to create OAuth app: ${metadataError.message}` },
@@ -137,8 +145,8 @@ app.post("/", async (c) => {
  */
 app.get("/", async (c) => {
 	try {
-		const ctx = c.get("ctx");
-		if (!ctx?.teamId) {
+		const authCtx = readAuthContext(c.get("ctx"));
+		if (!authCtx.teamId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -147,7 +155,7 @@ app.get("/", async (c) => {
 		const { data: apps, error: appsError } = await supabase
 			.from("oauth_apps_with_stats")
 			.select("*")
-			.eq("team_id", ctx.teamId)
+			.eq("team_id", authCtx.teamId)
 			.order("created_at", { ascending: false });
 
 		if (appsError) {
@@ -176,8 +184,8 @@ app.get("/", async (c) => {
  */
 app.get("/:clientId", async (c) => {
 	try {
-		const ctx = c.get("ctx");
-		if (!ctx?.teamId) {
+		const authCtx = readAuthContext(c.get("ctx"));
+		if (!authCtx.teamId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -189,7 +197,7 @@ app.get("/:clientId", async (c) => {
 			.from("oauth_apps_with_stats")
 			.select("*")
 			.eq("client_id", clientId)
-			.eq("team_id", ctx.teamId)
+			.eq("team_id", authCtx.teamId)
 			.single();
 
 		if (appError || !app) {
@@ -211,8 +219,8 @@ app.get("/:clientId", async (c) => {
  */
 app.patch("/:clientId", async (c) => {
 	try {
-		const ctx = c.get("ctx");
-		if (!ctx?.teamId) {
+		const authCtx = readAuthContext(c.get("ctx"));
+		if (!authCtx.teamId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -234,10 +242,11 @@ app.patch("/:clientId", async (c) => {
 
 		const supabase = getSupabaseAdmin();
 		const updates = parsed.data;
+		const oauthAdmin = (supabase.auth.admin as any).oauth;
 
 		// If updating redirect URIs, update in Supabase OAuth client
 		if (updates.redirect_uris) {
-			const { error: updateError } = await supabase.auth.admin.oauth.updateClient(clientId, {
+			const { error: updateError } = await oauthAdmin.updateClient(clientId, {
 				redirect_uris: updates.redirect_uris,
 			});
 
@@ -260,7 +269,7 @@ app.patch("/:clientId", async (c) => {
 				updated_at: new Date().toISOString(),
 			})
 			.eq("client_id", clientId)
-			.eq("team_id", ctx.teamId)
+			.eq("team_id", authCtx.teamId)
 			.select()
 			.single();
 
@@ -286,8 +295,8 @@ app.patch("/:clientId", async (c) => {
  */
 app.delete("/:clientId", async (c) => {
 	try {
-		const ctx = c.get("ctx");
-		if (!ctx?.teamId) {
+		const authCtx = readAuthContext(c.get("ctx"));
+		if (!authCtx.teamId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -300,7 +309,7 @@ app.delete("/:clientId", async (c) => {
 			.from("oauth_app_metadata")
 			.select("client_id")
 			.eq("client_id", clientId)
-			.eq("team_id", ctx.teamId)
+			.eq("team_id", authCtx.teamId)
 			.single();
 
 		if (fetchError || !app) {
@@ -308,7 +317,8 @@ app.delete("/:clientId", async (c) => {
 		}
 
 		// Delete from Supabase OAuth first
-		const { error: clientError } = await supabase.auth.admin.oauth.deleteClient(clientId);
+		const oauthAdmin = (supabase.auth.admin as any).oauth;
+		const { error: clientError } = await oauthAdmin.deleteClient(clientId);
 		if (clientError) {
 			console.error("Error deleting OAuth client:", clientError);
 			return c.json({ error: "Failed to delete OAuth client" }, 500);
@@ -319,7 +329,7 @@ app.delete("/:clientId", async (c) => {
 			.from("oauth_app_metadata")
 			.delete()
 			.eq("client_id", clientId)
-			.eq("team_id", ctx.teamId);
+			.eq("team_id", authCtx.teamId);
 
 		if (deleteError) {
 			console.error("Error deleting OAuth metadata:", deleteError);
@@ -343,8 +353,8 @@ app.delete("/:clientId", async (c) => {
  */
 app.post("/:clientId/regenerate-secret", async (c) => {
 	try {
-		const ctx = c.get("ctx");
-		if (!ctx?.teamId) {
+		const authCtx = readAuthContext(c.get("ctx"));
+		if (!authCtx.teamId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
@@ -357,7 +367,7 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 			.from("oauth_app_metadata")
 			.select("client_id")
 			.eq("client_id", clientId)
-			.eq("team_id", ctx.teamId)
+			.eq("team_id", authCtx.teamId)
 			.single();
 
 		if (fetchError || !app) {
@@ -365,7 +375,8 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 		}
 
 		// Regenerate secret via Supabase Admin SDK
-		const { data: newSecret, error: secretError } = await supabase.auth.admin.oauth.regenerateSecret(clientId);
+		const oauthAdmin = (supabase.auth.admin as any).oauth;
+		const { data: newSecret, error: secretError } = await oauthAdmin.regenerateSecret(clientId);
 
 		if (secretError || !newSecret) {
 			console.error("Error regenerating OAuth secret:", secretError);

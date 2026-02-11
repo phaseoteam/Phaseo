@@ -46,7 +46,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
 	const { adapterPayload } = buildAdapterPayload(AudioSpeechSchema, args.body, []);
 	const typedPayload = adapterPayload as AudioSpeechRequest;
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = String(bindings.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");
 
 	const voiceId = (typedPayload.voice ?? "").trim();

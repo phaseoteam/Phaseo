@@ -19,6 +19,10 @@
  */
 export type AnthropicMessagesRequestSystem = Array<object> | string;
 
+export function instanceOfAnthropicMessagesRequestSystem(value: any): value is AnthropicMessagesRequestSystem {
+    return true;
+}
+
 export function AnthropicMessagesRequestSystemFromJSON(json: any): AnthropicMessagesRequestSystem {
     return AnthropicMessagesRequestSystemFromJSONTyped(json, false);
 }

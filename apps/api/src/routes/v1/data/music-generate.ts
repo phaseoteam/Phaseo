@@ -76,7 +76,7 @@ function parseSunoOutput(json: any): { output: SunoOutputItem[]; totalDurationSe
 }
 
 async function fetchSunoTask(taskId: string) {
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const key = bindings.SUNO_API_KEY;
 	if (!key) {
 		return err("upstream_error", {

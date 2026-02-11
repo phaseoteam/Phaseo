@@ -141,3 +141,4 @@ export function EmbeddingsRequestToJSONTyped(value?: EmbeddingsRequest | null, i
         'provider': ProviderRoutingOptionsToJSON(value['provider']),
     };
 }
+

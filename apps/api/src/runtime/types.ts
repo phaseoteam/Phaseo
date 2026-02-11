@@ -4,7 +4,25 @@
 // How: Declares binding shapes used by runtime/env for type-safe access.
 
 import type { GatewayBindings } from "@/runtime/env";
-export type Env = { Bindings: GatewayBindings };
+
+export type AuthContext = {
+	teamId?: string;
+	userId?: string;
+	apiKeyId?: string;
+	apiKeyRef?: string | null;
+	apiKeyKid?: string | null;
+	internal?: boolean;
+	[key: string]: unknown;
+};
+
+export type HonoBindings = GatewayBindings;
+
+export type Env = {
+	Bindings: HonoBindings;
+	Variables: {
+		ctx?: AuthContext;
+	};
+};
 
 
 

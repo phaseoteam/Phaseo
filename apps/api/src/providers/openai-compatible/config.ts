@@ -470,7 +470,7 @@ function normalizePathSegment(value: string | undefined) {
 export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfig {
     const fallback: OpenAICompatConfig = { providerId };
     const config = OPENAI_COMPAT_CONFIG[providerId] ?? fallback;
-    const bindings = getBindings() as Record<string, string | undefined>;
+    const bindings = getBindings() as unknown as Record<string, string | undefined>;
 
     const baseUrl = (config.baseUrlEnv && bindings[config.baseUrlEnv]) || config.baseUrl;
     if (!baseUrl) {
@@ -527,7 +527,7 @@ export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
     const envKey = config.apiKeyEnv;
     return resolveProviderKey(args, () => {
         if (!envKey) return undefined;
-        const bindings = getBindings() as Record<string, string | undefined>;
+        const bindings = getBindings() as unknown as Record<string, string | undefined>;
         return bindings[envKey];
     });
 }

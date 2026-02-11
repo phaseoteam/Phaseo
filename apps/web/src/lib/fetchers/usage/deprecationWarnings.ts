@@ -4,7 +4,7 @@ import {
 	resolveIncludeHidden,
 } from "@/lib/fetchers/models/visibility";
 
-const RECENT_USAGE_WINDOW_DAYS = 14;
+const RECENT_USAGE_WINDOW_DAYS = 7;
 const UPCOMING_WINDOW_DAYS = 90;
 const RECENTLY_PASSED_WINDOW_DAYS = 30;
 
@@ -12,6 +12,7 @@ export type DeprecationWarning = {
 	modelId: string;
 	modelName: string | null;
 	organisationId: string | null;
+	lastUsedAt: string | null;
 	deprecationDate: string | null;
 	retirementDate: string | null;
 	deprecationDaysUntil: number | null;
@@ -67,7 +68,7 @@ export async function getDeprecationWarningsForTeam(
 
 	const { data: recentModels, error: recentErr } = await supabase
 		.from("gateway_requests")
-		.select("model_id")
+		.select("model_id,created_at")
 		.eq("team_id", teamId)
 		.gte("created_at", recentUsageCutoff)
 		.not("model_id", "is", null)
@@ -77,6 +78,22 @@ export async function getDeprecationWarningsForTeam(
 	if (recentErr) {
 		console.error("Failed to fetch recent model usage:", recentErr);
 		return [];
+	}
+
+	const lastUsedByModelId = new Map<string, string>();
+	for (const row of recentModels ?? []) {
+		const modelId =
+			typeof (row as any)?.model_id === "string" ? (row as any).model_id : null;
+		const createdAt =
+			typeof (row as any)?.created_at === "string"
+				? (row as any).created_at
+				: null;
+		if (!modelId || !createdAt) continue;
+
+		const previous = lastUsedByModelId.get(modelId);
+		if (!previous || new Date(createdAt).getTime() > new Date(previous).getTime()) {
+			lastUsedByModelId.set(modelId, createdAt);
+		}
 	}
 
 	const modelIds = Array.from(
@@ -152,6 +169,7 @@ export async function getDeprecationWarningsForTeam(
 				modelId: model?.model_id ?? "",
 				modelName: model?.name ?? null,
 				organisationId: model?.organisation_id ?? null,
+				lastUsedAt: lastUsedByModelId.get(model?.model_id ?? "") ?? null,
 				deprecationDate,
 				retirementDate,
 				deprecationDaysUntil,

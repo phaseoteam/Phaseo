@@ -225,7 +225,8 @@ async function handleNonStreamResponse(
             const mimeType = payload?.mime_type ?? payload?.audio?.mime_type ?? payload?.audio?.mimeType ?? "audio/mpeg";
             const headers = makeHeaders(timingHeader);
             headers.set("Content-Type", mimeType);
-            return new Response(decodeBase64ToBytes(audioBase64), {
+            const bytes = Uint8Array.from(decodeBase64ToBytes(audioBase64));
+            return new Response(bytes.buffer, {
                 status: result.upstream.status,
                 headers,
             });

@@ -61,6 +61,8 @@ export type ByokKeyMeta = {
      * avoid re-fetching from the database inside each adapter.
      */
     key?: string | null;
+    // Back-compat alias used by older executors.
+    value?: string | null;
 };
 
 /**
@@ -168,6 +170,7 @@ export type KeyEnrichment = {
  */
 export type GatewayContextData = {
     teamId: string;
+    endpoint?: Endpoint;
     resolvedModel?: string | null;
     preset?: PresetData | null;
     key: GateCheck;

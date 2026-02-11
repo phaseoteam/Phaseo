@@ -78,7 +78,6 @@ function encodeChoice(
 					arguments: tc.arguments,
 				},
 			})),
-			refusal: choice.message.refusal,
 			// Per-message reasoning fields (MiniMax/Aion format)
 			...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
 			...(reasoningDetails.length > 0 ? { reasoning_details: reasoningDetails } : {}),
@@ -114,14 +113,11 @@ function splitContentParts(parts: IRContentPart[]): {
  */
 function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 	if (!usage) return undefined;
-	const anyUsage = usage as any;
-	const promptTokens = anyUsage.promptTokens ?? usage.inputTokens;
-	const completionTokens = anyUsage.completionTokens ?? usage.outputTokens;
-	const totalTokens = anyUsage.totalTokens ?? usage.totalTokens;
+	const totalTokens = usage.totalTokens;
 
 	const result: GatewayUsage = {
-		prompt_tokens: promptTokens,
-		completion_tokens: completionTokens,
+		input_tokens: usage.inputTokens,
+		output_tokens: usage.outputTokens,
 		total_tokens: totalTokens,
 	};
 

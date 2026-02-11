@@ -9,6 +9,8 @@ export type ErrorCode =
     | "validation_error"
     | "model_required"
     | "upstream_error"
+    | "not_supported"
+    | "not_ready"
     | "key_limit_exceeded"
     | "insufficient_funds"
     | "unsupported_model_or_endpoint";
@@ -26,6 +28,8 @@ const STATUS: Record<ErrorCode, number> = {
     validation_error: 400,
     model_required: 400,
     upstream_error: 502,
+    not_supported: 400,
+    not_ready: 409,
     key_limit_exceeded: 429,
     insufficient_funds: 402,
     unsupported_model_or_endpoint: 400,

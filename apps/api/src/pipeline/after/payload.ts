@@ -10,6 +10,14 @@ import type { IRChatResponse, IRUsage } from "@core/ir";
 import { encodeAnthropicMessagesResponse } from "@/protocols/anthropic-messages/encode";
 import { shapeUsageForClient } from "../usage";
 
+type AnyRecord = Record<string, any>;
+
+function asChatResponse(ir: RequestResult["ir"] | undefined): IRChatResponse | undefined {
+	if (!ir || typeof ir !== "object") return undefined;
+	if (!Array.isArray((ir as AnyRecord).choices)) return undefined;
+	return ir as IRChatResponse;
+}
+
 /**
  * Enrich the protocol-encoded response with gateway metadata
  *
@@ -60,9 +68,9 @@ export async function enrichSuccessPayload(ctx: PipelineContext, result: Request
     return payload;
 }
 
-function buildResponsesPayload(ctx: PipelineContext, result: RequestResult) {   
-    const raw = result.rawResponse ?? null;
-    const ir = result.ir;
+function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): AnyRecord {
+    const raw: AnyRecord | null = (result.rawResponse as AnyRecord | null | undefined) ?? null;
+    const ir = asChatResponse(result.ir);
     const request = ctx.body ?? {};
     const startedAt = typeof ctx.meta.startedAtMs === "number"
         ? Math.floor(ctx.meta.startedAtMs / 1000)
@@ -365,7 +373,7 @@ function buildChatCompletionsPayload(
     result: RequestResult,
     payload: any
 ) {
-    const ir = result.ir;
+    const ir = asChatResponse(result.ir);
     const created = payload?.created ??
         (typeof ctx.meta.startedAtMs === "number"
             ? Math.floor(ctx.meta.startedAtMs / 1000)
@@ -459,7 +467,7 @@ function buildAnthropicMessagesPayload(
     payload: any,
     opts: { includeMeta: boolean; meta?: any }
 ) {
-    const ir = result.ir;
+    const ir = asChatResponse(result.ir);
     const encoded = ir
         ? encodeAnthropicMessagesResponse(ir)
         : null;
@@ -596,7 +604,7 @@ export function formatClientPayload(args: {
             meta,
         });
         if (usage) {
-            response.usage = normalizeAnthropicUsage(usage, result.ir?.usage);
+            response.usage = normalizeAnthropicUsage(usage, asChatResponse(result.ir)?.usage);
         }
         return response;
     }

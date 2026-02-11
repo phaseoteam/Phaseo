@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
-import { json } from "@/routes/utils";
+import { json, withRuntime } from "@/routes/utils";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
@@ -169,6 +169,6 @@ async function handleActivity(req: Request) {
 export const creditsRoutes = new Hono<Env>();
 export const activityRoutes = new Hono<Env>();
 
-creditsRoutes.get("/", handleCredits);
-activityRoutes.get("/", handleActivity);
+creditsRoutes.get("/", withRuntime(handleCredits));
+activityRoutes.get("/", withRuntime(handleActivity));
 

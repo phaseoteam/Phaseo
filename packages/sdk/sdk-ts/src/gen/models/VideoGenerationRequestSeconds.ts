@@ -19,6 +19,10 @@
  */
 export type VideoGenerationRequestSeconds = number | string;
 
+export function instanceOfVideoGenerationRequestSeconds(value: any): value is VideoGenerationRequestSeconds {
+    return true;
+}
+
 export function VideoGenerationRequestSecondsFromJSON(json: any): VideoGenerationRequestSeconds {
     return VideoGenerationRequestSecondsFromJSONTyped(json, false);
 }

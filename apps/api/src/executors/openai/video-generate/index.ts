@@ -104,7 +104,7 @@ function openAiVideoToIR(
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRVideoGenerationRequest;
 	const model = args.providerModelSlug || ir.model || "sora-2";
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
 		() => bindings.OPENAI_API_KEY,

@@ -27,6 +27,10 @@ import {
  */
 export type ListModelsOrganisationParameter = Array<OrganisationId> | OrganisationId;
 
+export function instanceOfListModelsOrganisationParameter(value: any): value is ListModelsOrganisationParameter {
+    return instanceOfOrganisationId(value as any);
+}
+
 export function ListModelsOrganisationParameterFromJSON(json: any): ListModelsOrganisationParameter {
     return ListModelsOrganisationParameterFromJSONTyped(json, false);
 }
@@ -64,15 +68,16 @@ export function ListModelsOrganisationParameterToJSONTyped(value?: ListModelsOrg
         return value;
     }
     if (instanceOfOrganisationId(value)) {
-        return OrganisationIdToJSON(value as OrganisationId);
+        return OrganisationIdToJSON(value as unknown as OrganisationId);
     }
     if (Array.isArray(value)) {
         if (value.every(item => typeof item === 'object')) {
             if (value.every(item => instanceOfOrganisationId(item))) {
-                return value.map(value => OrganisationIdToJSON(value as OrganisationId));
+                return value.map((item) => OrganisationIdToJSON(item as unknown as OrganisationId));
             }
         }
         return value;
     }
     return {};
 }
+

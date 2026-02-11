@@ -19,6 +19,10 @@
  */
 export type ChatCompletionsRequestToolChoice = object | string;
 
+export function instanceOfChatCompletionsRequestToolChoice(value: any): value is ChatCompletionsRequestToolChoice {
+    return true;
+}
+
 export function ChatCompletionsRequestToolChoiceFromJSON(json: any): ChatCompletionsRequestToolChoice {
     return ChatCompletionsRequestToolChoiceFromJSONTyped(json, false);
 }

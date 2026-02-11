@@ -29,6 +29,7 @@ import { normalizeOpenAIContent } from "../shared/normalizeContent";
  * @returns IR chat request
  */
 export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequest {
+	const reqAny = req as any;
 	// Transform messages
 	const messages: IRMessage[] = [];
 
@@ -41,20 +42,20 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 	}
 
 	// Transform message array
-	for (const msg of req.messages) {
+	for (const msgAny of req.messages as Array<any>) {
 		const normalizedRole =
-			msg.role === "developer" ? "system" : msg.role;
+			msgAny.role === "developer" ? "system" : msgAny.role;
 
 		if (normalizedRole === "system" || normalizedRole === "user") {
 			messages.push({
 				role: normalizedRole,
-				content: normalizeOpenAIContent(msg.content),
+				content: normalizeOpenAIContent(msgAny.content),
 			});
 		} else if (normalizedRole === "assistant") {
 			messages.push({
 				role: "assistant",
-				content: normalizeOpenAIContent(msg.content || ""),
-				toolCalls: msg.tool_calls?.map(decodeToolCall),
+				content: normalizeOpenAIContent(msgAny.content || ""),
+				toolCalls: Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined,
 			});
 		} else if (normalizedRole === "tool") {
 			// Tool result message
@@ -62,8 +63,8 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 				role: "tool",
 				toolResults: [
 					{
-						toolCallId: msg.tool_call_id,
-						content: typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content),
+						toolCallId: msgAny.tool_call_id,
+						content: typeof msgAny.content === "string" ? msgAny.content : JSON.stringify(msgAny.content),
 					},
 				],
 			});
@@ -118,7 +119,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		logitBias: req.logit_bias,
 		logprobs: req.logprobs,
 		topLogprobs: req.top_logprobs,
-		stop: req.stop,
+		stop: reqAny.stop,
 		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
 		serviceTier: resolveRequestedServiceTier({
 			service_tier: (req as any).service_tier,

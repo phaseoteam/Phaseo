@@ -50,7 +50,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		timing.timer.mark("ir_encode");
 		let protocolResponse;
 		if (exec.result.kind === "completed" && exec.result.ir) {
-			protocolResponse = encodeProtocol(protocol, exec.result.ir, pre.ctx.requestId);
+			protocolResponse = encodeProtocol(protocol, exec.result.ir as any, pre.ctx.requestId);
 		} else {
 			protocolResponse = null;
 		}

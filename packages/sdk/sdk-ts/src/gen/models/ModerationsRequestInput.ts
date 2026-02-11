@@ -27,6 +27,10 @@ import {
  */
 export type ModerationsRequestInput = Array<ModerationsRequestInputOneOfInner> | string;
 
+export function instanceOfModerationsRequestInput(value: any): value is ModerationsRequestInput {
+    return true;
+}
+
 export function ModerationsRequestInputFromJSON(json: any): ModerationsRequestInput {
     return ModerationsRequestInputFromJSONTyped(json, false);
 }
@@ -60,7 +64,7 @@ export function ModerationsRequestInputToJSONTyped(value?: ModerationsRequestInp
     if (Array.isArray(value)) {
         if (value.every(item => typeof item === 'object')) {
             if (value.every(item => instanceOfModerationsRequestInputOneOfInner(item))) {
-                return value.map(value => ModerationsRequestInputOneOfInnerToJSON(value as ModerationsRequestInputOneOfInner));
+                return value.map((item) => ModerationsRequestInputOneOfInnerToJSON(item as ModerationsRequestInputOneOfInner));
             }
         }
         return value;

@@ -3,7 +3,7 @@
 // Why: Keeps key handling isolated and secure.
 // How: Exposes focused helpers for this module.
 
-import { getByokKey } from '../../../runtime/env';
+import { getByokKey } from "@/runtime/env";
 
 const te = new TextEncoder();
 const td = new TextDecoder();

@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin, getBindings } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
-import { json } from "@/routes/utils";
+import { json, withRuntime } from "@/routes/utils";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
@@ -287,11 +287,11 @@ async function handleDeleteKey(req: Request) {
 
 export const provisioningRoutes = new Hono<Env>();
 
-provisioningRoutes.get("/keys", handleListKeys);
+provisioningRoutes.get("/keys", withRuntime(handleListKeys));
 // POST /keys is commented out - provisioning keys should be created via the dashboard
-provisioningRoutes.get("/keys/:id", handleGetKey);
-provisioningRoutes.patch("/keys/:id", handleUpdateKey);
-provisioningRoutes.delete("/keys/:id", handleDeleteKey);
+provisioningRoutes.get("/keys/:id", withRuntime(handleGetKey));
+provisioningRoutes.patch("/keys/:id", withRuntime(handleUpdateKey));
+provisioningRoutes.delete("/keys/:id", withRuntime(handleDeleteKey));
 
 // Canonical naming moving forward.
 export const managementRoutes = provisioningRoutes;

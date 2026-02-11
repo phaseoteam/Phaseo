@@ -27,6 +27,10 @@ import {
  */
 export type AnthropicMessageContent = Array<AnthropicContentBlock> | string;
 
+export function instanceOfAnthropicMessageContent(value: any): value is AnthropicMessageContent {
+    return true;
+}
+
 export function AnthropicMessageContentFromJSON(json: any): AnthropicMessageContent {
     return AnthropicMessageContentFromJSONTyped(json, false);
 }
@@ -60,7 +64,7 @@ export function AnthropicMessageContentToJSONTyped(value?: AnthropicMessageConte
     if (Array.isArray(value)) {
         if (value.every(item => typeof item === 'object')) {
             if (value.every(item => instanceOfAnthropicContentBlock(item))) {
-                return value.map(value => AnthropicContentBlockToJSON(value as AnthropicContentBlock));
+                return value.map((item) => AnthropicContentBlockToJSON(item as AnthropicContentBlock));
             }
         }
         return value;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import {
@@ -10,9 +11,12 @@ import {
 } from "@/lib/fetchers/usage/deprecationWarnings";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 
-type ModelLifecycle = DeprecationWarning & {
-	nearestDays: number;
-};
+interface DeprecationWarningsProps {
+	warnings?: DeprecationWarning[];
+	id?: string;
+}
+
+type AlertCardMode = "deprecated" | "retired";
 
 function formatDate(value: string) {
 	return new Date(value).toLocaleDateString(undefined, {
@@ -22,23 +26,9 @@ function formatDate(value: string) {
 	});
 }
 
-function formatDays(days: number) {
-	if (days < 0) return `${Math.abs(days)}d overdue`;
-	if (days === 0) return "today";
-	return `${days}d`;
-}
-
-function getUrgencyClasses(days: number) {
-	if (days < 0) {
-		return "border-red-300 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300";
-	}
-	if (days <= 7) {
-		return "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300";
-	}
-	if (days <= 30) {
-		return "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300";
-	}
-	return "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300";
+function formatFutureDays(days: number) {
+	if (days <= 0) return "today";
+	return `in ${days}d`;
 }
 
 function deriveOrganisationId(
@@ -74,173 +64,219 @@ function ModelLink({
 	);
 }
 
-function EventChip({
-	label,
-	days,
-	date,
+function AlertCard({
+	row,
+	mode,
 }: {
-	label: "Dep" | "Ret";
-	days: number;
-	date: string;
+	row: DeprecationWarning;
+	mode: AlertCardMode;
 }) {
-	return (
-		<Badge
-			variant="outline"
-			className={cn(
-				"h-5 gap-1 px-1.5 text-[11px] font-mono tabular-nums",
-				getUrgencyClasses(days),
-			)}
-		>
-			<span className="font-semibold">{label}</span>
-			<span>{formatDays(days)}</span>
-			<span className="opacity-70">{formatDate(date)}</span>
-		</Badge>
-	);
-}
-
-function LifecycleRow({ row }: { row: ModelLifecycle }) {
+	const modelOrgId = deriveOrganisationId(row.modelId, row.organisationId);
+	const replacementOrgId = row.replacementModelId
+		? deriveOrganisationId(row.replacementModelId, null)
+		: null;
 	const hasReadableName =
 		Boolean(row.modelName?.trim()) && row.modelName?.trim() !== row.modelId;
 
+	const deprecatedBadgeLabel =
+		row.retirementDaysUntil !== null
+			? `Retires ${formatFutureDays(row.retirementDaysUntil)}`
+			: "Deprecated";
+
+	const badge =
+		mode === "deprecated" ? (
+			<Badge
+				variant="outline"
+				className="h-5 shrink-0 border-amber-300 bg-amber-50 px-1.5 text-[11px] text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+			>
+				<span className="font-medium">{deprecatedBadgeLabel}</span>
+			</Badge>
+		) : (
+			<Badge
+				variant="outline"
+				className="h-5 shrink-0 gap-1 border-red-300 bg-red-50 px-1.5 text-[11px] text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
+			>
+				<span className="font-semibold">Retired</span>
+			</Badge>
+		);
+
 	return (
-		<div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5">
-			<div className="min-w-0 flex-1">
-				<div className="flex min-w-0 items-center gap-2">
-					<span
-						className={cn(
-							"h-1.5 w-1.5 shrink-0 rounded-full",
-							row.nearestDays <= 7 ? "bg-rose-500" : "bg-amber-500",
-						)}
+		<div className="rounded-xl border bg-card p-3 shadow-sm">
+			<div className="flex min-w-0 items-start gap-2">
+				{modelOrgId ? (
+					<Logo
+						id={modelOrgId}
+						width={16}
+						height={16}
+						className="mt-1 shrink-0 rounded-sm"
 					/>
+				) : (
+					<span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
+				)}
+				<div className="min-w-0 flex-1">
 					<ModelLink
 						modelId={row.modelId}
 						modelName={row.modelName}
 						organisationId={row.organisationId}
 						className="truncate text-sm font-medium"
 					/>
+					{hasReadableName ? (
+						<div className="mt-0.5 truncate text-[11px] font-mono text-muted-foreground">
+							{row.modelId}
+						</div>
+					) : null}
 				</div>
-				{hasReadableName ? (
-					<div className="mt-0.5 truncate text-[11px] font-mono text-muted-foreground">
-						{row.modelId}
-					</div>
-				) : null}
-				{row.replacementModelId ? (
-					<div className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-						<ArrowRight className="h-3 w-3 shrink-0" />
-						<span className="shrink-0">Replace with</span>
-						<ModelLink
-							modelId={row.replacementModelId}
-							modelName={null}
-							organisationId={deriveOrganisationId(row.replacementModelId, null)}
-							className="truncate font-medium text-foreground"
-						/>
-					</div>
-				) : null}
+				{badge}
 			</div>
 
-			<div className="flex flex-wrap items-center gap-1.5">
-				{row.deprecationDate && row.deprecationDaysUntil !== null ? (
-					<EventChip
-						label="Dep"
-						days={row.deprecationDaysUntil}
-						date={row.deprecationDate}
+			{mode === "deprecated" ? (
+				<p className="mt-2 text-[11px] text-muted-foreground">
+					This model has been deprecated and is due to retire on{" "}
+					<span className="font-medium text-foreground">
+						{row.retirementDate ? formatDate(row.retirementDate) : "TBD"}
+					</span>
+					. It will no longer be usable after this date.
+				</p>
+			) : (
+				<p className="mt-2 text-[11px] text-muted-foreground">
+					This model retired on{" "}
+					<span className="font-medium text-foreground">
+						{row.retirementDate ? formatDate(row.retirementDate) : "unknown date"}
+					</span>
+					. It is no longer usable.
+				</p>
+			)}
+
+			{row.replacementModelId ? (
+				<div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+					<ArrowRight className="h-3 w-3 shrink-0" />
+					<span className="shrink-0">Recommended replacement:</span>
+					<ModelLink
+						modelId={row.replacementModelId}
+						modelName={null}
+						organisationId={replacementOrgId}
+						className="truncate font-medium text-foreground"
 					/>
-				) : null}
-				{row.retirementDate && row.retirementDaysUntil !== null ? (
-					<EventChip
-						label="Ret"
-						days={row.retirementDaysUntil}
-						date={row.retirementDate}
-					/>
-				) : null}
-			</div>
+				</div>
+			) : null}
 		</div>
 	);
 }
 
-function toLifecycleRows(warnings: DeprecationWarning[]): ModelLifecycle[] {
-	return warnings
-		.map((warning) => {
-			const candidates = [warning.deprecationDaysUntil, warning.retirementDaysUntil]
-				.filter((value): value is number => Number.isFinite(value));
-			const nearestDays = candidates.length ? Math.min(...candidates) : 9999;
-			return {
-				...warning,
-				nearestDays,
-			};
-		})
-		.sort((a, b) => a.nearestDays - b.nearestDays);
+function SectionBlock({
+	title,
+	rows,
+	mode,
+}: {
+	title: string;
+	rows: DeprecationWarning[];
+	mode: AlertCardMode;
+}) {
+	if (!rows.length) return null;
+
+	const visibleRows = rows.slice(0, 4);
+	const hiddenRows = rows.slice(4);
+
+	return (
+		<div className="space-y-2">
+			<div className="flex items-center gap-2 px-1">
+				<h4 className="text-sm font-medium">{title}</h4>
+				<Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
+					{rows.length}
+				</Badge>
+			</div>
+
+			<div className="grid gap-2 md:grid-cols-2">
+				{visibleRows.map((row) => (
+					<AlertCard key={`${mode}-${row.modelId}`} row={row} mode={mode} />
+				))}
+			</div>
+
+			{hiddenRows.length > 0 ? (
+				<details className="rounded-md border">
+					<summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
+						Show {hiddenRows.length} more
+					</summary>
+					<div className="grid gap-2 border-t p-2 md:grid-cols-2">
+						{hiddenRows.map((row) => (
+							<AlertCard
+								key={`${mode}-${row.modelId}-more`}
+								row={row}
+								mode={mode}
+							/>
+						))}
+					</div>
+				</details>
+			) : null}
+		</div>
+	);
 }
 
-export default async function DeprecationWarnings() {
+function sortByRetirementDateAsc(rows: DeprecationWarning[]) {
+	return rows.slice().sort((a, b) => {
+		const aValue = a.retirementDate ? new Date(a.retirementDate).getTime() : Number.POSITIVE_INFINITY;
+		const bValue = b.retirementDate ? new Date(b.retirementDate).getTime() : Number.POSITIVE_INFINITY;
+		return aValue - bValue;
+	});
+}
+
+function sortRecentRetired(rows: DeprecationWarning[]) {
+	return rows.slice().sort((a, b) => {
+		const aDays = a.retirementDaysUntil ?? -9999;
+		const bDays = b.retirementDaysUntil ?? -9999;
+		return bDays - aDays;
+	});
+}
+
+export default async function DeprecationWarnings({
+	warnings,
+	id = "lifecycle-alerts",
+}: DeprecationWarningsProps = {}) {
 	const teamId = await getTeamIdFromCookie();
 	if (!teamId) return null;
 
-	const warnings = await getDeprecationWarningsForTeam(teamId);
-	if (!warnings.length) return null;
+	const rawWarnings = warnings ?? (await getDeprecationWarningsForTeam(teamId));
+	if (!rawWarnings.length) return null;
 
-	const rows = toLifecycleRows(warnings);
-	const visibleRows = rows.slice(0, 5);
-	const hiddenRows = rows.slice(5);
+	const deprecatedRows = sortByRetirementDateAsc(
+		rawWarnings.filter(
+			(row) =>
+				row.deprecationDaysUntil !== null &&
+				(row.retirementDaysUntil === null || row.retirementDaysUntil >= 0),
+		),
+	);
 
-	const overdueCount = rows.filter((row) => row.nearestDays < 0).length;
-	const next7DaysCount = rows.filter(
-		(row) => row.nearestDays >= 0 && row.nearestDays <= 7,
-	).length;
+	const recentRetiredRows = sortRecentRetired(
+		rawWarnings.filter((row) => (row.retirementDaysUntil ?? 0) < 0),
+	);
+	if (!deprecatedRows.length && !recentRetiredRows.length) return null;
 
 	return (
-		<div className="mt-4 space-y-2">
+		<div id={id} className="space-y-3">
 			<div className="flex items-center gap-2">
-				<h3 className="text-base font-semibold">Lifecycle Alerts</h3>
+				<h3 className="text-base font-semibold">Model Lifecycle Alerts</h3>
 				<Separator className="flex-1" />
+				<Badge
+					variant="outline"
+					className="h-5 border-amber-300 bg-amber-50 px-1.5 text-[11px] text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+				>
+					<AlertTriangle className="mr-1 h-3 w-3" />
+					Action required
+				</Badge>
 			</div>
 
-			<section className="overflow-hidden rounded-xl border bg-card">
-				<div className="flex flex-wrap items-center gap-1.5 border-b px-3 py-2.5">
-					<div className="mr-1 flex items-center gap-1.5">
-						<AlertTriangle className="h-4 w-4 text-amber-600" />
-						<span className="text-sm font-medium">Recently used models</span>
-					</div>
-					<Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
-						{rows.length}
-					</Badge>
-					{next7DaysCount > 0 ? (
-						<Badge
-							variant="outline"
-							className="h-5 border-rose-300 bg-rose-50 px-1.5 text-[11px] text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300"
-						>
-							{next7DaysCount} in 7d
-						</Badge>
-					) : null}
-					{overdueCount > 0 ? (
-						<Badge
-							variant="outline"
-							className="h-5 border-red-300 bg-red-50 px-1.5 text-[11px] text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
-						>
-							{overdueCount} overdue
-						</Badge>
-					) : null}
-				</div>
-
-				<div className="divide-y">
-					{visibleRows.map((row) => (
-						<LifecycleRow key={row.modelId} row={row} />
-					))}
-				</div>
-
-				{hiddenRows.length > 0 ? (
-					<details className="border-t">
-						<summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
-							Show {hiddenRows.length} more
-						</summary>
-						<div className="divide-y border-t">
-							{hiddenRows.map((row) => (
-								<LifecycleRow key={`${row.modelId}-more`} row={row} />
-							))}
-						</div>
-					</details>
-				) : null}
-			</section>
+			<div className="space-y-5">
+				<SectionBlock
+					title="Deprecated Models"
+					rows={deprecatedRows}
+					mode="deprecated"
+				/>
+				<SectionBlock
+					title="Recent Retirements"
+					rows={recentRetiredRows}
+					mode="retired"
+				/>
+			</div>
 		</div>
 	);
 }

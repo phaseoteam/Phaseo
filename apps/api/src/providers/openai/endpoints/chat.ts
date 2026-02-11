@@ -576,7 +576,7 @@ function createOpenAIStreamResponse(
         requestId: string;
         bill: ReturnType<typeof createBill>;
         onFirstFrame?: (ms: number) => void;
-        debug?: boolean;
+        debug?: { enabled?: boolean } | boolean;
     }
 ) {
     if (!res.body) {
@@ -588,7 +588,7 @@ function createOpenAIStreamResponse(
     const encoder = new TextEncoder();
     const transform = new TransformStream<Uint8Array, Uint8Array>();
     const writer = transform.writable.getWriter();
-    const debugEnabled = Boolean(opts.debug);
+    const debugEnabled = typeof opts.debug === "boolean" ? opts.debug : Boolean(opts.debug?.enabled);
     const debugFrames: string[] = [];
     const maxDebugFrames = 20;
     let totalFrames = 0;
@@ -833,7 +833,7 @@ async function bufferOpenAIStreamResponse(
         pricingCard: ProviderExecuteArgs["pricingCard"];
         bill: ReturnType<typeof createBill>;
         requestId: string;
-        debug?: boolean;
+        debug?: { enabled?: boolean } | boolean;
     }
 ): Promise<{ normalized: GatewayCompletionsResponse; bill: ReturnType<typeof createBill>; firstFrameMs: number | null }> {
     if (!res.body) {
@@ -842,7 +842,7 @@ async function bufferOpenAIStreamResponse(
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    const debugEnabled = Boolean(opts.debug);
+    const debugEnabled = typeof opts.debug === "boolean" ? opts.debug : Boolean(opts.debug?.enabled);
     const debugFrames: string[] = [];
     const maxDebugFrames = 20;
     let totalFrames = 0;

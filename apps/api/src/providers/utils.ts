@@ -15,15 +15,14 @@ export function sanitizePayload<T extends z.ZodTypeAny>(schema: T, payload: unkn
  * sending upstream.
  */
 export function buildAdapterPayload<
-    T extends z.ZodTypeAny,
-    K extends keyof z.infer<T>
->(schema: T, payload: unknown, omitKeys: K[] = [] as K[]) {
+    T extends z.ZodTypeAny
+>(schema: T, payload: unknown, omitKeys: string[] = []) {
     const canonical = schema.parse(payload);
-    const adapterPayload: any = { ...canonical };
+    const adapterPayload: Record<string, unknown> = { ...(canonical as Record<string, unknown>) };
     delete adapterPayload.provider;
     for (const key of omitKeys) {
-        delete adapterPayload[key as string];
+        delete adapterPayload[key];
     }
-    return { canonical, adapterPayload: adapterPayload as Omit<z.infer<T>, K> };
+    return { canonical, adapterPayload: adapterPayload as z.infer<T> };
 }
 

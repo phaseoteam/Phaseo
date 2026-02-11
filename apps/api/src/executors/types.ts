@@ -31,17 +31,8 @@ import type { DebugOptions } from "@core/types";
 import type { Protocol } from "@protocols/detect";
 
 export type ExecutorExecuteArgs = {
-	ir:
-		| IRChatRequest
-		| IREmbeddingsRequest
-		| IRModerationsRequest
-		| IRImageGenerationRequest
-		| IRAudioSpeechRequest
-		| IRAudioTranscriptionRequest
-		| IRAudioTranslationRequest
-		| IRVideoGenerationRequest
-		| IROcrRequest
-		| IRMusicGenerateRequest;
+	// Keep executor boundary permissive; each executor narrows to its capability-specific IR.
+	ir: any;
 
 	requestId: string;
 	teamId: string;
@@ -92,8 +83,8 @@ export type ExecutorCompletedResult = {
 		| IRMusicGenerateResponse;
 	bill: Bill;
 	upstream: Response;
-	keySource: "gateway" | "byok";
-	byokKeyId: string | null;
+	keySource?: "gateway" | "byok";
+	byokKeyId?: string | null;
 	mappedRequest?: string;
 	rawResponse?: any;
 	timing?: {
@@ -108,9 +99,10 @@ export type ExecutorStreamingResult = {
 	usageFinalizer: () => Promise<Bill | null>;
 	bill: Bill;
 	upstream: Response;
-	keySource: "gateway" | "byok";
-	byokKeyId: string | null;
+	keySource?: "gateway" | "byok";
+	byokKeyId?: string | null;
 	mappedRequest?: string;
+	rawResponse?: any;
 	timing?: {
 		latencyMs?: number;
 		generationMs?: number;

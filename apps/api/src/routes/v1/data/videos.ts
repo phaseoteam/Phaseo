@@ -162,7 +162,7 @@ async function proxyOpenAIVideoRequest(
 	path: string,
 	method: string
 ) {
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const config = resolveOpenAICompatConfig(OPENAI_PROVIDER_ID);
 	const key = bindings[config.apiKeyEnv ?? "OPENAI_API_KEY"];
 	if (!key) {
@@ -217,7 +217,7 @@ function decodeDashscopeTaskId(videoId: string): string | null {
 }
 
 async function fetchGoogleOperation(operationName: string) {
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY;
 	if (!key) {
 		return err("upstream_error", {
@@ -234,7 +234,7 @@ async function fetchGoogleOperation(operationName: string) {
 }
 
 async function fetchDashscopeTask(taskId: string) {
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const key = bindings.ALIBABA_API_KEY || bindings.QWEN_API_KEY;
 	if (!key) {
 		return err("upstream_error", {

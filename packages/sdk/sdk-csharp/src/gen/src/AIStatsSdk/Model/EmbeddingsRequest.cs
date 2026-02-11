@@ -43,7 +43,7 @@ namespace AIStatsSdk.Model
         /// <param name="debug">debug</param>
         /// <param name="provider">provider</param>
         [JsonConstructor]
-        public EmbeddingsRequest(Option<string?> model = default, Option<object?> input = default, Option<object?> inputs = default, Option<string?> encodingFormat = default, Option<int?> dimensions = default, Option<Object?> embeddingOptions = default, Option<string?> user = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
+        public EmbeddingsRequest(Option<string?> model = default, Option<OneOfstringarray?> input = default, Option<OneOfstringarray?> inputs = default, Option<string?> encodingFormat = default, Option<int?> dimensions = default, Option<Object?> embeddingOptions = default, Option<string?> user = default, Option<DebugOptions?> debug = default, Option<ProviderRoutingOptions?> provider = default)
         {
             ModelOption = model;
             InputOption = input;
@@ -77,27 +77,27 @@ namespace AIStatsSdk.Model
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<object?> InputOption { get; private set; }
+        public Option<OneOfstringarray?> InputOption { get; private set; }
 
         /// <summary>
         /// Gets or Sets Input
         /// </summary>
         [JsonPropertyName("input")]
-        public object? Input { get { return this.InputOption; } set { this.InputOption = new(value); } }
+        public OneOfstringarray? Input { get { return this.InputOption; } set { this.InputOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Inputs
         /// </summary>
         [JsonIgnore]
         [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
-        public Option<object?> InputsOption { get; private set; }
+        public Option<OneOfstringarray?> InputsOption { get; private set; }
 
         /// <summary>
         /// Alias for input.
         /// </summary>
         /// <value>Alias for input.</value>
         [JsonPropertyName("inputs")]
-        public object? Inputs { get { return this.InputsOption; } set { this.InputsOption = new(value); } }
+        public OneOfstringarray? Inputs { get { return this.InputsOption; } set { this.InputsOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of EncodingFormat
@@ -238,8 +238,8 @@ namespace AIStatsSdk.Model
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
             Option<string?> model = default;
-            Option<object?> input = default;
-            Option<object?> inputs = default;
+            Option<OneOfstringarray?> input = default;
+            Option<OneOfstringarray?> inputs = default;
             Option<string?> encodingFormat = default;
             Option<int?> dimensions = default;
             Option<Object?> embeddingOptions = default;
@@ -266,10 +266,10 @@ namespace AIStatsSdk.Model
                             model = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
                         case "input":
-                            input = new Option<object?>(JsonSerializer.Deserialize<object>(ref utf8JsonReader, jsonSerializerOptions));
+                            input = new Option<OneOfstringarray?>(JsonSerializer.Deserialize<OneOfstringarray>(ref utf8JsonReader, jsonSerializerOptions));
                             break;
                         case "inputs":
-                            inputs = new Option<object?>(JsonSerializer.Deserialize<object>(ref utf8JsonReader, jsonSerializerOptions));
+                            inputs = new Option<OneOfstringarray?>(JsonSerializer.Deserialize<OneOfstringarray>(ref utf8JsonReader, jsonSerializerOptions));
                             break;
                         case "encoding_format":
                             encodingFormat = new Option<string?>(utf8JsonReader.GetString()!);

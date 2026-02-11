@@ -98,7 +98,7 @@ function googleVideoToIR(
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRVideoGenerationRequest;
 	const model = args.providerModelSlug || ir.model || "veo-3.1-generate-preview";
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
 		() => bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY,

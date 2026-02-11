@@ -573,15 +573,15 @@ namespace AIStatsSdk.Model
             }
 
             // Seed (long) maximum
-            if (this.SeedOption.IsSet && this.SeedOption.Value > long.MaxValue)
+            if (this.SeedOption.IsSet && this.SeedOption.Value > (long)9223372036854776000)
             {
-                yield return new ValidationResult("Invalid value for Seed, must be a value less than or equal to long.MaxValue.", new [] { "Seed" });
+                yield return new ValidationResult("Invalid value for Seed, must be a value less than or equal to 9223372036854776000.", new [] { "Seed" });
             }
 
             // Seed (long) minimum
-            if (this.SeedOption.IsSet && this.SeedOption.Value < long.MinValue)
+            if (this.SeedOption.IsSet && this.SeedOption.Value < (long)-9223372036854776000)
             {
-                yield return new ValidationResult("Invalid value for Seed, must be a value greater than or equal to long.MinValue.", new [] { "Seed" });
+                yield return new ValidationResult("Invalid value for Seed, must be a value greater than or equal to -9223372036854776000.", new [] { "Seed" });
             }
 
             // Temperature (decimal) maximum

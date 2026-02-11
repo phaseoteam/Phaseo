@@ -13,7 +13,7 @@ function getStripe(): Stripe {
 
 async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): Promise<string | null> {
     if (!customerId) return null;
-    const customer = await stripe.customers.retrieve(customerId);
+    const customer = (await stripe.customers.retrieve(customerId)) as any;
     if (typeof customer === "string") return null;
     const invoiceDefault = customer.invoice_settings?.default_payment_method;
     if (typeof invoiceDefault === "string") return invoiceDefault;

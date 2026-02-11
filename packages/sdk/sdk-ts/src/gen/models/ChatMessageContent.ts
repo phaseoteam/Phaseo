@@ -27,6 +27,10 @@ import {
  */
 export type ChatMessageContent = Array<MessageContentPart> | string;
 
+export function instanceOfChatMessageContent(value: any): value is ChatMessageContent {
+    return true;
+}
+
 export function ChatMessageContentFromJSON(json: any): ChatMessageContent {
     return ChatMessageContentFromJSONTyped(json, false);
 }
@@ -60,7 +64,7 @@ export function ChatMessageContentToJSONTyped(value?: ChatMessageContent | null,
     if (Array.isArray(value)) {
         if (value.every(item => typeof item === 'object')) {
             if (value.every(item => instanceOfMessageContentPart(item))) {
-                return value.map(value => MessageContentPartToJSON(value as MessageContentPart));
+                return value.map((item) => MessageContentPartToJSON(item as MessageContentPart));
             }
         }
         return value;

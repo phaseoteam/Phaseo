@@ -35,7 +35,7 @@ import {
 export type ModerationsRequestInputOneOfInner = ImageModerationInput | TextModerationInput;
 
 export function instanceOfModerationsRequestInputOneOfInner(value: any): value is ModerationsRequestInputOneOfInner {
-    return typeof value === 'object' && value !== null;
+    return instanceOfImageModerationInput(value as any) || instanceOfTextModerationInput(value as any);
 }
 
 export function ModerationsRequestInputOneOfInnerFromJSON(json: any): ModerationsRequestInputOneOfInner {
@@ -77,3 +77,4 @@ export function ModerationsRequestInputOneOfInnerToJSONTyped(value?: Moderations
     }
     return {};
 }
+

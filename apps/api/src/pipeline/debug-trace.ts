@@ -2,7 +2,16 @@
 // Why: Provide detailed field-level diffs for debugging provider adapters.
 // How: Computes shallow/deep diffs with redaction for sensitive payloads.
 
-import type { DebugTraceEntry } from "@core/types";
+type DebugTraceEntry = {
+	stage: string;
+	action: "added" | "removed" | "changed" | "moved" | "note";
+	path: string;
+	before?: unknown;
+	after?: unknown;
+	note?: string;
+	from?: string;
+	to?: string;
+};
 
 const REDACT_PATH_PARTS = new Set([
 	"messages",

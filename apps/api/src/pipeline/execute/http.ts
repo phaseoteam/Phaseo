@@ -5,6 +5,7 @@
 
 export type ExecuteErrorCode =
     | "unsupported_model_or_endpoint"
+    | "unsupported_modalities"
     | "pricing_not_configured"
     | "upstream_error";
 
@@ -17,6 +18,7 @@ export function json(data: unknown, status = 200) {
 
 const STATUS: Record<ExecuteErrorCode, number> = {
     unsupported_model_or_endpoint: 400,
+    unsupported_modalities: 400,
     pricing_not_configured: 402,
     upstream_error: 502,
 };

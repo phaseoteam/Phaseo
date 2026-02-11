@@ -79,7 +79,7 @@ export function cacheHeaders(options: CacheOptions): Record<string, string> {
 export async function cacheResponse(req: Request, response: Response, options: CacheOptions): Promise<Response> {
     if (req.method !== "GET") return response;
     if (!response.ok) return response;
-    const cache = caches.default;
+    const cache = (caches as unknown as { default: Cache }).default;
     const cacheKey = await buildCacheKey(req, options.scope);
     dispatchBackground(cache.put(cacheKey, response.clone()));
     return response;

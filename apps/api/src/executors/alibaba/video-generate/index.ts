@@ -84,7 +84,7 @@ function wanToIR(
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRVideoGenerationRequest;
 	const model = args.providerModelSlug || ir.model || "wan2.2-t2v-plus";
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
 		() => bindings.ALIBABA_API_KEY || bindings.QWEN_API_KEY,

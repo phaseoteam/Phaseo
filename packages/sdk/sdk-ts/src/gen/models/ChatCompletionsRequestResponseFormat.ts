@@ -27,6 +27,10 @@ import {
  */
 export type ChatCompletionsRequestResponseFormat = ChatCompletionsRequestResponseFormatOneOf | string;
 
+export function instanceOfChatCompletionsRequestResponseFormat(value: any): value is ChatCompletionsRequestResponseFormat {
+    return instanceOfChatCompletionsRequestResponseFormatOneOf(value as any);
+}
+
 export function ChatCompletionsRequestResponseFormatFromJSON(json: any): ChatCompletionsRequestResponseFormat {
     return ChatCompletionsRequestResponseFormatFromJSONTyped(json, false);
 }

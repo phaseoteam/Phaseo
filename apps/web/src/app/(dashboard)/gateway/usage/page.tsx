@@ -7,6 +7,7 @@ import UsageHeader from "@/components/(gateway)/usage/UsageHeader/UsageHeader";
 import DeprecationWarnings from "@/components/(gateway)/usage/DeprecationWarnings/DeprecationWarnings";
 import MetricsOverview from "@/components/(gateway)/usage/MetricsOverview";
 import RequestsSection from "@/components/(gateway)/usage/RequestsSection";
+import { getDeprecationWarningsForTeam } from "@/lib/fetchers/usage/deprecationWarnings";
 import {
 	fetchOrganizationColors,
 	fetchAppNames,
@@ -166,6 +167,8 @@ async function UsagePageContent({
 	if (keyParam) {
 		activeKey = availableKeys.find((k) => k.id === keyParam) ?? null;
 	}
+	const lifecycleWarnings = await getDeprecationWarningsForTeam(teamId);
+	const lifecycleAlertCount = lifecycleWarnings.length;
 
 	const from = fromForRange(range).toISOString();
 	const nowIso = new Date().toISOString();
@@ -181,6 +184,26 @@ async function UsagePageContent({
 	const uniqueModels = Array.from(new Set((uniqueData ?? []).map((r: any) => r.model_id).filter(Boolean)));
 	const uniqueProviders = Array.from(new Set((uniqueData ?? []).map((r: any) => r.provider).filter(Boolean)));
 	const uniqueAppIds = Array.from(new Set((uniqueData ?? []).map((r: any) => r.app_id).filter(Boolean)));
+	const modelProviders = (() => {
+		const providerSetsByModel = new Map<string, Set<string>>();
+		for (const row of uniqueData ?? []) {
+			const modelId =
+				typeof row?.model_id === "string" ? row.model_id : null;
+			const providerId =
+				typeof row?.provider === "string" ? row.provider : null;
+			if (!modelId || !providerId) continue;
+			if (!providerSetsByModel.has(modelId)) {
+				providerSetsByModel.set(modelId, new Set<string>());
+			}
+			providerSetsByModel.get(modelId)!.add(providerId);
+		}
+		return new Map(
+			Array.from(providerSetsByModel.entries()).map(([modelId, providers]) => [
+				modelId,
+				Array.from(providers),
+			]),
+		);
+	})();
 
 	// Fetch organization colors, model metadata, and app names
 	const colorMap = await fetchOrganizationColors(uniqueModels);
@@ -428,7 +451,13 @@ async function UsagePageContent({
 	return (
 		<main className="flex min-h-screen flex-col">
 			<div className="container mx-auto px-4 py-8">
-				<UsageHeader keys={availableKeys} />
+				<UsageHeader
+					keys={availableKeys}
+					lifecycleAlerts={{
+						count: lifecycleAlertCount,
+						anchorId: "lifecycle-alerts",
+					}}
+				/>
 
 				{activeKey ? (
 					<div className="mb-6 text-sm text-muted-foreground">
@@ -451,11 +480,7 @@ async function UsagePageContent({
 							Clear filter
 						</a>
 					</div>
-				) : (
-					<div className="mb-6">
-						<DeprecationWarnings />
-					</div>
-				)}
+				) : null}
 
 				{/* Integrated Metrics & Charts */}
 				<MetricsOverview
@@ -477,11 +502,20 @@ async function UsagePageContent({
 						appNames={appNames}
 						models={uniqueModels}
 						providers={uniqueProviders}
+						modelProviders={modelProviders}
 						providerNames={providerNames}
 						apiKeys={availableKeys}
 						modelMetadata={modelMetadata}
 					/>
 				</div>
+				{lifecycleAlertCount > 0 ? (
+					<div className="mt-10">
+						<DeprecationWarnings
+							id="lifecycle-alerts"
+							warnings={lifecycleWarnings}
+						/>
+					</div>
+				) : null}
 
 
 			</div>

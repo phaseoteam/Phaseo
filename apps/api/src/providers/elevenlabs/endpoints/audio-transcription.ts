@@ -62,7 +62,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
 	const { adapterPayload } = buildAdapterPayload(AudioTranscriptionSchema, args.body, []);
 	const typedPayload = adapterPayload as AudioTranscriptionRequest;
-	const bindings = getBindings() as Record<string, string | undefined>;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = String(bindings.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");
 	const modelId = resolveElevenLabsModelSlug(typedPayload.model, args.providerModelSlug);
 
@@ -93,7 +93,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 				byokKeyId: keyInfo.byokId,
 			};
 		}
-		form.append("file", new Blob([decoded.bytes], { type: decoded.mimeType }), decoded.filename);
+		form.append("file", new Blob([Uint8Array.from(decoded.bytes)], { type: decoded.mimeType }), decoded.filename);
 	}
 
 	const res = await fetch(`${baseUrl}/v1/speech-to-text`, {

@@ -140,7 +140,7 @@ namespace AIStatsSdk.Test.Api
         [Fact (Skip = "not implemented")]
         public async Task CreateImageEditAsyncTest()
         {
-            string modelId = default!;
+            string model = default!;
             string image = default!;
             string prompt = default!;
             Client.Option<string> mask = default!;
@@ -150,7 +150,7 @@ namespace AIStatsSdk.Test.Api
             Client.Option<bool> meta = default!;
             Client.Option<bool> usage = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateImageEditAsync(modelId, image, prompt, mask, size, n, user, meta, usage, provider);
+            var response = await _instance.CreateImageEditAsync(model, image, prompt, mask, size, n, user, meta, usage, provider);
             var model = response.Ok();
             Assert.IsType<ImagesEditResponse>(model);
         }
@@ -232,12 +232,12 @@ namespace AIStatsSdk.Test.Api
         [Fact (Skip = "not implemented")]
         public async Task CreateTranscriptionAsyncTest()
         {
-            string modelId = default!;
+            string model = default!;
             Client.Option<string> audioUrl = default!;
             Client.Option<string> audioB64 = default!;
             Client.Option<string> language = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateTranscriptionAsync(modelId, audioUrl, audioB64, language, provider);
+            var response = await _instance.CreateTranscriptionAsync(model, audioUrl, audioB64, language, provider);
             var model = response.Ok();
             Assert.IsType<AudioTranscriptionResponse>(model);
         }
@@ -248,14 +248,14 @@ namespace AIStatsSdk.Test.Api
         [Fact (Skip = "not implemented")]
         public async Task CreateTranslationAsyncTest()
         {
-            string modelId = default!;
+            string model = default!;
             Client.Option<string> audioUrl = default!;
             Client.Option<string> audioB64 = default!;
             Client.Option<string> language = default!;
             Client.Option<string> prompt = default!;
             Client.Option<decimal> temperature = default!;
             Client.Option<ProviderRoutingOptions> provider = default!;
-            var response = await _instance.CreateTranslationAsync(modelId, audioUrl, audioB64, language, prompt, temperature, provider);
+            var response = await _instance.CreateTranslationAsync(model, audioUrl, audioB64, language, prompt, temperature, provider);
             var model = response.Ok();
             Assert.IsType<AudioTranslationResponse>(model);
         }

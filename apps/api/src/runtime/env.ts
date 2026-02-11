@@ -10,6 +10,8 @@ export type GatewayBindings = {
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
     GATEWAY_CACHE: KVNamespace;
+    KV?: KVNamespace;
+    DB?: D1Database;
     GATEWAY_CONTROL_SECRET?: string;
     NEXT_PUBLIC_GATEWAY_VERSION?: string;
     AXIOM_API_KEY?: string;
@@ -310,7 +312,8 @@ function snapshotBindings(env: GatewayBindings): GatewayBindings {
         const value = env[key];
         if (value !== undefined) {
             // Ensure we only retain primitive copies (avoid accidental mutation)
-            snap[key] = typeof value === "string" ? `${value}` : value;
+            const nextValue = typeof value === "string" ? `${value}` : value;
+            (snap as Record<string, unknown>)[key] = nextValue;
         }
     }
 
@@ -320,6 +323,9 @@ function snapshotBindings(env: GatewayBindings): GatewayBindings {
     }
     if (!snap.XAI_API_KEY && env.X_AI_API_KEY) {
         snap.XAI_API_KEY = `${env.X_AI_API_KEY}`;
+    }
+    if (!snap.KV && env.GATEWAY_CACHE) {
+        snap.KV = env.GATEWAY_CACHE;
     }
     if (!snap.MISTRAL_API_KEY && env.MISTRAL_AI_API_KEY) {
         snap.MISTRAL_API_KEY = `${env.MISTRAL_AI_API_KEY}`;
