@@ -1,0 +1,17 @@
+{
+  "model_id": "cursor/composer-1-5-2026-02-09",
+  "organisation_id": "cursor",
+  "name": "Composer 1.5",
+  "status": "Available",
+  "previous_model_id": "cursor/composer-1-2025-10-29",
+  "announced_date": "2026-02-09T00:00:00",
+  "release_date": "2026-02-09T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,0 +1,45 @@
+{
+  "key": "anthropic:anthropic/claude-3-opus:text.generate",
+  "api_provider_id": "anthropic",
+  "provider_slug": "anthropic",
+  "api_model_id": "anthropic/claude-3-opus",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 2e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 7.5e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 3.75e-05,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

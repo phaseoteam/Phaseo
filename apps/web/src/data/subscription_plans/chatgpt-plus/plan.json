@@ -156,7 +156,7 @@
       "model_id": "openai/chatgpt-4o-2024-05-13",
       "model_info": null,
       "rate_limit": "Advanced Voice Mode",
-      "other_info": null
+      "other_info": "Legacy Model"
     },
     {
       "model_id": "openai/chatgpt-image-latest-2025-12-16",
@@ -166,12 +166,6 @@
     },
     {
       "model_id": "openai/gpt-4-1-2025-04-14",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": "Legacy Model"
-    },
-    {
-      "model_id": "openai/gpt-4o-2024-08-06",
       "model_info": null,
       "rate_limit": null,
       "other_info": "Legacy Model"

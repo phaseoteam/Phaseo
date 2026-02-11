@@ -3,7 +3,7 @@
   "organisation_id": "google",
   "name": "Gemini 2.5 Pro Preview (2025-05-06)",
   "status": "Retired",
-  "previous_model_id": "google/gemini-2-5-pro-experimental-2025-03-25",
+  "previous_model_id": "google/gemini-2-5-pro-experimental",
   "announced_date": "2025-05-06T00:00:00",
   "release_date": "2025-05-06T00:00:00",
   "deprecation_date": "2025-06-15T00:00:00",

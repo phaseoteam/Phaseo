@@ -90,6 +90,18 @@
       "priority": 100,
       "effective_from": "2024-11-04T00:00:00",
       "effective_to": "2026-02-19T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1,
+      "price_per_unit": 4e-07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100
     }
   ]
 }

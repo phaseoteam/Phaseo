@@ -1,0 +1,17 @@
+{
+  "model_id": "cursor/composer-1-2025-10-29",
+  "organisation_id": "cursor",
+  "name": "Composer 1",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2025-10-29T00:00:00",
+  "release_date": "2025-10-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

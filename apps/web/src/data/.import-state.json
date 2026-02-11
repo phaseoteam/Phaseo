@@ -6424,7 +6424,7 @@
       }
     },
     "src/data/api_providers/anthropic/models.json": {
-      "hash": "9edafbb692bf1083fa86d4b010372479",
+      "hash": "f88d138374a5a703cf5b1b19c154b023",
       "meta": {
         "api_provider_id": "anthropic",
         "kind": "provider_models"
@@ -6516,7 +6516,7 @@
       }
     },
     "src/data/api_providers/deepseek/models.json": {
-      "hash": "aefda96089fddd4ac06414226c3aaf7d",
+      "hash": "1bed8bcb158b03e93f3fadcf1a1e81c0",
       "meta": {
         "api_provider_id": "deepseek",
         "kind": "provider_models"
@@ -6553,7 +6553,7 @@
       }
     },
     "src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "8b45cf5a07fe294c2a6352e759b9b126",
+      "hash": "2dd2eb75d993fbd6ebf2fc1f71ad0ede",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -6614,7 +6614,7 @@
       }
     },
     "src/data/api_providers/minimax/models.json": {
-      "hash": "bbdd295a71605cde49f0f29820325ecd",
+      "hash": "609ccf9f395636b9ace92e219dd08a63",
       "meta": {
         "api_provider_id": "minimax",
         "kind": "provider_models"
@@ -6627,7 +6627,7 @@
       }
     },
     "src/data/api_providers/minimax-lightning/models.json": {
-      "hash": "ad4e1061a61c9a3f09373cf38349eb1a",
+      "hash": "9292ac5d3cc657be04ee5859521fee81",
       "meta": {
         "api_provider_id": "minimax-lightning",
         "kind": "provider_models"
@@ -6646,7 +6646,7 @@
       }
     },
     "src/data/api_providers/moonshot-ai/models.json": {
-      "hash": "0f8ca927facf729b32ec4334d7d4551b",
+      "hash": "e0f3ee9cd9f12e422250ca396d56cfdf",
       "meta": {
         "api_provider_id": "moonshot-ai",
         "kind": "provider_models"
@@ -6659,7 +6659,7 @@
       }
     },
     "src/data/api_providers/moonshot-ai-turbo/models.json": {
-      "hash": "8693dd5769676a4fc8c5f82504a2ffb9",
+      "hash": "73f0510b311fd5c122eecd35e81ce758",
       "meta": {
         "api_provider_id": "moonshot-ai-turbo",
         "kind": "provider_models"
@@ -6690,7 +6690,7 @@
       }
     },
     "src/data/api_providers/openai/models.json": {
-      "hash": "2a1bb88bbcf0af21cd3c4ed2de45c18b",
+      "hash": "ddce6f3d98c75c673b87a0ac94fa1f8e",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -6776,7 +6776,7 @@
       }
     },
     "src/data/api_providers/x-ai/models.json": {
-      "hash": "e32b23c79dd0b14c3b2dc856ef51178c",
+      "hash": "c55ae06adbe7afef4bff428c6102303a",
       "meta": {
         "api_provider_id": "x-ai",
         "kind": "provider_models"
@@ -6789,7 +6789,7 @@
       }
     },
     "src/data/api_providers/xiaomi/models.json": {
-      "hash": "49a4a9eadab255391519ba4717e08673",
+      "hash": "583ff6b667984aafb4be7313561c3511",
       "meta": {
         "api_provider_id": "xiaomi",
         "kind": "provider_models"
@@ -6802,7 +6802,7 @@
       }
     },
     "src/data/api_providers/z-ai/models.json": {
-      "hash": "60a4b9277cade124d06c892d3831296e",
+      "hash": "2f46546895a7a5d585ced910575c3587",
       "meta": {
         "api_provider_id": "z-ai",
         "kind": "provider_models"
@@ -6865,21 +6865,21 @@
       }
     },
     "src/data/subscription_plans/chatgpt-free/plan.json": {
-      "hash": "31d2d32a2037e782053fd6b82c870449",
+      "hash": "357edd8478ec6421dd5654d5f4176f50",
       "meta": {
         "plan_id": "chatgpt-free",
         "organisation_id": "openai"
       }
     },
     "src/data/subscription_plans/chatgpt-plus/plan.json": {
-      "hash": "d957d7e746869f35fa3c37398261e1f8",
+      "hash": "60efe11ec71c204a2cd2ad887b4f9296",
       "meta": {
         "plan_id": "chatgpt-plus",
         "organisation_id": "openai"
       }
     },
     "src/data/subscription_plans/chatgpt-pro/plan.json": {
-      "hash": "aec9be75da6cb6a5b9f9748092ce16d5",
+      "hash": "e08233d57414954e97d28594179727dc",
       "meta": {
         "plan_id": "chatgpt-pro",
         "organisation_id": "openai"
@@ -7077,7 +7077,7 @@
       }
     },
     "src/data/api_providers/aion-labs/models.json": {
-      "hash": "c211cbd9d4c562af46020a49abbc9136",
+      "hash": "e61039afb7284023fefc83a28622f761",
       "meta": {
         "api_provider_id": "aion-labs",
         "kind": "provider_models"
@@ -7408,18 +7408,20 @@
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-haiku-4.5/text.generate/pricing.json": {
-      "hash": "2c057f809410b884dde7eb2ca1d0f3f5",
+      "hash": "163cea831047b8a1a3986ab249e9f3cc",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-haiku-4.5",
         "model_key": "anthropic:anthropic/claude-haiku-4.5:text.generate"
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-sonnet-4.5/text.generate/pricing.json": {
-      "hash": "5308ff1701c6a7d237180127d72285a1",
+      "hash": "a1f28b7bd79c3be066572136772b37e8",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-sonnet-4.5",
         "model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate"
       }
     },
@@ -7990,7 +7992,7 @@
       }
     },
     "src/data/api_providers/arcee-ai/models.json": {
-      "hash": "4ff29caa5bc6e5ae3daf20361b8607d8",
+      "hash": "64950153c1f64f8f69edc08e6d9fb064",
       "meta": {
         "api_provider_id": "arcee-ai",
         "kind": "provider_models"
@@ -8093,58 +8095,65 @@
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-3-haiku/text.generate/pricing.json": {
-      "hash": "a52837050ac6693ef9a424160cb4323e",
+      "hash": "f76de52acb97181af5d0869a871a8263",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-3-haiku",
         "model_key": "anthropic:anthropic/claude-3-haiku:text.generate"
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-3.5-haiku/text.generate/pricing.json": {
-      "hash": "597a9f0da009165015a6c19ce00f9c39",
+      "hash": "b6fc25b9edf076a10f3d920f38b5f583",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-3.5-haiku",
         "model_key": "anthropic:anthropic/claude-3.5-haiku:text.generate"
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-3.7-sonnet/text.generate/pricing.json": {
-      "hash": "bdde7a66d6d6c7538a54f3e4bf9ad937",
+      "hash": "9e2e110a2cbf45de23357c106a0a70c0",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-3.7-sonnet",
         "model_key": "anthropic:anthropic/claude-3.7-sonnet:text.generate"
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-opus-4/text.generate/pricing.json": {
-      "hash": "d239fbf4556e46163564f3fe3908bb97",
+      "hash": "cd5834c6b021385ec3a96d7a9e8d6b15",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-opus-4",
         "model_key": "anthropic:anthropic/claude-opus-4:text.generate"
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-opus-4.1/text.generate/pricing.json": {
-      "hash": "a28d3f70628bfa92902567960f5bfe6b",
+      "hash": "90d8949036f10066200ee5451116a317",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-opus-4.1",
         "model_key": "anthropic:anthropic/claude-opus-4.1:text.generate"
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-opus-4.5/text.generate/pricing.json": {
-      "hash": "c013a6bc3d6041c58400b59350195701",
+      "hash": "f9d92702a2cd6c89a5253248f3b4aa48",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-opus-4.5",
         "model_key": "anthropic:anthropic/claude-opus-4.5:text.generate"
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-sonnet-4/text.generate/pricing.json": {
-      "hash": "3dfc2210531e78d812cd88ae1617ceb1",
+      "hash": "78cc68dc501ec0f0bceab6d26660fd29",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-sonnet-4",
         "model_key": "anthropic:anthropic/claude-sonnet-4:text.generate"
       }
     },
@@ -8579,7 +8588,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-flash-image-preview-2025-08-25/model.json": {
-      "hash": "0497fea6bcd326f168d953c19a880575",
+      "hash": "6cb7221ef4d94794cbf8550ae8ce2ba8",
       "meta": {
         "model_id": "google/gemini-2-5-flash-image-preview-2025-08-25",
         "organisation_id": "google",
@@ -8731,7 +8740,7 @@
       }
     },
     "src/data/api_providers/mistral/models.json": {
-      "hash": "217b2ea26bc63be2dc77da295e1f40d7",
+      "hash": "c6dadff383283b4e74f08921eeeeca70",
       "meta": {
         "api_provider_id": "mistral",
         "kind": "provider_models"
@@ -8760,11 +8769,11 @@
       }
     },
     "src/data/models/aion-labs/aion-2-0-2025-12-21/model.json": {
-      "hash": "b9f0a825b7215f9e150067077bd9b8cc",
+      "hash": "1190a186fe1c1236155856ce9d45ba16",
       "meta": {
         "model_id": "aion-labs/aion-2-0-2025-12-21",
         "organisation_id": "aion-labs",
-        "previous_model_id": "aion-labs/aion-1-0-2025-01-29"
+        "previous_model_id": "aion-labs/aion-1-0"
       }
     },
     "src/data/models/aion-labs/aion-rp-llama-3-1-8b-2024-11-30/model.json": {
@@ -8830,15 +8839,16 @@
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-opus-4.6/text.generate/pricing.json": {
-      "hash": "fa4196c77ba94d777cde41e0979e3bae",
+      "hash": "ec1c66ae451dca650038789cfeeee368",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
+        "model_id": "anthropic/claude-opus-4.6",
         "model_key": "anthropic:anthropic/claude-opus-4.6:text.generate"
       }
     },
     "src/data/subscription_plans/chatgpt-go/plan.json": {
-      "hash": "370a5d4983e1838d316c9d4a6b495fee",
+      "hash": "4442e258e63cf58d078d3e7ca817a49c",
       "meta": {
         "plan_id": "chatgpt-go",
         "organisation_id": "openai"
@@ -8851,21 +8861,94 @@
         "organisation_id": "google"
       }
     },
-    "src/data/models/google/gemini-2-5-flash-image-2026-02-10/model.json": {
-      "hash": "0db5f45f56bfc67eb005c9267ce6a333",
+    "src/data/pricing/anthropic/anthropic-claude-3-opus/text.generate/pricing.json": {
+      "hash": "fb8c71e572b313f9adc07d519a7a4cd7",
       "meta": {
-        "model_id": "google/gemini-2-5-flash-image-2026-02-10",
+        "api_provider_id": "anthropic",
+        "capability_id": "text.generate",
+        "model_id": "anthropic/claude-3-opus",
+        "model_key": "anthropic:anthropic/claude-3-opus:text.generate"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-5.3/text.generate/pricing.json": {
+      "hash": "4c78a515090481d5ee5072898014f2a3",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-5.3",
+        "model_key": "openai:openai/gpt-5.3:text.generate"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-5.3-codex/text.generate/pricing.json": {
+      "hash": "71ac781f9f77060658a9500b6e557223",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-5.3-codex",
+        "model_key": "openai:openai/gpt-5.3-codex:text.generate"
+      }
+    },
+    "src/data/organisations/cursor/organisation.json": {
+      "hash": "78625509877cddc32d2250ee046eaedc",
+      "meta": {
+        "organisation_id": "cursor"
+      }
+    },
+    "src/data/organisations/voyage/organisation.json": {
+      "hash": "799086c9f7c92558b4fb8c04e0033fdb",
+      "meta": {
+        "organisation_id": "voyage"
+      }
+    },
+    "src/data/models/cursor/composer-1-2025-10-29/model.json": {
+      "hash": "0f30a0eacc8341833e2476c39603d9be",
+      "meta": {
+        "model_id": "cursor/composer-1-2025-10-29",
+        "organisation_id": "cursor",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/cursor/composer-1-5-2026-02-09/model.json": {
+      "hash": "43e0b46385209235f7361d5a78d45e8c",
+      "meta": {
+        "model_id": "cursor/composer-1-5-2026-02-09",
+        "organisation_id": "cursor",
+        "previous_model_id": "cursor/composer-1-2025-10-29"
+      }
+    },
+    "src/data/models/google/gemini-2-5-flash-image-2025-10-02/model.json": {
+      "hash": "27aefab8c78e884988ca5e87268d1deb",
+      "meta": {
+        "model_id": "google/gemini-2-5-flash-image-2025-10-02",
         "organisation_id": "google",
         "previous_model_id": "google/gemini-2-5-flash-image-preview-2025-08-25"
       }
     },
-    "src/data/pricing/google-ai-studio/google-gemini-2-5-flash-image/text.generate/pricing.json": {
-      "hash": "2068c8f4036d51cf5be910bd0fe85805",
+    "src/data/pricing/mistral/mistral-devstral-small-2-free/text.generate/pricing.json": {
+      "hash": "a4d9b3fb35d8cf16f1d8b006a01c439e",
+      "meta": {
+        "api_provider_id": "mistral",
+        "capability_id": "text.generate",
+        "model_id": "mistral/devstral-small-2:free",
+        "model_key": "mistral:mistral/devstral-small-2:free:text.generate"
+      }
+    },
+    "src/data/pricing/mistral/mistral-ministral-3-3b/text.generate/pricing.json": {
+      "hash": "fd1b9b71d55346a4d7c1d8204db44642",
+      "meta": {
+        "api_provider_id": "mistral",
+        "capability_id": "text.generate",
+        "model_id": "mistral/ministral-3-3b",
+        "model_key": "mistral:mistral/ministral-3-3b:text.generate"
+      }
+    },
+    "src/data/pricing/google-ai-studio/google-gemini-2.5-flash-image/text.generate/pricing.json": {
+      "hash": "d5694f8fbfa34ada7a8a7718e45a5aa9",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
-        "model_id": "google/gemini-2-5-flash-image",
-        "model_key": "google-ai-studio:google/gemini-2-5-flash-image:text.generate"
+        "model_id": "google/gemini-2.5-flash-image",
+        "model_key": "google-ai-studio:google/gemini-2.5-flash-image:text.generate"
       }
     }
   }

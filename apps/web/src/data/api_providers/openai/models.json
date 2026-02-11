@@ -17,27 +17,45 @@
         "params": [
           {
             "param_id": "max_tokens",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "response_format",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "seed",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "structured_outputs",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "tool_choice",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "tools",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -60,40 +78,88 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -117,27 +183,45 @@
         "params": [
           {
             "param_id": "max_tokens",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "response_format",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "seed",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "structured_outputs",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "tool_choice",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "tools",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -160,46 +244,102 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -222,46 +362,102 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -284,28 +480,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -328,28 +556,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -372,28 +632,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -416,46 +708,102 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -478,46 +826,102 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -540,49 +944,109 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "web_search_options"
+            "param_id": "web_search_options",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -605,49 +1069,109 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "web_search_options"
+            "param_id": "web_search_options",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -670,49 +1194,109 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "web_search_options"
+            "param_id": "web_search_options",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -735,49 +1319,109 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "web_search_options"
+            "param_id": "web_search_options",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -800,28 +1444,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -844,28 +1520,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -888,22 +1596,46 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -926,28 +1658,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -970,28 +1734,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1014,28 +1810,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1058,28 +1886,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1102,22 +1962,46 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1140,46 +2024,102 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1202,28 +2142,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1246,16 +2218,32 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1278,28 +2266,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1322,28 +2342,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1366,28 +2418,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1410,28 +2494,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1454,22 +2570,46 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1492,22 +2632,46 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1530,28 +2694,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1574,52 +2770,116 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1642,22 +2902,46 @@
         "status": "active",
         "params": [
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1680,28 +2964,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1724,28 +3040,60 @@
         "status": "active",
         "params": [
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1768,52 +3116,116 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "include_reasoning"
+            "param_id": "include_reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logit_bias"
+            "param_id": "logit_bias",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "logprobs"
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "reasoning"
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_logprobs"
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -1827,19 +3239,14 @@
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
-    "output_modalities": "moderation",
+    "output_modalities": "text",
     "effective_from": "2024-09-26T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
-        "capability_id": "text.moderate",
+        "capability_id": "text.generate",
         "status": "active",
-        "params": [
-          {
-            "param_id": "input",
-            "notes": "OpenAI Moderations API input payload (text or image)"
-          }
-        ]
+        "params": []
       }
     ]
   },
@@ -2397,22 +3804,66 @@
         "params": [
           {
             "param_id": "max_tokens",
-            "notes": "inferred_from_family:o1"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "response_format",
-            "notes": "inferred_from_family:o1"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "seed",
-            "notes": "inferred_from_family:o1"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "structured_outputs",
-            "notes": "inferred_from_family:o1"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
     ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.3-codex",
+    "provider_api_model_id": "openai:openai/gpt-5.3-codex",
+    "provider_model_slug": "gpt-5.3-codex",
+    "internal_model_id": "openai/gpt-5-3-codex-2026-02-05",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-5.3",
+    "provider_api_model_id": "openai:openai/gpt-5.3",
+    "provider_model_slug": null,
+    "internal_model_id": "openai/gpt-5-3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

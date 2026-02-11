@@ -1,8 +1,8 @@
 {
-  "key": "google-ai-studio:google/gemini-2-5-flash-image:text.generate",
+  "key": "google-ai-studio:google/gemini-2.5-flash-image:text.generate",
   "api_provider_id": "google-ai-studio",
   "provider_slug": "google-ai-studio",
-  "api_model_id": "google/gemini-2-5-flash-image",
+  "api_model_id": "google/gemini-2.5-flash-image",
   "capability_id": "text.generate",
   "rules": [
     {
@@ -16,11 +16,11 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-02-10T00:00:00"
+      "effective_from": "2025-10-02T00:00:00"
     },
     {
       "meter": "input_image_tokens",
-      "unit": "image",
+      "unit": "token",
       "unit_size": 1,
       "price_per_unit": 3e-07,
       "currency": "USD",
@@ -29,12 +29,25 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-02-10T00:00:00"
+      "effective_from": "2025-10-02T00:00:00"
     },
     {
-      "meter": "output_image",
-      "unit": "image",
+      "meter": "output_text_tokens",
+      "unit": "token",
       "unit_size": 1,
+      "price_per_unit": 2.5e-06,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-10-02T00:00:00"
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "image",
+      "unit_size": 1290,
       "price_per_unit": 0.039,
       "currency": "USD",
       "tiering_mode": "flat",
@@ -42,7 +55,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-02-10T00:00:00"
+      "effective_from": "2025-10-02T00:00:00"
     }
   ]
 }

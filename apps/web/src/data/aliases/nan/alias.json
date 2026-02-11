@@ -1,6 +1,5 @@
 {
   "alias_slug": "nan",
-  "resolved_model_id": "openai/gpt-5-nano-2025-08-07",
   "resolved_api_model_id": "nan",
   "channel": "nan",
   "is_enabled": false,

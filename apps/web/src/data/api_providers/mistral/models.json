@@ -16,37 +16,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -82,37 +126,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -135,37 +223,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -188,37 +320,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -241,37 +417,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -294,37 +514,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -348,47 +612,80 @@
         "params": [
           {
             "param_id": "frequency_penalty",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "max_tokens",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "presence_penalty",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "response_format",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "seed",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "stop",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "structured_outputs",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "temperature",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "tool_choice",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "tools",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "top_p",
-            "notes": "inferred_from_provider_defaults"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -412,47 +709,80 @@
         "params": [
           {
             "param_id": "frequency_penalty",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "max_tokens",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "presence_penalty",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "response_format",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "seed",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "stop",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "structured_outputs",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "temperature",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "tool_choice",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "tools",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
             "param_id": "top_p",
-            "notes": "inferred_from_family:magistral"
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -513,37 +843,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -585,37 +959,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -657,10 +1075,18 @@
         "status": "active",
         "params": [
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -696,37 +1122,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -749,37 +1219,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -821,37 +1335,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -874,37 +1432,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -927,37 +1529,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
@@ -980,37 +1626,81 @@
         "status": "active",
         "params": [
           {
-            "param_id": "frequency_penalty"
+            "param_id": "frequency_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "max_tokens"
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "presence_penalty"
+            "param_id": "presence_penalty",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "response_format"
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "seed"
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "stop"
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "structured_outputs"
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "temperature"
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tool_choice"
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "tools"
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           },
           {
-            "param_id": "top_p"
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
           }
         ]
       }
