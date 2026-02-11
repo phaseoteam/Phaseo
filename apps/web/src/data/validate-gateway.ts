@@ -1,16 +1,11 @@
 import { runWebDataValidation } from './validate';
 
 const GATEWAY_ERROR_PATTERN = /active on gateway but no rules/i;
-const MAX_SAMPLE_ERRORS = 20;
 
 function logGatewayErrors(errors: string[]) {
     console.error(`Gateway validation failed for ${errors.length} pricing entr${errors.length === 1 ? 'y' : 'ies'}:`);
-    const samples = errors.slice(0, MAX_SAMPLE_ERRORS);
-    for (const err of samples) {
+    for (const err of errors) {
         console.error(` - ${err}`);
-    }
-    if (errors.length > MAX_SAMPLE_ERRORS) {
-        console.error(`   ...and ${errors.length - MAX_SAMPLE_ERRORS} more issues (showing first ${MAX_SAMPLE_ERRORS}).`);
     }
 }
 
