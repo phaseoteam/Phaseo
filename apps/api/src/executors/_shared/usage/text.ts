@@ -51,6 +51,7 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 	]);
 	const cachedWriteTokens = pickFirstNumber(usageRaw, [
 		"cached_write_text_tokens",
+		"_ext.cachedWriteTokens",
 		"output_tokens_details.cached_tokens",
 		"completion_tokens_details.cached_tokens",
 	]);
@@ -65,26 +66,32 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 
 	const inputImageTokens = pickFirstNumber(usageRaw, [
 		"input_image_tokens",
+		"_ext.inputImageTokens",
 		"input_tokens_details.input_images",
 	]);
 	const inputAudioTokens = pickFirstNumber(usageRaw, [
 		"input_audio_tokens",
+		"_ext.inputAudioTokens",
 		"input_tokens_details.input_audio",
 	]);
 	const inputVideoTokens = pickFirstNumber(usageRaw, [
 		"input_video_tokens",
+		"_ext.inputVideoTokens",
 		"input_tokens_details.input_videos",
 	]);
 	const outputImageTokens = pickFirstNumber(usageRaw, [
 		"output_image_tokens",
+		"_ext.outputImageTokens",
 		"output_tokens_details.output_images",
 	]);
 	const outputAudioTokens = pickFirstNumber(usageRaw, [
 		"output_audio_tokens",
+		"_ext.outputAudioTokens",
 		"output_tokens_details.output_audio",
 	]);
 	const outputVideoTokens = pickFirstNumber(usageRaw, [
 		"output_video_tokens",
+		"_ext.outputVideoTokens",
 		"output_tokens_details.output_videos",
 	]);
 

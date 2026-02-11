@@ -18,6 +18,7 @@ import { resolveStreamForProtocol } from "@executors/_shared/text-generate/opena
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../shared/media";
 import { resolveGoogleModelCandidates } from "../shared/model";
+import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 
 /**
  * Transform IR request to Google Gemini format
@@ -245,14 +246,8 @@ function geminiToIR(
 		});
 	}
 
-	// Extract usage metadata
-	const usage = json.usageMetadata ? {
-		inputTokens: json.usageMetadata.promptTokenCount || 0,
-		outputTokens: json.usageMetadata.candidatesTokenCount || 0,
-		totalTokens: json.usageMetadata.totalTokenCount || 0,
-		cachedInputTokens: json.usageMetadata.cachedContentTokenCount,
-		reasoningTokens: json.usageMetadata.thoughtsTokenCount ?? json.usageMetadata.thoughtTokenCount,
-	} : undefined;
+	// Extract usage metadata (including multimodal token details)
+	const usage = googleUsageMetadataToIRUsage(json.usageMetadata);
 
 	return {
 		id: requestId,
@@ -568,13 +563,9 @@ export function transformStream(
 							}
 						}
 
-						if (payload.usageMetadata) {
-							irChunk.usage = {
-								inputTokens: payload.usageMetadata.promptTokenCount || 0,
-								outputTokens: payload.usageMetadata.candidatesTokenCount || 0,
-								totalTokens: payload.usageMetadata.totalTokenCount || 0,
-								reasoningTokens: payload.usageMetadata.thoughtsTokenCount ?? payload.usageMetadata.thoughtTokenCount,
-							};
+						const chunkUsage = googleUsageMetadataToIRUsage(payload.usageMetadata);
+						if (chunkUsage) {
+							irChunk.usage = chunkUsage;
 						}
 
 						// Encode IR Chunk to OpenAI Chunk (bytes)
@@ -652,13 +643,42 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk): any {
 	};
 
 	if (chunk.usage) {
+		const inputDetails: Record<string, number> = {};
+		const outputDetails: Record<string, number> = {};
+		if (typeof chunk.usage.cachedInputTokens === "number") {
+			inputDetails.cached_tokens = chunk.usage.cachedInputTokens;
+		}
+		if (typeof chunk.usage._ext?.inputImageTokens === "number") {
+			inputDetails.input_images = chunk.usage._ext.inputImageTokens;
+		}
+		if (typeof chunk.usage._ext?.inputAudioTokens === "number") {
+			inputDetails.input_audio = chunk.usage._ext.inputAudioTokens;
+		}
+		if (typeof chunk.usage._ext?.inputVideoTokens === "number") {
+			inputDetails.input_videos = chunk.usage._ext.inputVideoTokens;
+		}
+		if (typeof chunk.usage.reasoningTokens === "number") {
+			outputDetails.reasoning_tokens = chunk.usage.reasoningTokens;
+		}
+		if (typeof chunk.usage._ext?.cachedWriteTokens === "number") {
+			outputDetails.cached_tokens = chunk.usage._ext.cachedWriteTokens;
+		}
+		if (typeof chunk.usage._ext?.outputImageTokens === "number") {
+			outputDetails.output_images = chunk.usage._ext.outputImageTokens;
+		}
+		if (typeof chunk.usage._ext?.outputAudioTokens === "number") {
+			outputDetails.output_audio = chunk.usage._ext.outputAudioTokens;
+		}
+		if (typeof chunk.usage._ext?.outputVideoTokens === "number") {
+			outputDetails.output_videos = chunk.usage._ext.outputVideoTokens;
+		}
+
 		response.usage = {
 			prompt_tokens: chunk.usage.inputTokens,
 			completion_tokens: chunk.usage.outputTokens,
 			total_tokens: chunk.usage.totalTokens,
-			output_tokens_details: chunk.usage.reasoningTokens ? {
-				reasoning_tokens: chunk.usage.reasoningTokens,
-			} : undefined,
+			...(Object.keys(inputDetails).length > 0 ? { input_tokens_details: inputDetails } : {}),
+			...(Object.keys(outputDetails).length > 0 ? { output_tokens_details: outputDetails } : {}),
 		};
 	}
 

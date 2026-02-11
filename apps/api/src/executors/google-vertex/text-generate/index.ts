@@ -12,6 +12,7 @@ import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey } from "@providers/keys";
+import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import { getBindings } from "@/runtime/env";
 import { withNormalizedReasoning } from "@executors/google/text-generate/normalize-reasoning";
 import { irPartsToGeminiParts } from "@executors/google/shared/media";
@@ -411,13 +412,7 @@ function geminiToIR(
 		});
 	}
 
-	const usage = json.usageMetadata ? {
-		inputTokens: json.usageMetadata.promptTokenCount || 0,
-		outputTokens: json.usageMetadata.candidatesTokenCount || 0,
-		totalTokens: json.usageMetadata.totalTokenCount || 0,
-		cachedInputTokens: json.usageMetadata.cachedContentTokenCount,
-		reasoningTokens: json.usageMetadata.thoughtsTokenCount ?? json.usageMetadata.thoughtTokenCount,
-	} : undefined;
+	const usage = googleUsageMetadataToIRUsage(json.usageMetadata);
 
 	return {
 		id: requestId,

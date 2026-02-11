@@ -101,13 +101,38 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
     const cachedWrite = pickNumber(base, "cached_write_text_tokens") ?? pickNumber(base, "output_tokens_details.cached_tokens");
     const reasoningTokens = pickNumber(base, "reasoning_tokens") ?? pickNumber(base, "output_tokens_details.reasoning_tokens");
 
-    // Multimodal signals
-    const inputImages = pickNumber(base, "input_image_count");
-    const inputAudio = pickNumber(base, "input_audio_count");
-    const inputVideo = pickNumber(base, "input_video_count");
-    const outputImages = pickNumber(base, "output_image_count");
-    const outputAudio = pickNumber(base, "output_audio_count");
-    const outputVideo = pickNumber(base, "output_video_count");
+    // Multimodal signals (prefer tokenized meters, then detail fields, then count-based fallbacks).
+    const inputImageTokens =
+        pickNumber(base, "input_image_tokens") ??
+        pickNumber(base, "input_tokens_details.input_images") ??
+        pickNumber(base, "input_details.input_images");
+    const inputAudioTokens =
+        pickNumber(base, "input_audio_tokens") ??
+        pickNumber(base, "input_tokens_details.input_audio") ??
+        pickNumber(base, "input_details.input_audio");
+    const inputVideoTokens =
+        pickNumber(base, "input_video_tokens") ??
+        pickNumber(base, "input_tokens_details.input_videos") ??
+        pickNumber(base, "input_details.input_videos");
+    const outputImageTokens =
+        pickNumber(base, "output_image_tokens") ??
+        pickNumber(base, "output_tokens_details.output_images") ??
+        pickNumber(base, "completion_tokens_details.output_images");
+    const outputAudioTokens =
+        pickNumber(base, "output_audio_tokens") ??
+        pickNumber(base, "output_tokens_details.output_audio") ??
+        pickNumber(base, "completion_tokens_details.output_audio");
+    const outputVideoTokens =
+        pickNumber(base, "output_video_tokens") ??
+        pickNumber(base, "output_tokens_details.output_videos") ??
+        pickNumber(base, "completion_tokens_details.output_videos");
+
+    const inputImages = inputImageTokens ?? pickNumber(base, "input_image_count");
+    const inputAudio = inputAudioTokens ?? pickNumber(base, "input_audio_count");
+    const inputVideo = inputVideoTokens ?? pickNumber(base, "input_video_count");
+    const outputImages = outputImageTokens ?? pickNumber(base, "output_image_count");
+    const outputAudio = outputAudioTokens ?? pickNumber(base, "output_audio_count");
+    const outputVideo = outputVideoTokens ?? pickNumber(base, "output_video_count");
 
     const inputDetails: Record<string, number> = {};
     if (cachedRead !== undefined) inputDetails.cached_tokens = cachedRead;
@@ -132,6 +157,12 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
     if (cachedRead !== undefined) base.cached_read_text_tokens = cachedRead;
     if (cachedWrite !== undefined) base.cached_write_text_tokens = cachedWrite;
     if (reasoningTokens !== undefined) base.reasoning_tokens = reasoningTokens;
+    if (inputImageTokens !== undefined) base.input_image_tokens = inputImageTokens;
+    if (inputAudioTokens !== undefined) base.input_audio_tokens = inputAudioTokens;
+    if (inputVideoTokens !== undefined) base.input_video_tokens = inputVideoTokens;
+    if (outputImageTokens !== undefined) base.output_image_tokens = outputImageTokens;
+    if (outputAudioTokens !== undefined) base.output_audio_tokens = outputAudioTokens;
+    if (outputVideoTokens !== undefined) base.output_video_tokens = outputVideoTokens;
 
     if (Object.keys(inputDetails).length) {
         base.input_tokens_details = inputDetails;

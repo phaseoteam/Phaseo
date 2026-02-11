@@ -126,6 +126,15 @@ describe("google-ai-studio stream transform", () => {
 					},
 					finishReason: "STOP",
 				}],
+				usageMetadata: {
+					promptTokenCount: 66,
+					candidatesTokenCount: 1536,
+					totalTokenCount: 2027,
+					thoughtsTokenCount: 425,
+					candidatesTokensDetails: [
+						{ modality: "IMAGE", tokenCount: 1120 },
+					],
+				},
 			},
 		]);
 
@@ -134,5 +143,7 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("\"images\"");
 		expect(output).toContain("\"image_url\"");
 		expect(output).toContain("data:image/png;base64,ZmFrZS1pbWFnZQ==");
+		expect(output).toContain("\"output_tokens_details\"");
+		expect(output).toContain("\"output_images\":1120");
 	});
 });
