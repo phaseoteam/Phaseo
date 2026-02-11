@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -29,14 +29,26 @@ export default function Banner({
 		if (!queryString) return;
 		try {
 			const params = new URLSearchParams(queryString);
+			const refund = params.get("refund");
 			const checkout = params.get("checkout");
-			const payment_attempt = params.get("payment_attempt");
+			const paymentAttempt = params.get("payment_attempt");
+
+			if (refund) {
+				setBanner({
+					type: refund === "succeeded" ? "success" : "info",
+					message:
+						refund === "succeeded"
+							? "Your refund is confirmed. Most banks post refunds in 5-10 business days."
+							: "Your refund request is processing. Once confirmed, most banks post refunds in 5-10 business days.",
+				});
+				return;
+			}
 
 			// If we have a payment_attempt param, show a processing/info
 			// banner. This takes precedence over checkout success/cancelled
 			// because it indicates an in-progress payment attempt.
-			if (payment_attempt) {
-				const attemptTs = Number(payment_attempt);
+			if (paymentAttempt) {
+				const attemptTs = Number(paymentAttempt);
 				const successTs = latestPaymentSuccessAt
 					? new Date(latestPaymentSuccessAt).getTime()
 					: NaN;
@@ -58,11 +70,11 @@ export default function Banner({
 				}
 				return;
 			}
+
 			if (checkout === "success") {
 				setBanner({
 					type: "success",
-					message:
-						"Checkout successful — your credits have been purchased.",
+					message: "Checkout successful - your credits have been purchased.",
 				});
 			} else if (checkout === "cancelled") {
 				setBanner({
@@ -83,8 +95,8 @@ export default function Banner({
 						banner.type === "success"
 							? "bg-green-50 text-green-800 border-green-500"
 							: banner.type === "info"
-							? "bg-blue-50 text-blue-800 border-blue-500"
-							: "bg-red-50 text-red-800 border-red-500"
+								? "bg-blue-50 text-blue-800 border-blue-500"
+								: "bg-red-50 text-red-800 border-red-500"
 					}`}
 				>
 					<div className="flex items-center justify-between">
@@ -94,17 +106,15 @@ export default function Banner({
 								variant="ghost"
 								size="icon"
 								onClick={() => {
-									// remove payment-related query params when dismissing banner
+									// Clear query state when dismissing banner.
 									try {
-										const params = new URLSearchParams(
-											window.location.search
+										const cleanPath = window.location.pathname;
+										window.history.replaceState(
+											window.history.state,
+											"",
+											cleanPath
 										);
-										params.delete("payment_attempt");
-										const q = params.toString();
-										const url = q
-											? `${window.location.pathname}?${q}`
-											: window.location.pathname;
-										router.replace(url);
+										router.replace(cleanPath, { scroll: false });
 									} catch {
 										// ignore
 									}
@@ -121,4 +131,3 @@ export default function Banner({
 		</>
 	);
 }
-

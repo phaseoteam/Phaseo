@@ -170,7 +170,7 @@ def fetch_xai_models() -> list[str]:
         return []
 
 def fetch_deepseek_models() -> list[str]:
-    api_key = os.getenv('DEEEPSEEK_API_KEY')
+    api_key = os.getenv('DEEPSEEK_API_KEY')
     if not api_key:
         return []
     try:
@@ -287,6 +287,32 @@ def fetch_moonshot_ai_models() -> list[str]:
     except requests.RequestException:
         return []
 
+def fetch_minimax_models() -> list[str]:
+    api_key = os.getenv('MINIMAX_API_KEY')
+    if not api_key:
+        return []
+    try:
+        response = requests.get('https://api.minimax.chat/v1/models', headers={'Authorization': f'Bearer {api_key}'})
+        if response.status_code != 200:
+            return []
+        data = response.json()
+        return [f"minimax/{m['id']}" for m in data.get('data', [])]
+    except requests.RequestException:
+        return []
+
+def fetch_zai_models() -> list[str]:
+    api_key = os.getenv('ZAI_API_KEY')
+    if not api_key:
+        return []
+    try:
+        response = requests.get('https://open.bigmodel.cn/api/paas/v4/models', headers={'Authorization': f'Bearer {api_key}'})
+        if response.status_code != 200:
+            return []
+        data = response.json()
+        return [f"z-ai/{m['id']}" for m in data.get('data', [])]
+    except requests.RequestException:
+        return []
+
 def fetch_chutes_models() -> list[str]:
     api_key = os.getenv('CHUTES_API_KEY')
     if not api_key:
@@ -381,6 +407,8 @@ def fetch_all_provider_models() -> list[dict]:
         {'id': 'mistral', 'name': 'Mistral', 'fetch': fetch_mistral_models},
         {'id': 'x-ai', 'name': 'xAI', 'fetch': fetch_xai_models},
         {'id': 'deepseek', 'name': 'DeepSeek', 'fetch': fetch_deepseek_models},
+        {'id': 'minimax', 'name': 'MiniMax', 'fetch': fetch_minimax_models},
+        {'id': 'z-ai', 'name': 'z.AI', 'fetch': fetch_zai_models},
         {'id': 'novitaai', 'name': 'NovitaAI', 'fetch': fetch_novitaai_models},
         {'id': 'google-ai-studio', 'name': 'Google AI Studio', 'fetch': fetch_google_ai_studio_models},
         {'id': 'cohere', 'name': 'Cohere', 'fetch': fetch_cohere_models},

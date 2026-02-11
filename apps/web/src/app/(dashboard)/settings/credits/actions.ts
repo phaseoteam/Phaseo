@@ -82,6 +82,7 @@ type ChargeSavedPaymentArgs = {
     event_type?: string;
     paymentMethodId?: string | null;
     payment_method_id?: string | null;
+    team_id?: string | null;
 };
 
 function resolveInternalBaseUrl(): string {

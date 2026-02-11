@@ -131,33 +131,33 @@ export default function CreditsPurchaseDialog({
 	const quickPicks = [10, 25, 50, 100];
 
 	// Default selection: only auto-select the Stripe default payment method.
-	// Do not auto-select the first saved method when there's no default.
 	const [selectedPm, setSelectedPm] = useState<string | "new" | null>(() => {
 		const defaultId = stripeInfo?.defaultPaymentMethodId ?? null;
-		// If there is a default, use it. Otherwise, if there are no saved
-		// methods, fall back to 'new'. If there are saved methods but no
-		// default, leave selection null so user chooses explicitly.
+		const firstMethodId = stripeInfo?.paymentMethods?.[0]?.id ?? null;
+		// Prefer default -> first saved method -> new card.
 		if (defaultId) return defaultId;
-		const hasMethods = (stripeInfo?.paymentMethods?.length ?? 0) > 0;
-		return hasMethods ? null : "new";
+		if (firstMethodId) return firstMethodId;
+		return "new";
 	});
 
-	// If stripeInfo indicates there are saved payment methods, ensure we
-	// select an existing method (default or first) only when no selection
-	// has been made (selectedPm === null). Do NOT override when the user
-	// explicitly chose "new".
+	// Keep selection sane when payment methods refresh.
 	useEffect(() => {
-		// Only run when stripeInfo changes. Auto-select a payment method
-		// only when the user hasn't made an explicit choice (selectedPm === null).
 		const defaultId = stripeInfo?.defaultPaymentMethodId ?? null;
+		const firstMethodId = stripeInfo?.paymentMethods?.[0]?.id ?? null;
 		const hasMethods = (stripeInfo?.paymentMethods?.length ?? 0) > 0;
 		if (selectedPm === null) {
 			if (defaultId) {
 				setSelectedPm(defaultId);
-			} else if (!defaultId && !hasMethods) {
-				// No saved methods at all -> default to 'new' so the UX shows the
-				// one-off/new-card flow.
+			} else if (firstMethodId) {
+				setSelectedPm(firstMethodId);
+			} else if (!hasMethods) {
 				setSelectedPm("new");
+			}
+		}
+		if (selectedPm && selectedPm !== "new" && hasMethods) {
+			const exists = (stripeInfo?.paymentMethods ?? []).some((m: any) => m.id === selectedPm);
+			if (!exists) {
+				setSelectedPm(defaultId ?? firstMethodId ?? "new");
 			}
 		}
 	}, [selectedPm, stripeInfo]);
@@ -183,6 +183,7 @@ export default function CreditsPurchaseDialog({
 				(window as any).__USER_ID__ || document?.body?.dataset?.userId;
 			const customerId =
 				stripeInfo?.customer?.id ?? wallet?.stripe_customer_id ?? null;
+			const teamId = wallet?.team_id ?? null;
 
 			if (selectedPm && selectedPm !== "new") {
 				const response = await ChargeSavedPayment({
@@ -193,6 +194,7 @@ export default function CreditsPurchaseDialog({
 					kind: mode,
 					user_id: clientUserId ?? null,
 					event_type: "top_up",
+					team_id: teamId,
 				} as any);
 
 				const { data, status, ok } = response;
@@ -278,6 +280,7 @@ export default function CreditsPurchaseDialog({
 					save_payment_method: mode === "pay_and_save",
 					customerId,
 					user_id: clientUserId ?? null,
+					team_id: teamId,
 				}),
 			});
 

@@ -71,7 +71,7 @@ async function CreditsSettingsContent(props: {
 		const { data, error: walletErr } = await supabase
 			.from("wallets")
 			.select(
-				"stripe_customer_id,balance_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id"
+				"team_id,stripe_customer_id,balance_nanos,auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id"
 			)
 			.eq("team_id", teamId)
 			.maybeSingle();
@@ -162,7 +162,7 @@ async function CreditsSettingsContent(props: {
 		const { data: tx, error: txErr } = await supabase
 			.from("credit_ledger")
 			.select(
-				"id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,created_at"
+				"id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at"
 			)
 			.eq("team_id", teamId)
 			.order("event_time", { ascending: false })
@@ -182,6 +182,8 @@ async function CreditsSettingsContent(props: {
 				kind: r.kind ?? null,
 				ref_type: r.ref_type ?? null,
 				ref_id: r.ref_id ?? null,
+				source_ref_type: r.source_ref_type ?? null,
+				source_ref_id: r.source_ref_id ?? null,
 				before_balance_nanos: r.before_balance ?? null,
 				after_balance_nanos: r.after_balance ?? null,
 			}));

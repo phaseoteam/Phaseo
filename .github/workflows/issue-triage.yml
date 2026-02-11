@@ -1,0 +1,48 @@
+name: Issue Triage
+
+on:
+    issues:
+        types: [opened]
+
+jobs:
+    triage:
+        name: AI issue triage
+        runs-on: ubuntu-latest
+        permissions:
+            id-token: write
+            contents: read
+            issues: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  persist-credentials: false
+
+            - uses: anomalyco/opencode/github@latest
+              with:
+                  model: zen/gpt-5-nano
+                  prompt: |
+                      You are responding to a new GitHub issue on the AI Stats project — an
+                      open-source monorepo that provides an AI model data registry (pricing,
+                      capabilities, statuses across 60+ providers), a Cloudflare Worker gateway
+                      API, a Next.js dashboard, and TypeScript/Python SDKs.
+
+                      Respond with a comment structured as follows:
+
+                      Start with an empathetic greeting: "We're super sorry about this issue
+                      you're facing! We'll have someone look at this as soon as possible."
+
+                      Then add:
+
+                      ### Quick Overview
+                      A 2-3 sentence summary of what the reporter is experiencing or requesting.
+
+                      ### Possible Cause & Suggested Fix
+                      - The most likely reason this is happening (or feasibility notes if it
+                        is a feature request)
+                      - A potential quick fix or workaround
+                      - Any clarifying questions if the issue lacks detail
+
+                      End with:
+                      "*This is an automated response — a team member will follow up shortly.*"
+
+                      Keep the response concise, helpful, and technically grounded.

@@ -11,7 +11,7 @@ import {
 	PaginationEllipsis,
 	PaginationLink,
 } from "@/components/ui/pagination";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	ExternalLink,
 	ArrowDownCircle,
@@ -34,6 +34,21 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -47,6 +62,8 @@ type Transaction = {
 	kind?: string | null; // e.g. 'topup', 'charge', 'auto_topup', 'adjustment'
 	ref_type?: string | null; // e.g. 'payment_intent'
 	ref_id?: string | null; // e.g. 'pi_xxx'
+	source_ref_type?: string | null;
+	source_ref_id?: string | null;
 	before_balance_nanos?: number | null; // bigint nanos
 	after_balance_nanos?: number | null; // bigint nanos
 };
@@ -61,6 +78,16 @@ interface Props {
 const REFUND_WINDOW_MS = 24 * 60 * 60 * 1000;
 const TOP_UP_KINDS = new Set(["top_up", "top_up_one_off", "auto_top_up"]);
 const PAID_STATUSES = new Set(["paid", "succeeded"]);
+const REFUND_REASON_OPTIONS = [
+	{ value: "no_comment", label: "No comment" },
+	{ value: "accidental_purchase", label: "Accidental purchase" },
+	{ value: "duplicate_purchase", label: "Duplicate purchase" },
+	{ value: "wrong_amount", label: "Wrong amount selected" },
+	{ value: "testing_only", label: "Testing / sandbox use" },
+	{ value: "no_longer_needed", label: "No longer needed" },
+	{ value: "other", label: "Other" },
+] as const;
+type RefundReasonValue = (typeof REFUND_REASON_OPTIONS)[number]["value"];
 
 function formatNanos(nanos?: number | null, currency = "USD") {
         const val = (nanos ?? 0) / 1_000_000_000;
@@ -285,7 +312,11 @@ export default function RecentTransactions({
 	stripeCustomerId,
 	currency = "USD",
 }: Props) {
+	const router = useRouter();
 	const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
+	const [refundDialogTx, setRefundDialogTx] = useState<Transaction | null>(null);
+	const [refundReason, setRefundReason] =
+		useState<RefundReasonValue>("no_comment");
 	const [pageStr, setPageStr] = useQueryState("tx_page", {
 		defaultValue: "0",
 	});
@@ -303,6 +334,27 @@ export default function RecentTransactions({
 		const start = page * pageSize;
 		return transactions.slice(start, start + pageSize);
 	}, [transactions, page, pageSize]);
+	const activeRefundSourceIds = useMemo(() => {
+		const activeStatuses = new Set([
+			"pending",
+			"processing",
+			"applying",
+			"succeeded",
+		]);
+		const ids = new Set<string>();
+		for (const tx of transactions) {
+			const kind = String(tx.kind ?? "").toLowerCase();
+			if (kind !== "refund" && kind !== "refunded") continue;
+			const status = String(tx.status ?? "").toLowerCase();
+			if (!activeStatuses.has(status)) continue;
+			const sourceType = String(tx.source_ref_type ?? "").toLowerCase();
+			const sourceId = String(tx.source_ref_id ?? "").trim();
+			if (sourceType === "stripe_payment_intent" && sourceId.startsWith("pi_")) {
+				ids.add(sourceId);
+			}
+		}
+		return ids;
+	}, [transactions]);
 
 	const pathname = usePathname() || "/";
 	const searchParams = useSearchParams();
@@ -343,20 +395,20 @@ export default function RecentTransactions({
 		}
 	}
 
-	async function requestRefund(tx: Transaction) {
+	async function requestRefund(tx: Transaction, reason: string): Promise<boolean> {
 		const paymentIntentId = parsePaymentIntentId(tx);
 		if (!paymentIntentId) {
 			toast.error("No payment intent found for this purchase.");
-			return;
+			return false;
 		}
 		setBusy(tx.id, true);
 		try {
-			await toast.promise(
+			const result = await toast.promise(
 				(async () => {
 					const response = await fetch("/api/stripe/refunds/request", {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ paymentIntentId }),
+						body: JSON.stringify({ paymentIntentId, reason }),
 					});
 					const payload = await response.json().catch(() => ({}));
 					if (!response.ok) {
@@ -368,11 +420,25 @@ export default function RecentTransactions({
 				})(),
 				{
 					loading: "Submitting refund request...",
-					success: "Refund request submitted",
+					success: (result) =>
+						result?.message ?? "Refund request submitted",
 					error: (err) =>
 						err?.message ?? "Failed to submit refund request",
 				},
 			);
+			const params = new URLSearchParams(Array.from(searchParams.entries()));
+			const nextStatus =
+				String((result as any)?.status ?? "").toLowerCase() === "succeeded"
+					? "succeeded"
+					: "processing";
+			params.set("refund", nextStatus);
+			params.delete("payment_attempt");
+			const nextHref = `${pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+			router.replace(nextHref, { scroll: false });
+			router.refresh();
+			return true;
+		} catch {
+			return false;
 		} finally {
 			setBusy(tx.id, false);
 		}
@@ -472,8 +538,17 @@ export default function RecentTransactions({
 											t.after_balance_nanos ?? null;
 										const paymentIntentId =
 											parsePaymentIntentId(t);
-										const refundEligibility =
+										const baseEligibility =
 											isRefundEligible(t);
+										const refundEligibility =
+											baseEligibility.ok &&
+											paymentIntentId &&
+											activeRefundSourceIds.has(paymentIntentId)
+												? {
+														ok: false,
+														reason: "A refund for this purchase is already in progress or completed.",
+													}
+												: baseEligibility;
 										const busy = Boolean(actionBusy[t.id]);
 
 										return (
@@ -589,11 +664,10 @@ export default function RecentTransactions({
 																		? "Refund this purchase"
 																		: refundEligibility.reason
 																}
-																onClick={() =>
-																	requestRefund(
-																		t,
-																	)
-																}
+																onClick={() => {
+																	setRefundDialogTx(t);
+																	setRefundReason("no_comment");
+																}}
 															>
 																Refund
 															</Button>
@@ -704,6 +778,84 @@ export default function RecentTransactions({
 					</div>
 				</CardContent>
 			</Card>
+
+			<Dialog
+				open={Boolean(refundDialogTx)}
+				onOpenChange={(open) => {
+					if (!open && refundDialogTx && !actionBusy[refundDialogTx.id]) {
+						setRefundDialogTx(null);
+						setRefundReason("no_comment");
+					}
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Request refund?</DialogTitle>
+						<DialogDescription>
+							Select an optional reason for this self-serve refund request.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-2">
+						<p className="text-xs text-muted-foreground">
+							Reason is optional and logged for audit.
+						</p>
+						<Select
+							value={refundReason}
+							onValueChange={(value) =>
+								setRefundReason(value as RefundReasonValue)
+							}
+							disabled={Boolean(refundDialogTx && actionBusy[refundDialogTx.id])}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="No comment" />
+							</SelectTrigger>
+							<SelectContent>
+								{REFUND_REASON_OPTIONS.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => {
+								setRefundDialogTx(null);
+								setRefundReason("no_comment");
+							}}
+							disabled={Boolean(refundDialogTx && actionBusy[refundDialogTx.id])}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="button"
+							variant="destructive"
+							disabled={
+								!refundDialogTx ||
+								Boolean(actionBusy[refundDialogTx.id])
+							}
+							onClick={async () => {
+								if (!refundDialogTx) return;
+								const ok = await requestRefund(
+									refundDialogTx,
+									refundReason.trim(),
+								);
+								if (ok) {
+									setRefundDialogTx(null);
+									setRefundReason("no_comment");
+								}
+							}}
+						>
+							{refundDialogTx && actionBusy[refundDialogTx.id]
+								? "Submitting..."
+								: "Submit Refund"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</section>
 	);
 }

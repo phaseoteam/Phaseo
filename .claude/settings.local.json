@@ -24,7 +24,8 @@
       "Bash(pnpm install:*)",
       "Bash(grep:*)",
       "Bash(cat:*)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "WebFetch(domain:opencode.ai)"
     ]
   },
   "outputStyle": "Explanatory"

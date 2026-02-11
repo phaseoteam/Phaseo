@@ -9,6 +9,10 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const purchaseAmount = Number(body?.purchase_amount_cents);
         const totalAmount = Number(body?.total_amount_cents) || purchaseAmount;
+        const teamId =
+            typeof body?.team_id === "string" && body.team_id.trim().length > 0
+                ? body.team_id.trim()
+                : null;
         if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount < 50) {
             return NextResponse.json({ error: "Invalid purchase amount. Minimum 50 cents." }, { status: 400 });
         }
@@ -40,7 +44,11 @@ export async function POST(req: NextRequest) {
             ],
             metadata: userId ? { user_id: String(userId), purchase_amount_cents: String(purchaseAmount) } : { purchase_amount_cents: String(purchaseAmount) },
             payment_intent_data: {
-                description: 'Credits purchase'
+                description: 'Credits purchase',
+                metadata: {
+                    purpose: "top_up_one_off",
+                    ...(teamId ? { team_id: teamId } : {}),
+                },
             },
             success_url: `${origin}/settings/credits?checkout=success`,
             cancel_url: `${origin}/settings/credits?checkout=cancelled`,

@@ -3,7 +3,11 @@ import { getStripe } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
     try {
-        const { kind, amount_pence, customerId, currency = "usd" } = await req.json();
+        const { kind, amount_pence, customerId, currency = "usd", team_id } = await req.json();
+        const teamId =
+            typeof team_id === "string" && team_id.trim().length > 0
+                ? team_id.trim()
+                : undefined;
 
         // Derive a base URL: prefer NEXT_PUBLIC_BASE_URL, fall back to request origin, then localhost.
         const requestOrigin = req.headers.get("origin") || req.headers.get("referer") || "http://localhost:3000";
@@ -40,13 +44,22 @@ export async function POST(req: NextRequest) {
                         product_data: { name: "AI Credits top-up (one-off)" },
                     },
                 }],
+                payment_intent_data: {
+                    metadata: {
+                        purpose: "top_up_one_off",
+                        ...(teamId ? { team_id: teamId } : {}),
+                    },
+                },
                 // Do NOT set setup_future_usage here (keeps it strictly one-off)
                 success_url: successUrl,
                 cancel_url: cancelUrl,
                 // optional niceties:
                 allow_promotion_codes: false,
                 billing_address_collection: "auto",
-                metadata: { purpose: "top_up_one_off" },
+                metadata: {
+                    purpose: "top_up_one_off",
+                    ...(teamId ? { team_id: teamId } : {}),
+                },
             });
 
             return NextResponse.json({ url: session.url });
@@ -74,7 +87,10 @@ export async function POST(req: NextRequest) {
                 }],
                 payment_intent_data: {
                     setup_future_usage: "off_session", // Save the card for later server-side charging
-                    metadata: { purpose: "top_up" },
+                    metadata: {
+                        purpose: "top_up",
+                        ...(teamId ? { team_id: teamId } : {}),
+                    },
                 },
                 success_url: successUrl,
                 cancel_url: cancelUrl,
@@ -96,7 +112,10 @@ export async function POST(req: NextRequest) {
                 success_url: successUrl,
                 cancel_url: cancelUrl,
                 setup_intent_data: {
-                    metadata: { purpose: "auto_topup_setup" },
+                    metadata: {
+                        purpose: "auto_topup_setup",
+                        ...(teamId ? { team_id: teamId } : {}),
+                    },
                 },
             });
 
