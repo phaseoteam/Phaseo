@@ -409,11 +409,6 @@ jobs:
               if: matrix.target == 'api'
               run: pnpm install --frozen-lockfile
 
-            # Wrangler CLI (you already had this)
-            - name: Install Wrangler CLI
-              if: matrix.target == 'api'
-              run: npm install -g wrangler@4.45.0
-
             - name: Validate Cloudflare API deploy secrets
               if: matrix.target == 'api'
               shell: bash
@@ -432,6 +427,15 @@ jobs:
                     exit 1
                   fi
 
+            - name: Validate wrangler.toml placeholder markers
+              if: matrix.target == 'api'
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  cd apps/api
+                  grep -q "REPLACE_WITH_KV_NAMESPACE_ID" wrangler.toml
+                  grep -q "REPLACE_WITH_KV_NAMESPACE_PREVIEW_ID" wrangler.toml
+
             - name: Inject Cloudflare KV namespace IDs
               if: matrix.target == 'api'
               shell: bash
@@ -444,6 +448,11 @@ jobs:
                   KV_PREVIEW="${CLOUDFLARE_KV_NAMESPACE_PREVIEW_ID:-$CLOUDFLARE_KV_NAMESPACE_ID}"
                   sed -i "s/REPLACE_WITH_KV_NAMESPACE_ID/${CLOUDFLARE_KV_NAMESPACE_ID}/g" wrangler.toml
                   sed -i "s/REPLACE_WITH_KV_NAMESPACE_PREVIEW_ID/${KV_PREVIEW}/g" wrangler.toml
+                  if grep -q "REPLACE_WITH_KV_NAMESPACE" wrangler.toml; then
+                    echo "::error::KV placeholder still present after replacement"
+                    cat wrangler.toml
+                    exit 1
+                  fi
 
             - name: Deploy API app to Cloudflare
               if: matrix.target == 'api'
@@ -452,6 +461,7 @@ jobs:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   workingDirectory: apps/api
+                  wranglerVersion: "4.45.0"
 
             # ---------- DOCS ----------
             - name: Docs (Mintlify deploy is handled by GitHub App)
