@@ -24,5 +24,5 @@ invocation_logs = true
 
 [[kv_namespaces]]
 binding = "GATEWAY_CACHE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_KV_NAMESPACE_PREVIEW_ID"
+id = "f5e23068fcd94125ad9860c817c543d9"
+preview_id = "f5e23068fcd94125ad9860c817c543d9"
