@@ -17,7 +17,7 @@ jobs:
         name: Validate data
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -44,7 +44,7 @@ jobs:
         outputs:
             data-changed: ${{ steps.filter.outputs.data }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - uses: dorny/paths-filter@v3
               id: filter
@@ -58,7 +58,7 @@ jobs:
         needs: data
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -87,7 +87,7 @@ jobs:
             matrix:
                 app: [api, docs, web]
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -134,7 +134,7 @@ jobs:
             SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
             NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -180,7 +180,7 @@ jobs:
                     - sdk: ruby
                       name: Generate Ruby SDK
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
@@ -265,7 +265,7 @@ jobs:
         needs: sdk-gen
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Set up Python for SDK builds
               uses: actions/setup-python@v5
@@ -305,7 +305,7 @@ jobs:
             contents: read
             deployments: write
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -354,7 +354,7 @@ jobs:
                     - target: docs
                       name: Deploy Docs
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -424,7 +424,7 @@ jobs:
             pull-requests: write
             id-token: write
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
               with:
                   fetch-depth: 0
 
