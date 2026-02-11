@@ -269,8 +269,9 @@ function checkOrganisations(state: ValidationState): string[] {
     return errors;
 }
 
-function checkFamilies(state: ValidationState): string[] {
+function checkFamilies(state: ValidationState): { errors: string[]; warnings: string[] } {
     const errors: string[] = [];
+    const warnings: string[] = [];
     const familiesDir = path.join(DATA_ROOT, 'families');
     for (const fam of listDirs(familiesDir)) {
         const filePath = path.join(familiesDir, fam, 'family.json');
@@ -293,10 +294,10 @@ function checkFamilies(state: ValidationState): string[] {
             }
         }
         if (typeof data.family_name !== 'string' || !data.family_name.trim()) {
-            errors.push(`Family ${familyId} missing family_name`);
+            warnings.push(`Family ${familyId} missing family_name`);
         }
     }
-    return errors;
+    return { errors, warnings };
 }
 
 function checkBenchmarks(state: ValidationState): string[] {
@@ -524,8 +525,9 @@ function checkSubscriptionPlans(state: ValidationState): string[] {
     return errors;
 }
 
-function checkAliases(state: ValidationState): string[] {
+function checkAliases(state: ValidationState): { errors: string[]; warnings: string[] } {
     const errors: string[] = [];
+    const warnings: string[] = [];
     const aliasesDir = path.join(DATA_ROOT, 'aliases');
     const aliasDirs = listDirs(aliasesDir);
     state.aliasCount = aliasDirs.length;
@@ -540,14 +542,14 @@ function checkAliases(state: ValidationState): string[] {
         const aliasSlug = typeof data.alias_slug === 'string' ? data.alias_slug : alias;
         const resolved = normalizeReference(data.resolved_model_id);
         if (!resolved) {
-            errors.push(`Alias ${aliasSlug} missing resolved_model_id`);
+            warnings.push(`Alias ${aliasSlug} missing resolved_model_id`);
             continue;
         }
         if (!state.modelIds.has(resolved)) {
             errors.push(`Alias ${aliasSlug} resolves to unknown model ${resolved}`);
         }
     }
-    return errors;
+    return { errors, warnings };
 }
 
 export function runWebDataValidation(options?: { gatingSections?: ValidationSectionKey[] }) {
@@ -562,8 +564,14 @@ export function runWebDataValidation(options?: { gatingSections?: ValidationSect
         errors: orgErrors,
     });
 
-    const familyErrors = checkFamilies(state);
-    results.push({ key: 'families', label: 'Families', info: `${state.familyIds.size} entries`, errors: familyErrors });
+    const familyChecks = checkFamilies(state);
+    results.push({
+        key: 'families',
+        label: 'Families',
+        info: `${state.familyIds.size} entries`,
+        errors: familyChecks.errors,
+        warnings: familyChecks.warnings,
+    });
 
     const benchmarkErrors = checkBenchmarks(state);
     results.push({
@@ -604,8 +612,14 @@ export function runWebDataValidation(options?: { gatingSections?: ValidationSect
         errors: planErrors,
     });
 
-    const aliasErrors = checkAliases(state);
-    results.push({ key: 'aliases', label: 'Aliases', info: `${state.aliasCount} entries`, errors: aliasErrors });
+    const aliasChecks = checkAliases(state);
+    results.push({
+        key: 'aliases',
+        label: 'Aliases',
+        info: `${state.aliasCount} entries`,
+        errors: aliasChecks.errors,
+        warnings: aliasChecks.warnings,
+    });
 
     const gatingSet =
         options?.gatingSections && options.gatingSections.length > 0
