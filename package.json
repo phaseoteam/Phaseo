@@ -42,7 +42,7 @@
 		"api:lint": "cd apps/api && pnpm run lint",
 		"api:build": "cd apps/api && pnpm run build",
 		"validate:api": "pnpm run api:lint && pnpm run api:build",
-		"packages:build:ts": "cd packages/sdk/sdk-ts && pnpm run build",
+		"packages:build:ts": "pnpm --filter @ai-stats/devtools-core run build && cd packages/sdk/sdk-ts && pnpm run build",
 		"packages:pack:ts": "cd packages/sdk/sdk-ts && pnpm run pack:dry",
 		"packages:build:py": "cd packages/sdk/sdk-py && pnpm run build",
 		"validate:packages": "pnpm run packages:build:ts && pnpm run packages:pack:ts && pnpm run packages:build:py",
