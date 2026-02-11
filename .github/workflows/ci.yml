@@ -223,15 +223,15 @@ jobs:
               if: matrix.sdk == 'ts'
               run: |
                   echo "==== TS ModerationRequestInput BEFORE ===="
-                  sed -n '20,90p' packages/sdk-ts/src/gen/models/ModerationRequestInput.ts || echo "File missing"
+                  sed -n '20,90p' packages/sdk/sdk-ts/src/gen/models/ModerationsRequestInput.ts || echo "File missing"
 
             - name: Show C# solution + config BEFORE
               if: matrix.sdk == 'csharp'
               run: |
                   echo "==== C# AIStatsSdk.sln BEFORE ===="
-                  sed -n '1,40p' packages/sdk-csharp/src/gen/AIStatsSdk.sln || echo "sln missing"
+                  sed -n '1,40p' packages/sdk/sdk-csharp/src/gen/AIStatsSdk.sln || echo "sln missing"
                   echo "==== C# README config BEFORE ===="
-                  sed -n '1,40p' packages/sdk-csharp/src/gen/src/AIStatsSdk/README.md || echo "README missing"
+                  sed -n '1,40p' packages/sdk/sdk-csharp/src/gen/src/AIStatsSdk/README.md || echo "README missing"
 
             # --- ACTUAL GENERATION ---
             - name: Generate ${{ matrix.sdk }} SDK
@@ -250,26 +250,26 @@ jobs:
               if: matrix.sdk == 'ts'
               run: |
                   echo "==== TS ModerationRequestInput AFTER ===="
-                  sed -n '20,90p' packages/sdk-ts/src/gen/models/ModerationRequestInput.ts || echo "File missing"
+                  sed -n '20,90p' packages/sdk/sdk-ts/src/gen/models/ModerationsRequestInput.ts || echo "File missing"
 
             - name: Show C# solution + config AFTER
               if: matrix.sdk == 'csharp'
               run: |
                   echo "==== C# AIStatsSdk.sln AFTER ===="
-                  sed -n '1,40p' packages/sdk-csharp/src/gen/AIStatsSdk.sln || echo "sln missing"
+                  sed -n '1,40p' packages/sdk/sdk-csharp/src/gen/AIStatsSdk.sln || echo "sln missing"
                   echo "==== C# README config AFTER ===="
-                  sed -n '1,40p' packages/sdk-csharp/src/gen/src/AIStatsSdk/README.md || echo "README missing"
+                  sed -n '1,40p' packages/sdk/sdk-csharp/src/gen/src/AIStatsSdk/README.md || echo "README missing"
 
             # --- EXISTING CONSISTENCY CHECK ---
             - name: Ensure OpenAPI outputs up to date
               run: |
                   case "${{ matrix.sdk }}" in
-                    ts) gen_path="packages/sdk-ts/src/gen" ; gen_script="openapi:gen:ts" ;;
-                    py) gen_path="packages/sdk-py/src/gen" ; gen_script="openapi:gen:py" ;;
-                    go) gen_path="packages/sdk-go/gen" ; gen_script="openapi:gen:go" ;;
-                    csharp) gen_path="packages/sdk-csharp/src/gen" ; gen_script="openapi:gen:csharp" ;;
-                    php) gen_path="packages/sdk-php/src/gen" ; gen_script="openapi:gen:php" ;;
-                    ruby) gen_path="packages/sdk-ruby/lib/gen" ; gen_script="openapi:gen:ruby" ;;
+                    ts) gen_path="packages/sdk/sdk-ts/src/gen" ; gen_script="openapi:gen:ts" ;;
+                    py) gen_path="packages/sdk/sdk-py/src/gen" ; gen_script="openapi:gen:py" ;;
+                    go) gen_path="packages/sdk/sdk-go/gen" ; gen_script="openapi:gen:go" ;;
+                    csharp) gen_path="packages/sdk/sdk-csharp/src/gen" ; gen_script="openapi:gen:csharp" ;;
+                    php) gen_path="packages/sdk/sdk-php/src/gen" ; gen_script="openapi:gen:php" ;;
+                    ruby) gen_path="packages/sdk/sdk-ruby/lib/gen" ; gen_script="openapi:gen:ruby" ;;
                   esac
                   echo "Checking that OpenAPI spec and '${{ matrix.sdk }}' SDK are up to date..."
                   if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet apps/docs/openapi/v1/openapi.yaml $gen_path; then
@@ -299,7 +299,7 @@ jobs:
               run: |
                   python -m pip install --upgrade pip
                   python -m pip install build pytest
-                  python -m pip install -e packages/sdk-py
+                  python -m pip install -e packages/sdk/sdk-py
 
             - name: Setup pnpm
               uses: pnpm/action-setup@v4
@@ -498,7 +498,7 @@ jobs:
 
             - name: Build Python SDK
               if: github.ref == 'refs/heads/main'
-              working-directory: packages/sdk-py
+              working-directory: packages/sdk/sdk-py
               run: |
                   python -m pip install --upgrade pip
                   python -m pip install build
@@ -508,7 +508,7 @@ jobs:
               if: github.ref == 'refs/heads/main'
               uses: pypa/gh-action-pypi-publish@release/v1
               with:
-                  packages-dir: packages/sdk-py/dist
+                  packages-dir: packages/sdk/sdk-py/dist
                   skip-existing: true
 
             - name: Create GitHub releases from changelogs
