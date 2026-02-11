@@ -126,18 +126,34 @@ export function Hero({
 		return `${value.toFixed(2)}%`;
 	};
 
-	const heroStats = [
-		{
-			label: `${statsWindowHours}h uptime`,
-			value: formatPercent(stats?.uptimePct ?? null),
-			icon: Activity,
-			accent: "#0ea5e9",
-		},
-		{
-			label: `${tokensWindowHours}h tokens`,
-			value: formatTokens(stats?.tokens24h ?? null),
-			icon: BarChart3,
-			accent: "#10b981",
+		const formatWindow = (hours: number) => {
+			if (!Number.isFinite(hours) || hours <= 0) return "24h";
+			if (hours % (24 * 30) === 0)
+				return `${Math.round(hours / (24 * 30))}mo`;
+			if (hours % 24 === 0) return `${Math.round(hours / 24)}d`;
+			return `${Math.round(hours)}h`;
+		};
+		const statsWindowLabel =
+			statsWindowHours >= 24 * 28
+				? "Monthly uptime"
+				: `${formatWindow(statsWindowHours)} uptime`;
+		const tokensWindowLabel =
+			tokensWindowHours >= 24 * 28
+				? "monthly tokens"
+				: `${formatWindow(tokensWindowHours)} tokens`;
+
+		const heroStats = [
+			{
+				label: statsWindowLabel,
+				value: formatPercent(stats?.uptimePct ?? null),
+				icon: Activity,
+				accent: "#0ea5e9",
+			},
+			{
+				label: tokensWindowLabel,
+				value: formatTokens(stats?.tokens24h ?? null),
+				icon: BarChart3,
+				accent: "#10b981",
 		},
 		{
 			label: "Models",

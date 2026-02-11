@@ -24,9 +24,9 @@ export const metadata: Metadata = {
 };
 
 export default async function GatewayMarketingPage() {
-	const [gatewayMetrics, tokenMetrics, popularModels] = await Promise.all([
-		getGatewayMarketingMetrics(1),
-		getGatewayMarketingMetrics(12),
+	const monthlyWindowHours = 24 * 30;
+	const [gatewayMetrics, popularModels] = await Promise.all([
+		getGatewayMarketingMetrics(monthlyWindowHours),
 		getModelCardsByIdsCached(
 			[
 				"openai/gpt-5-2-2025-12-11",
@@ -41,15 +41,14 @@ export default async function GatewayMarketingPage() {
 	return (
 		<div className="container mx-auto flex flex-col items-center pt-16 sm:pt-20">
 			{/* Hero with stats, provider marquee, and popular models */}
-			<Hero
-				stats={{
-					...gatewayMetrics.summary,
-					tokens24h: tokenMetrics.summary.tokens24h,
-				}}
-				statsWindowHours={12}
-				tokensWindowHours={12}
-				popularModels={popularModels}
-			/>
+		<Hero
+			stats={{
+				...gatewayMetrics.summary,
+			}}
+			statsWindowHours={monthlyWindowHours}
+			tokensWindowHours={monthlyWindowHours}
+			popularModels={popularModels}
+		/>
 
 			{/* Features grid showing key capabilities */}
 			<Features />

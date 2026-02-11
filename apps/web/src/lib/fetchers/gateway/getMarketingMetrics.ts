@@ -259,13 +259,31 @@ function isUserError(row: RawGatewayRequest): boolean {
 	const code = String(row?.error_code ?? "").toLowerCase();
 	if (code.startsWith("user:")) return true;
 	if (code.startsWith("upstream:")) return false;
+	if (code.startsWith("system:")) return false;
 	const sc = Number(row?.status_code ?? 0);
 	if (Number.isFinite(sc)) {
 		if (sc >= 500) return false;
 		if (sc === 408 || sc === 429) return false;
 		if (sc >= 400 && sc < 500) return true;
 	}
-	return row?.success === false || row?.success === "false";
+	return false;
+}
+
+function isSuccessfulForUptime(row: RawGatewayRequest): boolean {
+	const successFlag =
+		row.success === true ||
+		row.success === 1 ||
+		row.success === "true" ||
+		row.success === "t";
+	if (successFlag) return true;
+
+	const statusCode = Number(row?.status_code ?? 0);
+	if (Number.isFinite(statusCode) && statusCode > 0 && statusCode < 400) {
+		return true;
+	}
+
+	if (isUserError(row)) return true;
+	return false;
 }
 
 async function fetchActiveGatewayModels(
@@ -330,14 +348,7 @@ function buildMetricsFromRows(
 		bucket.requests += 1;
 		totalRequests += 1;
 
-		const rawSuccess =
-			row.success === true ||
-			row.success === 1 ||
-			row.success === "true" ||
-			row.success === "t" ||
-			(Number.isFinite(Number(row.status_code)) &&
-				Number(row.status_code) < 400);
-		const success = isUserError(row) ? true : rawSuccess;
+		const success = isSuccessfulForUptime(row);
 		if (success) {
 			bucket.success += 1;
 			totalSuccess += 1;
@@ -541,7 +552,15 @@ export async function getGatewayMarketingMetrics(
 ): Promise<GatewayMarketingMetrics> {
 	"use cache";
 
-	cacheLife("minutes");
+	const normalizedHours =
+		Number.isFinite(hours) && hours > 0 ? Math.round(hours) : HOURS_DEFAULT;
+	if (normalizedHours >= 24 * 30) {
+		cacheLife("days");
+	} else if (normalizedHours >= 24) {
+		cacheLife("hours");
+	} else {
+		cacheLife("minutes");
+	}
 	cacheTag("gateway:marketing-metrics");
 	cacheTag("data:gateway_requests");
 

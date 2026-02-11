@@ -11,6 +11,13 @@ export default function GatewayTeaser({
 	providers?: number;
 	models?: number;
 }) {
+	const roundDownToStep = (value: number, step: number) => {
+		if (!Number.isFinite(value) || value <= 0) return 0;
+		return Math.max(step, Math.floor(value / step) * step);
+	};
+	const providersRounded = roundDownToStep(providers, 10);
+	const modelsRounded = roundDownToStep(models, 100);
+
 	return (
 		<section className="container mx-auto">
 			<Card className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 md:p-6 border-dashed">
@@ -24,10 +31,10 @@ export default function GatewayTeaser({
 					</h3>
 					<div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
 						<span className="inline-flex items-center gap-2">
-							<Server size={16} /> {providers}+ providers
+							<Server size={16} /> {providersRounded}+ providers
 						</span>
 						<span className="inline-flex items-center gap-2">
-							<ShieldCheck size={16} /> {models}+ models
+							<ShieldCheck size={16} /> {modelsRounded}+ models
 						</span>
 					</div>
 				</div>
