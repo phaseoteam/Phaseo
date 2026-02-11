@@ -11,64 +11,74 @@ interface PackageConfig {
     changelogPath: string;
 }
 
-// [WARN] Adjust these paths to match your repo structure.
-// I've filled in the obvious ones; add/remove as needed.
-// NOTE: Temporarily excluding SDK packages from GitHub releases (keeping NPM publishing)
 const PACKAGES: PackageConfig[] = [
-    // SDK packages temporarily disabled for GitHub releases
-    // {
-    //     name: "@ai-stats/sdk",
-    //     manifestPath: "packages/sdk-ts/package.json",
-    //     manifestType: "npm",
-    //     changelogPath: "packages/sdk-ts/CHANGELOG.md",
-    // },
-    // {
-    //     name: "@ai-stats/py-sdk",
-    //     manifestPath: "packages/sdk-py/pyproject.toml",
-    //     manifestType: "pyproject",
-    //     changelogPath: "packages/sdk-py/CHANGELOG.md",
-    // },
-    // {
-    //     name: "@ai-stats/go-sdk",
-    //     manifestPath: "packages/sdk-go/package.json",
-    //     manifestType: "npm",
-    //     changelogPath: "packages/sdk-go/CHANGELOG.md",
-    // },
-    // {
-    //     name: "@ai-stats/csharp-sdk",
-    //     manifestPath: "packages/sdk-csharp/package.json",
-    //     manifestType: "npm",
-    //     changelogPath: "packages/sdk-csharp/CHANGELOG.md",
-    // },
-    // {
-    //     name: "@ai-stats/php-sdk",
-    //     manifestPath: "packages/sdk-php/package.json",
-    //     manifestType: "npm",
-    //     changelogPath: "packages/sdk-php/CHANGELOG.md",
-    // },
-    // {
-    //     name: "@ai-stats/ruby-sdk",
-    //     manifestPath: "packages/sdk-ruby/package.json",
-    //     manifestType: "npm",
-    //     changelogPath: "packages/sdk-ruby/CHANGELOG.md",
-    // },
+    // Gateway API
     {
         name: "@ai-stats/gateway-api",
         manifestPath: "apps/api/package.json",
         manifestType: "npm",
         changelogPath: "apps/api/CHANGELOG.md",
     },
+    // SDKs
     {
-        name: "@ai-stats/web",
-        manifestPath: "apps/web/package.json",
+        name: "@ai-stats/ai-sdk-provider",
+        manifestPath: "packages/integrations/ai-sdk-ai-stats/package.json",
         manifestType: "npm",
-        changelogPath: "apps/web/CHANGELOG.md",
+        changelogPath: "packages/integrations/ai-sdk-ai-stats/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/docs",
-        manifestPath: "apps/docs/package.json",
+        name: "@ai-stats/sdk",
+        manifestPath: "packages/sdk/sdk-ts/package.json",
         manifestType: "npm",
-        changelogPath: "apps/docs/CHANGELOG.md",
+        changelogPath: "packages/sdk/sdk-ts/CHANGELOG.md",
+    },
+    {
+        name: "@ai-stats/py-sdk",
+        manifestPath: "packages/sdk/sdk-py/pyproject.toml",
+        manifestType: "pyproject",
+        changelogPath: "packages/sdk/sdk-py/CHANGELOG.md",
+    },
+    {
+        name: "@ai-stats/go-sdk",
+        manifestPath: "packages/sdk/sdk-go/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/sdk/sdk-go/CHANGELOG.md",
+    },
+    {
+        name: "@ai-stats/csharp-sdk",
+        manifestPath: "packages/sdk/sdk-csharp/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/sdk/sdk-csharp/CHANGELOG.md",
+    },
+    {
+        name: "@ai-stats/php-sdk",
+        manifestPath: "packages/sdk/sdk-php/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/sdk/sdk-php/CHANGELOG.md",
+    },
+    {
+        name: "@ai-stats/ruby-sdk",
+        manifestPath: "packages/sdk/sdk-ruby/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/sdk/sdk-ruby/CHANGELOG.md",
+    },
+    {
+        name: "@ai-stats/java-sdk",
+        manifestPath: "packages/sdk/sdk-java/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/sdk/sdk-java/CHANGELOG.md",
+    },
+    {
+        name: "@ai-stats/rust-sdk",
+        manifestPath: "packages/sdk/sdk-rust/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/sdk/sdk-rust/CHANGELOG.md",
+    },
+    {
+        name: "@ai-stats/cpp-sdk",
+        manifestPath: "packages/sdk/sdk-cpp/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/sdk/sdk-cpp/CHANGELOG.md",
     },
 ];
 
