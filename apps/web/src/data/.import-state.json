@@ -6802,7 +6802,7 @@
       }
     },
     "src/data/api_providers/z-ai/models.json": {
-      "hash": "2f46546895a7a5d585ced910575c3587",
+      "hash": "968f13602411bf68c2f29c809e6da78f",
       "meta": {
         "api_provider_id": "z-ai",
         "kind": "provider_models"
@@ -8769,11 +8769,11 @@
       }
     },
     "src/data/models/aion-labs/aion-2-0-2025-12-21/model.json": {
-      "hash": "1190a186fe1c1236155856ce9d45ba16",
+      "hash": "0a0f32b7022098c29c553489492f1a79",
       "meta": {
         "model_id": "aion-labs/aion-2-0-2025-12-21",
         "organisation_id": "aion-labs",
-        "previous_model_id": "aion-labs/aion-1-0"
+        "previous_model_id": "aion-labs/aion-1-0-2025-01-29"
       }
     },
     "src/data/models/aion-labs/aion-rp-llama-3-1-8b-2024-11-30/model.json": {
@@ -8822,14 +8822,6 @@
         "model_id": "openai/gpt-5-3-codex-2026-02-05",
         "organisation_id": "openai",
         "previous_model_id": "openai/gpt-5-2-codex-2025-12-18"
-      }
-    },
-    "src/data/models/z-ai/glm-5/model.json": {
-      "hash": "fa8f69b6c615194121857de305b50568",
-      "meta": {
-        "model_id": "z-ai/glm-5",
-        "organisation_id": "z-ai",
-        "previous_model_id": "z-ai/glm-4-7-2025-12-22"
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-opus-4.6/text.generate/pricing.json": {
@@ -8943,6 +8935,40 @@
         "capability_id": "text.generate",
         "model_id": "google/gemini-2.5-flash-image",
         "model_key": "google-ai-studio:google/gemini-2.5-flash-image:text.generate"
+      }
+    },
+    "src/data/models/z-ai/glm-5-2026-02-11/model.json": {
+      "hash": "599a6d0595697a191c0034d68d70c7a4",
+      "meta": {
+        "model_id": "z-ai/glm-5-2026-02-11",
+        "organisation_id": "z-ai",
+        "previous_model_id": "z-ai/glm-4-7-2025-12-22"
+      }
+    },
+    "src/data/models/z-ai/glm-5-code-2026-02-11/model.json": {
+      "hash": "b96ae4e976a58ff556f4668e3c8953b9",
+      "meta": {
+        "model_id": "z-ai/glm-5-code-2026-02-11",
+        "organisation_id": "z-ai",
+        "previous_model_id": null
+      }
+    },
+    "src/data/pricing/z-ai/z-ai-glm-5/text.generate/pricing.json": {
+      "hash": "dc7d8411e0c0537819a47e8475df31fc",
+      "meta": {
+        "api_provider_id": "z-ai",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-5",
+        "model_key": "z-ai:z-ai/glm-5:text.generate"
+      }
+    },
+    "src/data/pricing/z-ai/z-ai-glm-5-code/text.generate/pricing.json": {
+      "hash": "95bce4fa5a5ffefda3429623ede0fedf",
+      "meta": {
+        "api_provider_id": "z-ai",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-5-code",
+        "model_key": "z-ai:z-ai/glm-5-code:text.generate"
       }
     }
   }

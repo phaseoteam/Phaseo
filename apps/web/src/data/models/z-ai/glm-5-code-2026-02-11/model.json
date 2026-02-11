@@ -1,0 +1,17 @@
+{
+  "model_id": "z-ai/glm-5-code-2026-02-11",
+  "organisation_id": "z-ai",
+  "name": "GLM 5 Code",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-02-11T00:00:00",
+  "release_date": "2026-02-11T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

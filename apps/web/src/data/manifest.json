@@ -822,7 +822,8 @@
       "z-ai/glm-4-9b-chat-1m-2024-10-24",
       "z-ai/glm-4-9b-chat-2024-06-04",
       "z-ai/glm-4v-9b",
-      "z-ai/glm-5",
+      "z-ai/glm-5-2026-02-11",
+      "z-ai/glm-5-code-2026-02-11",
       "z-ai/glm-image-2026-01-14"
     ]
   },
@@ -1043,7 +1044,6 @@
     "supergrok-heavy"
   ],
   "aliases": [
-    "nan",
     "openai-gpt-chat",
     "openai-gpt-latest"
   ],
@@ -1264,6 +1264,8 @@
     "z-ai:text.generate:z-ai-glm-4.6v",
     "z-ai:text.generate:z-ai-glm-4.6v-flash",
     "z-ai:text.generate:z-ai-glm-4.7",
-    "z-ai:text.generate:z-ai-glm-4.7-flash"
+    "z-ai:text.generate:z-ai-glm-4.7-flash",
+    "z-ai:text.generate:z-ai-glm-5",
+    "z-ai:text.generate:z-ai-glm-5-code"
   ]
 }
