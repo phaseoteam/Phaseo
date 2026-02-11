@@ -97,12 +97,14 @@ type PricingRuleRow = {
 
 export async function loadPricing(
     tracker: ChangeTracker,
-    { modelId }: { modelId: string | null }
+    { modelId, forceFull = false }: { modelId: string | null; forceFull?: boolean }
 ) {
     const supa = client();
     if (!modelId) tracker.touchPrefix(DIR_PRICING);
     const pricingRuleKeys = new Set<string>();
     let hasChanges = false;
+    let scannedFiles = 0;
+    let queuedModelKeys = 0;
 
     const capabilities = new Map<string, CapabilityState>();
 
@@ -123,6 +125,7 @@ export async function loadPricing(
                     throw new Error(`pricing.json missing model_id/api_model_id: ${fp}`);
                 }
                 if (modelId && modelIdFromFile !== modelId) continue;
+                scannedFiles += 1;
                 const capability_id = j.capability_id ?? j.endpoint ?? capabilityFallback;
                 const computedKey =
                     j.key && j.key.trim()
@@ -179,9 +182,10 @@ export async function loadPricing(
                     });
                 }
 
-                if (modelId || change.status !== "unchanged") {
+                if (modelId || forceFull || change.status !== "unchanged") {
                     capabilityState.ruleReplacements.push({ model_key: computedKey, rows: desiredRules });
                     hasChanges = true;
+                    queuedModelKeys += 1;
                 }
 
                 capabilities.set(capabilityKey, capabilityState);
@@ -251,7 +255,12 @@ export async function loadPricing(
         }
     }
 
-    if (!hasChanges) return;
+    if (!hasChanges) {
+        console.log(
+            `[pricing-import] No pricing changes detected. scanned_files=${scannedFiles} model_filter=${modelId ?? "none"}`
+        );
+        return;
+    }
 
     if (!modelId) {
         await pruneRowsByColumn(
@@ -262,4 +271,8 @@ export async function loadPricing(
             "data_api_pricing_rules"
         );
     }
+
+    console.log(
+        `[pricing-import] Applied pricing updates. scanned_files=${scannedFiles} queued_model_keys=${queuedModelKeys} keep_model_keys=${pricingRuleKeys.size} full_mode=${forceFull ? "yes" : "no"} model_filter=${modelId ?? "none"}`
+    );
 }

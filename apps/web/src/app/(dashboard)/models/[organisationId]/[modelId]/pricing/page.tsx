@@ -12,10 +12,17 @@ async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
 		return await getModelOverview(modelId, includeHidden);
 	} catch (error) {
-		console.warn("[seo] failed to load model overview for metadata", {
-			modelId,
-			error,
-		});
+		const message =
+			error instanceof Error ? error.message : typeof error === "string" ? error : "";
+		const isAbort =
+			(error instanceof DOMException && error.name === "AbortError") ||
+			message.includes("AbortError");
+		if (!isAbort) {
+			console.warn("[seo] failed to load model overview for metadata", {
+				modelId,
+				error,
+			});
+		}
 		return null;
 	}
 }

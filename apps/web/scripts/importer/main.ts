@@ -19,6 +19,7 @@ const getArgValue = (name: string) =>
 
 async function main() {
     const modelFilter = getArgValue("model");
+    const forcePricing = process.argv.includes("--full-pricing") || process.argv.includes("--full");
     if (!modelFilter) await cleanDeleted();
     const tracker = await ChangeTracker.init();
     const requestedSection =
@@ -36,11 +37,15 @@ async function main() {
     const tasks: Record<string, (tracker: ChangeTracker) => Promise<void>> = {
         families: loadFamilies,
         models: tracker => loadModels(tracker, { modelId: modelFilter ?? null }),
-        pricing: tracker => loadPricing(tracker, { modelId: modelFilter ?? null }),
+        pricing: tracker =>
+            loadPricing(tracker, { modelId: modelFilter ?? null, forceFull: forcePricing }),
         model: async tracker => {
             await loadModels(tracker, { modelId: modelFilter ?? null });
             await loadProviders(tracker, { modelId: modelFilter ?? null });
-            await loadPricing(tracker, { modelId: modelFilter ?? null });
+            await loadPricing(tracker, {
+                modelId: modelFilter ?? null,
+                forceFull: forcePricing,
+            });
         },
         benchmarks: loadBenchmarks,
         organisations: loadOrganisations,
@@ -54,7 +59,7 @@ async function main() {
             await loadModels(tracker, { modelId: null });
             await loadAliases(tracker); // optional: if you have the aliases loader
             await loadProviders(tracker);
-            await loadPricing(tracker, { modelId: null });
+            await loadPricing(tracker, { modelId: null, forceFull: forcePricing });
             await loadSubscriptionPlans(tracker);
         },
     };
@@ -69,6 +74,7 @@ async function main() {
 
     console.log(`>> Importing: ${section}`);
     if (modelFilter) console.log(`>> Model filter: ${modelFilter}`);
+    if (forcePricing) console.log(">> Full pricing import mode enabled.");
     await fn(tracker);
     await tracker.persist({ dryRun: isDryRun() });
     console.log(">> Done.");
