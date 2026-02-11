@@ -3,7 +3,7 @@
   "organisation_id": "google",
   "name": "Imagen 4.0 Ultra Preview",
   "status": "Retired",
-  "previous_model_id": "google/imagen-3-0-generate-002-2025-02-06",
+  "previous_model_id": "google/imagen-3-0-generate-002-2025-01-29",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": "2025-05-20T00:00:00",
   "deprecation_date": "2025-06-11T00:00:00",

@@ -3,7 +3,7 @@
   "organisation_id": "openai",
   "name": "GPT 5 Search API",
   "status": "Available",
-  "previous_model_id": "openai/gpt-4o-search-preview",
+  "previous_model_id": "openai/gpt-4o-search-preview-2025-03-11",
   "announced_date": "2025-10-14T00:00:00",
   "release_date": "2025-10-14T00:00:00",
   "deprecation_date": null,
