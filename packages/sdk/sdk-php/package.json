@@ -1,6 +1,6 @@
 {
   "name": "@ai-stats/php-sdk",
-  "version": "0.2.1-alpha.0",
+  "version": "1.0.0",
   "private": true,
   "description": "AI Stats PHP SDK (preview) - generated client with models wrapper",
   "license": "MIT",

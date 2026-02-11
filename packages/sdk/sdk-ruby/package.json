@@ -1,6 +1,6 @@
 {
   "name": "@ai-stats/ruby-sdk",
-  "version": "0.2.1-alpha.0",
+  "version": "1.0.0",
   "private": true,
   "description": "AI Stats Ruby SDK (preview) - generated client with models wrapper",
   "license": "MIT",

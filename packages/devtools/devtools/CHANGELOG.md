@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.2.1
+
 All notable changes to `@ai-stats/devtools` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -43,40 +45,43 @@ None - this is a new package. The old pattern (`devtools: { enabled: true }`) st
 ### Migration from Old Pattern
 
 **Before:**
+
 ```typescript
-import { AIStats } from '@ai-stats/sdk';
+import { AIStats } from "@ai-stats/sdk";
 
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
   devtools: {
     enabled: true,
-    directory: '.ai-stats-devtools',
-    flushIntervalMs: 1000
-  }
+    directory: ".ai-stats-devtools",
+    flushIntervalMs: 1000,
+  },
 });
 ```
 
 **After:**
+
 ```typescript
-import { AIStats, createAIStatsDevtools } from '@ai-stats/sdk';
+import { AIStats, createAIStatsDevtools } from "@ai-stats/sdk";
 
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
   devtools: createAIStatsDevtools({
-    directory: '.ai-stats-devtools',
-    flushIntervalMs: 1000
-  })
+    directory: ".ai-stats-devtools",
+    flushIntervalMs: 1000,
+  }),
 });
 ```
 
 Or using the standalone package:
+
 ```typescript
-import { AIStats } from '@ai-stats/sdk';
-import { createAIStatsDevtools } from '@ai-stats/devtools';
+import { AIStats } from "@ai-stats/sdk";
+import { createAIStatsDevtools } from "@ai-stats/devtools";
 
 const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
-  devtools: createAIStatsDevtools()
+  devtools: createAIStatsDevtools(),
 });
 ```
 

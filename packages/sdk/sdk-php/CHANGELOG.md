@@ -1,5 +1,23 @@
 # @ai-stats/php-sdk
 
+## 1.0.0
+
+### Major Changes
+
+- [`f610264`](https://github.com/AI-Stats/AI-Stats/commit/f6102647107d57ff8e4292ffcab57109fe6c92b7) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Prepare the API and all SDKs for a coordinated breaking release.
+
+  This captures breaking changes across endpoint surfaces, protocol/IR conversions,
+  provider routing/usage behavior, and regenerated SDK interfaces from the latest
+  OpenAPI definitions.
+
+### Minor Changes
+
+- [`f610264`](https://github.com/AI-Stats/AI-Stats/commit/f6102647107d57ff8e4292ffcab57109fe6c92b7) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Regenerate language SDKs against the latest OpenAPI spec.
+
+### Patch Changes
+
+- [#13](https://github.com/AI-Stats/AI-Stats/pull/13) [`d280bf0`](https://github.com/AI-Stats/AI-Stats/commit/d280bf07747eb9b07e8aff7a1dcf36038240bc11) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bump all SDKs for the next alpha drop so they land on 0.2.1-alpha.0 together.
+
 ## 0.2.1-alpha.0
 
 ### Patch Changes
