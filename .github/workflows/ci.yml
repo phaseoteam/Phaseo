@@ -156,7 +156,23 @@ jobs:
               env:
                   SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
                   NEXT_PUBLIC_SUPABASE_URL: ${{ env.NEXT_PUBLIC_SUPABASE_URL }}
-              run: cd apps/web && pnpm exec tsx scripts/importer/main.ts --section=all
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  for attempt in 1 2 3; do
+                    echo "Running importer attempt ${attempt}/3"
+                    if (cd apps/web && pnpm exec tsx scripts/importer/main.ts --section=all); then
+                      echo "Importer succeeded on attempt ${attempt}"
+                      exit 0
+                    fi
+                    if [ "${attempt}" -lt 3 ]; then
+                      sleep_for=$((attempt * 15))
+                      echo "Importer failed, retrying in ${sleep_for}s..."
+                      sleep "${sleep_for}"
+                    fi
+                  done
+                  echo "Importer failed after 3 attempts"
+                  exit 1
 
     sdk-gen:
         name: Generate SDKs
@@ -398,8 +414,25 @@ jobs:
               if: matrix.target == 'api'
               run: npm install -g wrangler@4.45.0
 
+            - name: Inject Cloudflare KV namespace IDs
+              if: ${{ matrix.target == 'api' && secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' && secrets.CLOUDFLARE_KV_NAMESPACE_ID != '' }}
+              shell: bash
+              env:
+                  CLOUDFLARE_KV_NAMESPACE_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_ID }}
+                  CLOUDFLARE_KV_NAMESPACE_PREVIEW_ID: ${{ secrets.CLOUDFLARE_KV_NAMESPACE_PREVIEW_ID }}
+              run: |
+                  set -euo pipefail
+                  cd apps/api
+                  KV_PREVIEW="${CLOUDFLARE_KV_NAMESPACE_PREVIEW_ID:-$CLOUDFLARE_KV_NAMESPACE_ID}"
+                  sed -i "s/REPLACE_WITH_KV_NAMESPACE_ID/${CLOUDFLARE_KV_NAMESPACE_ID}/g" wrangler.toml
+                  sed -i "s/REPLACE_WITH_KV_NAMESPACE_PREVIEW_ID/${KV_PREVIEW}/g" wrangler.toml
+
+            - name: Skip API deploy (missing Cloudflare secrets)
+              if: ${{ matrix.target == 'api' && (secrets.CLOUDFLARE_API_TOKEN == '' || secrets.CLOUDFLARE_ACCOUNT_ID == '' || secrets.CLOUDFLARE_KV_NAMESPACE_ID == '') }}
+              run: echo "Skipping API deploy because CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_KV_NAMESPACE_ID is not fully configured."
+
             - name: Deploy API app to Cloudflare
-              if: matrix.target == 'api'
+              if: ${{ matrix.target == 'api' && secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' && secrets.CLOUDFLARE_KV_NAMESPACE_ID != '' }}
               uses: cloudflare/wrangler-action@v3
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

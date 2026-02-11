@@ -1,10 +1,28 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+async function firstExistingPath(paths: string[]) {
+  for (const candidate of paths) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // try next path
+    }
+  }
+  throw new Error(`Unable to find any of the expected files:\n${paths.join("\n")}`);
+}
+
 async function main() {
   const root = path.resolve(__dirname, "..");
-  const pkgPath = path.join(root, "packages", "sdk-py", "package.json");
-  const pyprojectPath = path.join(root, "packages", "sdk-py", "pyproject.toml");
+  const pkgPath = await firstExistingPath([
+    path.join(root, "packages", "sdk", "sdk-py", "package.json"),
+    path.join(root, "packages", "sdk-py", "package.json"),
+  ]);
+  const pyprojectPath = await firstExistingPath([
+    path.join(root, "packages", "sdk", "sdk-py", "pyproject.toml"),
+    path.join(root, "packages", "sdk-py", "pyproject.toml"),
+  ]);
 
   const [pkgRaw, pyprojectRaw] = await Promise.all([
     fs.readFile(pkgPath, "utf8"),
@@ -13,7 +31,7 @@ async function main() {
 
   const { version } = JSON.parse(pkgRaw);
   if (!version) {
-    throw new Error("packages/sdk-py/package.json is missing a version");
+    throw new Error(`${pkgPath} is missing a version`);
   }
 
   const updated = pyprojectRaw.replace(/^(version\\s*=\\s*\").+?(\\")/m, `$1${version}$2`);
