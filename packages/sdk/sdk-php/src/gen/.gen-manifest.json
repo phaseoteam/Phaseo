@@ -1,0 +1,7 @@
+{
+  "files": [
+    "Client.php",
+    "Models.php",
+    "Operations.php"
+  ]
+}

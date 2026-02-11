@@ -1,0 +1,7 @@
+{
+  "files": [
+    "client.rb",
+    "models.rb",
+    "operations.rb"
+  ]
+}

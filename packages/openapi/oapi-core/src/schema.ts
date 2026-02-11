@@ -42,12 +42,21 @@ function toIRSchemaInner(
 	}
 
 	if (schema.anyOf && schema.anyOf.length > 0) {
+		const objectWithRequiredConstraintAnyOf =
+			isObjectLikeSchema(schema) &&
+			schema.anyOf.every(
+				(variant) => !isRef(variant) && isRequiredOnlySchema(variant as OpenAPIV3.SchemaObject)
+			);
+		if (objectWithRequiredConstraintAnyOf) {
+			// Keep object shape and properties; IR cannot fully represent conditional required sets.
+		} else {
 		return {
 			kind: "union",
 			variants: schema.anyOf.map((variant) =>
 				toIRSchema(variant as OpenAPIV3.SchemaObject, ctx)
 			)
 		};
+		}
 	}
 
 	if (schema.allOf && schema.allOf.length > 0) {
@@ -102,6 +111,15 @@ function toIRSchemaInner(
 				...ctx,
 				pointer: ctx.pointer ? `${ctx.pointer}/items` : undefined
 			})
+		};
+	}
+
+	if (isRequiredOnlySchema(schema)) {
+		return {
+			kind: "object",
+			properties: {},
+			required: schema.required ?? [],
+			additionalProperties: undefined
 		};
 	}
 
@@ -212,4 +230,19 @@ function flattenAllOf(
 function refName(ref: string): string {
 	const parts = ref.split("/");
 	return parts[parts.length - 1] ?? ref;
+}
+
+function isObjectLikeSchema(schema: OpenAPIV3.SchemaObject): boolean {
+	return schema.type === "object" || Boolean(schema.properties) || Boolean(schema.additionalProperties);
+}
+
+function isRequiredOnlySchema(schema: OpenAPIV3.SchemaObject): boolean {
+	const hasRequired = Array.isArray(schema.required) && schema.required.length > 0;
+	const hasType = Boolean(schema.type);
+	const hasProperties = Boolean(schema.properties);
+	const hasAdditionalProperties = schema.additionalProperties !== undefined;
+	const hasCombinators =
+		Boolean(schema.oneOf?.length) || Boolean(schema.anyOf?.length) || Boolean(schema.allOf?.length);
+	const hasEnum = Boolean(schema.enum?.length);
+	return hasRequired && !hasType && !hasProperties && !hasAdditionalProperties && !hasCombinators && !hasEnum;
 }

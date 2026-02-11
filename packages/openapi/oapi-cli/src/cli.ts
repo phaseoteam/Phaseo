@@ -210,8 +210,7 @@ async function writeGeneratedFiles(outDir: string, files: { path: string; conten
 
 async function writeManifest(outDir: string, files: { path: string }[]) {
 	const manifest = {
-		files: files.map((file) => file.path).sort((a, b) => a.localeCompare(b)),
-		generatedAt: new Date().toISOString()
+		files: files.map((file) => file.path).sort((a, b) => a.localeCompare(b))
 	};
 	await fs.mkdir(outDir, { recursive: true });
 	await fs.writeFile(

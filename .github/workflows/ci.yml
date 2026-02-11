@@ -204,14 +204,7 @@ jobs:
               run: |
                   echo "Node: $(node -v)"
                   echo "pnpm: $(pnpm -v)"
-                  # Adjust package names to whatever you actually use
-                  if [ "${{ matrix.sdk }}" = "ts" ]; then
-                    node -p "console.log('openapi-typescript-codegen:', require('openapi-typescript-codegen/package.json').version)" || true
-                  fi
-                  if [ "${{ matrix.sdk }}" = "csharp" ]; then
-                    node -p "console.log('@openapitools/openapi-generator-cli:', require('@openapitools/openapi-generator-cli/package.json').version)" || true
-                    pnpm exec openapi-generator-cli version || true
-                  fi
+                  node -p "console.log('oapi-cli script =', JSON.parse(require('fs').readFileSync('package.json','utf8')).scripts['oapi'])" || true
 
             - name: Show openapi:gen scripts
               run: |
@@ -223,15 +216,7 @@ jobs:
               if: matrix.sdk == 'ts'
               run: |
                   echo "==== TS ModerationRequestInput BEFORE ===="
-                  sed -n '20,90p' packages/sdk/sdk-ts/src/gen/models/ModerationsRequestInput.ts || echo "File missing"
-
-            - name: Show C# solution + config BEFORE
-              if: matrix.sdk == 'csharp'
-              run: |
-                  echo "==== C# AIStatsSdk.sln BEFORE ===="
-                  sed -n '1,40p' packages/sdk/sdk-csharp/src/gen/AIStatsSdk.sln || echo "sln missing"
-                  echo "==== C# README config BEFORE ===="
-                  sed -n '1,40p' packages/sdk/sdk-csharp/src/gen/src/AIStatsSdk/README.md || echo "README missing"
+                  sed -n '20,90p' packages/sdk/sdk-ts/src/oapi-gen/models/ModerationsRequestInput.ts || echo "File missing"
 
             # --- ACTUAL GENERATION ---
             - name: Generate ${{ matrix.sdk }} SDK
@@ -250,23 +235,15 @@ jobs:
               if: matrix.sdk == 'ts'
               run: |
                   echo "==== TS ModerationRequestInput AFTER ===="
-                  sed -n '20,90p' packages/sdk/sdk-ts/src/gen/models/ModerationsRequestInput.ts || echo "File missing"
-
-            - name: Show C# solution + config AFTER
-              if: matrix.sdk == 'csharp'
-              run: |
-                  echo "==== C# AIStatsSdk.sln AFTER ===="
-                  sed -n '1,40p' packages/sdk/sdk-csharp/src/gen/AIStatsSdk.sln || echo "sln missing"
-                  echo "==== C# README config AFTER ===="
-                  sed -n '1,40p' packages/sdk/sdk-csharp/src/gen/src/AIStatsSdk/README.md || echo "README missing"
+                  sed -n '20,90p' packages/sdk/sdk-ts/src/oapi-gen/models/ModerationsRequestInput.ts || echo "File missing"
 
             # --- EXISTING CONSISTENCY CHECK ---
             - name: Ensure OpenAPI outputs up to date
               run: |
                   case "${{ matrix.sdk }}" in
-                    ts) gen_path="packages/sdk/sdk-ts/src/gen" ; gen_script="openapi:gen:ts" ;;
+                    ts) gen_path="packages/sdk/sdk-ts/src/oapi-gen" ; gen_script="openapi:gen:ts" ;;
                     py) gen_path="packages/sdk/sdk-py/src/gen" ; gen_script="openapi:gen:py" ;;
-                    go) gen_path="packages/sdk/sdk-go/gen" ; gen_script="openapi:gen:go" ;;
+                    go) gen_path="packages/sdk/sdk-go/src/gen" ; gen_script="openapi:gen:go" ;;
                     csharp) gen_path="packages/sdk/sdk-csharp/src/gen" ; gen_script="openapi:gen:csharp" ;;
                     php) gen_path="packages/sdk/sdk-php/src/gen" ; gen_script="openapi:gen:php" ;;
                     ruby) gen_path="packages/sdk/sdk-ruby/lib/gen" ; gen_script="openapi:gen:ruby" ;;

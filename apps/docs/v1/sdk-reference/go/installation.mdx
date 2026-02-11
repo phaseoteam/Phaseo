@@ -21,7 +21,7 @@ For now, you can generate and use the client locally:
 
 - Ensure Go 1.21+.
 - From the repo root run `pnpm openapi:gen:go` to regenerate the client.
-- In your Go module, point to the generated code (preview path): `replace github.com/ai-stats/sdk-go => ./packages/sdk/sdk-go/gen`.
+- In your Go module, point to the generated code (preview path): `replace github.com/ai-stats/sdk-go => ./packages/sdk/sdk-go/src/gen`.
 - Import the convenience facade from `packages/sdk/sdk-go`.
 
 ```bash

@@ -1,90 +1,49 @@
-using System.Net.Http.Headers;
-using AiStatsSdk.Client;
-using AiStatsSdk.Api;
-using AiStatsSdk.Model;
-
-// Lightweight facade over the generated SDK for common endpoints.
-// Generate the SDK with: `pnpm openapi:gen:csharp`
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using AiStats.Gen;
 
 namespace AiStatsSdk
 {
-    public class Client
+    // Lightweight facade over the in-house generated SDK.
+    // Regenerate with: `pnpm openapi:gen:csharp`
+    public sealed class Client
     {
-        private readonly ModelsApi _modelsApi;
-        private readonly CompletionsApi _completionsApi;
-        private readonly ResponsesApi _responsesApi;
-        private readonly AudioApi _audioApi;
-        private readonly BatchApi _batchApi;
-        private readonly FilesApi _filesApi;
-        private readonly AnalyticsApi _analyticsApi;
-        private readonly ImagesApi _imagesApi;
-        private readonly VideoApi _videoApi;
-        private readonly ModerationsApi _moderationsApi;
+        private readonly AiStats.Gen.Client _client;
 
         public Client(string apiKey, string basePath = "https://api.phaseo.app/v1")
         {
-            var config = new Configuration { BasePath = basePath };
-            config.DefaultHeaders["Authorization"] = $"Bearer {apiKey}";
-            var httpClient = new HttpClient { BaseAddress = new Uri(basePath) };
-            _modelsApi = new ModelsApi(httpClient, config);
-            _completionsApi = new CompletionsApi(httpClient, config);
-            _responsesApi = new ResponsesApi(httpClient, config);
-            _audioApi = new AudioApi(httpClient, config);
-            _batchApi = new BatchApi(httpClient, config);
-            _filesApi = new FilesApi(httpClient, config);
-            _analyticsApi = new AnalyticsApi(httpClient, config);
-            _imagesApi = new ImagesApi(httpClient, config);
-            _videoApi = new VideoApi(httpClient, config);
-            _moderationsApi = new ModerationsApi(httpClient, config);
+            var headers = new Dictionary<string, string> { { "Authorization", $"Bearer {apiKey}" } };
+            _client = new AiStats.Gen.Client(basePath, headers: headers);
         }
 
-        public ModelListResponse GetModels(
-            string? provider = null,
-            int? limit = null,
-            int? offset = null,
-            string? organisation = null)
+        public Task<Dictionary<string, object>?> GenerateText(Dictionary<string, object> request)
         {
-            return _modelsApi.ModelsGet(provider, limit, offset, organisation);
+            return Operations.CreateChatCompletionAsync(_client, body: request);
         }
 
-        public ImagesApi ImagesApi => _imagesApi;
-        public AudioApi AudioApi => _audioApi;
-        public VideoApi VideoApi => _videoApi;
-        public ModerationsApi ModerationsApi => _moderationsApi;
-
-        public ChatCompletionsResponse GenerateText(ChatCompletionsRequest request)
+        public Task<Dictionary<string, object>?> GenerateResponse(Dictionary<string, object> request)
         {
-            return _completionsApi.CreateChatCompletion(new CreateChatCompletionRequest(request));
+            return Operations.CreateResponseAsync(_client, body: request);
         }
 
-        public ResponsesResponse GenerateResponse(ResponsesRequest request)
+        public Task<Dictionary<string, object>?> GenerateImage(Dictionary<string, object> request)
         {
-            return _responsesApi.CreateResponse(new CreateResponseRequest(request));
+            return Operations.CreateImageAsync(_client, body: request);
         }
 
-        public BatchResponse CreateBatch(BatchRequest request)
+        public Task<Dictionary<string, object>?> GenerateModeration(Dictionary<string, object> request)
         {
-            return _batchApi.BatchesPost(new BatchesPostRequest(request));
+            return Operations.CreateModerationAsync(_client, body: request);
         }
 
-        public BatchResponse GetBatch(string batchId)
+        public Task<Dictionary<string, object>?> ListModels(Dictionary<string, string>? query = null)
         {
-            return _batchApi.BatchesBatchIdGet(batchId);
+            return Operations.ListModelsAsync(_client, query: query);
         }
 
-        public FileListResponse ListFiles()
+        public Task<Dictionary<string, object>?> Health()
         {
-            return _filesApi.FilesGet();
-        }
-
-        public FileObject GetFile(string fileId)
-        {
-            return _filesApi.FilesFileIdGet(fileId);
-        }
-
-        public HealthzGet200Response GetHealth()
-        {
-            return _analyticsApi.HealthzGet();
+            return Operations.HealthzAsync(_client);
         }
     }
 }

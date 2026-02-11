@@ -1,101 +1,76 @@
 <?php
-// Thin wrapper around the generated PHP SDK.
+declare(strict_types=1);
+
+// Thin wrapper around the in-house generated PHP SDK.
 // Regenerate with: `pnpm openapi:gen:php`
 
 namespace AIStats\Sdk;
 
-use AIStats\Sdk\Api\DefaultApi;
-use AIStats\Sdk\Configuration;
-use AIStats\Sdk\Model\ResponsesResponse;
-use AIStats\Sdk\Model\ChatCompletionsResponse;
-use AIStats\Sdk\Model\ImagesGenerationResponse;
-use AIStats\Sdk\Model\ImagesEditResponse;
-use AIStats\Sdk\Model\EmbeddingsResponse;
-use AIStats\Sdk\Model\ModerationsResponse;
-use AIStats\Sdk\Model\AudioTranscriptionResponse;
-use AIStats\Sdk\Model\AudioTranslationResponse;
-use AIStats\Sdk\Model\ListModels200Response;
+require_once __DIR__ . "/gen/Client.php";
+require_once __DIR__ . "/gen/Models.php";
+require_once __DIR__ . "/gen/Operations.php";
+
+use AIStats\Gen\Client as GenClient;
 
 class Client
 {
-    private DefaultApi $api;
+    private GenClient $client;
 
-    public function __construct(string $apiKey, string $basePath = 'https://api.phaseo.app/v1')
+    public function __construct(string $apiKey, string $basePath = "https://api.phaseo.app/v1")
     {
-        $host = rtrim($basePath, '/');
-        $config = Configuration::getDefaultConfiguration()
-            ->setHost($host)
-            ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
-
-        $this->api = new DefaultApi(null, $config);
-    }
-
-    /**
-     * Chat completions.
-     */
-    public function generateText(array $payload): ChatCompletionsResponse
-    {
-        return $this->api->createChatCompletion($payload);
-    }
-
-    /**
-     * Responses API.
-     */
-    public function generateResponse(array $payload): ResponsesResponse
-    {
-        return $this->api->createResponse($payload);
-    }
-
-    public function generateImage(array $payload): ImagesGenerationResponse
-    {
-        return $this->api->createImage($payload);
-    }
-
-    public function generateImageEdit(array $payload): ImagesEditResponse
-    {
-        $model = $payload['model'] ?? null;
-        $image = $payload['image'] ?? null;
-        $prompt = $payload['prompt'] ?? null;
-        $mask = $payload['mask'] ?? null;
-        $size = $payload['size'] ?? null;
-        $n = $payload['n'] ?? null;
-        $user = $payload['user'] ?? null;
-        $meta = $payload['meta'] ?? null;
-        $usage = $payload['usage'] ?? null;
-
-        return $this->api->createImageEdit($model, $image, $prompt, $mask, $size, $n, $user, $meta, $usage);
-    }
-
-    public function generateEmbedding(array $payload): EmbeddingsResponse
-    {
-        return $this->api->createEmbedding($payload);
-    }
-
-    public function generateModeration(array $payload): ModerationsResponse
-    {
-        return $this->api->createModeration($payload);
-    }
-
-    public function generateTranscription(array $payload): AudioTranscriptionResponse
-    {
-        return $this->api->createTranscription($payload['model'] ?? null, $payload['audioUrl'] ?? null, $payload['audioB64'] ?? null, $payload['language'] ?? null);
-    }
-
-    public function generateTranslation(array $payload): AudioTranslationResponse
-    {
-        return $this->api->createTranslation($payload['model'] ?? null, $payload['audioUrl'] ?? null, $payload['audioB64'] ?? null, $payload['language'] ?? null, $payload['prompt'] ?? null, $payload['temperature'] ?? null);
-    }
-
-    public function listModels(array $params = []): ListModels200Response
-    {
-        return $this->api->listModels(
-            $params['endpoints'] ?? null,
-            $params['organisation'] ?? null,
-            $params['input_types'] ?? null,
-            $params['output_types'] ?? null,
-            $params['params'] ?? null,
-            $params['limit'] ?? 50,
-            $params['offset'] ?? 0
+        $this->client = new GenClient(
+            rtrim($basePath, "/"),
+            ["Authorization" => "Bearer " . $apiKey]
         );
+    }
+
+    public function generateText(array $payload): mixed
+    {
+        return \AIStats\Gen\createChatCompletion($this->client, null, null, null, $payload);
+    }
+
+    public function generateResponse(array $payload): mixed
+    {
+        return \AIStats\Gen\createResponse($this->client, null, null, null, $payload);
+    }
+
+    public function generateImage(array $payload): mixed
+    {
+        return \AIStats\Gen\createImage($this->client, null, null, null, $payload);
+    }
+
+    public function generateImageEdit(array $payload): mixed
+    {
+        return \AIStats\Gen\createImageEdit($this->client, null, null, null, $payload);
+    }
+
+    public function generateEmbedding(array $payload): mixed
+    {
+        return \AIStats\Gen\createEmbedding($this->client, null, null, null, $payload);
+    }
+
+    public function generateModeration(array $payload): mixed
+    {
+        return \AIStats\Gen\createModeration($this->client, null, null, null, $payload);
+    }
+
+    public function generateTranscription(array $payload): mixed
+    {
+        return \AIStats\Gen\createTranscription($this->client, null, null, null, $payload);
+    }
+
+    public function generateTranslation(array $payload): mixed
+    {
+        return \AIStats\Gen\createTranslation($this->client, null, null, null, $payload);
+    }
+
+    public function listModels(array $params = []): mixed
+    {
+        return \AIStats\Gen\listModels($this->client, null, $params, null, null);
+    }
+
+    public function health(): mixed
+    {
+        return \AIStats\Gen\healthz($this->client);
     }
 }

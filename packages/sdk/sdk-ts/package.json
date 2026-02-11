@@ -37,9 +37,9 @@
 	],
 	"sideEffects": false,
 	"scripts": {
-		"clean": "rimraf dist src/gen",
+		"clean": "rimraf dist src/oapi-gen",
 		"gen": "pnpm -w oapi:gen:ts",
-		"build": "tsc -p tsconfig.build.json",
+		"build": "rimraf dist && tsc -p tsconfig.build.json",
 		"postinstall": "node scripts/postinstall.cjs",
 		"smoke:chat": "dotenv -e .env.local -- tsx tests/smoke.ts --operation chat",
 		"smoke:responses": "dotenv -e .env.local -- tsx tests/smoke.ts --operation responses",

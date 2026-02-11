@@ -350,7 +350,17 @@ type Embedding struct {
 	Object *string `json:"object,omitempty"`
 }
 
-type EmbeddingsRequest = interface{}
+type EmbeddingsRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
+	Dimensions *int `json:"dimensions,omitempty"`
+	EmbeddingOptions *map[string]interface{} `json:"embedding_options,omitempty"`
+	EncodingFormat *string `json:"encoding_format,omitempty"`
+	Input interface{} `json:"input,omitempty"`
+	Inputs interface{} `json:"inputs,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	User *string `json:"user,omitempty"`
+}
 
 type EmbeddingsResponse struct {
 	Data *[]map[string]interface{} `json:"data,omitempty"`

@@ -72,6 +72,5 @@
     "models/VideoDeleteResponse.ts",
     "models/VideoGenerationRequest.ts",
     "models/VideoGenerationResponse.ts"
-  ],
-  "generatedAt": "2026-02-09T11:37:37.276Z"
+  ]
 }

@@ -1,0 +1,7 @@
+{
+  "files": [
+    "Client.cs",
+    "Models.cs",
+    "Operations.cs"
+  ]
+}
