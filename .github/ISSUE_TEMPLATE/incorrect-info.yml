@@ -1,7 +1,6 @@
 name: "📘 Report Incorrect Info"
 description: Flag incorrect or outdated information
 title: "[Incorrect Info] "
-labels: ["type/incorrect-info", "status/triage"]
 assignees:
     - DanielButler1
 body:
@@ -10,12 +9,12 @@ body:
       attributes:
           label: Area
           options:
-              - area/web
-              - area/docs
-              - area/schema
-              - area/data-importers
-              - area/analytics
-              - area/api
+              - API
+              - Data
+              - Docs
+              - Other
+              - SDKs
+              - Web
       validations:
           required: true
     - type: textarea

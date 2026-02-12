@@ -1,44 +1,67 @@
-name: Apply area label & normalise title
+name: Sync Linear Issue Labels
 on:
+    workflow_dispatch:
     issues:
         types: [opened, edited]
 permissions:
     issues: write
 jobs:
-    label:
+    sync-labels:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/github-script@v8
               with:
                   script: |
-                      const issue = context.payload.issue;
-                      const body = issue.body || "";
-                      const labels = new Set(issue.labels.map(l => l.name));
+                      // Keep GitHub labels aligned with Linear taxonomy.
+                      // We intentionally do not auto-apply labels from issue body.
+                      const linearLabels = [
+                        { name: "Area: API", color: "0e8a16", description: "Issue area: API" },
+                        { name: "Area: Data", color: "5319e7", description: "Issue area: Data" },
+                        { name: "Area: Docs", color: "0075ca", description: "Issue area: Docs" },
+                        { name: "Area: Other", color: "6a737d", description: "Issue area: Other" },
+                        { name: "Area: SDKs", color: "fbca04", description: "Issue area: SDKs" },
+                        { name: "Area: Web", color: "1d76db", description: "Issue area: Web" },
+                        { name: "Impact: Breaking", color: "b60205", description: "Impact: Breaking change" },
+                        { name: "Impact: High Impact", color: "d93f0b", description: "Impact: High impact" },
+                        { name: "Impact: Low Risk", color: "0e8a16", description: "Impact: Low risk" },
+                        { name: "Source: Community", color: "0052cc", description: "Source: Community-reported" },
+                        { name: "Source: External", color: "c2e0c6", description: "Source: External signal" },
+                        { name: "Source: Upstream", color: "bfd4f2", description: "Source: Upstream dependency/provider" },
+                        { name: "Type: Bug", color: "d73a4a", description: "Type: Bug" },
+                        { name: "Type: Chore", color: "fef2c0", description: "Type: Chore" },
+                        { name: "Type: Feature", color: "a2eeef", description: "Type: Feature" },
+                        { name: "Type: Improvement", color: "84b6eb", description: "Type: Improvement" },
+                        { name: "Type: Spike", color: "d4c5f9", description: "Type: Spike" },
+                      ];
 
-                      // Read the "Area" field (Issue Forms render headings like "### Area")
-                      const m = body.match(/(^|\n)###\s*Area\s*\n([^\n]+)/i);
-                      if (m) {
-                        const area = m[2].trim();
-                        if (area.startsWith("area/")) labels.add(area);
-                      }
-
-                      // Ensure a single status label exists
-                      if (![...labels].some(n => n.startsWith("status/"))) labels.add("status/triage");
-
-                      // Normalise title prefix based on type/* label already present from template
-                      const type = [...labels].find(n => n.startsWith("type/"));
-                      if (type) {
-                        const tag = type.replace('type/','').replace('-', ' ');
-                        const pretty = tag.replace(/\b\w/g, s => s.toUpperCase());
-                        const want = `[${pretty}] `;
-                        const newTitle = issue.title.startsWith('[')
-                          ? issue.title.replace(/^\[[^\]]+\]\s*/, want)
-                          : want + issue.title;
-                        if (newTitle !== issue.title) {
-                          await github.rest.issues.update({ ...context.repo, issue_number: issue.number, title: newTitle });
+                      for (const label of linearLabels) {
+                        try {
+                          const existing = await github.rest.issues.getLabel({
+                            ...context.repo,
+                            name: label.name,
+                          });
+                          const needsUpdate =
+                            existing.data.color.toLowerCase() !== label.color.toLowerCase() ||
+                            (existing.data.description || "") !== label.description;
+                          if (needsUpdate) {
+                            await github.rest.issues.updateLabel({
+                              ...context.repo,
+                              name: label.name,
+                              new_name: label.name,
+                              color: label.color,
+                              description: label.description,
+                            });
+                          }
+                        } catch (error) {
+                          if (error.status === 404) {
+                            await github.rest.issues.createLabel({
+                              ...context.repo,
+                              name: label.name,
+                              color: label.color,
+                              description: label.description,
+                            });
+                          } else {
+                            throw error;
+                          }
                         }
                       }
-
-                      await github.rest.issues.setLabels({
-                        ...context.repo, issue_number: issue.number, labels: [...labels]
-                      });

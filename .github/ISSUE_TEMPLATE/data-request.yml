@@ -1,7 +1,6 @@
 name: "🧠 New Data Request"
 description: Suggest new data to add
 title: "[Data Request] "
-labels: ["type/data-request", "status/triage"]
 assignees:
     - DanielButler1
 body:
@@ -10,11 +9,12 @@ body:
       attributes:
           label: Area
           options:
-              - area/schema
-              - area/data-importers
-              - area/analytics
-              - area/docs
-              - area/web
+              - API
+              - Data
+              - Docs
+              - Other
+              - SDKs
+              - Web
       validations:
           required: true
     - type: input

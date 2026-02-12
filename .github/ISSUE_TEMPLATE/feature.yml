@@ -1,7 +1,6 @@
 name: "✨ Feature"
 description: Propose a new capability
 title: "[Feature] "
-labels: ["type/feature", "status/triage"]
 assignees:
     - DanielButler1
 body:
@@ -10,15 +9,12 @@ body:
       attributes:
           label: Area
           options:
-              - area/api
-              - area/web
-              - area/web:ui
-              - area/web:server
-              - area/web:db
-              - area/sdk-js
-              - area/sdk-py
-              - area/docs
-              - area/infrastructure
+              - API
+              - Data
+              - Docs
+              - Other
+              - SDKs
+              - Web
       validations:
           required: true
     - type: textarea

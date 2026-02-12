@@ -1,7 +1,6 @@
 name: "🧹 Chore / Test"
 description: Maintenance, CI, dependencies, or tests
 title: "[Chore] "
-labels: ["type/chore", "status/triage"]
 assignees:
     - DanielButler1
 body:
@@ -10,12 +9,12 @@ body:
       attributes:
           label: Area
           options:
-              - area/infrastructure
-              - area/test
-              - area/web
-              - area/api
-              - area/sdk-js
-              - area/sdk-py
+              - API
+              - Data
+              - Docs
+              - Other
+              - SDKs
+              - Web
       validations:
           required: true
     - type: textarea

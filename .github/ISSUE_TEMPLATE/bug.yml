@@ -1,7 +1,6 @@
 name: "🐞 Bug Report"
 description: Report a defect or unintended behaviour
 title: "[Bug] "
-labels: ["type/bug", "status/triage"]
 assignees:
     - DanielButler1
 body:
@@ -10,22 +9,12 @@ body:
       attributes:
           label: Area
           options:
-              - area/api
-              - area/api:routing
-              - area/api:pricing
-              - area/web
-              - area/web:ui
-              - area/web:server
-              - area/web:db
-              - area/web:auth
-              - area/docs
-              - area/sdk-js
-              - area/sdk-py
-              - area/schema
-              - area/data-importers
-              - area/infrastructure
-              - area/analytics
-              - area/security
+              - API
+              - Data
+              - Docs
+              - Other
+              - SDKs
+              - Web
       validations:
           required: true
     - type: textarea

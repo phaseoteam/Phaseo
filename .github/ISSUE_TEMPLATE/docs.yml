@@ -1,7 +1,6 @@
 name: "📝 Docs"
 description: Content, structure, or navigation changes
 title: "[Docs] "
-labels: ["type/docs", "status/triage"]
 assignees:
     - DanielButler1
 body:
@@ -10,11 +9,12 @@ body:
       attributes:
           label: Area
           options:
-              - area/docs
-              - area/web
-              - area/sdk-js
-              - area/sdk-py
-              - area/api
+              - API
+              - Data
+              - Docs
+              - Other
+              - SDKs
+              - Web
       validations:
           required: true
     - type: textarea
