@@ -39,6 +39,7 @@ type Props = {
 	subtitle?: string | null;
 	link: UpdateLink;
 	dateIso?: string | null;
+	isReleaseToday?: boolean;
 	accentClass?: string | null;
 	className?: string;
 };
@@ -53,6 +54,7 @@ export default function UpdateCard({
 	tags: _tags,
 	link,
 	dateIso,
+	isReleaseToday = false,
 	accentClass,
 	className,
 }: Props) {
@@ -63,7 +65,7 @@ export default function UpdateCard({
 			key={id}
 			className={cn(
 				"flex h-full flex-col border border-zinc-200 bg-white transition hover:-translate-y-1 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-950",
-				isModelRelease &&
+				isReleaseToday &&
 					"border-amber-300 dark:border-amber-500 bg-amber-50/60 dark:bg-amber-900/20",
 				className
 			)}

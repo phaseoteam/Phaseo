@@ -27,6 +27,16 @@ export default function ModelUpdatesRecentReleases({
 	getRelativeLabel,
 	emptyMessage,
 }: ModelUpdatesRecentReleasesProps) {
+	const isUtcToday = (iso: string) => {
+		const now = new Date();
+		const date = new Date(iso);
+		return (
+			now.getUTCFullYear() === date.getUTCFullYear() &&
+			now.getUTCMonth() === date.getUTCMonth() &&
+			now.getUTCDate() === date.getUTCDate()
+		);
+	};
+
 	if (events.length === 0) {
 		return (
 			<div className="mb-6">
@@ -94,6 +104,7 @@ export default function ModelUpdatesRecentReleases({
 					const primaryType = event.types[0];
 					const accentClass = accentMap[primaryType] ?? null;
 					const dateIso = new Date(event.date).toISOString();
+					const hasReleaseType = event.types.includes("Released");
 
 					return (
 						<UpdateCard
@@ -121,6 +132,7 @@ export default function ModelUpdatesRecentReleases({
 								cta: "View",
 							}}
 							dateIso={dateIso}
+							isReleaseToday={hasReleaseType && isUtcToday(dateIso)}
 							// relative={getRelativeLabel(event.date)}
 							accentClass={accentClass}
 						/>

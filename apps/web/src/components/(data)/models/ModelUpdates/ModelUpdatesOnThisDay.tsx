@@ -115,6 +115,7 @@ export default function ModelUpdatesOnThisDay({
 									cta: "View",
 								}}
 								dateIso={new Date(event.date).toISOString()}
+								isReleaseToday={false}
 								// relative={getRelativeTime(event.date)}
 								accentClass={accentClass}
 							/>
