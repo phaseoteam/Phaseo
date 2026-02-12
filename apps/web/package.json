@@ -1,7 +1,6 @@
 {
 	"name": "@ai-stats/web",
 	"version": "1.0.0",
-	"type": "module",
 	"private": true,
 	"engines": {
 		"node": ">=20.10.0"
