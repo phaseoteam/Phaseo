@@ -635,11 +635,11 @@ importers:
   packages/devtools/raycast-extension:
     dependencies:
       '@raycast/api':
-        specifier: ^1.104.1
-        version: 1.104.4(@types/node@22.19.9)(@types/react@19.2.7)
+        specifier: ^1.104.6
+        version: 1.104.6(@types/node@22.19.9)(@types/react@19.2.7)
       '@raycast/utils':
         specifier: ^2.2.2
-        version: 2.2.2(@raycast/api@1.104.4(@types/node@22.19.9)(@types/react@19.2.7))(react@19.2.3)
+        version: 2.2.2(@raycast/api@1.104.6(@types/node@22.19.9)(@types/react@19.2.7))(react@19.2.3)
     devDependencies:
       '@raycast/eslint-config':
         specifier: ^1.0.11
@@ -4478,8 +4478,8 @@ packages:
   '@radix-ui/rect@1.1.1':
     resolution: {integrity: sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw==}
 
-  '@raycast/api@1.104.4':
-    resolution: {integrity: sha512-Pz6qmLVfHp1OLKGyzDhFN9IPczG6EiGFIE6pq23SVsYB6lRpfABSVsscnjioa5NAX3cI5/6cz+/nk142ZncupA==}
+  '@raycast/api@1.104.6':
+    resolution: {integrity: sha512-W3UnZrfh1EH9mteQQOibeUvniDnVsbRgcfSUgVWFTGuI6mzKLFzoM8mD6n5amYQM51JVvbuJbaqtfMqsTmnQCQ==}
     engines: {node: '>=22.14.0'}
     hasBin: true
     peerDependencies:
@@ -16219,7 +16219,7 @@ snapshots:
       extract-zip: 2.0.1
       progress: 2.0.3
       proxy-agent: 6.5.0
-      semver: 7.7.2
+      semver: 7.7.4
       tar-fs: 3.1.1
       unbzip2-stream: 1.4.3
       yargs: 17.7.2
@@ -16924,7 +16924,7 @@ snapshots:
 
   '@radix-ui/rect@1.1.1': {}
 
-  '@raycast/api@1.104.4(@types/node@22.19.9)(@types/react@19.2.7)':
+  '@raycast/api@1.104.6(@types/node@22.19.9)(@types/react@19.2.7)':
     dependencies:
       '@oclif/core': 4.8.0
       '@oclif/plugin-autocomplete': 3.2.40
@@ -16959,9 +16959,9 @@ snapshots:
       - supports-color
       - typescript
 
-  '@raycast/utils@2.2.2(@raycast/api@1.104.4(@types/node@22.19.9)(@types/react@19.2.7))(react@19.2.3)':
+  '@raycast/utils@2.2.2(@raycast/api@1.104.6(@types/node@22.19.9)(@types/react@19.2.7))(react@19.2.3)':
     dependencies:
-      '@raycast/api': 1.104.4(@types/node@22.19.9)(@types/react@19.2.7)
+      '@raycast/api': 1.104.6(@types/node@22.19.9)(@types/react@19.2.7)
       dequal: 2.0.3
     optionalDependencies:
       react: 19.2.3
@@ -25315,7 +25315,7 @@ snapshots:
     dependencies:
       color: 4.2.3
       detect-libc: 2.1.2
-      semver: 7.7.2
+      semver: 7.7.4
     optionalDependencies:
       '@img/sharp-darwin-arm64': 0.33.5
       '@img/sharp-darwin-x64': 0.33.5
