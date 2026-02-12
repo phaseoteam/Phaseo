@@ -1,7 +1,7 @@
 {
 	"name": "@ai-stats/sdk",
 	"description": "AI Stats Gateway SDK for TypeScript/JavaScript",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"type": "module",
 	"private": false,
 	"license": "MIT",
