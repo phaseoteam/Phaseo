@@ -27,6 +27,7 @@
 
 ## Commit & Pull Request Guidelines
 - Commit subjects in history are short, descriptive, and scoped. Add a `.changeset` entry when shipping SDK/API/web changes that should version.
+- Never commit directly to `main`. Always work on a branch, open a PR, and merge via the PR flow.
 - PRs: describe intent and scope, list commands run (lint/typecheck/build/tests/validations), link issues, and include screenshots or notes for UI changes.
 
 ## Security & Configuration Tips
