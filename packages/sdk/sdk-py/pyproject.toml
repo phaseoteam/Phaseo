@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-stats-py-sdk"
-version = "0.2.0"
+version = "1.0.0"
 description = "Official AI Stats Gateway SDK for Python."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,6 +34,7 @@ Issues = "https://github.com/AI-Stats/AI-Stats/issues"
 [tool.hatch.build.targets.sdist]
 include = [
 	"src/ai_stats",
+	"src/ai_stats_devtools",
 	"src/gen",
 	"README.md",
 	"LICENSE",
@@ -42,6 +43,7 @@ include = [
 [tool.hatch.build.targets.wheel]
 packages = [
 	"src/ai_stats",
+	"src/ai_stats_devtools",
 	"src/gen",
 ]
 

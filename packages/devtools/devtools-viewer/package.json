@@ -21,6 +21,7 @@
     "build:server": "tsc -p tsconfig.server.json",
     "build:ui": "vite build",
     "build": "pnpm run build:ui && pnpm run build:server",
+    "prepublishOnly": "pnpm run build",
     "dev:server": "pnpm exec tsx watch src/server/index.ts -- --start --port 4984 --dir ../../../.ai-stats-devtools",
     "dev:ui": "pnpm exec wait-on tcp:4984 && vite --port 4983",
     "dev": "node dev-start.mjs",
@@ -29,14 +30,12 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@ai-stats/devtools-core": "workspace:*",
     "@hono/node-server": "^1.16.0",
     "hono": "^4.6.14",
     "@tanstack/react-query": "^5.62.11",
     "react": "^19.0.0",
     "react-dom": "^19.2.4",
-    "recharts": "^2.15.0",
-    "zod": "^3.23.8"
+    "recharts": "^2.15.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.2",

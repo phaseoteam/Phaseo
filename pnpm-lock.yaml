@@ -564,9 +564,6 @@ importers:
 
   packages/devtools/devtools-viewer:
     dependencies:
-      '@ai-stats/devtools-core':
-        specifier: workspace:*
-        version: link:../devtools-core
       '@hono/node-server':
         specifier: ^1.16.0
         version: 1.19.9(hono@4.11.8)
@@ -585,9 +582,6 @@ importers:
       recharts:
         specifier: ^2.15.0
         version: 2.15.4(react-dom@19.2.4(react@19.2.3))(react@19.2.3)
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^25.0.2
@@ -896,10 +890,6 @@ importers:
   packages/sdk/sdk-rust: {}
 
   packages/sdk/sdk-ts:
-    dependencies:
-      '@ai-stats/devtools-core':
-        specifier: workspace:*
-        version: link:../../devtools/devtools-core
     devDependencies:
       '@types/node':
         specifier: ^25.0.2

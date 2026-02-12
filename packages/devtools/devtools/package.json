@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "description": "Devtools for AI Stats SDK - enables telemetry capture and debugging",
   "type": "module",
-  "private": false,
+  "private": true,
   "license": "MIT",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

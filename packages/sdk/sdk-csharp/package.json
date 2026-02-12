@@ -5,6 +5,7 @@
 	"description": "AI Stats C# SDK (preview) - generated client with models wrapper",
 	"license": "MIT",
 	"scripts": {
+		"postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/csharp-sdk",
 		"smoke:chat": "dotenv -e .env.local -- dotnet run --project tests/SmokeChat/SmokeChat.csproj",
 		"smoke:responses": "dotenv -e .env.local -- dotnet run --project tests/SmokeChat/SmokeChat.csproj -- responses"
 	}

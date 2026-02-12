@@ -34,7 +34,12 @@ async function main() {
     throw new Error(`${pkgPath} is missing a version`);
   }
 
-  const updated = pyprojectRaw.replace(/^(version\\s*=\\s*\").+?(\\")/m, `$1${version}$2`);
+  const versionPattern = /^(version\s*=\s*").+?(")/m;
+  const matches = versionPattern.test(pyprojectRaw);
+  if (!matches) {
+    throw new Error(`Could not locate version field in ${pyprojectPath}`);
+  }
+  const updated = pyprojectRaw.replace(versionPattern, `$1${version}$2`);
 
   if (updated === pyprojectRaw) {
     console.log("pyproject.toml already matched the workspace version");

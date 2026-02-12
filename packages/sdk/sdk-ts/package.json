@@ -40,6 +40,7 @@
 		"clean": "rimraf dist src/oapi-gen",
 		"gen": "pnpm -w oapi:gen:ts",
 		"build": "rimraf dist && tsc -p tsconfig.build.json",
+		"prepublishOnly": "pnpm run build",
 		"postinstall": "node scripts/postinstall.cjs",
 		"smoke:chat": "dotenv -e .env.local -- tsx tests/smoke.ts --operation chat",
 		"smoke:responses": "dotenv -e .env.local -- tsx tests/smoke.ts --operation responses",
@@ -49,9 +50,7 @@
 		"test": "pnpm smoke:all",
 		"pack:dry": "npm pack --dry-run"
 	},
-	"dependencies": {
-		"@ai-stats/devtools-core": "workspace:*"
-	},
+	"dependencies": {},
 	"devDependencies": {
 		"@types/node": "^25.0.2",
 		"rimraf": "^6.0.0",

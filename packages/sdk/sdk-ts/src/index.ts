@@ -26,7 +26,7 @@ import type {
 import * as ops from "./oapi-gen/client/index.js";
 import { Client } from "./runtime/client.js";
 import { TelemetryCapture, extractChatMetadata, extractImageMetadata } from "./devtools/telemetry.js";
-import type { DevToolsConfig } from "@ai-stats/devtools-core";
+import type { DevToolsConfig } from "./devtools/core.js";
 
 export type ModelIdLiteral = ModelId;
 export const MODEL_IDS: ModelIdLiteral[] = [];

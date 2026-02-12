@@ -112,23 +112,10 @@ const client = new AIStats({
 });
 ```
 
-### Alternative: Standalone Package
+### No Extra Core Package Required
 
-You can also install `@ai-stats/devtools` as a separate package:
-
-```bash
-npm install @ai-stats/devtools
-```
-
-```ts
-import { AIStats } from "@ai-stats/sdk";
-import { createAIStatsDevtools } from "@ai-stats/devtools";
-
-const client = new AIStats({
-  apiKey: process.env.AI_STATS_API_KEY!,
-  devtools: createAIStatsDevtools()
-});
-```
+`createAIStatsDevtools` and telemetry capture are bundled directly in `@ai-stats/sdk`,
+so there is no separate devtools-core dependency to install.
 
 ### Environment Variable Control
 

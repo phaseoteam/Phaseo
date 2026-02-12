@@ -10,7 +10,7 @@ import {
   Timer,
   X
 } from "lucide-react";
-import type { DevToolsEntry } from "@ai-stats/devtools-core";
+import type { DevToolsEntry } from "@/types";
 
 interface GenerationsListProps {
   selectedId: string | null;
@@ -280,3 +280,4 @@ export function GenerationsList({ selectedId, onSelect }: GenerationsListProps) 
     </div>
   );
 }
+

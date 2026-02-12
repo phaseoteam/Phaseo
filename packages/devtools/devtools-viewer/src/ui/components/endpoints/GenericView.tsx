@@ -1,4 +1,4 @@
-import type { DevToolsEntry } from "@ai-stats/devtools-core";
+import type { DevToolsEntry } from "@/types";
 import { safeJson } from "../../utils/format";
 
 interface GenericViewProps {
@@ -39,3 +39,4 @@ export function GenericView({ entry }: GenericViewProps) {
     </div>
   );
 }
+

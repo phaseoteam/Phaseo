@@ -3,7 +3,7 @@
   "description": "Core types and schemas for AI Stats DevTools",
   "version": "0.1.0",
   "type": "module",
-  "private": false,
+  "private": true,
   "license": "MIT",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
-import { DevToolsWriter, type DevToolsEntry, type Stats } from "@ai-stats/devtools-core";
+import { DevToolsWriter, type DevToolsEntry, type Stats } from "../core.js";
 import * as path from "path";
 import * as fs from "fs";
 import { fileURLToPath } from "url";

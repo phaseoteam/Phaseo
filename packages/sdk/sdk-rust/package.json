@@ -5,6 +5,7 @@
   "description": "AI Stats Rust SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/rust-sdk",
     "smoke:chat": "dotenv -e .env.local -- cargo test --test smoke_chat -- --nocapture",
     "smoke:responses": "dotenv -e .env.local -- cargo test --test smoke_responses -- --nocapture"
   }

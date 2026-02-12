@@ -4,10 +4,12 @@ from typing import Any, Dict, Iterator, Optional, Union
 from typing_extensions import NotRequired, TypedDict
 
 import httpx
+import time
 
 from gen.client import Client
 from gen import models
 from gen import operations as ops
+from ai_stats_devtools import TelemetryRecorder, create_ai_stats_devtools
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
 DEFAULT_USER_AGENT = "ai-stats-python"
@@ -156,7 +158,13 @@ class ChatCompletionsParams(TypedDict, total=False):
 
 
 class AIStats:
-    def __init__(self, api_key: str, base_url: Optional[str] = None, timeout: Optional[float] = None):
+    def __init__(
+        self,
+        api_key: str,
+        base_url: Optional[str] = None,
+        timeout: Optional[float] = None,
+        devtools: Optional[dict[str, Any]] = None,
+    ):
         if not api_key:
             raise ValueError("api_key is required")
 
@@ -175,6 +183,49 @@ class AIStats:
         self.files = _FilesResource(self)
         self.models = _ModelsResource(self)
         self._coming_soon_message = "This endpoint is not yet supported in the SDK."
+        self._devtools = TelemetryRecorder(devtools)
+
+    def _capture_success(
+        self,
+        *,
+        endpoint: str,
+        request: dict[str, Any],
+        response: Any,
+        started_at: float,
+        stream: bool = False,
+        chunk_count: Optional[int] = None,
+        status_code: Optional[int] = None,
+    ) -> None:
+        self._devtools.capture_success(
+            endpoint=endpoint,
+            request=request,
+            response=response,
+            duration_ms=(time.time() - started_at) * 1000,
+            stream=stream,
+            chunk_count=chunk_count,
+            status_code=status_code,
+        )
+
+    def _capture_error(
+        self,
+        *,
+        endpoint: str,
+        request: dict[str, Any],
+        error: Exception,
+        started_at: float,
+        stream: bool = False,
+        chunk_count: Optional[int] = None,
+        status_code: Optional[int] = None,
+    ) -> None:
+        self._devtools.capture_error(
+            endpoint=endpoint,
+            request=request,
+            error=error,
+            duration_ms=(time.time() - started_at) * 1000,
+            stream=stream,
+            chunk_count=chunk_count,
+            status_code=status_code,
+        )
 
     def _coming_soon(self, endpoint: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
         return {
@@ -187,24 +238,67 @@ class AIStats:
     def generate_text(self, request: models.ChatCompletionsRequest | ChatCompletionsParams) -> dict[str, Any]:
         payload = dict(request)
         payload["stream"] = False
-        return ops.createChatCompletion(self._client, body=payload)
+        started = time.time()
+        try:
+            response = ops.createChatCompletion(self._client, body=payload)
+            self._capture_success(
+                endpoint="chat.completions",
+                request=payload,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="chat.completions",
+                request=payload,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def stream_text(self, request: models.ChatCompletionsRequest | ChatCompletionsParams) -> Iterator[str]:
         payload = dict(request)
         payload["stream"] = True
         client_timeout = self._timeout
-        with httpx.stream(
-            "POST",
-            f"{self._base_url}/chat/completions",
-            headers={**self._headers, "Content-Type": "application/json"},
-            json=payload,
-            timeout=client_timeout,
-        ) as resp:
-            resp.raise_for_status()
-            for line in resp.iter_lines():
-                if not line:
-                    continue
-                yield line.decode("utf-8") if isinstance(line, (bytes, bytearray)) else str(line)
+        started = time.time()
+        chunk_count = 0
+        status_code: Optional[int] = None
+        try:
+            with httpx.stream(
+                "POST",
+                f"{self._base_url}/chat/completions",
+                headers={**self._headers, "Content-Type": "application/json"},
+                json=payload,
+                timeout=client_timeout,
+            ) as resp:
+                status_code = resp.status_code
+                resp.raise_for_status()
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
+                    chunk_count += 1
+                    yield line.decode("utf-8") if isinstance(line, (bytes, bytearray)) else str(line)
+            self._capture_success(
+                endpoint="chat.completions",
+                request=payload,
+                response={"chunks": chunk_count},
+                started_at=started,
+                stream=True,
+                chunk_count=chunk_count,
+                status_code=status_code,
+            )
+        except Exception as exc:
+            self._capture_error(
+                endpoint="chat.completions",
+                request=payload,
+                error=exc,
+                started_at=started,
+                stream=True,
+                chunk_count=chunk_count,
+                status_code=status_code,
+            )
+            raise
 
     def generate_image(self, request: models.ImagesGenerationRequest) -> dict[str, Any]:
         return self._coming_soon("images/generations", dict(request))
@@ -213,10 +307,46 @@ class AIStats:
         return self._coming_soon("images/edits", dict(request))
 
     def generate_embedding(self, body: dict[str, Any]) -> dict[str, Any]:
-        return ops.createEmbedding(self._client, body=body)
+        payload = dict(body)
+        started = time.time()
+        try:
+            response = ops.createEmbedding(self._client, body=payload)
+            self._capture_success(
+                endpoint="embeddings",
+                request=payload,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="embeddings",
+                request=payload,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def generate_moderation(self, request: models.ModerationsRequest) -> dict[str, Any]:
-        return ops.createModeration(self._client, body=request)
+        payload = dict(request)
+        started = time.time()
+        try:
+            response = ops.createModeration(self._client, body=payload)
+            self._capture_success(
+                endpoint="moderations",
+                request=payload,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="moderations",
+                request=payload,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def generate_video(self, request: models.VideoGenerationRequest) -> dict[str, Any]:
         return self._coming_soon("videos", dict(request))
@@ -231,42 +361,130 @@ class AIStats:
         return self._coming_soon("audio/speech", dict(body))
 
     def generate_response(self, request: models.ResponsesRequest) -> dict[str, Any]:
-        return ops.createResponse(self._client, body=request)
+        payload = dict(request)
+        started = time.time()
+        try:
+            response = ops.createResponse(self._client, body=payload)
+            self._capture_success(
+                endpoint="responses",
+                request=payload,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="responses",
+                request=payload,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def stream_response(self, request: models.ResponsesRequest) -> Iterator[str]:
         payload = dict(request)
         payload["stream"] = True
-        with httpx.stream(
-            "POST",
-            f"{self._base_url}/responses",
-            headers={**self._headers, "Content-Type": "application/json"},
-            json=payload,
-            timeout=self._timeout,
-        ) as resp:
-            resp.raise_for_status()
-            for line in resp.iter_lines():
-                if not line:
-                    continue
-                yield line.decode("utf-8") if isinstance(line, (bytes, bytearray)) else str(line)
+        started = time.time()
+        chunk_count = 0
+        status_code: Optional[int] = None
+        try:
+            with httpx.stream(
+                "POST",
+                f"{self._base_url}/responses",
+                headers={**self._headers, "Content-Type": "application/json"},
+                json=payload,
+                timeout=self._timeout,
+            ) as resp:
+                status_code = resp.status_code
+                resp.raise_for_status()
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
+                    chunk_count += 1
+                    yield line.decode("utf-8") if isinstance(line, (bytes, bytearray)) else str(line)
+            self._capture_success(
+                endpoint="responses",
+                request=payload,
+                response={"chunks": chunk_count},
+                started_at=started,
+                stream=True,
+                chunk_count=chunk_count,
+                status_code=status_code,
+            )
+        except Exception as exc:
+            self._capture_error(
+                endpoint="responses",
+                request=payload,
+                error=exc,
+                started_at=started,
+                stream=True,
+                chunk_count=chunk_count,
+                status_code=status_code,
+            )
+            raise
 
     def generate_message(self, request: models.AnthropicMessagesRequest) -> dict[str, Any]:
-        return ops.createAnthropicMessage(self._client, body=request)
+        payload = dict(request)
+        started = time.time()
+        try:
+            response = ops.createAnthropicMessage(self._client, body=payload)
+            self._capture_success(
+                endpoint="messages",
+                request=payload,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="messages",
+                request=payload,
+                error=exc,
+                started_at=started,
+            )
+            raise
 
     def stream_messages(self, request: models.AnthropicMessagesRequest) -> Iterator[str]:
         payload = dict(request)
         payload["stream"] = True
-        with httpx.stream(
-            "POST",
-            f"{self._base_url}/messages",
-            headers={**self._headers, "Content-Type": "application/json"},
-            json=payload,
-            timeout=self._timeout,
-        ) as resp:
-            resp.raise_for_status()
-            for line in resp.iter_lines():
-                if not line:
-                    continue
-                yield line.decode("utf-8") if isinstance(line, (bytes, bytearray)) else str(line)
+        started = time.time()
+        chunk_count = 0
+        status_code: Optional[int] = None
+        try:
+            with httpx.stream(
+                "POST",
+                f"{self._base_url}/messages",
+                headers={**self._headers, "Content-Type": "application/json"},
+                json=payload,
+                timeout=self._timeout,
+            ) as resp:
+                status_code = resp.status_code
+                resp.raise_for_status()
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
+                    chunk_count += 1
+                    yield line.decode("utf-8") if isinstance(line, (bytes, bytearray)) else str(line)
+            self._capture_success(
+                endpoint="messages",
+                request=payload,
+                response={"chunks": chunk_count},
+                started_at=started,
+                stream=True,
+                chunk_count=chunk_count,
+                status_code=status_code,
+            )
+        except Exception as exc:
+            self._capture_error(
+                endpoint="messages",
+                request=payload,
+                error=exc,
+                started_at=started,
+                stream=True,
+                chunk_count=chunk_count,
+                status_code=status_code,
+            )
+            raise
 
     def create_batch(self, request: models.BatchRequest | dict[str, Any]) -> dict[str, Any]:
         payload = request if isinstance(request, dict) else dict(request)
@@ -324,5 +542,6 @@ class AIStats:
 __all__ = [
     "AIStats",
     "ChatCompletionsParams",
+    "create_ai_stats_devtools",
     "models",
 ]

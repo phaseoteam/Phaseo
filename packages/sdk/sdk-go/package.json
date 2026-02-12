@@ -5,6 +5,7 @@
   "description": "AI Stats Go SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/go-sdk",
     "smoke:chat": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v",
     "smoke:responses": "dotenv -e .env.local -- go test ./tests -run TestSmokeChat -v"
   }

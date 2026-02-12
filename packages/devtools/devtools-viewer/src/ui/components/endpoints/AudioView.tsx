@@ -1,4 +1,4 @@
-import type { DevToolsEntry } from "@ai-stats/devtools-core";
+import type { DevToolsEntry } from "@/types";
 import { safeJson } from "../../utils/format";
 
 interface AudioViewProps {
@@ -86,3 +86,4 @@ export function AudioView({ entry }: AudioViewProps) {
     </div>
   );
 }
+

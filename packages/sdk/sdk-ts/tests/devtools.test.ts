@@ -1,5 +1,5 @@
 import { AIStats } from "../src/index.js";
-import { DevToolsWriter } from "@ai-stats/devtools-core";
+import { DevToolsWriter } from "../src/devtools/core.js";
 import { randomUUID } from "crypto";
 import * as fs from "fs";
 

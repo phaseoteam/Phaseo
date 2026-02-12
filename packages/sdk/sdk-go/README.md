@@ -14,4 +14,14 @@ client := aistats.New("<API_KEY>", "https://api.phaseo.app/v1")
 resp, _, err := client.GetModels(context.Background(), nil)
 ```
 
+Devtools:
+
+- Telemetry capture is bundled in the SDK family.
+- On package install, you will be prompted to optionally install the viewer.
+- You can always run the viewer directly with:
+
+```bash
+npx @ai-stats/devtools-viewer
+```
+
 Python and TypeScript SDKs are fully supported today; other languages will follow soon.

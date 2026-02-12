@@ -58,6 +58,31 @@ async with AIStats(api_key="...") as client:
 - Typed models for requests/responses and errors
 - Streaming helper that yields decoded SSE frames
 - Customisable timeouts, headers, and base URL
+- Built-in devtools telemetry capture (no separate core package required)
+
+## Devtools
+
+The Python SDK bundles telemetry capture directly. Enable it by passing
+`create_ai_stats_devtools()` to the client:
+
+```python
+from ai_stats import AIStats, create_ai_stats_devtools
+
+client = AIStats(
+    api_key="sk_test_xxx",
+    devtools=create_ai_stats_devtools(
+        directory=".ai-stats-devtools",
+        capture_headers=False,
+    ),
+)
+```
+
+Captured data is written to `.ai-stats-devtools/generations.jsonl` and can be
+viewed with:
+
+```bash
+npx @ai-stats/devtools-viewer
+```
 
 Note: Provide the API key explicitly via the `api_key` parameter or by adding an `Authorization` header through `headers`. The SDK does not read environment variables.
 

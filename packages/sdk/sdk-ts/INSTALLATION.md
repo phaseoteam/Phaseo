@@ -67,11 +67,10 @@ Next steps:
 
 ### Always Installed (with SDK)
 
-- **@ai-stats/devtools-core** (~50KB)
-  - Core schemas and telemetry writer
+- **Built-in telemetry capture** (bundled with `@ai-stats/sdk`)
   - Captures API requests to local files
-  - Zero dependencies
   - Required for `createAIStatsDevtools()` to work
+  - No separate devtools-core package required
 
 ### Optionally Installed (via prompt)
 

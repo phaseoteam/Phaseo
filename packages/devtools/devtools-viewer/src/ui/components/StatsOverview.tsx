@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import type { Stats } from "@ai-stats/devtools-core";
+import type { Stats } from "@/types";
 
 export function StatsOverview() {
   const { data, isLoading, error } = useQuery({
@@ -188,3 +188,4 @@ function StatCard({ title, value, subtitle }: StatCardProps) {
     </div>
   );
 }
+

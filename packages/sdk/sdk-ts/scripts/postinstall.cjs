@@ -85,7 +85,7 @@ function askQuestion() {
         (answer) => {
           const normalized = answer.toLowerCase().trim();
 
-          if (normalized === 'y' || normalized === 'yes') {
+          if (normalized === '' || normalized === 'y' || normalized === 'yes') {
             rl.close();
             resolve(true);
           } else if (normalized === 'n' || normalized === 'no') {

@@ -28,7 +28,7 @@
  * ```
  */
 
-import type { DevToolsConfig } from "@ai-stats/devtools-core";
+import type { DevToolsConfig } from "./core.js";
 
 /**
  * Creates a devtools configuration that enables telemetry capture for debugging.
@@ -63,10 +63,10 @@ export function createAIStatsDevtools(options?: {
 }
 
 // Re-export devtools types for convenience
-export type { DevToolsConfig, DevToolsEntry, SessionMetadata, Stats } from "@ai-stats/devtools-core";
+export type { DevToolsConfig, DevToolsEntry, SessionMetadata, Stats } from "./core.js";
 
 /**
  * Re-export the devtools viewer CLI
  * This allows users to run the devtools viewer directly from this package
  */
-export { DevToolsWriter } from "@ai-stats/devtools-core";
+export { DevToolsWriter, entriesToCSV } from "./core.js";

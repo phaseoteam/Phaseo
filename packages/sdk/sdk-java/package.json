@@ -5,6 +5,7 @@
   "description": "AI Stats Java SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/java-sdk",
     "smoke:chat": "dotenv -e .env.local -- cmd /c \"javac -d tests/out src/gen/*.java tests/SmokeChat.java && java -cp tests/out SmokeChat\"",
     "smoke:responses": "dotenv -e .env.local -- cmd /c \"javac -d tests/out src/gen/*.java tests/SmokeResponses.java && java -cp tests/out SmokeResponses\""
   }

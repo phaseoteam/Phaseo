@@ -18,7 +18,7 @@ import {
   Wrench,
   Zap
 } from "lucide-react";
-import type { DevToolsEntry } from "@ai-stats/devtools-core";
+import type { DevToolsEntry } from "@/types";
 import { ChatCompletionView } from "./endpoints/ChatCompletionView";
 import { ImageGenerationView } from "./endpoints/ImageGenerationView";
 import { AudioView } from "./endpoints/AudioView";
@@ -621,3 +621,4 @@ function ErrorDetails({ error, metadata }: ErrorDetailsProps) {
     </section>
   );
 }
+

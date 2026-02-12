@@ -1,4 +1,4 @@
-import type { DevToolsEntry } from "@ai-stats/devtools-core";
+import type { DevToolsEntry } from "@/types";
 import { safeJson } from "../../utils/format";
 
 interface ImageGenerationViewProps {
@@ -88,3 +88,4 @@ export function ImageGenerationView({ entry }: ImageGenerationViewProps) {
     </div>
   );
 }
+

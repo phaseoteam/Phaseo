@@ -12,4 +12,14 @@ $client = new \AIStats\Sdk\Client('<API_KEY>');
 $resp = $client->getModels(['limit' => 5]);
 ```
 
+Devtools:
+
+- Telemetry capture is bundled in the SDK family.
+- On package install, you will be prompted to optionally install the viewer.
+- You can always run the viewer directly with:
+
+```bash
+npx @ai-stats/devtools-viewer
+```
+
 Python and TypeScript SDKs are fully supported today; other languages will follow soon.

@@ -1,4 +1,4 @@
-import { DevToolsWriter, type DevToolsEntry, type EndpointType, type DevToolsConfig } from "@ai-stats/devtools-core";
+import { DevToolsWriter, type DevToolsEntry, type EndpointType, type DevToolsConfig } from "./core.js";
 import { randomUUID } from "crypto";
 
 /**

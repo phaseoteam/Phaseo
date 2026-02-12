@@ -28,6 +28,7 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
+                  registry-url: https://registry.npmjs.org
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
@@ -69,6 +70,7 @@ jobs:
               uses: actions/setup-node@v6
               with:
                   node-version: ${{ env.NODE_VERSION }}
+                  registry-url: https://registry.npmjs.org
                   cache: pnpm
                   cache-dependency-path: pnpm-lock.yaml
 
@@ -496,6 +498,17 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Validate npm publish token
+              shell: bash
+              env:
+                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  if [ -z "${NPM_TOKEN:-}" ]; then
+                    echo "::error::Missing required npm publish secret: NPM_TOKEN"
+                    exit 1
+                  fi
+
             - name: Create release PR / publish
               id: changesets
               uses: changesets/action@v1
@@ -506,6 +519,8 @@ jobs:
                   commitMode: github-api
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
             - name: Set up Python (for PyPI publish)
               if: github.ref == 'refs/heads/main'

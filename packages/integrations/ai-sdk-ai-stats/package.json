@@ -17,6 +17,7 @@
     "README.md"
   ],
   "scripts": {
+    "postinstall": "node ../../sdk/scripts/postinstall-viewer-prompt.cjs @ai-stats/ai-sdk-provider",
     "build": "tsc -p tsconfig.build.json",
     "clean": "rimraf dist",
     "dev": "tsc -p tsconfig.build.json --watch",

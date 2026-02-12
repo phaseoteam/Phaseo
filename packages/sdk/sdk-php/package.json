@@ -5,6 +5,7 @@
   "description": "AI Stats PHP SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/php-sdk",
     "smoke:chat": "dotenv -e .env.local -- php tests/smoke_chat.php",
     "smoke:responses": "dotenv -e .env.local -- php tests/smoke_responses.php"
   }

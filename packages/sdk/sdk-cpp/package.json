@@ -5,6 +5,7 @@
   "description": "AI Stats C++ SDK (preview) - generated client with models wrapper",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/cpp-sdk",
     "smoke:chat": "dotenv -e .env.local -- cmd /c \"g++ -std=c++17 -I src/gen -o tests/smoke_chat.exe tests/smoke_chat.cpp && tests\\\\smoke_chat.exe\"",
     "smoke:responses": "dotenv -e .env.local -- cmd /c \"g++ -std=c++17 -I src/gen -o tests/smoke_responses.exe tests/smoke_responses.cpp && tests\\\\smoke_responses.exe\""
   }
