@@ -33,6 +33,12 @@ const PACKAGES: PackageConfig[] = [
         changelogPath: "packages/sdk/sdk-ts/CHANGELOG.md",
     },
     {
+        name: "@ai-stats/devtools-viewer",
+        manifestPath: "packages/devtools/devtools-viewer/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/devtools/devtools-viewer/CHANGELOG.md",
+    },
+    {
         name: "@ai-stats/py-sdk",
         manifestPath: "packages/sdk/sdk-py/pyproject.toml",
         manifestType: "pyproject",

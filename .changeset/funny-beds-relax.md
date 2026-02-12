@@ -1,5 +1,6 @@
 ---
 "@ai-stats/sdk": patch
+"@ai-stats/ai-sdk-provider": patch
 "@ai-stats/devtools-viewer": patch
 ---
 
