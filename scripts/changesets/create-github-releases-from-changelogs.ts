@@ -117,6 +117,18 @@ function getCurrentVersion(pkg: PackageConfig): string | null {
     return getVersionFromManifest(content, pkg.manifestType);
 }
 
+function getPreviousVersion(pkg: PackageConfig): string | null {
+    try {
+        const content = execSync(`git show HEAD^:${pkg.manifestPath}`, {
+            encoding: "utf8",
+        });
+        return getVersionFromManifest(content, pkg.manifestType);
+    } catch {
+        // No previous commit or file - treat as first release
+        return null;
+    }
+}
+
 function escapeRegex(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -202,6 +214,14 @@ function main() {
         const current = getCurrentVersion(pkg);
         if (!current) {
             console.log(`[${pkg.name}] No current version found; skipping`);
+            continue;
+        }
+
+        const previous = getPreviousVersion(pkg);
+        if (previous === current) {
+            console.log(
+                `[${pkg.name}] Version did not change in last commit (${current}); skipping`,
+            );
             continue;
         }
 

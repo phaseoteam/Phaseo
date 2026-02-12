@@ -540,7 +540,7 @@ jobs:
                   skip-existing: true
 
             - name: Create GitHub releases from changelogs
-              if: github.ref == 'refs/heads/main'
+              if: steps.changesets.outputs.published == 'true'
               env:
                   GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
               run: |
