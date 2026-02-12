@@ -27,7 +27,7 @@
 		"@next/third-parties": "16.1.5",
 		"@number-flow/react": "^0.5.10",
 		"@octokit/rest": "^21.1.1",
-		"@opennextjs/cloudflare": "^1.9.1",
+		"@opennextjs/cloudflare": "^1.16.4",
 		"@radix-ui/react-accordion": "^1.2.12",
 		"@radix-ui/react-alert-dialog": "^1.1.15",
 		"@radix-ui/react-aspect-ratio": "^1.1.7",
