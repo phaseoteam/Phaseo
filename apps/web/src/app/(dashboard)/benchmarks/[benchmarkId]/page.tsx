@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import Script from "next/script";
+import { cacheLife } from "next/cache";
 
 function parseScore(score: string | number | null | undefined): number | null {
 	if (score == null) return null;
@@ -122,6 +123,13 @@ export default async function Page({
 }: {
 	params: Promise<{ benchmarkId: string }>;
 }) {
+	"use cache";
+	cacheLife({
+		stale: 60 * 60 * 24 * 7,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 365,
+	});
+
 	const { benchmarkId } = await params;
 	const includeHidden = false;
 	const benchmark = await getBenchmarkCached(benchmarkId, includeHidden);

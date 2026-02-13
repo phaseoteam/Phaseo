@@ -529,6 +529,12 @@ export async function GET(
 		{
 			width: 1200,
 			height: 630,
+			headers: {
+				// Keep OG images at the edge for a year; they are expensive to render and rarely change.
+				// This reduces Fast Origin Transfer by avoiding frequent regeneration/revalidation.
+				"Cache-Control":
+					"public, max-age=0, s-maxage=31536000, stale-while-revalidate=86400, stale-if-error=86400",
+			},
 		}
 	);
 }

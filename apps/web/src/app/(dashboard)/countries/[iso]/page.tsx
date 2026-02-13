@@ -12,6 +12,7 @@ import {
 	normaliseIso,
 } from "@/lib/fetchers/countries/getCountrySummary";
 import { buildMetadata } from "@/lib/seo";
+import { cacheLife } from "next/cache";
 
 async function loadCountry(isoInput: string, includeHidden: boolean) {
 	const iso = normaliseIso(isoInput);
@@ -70,6 +71,13 @@ export default async function CountryDetailPage({
 }: {
 	params: Promise<{ iso: string }>;
 }) {
+	"use cache";
+	cacheLife({
+		stale: 60 * 60 * 24 * 7,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 365,
+	});
+
 	const { iso: isoParamRaw } = await params;
 	const iso = normaliseIso(isoParamRaw);
 	const includeHidden = false;

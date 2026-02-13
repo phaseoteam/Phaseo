@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Logo } from "@/components/Logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cacheLife } from "next/cache";
 import {
 	getAllFamiliesCached,
 	type FamilyCard,
@@ -24,6 +25,13 @@ export const metadata: Metadata = {
 };
 
 export default async function FamiliesPage() {
+	"use cache";
+	cacheLife({
+		stale: 60 * 60 * 24 * 7,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 365,
+	});
+
 	const families = (await getAllFamiliesCached()) as FamilyCard[];
 
 	return (

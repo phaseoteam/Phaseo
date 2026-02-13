@@ -7,6 +7,7 @@ import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHea
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import Script from "next/script";
+import { cacheLife } from "next/cache";
 
 async function fetchProviderMeta(apiProviderId: string) {
 	try {
@@ -85,6 +86,13 @@ export default async function Page({
 }: {
 	params: Promise<{ apiProvider: string }>;
 }) {
+	"use cache";
+	cacheLife({
+		stale: 60 * 60 * 24 * 7,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 365,
+	});
+
 	const resolved = await params;
 	const apiProvider = resolved.apiProvider;
 	const header = await fetchProviderMeta(apiProvider);

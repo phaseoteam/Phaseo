@@ -4,6 +4,7 @@ import {
 	getAllBenchmarksCached,
 } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 
 export const metadata: Metadata = {
 	title: "AI Model Benchmarks - Compare Scores & Evaluations",
@@ -24,6 +25,13 @@ export const metadata: Metadata = {
 };
 
 export default async function BenchmarksPage() {
+	"use cache";
+	cacheLife({
+		stale: 60 * 60 * 24 * 7,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 365,
+	});
+
 	const benchmarks = (await getAllBenchmarksCached(true)) as BenchmarkCard[];
 
 	return (

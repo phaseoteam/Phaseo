@@ -5,6 +5,7 @@ import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { withUTM } from "@/lib/utm";
+import { cacheLife } from "next/cache";
 import {
 	getModelIdFromParams,
 	type ModelRouteParams,
@@ -103,6 +104,13 @@ export default async function Page({
 }: {
 	params: Promise<ModelRouteParams>;
 }) {
+	"use cache";
+	cacheLife({
+		stale: 60 * 60 * 24 * 7,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 365,
+	});
+
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;

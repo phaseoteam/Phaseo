@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import {
 	SubscriptionPlanSummary,
 	getAllSubscriptionPlansCached,
@@ -27,6 +28,13 @@ export const metadata: Metadata = {
 };
 
 export default async function SubscriptionPlansPage() {
+	"use cache";
+	cacheLife({
+		stale: 60 * 60 * 24 * 7,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 365,
+	});
+
 	const subscriptionPlans =
 		(await getAllSubscriptionPlansCached()) as SubscriptionPlanSummary[];
 
