@@ -15,14 +15,11 @@ import {
 	Handshake,
 	LifeBuoy,
 } from "lucide-react";
-import LastUpdated from "@/components/last-updated";
 import { Button } from "@/components/ui/button";
 import { withUTM } from "@/lib/utm";
 import { Logo } from "./Logo";
 
 const startYear = 2025;
-const currentYear = new Date().getFullYear();
-const deployTime = process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "";
 
 const externalLinks = {
 	discord: withUTM("https://discord.gg/zDw73wamdX", {
@@ -632,16 +629,11 @@ export default function Footer() {
 
 				<div className="flex flex-col items-center justify-center">
 					<div className="text-center w-full px-4 sm:px-0">
-						&copy; {startYear}
-						{currentYear > startYear ? ` - ${currentYear}` : ""} AI
-						Stats
+						&copy; {startYear} AI Stats
 						<span className="block mt-1">
 							If you run into any issues or notice any data
 							errors, please visit our GitHub and report an issue.
 						</span>
-						<React.Suspense fallback={null}>
-							<LastUpdated deployTime={deployTime} />
-						</React.Suspense>
 					</div>
 				</div>
 			</div>

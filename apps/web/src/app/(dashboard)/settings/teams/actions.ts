@@ -112,6 +112,9 @@ async function ensureTeamOwnerOrAdmin(
 
 export async function createTeamAction(name: string, userId: string) {
     const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user?.id) throw new Error("Unauthorized");
+    if (user.id !== userId) throw new Error("Unauthorized");
     const baseSlug = makeSlug(name);
 
     const { data, error } = await supabase
@@ -130,8 +133,7 @@ export async function createTeamAction(name: string, userId: string) {
     const stripe = getStripe();
 
     try {
-        const user = await supabase.auth.getUser();
-        const userEmail = user.data.user?.email || undefined;
+        const userEmail = user.email || undefined;
         const customer = await stripe.customers.create({ name, email: userEmail, metadata: { team_id: newTeamId, user_id: userId } });
         if (customer && newTeamId) {
             await supabase.from("wallets").upsert(

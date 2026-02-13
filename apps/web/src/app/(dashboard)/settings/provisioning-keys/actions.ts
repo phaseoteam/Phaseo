@@ -3,6 +3,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { makeKeyV2, hmacSecret } from "@/lib/keygen";
+import {
+	requireActingUser,
+	requireAuthenticatedUser,
+	requireTeamMembership,
+} from "@/utils/serverActionAuth";
 
 export type ProvisioningKeyLimitPayload = {
 	dailyRequests?: number | null;
@@ -41,7 +46,9 @@ export async function createProvisioningKeyAction(
 		throw new Error("Team ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
+	requireActingUser(creatorUserId, user.id);
+	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	// Generate secure key
 	const { kid, secret, plaintext, prefix } = makeKeyV2();
@@ -95,7 +102,15 @@ export async function updateProvisioningKeyAction(
 		throw new Error("Valid key ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
+	const { data: keyRow, error: keyErr } = await supabase
+		.from("provisioning_keys")
+		.select("team_id")
+		.eq("id", id)
+		.maybeSingle();
+	if (keyErr) throw keyErr;
+	if (!keyRow?.team_id) throw new Error("Management API key not found");
+	await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
 
 	const updateObj: Record<string, unknown> = {};
 
@@ -117,7 +132,8 @@ export async function updateProvisioningKeyAction(
 	const { error } = await supabase
 		.from("provisioning_keys")
 		.update(updateObj)
-		.eq("id", id);
+		.eq("id", id)
+		.eq("team_id", keyRow.team_id);
 
 	if (error) {
 		console.error("Failed to update management API key:", error);
@@ -137,7 +153,15 @@ export async function updateProvisioningKeyLimitsAction(
 		throw new Error("Valid key ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
+	const { data: keyRow, error: keyErr } = await supabase
+		.from("provisioning_keys")
+		.select("team_id")
+		.eq("id", id)
+		.maybeSingle();
+	if (keyErr) throw keyErr;
+	if (!keyRow?.team_id) throw new Error("Management API key not found");
+	await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
 
 	const updateObj: Record<string, unknown> = {
 		daily_limit_requests: payload.dailyRequests ?? null,
@@ -157,7 +181,8 @@ export async function updateProvisioningKeyLimitsAction(
 	const { error } = await supabase
 		.from("provisioning_keys")
 		.update(updateObj)
-		.eq("id", id);
+		.eq("id", id)
+		.eq("team_id", keyRow.team_id);
 
 	if (error) {
 		console.error("Failed to update management API key limits:", error);
@@ -179,21 +204,19 @@ export async function deleteProvisioningKeyAction(
 		throw new Error("Valid key ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
+	const { data: keyRow, error: keyErr } = await supabase
+		.from("provisioning_keys")
+		.select("team_id, name")
+		.eq("id", id)
+		.maybeSingle();
+	if (keyErr) throw keyErr;
+	if (!keyRow?.team_id) throw new Error("Management API key not found");
+	await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
 
 	// If confirmation is required, verify the name matches
 	if (confirmName) {
-		const { data, error: err } = await supabase
-			.from("provisioning_keys")
-			.select("name")
-			.eq("id", id)
-			.maybeSingle();
-
-		if (err) {
-			throw new Error(`Failed to verify key: ${err.message}`);
-		}
-
-		if (!data || data.name !== confirmName) {
+		if (keyRow.name !== confirmName) {
 			throw new Error(
 				"Confirmation failed: Key name does not match"
 			);
@@ -203,7 +226,8 @@ export async function deleteProvisioningKeyAction(
 	const { error } = await supabase
 		.from("provisioning_keys")
 		.delete()
-		.eq("id", id);
+		.eq("id", id)
+		.eq("team_id", keyRow.team_id);
 
 	if (error) {
 		console.error("Failed to delete management API key:", error);
@@ -220,13 +244,16 @@ export async function getProvisioningKeyById(id: string) {
 		throw new Error("Valid key ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
 
 	const { data, error } = await supabase
 		.from("provisioning_keys")
 		.select("*")
 		.eq("id", id)
 		.maybeSingle();
+	if (data?.team_id) {
+		await requireTeamMembership(supabase, user.id, data.team_id, ["owner", "admin"]);
+	}
 
 	if (error) {
 		console.error("Failed to fetch management API key:", error);
@@ -241,7 +268,8 @@ export async function listProvisioningKeysByTeam(teamId: string) {
 		throw new Error("Valid team ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
+	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	const { data, error } = await supabase
 		.from("provisioning_keys")

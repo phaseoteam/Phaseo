@@ -3,6 +3,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import { revalidatePath } from "next/cache";
+import {
+	requireAuthenticatedUser,
+	requireTeamMembership,
+} from "@/utils/serverActionAuth";
 
 export type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 
@@ -15,11 +19,12 @@ export async function updateRoutingSettings({
 	mode,
 	betaChannelEnabled,
 }: UpdateRoutingSettingsInput) {
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
 	const teamId = await getTeamIdFromCookie();
 	if (!teamId) {
 		throw new Error("Missing team id");
 	}
+	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	const payload = {
 		team_id: teamId,

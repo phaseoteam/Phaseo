@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 const ATTRIBUTION_DOCS_HREF =
 	"https://docs.ai-stats.phaseo.app/v1/guides/app-attribution";
@@ -50,20 +51,22 @@ function isInternalApp(app: AppRow) {
 export default function AppsSettingsPage() {
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-wrap items-end justify-between gap-3">
-				<div>
-					<h1 className="text-2xl font-bold">Apps</h1>
-					<p className="text-sm text-muted-foreground mt-1">
-						Manage application metadata and public visibility for your team.
-					</p>
-				</div>
-				<Button asChild variant="outline" size="sm">
-					<Link href={ATTRIBUTION_DOCS_HREF} target="_blank" rel="noreferrer">
-						Request attribution docs
-						<ArrowUpRight className="ml-1 h-4 w-4" />
-					</Link>
-				</Button>
-			</div>
+			<SettingsPageHeader
+				title="Apps"
+				description="Manage application metadata and public visibility for your team."
+				actions={
+					<Button asChild variant="outline" size="sm">
+						<Link
+							href={ATTRIBUTION_DOCS_HREF}
+							target="_blank"
+							rel="noreferrer"
+						>
+							Request attribution docs
+							<ArrowUpRight className="ml-1 h-4 w-4" />
+						</Link>
+					</Button>
+				}
+			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<AppsSettingsContent />
 			</Suspense>

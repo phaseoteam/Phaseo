@@ -3,6 +3,11 @@
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import { revalidatePath } from "next/cache";
+import {
+	requireActingUser,
+	requireAuthenticatedUser,
+	requireTeamMembership,
+} from "@/utils/serverActionAuth";
 
 export type PresetConfig = {
 	system_prompt?: string;
@@ -204,7 +209,9 @@ export async function createPresetAction(input: CreatePresetInput) {
 
 	validatePresetName(name);
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
+	requireActingUser(creatorUserId, user.id);
+	await requireTeamMembership(supabase, user.id, teamId);
 
 	const { data: existing } = await supabase
 		.from("presets")
@@ -328,7 +335,7 @@ export async function updatePresetAction(input: UpdatePresetInput) {
 		throw new Error("Valid preset ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
 
 	const { data: existing } = await supabase
 		.from("presets")
@@ -339,6 +346,7 @@ export async function updatePresetAction(input: UpdatePresetInput) {
 	if (!existing) {
 		throw new Error("Preset not found");
 	}
+	await requireTeamMembership(supabase, user.id, existing.team_id);
 
 	const updateObj: Record<string, unknown> = {
 		updated_at: new Date().toISOString(),
@@ -396,11 +404,11 @@ export async function deletePresetAction(id: string, confirmName?: string) {
 		throw new Error("Valid preset ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
 
 	const { data: existing, error: fetchError } = await supabase
 		.from("presets")
-		.select("name")
+		.select("name, team_id")
 		.eq("id", id)
 		.maybeSingle();
 
@@ -411,6 +419,8 @@ export async function deletePresetAction(id: string, confirmName?: string) {
 	if (!existing) {
 		throw new Error("Preset not found");
 	}
+	if (!existing.team_id) throw new Error("Preset not found");
+	await requireTeamMembership(supabase, user.id, existing.team_id);
 
 	if (confirmName) {
 		if (existing.name !== confirmName) {
@@ -438,7 +448,7 @@ export async function getPresetById(id: string) {
 		throw new Error("Valid preset ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
 
 	const { data, error } = await supabase
 		.from("presets")
@@ -450,6 +460,9 @@ export async function getPresetById(id: string) {
 		console.error("Failed to fetch preset:", error);
 		throw new Error(`Failed to fetch preset: ${error.message}`);
 	}
+	if (data?.team_id) {
+		await requireTeamMembership(supabase, user.id, data.team_id);
+	}
 
 	return data;
 }
@@ -459,7 +472,8 @@ export async function listPresetsByTeam(teamId: string) {
 		throw new Error("Valid team ID is required");
 	}
 
-	const supabase = await createClient();
+	const { supabase, user } = await requireAuthenticatedUser();
+	await requireTeamMembership(supabase, user.id, teamId);
 
 	const { data, error } = await supabase
 		.from("presets")

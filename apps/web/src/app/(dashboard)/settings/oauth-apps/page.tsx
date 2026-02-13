@@ -6,6 +6,7 @@ import CreateOAuthAppDialog from "@/components/(gateway)/settings/oauth-apps/Cre
 import OAuthAppsPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppsPanel";
 import { Button } from "@/components/ui/button";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export const metadata = {
 	title: "OAuth Apps - Settings",
@@ -46,30 +47,6 @@ export default function OAuthAppsPage() {
 						</ul>
 					</div>
 				</div>
-			</div>
-
-			<div className="flex items-center justify-between">
-				<div>
-					<div className="flex items-center gap-2">
-						<h1 className="text-2xl font-bold">OAuth Apps</h1>
-						<span className="inline-flex items-center rounded-md bg-yellow-100 dark:bg-yellow-900 px-2 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-200">
-							ALPHA
-						</span>
-					</div>
-					<p className="text-sm text-muted-foreground mt-1">
-						Create OAuth applications to enable third-party integrations with
-						your AI Stats account
-					</p>
-				</div>
-				<Link
-					href="https://docs.ai-stats.phaseo.app/v1/guides/oauth-quickstart"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<Button variant="outline" size="sm">
-						View Docs
-					</Button>
-				</Link>
 			</div>
 
 			<Suspense fallback={<SettingsSectionFallback />}>
@@ -122,13 +99,33 @@ async function OAuthAppsContent() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex justify-end">
-				<CreateOAuthAppDialog
-					currentUserId={user.id}
-					currentTeamId={initialTeamId}
-					teams={teams}
-				/>
-			</div>
+			<SettingsPageHeader
+				title="OAuth Apps"
+				meta={
+					<span className="inline-flex items-center rounded-md bg-yellow-100 dark:bg-yellow-900 px-2 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-200">
+						ALPHA
+					</span>
+				}
+				description="Create OAuth applications to enable third-party integrations with your AI Stats account."
+				actions={
+					<>
+						<Link
+							href="https://docs.ai-stats.phaseo.app/v1/guides/oauth-quickstart"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<Button variant="outline" size="sm">
+								View Docs
+							</Button>
+						</Link>
+						<CreateOAuthAppDialog
+							currentUserId={user.id}
+							currentTeamId={initialTeamId}
+							teams={teams}
+						/>
+					</>
+				}
+			/>
 			<OAuthAppsPanel
 				oauthApps={oauthApps ?? []}
 				initialTeamId={initialTeamId}

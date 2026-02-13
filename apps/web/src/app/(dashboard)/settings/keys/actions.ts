@@ -4,6 +4,11 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { makeKeyV2, hmacSecret } from '@/lib/keygen';
 import { invalidateGatewayKeyCache } from '@/lib/gateway/invalidateKeyCache';
+import {
+    requireActingUser,
+    requireAuthenticatedUser,
+    requireTeamMembership,
+} from '@/utils/serverActionAuth';
 
 export type KeyLimitPayload = {
     dailyRequests?: number | null;
@@ -25,7 +30,9 @@ export async function createApiKeyAction(
     if (!creatorUserId) throw new Error('Missing creatorUserId');
     if (!teamId) throw new Error('Missing teamId');
 
-    const supabase = await createClient();
+    const { supabase, user } = await requireAuthenticatedUser();
+    requireActingUser(creatorUserId, user.id);
+    await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
     const { kid, secret, plaintext, prefix } = makeKeyV2();
 
     const pepper = process.env.KEY_PEPPER!;
@@ -63,13 +70,25 @@ export async function updateApiKeyAction(
     updates: { name?: string; paused?: boolean }
 ) {
     if (!id || typeof id !== "string") throw new Error("Missing id")
-    const supabase = await createClient()
+    const { supabase, user } = await requireAuthenticatedUser();
+    const { data: keyRow, error: keyErr } = await supabase
+        .from("keys")
+        .select("team_id")
+        .eq("id", id)
+        .maybeSingle();
+    if (keyErr) throw keyErr;
+    if (!keyRow?.team_id) throw new Error("Key not found");
+    await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
 
     const updateObj: any = {}
     if (typeof updates.name === "string") updateObj.name = updates.name
     if (typeof updates.paused === "boolean") updateObj.status = updates.paused ? "paused" : "active"
 
-    const { error } = await supabase.from("keys").update(updateObj).eq("id", id)
+    const { error } = await supabase
+        .from("keys")
+        .update(updateObj)
+        .eq("id", id)
+        .eq("team_id", keyRow.team_id);
     if (error) throw error
 
     if (Object.prototype.hasOwnProperty.call(updateObj, "status")) {
@@ -82,16 +101,26 @@ export async function updateApiKeyAction(
 
 export async function deleteApiKeyAction(id: string, confirmName?: string) {
     if (!id || typeof id !== "string") throw new Error("Missing id")
-    const supabase = await createClient()
+    const { supabase, user } = await requireAuthenticatedUser();
+    const { data: keyRow, error: keyErr } = await supabase
+        .from("keys")
+        .select("team_id, name")
+        .eq("id", id)
+        .maybeSingle();
+    if (keyErr) throw keyErr;
+    if (!keyRow?.team_id) throw new Error("Key not found");
+    await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
 
     // optionally verify name matches before deleting
     if (confirmName) {
-        const { data, error: err } = await supabase.from("keys").select("name").eq("id", id).maybeSingle()
-        if (err) throw err
-        if (!data || data.name !== confirmName) throw new Error("Confirmation name does not match")
+        if (keyRow.name !== confirmName) throw new Error("Confirmation name does not match")
     }
 
-    const { error } = await supabase.from("keys").delete().eq("id", id)
+    const { error } = await supabase
+        .from("keys")
+        .delete()
+        .eq("id", id)
+        .eq("team_id", keyRow.team_id)
     if (error) throw error
 
     await invalidateGatewayKeyCache(id);
@@ -102,7 +131,15 @@ export async function deleteApiKeyAction(id: string, confirmName?: string) {
 
 export async function updateKeyLimitsAction(id: string, payload: KeyLimitPayload) {
     if (!id || typeof id !== "string") throw new Error("Missing id");
-    const supabase = await createClient();
+    const { supabase, user } = await requireAuthenticatedUser();
+    const { data: keyRow, error: keyErr } = await supabase
+        .from("keys")
+        .select("team_id")
+        .eq("id", id)
+        .maybeSingle();
+    if (keyErr) throw keyErr;
+    if (!keyRow?.team_id) throw new Error("Key not found");
+    await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
 
     const updateObj = {
         daily_limit_requests: payload.dailyRequests ?? null,
@@ -118,7 +155,11 @@ export async function updateKeyLimitsAction(id: string, payload: KeyLimitPayload
         delete (updateObj as any).soft_blocked;
     }
 
-    const { error } = await supabase.from("keys").update(updateObj).eq("id", id);
+    const { error } = await supabase
+        .from("keys")
+        .update(updateObj)
+        .eq("id", id)
+        .eq("team_id", keyRow.team_id);
     if (error) throw error;
 
     revalidatePath("/settings/keys");

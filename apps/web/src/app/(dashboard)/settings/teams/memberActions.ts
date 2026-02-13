@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { requireTeamMembership } from "@/utils/serverActionAuth";
 
 /**
  * Server action: update a member's role.
@@ -14,6 +15,14 @@ export async function updateMemberRole(teamId: string, userId: string, newRole?:
     }
 
     const supabase = await createClient();
+    const {
+        data: { user: authUser },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !authUser?.id) {
+        throw new Error("Not authenticated");
+    }
+    await requireTeamMembership(supabase, authUser.id, teamId, ["owner", "admin"]);
 
     const { data, error } = await supabase
         .from("team_members")

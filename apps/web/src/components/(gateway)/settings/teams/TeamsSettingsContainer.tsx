@@ -3,6 +3,7 @@
 import React from "react";
 import CreateTeamDialog from "@/components/(gateway)/settings/CreateTeamDialog";
 import CreateTeamInviteDialog from "@/components/(gateway)/settings/CreateTeamInviteDialog";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import TeamSettingsPanel from "./TeamSettingsPanel";
 import TeamsPanel from "./TeamsPanel";
 
@@ -75,23 +76,26 @@ export default function TeamsSettingsContainer({
 
 	return (
 		<div className="space-y-6">
-			<div
-				className={`flex flex-col gap-3 sm:flex-row sm:items-center ${hideTitle ? "sm:justify-end" : "sm:justify-between"}`}
-			>
-				{hideTitle ? null : <h1 className="text-2xl font-bold">Teams</h1>}
-				<div className="flex flex-wrap items-center gap-2">
-					<CreateTeamDialog
-						currentUserId={currentUserId ?? undefined}
-					/>
-					{canManageActiveTeam && inviteableTeams.length ? (
-						<CreateTeamInviteDialog
-							currentUserId={currentUserId ?? undefined}
-							teams={inviteableTeams}
-							defaultTeamId={activeTeamId}
-						/>
-					) : null}
-				</div>
-			</div>
+			{hideTitle ? null : (
+				<SettingsPageHeader
+					title="Teams"
+					description="Manage teams, members, and team-level access controls."
+					actions={
+						<>
+							<CreateTeamDialog
+								currentUserId={currentUserId ?? undefined}
+							/>
+							{canManageActiveTeam && inviteableTeams.length ? (
+								<CreateTeamInviteDialog
+									currentUserId={currentUserId ?? undefined}
+									teams={inviteableTeams}
+									defaultTeamId={activeTeamId}
+								/>
+							) : null}
+						</>
+					}
+				/>
+			)}
 
 			<TeamSettingsPanel
 				teams={teams}

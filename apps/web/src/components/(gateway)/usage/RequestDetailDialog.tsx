@@ -9,14 +9,15 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { CopyButton } from "@/components/ui/copy-button";
 import {
 	CheckCircle2,
 	XCircle,
 	Clock,
 	Coins,
-	Layers,
 	Hash,
+	Layers,
+	AppWindow,
+	Server,
 } from "lucide-react";
 import { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 
@@ -27,30 +28,43 @@ interface RequestDetailDialogProps {
 	appName?: string | null;
 }
 
-function MetricTile({
+function Field({
 	icon: Icon,
 	label,
 	value,
-	variant = "default",
 }: {
 	icon: React.ElementType;
 	label: string;
-	value: string | number;
-	variant?: "default" | "success" | "error";
+	value: React.ReactNode;
 }) {
-	const colorClasses = {
-		default: "text-muted-foreground",
-		success: "text-green-600",
-		error: "text-red-600",
-	};
-
 	return (
-		<div className="flex items-start gap-3 p-3 rounded-lg border bg-card">
-			<Icon className={`h-5 w-5 mt-0.5 ${colorClasses[variant]}`} />
-			<div className="flex-1 min-w-0">
-				<p className="text-sm text-muted-foreground">{label}</p>
-				<p className="text-lg font-semibold truncate">{value}</p>
+		<div className="flex items-start gap-2 rounded-lg border bg-card px-3 py-2">
+			<Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+			<div className="min-w-0 flex-1">
+				<div className="text-[11px] font-medium text-muted-foreground">
+					{label}
+				</div>
+				<div className="mt-0.5 flex min-w-0 items-center gap-2">
+					<div className="min-w-0 truncate text-sm font-semibold tracking-tight">
+						{value}
+					</div>
+				</div>
 			</div>
+		</div>
+	);
+}
+
+function Section({
+	title,
+	children,
+}: {
+	title: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<div className="space-y-2">
+			<div className="text-xs font-semibold text-foreground">{title}</div>
+			<div className="grid grid-cols-1 gap-2 md:grid-cols-2">{children}</div>
 		</div>
 	);
 }
@@ -67,6 +81,14 @@ function formatCost(nanos: number | null | undefined): string {
 	return `$${dollars.toFixed(5)}`;
 }
 
+function formatThroughput(value: number | string | null | undefined): string {
+	if (value === null || value === undefined) return "-";
+	const n = Number(value);
+	if (!Number.isFinite(n)) return "-";
+	// Stored as numeric; treat as tokens/sec (tps) in UI.
+	return `${Math.round(n * 100) / 100} tps`;
+}
+
 export default function RequestDetailDialog({
 	open,
 	onOpenChange,
@@ -76,23 +98,25 @@ export default function RequestDetailDialog({
 	if (!request) return null;
 
 	const tokens = getTokens(request.usage);
-	const latency = request.generation_ms || request.latency_ms || null;
+	const timestampLocal = new Date(request.created_at).toLocaleString();
+	const requestStatusLabel = request.success ? "Success" : "Error";
+	const showApp = Boolean(appName) || Boolean(request.app_id);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
-						<span>Request Details</span>
+						<span>Request</span>
 						{request.success ? (
 							<Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
 								<CheckCircle2 className="mr-1 h-3 w-3" />
-								Success
+								{requestStatusLabel}
 							</Badge>
 						) : (
 							<Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
 								<XCircle className="mr-1 h-3 w-3" />
-								Error
+								{requestStatusLabel}
 							</Badge>
 						)}
 					</DialogTitle>
@@ -105,114 +129,135 @@ export default function RequestDetailDialog({
 					</TabsList>
 
 					<TabsContent value="overview" className="space-y-4 mt-4">
-						{/* Request ID */}
-						<div className="flex items-center gap-2">
-							<Hash className="h-4 w-4 text-muted-foreground" />
-							<span className="text-sm font-medium">Request ID:</span>
-							<code className="text-sm bg-muted px-2 py-1 rounded">
-								{request.request_id}
-							</code>
-							<CopyButton content={request.request_id} />
-						</div>
-
-						{/* Key Metrics Grid */}
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-							<MetricTile
-								icon={Clock}
-								label="Timestamp"
-								value={new Date(request.created_at).toLocaleString()}
-							/>
-							<MetricTile
-								icon={Layers}
-								label="Model"
-								value={request.model_id || "-"}
-							/>
-							<MetricTile
-								icon={Layers}
-								label="Provider"
-								value={request.provider || "-"}
-							/>
-						</div>
-
-						{/* Usage Metrics */}
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-							<MetricTile
-								icon={Coins}
-								label="Input Tokens"
-								value={tokens.input.toLocaleString()}
-							/>
-							<MetricTile
-								icon={Coins}
-								label="Output Tokens"
-								value={tokens.output.toLocaleString()}
-							/>
-							<MetricTile
-								icon={Coins}
-								label="Total Tokens"
-								value={tokens.total.toLocaleString()}
-							/>
-						</div>
-
-						{/* Performance Metrics */}
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-							<MetricTile
-								icon={Coins}
-								label="Cost"
-								value={formatCost(request.cost_nanos)}
-								variant={request.cost_nanos ? "default" : "default"}
-							/>
-							<MetricTile
-								icon={Clock}
-								label="Latency"
-								value={latency ? `${latency}ms` : "-"}
-							/>
-							<MetricTile
-								icon={Layers}
-								label="Status Code"
-								value={request.status_code || "-"}
-								variant={request.success ? "success" : "error"}
-							/>
-						</div>
-
-						{/* Additional Info */}
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-							{appName && (
-								<MetricTile
-									icon={Layers}
-									label="App"
-									value={appName}
-								/>
-							)}
-							<MetricTile
-								icon={Layers}
-								label="Finish Reason"
-								value={request.finish_reason || "-"}
-							/>
-						</div>
-
 						{/* Error Details (if applicable) */}
-						{!request.success && (
-							<div className="p-4 rounded-lg border border-red-200 bg-red-50 space-y-2">
-								<h4 className="font-semibold text-red-900 flex items-center gap-2">
+						{!request.success && (request.error_code || request.error_message) ? (
+							<div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-2">
+								<h4 className="flex items-center gap-2 text-sm font-semibold text-red-900">
 									<XCircle className="h-4 w-4" />
 									Error Details
 								</h4>
-								{request.error_code && (
+								{request.error_code ? (
 									<p className="text-sm">
 										<span className="font-medium">Code:</span>{" "}
 										<code className="bg-red-100 px-2 py-0.5 rounded text-red-800">
 											{request.error_code}
 										</code>
 									</p>
-								)}
-								{request.error_message && (
-									<p className="text-sm">
+								) : null}
+								{request.error_message ? (
+									<p className="text-sm leading-relaxed">
 										<span className="font-medium">Message:</span>{" "}
 										{request.error_message}
 									</p>
-								)}
+								) : null}
 							</div>
-						)}
+						) : null}
+
+						<Section title="Identity">
+							<Field
+								icon={Hash}
+								label="Request ID"
+								value={
+									<code className="font-mono text-xs">
+										{request.request_id}
+									</code>
+								}
+							/>
+							<Field
+								icon={Clock}
+								label="Timestamp"
+								value={timestampLocal}
+							/>
+							{showApp ? (
+								<Field
+									icon={AppWindow}
+									label="App"
+									value={appName ?? request.app_id ?? "-"}
+								/>
+							) : null}
+						</Section>
+
+						<Section title="Routing">
+							<Field
+								icon={Layers}
+								label="Model"
+								value={request.model_id || "-"}
+							/>
+							<Field
+								icon={Server}
+								label="Provider"
+								value={request.provider || "-"}
+							/>
+						</Section>
+
+						<Section title="Usage">
+							<Field
+								icon={Coins}
+								label="Input tokens"
+								value={tokens.input.toLocaleString()}
+							/>
+							<Field
+								icon={Coins}
+								label="Output tokens"
+								value={tokens.output.toLocaleString()}
+							/>
+							<Field
+								icon={Coins}
+								label="Total tokens"
+								value={tokens.total.toLocaleString()}
+							/>
+							<Field
+								icon={Coins}
+								label="Cost"
+								value={formatCost(request.cost_nanos)}
+							/>
+						</Section>
+
+						<Section title="Result">
+							<Field
+								icon={Layers}
+								label="Status code"
+								value={request.status_code ?? "-"}
+							/>
+							<Field
+								icon={Layers}
+								label="Finish reason"
+								value={request.finish_reason || "-"}
+							/>
+							<Field
+								icon={request.success ? CheckCircle2 : XCircle}
+								label="Success"
+								value={request.success ? "true" : "false"}
+							/>
+						</Section>
+
+						<Section title="Performance">
+							<Field
+								icon={Clock}
+								label="Latency"
+								value={
+									request.latency_ms !== null && request.latency_ms !== undefined
+										? `${request.latency_ms}ms`
+										: "-"
+								}
+							/>
+							<Field
+								icon={Clock}
+								label="Generation time"
+								value={
+									request.generation_ms !== null &&
+									request.generation_ms !== undefined
+										? `${request.generation_ms}ms`
+										: "-"
+								}
+							/>
+							<Field
+								icon={Layers}
+								label="Throughput"
+								value={formatThroughput(request.throughput)}
+							/>
+						</Section>
+
 					</TabsContent>
 
 					<TabsContent value="raw" className="mt-4">

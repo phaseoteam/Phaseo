@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert } from "lucide-react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export const metadata = {
 	title: "Management API Keys - Settings",
@@ -30,15 +31,6 @@ export default function ManagementApiKeysPage() {
 				</AlertDescription>
 			</Alert>
 
-			<div>
-				<div className="flex items-center gap-2">
-					<h1 className="text-2xl font-bold">Management API Keys</h1>
-					<Badge variant="outline">Beta</Badge>
-				</div>
-				<p className="text-sm text-muted-foreground mt-1">
-					Manage elevated keys for automated team and key management
-				</p>
-			</div>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<ManagementApiKeysContent />
 			</Suspense>
@@ -88,13 +80,18 @@ async function ManagementApiKeysContent() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-end">
-				<CreateProvisioningKeyDialog
-					currentUserId={user?.id}
-					currentTeamId={initialTeamId}
-					teams={teams}
-				/>
-			</div>
+			<SettingsPageHeader
+				title="Management API Keys"
+				meta={<Badge variant="outline">Beta</Badge>}
+				description="Manage elevated keys for automated team and key management."
+				actions={
+					<CreateProvisioningKeyDialog
+						currentUserId={user?.id}
+						currentTeamId={initialTeamId}
+						teams={teams}
+					/>
+				}
+			/>
 			<ProvisioningKeysPanel
 				teamsWithKeys={teamsWithKeys}
 				initialTeamId={initialTeamId}

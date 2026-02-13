@@ -95,9 +95,6 @@ export default function SettingsSdkPage() {
 	return (
 		<main className="space-y-6">
 			<section className="space-y-2">
-				<div className="text-xs font-semibold uppercase tracking-[0.3rem] text-zinc-500">
-					SDKs
-				</div>
 				<div className="space-y-2">
 					<h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
 						SDKs for the AI Stats gateway

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Store } from "lucide-react";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export const metadata = {
 	title: "Presets - Settings",
@@ -32,31 +33,39 @@ export default function PresetsPage() {
 				</AlertDescription>
 			</Alert>
 
-			<div className="flex items-center justify-between">
-				<div>
-					<div className="flex items-center gap-2">
-						<h1 className="text-2xl font-bold">Presets</h1>
-						<Badge variant="outline">Beta</Badge>
-					</div>
-					<p className="text-sm text-muted-foreground mt-1">
-						Manage reusable request configurations for your API calls
-					</p>
-				</div>
-				<div className="flex items-center gap-2">
-					<Link href="/gateway/marketplace" target="_blank" rel="noreferrer">
-						<Button variant="outline" size="sm" className="flex items-center gap-2">
-							<Store className="h-4 w-4" />
-							Marketplace
-						</Button>
-					</Link>
-					<Link href="/settings/presets/new">
-						<Button variant="default" size="sm" className="flex items-center">
-							<Plus className="h-4 w-4" />
-							Create Preset
-						</Button>
-					</Link>
-				</div>
-			</div>
+			<SettingsPageHeader
+				title="Presets"
+				description="Manage reusable request configurations for your API calls."
+				meta={<Badge variant="outline">Beta</Badge>}
+				actions={
+					<>
+						<Link
+							href="/gateway/marketplace"
+							target="_blank"
+							rel="noreferrer"
+						>
+							<Button
+								variant="outline"
+								size="sm"
+								className="flex items-center gap-2"
+							>
+								<Store className="h-4 w-4" />
+								Marketplace
+							</Button>
+						</Link>
+						<Link href="/settings/presets/new">
+							<Button
+								variant="default"
+								size="sm"
+								className="flex items-center gap-2"
+							>
+								<Plus className="h-4 w-4" />
+								Create Preset
+							</Button>
+						</Link>
+					</>
+				}
+			/>
 
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<PresetsContent />

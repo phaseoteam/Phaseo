@@ -47,6 +47,7 @@ type UsageHeaderProps = {
 	lifecycleAlerts?: {
 		count: number;
 		anchorId?: string;
+		href?: string;
 	};
 };
 
@@ -161,7 +162,10 @@ export default function UsageHeader({
 								aria-label="View lifecycle alerts"
 							>
 								<a
-									href={`#${lifecycleAlerts.anchorId ?? "lifecycle-alerts"}`}
+									href={
+										lifecycleAlerts.href ??
+										`#${lifecycleAlerts.anchorId ?? "lifecycle-alerts"}`
+									}
 								>
 									<AlertTriangle className="h-4 w-4 text-amber-600" />
 									<span className="sr-only">

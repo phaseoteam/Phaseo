@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/Logo";
@@ -10,10 +10,12 @@ import {
 	getDeprecationWarningsForTeam,
 } from "@/lib/fetchers/usage/deprecationWarnings";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
+import RetiresBadge from "./RetiresBadge";
 
 interface DeprecationWarningsProps {
 	warnings?: DeprecationWarning[];
 	id?: string;
+	showHeader?: boolean;
 }
 
 type AlertCardMode = "deprecated" | "retired";
@@ -83,14 +85,22 @@ function AlertCard({
 			? `Retires ${formatFutureDays(row.retirementDaysUntil)}`
 			: "Deprecated";
 
+	const deprecatedBadgeClassName =
+		row.severity === "critical"
+			? "h-5 shrink-0 border-red-300 bg-red-50 px-1.5 text-[11px] text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300"
+			: row.severity === "warning"
+				? "h-5 shrink-0 border-amber-300 bg-amber-50 px-1.5 text-[11px] text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
+				: row.severity === "notice"
+					? "h-5 shrink-0 border-blue-300 bg-blue-50 px-1.5 text-[11px] text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300"
+				: "h-5 shrink-0 border-amber-200 bg-amber-50/60 px-1.5 text-[11px] text-amber-800/70 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200/70";
+
 	const badge =
 		mode === "deprecated" ? (
-			<Badge
-				variant="outline"
-				className="h-5 shrink-0 border-amber-300 bg-amber-50 px-1.5 text-[11px] text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
-			>
-				<span className="font-medium">{deprecatedBadgeLabel}</span>
-			</Badge>
+			<RetiresBadge
+				label={deprecatedBadgeLabel}
+				retirementDate={row.retirementDate}
+				className={deprecatedBadgeClassName}
+			/>
 		) : (
 			<Badge
 				variant="outline"
@@ -101,51 +111,69 @@ function AlertCard({
 		);
 
 	return (
-		<div className="rounded-xl border bg-card p-3 shadow-sm">
-			<div className="flex min-w-0 items-start gap-2">
-				{modelOrgId ? (
-					<Logo
-						id={modelOrgId}
-						width={16}
-						height={16}
-						className="mt-1 shrink-0 rounded-sm"
-					/>
-				) : (
-					<span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
-				)}
-				<div className="min-w-0 flex-1">
-					<ModelLink
-						modelId={row.modelId}
-						modelName={row.modelName}
-						organisationId={row.organisationId}
-						className="truncate text-sm font-medium"
-					/>
-					{hasReadableName ? (
-						<div className="mt-0.5 truncate text-[11px] font-mono text-muted-foreground">
-							{row.modelId}
-						</div>
-					) : null}
+		<div
+			className={cn(
+				"rounded-xl border bg-card p-3 shadow-sm transition-shadow hover:shadow-md",
+			)}
+		>
+			<div className="flex min-w-0 items-start justify-between gap-3">
+				<div className="flex min-w-0 items-start gap-2">
+					{modelOrgId ? (
+						<Logo
+							id={modelOrgId}
+							width={16}
+							height={16}
+							className="mt-1 shrink-0 rounded-sm"
+						/>
+					) : (
+						<span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" />
+					)}
+					<div className="min-w-0">
+						<ModelLink
+							modelId={row.modelId}
+							modelName={row.modelName}
+							organisationId={row.organisationId}
+							className="block truncate text-sm font-semibold tracking-tight"
+						/>
+						{hasReadableName ? (
+							<div className="mt-0.5 truncate text-[11px] font-mono text-muted-foreground">
+								{row.modelId}
+							</div>
+						) : null}
+					</div>
 				</div>
 				{badge}
 			</div>
 
-			{mode === "deprecated" ? (
-				<p className="mt-2 text-[11px] text-muted-foreground">
-					This model has been deprecated and is due to retire on{" "}
-					<span className="font-medium text-foreground">
-						{row.retirementDate ? formatDate(row.retirementDate) : "TBD"}
+			<div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+				{mode === "deprecated" ? (
+					<>
+						{row.lastUsedAt ? (
+							<span className="inline-flex items-center gap-1">
+								<span>
+									Last used{" "}
+									<span className="font-medium text-foreground">
+										{formatDate(row.lastUsedAt)}
+									</span>
+								</span>
+							</span>
+						) : null}
+					</>
+				) : (
+					<span>
+						Retired{" "}
+						<span className="font-medium text-foreground">
+							{row.retirementDate ? formatDate(row.retirementDate) : "unknown"}
+						</span>
 					</span>
-					. It will no longer be usable after this date.
+				)}
+			</div>
+
+			{mode === "retired" ? (
+				<p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+					This model is retired and no longer usable.
 				</p>
-			) : (
-				<p className="mt-2 text-[11px] text-muted-foreground">
-					This model retired on{" "}
-					<span className="font-medium text-foreground">
-						{row.retirementDate ? formatDate(row.retirementDate) : "unknown date"}
-					</span>
-					. It is no longer usable.
-				</p>
-			)}
+			) : null}
 
 			{row.replacementModelId ? (
 				<div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -158,6 +186,56 @@ function AlertCard({
 						className="truncate font-medium text-foreground"
 					/>
 				</div>
+			) : mode === "deprecated" ? (
+				<div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+					<ArrowRight className="h-3 w-3 shrink-0 opacity-60" />
+					<span>No recommended replacement yet.</span>
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+function CardsBlock({
+	rows,
+	mode,
+	title,
+	collapsible = true,
+}: {
+	rows: DeprecationWarning[];
+	mode: AlertCardMode;
+	title: string;
+	collapsible?: boolean;
+}) {
+	if (!rows.length) return null;
+
+	const visibleRows = collapsible ? rows.slice(0, 4) : rows;
+	const hiddenRows = collapsible ? rows.slice(4) : [];
+
+	return (
+		<div className="space-y-2">
+			<h4 className="px-1 text-sm font-medium text-foreground">{title}</h4>
+			<div className="grid gap-2 md:grid-cols-2">
+				{visibleRows.map((row) => (
+					<AlertCard key={`${mode}-${row.modelId}`} row={row} mode={mode} />
+				))}
+			</div>
+
+			{collapsible && hiddenRows.length > 0 ? (
+				<details className="rounded-md border">
+					<summary className="cursor-pointer px-3 py-2 text-xs text-muted-foreground hover:text-foreground">
+						Show {hiddenRows.length} more
+					</summary>
+					<div className="grid gap-2 border-t p-2 md:grid-cols-2">
+						{hiddenRows.map((row) => (
+							<AlertCard
+								key={`${mode}-${row.modelId}-more`}
+								row={row}
+								mode={mode}
+							/>
+						))}
+					</div>
+				</details>
 			) : null}
 		</div>
 	);
@@ -231,6 +309,7 @@ function sortRecentRetired(rows: DeprecationWarning[]) {
 export default async function DeprecationWarnings({
 	warnings,
 	id = "lifecycle-alerts",
+	showHeader = true,
 }: DeprecationWarningsProps = {}) {
 	const teamId = await getTeamIdFromCookie();
 	if (!teamId) return null;
@@ -241,10 +320,13 @@ export default async function DeprecationWarnings({
 	const deprecatedRows = sortByRetirementDateAsc(
 		rawWarnings.filter(
 			(row) =>
-				row.deprecationDaysUntil !== null &&
-				(row.retirementDaysUntil === null || row.retirementDaysUntil >= 0),
+				(row.retirementDaysUntil ?? row.deprecationDaysUntil) !== null &&
+				(row.retirementDaysUntil ?? row.deprecationDaysUntil)! >= 0,
 		),
 	);
+
+	const deprecatedInUseRows = deprecatedRows.filter((row) => row.countAsAlert);
+	const deprecatedFyiRows = deprecatedRows.filter((row) => !row.countAsAlert);
 
 	const recentRetiredRows = sortRecentRetired(
 		rawWarnings.filter((row) => (row.retirementDaysUntil ?? 0) < 0),
@@ -253,23 +335,27 @@ export default async function DeprecationWarnings({
 
 	return (
 		<div id={id} className="space-y-3">
-			<div className="flex items-center gap-2">
-				<h3 className="text-base font-semibold">Model Lifecycle Alerts</h3>
-				<Separator className="flex-1" />
-				<Badge
-					variant="outline"
-					className="h-5 border-amber-300 bg-amber-50 px-1.5 text-[11px] text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300"
-				>
-					<AlertTriangle className="mr-1 h-3 w-3" />
-					Action required
-				</Badge>
-			</div>
+			{showHeader ? (
+				<div className="flex items-center gap-2">
+					<h3 className="text-base font-semibold">Model Lifecycle Alerts</h3>
+					<Separator className="flex-1" />
+				</div>
+			) : null}
 
 			<div className="space-y-5">
-				<SectionBlock
-					title="Deprecated Models"
-					rows={deprecatedRows}
+				<CardsBlock
+					title="Models You Use"
+					rows={deprecatedInUseRows}
 					mode="deprecated"
+				/>
+				{deprecatedInUseRows.length > 0 && deprecatedFyiRows.length > 0 ? (
+					<Separator className="my-2" />
+				) : null}
+				<CardsBlock
+					title="Models You Don't Use"
+					rows={deprecatedFyiRows}
+					mode="deprecated"
+					collapsible={false}
 				/>
 				<SectionBlock
 					title="Recent Retirements"

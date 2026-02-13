@@ -1,52 +1,98 @@
 // Centralised sidebar config used by SettingsSidebar
 
+import type { LucideIcon } from "lucide-react";
+import { AppWindow, BarChart3, CreditCard, KeyRound, Package, User, Users } from "lucide-react";
+
 export type NavItem = {
     href: string;
     label: string;
+	icon?: LucideIcon;
     badge?: string;
     disabled?: boolean;
     external?: boolean; // when true, opens in new tab and shows a link icon
+	/**
+	 * Optional route prefixes that should highlight this item as active.
+	 * Useful when the sidebar links to a "section home" but the section has
+	 * multiple subpages rendered as tabs.
+	 */
+	match?: string[];
 };
 
 export type NavGroup = {
-    heading: string;
+    heading?: string;
     items: NavItem[];
 };
 
 export const SETTINGS_SIDEBAR: NavGroup[] = [
     {
-        heading: "General",
+        heading: undefined,
         items: [
-            { href: "/settings/account", label: "Account" },
-            { href: "/settings/teams", label: "Teams" },
-            { href: "/settings/management-api-keys", label: "Management API Keys", badge: "Beta" },
-            { href: "/settings/authorized-apps", label: "Authorized Apps", badge: "Alpha" },
-            { href: "/settings/privacy", label: "Training, Logging, & Privacy", disabled: true },
+            {
+				href: "/settings/account",
+				label: "Account",
+				icon: User,
+				match: ["/settings/account"],
+			},
+            {
+				href: "/settings/teams",
+				label: "Team",
+				icon: Users,
+				match: ["/settings/teams", "/settings/apps"],
+			},
         ],
     },
 	{
-		heading: "AI Gateway",
+		heading: undefined,
 		items: [
-			{ href: "/settings/keys", label: "API Keys" },
-			{ href: "/settings/byok", label: "BYOK" },
-			{ href: "/settings/routing", label: "Routing" },
-			{ href: "/settings/presets", label: "Presets", badge: "Beta" },
-			{ href: "/settings/apps", label: "Apps" },
+			{
+				href: "/settings/keys",
+				label: "API",
+				icon: KeyRound,
+				match: [
+					"/settings/keys",
+					"/settings/management-api-keys",
+					"/settings/provisioning-keys",
+					"/settings/routing",
+					"/settings/byok",
+					"/settings/presets",
+					"/settings/guardrails",
+				],
+			},
 		],
 	},
     {
-        heading: "Billing",
+        heading: undefined,
         items: [
-            { href: "/settings/credits", label: "Credits" },
-            { href: "/settings/tiers", label: "Tiers & Discounts" },
-            { href: "/settings/payment-methods", label: "Payment Methods" },
+			{
+				href: "/settings/credits",
+				label: "Billing",
+				icon: CreditCard,
+				match: [
+					"/settings/credits",
+					"/settings/credits/transactions",
+					"/settings/payment-methods",
+					"/settings/tiers",
+				],
+			},
+			{
+				href: "/settings/usage",
+				label: "Usage",
+				icon: BarChart3,
+				match: ["/settings/usage", "/settings/usage/logs", "/settings/usage/alerts"],
+			},
         ],
     },
 	{
 		heading: "Developer",
 		items: [
-			{ href: "/settings/oauth-apps", label: "OAuth Apps", badge: "Alpha" },
-			{ href: "/settings/sdk", label: "SDKs" },
+			{
+				href: "/settings/oauth-apps",
+				label: "OAuth Apps",
+				icon: AppWindow,
+				badge: "Alpha",
+				match: ["/settings/oauth-apps", "/settings/authorized-apps"],
+			},
+			{ href: "/settings/sdk", label: "SDKs", icon: Package, match: ["/settings/sdk"] },
 		],
 	},
 

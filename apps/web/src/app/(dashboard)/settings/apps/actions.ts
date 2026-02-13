@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { revalidateAppDataTags } from "@/lib/cache/revalidateDataTags";
+import { requireTeamMembership } from "@/utils/serverActionAuth";
 
 const PROTECTED_APP_TITLES = new Set([
 	"ai stats chat",
@@ -55,7 +56,7 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 
 	const { data: existingApp, error: existingAppError } = await supabase
 		.from("api_apps")
-		.select("id, title, app_key")
+		.select("id, team_id, title, app_key")
 		.eq("id", appId)
 		.maybeSingle();
 
@@ -66,6 +67,11 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 	if (!existingApp) {
 		throw new Error("App not found");
 	}
+
+	if (!existingApp.team_id) {
+		throw new Error("App not found");
+	}
+	await requireTeamMembership(supabase, user.id, existingApp.team_id);
 
 	if (isProtectedApp(existingApp.title, existingApp.app_key)) {
 		throw new Error("This app is managed by AI Stats and cannot be edited");
@@ -114,7 +120,8 @@ export async function updateAppAction(appId: string, updates: UpdateAppInput) {
 	const { error } = await supabase
 		.from("api_apps")
 		.update(updateObj)
-		.eq("id", appId);
+		.eq("id", appId)
+		.eq("team_id", existingApp.team_id);
 
 	if (error) {
 		throw new Error(error.message ?? "Failed to update app");
@@ -161,6 +168,11 @@ export async function mergeAppsAction(
 	if (!apps.every((app) => app.team_id === teamId)) {
 		throw new Error("Apps must belong to the same team");
 	}
+
+	if (!teamId) {
+		throw new Error("Apps must belong to your team");
+	}
+	await requireTeamMembership(supabase, user.id, teamId);
 
 	if (apps.some((app) => isProtectedApp(app.title, app.app_key))) {
 		throw new Error("AI Stats managed apps cannot be merged");

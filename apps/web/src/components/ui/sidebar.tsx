@@ -60,11 +60,18 @@ function SidebarProvider({
 	className,
 	style,
 	children,
+	contained = false,
 	...props
 }: React.ComponentProps<"div"> & {
 	defaultOpen?: boolean;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
+	/**
+	 * When true, don't force full-viewport height.
+	 * Useful when the sidebar is rendered inside a page layout that already
+	 * has its own header/footer and manages overall height.
+	 */
+	contained?: boolean;
 }) {
 	const isMobile = useIsMobile();
 	const [openMobile, setOpenMobile] = React.useState(false);
@@ -149,7 +156,8 @@ function SidebarProvider({
 						} as React.CSSProperties
 					}
 					className={cn(
-						"group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+						"group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex w-full",
+						contained ? "min-h-0" : "min-h-svh",
 						className
 					)}
 					{...props}

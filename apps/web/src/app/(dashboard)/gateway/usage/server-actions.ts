@@ -2,6 +2,26 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import {
+	requireAuthenticatedUser,
+	requireTeamMembership,
+} from "@/utils/serverActionAuth";
+
+async function requireAuthedTeamContext(
+	supabase: Awaited<ReturnType<typeof createClient>>
+) {
+	const {
+		data: { user },
+		error,
+	} = await supabase.auth.getUser();
+	if (error || !user?.id) throw new Error("Unauthorized");
+
+	const teamId = await getTeamIdFromCookie();
+	if (!teamId) throw new Error("Missing team id");
+
+	await requireTeamMembership(supabase, user.id, teamId);
+	return { user, teamId };
+}
 
 export interface PaginatedRequestsParams {
 	timeRange: { from: string; to: string };
@@ -24,6 +44,8 @@ export interface RequestRow {
 	cost_nanos: number | null;
 	generation_ms: number | null;
 	latency_ms: number | null;
+	// PostgREST often returns `numeric` as string; treat as number-like in the UI.
+	throughput: number | string | null;
 	finish_reason: string | null;
 	success: boolean;
 	status_code: number | null;
@@ -47,7 +69,7 @@ export async function fetchPaginatedRequests(
 	params: PaginatedRequestsParams
 ): Promise<PaginatedRequestsResult> {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const { teamId } = await requireAuthedTeamContext(supabase);
 
 	if (!teamId) {
 		return {
@@ -81,7 +103,8 @@ export async function fetchPaginatedRequests(
 			status_code,
 			error_code,
 			error_message,
-			key_id
+			key_id,
+			throughput
 		`,
 			{ count: "exact" }
 		)
@@ -141,7 +164,7 @@ export async function fetchPaginatedRequests(
 export async function fetchOrganizationColors(
 	modelIds: string[]
 ): Promise<Map<string, string>> {
-	const supabase = await createClient();
+	const { supabase } = await requireAuthenticatedUser();
 
 	if (modelIds.length === 0) {
 		return new Map();
@@ -253,7 +276,7 @@ export async function fetchOrganizationColors(
 export async function fetchModelMetadata(
 	modelIds: string[]
 ): Promise<Map<string, { organisationId: string; organisationName: string }>> {
-	const supabase = await createClient();
+	const { supabase } = await requireAuthenticatedUser();
 
 	if (modelIds.length === 0) {
 		return new Map();
@@ -371,7 +394,7 @@ export async function fetchModelMetadata(
 export async function fetchProviderNames(
 	providerIds: string[]
 ): Promise<Map<string, string>> {
-	const supabase = await createClient();
+	const { supabase } = await requireAuthenticatedUser();
 
 	if (providerIds.length === 0) {
 		return new Map();
@@ -412,7 +435,7 @@ export async function fetchFunStats(
 	timeRange: { from: string; to: string }
 ): Promise<FunStatsResult> {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const { teamId } = await requireAuthedTeamContext(supabase);
 
 	if (!teamId) {
 		return {
@@ -509,7 +532,7 @@ export async function fetchFunStats(
  */
 export async function fetchAppNames(appIds: string[]): Promise<Map<string, string>> {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const { teamId } = await requireAuthedTeamContext(supabase);
 
 	if (!teamId || appIds.length === 0) {
 		return new Map();
@@ -540,7 +563,7 @@ export async function investigateGeneration(
 	requestId: string
 ): Promise<{ success: boolean; data?: any; error?: string }> {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const { teamId } = await requireAuthedTeamContext(supabase);
 
 	if (!teamId) {
 		return {
@@ -623,7 +646,7 @@ export async function fetchChartData(
 	params: ChartDataParams
 ): Promise<ChartDataResult> {
 	const supabase = await createClient();
-	const teamId = await getTeamIdFromCookie();
+	const { teamId } = await requireAuthedTeamContext(supabase);
 
 	if (!teamId) {
 		return {

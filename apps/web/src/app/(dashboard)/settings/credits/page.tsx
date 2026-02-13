@@ -1,10 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import CurrentCredits from "@/components/(gateway)/credits/CurrentCredits";
-import RecentTransactions from "@/components/(gateway)/credits/RecentTransactions";
 import Banner from "@/components/(gateway)/credits/Banner";
 import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/TopUp/BuyCreditsClient";
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
+import LowBalanceEmailAlertsClient from "@/components/(gateway)/credits/LowBalanceEmailAlertsClient";
 import { getStripe } from "@/lib/stripe";
 import {
 	GATEWAY_TIERS,
@@ -14,6 +14,7 @@ import { TierBadge } from "@/components/(gateway)/credits/TierBadge";
 import { Metadata } from "next";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export const metadata: Metadata = {
 	title: "Credits - Settings",
@@ -56,7 +57,8 @@ async function CreditsSettingsContent(props: {
 	let initialBalance = 0;
 	let wallet: any = null;
 	let stripeInfo: any = null;
-	let recentTransactions: any[] = [];
+	let lowBalanceEmailEnabled = false;
+	let lowBalanceEmailThresholdUsd: number | null = null;
 	let tierStats: {
 		lastMonth: number;
 		mtd: number;
@@ -90,6 +92,26 @@ async function CreditsSettingsContent(props: {
 		}
 	} catch (outerErr) {
 		console.log("[ERROR] unexpected wallet fetch error:", String(outerErr));
+	}
+
+	// Team settings (best-effort)
+	try {
+		const { data: settingsRow, error: settingsErr } = await supabase
+			.from("team_settings")
+			.select("low_balance_email_enabled,low_balance_email_threshold_nanos")
+			.eq("team_id", teamId)
+			.maybeSingle();
+
+		if (settingsErr) {
+			console.log("[WARN] fetching team settings:", String(settingsErr));
+		} else {
+			lowBalanceEmailEnabled = Boolean(settingsRow?.low_balance_email_enabled);
+			const nanos = Number(settingsRow?.low_balance_email_threshold_nanos ?? 0);
+			lowBalanceEmailThresholdUsd =
+				nanos > 0 ? Number((nanos / 1_000_000_000).toFixed(2)) : null;
+		}
+	} catch (outerErr) {
+		console.log("[WARN] unexpected team settings fetch error:", String(outerErr));
 	}
 
 	// Stripe: customer + payment methods
@@ -157,53 +179,25 @@ async function CreditsSettingsContent(props: {
 		defaultPaymentMethodId,
 	};
 
-	// Recent transactions (best-effort)
+	// Latest success timestamp (for the checkout banner's payment_attempt flow)
+	let latestPaymentSuccessAt: string | null = null;
 	try {
-		const { data: tx, error: txErr } = await supabase
+		const { data: latestRow, error: latestErr } = await supabase
 			.from("credit_ledger")
-			.select(
-				"id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at"
-			)
+			.select("event_time,status,amount_nanos")
 			.eq("team_id", teamId)
+			.in("status", ["paid", "succeeded"])
+			.gt("amount_nanos", 0)
 			.order("event_time", { ascending: false })
-			.limit(100);
+			.limit(1)
+			.maybeSingle();
 
-		if (txErr) {
-			console.log("[ERROR] fetching recent transactions:", String(txErr));
-		} else if (tx) {
-			recentTransactions = (tx as any[]).map((r) => ({
-				id: r.id,
-				amount_nanos: Number(r.amount_nanos ?? 0),
-				description:
-					r.kind ??
-					(r.ref_type ? `${r.ref_type}:${r.ref_id}` : "Purchase"),
-				created_at: r.event_time ?? r.created_at ?? null,
-				status: r.status ?? null,
-				kind: r.kind ?? null,
-				ref_type: r.ref_type ?? null,
-				ref_id: r.ref_id ?? null,
-				source_ref_type: r.source_ref_type ?? null,
-				source_ref_id: r.source_ref_id ?? null,
-				before_balance_nanos: r.before_balance ?? null,
-				after_balance_nanos: r.after_balance ?? null,
-			}));
+		if (!latestErr && latestRow?.event_time) {
+			latestPaymentSuccessAt = String(latestRow.event_time);
 		}
-	} catch (e) {
-		console.log("[ERROR] unexpected recent transactions error:", String(e));
+	} catch {
+		latestPaymentSuccessAt = null;
 	}
-
-	const latestPaymentSuccessAt = (() => {
-		let latest: number | null = null;
-		for (const tx of recentTransactions) {
-			const status = String(tx.status ?? "").toLowerCase();
-			if (status !== "paid" && status !== "succeeded") continue;
-			if ((tx.amount_nanos ?? 0) <= 0) continue;
-			const ts = tx.created_at ? new Date(tx.created_at).getTime() : NaN;
-			if (!Number.isFinite(ts)) continue;
-			if (latest === null || ts > latest) latest = ts;
-		}
-		return latest ? new Date(latest).toISOString() : null;
-	})();
 
 	// Tier stats (best-effort)
 	if (teamId) {
@@ -264,21 +258,23 @@ async function CreditsSettingsContent(props: {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between gap-3">
-				<h1 className="text-2xl font-bold">Credits</h1>
-				<TierBadge
-					href="/settings/tiers"
-					tierName={current.name}
-					feePct={current.feePct}
-					savingsPoints={savingVsBase}
-					savingsAmountFormatted={badgeSavingsFormatted}
-					nextTierName={next?.name ?? null}
-					nextFeePct={next?.feePct ?? null}
-					nextDiscountDelta={nextDiscountDelta}
-					remainingFormatted={badgeRemainingFormatted}
-					topTier={topTier}
-				/>
-			</div>
+			<SettingsPageHeader
+				title="Credits"
+				actions={
+					<TierBadge
+						href="/settings/tiers"
+						tierName={current.name}
+						feePct={current.feePct}
+						savingsPoints={savingVsBase}
+						savingsAmountFormatted={badgeSavingsFormatted}
+						nextTierName={next?.name ?? null}
+						nextFeePct={next?.feePct ?? null}
+						nextDiscountDelta={nextDiscountDelta}
+						remainingFormatted={badgeRemainingFormatted}
+						topTier={topTier}
+					/>
+				}
+			/>
 
 			<Banner
 				queryString={queryString ?? null}
@@ -304,14 +300,11 @@ async function CreditsSettingsContent(props: {
 					/>
 					<AutoTopUpClient wallet={wallet} stripeInfo={stripeInfo} />
 				</div>
+				<LowBalanceEmailAlertsClient
+					enabled={lowBalanceEmailEnabled}
+					thresholdUsd={lowBalanceEmailThresholdUsd}
+				/>
 			</div>
-
-			<RecentTransactions
-				transactions={recentTransactions}
-				stripeCustomerId={
-					wallet?.stripe_customer_id ?? stripeInfo?.customer?.id
-				}
-			/>
 		</div>
 	);
 }

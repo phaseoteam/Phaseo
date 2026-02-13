@@ -7,6 +7,7 @@ import ExportDropdown from "./ExportDropdown";
 import InvestigateGeneration from "./UsageHeader/InvestigateGeneration";
 
 interface RequestsSectionProps {
+	title?: string;
 	timeRange: { from: string; to: string };
 	appNames: Map<string, string>;
 	models: string[];
@@ -18,6 +19,7 @@ interface RequestsSectionProps {
 }
 
 export default function RequestsSection({
+	title,
 	timeRange,
 	appNames,
 	models,
@@ -36,7 +38,20 @@ export default function RequestsSection({
 	};
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-3">
+			{title ? (
+				<div className="flex items-center justify-between">
+					<h2 className="text-2xl font-bold">{title}</h2>
+					<div className="flex items-center gap-2">
+						<InvestigateGeneration iconOnly />
+						<ExportDropdown
+							onExportCSV={() => handleExport("csv")}
+							onExportPDF={() => handleExport("pdf")}
+							iconOnly
+						/>
+					</div>
+				</div>
+			) : null}
 			<UsageTableFilters
 				models={models}
 				providers={providers}
@@ -44,13 +59,7 @@ export default function RequestsSection({
 				providerNames={providerNames}
 				apiKeys={apiKeys}
 				modelMetadata={modelMetadata}
-				leftActions={<InvestigateGeneration iconOnly />}
-			>
-				<ExportDropdown
-					onExportCSV={() => handleExport("csv")}
-					onExportPDF={() => handleExport("pdf")}
-				/>
-			</UsageTableFilters>
+			/>
 			<UnifiedRequestsTable
 				timeRange={timeRange}
 				appNames={appNames}

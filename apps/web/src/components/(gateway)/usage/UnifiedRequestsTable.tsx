@@ -336,18 +336,18 @@ export default function UnifiedRequestsTable({
 	};
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-3">
 			{/* Table */}
 			<div className="rounded-md border">
-				<Table>
+				<Table className="text-xs">
 					<TableHeader>
-						<TableRow>
+						<TableRow className="h-9">
 							<TableHead className="w-[180px]">
 								<Button
 									variant="ghost"
 									size="sm"
 									onClick={() => handleSort("created_at")}
-									className="h-8 px-2"
+									className="h-7 px-2 text-xs"
 								>
 									Timestamp
 									<SortIcon field="created_at" />
@@ -358,7 +358,7 @@ export default function UnifiedRequestsTable({
 									variant="ghost"
 									size="sm"
 									onClick={() => handleSort("model_id")}
-									className="h-8 px-2"
+									className="h-7 px-2 text-xs"
 								>
 									Model
 									<SortIcon field="model_id" />
@@ -369,19 +369,18 @@ export default function UnifiedRequestsTable({
 									variant="ghost"
 									size="sm"
 									onClick={() => handleSort("provider")}
-									className="h-8 px-2"
+									className="h-7 px-2 text-xs"
 								>
 									Provider
 									<SortIcon field="provider" />
 								</Button>
 							</TableHead>
-							<TableHead>App</TableHead>
 							<TableHead className="text-right">
 								<Button
 									variant="ghost"
 									size="sm"
 									onClick={() => handleSort("usage")}
-									className="h-8 px-2"
+									className="h-7 px-2 text-xs"
 								>
 									Usage
 									<SortIcon field="usage" />
@@ -392,7 +391,7 @@ export default function UnifiedRequestsTable({
 									variant="ghost"
 									size="sm"
 									onClick={() => handleSort("cost_nanos")}
-									className="h-8 px-2"
+									className="h-7 px-2 text-xs"
 								>
 									Cost
 									<SortIcon field="cost_nanos" />
@@ -404,7 +403,7 @@ export default function UnifiedRequestsTable({
 									variant="ghost"
 									size="sm"
 									onClick={() => handleSort("success")}
-									className="h-8 px-2"
+									className="h-7 px-2 text-xs"
 								>
 									Status
 									<SortIcon field="success" />
@@ -419,7 +418,7 @@ export default function UnifiedRequestsTable({
 						{data.length === 0 && !loading ? (
 							<TableRow>
 								<TableCell
-									colSpan={10}
+									colSpan={8}
 									className="text-center py-8 text-muted-foreground"
 								>
 									No requests found
@@ -444,9 +443,6 @@ export default function UnifiedRequestsTable({
 													</TableCell>
 													<TableCell>
 														<div className="h-5 bg-muted rounded w-20" />
-													</TableCell>
-													<TableCell>
-														<div className="h-4 bg-muted rounded w-24" />
 													</TableCell>
 													<TableCell className="text-right">
 														<div className="h-4 bg-muted rounded w-24 ml-auto" />
@@ -488,7 +484,7 @@ export default function UnifiedRequestsTable({
 												loading && "opacity-50",
 											)}
 										>
-											<TableCell className="font-mono text-xs">
+											<TableCell className="py-2 font-mono text-xs">
 												<HoverCard>
 													<HoverCardTrigger asChild>
 														<span className="cursor-help underline underline-offset-2 decoration-dotted">
@@ -562,7 +558,7 @@ export default function UnifiedRequestsTable({
 													</HoverCardContent>
 												</HoverCard>
 											</TableCell>
-											<TableCell className="font-medium truncate max-w-[200px]">
+											<TableCell className="py-2 font-medium truncate max-w-[200px]">
 												{row.model_id ? (
 													<div className="flex items-center gap-2">
 														{modelMeta ? (
@@ -570,7 +566,7 @@ export default function UnifiedRequestsTable({
 																id={modelMeta.organisationId}
 																width={16}
 																height={16}
-																className="rounded flex-shrink-0"
+																className="flex-shrink-0"
 															/>
 														) : null}
 														{modelHref ? (
@@ -590,51 +586,35 @@ export default function UnifiedRequestsTable({
 													"-"
 												)}
 											</TableCell>
-											<TableCell>
+											<TableCell className="py-2">
 												{row.provider ? (
-													<div className="flex items-center gap-2">
-														<Logo
-															id={row.provider}
-															width={16}
-															height={16}
-															className="rounded flex-shrink-0"
-														/>
-														<Link
-															href={`/api-providers/${encodeURIComponent(row.provider)}`}
-															className="hover:underline hover:text-primary"
+													<Link
+														href={`/api-providers/${encodeURIComponent(row.provider)}`}
+														className="hover:underline hover:text-primary"
+													>
+														<Badge
+															variant="outline"
+															className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
 														>
-															<Badge
-																variant="outline"
-																className="hover:bg-muted cursor-pointer"
-															>
-																{providerLabel}
-															</Badge>
-														</Link>
-													</div>
+															<Logo
+																id={row.provider}
+																width={14}
+																height={14}
+																className="flex-shrink-0"
+															/>
+															<span className="truncate">{providerLabel}</span>
+														</Badge>
+													</Link>
 												) : (
 													<Badge variant="outline">
 														-
 													</Badge>
 												)}
 											</TableCell>
-											<TableCell className="truncate max-w-[150px]">
-												{row.app_id ? (
-													<Link
-														href={`/apps/${encodeURIComponent(row.app_id)}`}
-														className="hover:underline hover:text-primary"
-													>
-														{appNames.get(
-															row.app_id,
-														) || row.app_id}
-													</Link>
-												) : (
-													"-"
-												)}
-											</TableCell>
-											<TableCell className="text-right">
+											<TableCell className="py-2 text-right">
 												<Tooltip>
 													<TooltipTrigger asChild>
-														<div className="cursor-help inline-flex items-center justify-end font-mono text-sm tabular-nums">
+														<div className="cursor-help inline-flex items-center justify-end font-mono text-xs tabular-nums">
 															<span
 																className="inline-block text-right"
 																style={{
@@ -668,13 +648,13 @@ export default function UnifiedRequestsTable({
 													</TooltipContent>
 												</Tooltip>
 											</TableCell>
-											<TableCell className="text-right font-mono text-sm">
+											<TableCell className="py-2 text-right font-mono text-xs">
 												{formatCost(row.cost_nanos)}
 											</TableCell>
-											<TableCell className="text-sm text-muted-foreground">
+											<TableCell className="py-2 text-xs text-muted-foreground">
 												{row.finish_reason || "-"}
 											</TableCell>
-											<TableCell>
+											<TableCell className="py-2">
 												{row.success ? (
 													<Badge
 														variant="outline"
@@ -693,14 +673,14 @@ export default function UnifiedRequestsTable({
 													</Badge>
 												)}
 											</TableCell>
-											<TableCell className="text-center">
+											<TableCell className="py-2 text-center">
 												<Button
 													variant="ghost"
 													size="sm"
 													onClick={() =>
 														handleRowClick(row)
 													}
-													className="h-8 w-8 p-0"
+													className="h-7 w-7 p-0"
 													title="View request details"
 												>
 													<Eye className="h-4 w-4" />

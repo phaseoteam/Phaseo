@@ -13,12 +13,6 @@ export const metadata = {
 export default function TeamsSettingsPage() {
 	return (
 		<div className="space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold">Teams</h1>
-				<p className="text-sm text-muted-foreground mt-1">
-					Manage teams, members, and team-level access controls.
-				</p>
-			</div>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<TeamsSettingsContent />
 			</Suspense>
@@ -196,7 +190,6 @@ async function TeamsSettingsContent() {
 			personalTeamId={personalTeamId}
 			manageableTeamIds={manageableTeamIds}
 			walletBalances={walletBalances}
-			hideTitle
 		/>
 	);
 }

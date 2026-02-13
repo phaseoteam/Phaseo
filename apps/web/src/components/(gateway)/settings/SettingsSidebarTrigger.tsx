@@ -14,16 +14,34 @@ export default function SettingsSidebarTrigger() {
 	const pathname = usePathname();
 	const { toggleSidebar } = useSidebar();
 
+	function matchScore(item: NavItem) {
+		const path = pathname ?? "";
+		if (item.disabled || item.external) return null;
+
+		if (path === item.href) return { exact: true, len: item.href.length };
+		if (path.startsWith(item.href + "/"))
+			return { exact: true, len: item.href.length };
+
+		let best = 0;
+		for (const prefix of item.match ?? []) {
+			if (path === prefix || path.startsWith(prefix + "/")) {
+				best = Math.max(best, prefix.length);
+			}
+		}
+		if (best > 0) return { exact: false, len: best };
+		return null;
+	}
+
 	const allItems: NavItem[] = SETTINGS_SIDEBAR.flatMap((g) => g.items);
 	const activeItem =
 		allItems
-			.filter((item) => !item.disabled && !item.external)
-			.sort((a, b) => b.href.length - a.href.length)
-			.find(
-				(item) =>
-					pathname === item.href ||
-					pathname?.startsWith(item.href + "/")
-			) ?? null;
+			.map((item) => ({ item, score: matchScore(item) }))
+			.filter((x) => x.score !== null)
+			.sort((a, b) => {
+				if (a.score!.exact !== b.score!.exact)
+					return a.score!.exact ? -1 : 1;
+				return b.score!.len - a.score!.len;
+			})[0]?.item ?? null;
 
 	return (
 		<div className="md:hidden">

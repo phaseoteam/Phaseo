@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function UsageItem({ k }: any) {
 	// Navigate to the dashboard usage page, scoped to this key
-	const href = `/gateway/usage?key=${encodeURIComponent(k.id)}`;
+	const href = `/settings/usage?key=${encodeURIComponent(k.id)}`;
 
 	return (
 		<DropdownMenuItem asChild>

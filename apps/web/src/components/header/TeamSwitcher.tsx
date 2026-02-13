@@ -228,7 +228,7 @@ export default function TeamSwitcher({
 
 					<DropdownMenuItem className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
 						<Link
-							href={`/gateway/usage?team_id=${encodeURIComponent(
+							href={`/settings/usage?team_id=${encodeURIComponent(
 								activeTeamId ?? ""
 							)}`}
 							className="flex w-full items-center"

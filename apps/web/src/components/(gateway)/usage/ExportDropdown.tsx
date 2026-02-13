@@ -14,19 +14,27 @@ interface ExportDropdownProps {
 	onExportCSV: () => void;
 	onExportPDF: () => void;
 	disabled?: boolean;
+	iconOnly?: boolean;
 }
 
 export default function ExportDropdown({
 	onExportCSV,
 	onExportPDF,
 	disabled = false,
+	iconOnly = false,
 }: ExportDropdownProps) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant="outline" size="sm" disabled={disabled}>
-					<Download className="mr-2 h-4 w-4" />
-					Export
+				<Button
+					variant="outline"
+					size={iconOnly ? "icon" : "sm"}
+					disabled={disabled}
+					aria-label="Export"
+					title="Export"
+				>
+					<Download className={iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+					{iconOnly ? null : "Export"}
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">

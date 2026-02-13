@@ -103,14 +103,7 @@ async function PaymentMethodsContent() {
           <div>
             <CardTitle>Saved payment methods</CardTitle>
             <CardDescription>
-              {customerId ? (
-                <span>
-                  Linked Stripe customer: <code className="font-mono text-xs">{customerId}</code>
-                  {customer?.email ? ` (${customer.email})` : ""}
-                </span>
-              ) : (
-                "No Stripe customer is linked to this team yet."
-              )}
+              Review cards and identify the default payment method used for auto top-ups and invoices.
             </CardDescription>
           </div>
           {customerId ? (

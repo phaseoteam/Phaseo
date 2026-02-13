@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
 import { investigateGeneration } from "@/app/(dashboard)/gateway/usage/server-actions";
+import RequestDetailDialog from "../RequestDetailDialog";
+import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 interface InvestigateGenerationProps {
 	iconOnly?: boolean;
@@ -24,7 +26,8 @@ export default function InvestigateGeneration({
 	const [open, setOpen] = React.useState(false);
 	const [id, setId] = React.useState("");
 	const [loading, setLoading] = React.useState(false);
-	const [result, setResult] = React.useState<any | null>(null);
+	const [request, setRequest] = React.useState<RequestRow | null>(null);
+	const [detailOpen, setDetailOpen] = React.useState(false);
 
 	async function onSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -35,7 +38,7 @@ export default function InvestigateGeneration({
 
 		try {
 			setLoading(true);
-			setResult(null);
+			setRequest(null);
 
 			const response = await investigateGeneration(id.trim());
 
@@ -44,8 +47,9 @@ export default function InvestigateGeneration({
 				return;
 			}
 
-			setResult(response.data);
-			toast.success("Loaded generation");
+			setRequest(response.data as RequestRow);
+			setOpen(false);
+			setDetailOpen(true);
 		} catch (error) {
 			console.error("Investigation error:", error);
 			toast.error("Failed to load generation");
@@ -55,45 +59,44 @@ export default function InvestigateGeneration({
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button
-					variant="outline"
-					size={iconOnly ? "icon" : "default"}
-					aria-label="Investigate generation"
-					title="Investigate generation"
-				>
-					<Search className={iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4"} />
-					{iconOnly ? null : "Investigate Generation"}
-				</Button>
-			</DialogTrigger>
-			<DialogContent
-				className={result ? "w-[80vw] max-w-none" : undefined}
-				style={result ? { width: "80vw" } : undefined}
-			>
-				<DialogHeader>
-					<DialogTitle>Investigate Generation</DialogTitle>
-				</DialogHeader>
-				<form onSubmit={onSubmit} className="space-y-3">
-					<div className="flex gap-2">
-						<Input
-							placeholder="Enter request_id"
-							value={id}
-							onChange={(e) => setId(e.target.value)}
-						/>
-						<Button type="submit" disabled={loading}>
-							{loading ? "Loading..." : "Lookup"}
-						</Button>
-					</div>
-				</form>
-				{result ? (
-					<div className="max-h-[60vh] overflow-auto">
-						<pre className="text-xs bg-muted p-3 rounded-md whitespace-pre-wrap break-words">
-							{JSON.stringify(result, null, 2)}
-						</pre>
-					</div>
-				) : null}
-			</DialogContent>
-		</Dialog>
+		<>
+			<Dialog open={open} onOpenChange={setOpen}>
+				<DialogTrigger asChild>
+					<Button
+						variant="outline"
+						size={iconOnly ? "icon" : "default"}
+						aria-label="Investigate generation"
+						title="Investigate generation"
+					>
+						<Search className={iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+						{iconOnly ? null : "Investigate Generation"}
+					</Button>
+				</DialogTrigger>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Investigate Generation</DialogTitle>
+					</DialogHeader>
+					<form onSubmit={onSubmit} className="space-y-3">
+						<div className="flex gap-2">
+							<Input
+								placeholder="Enter request_id"
+								value={id}
+								onChange={(e) => setId(e.target.value)}
+							/>
+							<Button type="submit" disabled={loading}>
+								{loading ? "Loading..." : "Lookup"}
+							</Button>
+						</div>
+					</form>
+				</DialogContent>
+			</Dialog>
+
+			<RequestDetailDialog
+				open={detailOpen}
+				onOpenChange={setDetailOpen}
+				request={request}
+				appName={null}
+			/>
+		</>
 	);
 }

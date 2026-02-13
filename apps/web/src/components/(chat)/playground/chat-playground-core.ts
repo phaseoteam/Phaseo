@@ -157,8 +157,21 @@ export const STORAGE_KEYS = {
 	personalizationRole: "ai-stats-chat-personal-role",
 	personalizationNotes: "ai-stats-chat-personal-notes",
 	personalizationAccent: "ai-stats-chat-personal-accent",
+	notifyOnComplete: "ai-stats-chat-notify-on-complete",
 	debugMode: "ai-stats-chat-debug",
 };
+
+export const PERSONALIZATION_ACCENT_COLORS: Array<{
+	label: string;
+	value: string;
+}> = [
+	{ label: "Ink", value: "#111111" },
+	{ label: "Cobalt", value: "#2563eb" },
+	{ label: "Emerald", value: "#059669" },
+	{ label: "Amber", value: "#d97706" },
+	{ label: "Rose", value: "#e11d48" },
+	{ label: "Violet", value: "#7c3aed" },
+];
 
 export const generateId = () => {
 	if (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID) {

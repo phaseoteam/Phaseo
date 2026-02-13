@@ -1,12 +1,18 @@
 "use server"
 
 import { cookies } from "next/headers";
+import {
+    requireAuthenticatedUser,
+    requireTeamMembership,
+} from "@/utils/serverActionAuth";
 
 export async function SwapTeam(teamId: string) {
     try {
         if (!teamId || typeof teamId !== 'string') {
             return { ok: false, error: 'teamId required' };
         }
+        const { supabase, user } = await requireAuthenticatedUser();
+        await requireTeamMembership(supabase, user.id, teamId);
         const cookieStore: any = await cookies();
         await cookieStore.set({
             name: 'activeTeamId',

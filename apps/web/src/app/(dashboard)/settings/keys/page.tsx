@@ -4,6 +4,7 @@ import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialo
 import KeysPanel from "@/components/(gateway)/settings/keys/KeysPanel";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export const metadata = {
 	title: "API Keys - Settings",
@@ -12,7 +13,6 @@ export const metadata = {
 export default function KeysPage() {
 	return (
 		<div className="space-y-6">
-			<h1 className="text-2xl font-bold">API Keys</h1>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<KeysContent />
 			</Suspense>
@@ -62,13 +62,17 @@ async function KeysContent() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-end">
-				<CreateKeyDialog
-					currentUserId={user?.id}
-					currentTeamId={initialTeamId}
-					teams={teams}
-				/>
-			</div>
+			<SettingsPageHeader
+				title="API Keys"
+				description="Create and manage gateway API keys for this team."
+				actions={
+					<CreateKeyDialog
+						currentUserId={user?.id}
+						currentTeamId={initialTeamId}
+						teams={teams}
+					/>
+				}
+			/>
 			<KeysPanel
 				teamsWithKeys={teamsWithKeys}
 				initialTeamId={initialTeamId}

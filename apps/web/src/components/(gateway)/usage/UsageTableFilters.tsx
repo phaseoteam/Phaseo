@@ -12,9 +12,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { cn } from "@/lib/utils";
 
 interface UsageTableFiltersProps {
 	models: string[];
@@ -23,7 +23,6 @@ interface UsageTableFiltersProps {
 	providerNames: Map<string, string>;
 	apiKeys: { id: string; name: string | null; prefix: string | null }[];
 	modelMetadata: Map<string, { organisationId: string; organisationName: string }>;
-	leftActions?: React.ReactNode;
 	children?: React.ReactNode;
 }
 
@@ -34,7 +33,6 @@ export default function UsageTableFilters({
 	providerNames,
 	apiKeys,
 	modelMetadata,
-	leftActions,
 	children,
 }: UsageTableFiltersProps) {
 	const [modelFilter, setModelFilter] = useQueryState("model", {
@@ -115,177 +113,148 @@ export default function UsageTableFilters({
 		setStatusFilter("all");
 	};
 
-	return (
-		<div className="space-y-4">
-			<div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-				<div className="flex flex-1 items-end gap-2">
-					{leftActions ? (
-						<div className="flex h-10 items-center">
-							{leftActions}
-						</div>
-					) : null}
-					<div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-						{/* Model Filter */}
-						<div className="space-y-2">
-							<Label htmlFor="model-filter">Model</Label>
-							<Select
-								value={modelFilter || "all"}
-								onValueChange={(v) =>
-									setModelFilter(v === "all" ? "" : v)
-								}
-							>
-								<SelectTrigger id="model-filter">
-									<SelectValue placeholder="All models" />
-								</SelectTrigger>
-								<SelectContent className="max-h-[300px]">
-									<SelectItem value="all">All models</SelectItem>
-									{groupedModels.map((group) => (
-										<SelectGroup key={group.providerId}>
-											<SelectLabel>
-												<div className="flex items-center gap-2">
-													{group.providerId !== "__other__" ? (
-														<Logo
-															id={group.providerId}
-															width={14}
-															height={14}
-															className="rounded-sm"
-														/>
-													) : null}
-													<span className="truncate">
-														{group.label}
-													</span>
-												</div>
-											</SelectLabel>
-											{group.models.map((model) => {
-												const metadata = modelMetadata.get(model);
-												return (
-													<SelectItem key={model} value={model}>
-														<div className="flex items-center gap-2">
-															{metadata ? (
-																<Logo
-																	id={metadata.organisationId}
-																	width={16}
-																	height={16}
-																	className="rounded flex-shrink-0"
-																/>
-															) : null}
-															<span className="truncate">
-																{model}
-															</span>
-														</div>
-													</SelectItem>
-												);
-											})}
-										</SelectGroup>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+	const triggerClassName = "h-9 text-sm bg-background [&>span]:text-sm";
 
-						{/* Provider Filter */}
-						<div className="space-y-2">
-							<Label htmlFor="provider-filter">Provider</Label>
-							<Select
-								value={providerFilter || "all"}
-								onValueChange={(v) =>
-									setProviderFilter(v === "all" ? "" : v)
-								}
-							>
-								<SelectTrigger id="provider-filter">
-									<SelectValue placeholder="All providers" />
-								</SelectTrigger>
-								<SelectContent className="max-h-[300px]">
-									<SelectItem value="all">
-										All providers
-									</SelectItem>
-									{sortedProviders.map((provider) => (
-										<SelectItem
-											key={provider}
-											value={provider}
-										>
+	return (
+		<div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+			<div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-nowrap sm:overflow-x-auto sm:pb-0.5">
+				<Select
+					value={modelFilter || "all"}
+					onValueChange={(v) => setModelFilter(v === "all" ? "" : v)}
+				>
+					<SelectTrigger
+						id="model-filter"
+						className={cn(triggerClassName, "min-w-[220px]")}
+						aria-label="Model filter"
+					>
+						<SelectValue placeholder="Model (all)" />
+					</SelectTrigger>
+					<SelectContent className="max-h-[320px]">
+						<SelectItem value="all">All models</SelectItem>
+						{groupedModels.map((group) => (
+							<SelectGroup key={group.providerId}>
+								<SelectLabel>
+									<div className="flex items-center gap-2">
+										{group.providerId !== "__other__" ? (
+											<Logo
+												id={group.providerId}
+												width={14}
+												height={14}
+												className="rounded-sm"
+											/>
+										) : null}
+										<span className="truncate">{group.label}</span>
+									</div>
+								</SelectLabel>
+								{group.models.map((model) => {
+									const metadata = modelMetadata.get(model);
+									return (
+										<SelectItem key={model} value={model}>
 											<div className="flex items-center gap-2">
-												<Logo
-													id={provider}
-													width={16}
-													height={16}
-													className="rounded flex-shrink-0"
-												/>
-												<span className="truncate">
-													{providerNames.get(provider) ||
-														provider}
-												</span>
+												{metadata ? (
+													<Logo
+														id={metadata.organisationId}
+														width={16}
+														height={16}
+														className="rounded flex-shrink-0"
+													/>
+												) : null}
+												<span className="truncate">{model}</span>
 											</div>
 										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+									);
+								})}
+							</SelectGroup>
+						))}
+					</SelectContent>
+				</Select>
 
-						{/* API Key Filter */}
-						<div className="space-y-2">
-							<Label htmlFor="key-filter">API Key</Label>
-							<Select
-								value={keyFilter || "all"}
-								onValueChange={(v) =>
-									setKeyFilter(v === "all" ? "" : v)
-								}
-							>
-								<SelectTrigger id="key-filter">
-									<SelectValue placeholder="All keys" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All keys</SelectItem>
-									{apiKeys.map((key) => (
-										<SelectItem key={key.id} value={key.id}>
-											{key.name ||
-												key.prefix ||
-												key.id.slice(0, 8)}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+				<Select
+					value={providerFilter || "all"}
+					onValueChange={(v) => setProviderFilter(v === "all" ? "" : v)}
+				>
+					<SelectTrigger
+						id="provider-filter"
+						className={cn(triggerClassName, "min-w-[190px]")}
+						aria-label="Provider filter"
+					>
+						<SelectValue placeholder="Provider (all)" />
+					</SelectTrigger>
+					<SelectContent className="max-h-[320px]">
+						<SelectItem value="all">All providers</SelectItem>
+						{sortedProviders.map((provider) => (
+							<SelectItem key={provider} value={provider}>
+								<div className="flex items-center gap-2">
+									<Logo
+										id={provider}
+										width={16}
+										height={16}
+										className="rounded flex-shrink-0"
+									/>
+									<span className="truncate">
+										{providerNames.get(provider) || provider}
+									</span>
+								</div>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
-						{/* Status Filter */}
-						<div className="space-y-2">
-							<Label htmlFor="status-filter">Status</Label>
-							<Select
-								value={statusFilter}
-								onValueChange={setStatusFilter}
-							>
-								<SelectTrigger id="status-filter">
-									<SelectValue placeholder="All statuses" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">
-										All requests
-									</SelectItem>
-									<SelectItem value="success">
-										Successful only
-									</SelectItem>
-									<SelectItem value="error">
-										Errors only
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-				</div>
+				<Select
+					value={keyFilter || "all"}
+					onValueChange={(v) => setKeyFilter(v === "all" ? "" : v)}
+				>
+					<SelectTrigger
+						id="key-filter"
+						className={cn(triggerClassName, "min-w-[160px]")}
+						aria-label="API key filter"
+					>
+						<SelectValue placeholder="Key (all)" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">All keys</SelectItem>
+						{apiKeys.map((key) => (
+							<SelectItem key={key.id} value={key.id}>
+								{key.name || key.prefix || key.id.slice(0, 8)}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 
-				{/* Action Buttons */}
-				<div className="flex flex-col gap-2">
-					<Label className="invisible">Actions</Label>
-					<div className="flex items-center gap-2">
-						{hasFilters && (
-							<Button variant="outline" size="sm" onClick={clearFilters}>
-								<X className="mr-2 h-4 w-4" />
-								Clear filters
-							</Button>
-						)}
-						{children}
-					</div>
-				</div>
+				<Select value={statusFilter} onValueChange={setStatusFilter}>
+					<SelectTrigger
+						id="status-filter"
+						className={cn(triggerClassName, "min-w-[150px]")}
+						aria-label="Status filter"
+					>
+						<SelectValue placeholder="Status" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">All requests</SelectItem>
+						<SelectItem value="success">Successful only</SelectItem>
+						<SelectItem value="error">Errors only</SelectItem>
+					</SelectContent>
+				</Select>
+
+				{hasFilters ? (
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={clearFilters}
+						aria-label="Clear filters"
+						title="Clear filters"
+						className="h-9 w-9"
+					>
+						<X className="h-4 w-4" />
+					</Button>
+				) : null}
 			</div>
+
+			{children ? (
+				<div className="flex items-center justify-end gap-2">
+					{children}
+				</div>
+			) : null}
 		</div>
 	);
 }
