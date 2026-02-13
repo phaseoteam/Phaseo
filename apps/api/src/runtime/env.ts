@@ -140,6 +140,8 @@ export type GatewayBindings = {
     AZURE_OPENAI_API_KEY?: string;
     AZURE_OPENAI_BASE_URL?: string;
     AZURE_OPENAI_API_VERSION?: string;
+    RESEND_API_KEY?: string;
+    RESEND_FROM_EMAIL?: string;
     KEY_PEPPER?: string;
     NODE_ENV?: string;
     BYOK_KMS_KEY_V1_B64?: string;
@@ -290,6 +292,8 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "AZURE_OPENAI_API_KEY",
     "AZURE_OPENAI_BASE_URL",
     "AZURE_OPENAI_API_VERSION",
+    "RESEND_API_KEY",
+    "RESEND_FROM_EMAIL",
     "NODE_ENV",
     "BYOK_KMS_KEY_V1_B64",
     "BYOK_ACTIVE_KEY_VERSION",
