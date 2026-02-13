@@ -10,6 +10,7 @@ import {
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 
 async function fetchModelOverview(modelId: string, includeHidden: boolean) {
 	try {
@@ -74,6 +75,14 @@ export default async function Page({
 }: {
 	params: Promise<ModelRouteParams>;
 }) {
+	"use cache";
+	cacheLife({
+		// Performance dashboards should be near real-time.
+		stale: 60 * 60,
+		revalidate: 60 * 60,
+		expire: 60 * 60 * 24,
+	});
+
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;

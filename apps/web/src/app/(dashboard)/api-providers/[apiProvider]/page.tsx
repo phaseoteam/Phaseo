@@ -88,9 +88,10 @@ export default async function Page({
 }) {
 	"use cache";
 	cacheLife({
-		stale: 60 * 60 * 24 * 7,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 365,
+		// Provider performance + top models/apps change frequently; keep this closer to real-time.
+		stale: 60 * 60,
+		revalidate: 60 * 60,
+		expire: 60 * 60 * 24,
 	});
 
 	const resolved = await params;
