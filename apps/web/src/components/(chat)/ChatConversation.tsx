@@ -107,6 +107,8 @@ type ChatConversationProps = {
 	onAudioAttachmentRequirementChange?: (requiresAudioInput: boolean) => void;
 };
 
+type SendGateType = "auth" | "api-key";
+
 const AUDIO_RECORDING_MIME_CANDIDATES = [
 	"audio/webm;codecs=opus",
 	"audio/webm",
@@ -415,6 +417,7 @@ export function ChatConversation({
 	const [isRecording, setIsRecording] = useState(false);
 	const [isStartingRecording, setIsStartingRecording] = useState(false);
 	const [reasoningPickerOpen, setReasoningPickerOpen] = useState(false);
+	const [sendGateType, setSendGateType] = useState<SendGateType | null>(null);
 	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 	const mediaStreamRef = useRef<MediaStream | null>(null);
 	const recordingChunksRef = useRef<Blob[]>([]);
@@ -476,6 +479,18 @@ export function ChatConversation({
 			typeof navigator.mediaDevices?.getUserMedia === "function";
 		setRecordingSupported(supported);
 	}, []);
+
+	useEffect(() => {
+		if (isAuthenticated && sendGateType === "auth") {
+			setSendGateType(null);
+		}
+	}, [isAuthenticated, sendGateType]);
+
+	useEffect(() => {
+		if (hasApiKey && sendGateType === "api-key") {
+			setSendGateType(null);
+		}
+	}, [hasApiKey, sendGateType]);
 
 	useEffect(() => {
 		const requiresAudioInput = attachments.some((attachment) =>
@@ -1371,6 +1386,15 @@ export function ChatConversation({
 	const handleSubmit = () => {
 		const text = composer.trim();
 		if (!text && attachments.length === 0) return;
+		if (!isAuthenticated) {
+			setSendGateType("auth");
+			return;
+		}
+		if (!hasApiKey) {
+			setSendGateType("api-key");
+			return;
+		}
+		setSendGateType(null);
 		onSend({
 			content: text,
 			attachments,
@@ -1433,6 +1457,44 @@ export function ChatConversation({
 			</ScrollArea>
 			<div className="border-t border-border px-4 py-4 md:px-8">
 				<div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
+					{sendGateType === "auth" ? (
+						<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-700/70 dark:bg-amber-950/30 dark:text-amber-100">
+							<div className="flex items-start gap-2 text-sm">
+								<Info className="mt-0.5 h-4 w-4 shrink-0" />
+								<div className="space-y-0.5">
+									<p className="font-medium">
+										Create an account to send messages.
+									</p>
+									<p className="text-xs opacity-90">
+										Sign up to start chatting in this playground.
+									</p>
+								</div>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button asChild size="sm">
+									<Link href="/sign-up">Create account</Link>
+								</Button>
+								<Button asChild variant="outline" size="sm">
+									<Link href="/sign-in">Sign in</Link>
+								</Button>
+							</div>
+						</div>
+					) : null}
+					{sendGateType === "api-key" ? (
+						<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/50 px-3 py-2 text-foreground">
+							<div className="flex items-start gap-2 text-sm">
+								<Info className="mt-0.5 h-4 w-4 shrink-0" />
+								<div className="space-y-0.5">
+									<p className="font-medium">
+										Add an API key before sending.
+									</p>
+									<p className="text-xs text-muted-foreground">
+										Open settings in the chat header and paste your gateway key.
+									</p>
+								</div>
+							</div>
+						</div>
+					) : null}
 					<div className="rounded-2xl border border-border bg-background px-3 py-2">
 						<input
 							ref={fileInputRef}
@@ -1667,9 +1729,7 @@ export function ChatConversation({
 								onClick={handleSubmit}
 								disabled={
 									isSending ||
-									(!composer.trim() && attachments.length === 0) ||
-									!isAuthenticated ||
-									!hasApiKey
+									(!composer.trim() && attachments.length === 0)
 								}
 							>
 								{isSending ? (
