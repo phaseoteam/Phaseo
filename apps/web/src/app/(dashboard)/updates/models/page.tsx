@@ -2,7 +2,6 @@
 import ModelUpdatesPage from "@/components/(data)/models/ModelUpdates/ModelUpdates";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { cacheLife } from "next/cache";
 
 export const metadata: Metadata = buildMetadata({
 	title: "AI Model Updates",
@@ -25,9 +24,6 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function Page() {
-	"use cache";
-	cacheLife("days");
-
 	// Fetch recent model update events (same source as landing page)
 	const { past: pastEvents, future: upcomingEvents } =
 		await getRecentModelUpdatesSplit({

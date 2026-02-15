@@ -6,7 +6,6 @@ import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { withUTM } from "@/lib/utm";
 import Script from "next/script";
-import { cacheLife } from "next/cache";
 
 async function fetchOrganisation(organisationId: string, includeHidden: boolean) {
 	try {
@@ -82,13 +81,6 @@ export default async function Page({
 }: {
 	params: Promise<{ organisationId: string }>;
 }) {
-	"use cache";
-	cacheLife({
-		stale: 60 * 60 * 24 * 7,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 365,
-	});
-
 	const { organisationId } = await params;
 
 	const includeHidden = false;

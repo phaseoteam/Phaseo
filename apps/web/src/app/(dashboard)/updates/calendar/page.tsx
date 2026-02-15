@@ -4,7 +4,6 @@ import {
 	type ModelEvent,
 } from "@/lib/fetchers/updates/getModelUpdates";
 import { buildMetadata } from "@/lib/seo";
-import { cacheLife } from "next/cache";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = buildMetadata({
@@ -25,9 +24,6 @@ export const metadata: Metadata = buildMetadata({
 const UPCOMING_LIMIT = 64;
 
 export default async function Page() {
-	"use cache";
-	cacheLife("days");
-
 	const { past: pastEvents, future: upcomingEvents } =
 		await getRecentModelUpdatesSplit({
 			pastMonths: 12,

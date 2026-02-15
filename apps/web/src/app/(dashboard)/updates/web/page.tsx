@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getWebUpdatesCached } from "@/lib/fetchers/updates/getWebUpdates";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { cacheLife } from "next/cache";
 
 export const metadata: Metadata = buildMetadata({
 	title: "Web AI Updates - Research Drops, Destinations & Data Hubs",
@@ -21,9 +20,6 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function Page() {
-	"use cache";
-	cacheLife("hours");
-
 	const cards = await getWebUpdatesCached(100);
 
 	return (

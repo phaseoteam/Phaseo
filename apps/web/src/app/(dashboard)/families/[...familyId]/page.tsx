@@ -15,7 +15,6 @@ import {
 	getFamilyModelsCached,
 	type FamilyModelItem,
 } from "@/lib/fetchers/models/getFamilyModels";
-import { cacheLife } from "next/cache";
 
 const STATUS_STYLES: Record<string, string> = {
 	Available:
@@ -89,13 +88,6 @@ export default async function Page({
 }: {
 	params: Promise<{ familyId: string[] }>;
 }) {
-	"use cache";
-	cacheLife({
-		stale: 60 * 60 * 24 * 7,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 365,
-	});
-
 	const { familyId: rawFamilyId } = await params;
 	const familyId = parseFamilyId(rawFamilyId);
 	const family = await getFamilyModelsCached(familyId, false);

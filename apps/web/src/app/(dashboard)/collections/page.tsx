@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { cacheLife } from "next/cache";
 import { getModelCollections } from "@/lib/fetchers/collections/getCollections";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 
@@ -27,13 +26,6 @@ function CollectionSkeleton() {
 }
 
 async function CollectionsPageContent() {
-	"use cache";
-	cacheLife({
-		stale: 60 * 60 * 24 * 7,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 365,
-	});
-
 	const collections = await getModelCollections(10);
 
 	return (

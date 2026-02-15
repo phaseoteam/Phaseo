@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { MapPin } from "lucide-react";
-import { cacheLife } from "next/cache";
 
 import CountriesGrid from "@/components/(data)/countries/CountryGrid";
 import { getCountrySummariesCached } from "@/lib/fetchers/countries/getCountrySummaries";
@@ -23,13 +22,6 @@ export const metadata: Metadata = {
 };
 
 export default async function CountriesPage() {
-	"use cache";
-	cacheLife({
-		stale: 60 * 60 * 24 * 7,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 365,
-	});
-
 	const includeHidden = false;
 	const countries = await getCountrySummariesCached(includeHidden);
 

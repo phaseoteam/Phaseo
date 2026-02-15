@@ -10,7 +10,6 @@ import { getLatestUpdateCards } from "@/lib/fetchers/updates/getLatestUpdates";
 import { getYouTubeUpdatesCached } from "@/lib/fetchers/updates/getYouTubeUpdates";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { cacheLife } from "next/cache";
 
 export const metadata: Metadata = buildMetadata({
 	title: "AI Updates - Latest AI Model, Web & YouTube Changes",
@@ -115,9 +114,6 @@ function CategorySection({ category, cards }: CategorySectionProps) {
 }
 
 export default async function Page() {
-	"use cache";
-	cacheLife("hours");
-
 	const [allCards, modelEvents, youtubeCardsFromFeed] = await Promise.all([
 		getLatestUpdateCards(
 			Math.max(CATEGORY_LIMIT.web, CATEGORY_LIMIT.youtube)

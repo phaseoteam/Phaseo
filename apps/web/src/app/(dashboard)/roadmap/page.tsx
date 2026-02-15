@@ -21,7 +21,6 @@ import {
 	monthLabelFromKey,
 	formatShortDate,
 } from "@/lib/roadmap";
-import { cacheLife } from "next/cache";
 
 export const metadata: Metadata = {
 	title: "Roadmap - What We're Building Next For AI Stats",
@@ -114,11 +113,13 @@ function FeedbackCTA() {
 }
 
 export default async function RoadmapPage() {
-	"use cache";
-	cacheLife("days");
-
 	const { upcoming, shippedGroups } = splitUpcomingAndShipped();
-	const thisMonthKey = new Date().toISOString().slice(0, 7);
+	// Avoid reading the current time during prerender.
+	const thisMonthKey = new Date(
+		process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "1970-01-01T00:00:00.000Z"
+	)
+		.toISOString()
+		.slice(0, 7);
 
 	return (
 		<main className="min-h-screen">

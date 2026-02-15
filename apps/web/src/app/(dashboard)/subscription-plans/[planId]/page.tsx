@@ -3,7 +3,6 @@ import SubscriptionPlanOverview from "@/components/(data)/subscription-plans/Sub
 import { getSubscriptionPlanCached } from "@/lib/fetchers/subscription-plans/getSubscriptionPlan";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { cacheLife } from "next/cache";
 
 async function fetchPlan(baseId: string) {
 	try {
@@ -89,13 +88,6 @@ export default async function Page({
 }: {
 	params: Promise<{ planId: string }>;
 }) {
-	"use cache";
-	cacheLife({
-		stale: 60 * 60 * 24 * 7,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 365,
-	});
-
 	const { planId } = await params;
 
 	const plan = await getSubscriptionPlanCached(planId, false);

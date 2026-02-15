@@ -6,6 +6,10 @@ import {
 } from "@/lib/content/helpCenter";
 import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 
+// Cache sitemap output at the edge to avoid repeated compute (and Fast Origin Transfer)
+// from crawlers hitting `/sitemap.xml` frequently.
+export const revalidate = 86400; // 1 day (must be a literal for static analysis)
+
 type ManifestFile = {
     organisations?: string[];
     models?: Record<string, string[]>;
@@ -198,7 +202,8 @@ function generateItems(
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-	const lastModified = new Date().toISOString();
+	const lastModified =
+		process.env.NEXT_PUBLIC_DEPLOY_TIME ?? new Date().toISOString();
 	const staticItems = staticRoutes.map((route) =>
 		createItem(route.path, route.changeFrequency, route.priority, lastModified),
 	);
