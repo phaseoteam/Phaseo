@@ -4,17 +4,15 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import AccountSettingsClient, {
 	UserPayload,
 } from "@/components/(gateway)/settings/account/AccountSettingsClient";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export default function AccountDetailsPage() {
 	return (
-		<div className="space-y-4">
-			<div>
-				<h2 className="text-lg font-semibold leading-none">Account</h2>
-				<p className="text-sm text-muted-foreground mt-1">
-					Profile and login settings.
-				</p>
-			</div>
-
+		<div className="space-y-6">
+			<SettingsPageHeader
+				title="Account"
+				description="Profile and login settings."
+			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<AccountDetailsContent />
 			</Suspense>

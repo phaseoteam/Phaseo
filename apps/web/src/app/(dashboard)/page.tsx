@@ -33,19 +33,9 @@ function DatabaseStatsFallback() {
 }
 
 function LatestUpdatesFallback() {
-	return (
-		<section className="space-y-4">
-			<div className="h-10 w-80 animate-pulse rounded bg-muted" />
-			<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				{Array.from({ length: 4 }).map((_, index) => (
-					<div
-						key={index}
-						className="h-56 animate-pulse rounded-xl bg-muted"
-					/>
-				))}
-			</div>
-		</section>
-	);
+	// Keep a minimal fallback here; the LatestUpdates component now handles its own
+	// Suspense boundary so that headings/links render immediately.
+	return <div className="h-[520px] animate-pulse rounded-xl bg-muted" />;
 }
 
 async function GatewayTeaserServer() {
@@ -113,9 +103,7 @@ export default function Page() {
 			</Suspense>
 
 			<div className="space-y-8">
-				<Suspense fallback={<LatestUpdatesFallback />}>
-					<LatestUpdates />
-				</Suspense>
+				<LatestUpdates />
 			</div>
 
 			<div className="mt-4 space-y-4 px-4 sm:px-6 lg:px-8">

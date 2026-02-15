@@ -60,7 +60,7 @@ function getTabSet(
 				match: ["/settings/account", "/settings/account/details"],
 			},
 			{ href: "/settings/account/mfa", label: "MFA" },
-			{ href: "/settings/account/danger", label: "Danger zone" },
+			{ href: "/settings/account/danger", label: "Danger Zone" },
 		];
 	}
 
@@ -73,7 +73,7 @@ function getTabSet(
 			{ href: "/settings/oauth-apps", label: "OAuth Apps", badge: "Alpha" },
 			{
 				href: "/settings/authorized-apps",
-				label: "Authorized Apps",
+				label: "OAuth Integrations",
 				badge: "Alpha",
 			},
 		];
@@ -86,13 +86,14 @@ function getTabSet(
 	}
 
 	// Team
-	if (
-		pathname.startsWith("/settings/teams") ||
-		pathname.startsWith("/settings/apps")
-	) {
+	if (pathname.startsWith("/settings/teams")) {
 		return [
-			{ href: "/settings/teams", label: "Teams" },
-			{ href: "/settings/apps", label: "Apps" },
+			{
+				href: "/settings/teams/members",
+				label: "Members",
+				match: ["/settings/teams", "/settings/teams/members"],
+			},
+			{ href: "/settings/teams/settings", label: "Team Settings" },
 		];
 	}
 
@@ -130,6 +131,7 @@ function getTabSet(
 		pathname.startsWith("/settings/keys") ||
 		pathname.startsWith("/settings/management-api-keys") ||
 		pathname.startsWith("/settings/provisioning-keys") ||
+		pathname.startsWith("/settings/apps") ||
 		pathname.startsWith("/settings/routing") ||
 		pathname.startsWith("/settings/byok") ||
 		pathname.startsWith("/settings/presets") ||
@@ -137,6 +139,7 @@ function getTabSet(
 	) {
 		return [
 			{ href: "/settings/keys", label: "API Keys" },
+			{ href: "/settings/apps", label: "Apps" },
 			{
 				href: "/settings/management-api-keys",
 				label: "Management Keys",

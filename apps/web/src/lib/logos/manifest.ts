@@ -233,6 +233,9 @@ export const logoManifest = {
 		light: "/logos/sourceful_light.svg",
 		dark: "/logos/sourceful_dark.svg",
 	},
+	stepfun: {
+		color: "/logos/stepfun.svg",
+	},
 	suno: {
 		light: "/logos/suno_light.svg",
 		dark: "/logos/suno_dark.svg",

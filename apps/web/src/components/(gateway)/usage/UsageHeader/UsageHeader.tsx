@@ -23,7 +23,7 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { AlertTriangle, Check, ChevronDown, Loader2, RotateCcw } from "lucide-react";
+import { Check, ChevronDown, Loader2, RotateCcw } from "lucide-react";
 import {
 	Tooltip,
 	TooltipTrigger,
@@ -44,11 +44,6 @@ type ApiKeyOption = {
 
 type UsageHeaderProps = {
 	keys?: ApiKeyOption[];
-	lifecycleAlerts?: {
-		count: number;
-		anchorId?: string;
-		href?: string;
-	};
 };
 
 function parseRange(range?: string | null): RangeKey {
@@ -81,7 +76,6 @@ function formatKeySubtitle(key?: ApiKeyOption | null): string | null {
 
 export default function UsageHeader({
 	keys = [],
-	lifecycleAlerts,
 }: UsageHeaderProps) {
 	const router = useRouter();
 	const [range, setRange] = useQueryState<RangeKey>("range", {
@@ -151,40 +145,6 @@ export default function UsageHeader({
 		<div className="flex items-center justify-between mb-6">
 			<h1 className="font-bold text-2xl">Usage Dashboard</h1>
 			<div className="flex items-center gap-2">
-				{lifecycleAlerts && lifecycleAlerts.count > 0 ? (
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								asChild
-								variant="outline"
-								size="icon"
-								className="relative"
-								aria-label="View lifecycle alerts"
-							>
-								<a
-									href={
-										lifecycleAlerts.href ??
-										`#${lifecycleAlerts.anchorId ?? "lifecycle-alerts"}`
-									}
-								>
-									<AlertTriangle className="h-4 w-4 text-amber-600" />
-									<span className="sr-only">
-										View lifecycle alerts
-									</span>
-									<span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold leading-none text-white">
-										{lifecycleAlerts.count}
-									</span>
-								</a>
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent sideOffset={6}>
-							<div className="text-xs">
-								{lifecycleAlerts.count} model
-								{lifecycleAlerts.count === 1 ? "" : "s"} need attention
-							</div>
-						</TooltipContent>
-					</Tooltip>
-				) : null}
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button variant="outline" className="flex items-center gap-2">

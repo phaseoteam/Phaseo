@@ -20,6 +20,7 @@ type Props = {
 	manageableTeamIds?: string[];
 	walletBalances?: Record<string, number>;
 	hideTitle?: boolean;
+	tab?: "members" | "settings";
 };
 
 export default function TeamsSettingsContainer({
@@ -33,6 +34,7 @@ export default function TeamsSettingsContainer({
 	manageableTeamIds,
 	walletBalances,
 	hideTitle = false,
+	tab = "members",
 }: Props) {
 	// Controlled active team id state shared between child panels
 	const getInitial = () =>
@@ -97,27 +99,29 @@ export default function TeamsSettingsContainer({
 				/>
 			)}
 
-			<TeamSettingsPanel
-				teams={teams}
-				membersByTeam={membersByTeam}
-				teamId={activeTeamId}
-				onTeamChange={(id) => setActiveTeamId(id)}
-				currentUserId={currentUserId}
-				personalTeamId={personalTeamId}
-				walletBalances={walletBalances}
-			/>
-
-			<TeamsPanel
-				teams={teams}
-				membersByTeam={membersByTeam}
-				requestsByTeam={requestsByTeam}
-				invitesByTeam={invitesByTeam}
-				activeTeamId={activeTeamId}
-				onTeamChange={(id) => setActiveTeamId(id)}
-				currentUserId={currentUserId}
-				personalTeamId={personalTeamId}
-				manageableTeamIds={manageableTeamIds}
-			/>
+			{tab === "settings" ? (
+				<TeamSettingsPanel
+					teams={teams}
+					membersByTeam={membersByTeam}
+					teamId={activeTeamId}
+					onTeamChange={(id) => setActiveTeamId(id)}
+					currentUserId={currentUserId}
+					personalTeamId={personalTeamId}
+					walletBalances={walletBalances}
+				/>
+			) : (
+				<TeamsPanel
+					teams={teams}
+					membersByTeam={membersByTeam}
+					requestsByTeam={requestsByTeam}
+					invitesByTeam={invitesByTeam}
+					activeTeamId={activeTeamId}
+					onTeamChange={(id) => setActiveTeamId(id)}
+					currentUserId={currentUserId}
+					personalTeamId={personalTeamId}
+					manageableTeamIds={manageableTeamIds}
+				/>
+			)}
 		</div>
 	);
 }

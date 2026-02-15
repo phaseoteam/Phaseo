@@ -45,7 +45,7 @@ export default function AccountDangerZoneClient() {
 			<div className="min-w-0">
 				<h3 className="text-sm font-medium flex items-center gap-2 text-destructive">
 					<ShieldAlert className="h-4 w-4" />
-					Danger zone
+					Danger Zone
 				</h3>
 				<p className="text-sm text-muted-foreground mt-1">
 					Deleting your account permanently removes all your data. This cannot be

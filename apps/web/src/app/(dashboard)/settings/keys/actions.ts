@@ -49,6 +49,16 @@ export async function createApiKeyAction(
         status: 'active',
         scopes,
         created_by: creatorUserId,
+        // DB constraints: request limit columns are NOT NULL.
+        // Use 0 to represent "no request limit".
+        daily_limit_requests: 0,
+        weekly_limit_requests: 0,
+        monthly_limit_requests: 0,
+        // DB constraints: cost limit nanos columns are NOT NULL.
+        // Use 0 to represent "no cost limit" (UI can still treat 0 as unlimited).
+        daily_limit_cost_nanos: 0,
+        weekly_limit_cost_nanos: 0,
+        monthly_limit_cost_nanos: 0,
     };
 
     const { data, error } = await supabase
@@ -142,12 +152,16 @@ export async function updateKeyLimitsAction(id: string, payload: KeyLimitPayload
     await requireTeamMembership(supabase, user.id, keyRow.team_id, ["owner", "admin"]);
 
     const updateObj = {
-        daily_limit_requests: payload.dailyRequests ?? null,
-        weekly_limit_requests: payload.weeklyRequests ?? null,
-        monthly_limit_requests: payload.monthlyRequests ?? null,
-        daily_limit_cost_nanos: payload.dailyCostNanos ?? null,
-        weekly_limit_cost_nanos: payload.weeklyCostNanos ?? null,
-        monthly_limit_cost_nanos: payload.monthlyCostNanos ?? null,
+        // DB constraints: request limit columns are NOT NULL.
+        // Use 0 to represent "no request limit".
+        daily_limit_requests: payload.dailyRequests ?? 0,
+        weekly_limit_requests: payload.weeklyRequests ?? 0,
+        monthly_limit_requests: payload.monthlyRequests ?? 0,
+        // DB constraints: cost limit nanos columns are NOT NULL.
+        // Use 0 to represent "no cost limit" (UI can still treat 0 as unlimited).
+        daily_limit_cost_nanos: payload.dailyCostNanos ?? 0,
+        weekly_limit_cost_nanos: payload.weeklyCostNanos ?? 0,
+        monthly_limit_cost_nanos: payload.monthlyCostNanos ?? 0,
         soft_blocked: typeof payload.softBlocked === "boolean" ? payload.softBlocked : undefined,
     };
 

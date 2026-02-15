@@ -17,34 +17,31 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-	ArrowUpDown,
-	ArrowUp,
+	AlignCenter,
 	ArrowDown,
+	ArrowUp,
+	ArrowUpDown,
+	AudioLines,
+	BadgeCheck,
+	Brain,
+	Braces,
+	CheckCircle2,
 	ChevronLeft,
 	ChevronRight,
+	Database,
+	FileDigit,
+	FileUp,
+	Globe,
+	ImageDown,
+	ImageUp,
+	ShieldAlert,
+	ShieldCheck,
+	Video,
+	Wrench,
+	XCircle,
 } from "lucide-react";
 
 import { Logo } from "@/components/Logo";
-import {
-	ImageUp,
-	ImageDown,
-	Video,
-	VideoOff,
-	FileUp,
-	FileDigit,
-	ShieldCheck,
-	ShieldAlert,
-	AudioLines,
-	AlignCenter,
-	Globe,
-	Wrench,
-	Brain,
-	Braces,
-	Database,
-	BadgeCheck,
-	CheckCircle2,
-	XCircle,
-} from "lucide-react";
 
 import Link from "next/link";
 import { useQueryState } from "nuqs";
@@ -54,7 +51,7 @@ import { featureLabels } from "@/lib/config/featureLabels";
 const modalityIcons = {
 	image: { input: ImageUp, output: ImageDown, color: "text-blue-600" },
 	vision: { input: ImageUp, output: ImageDown, color: "text-blue-600" },
-	video: { input: Video, output: VideoOff, color: "text-purple-600" },
+	video: { input: Video, output: Video, color: "text-purple-600" },
 	file: { input: FileUp, output: null, color: "text-green-600" },
 	embeddings: { input: FileDigit, output: null, color: "text-orange-600" },
 	moderations: { input: ShieldCheck, output: null, color: "text-red-600" },

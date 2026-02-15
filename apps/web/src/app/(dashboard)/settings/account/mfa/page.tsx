@@ -2,17 +2,15 @@ import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import AccountMFAClient from "@/components/(gateway)/settings/account/AccountMFAClient";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export default function AccountMFAPage() {
 	return (
-		<div className="space-y-4">
-			<div>
-				<h2 className="text-lg font-semibold leading-none">MFA</h2>
-				<p className="text-sm text-muted-foreground mt-1">
-					Manage two-factor authentication for your user.
-				</p>
-			</div>
-
+		<div className="space-y-6">
+			<SettingsPageHeader
+				title="MFA"
+				description="Manage two-factor authentication for your user."
+			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<AccountMFAContent />
 			</Suspense>

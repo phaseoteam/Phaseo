@@ -2,17 +2,15 @@ import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import AccountDangerZoneClient from "@/components/(gateway)/settings/account/AccountDangerZoneClient";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export default function AccountDangerPage() {
 	return (
-		<div className="space-y-4">
-			<div>
-				<h2 className="text-lg font-semibold leading-none">Danger zone</h2>
-				<p className="text-sm text-muted-foreground mt-1">
-					Destructive actions for your user.
-				</p>
-			</div>
-
+		<div className="space-y-6">
+			<SettingsPageHeader
+				title="Danger Zone"
+				description="Destructive actions for your user."
+			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<AccountDangerContent />
 			</Suspense>

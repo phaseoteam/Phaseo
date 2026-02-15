@@ -9,7 +9,6 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 
 import UsageHeader from "@/components/(gateway)/usage/UsageHeader/UsageHeader";
 import MetricsOverview from "@/components/(gateway)/usage/MetricsOverview";
-import { getDeprecationWarningsForTeam } from "@/lib/fetchers/usage/deprecationWarnings";
 import {
 	fetchOrganizationColors,
 	fetchAppNames,
@@ -135,9 +134,6 @@ async function UsageSettingsContent({
 		activeKey = availableKeys.find((k) => k.id === keyParam) ?? null;
 	}
 
-	const lifecycleWarnings = await getDeprecationWarningsForTeam(teamId);
-	const lifecycleAlertCount = lifecycleWarnings.length;
-
 	const from = fromForRange(range).toISOString();
 	const nowIso = new Date().toISOString();
 
@@ -203,13 +199,7 @@ async function UsageSettingsContent({
 
 	return (
 		<div className="space-y-6">
-			<UsageHeader
-				keys={availableKeys}
-				lifecycleAlerts={{
-					count: lifecycleAlertCount,
-					href: "/settings/usage/alerts",
-				}}
-			/>
+			<UsageHeader keys={availableKeys} />
 
 			{activeKey ? (
 				<div className="text-sm text-muted-foreground">

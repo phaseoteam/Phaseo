@@ -14,7 +14,7 @@ type Tab = {
 const TABS: Tab[] = [
 	{ href: "/settings/account/details", label: "Details" },
 	{ href: "/settings/account/mfa", label: "MFA" },
-	{ href: "/settings/account/danger", label: "Danger zone" },
+	{ href: "/settings/account/danger", label: "Danger Zone" },
 ];
 
 export default function AccountTopTabs() {

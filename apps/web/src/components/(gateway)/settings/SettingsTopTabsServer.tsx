@@ -5,17 +5,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 type Tab = {
 	href: string;
 	label: string;
 	match?: string[];
+	badge?: string;
 };
 
 const BILLING_TABS: Tab[] = [
 	{ href: "/settings/credits", label: "Credits" },
 	{ href: "/settings/credits/transactions", label: "Transactions" },
-	{ href: "/settings/payment-methods", label: "Payment methods" },
+	{ href: "/settings/payment-methods", label: "Payment Methods" },
 	{ href: "/settings/tiers", label: "Tiers" },
 ];
 
@@ -28,15 +30,76 @@ const USAGE_TABS: Tab[] = [
 const API_TABS: Tab[] = [
 	{
 		href: "/settings/keys",
-		label: "Keys",
-		match: ["/settings/keys", "/settings/management-api-keys", "/settings/provisioning-keys"],
+		label: "API Keys",
+		match: ["/settings/keys"],
 	},
-	{ href: "/settings/routing", label: "Routing" },
-	{ href: "/settings/byok", label: "BYOK" },
-	{ href: "/settings/presets", label: "Presets" },
+	{ href: "/settings/apps", label: "Apps", match: ["/settings/apps"] },
+	{
+		href: "/settings/management-api-keys",
+		label: "Management Keys",
+		match: ["/settings/management-api-keys", "/settings/provisioning-keys"],
+	},
+	{ href: "/settings/routing", label: "Routing", match: ["/settings/routing"] },
+	{ href: "/settings/byok", label: "BYOK", match: ["/settings/byok"] },
+	{ href: "/settings/presets", label: "Presets", match: ["/settings/presets"] },
+	{
+		href: "/settings/guardrails",
+		label: "Guardrails",
+		match: ["/settings/guardrails"],
+		badge: "Alpha",
+	},
+];
+
+const OAUTH_TABS: Tab[] = [
+	{ href: "/settings/oauth-apps", label: "OAuth Apps" },
+	{ href: "/settings/authorized-apps", label: "OAuth Integrations" },
+];
+
+const TEAM_TABS: Tab[] = [
+	{
+		href: "/settings/teams/members",
+		label: "Members",
+		match: ["/settings/teams/members"],
+	},
+	{
+		href: "/settings/teams/settings",
+		label: "Team Settings",
+		match: ["/settings/teams/settings"],
+	},
 ];
 
 function resolveTabs(pathname: string): Tab[] | null {
+	// Account
+	if (pathname.startsWith("/settings/account")) {
+		return [
+			{
+				href: "/settings/account/details",
+				label: "Details",
+				match: ["/settings/account/details"],
+			},
+			{
+				href: "/settings/account/mfa",
+				label: "MFA",
+				match: ["/settings/account/mfa"],
+			},
+			{
+				href: "/settings/account/danger",
+				label: "Danger Zone",
+				match: ["/settings/account/danger"],
+			},
+		];
+	}
+
+	// OAuth
+	if (pathname.startsWith("/settings/oauth-apps") || pathname.startsWith("/settings/authorized-apps")) {
+		return OAUTH_TABS;
+	}
+
+	// Team
+	if (pathname.startsWith("/settings/teams")) {
+		return TEAM_TABS;
+	}
+
 	if (pathname.startsWith("/settings/credits") || pathname.startsWith("/settings/payment-methods") || pathname.startsWith("/settings/tiers")) {
 		return BILLING_TABS;
 	}
@@ -45,9 +108,11 @@ function resolveTabs(pathname: string): Tab[] | null {
 		pathname.startsWith("/settings/keys") ||
 		pathname.startsWith("/settings/management-api-keys") ||
 		pathname.startsWith("/settings/provisioning-keys") ||
+		pathname.startsWith("/settings/apps") ||
 		pathname.startsWith("/settings/routing") ||
 		pathname.startsWith("/settings/byok") ||
-		pathname.startsWith("/settings/presets")
+		pathname.startsWith("/settings/presets") ||
+		pathname.startsWith("/settings/guardrails")
 	) {
 		return API_TABS;
 	}
@@ -56,8 +121,20 @@ function resolveTabs(pathname: string): Tab[] | null {
 }
 
 function isActive(pathname: string, tab: Tab) {
+	// Treat the account index route as details, since `/settings/account` redirects.
+	if (pathname === "/settings/account" && tab.href === "/settings/account/details")
+		return true;
+
+	// Treat the team index route as members, since `/settings/teams` will redirect.
+	if (pathname === "/settings/teams" && tab.href === "/settings/teams/members")
+		return true;
+
 	if (pathname === tab.href) return true;
-	return Boolean(tab.match?.some((m) => pathname.startsWith(m)));
+	if (pathname.startsWith(tab.href + "/")) return true;
+
+	return Boolean(
+		tab.match?.some((m) => pathname === m || pathname.startsWith(m + "/")),
+	);
 }
 
 export default function SettingsTopTabsServer() {
@@ -68,7 +145,41 @@ export default function SettingsTopTabsServer() {
 	const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
 	const [indicator, setIndicator] = React.useState({ left: 0, width: 0, opacity: 0 });
 
-	const activeTab = tabs?.find((t) => isActive(pathname, t)) ?? null;
+	const matchScore = React.useCallback((t: Tab) => {
+		// Treat the account index route as details, since `/settings/account` redirects.
+		if (pathname === "/settings/account" && t.href === "/settings/account/details") {
+			return { exact: true, len: t.href.length };
+		}
+
+		// Treat the team index route as members, since `/settings/teams` will redirect.
+		if (pathname === "/settings/teams" && t.href === "/settings/teams/members") {
+			return { exact: true, len: t.href.length };
+		}
+
+		if (pathname === t.href) return { exact: true, len: t.href.length };
+		if (pathname.startsWith(t.href + "/"))
+			return { exact: true, len: t.href.length };
+
+		let best = 0;
+		for (const prefix of t.match ?? []) {
+			if (pathname === prefix || pathname.startsWith(prefix + "/")) {
+				best = Math.max(best, prefix.length);
+			}
+		}
+		if (best > 0) return { exact: false, len: best };
+		return null;
+	}, [pathname]);
+
+	const activeTab =
+		tabs && tabs.length > 0
+			? tabs
+					.map((t) => ({ t, score: matchScore(t) }))
+					.filter((x) => x.score !== null)
+					.sort((a, b) => {
+						if (a.score!.exact !== b.score!.exact) return a.score!.exact ? -1 : 1;
+						return b.score!.len - a.score!.len;
+					})[0]?.t ?? tabs[0]
+			: null;
 
 	const setIndicatorToHref = React.useCallback((href: string | null) => {
 		const container = containerRef.current;
@@ -132,7 +243,17 @@ export default function SettingsTopTabsServer() {
 							active ? "text-primary" : "text-muted-foreground hover:text-primary",
 						)}
 					>
-						{tab.label}
+						<span className="flex items-center gap-2">
+							<span>{tab.label}</span>
+							{tab.badge ? (
+								<Badge
+									variant="outline"
+									className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
+								>
+									{tab.badge}
+								</Badge>
+							) : null}
+						</span>
 					</Link>
 				);
 			})}

@@ -27,7 +27,7 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
     {
         heading: undefined,
         items: [
-            {
+			{
 				href: "/settings/account",
 				label: "Account",
 				icon: User,
@@ -37,7 +37,7 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
 				href: "/settings/teams",
 				label: "Team",
 				icon: Users,
-				match: ["/settings/teams", "/settings/apps"],
+				match: ["/settings/teams"],
 			},
         ],
     },
@@ -50,6 +50,7 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
 				icon: KeyRound,
 				match: [
 					"/settings/keys",
+					"/settings/apps",
 					"/settings/management-api-keys",
 					"/settings/provisioning-keys",
 					"/settings/routing",
