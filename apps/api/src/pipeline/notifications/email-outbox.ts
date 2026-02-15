@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { sendEmail } from "@/lib/email/resend";
+import { getBindings } from "@/runtime/env";
 
 type OutboxRow = {
 	id: string;
@@ -62,20 +63,44 @@ function renderLowBalanceEmail(payload: Record<string, unknown> | null): {
 
 function renderEmailForRow(row: OutboxRow): {
 	subject: string;
-	html: string;
-	text?: string;
+	templateId: string;
+	variables: Record<string, string | number>;
 } {
+	const bindings = getBindings();
 	if (row.template === "welcome" || row.kind === "welcome") {
-		return renderWelcomeEmail();
+		const templateId = bindings.RESEND_TEMPLATE_WELCOME_ID?.trim() || "";
+		if (!templateId) throw new Error("missing_resend_template_welcome_id");
+
+		const payload = row.payload ?? {};
+		return {
+			subject: row.subject ?? "Welcome to AI Stats",
+			templateId,
+			variables: {
+				USER_FIRST_NAME:
+					(typeof payload.user_first_name === "string" && payload.user_first_name.trim()) ||
+					"there",
+			},
+		};
 	}
 	if (row.template === "low_balance" || row.kind === "low_balance") {
-		return renderLowBalanceEmail(row.payload ?? null);
+		const templateId = bindings.RESEND_TEMPLATE_LOW_BALANCE_ID?.trim() || "";
+		if (!templateId) throw new Error("missing_resend_template_low_balance_id");
+
+		const payload = row.payload ?? {};
+		const balanceUsd = typeof payload.balance_usd === "number" ? payload.balance_usd : null;
+
+		return {
+			subject: row.subject ?? "Low balance alert",
+			templateId,
+			variables: {
+				USER_FIRST_NAME:
+					(typeof payload.user_first_name === "string" && payload.user_first_name.trim()) ||
+					"there",
+				BALANCE_REMAINING: balanceUsd ?? "",
+			},
+		};
 	}
-	// Generic fallback: send a minimal message so we can still clear the queue.
-	return {
-		subject: row.subject ?? "AI Stats notification",
-		html: "<div style=\"font-family: ui-sans-serif, system-ui; line-height: 1.5;\"><p>AI Stats notification.</p></div>",
-	};
+	throw new Error(`unsupported_email_template:${row.template || row.kind}`);
 }
 
 export async function drainEmailOutbox(limit = 25): Promise<{
@@ -84,6 +109,7 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 	failed: number;
 }> {
 	const supabase = getSupabaseAdmin();
+	const bindings = getBindings();
 
 	const { data, error } = await supabase
 		.from("email_outbox")
@@ -105,12 +131,41 @@ export async function drainEmailOutbox(limit = 25): Promise<{
 
 	for (const row of rows) {
 		try {
+			// Best-effort enrichment for template variables.
+			// (We keep this at send-time so the DB trigger can stay minimal.)
+			if (
+				(row.template === "welcome" ||
+					row.kind === "welcome" ||
+					row.template === "low_balance" ||
+					row.kind === "low_balance") &&
+				(bindings.RESEND_TEMPLATE_WELCOME_ID?.trim() ||
+					bindings.RESEND_TEMPLATE_LOW_BALANCE_ID?.trim())
+			) {
+				if (!row.payload) row.payload = {};
+				if (!row.payload.user_first_name && row.user_id) {
+					try {
+						const userRes = await (supabase as any).auth.admin.getUserById(row.user_id);
+						const meta = userRes?.data?.user?.user_metadata ?? {};
+						const first =
+							(typeof meta?.first_name === "string" && meta.first_name.trim()) ||
+							(typeof meta?.given_name === "string" && meta.given_name.trim()) ||
+							(typeof meta?.full_name === "string" && meta.full_name.trim().split(/\s+/)[0]) ||
+							(typeof meta?.name === "string" && meta.name.trim().split(/\s+/)[0]) ||
+							"";
+						if (first) {
+							(row.payload as any).user_first_name = first;
+						}
+					} catch {
+						// ignore enrichment failures
+					}
+				}
+			}
+
 			const rendered = renderEmailForRow(row);
 			await sendEmail({
 				to: row.to_email,
 				subject: rendered.subject,
-				html: rendered.html,
-				text: rendered.text,
+				template: { id: rendered.templateId, variables: rendered.variables },
 			});
 
 			const { error: updateErr } = await supabase
