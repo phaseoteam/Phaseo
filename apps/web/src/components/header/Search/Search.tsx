@@ -20,14 +20,45 @@ import type { SearchData } from "@/lib/fetchers/search/getSearchData";
 
 interface Props {
 	className?: string;
-	initialData: SearchData;
 }
 
-export default function Search({ className, initialData }: Props) {
+let cachedSearchData: SearchData | null = null;
+let searchDataRequest: Promise<SearchData> | null = null;
+
+async function fetchSearchData(): Promise<SearchData> {
+	if (cachedSearchData) return cachedSearchData;
+	if (searchDataRequest) return searchDataRequest;
+
+	searchDataRequest = fetch("/api/frontend/search", {
+		method: "GET",
+		cache: "force-cache",
+		credentials: "same-origin",
+	})
+		.then(async (response) => {
+			if (!response.ok) {
+				throw new Error("Failed to load search data");
+			}
+			return (await response.json()) as SearchData;
+		})
+		.then((data) => {
+			cachedSearchData = data;
+			return data;
+		})
+		.finally(() => {
+			searchDataRequest = null;
+		});
+
+	return searchDataRequest;
+}
+
+export default function Search({ className }: Props) {
 	const router = useRouter();
 
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
+	const [searchData, setSearchData] = useState<SearchData | null>(cachedSearchData);
+	const [isLoadingSearchData, setIsLoadingSearchData] = useState(false);
+	const [searchDataError, setSearchDataError] = useState<string | null>(null);
 	const listRef = React.useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -58,6 +89,32 @@ export default function Search({ className, initialData }: Props) {
 			setQuery("");
 		}
 	};
+
+	useEffect(() => {
+		if (!open || searchData || isLoadingSearchData) return;
+
+		let cancelled = false;
+		setIsLoadingSearchData(true);
+		setSearchDataError(null);
+
+		void fetchSearchData()
+			.then((data) => {
+				if (cancelled) return;
+				setSearchData(data);
+			})
+			.catch(() => {
+				if (cancelled) return;
+				setSearchDataError("Unable to load search data.");
+			})
+			.finally(() => {
+				if (cancelled) return;
+				setIsLoadingSearchData(false);
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [open, searchData, isLoadingSearchData]);
 
 	const handleSelect = (href: string) => {
 		setOpen(false);
@@ -119,12 +176,12 @@ export default function Search({ className, initialData }: Props) {
 	};
 
 	// Filter and sort data based on search query
-	const modelsToShow = hasQuery ? filterAndSort(initialData.models, searchTerm) : [];
-	const orgsToShow = hasQuery ? filterAndSort(initialData.organisations, searchTerm) : [];
-	const benchmarksToShow = hasQuery ? filterAndSort(initialData.benchmarks, searchTerm) : [];
-	const providersToShow = hasQuery ? filterAndSort(initialData.apiProviders, searchTerm) : [];
-	const plansToShow = hasQuery ? filterAndSort(initialData.subscriptionPlans, searchTerm) : [];
-	const countriesToShow = hasQuery ? filterAndSort(initialData.countries, searchTerm) : [];
+	const modelsToShow = hasQuery && searchData ? filterAndSort(searchData.models, searchTerm) : [];
+	const orgsToShow = hasQuery && searchData ? filterAndSort(searchData.organisations, searchTerm) : [];
+	const benchmarksToShow = hasQuery && searchData ? filterAndSort(searchData.benchmarks, searchTerm) : [];
+	const providersToShow = hasQuery && searchData ? filterAndSort(searchData.apiProviders, searchTerm) : [];
+	const plansToShow = hasQuery && searchData ? filterAndSort(searchData.subscriptionPlans, searchTerm) : [];
+	const countriesToShow = hasQuery && searchData ? filterAndSort(searchData.countries, searchTerm) : [];
 
 	// Calculate best match score for each category to determine section order
 	const categoryScores = [
@@ -162,12 +219,34 @@ export default function Search({ className, initialData }: Props) {
 								<SearchIcon className="size-6 text-zinc-400" />
 							</div>
 							<div className="text-center">
-								<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-									No results found
-								</p>
-								<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-									Try different keywords or check your spelling
-								</p>
+								{isLoadingSearchData ? (
+									<>
+										<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+											Loading search index...
+										</p>
+										<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+											This only loads once per session.
+										</p>
+									</>
+								) : searchDataError ? (
+									<>
+										<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+											{searchDataError}
+										</p>
+										<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+											Close and reopen search to retry.
+										</p>
+									</>
+								) : (
+									<>
+										<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+											No results found
+										</p>
+										<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+											Try different keywords or check your spelling
+										</p>
+									</>
+								)}
 							</div>
 						</div>
 					</CommandEmpty>

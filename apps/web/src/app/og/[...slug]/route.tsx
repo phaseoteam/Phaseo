@@ -2,9 +2,9 @@ import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { formatCountryName } from "@/lib/fetchers/countries/utils";
 import { resolveLogo } from "@/lib/logos";
-import { createClient } from "@/utils/supabase/server";
 import { applyHiddenFilter, resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 type OgEntity =
@@ -212,40 +212,32 @@ async function buildPayload(
 	segments: string[],
 	supabase: SupabaseClient
 ): Promise<OgPayload | null> {
-	console.log("Building payload for kind:", kind, "segments:", segments);
 	switch (kind) {
 		case "organisations": {
 			const [slug] = segments;
-			console.log("Loading organisation for slug:", slug);
 			return slug ? loadOrganisation(supabase, slug) : null;
 		}
 		case "models": {
 			const modelId = segments.join("/");
-			console.log("Loading model for modelId:", modelId);
 			return modelId ? loadModel(supabase, modelId) : null;
 		}
 		case "benchmarks": {
 			const [slug] = segments;
-			console.log("Loading benchmark for slug:", slug);
 			return slug ? loadBenchmark(supabase, slug) : null;
 		}
 		case "api-providers": {
 			const [slug] = segments;
-			console.log("Loading API provider for slug:", slug);
 			return slug ? loadApiProvider(supabase, slug) : null;
 		}
 		case "countries": {
 			const [slug] = segments;
-			console.log("Loading country for slug:", slug);
 			return slug ? loadCountry(slug) : null;
 		}
 		case "subscription-plans": {
 			const [slug] = segments;
-			console.log("Loading subscription plan for slug:", slug);
 			return slug ? loadSubscriptionPlan(supabase, slug) : null;
 		}
 		default:
-			console.log("Unknown kind:", kind);
 			return null;
 	}
 }
@@ -266,35 +258,51 @@ function normaliseSegments(
 	return [];
 }
 
+function createOgSupabaseClient() {
+	return createSupabaseClient(
+		process.env.NEXT_PUBLIC_SUPABASE_URL!,
+		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+		{
+			auth: {
+				persistSession: false,
+				autoRefreshToken: false,
+			},
+		}
+	);
+}
+
 export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ slug: string[] }> }
 ) {
-	console.log("OG Route called with params:", params);
-	console.log("Request URL:", request.url);
-
 	const { slug } = await params;
 	const rawSegments = normaliseSegments(request, slug);
-	console.log("Raw segments:", rawSegments);
 
 	if (rawSegments.length < 2) {
-		console.log("Missing OG target: segments length < 2");
-		return new Response("Missing OG target", { status: 400 });
+		return new Response("Missing OG target", {
+			status: 400,
+			headers: {
+				"Cache-Control":
+					"public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+			},
+		});
 	}
 
 	const [kindRaw, ...segments] = rawSegments;
 	const kind = kindRaw as OgEntity;
 	const isCountry = kind === "countries";
 
-	console.log("Kind:", kind, "Segments:", segments);
-
-	const supabase = await createClient();
+	const supabase = createOgSupabaseClient();
 	const payload = await buildPayload(kind, segments, supabase);
-	console.log("Built payload:", payload);
 
 	if (!payload) {
-		console.log("Payload not found for kind:", kind, "segments:", segments);
-		return new Response("Not found", { status: 404 });
+		return new Response("Not found", {
+			status: 404,
+			headers: {
+				"Cache-Control":
+					"public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+			},
+		});
 	}
 
 	const entityLabel = ENTITY_LABELS[kind] ?? "AI Stats";
@@ -311,13 +319,6 @@ export async function GET(
 	// constants for the top-right box
 	const LOGO_BOX_WIDTH = 220;
 	const LOGO_BOX_HEIGHT = 96;
-
-	console.log(
-		"Generating ImageResponse for payload:",
-		payload.name,
-		"logo:",
-		primaryLogoSrc
-	);
 
 	return new ImageResponse(
 		(
