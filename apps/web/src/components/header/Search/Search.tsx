@@ -85,13 +85,17 @@ export default function Search({ className }: Props) {
 	// Reset query when dialog closes
 	const handleOpenChange = (newOpen: boolean) => {
 		setOpen(newOpen);
-		if (!newOpen) {
-			setQuery("");
-			setIsLoadingSearchData(false);
+	};
+
+	// Keep dialog lifecycle state synchronized regardless of how it was opened/closed.
+	useEffect(() => {
+		if (open) {
+			setSearchDataError(null);
 			return;
 		}
-		setSearchDataError(null);
-	};
+		setQuery("");
+		setIsLoadingSearchData(false);
+	}, [open]);
 
 	useEffect(() => {
 		if (!open || searchData || searchDataError || isLoadingSearchData) return;
