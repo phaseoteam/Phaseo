@@ -7,6 +7,8 @@ import {
 	Book,
 	Milestone,
 	Hammer,
+	Info,
+	Megaphone,
 	FileText,
 	ShieldCheck,
 	Database,
@@ -18,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { withUTM } from "@/lib/utm";
 import { Logo } from "./Logo";
+import { FooterYearRange } from "./FooterYearRange";
 
 const startYear = 2025;
 
@@ -300,9 +303,34 @@ export default function Footer() {
 
 						<div className="flex flex-col items-start gap-2">
 							<span className="pl-2 text-sm font-semibold">
-								Legal
+								Company
 							</span>
 							<div className="flex w-full flex-col gap-1">
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link href="/about" aria-label="About AI Stats">
+										<Info className="h-4 w-4" />
+										<span className="text-xs">About</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
+									<Link
+										href="https://docs.ai-stats.phaseo.app/v1/changelog"
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="Announcements"
+									>
+										<Megaphone className="h-4 w-4" />
+										<span className="text-xs">Announcements</span>
+									</Link>
+								</Button>
 								<Button
 									asChild
 									variant="ghost"
@@ -589,12 +617,37 @@ export default function Footer() {
 							<ThemeSelector />
 						</div>
 					</div>
-					{/* --- Desktop: Legal --- */}
+					{/* --- Desktop: Company --- */}
 					<div className="hidden lg:flex flex-col items-start gap-2">
 						<span className="pl-2 text-sm font-semibold">
-							Legal
+							Company
 						</span>
 						<div className="flex flex-col gap-1">
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
+								<Link href="/about" aria-label="About AI Stats">
+									<Info className="h-4 w-4" />
+									<span className="text-xs">About</span>
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
+								<Link
+									href="https://docs.ai-stats.phaseo.app/v1/changelog"
+									target="_blank"
+									rel="noopener noreferrer"
+									aria-label="Announcements"
+								>
+									<Megaphone className="h-4 w-4" />
+									<span className="text-xs">Announcements</span>
+								</Link>
+							</Button>
 							<Button
 								asChild
 								variant="ghost"
@@ -629,7 +682,7 @@ export default function Footer() {
 
 				<div className="flex flex-col items-center justify-center">
 					<div className="text-center w-full px-4 sm:px-0">
-						&copy; {startYear} AI Stats
+						&copy; <FooterYearRange startYear={startYear} /> AI Stats
 						<span className="block mt-1">
 							If you run into any issues or notice any data
 							errors, please visit our GitHub and report an issue.
