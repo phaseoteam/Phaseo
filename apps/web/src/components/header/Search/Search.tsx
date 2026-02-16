@@ -98,7 +98,7 @@ export default function Search({ className }: Props) {
 	}, [open]);
 
 	useEffect(() => {
-		if (!open || searchData || searchDataError || isLoadingSearchData) return;
+		if (!open || searchData || searchDataError) return;
 
 		let cancelled = false;
 		setIsLoadingSearchData(true);
@@ -113,13 +113,14 @@ export default function Search({ className }: Props) {
 				setSearchDataError("Unable to load search data.");
 			})
 			.finally(() => {
+				if (cancelled) return;
 				setIsLoadingSearchData(false);
 			});
 
 		return () => {
 			cancelled = true;
 		};
-	}, [open, searchData, searchDataError, isLoadingSearchData]);
+	}, [open, searchData, searchDataError]);
 
 	const handleSelect = (href: string) => {
 		setOpen(false);
