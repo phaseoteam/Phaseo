@@ -87,15 +87,17 @@ export default function Search({ className }: Props) {
 		setOpen(newOpen);
 		if (!newOpen) {
 			setQuery("");
+			setIsLoadingSearchData(false);
+			return;
 		}
+		setSearchDataError(null);
 	};
 
 	useEffect(() => {
-		if (!open || searchData || isLoadingSearchData) return;
+		if (!open || searchData || searchDataError || isLoadingSearchData) return;
 
 		let cancelled = false;
 		setIsLoadingSearchData(true);
-		setSearchDataError(null);
 
 		void fetchSearchData()
 			.then((data) => {
@@ -107,14 +109,13 @@ export default function Search({ className }: Props) {
 				setSearchDataError("Unable to load search data.");
 			})
 			.finally(() => {
-				if (cancelled) return;
 				setIsLoadingSearchData(false);
 			});
 
 		return () => {
 			cancelled = true;
 		};
-	}, [open, searchData, isLoadingSearchData]);
+	}, [open, searchData, searchDataError, isLoadingSearchData]);
 
 	const handleSelect = (href: string) => {
 		setOpen(false);
