@@ -17,8 +17,8 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Logo } from "@/components/Logo";
 import type { ExtendedModel } from "@/data/types";
+import { ProviderLogo } from "./ProviderLogo";
 
 interface ModelComboboxProps {
 	models: ExtendedModel[];
@@ -34,8 +34,43 @@ type GroupedModels = {
 
 const MAX_SELECTION = 4;
 
-function isModelAvailable(_model: ExtendedModel): boolean {
-	return true;
+function parseTypeSet(value: ExtendedModel["input_types"]): Set<string> {
+	if (!value) return new Set();
+	const parts = Array.isArray(value)
+		? value
+		: String(value)
+				.split(",")
+				.map((v) => v.trim())
+				.filter(Boolean);
+	return new Set(parts.map((v) => v.toLowerCase()));
+}
+
+function getEndpointSignature(model: ExtendedModel): Set<string> {
+	// Proxy for "endpoints": treat output types as the primary signal,
+	// falling back to input types if output is missing.
+	const out = parseTypeSet(model.output_types);
+	if (out.size) return out;
+	return parseTypeSet(model.input_types);
+}
+
+function intersect(a: Set<string>, b: Set<string>): Set<string> {
+	if (a.size === 0 || b.size === 0) return new Set();
+	const out = new Set<string>();
+	for (const v of a) {
+		if (b.has(v)) out.add(v);
+	}
+	return out;
+}
+
+function buildRequiredSignature(selectedModels: ExtendedModel[]): Set<string> | null {
+	let required: Set<string> | null = null;
+	for (const m of selectedModels) {
+		const sig = getEndpointSignature(m);
+		if (!sig.size) continue;
+		required = required ? intersect(required, sig) : new Set(sig);
+		if (required.size === 0) return required;
+	}
+	return required;
 }
 
 export default function ModelCombobox({
@@ -126,6 +161,20 @@ export default function ModelCombobox({
 		return lookup;
 	}, [models]);
 
+	const pendingSelectedModels = React.useMemo(() => {
+		return pendingSelection
+			.map((id) => modelsById.get(id))
+			.filter(Boolean) as ExtendedModel[];
+	}, [pendingSelection, modelsById]);
+
+	const requiredSignature = React.useMemo(() => {
+		return buildRequiredSignature(pendingSelectedModels);
+	}, [pendingSelectedModels]);
+
+	const compatibilityActive = requiredSignature !== null;
+	const selectionIncompatible =
+		compatibilityActive && requiredSignature.size === 0;
+
 	const handleOpenChange = (open: boolean) => {
 		setDialogOpen(open);
 		if (open) {
@@ -140,7 +189,11 @@ export default function ModelCombobox({
 				return current.filter((id) => id !== modelId);
 			}
 			if (!available) {
-				setSelectionNotice("This model isn't ready for comparison yet.");
+				setSelectionNotice(
+					selectionIncompatible
+						? "Your current selection mixes incompatible model types. Remove a model to continue."
+						: "This model doesn't share a compatible endpoint with the current selection."
+				);
 				return current;
 			}
 			if (current.length >= MAX_SELECTION) {
@@ -219,7 +272,7 @@ export default function ModelCombobox({
 
 					<div className="rounded-md border border-dashed border-border/60 p-3">
 						<div className="flex items-center justify-between">
-							<p className="text-xs font-medium uppercase tracking-[0.3em] text-muted-foreground">
+							<p className="text-xs font-medium text-muted-foreground">
 								Selected
 							</p>
 							<span className="text-xs text-muted-foreground">
@@ -255,6 +308,13 @@ export default function ModelCombobox({
 						</div>
 					</div>
 
+					{compatibilityActive ? (
+						<div className="rounded-lg border border-border/60 bg-muted/20 p-3 text-xs text-muted-foreground">
+							We only allow comparisons across models that share compatible
+							endpoints (based on input/output modalities).
+						</div>
+					) : null}
+
 					<div className="max-h-[420px] space-y-4 overflow-y-auto pr-2">
 						{filteredGroups.length === 0 ? (
 							<p className="py-8 text-center text-sm text-muted-foreground">
@@ -268,12 +328,10 @@ export default function ModelCombobox({
 								>
 									<div className="mb-3 flex items-center justify-between gap-4">
 										<div className="flex items-center gap-2">
-											<Logo
+											<ProviderLogo
 												id={group.providerId}
-												width={24}
-												height={24}
 												alt={group.providerName}
-												className="h-6 w-6"
+												size="xs"
 											/>
 											<span className="font-semibold">
 												{group.providerName}
@@ -286,8 +344,23 @@ export default function ModelCombobox({
 									</div>
 									<div className="grid gap-2 sm:grid-cols-2">
 										{group.models.map((model) => {
-											const modelAvailable =
-												isModelAvailable(model);
+											const sig = getEndpointSignature(model);
+											const hasSignature = sig.size > 0;
+											const modelAvailable = (() => {
+												// Always allow removing an already-selected model.
+												if (pendingSelection.includes(model.id)) return true;
+												// If we have an active signature requirement, enforce it.
+												if (requiredSignature && requiredSignature.size > 0) {
+													if (!hasSignature) return false;
+													for (const v of sig) {
+														if (requiredSignature.has(v)) return true;
+													}
+													return false;
+												}
+												// If selection is incompatible, block adding more until user fixes it.
+												if (selectionIncompatible) return false;
+												return true;
+											})();
 											const isSelected =
 												pendingSelection.includes(
 													model.id
@@ -330,14 +403,20 @@ export default function ModelCombobox({
 																group.providerName}
 														</span>
 														{!modelAvailable && (
-															<span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-																Coming soon
-															</span>
+															<Badge
+																variant="outline"
+																className="text-[10px] px-2 py-0.5"
+															>
+																Incompatible
+															</Badge>
 														)}
 														{isSelected && (
-															<span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+															<Badge
+																variant="secondary"
+																className="text-[10px] bg-primary/10 text-primary px-2 py-0.5"
+															>
 																Selected
-															</span>
+															</Badge>
 														)}
 													</div>
 												</button>
@@ -377,4 +456,3 @@ export default function ModelCombobox({
 		</Dialog>
 	);
 }
-

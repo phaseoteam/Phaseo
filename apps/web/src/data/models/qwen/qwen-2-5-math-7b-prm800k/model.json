@@ -1,0 +1,17 @@
+{
+  "model_id": "qwen/qwen-2-5-math-7b-prm800k",
+  "organisation_id": "qwen",
+  "name": "Qwen 2.5 Math 7B PRM800K",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

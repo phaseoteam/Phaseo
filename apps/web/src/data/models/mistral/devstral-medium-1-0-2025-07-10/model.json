@@ -11,7 +11,12 @@
   "license": "Proprietary",
   "input_types": "text",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/devstral-2507"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

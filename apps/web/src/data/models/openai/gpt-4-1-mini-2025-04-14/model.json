@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://sciarena.allen.ai/",
-      "rank": 9
+      "rank": 8
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 27
+      "rank": 25
     },
     {
       "benchmark_id": "aime-2024",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 27
+      "rank": 22
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 15
+      "rank": 13
     },
     {
       "benchmark_id": "factscore-halluciation-rate",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 44
+      "rank": 41
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -126,7 +126,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 14
+      "rank": 12
     },
     {
       "benchmark_id": "lmarena-text",
@@ -134,7 +134,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 19
+      "rank": 18
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -166,7 +166,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 27
+      "rank": 25
     },
     {
       "benchmark_id": "openai-mrcr-2-needle-128k",

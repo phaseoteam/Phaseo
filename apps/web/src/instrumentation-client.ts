@@ -15,6 +15,7 @@ import {
 
 let posthogInitialized = false;
 let listenersBound = false;
+let posthogEnabled = false;
 
 const RECENT_ERROR_WINDOW_MS = 15000;
 const RECENT_ERROR_MAX = 100;
@@ -195,19 +196,19 @@ function enablePosthog() {
 		return;
 	}
 
-	if (!posthogInitialized) {
-		posthog.init(POSTHOG_KEY, {
-			api_host: POSTHOG_API_HOST,
-			ui_host: POSTHOG_UI_HOST,
-			defaults: "2025-05-24",
-			autocapture: true,
-			capture_pageview: true,
-			debug: process.env.NODE_ENV === "development",
-		});
-		posthogInitialized = true;
+	initializePosthog();
+
+	if (posthogEnabled) {
+		return;
 	}
 
-	posthog.opt_in_capturing();
+	posthogEnabled = true;
+	posthog.set_config({
+		autocapture: true,
+		capture_pageview: true,
+	});
+	posthog.opt_in_capturing({ captureEventName: false });
+	posthog.capture("$pageview");
 }
 
 function disablePosthog() {
@@ -215,6 +216,16 @@ function disablePosthog() {
 		return;
 	}
 
+	if (!posthogEnabled) {
+		posthog.opt_out_capturing();
+		return;
+	}
+
+	posthogEnabled = false;
+	posthog.set_config({
+		autocapture: false,
+		capture_pageview: false,
+	});
 	posthog.opt_out_capturing();
 	posthog.reset();
 }
@@ -228,8 +239,25 @@ function applyPosthogConsent(consent: AnalyticsConsent | null) {
 	disablePosthog();
 }
 
+function initializePosthog() {
+	if (typeof window === "undefined" || !POSTHOG_KEY || posthogInitialized) {
+		return;
+	}
+
+	posthog.init(POSTHOG_KEY, {
+		api_host: POSTHOG_API_HOST,
+		ui_host: POSTHOG_UI_HOST,
+		defaults: "2025-05-24",
+		autocapture: false,
+		capture_pageview: false,
+		debug: process.env.NODE_ENV === "development",
+	});
+	posthogInitialized = true;
+}
+
 if (typeof window !== "undefined" && POSTHOG_KEY) {
 	bindGlobalErrorListeners();
+	initializePosthog();
 	applyPosthogConsent(readAnalyticsConsent());
 
 	window.addEventListener(ANALYTICS_CONSENT_EVENT, (event) => {

@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 20
+      "rank": 18
     },
     {
       "benchmark_id": "aime-2024",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 33
+      "rank": 28
     },
     {
       "benchmark_id": "confabulations",
@@ -75,7 +75,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 29
+      "rank": 25
     },
     {
       "benchmark_id": "elimination-game",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 19
+      "rank": 17
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 44
+      "rank": 41
     },
     {
       "benchmark_id": "lisanbench",
@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 13
+      "rank": 11
     },
     {
       "benchmark_id": "lmarena-text",
@@ -123,7 +123,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 20
+      "rank": 19
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -139,7 +139,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 25
+      "rank": 23
     },
     {
       "benchmark_id": "simplebench",

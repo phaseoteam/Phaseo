@@ -27,6 +27,7 @@ export default function MainNav() {
 					<Link
 						key={href}
 						href={href}
+						prefetch={false}
 						aria-current={isActive ? "page" : undefined}
 						className={cn(
 							// layout: no fixed height -> no clipping

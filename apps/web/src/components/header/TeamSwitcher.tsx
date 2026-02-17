@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-	ChevronDown,
 	LogOut,
 	CreditCard,
 	Key as KeyIcon,
@@ -316,3 +315,4 @@ export default function TeamSwitcher({
 		</div>
 	);
 }
+

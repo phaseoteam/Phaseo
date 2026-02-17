@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 20
+      "rank": 19
     },
     {
       "benchmark_id": "confabulations",
@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 25
+      "rank": 22
     },
     {
       "benchmark_id": "confabulations",
@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 25
+      "rank": 22
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 21
+      "rank": 20
     },
     {
       "benchmark_id": "mmmlu",
@@ -131,7 +131,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 2
+      "rank": 1
     },
     {
       "benchmark_id": "tau-bench-retail",

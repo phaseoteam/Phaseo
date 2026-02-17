@@ -11,7 +11,24 @@
   "license": "Mistral AI Non Production License",
   "input_types": "text",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.mistral.ai/api/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://chat.mistral.ai/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/codestral/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/mistralai/Codestral-22B-v0.1"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

@@ -1,0 +1,42 @@
+{
+  "model_id": "qwen/qwq-32b-preview",
+  "organisation_id": "qwen",
+  "name": "QwQ 32B Preview",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://huggingface.co/Qwen/QwQ-32B-Preview"
+    },
+    {
+      "platform": "playground",
+      "url": "https://huggingface.co/spaces/Qwen/QwQ-32B-Preview"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2407.10671"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://qwenlm.github.io/blog/qwq-32b-preview/"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/QwenLM/Qwen2"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/Qwen/QwQ-32B-Preview"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

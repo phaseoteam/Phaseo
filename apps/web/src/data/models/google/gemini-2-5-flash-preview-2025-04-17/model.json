@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Whole",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 21
+      "rank": 19
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Diff-Fenced",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 21
+      "rank": 19
     },
     {
       "benchmark_id": "aime-2024",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 20
+      "rank": 19
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 27
+      "rank": 26
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 27
+      "rank": 26
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, No Tools",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 16
+      "rank": 15
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 16
+      "rank": 15
     },
     {
       "benchmark_id": "lmarena-text",
@@ -119,7 +119,7 @@
       "is_self_reported": false,
       "other_info": "16th June 2025",
       "source_link": "https://web.lmarena.ai/leaderboard",
-      "rank": 14
+      "rank": 13
     },
     {
       "benchmark_id": "mmlu",
@@ -159,7 +159,7 @@
       "is_self_reported": true,
       "other_info": "Thinking",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 6
+      "rank": 5
     },
     {
       "benchmark_id": "simpleqa",
@@ -167,7 +167,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 6
+      "rank": 5
     }
   ]
 }

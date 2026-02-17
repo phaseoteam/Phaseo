@@ -262,6 +262,30 @@ export const logoManifest = {
 		dark: "/logos/zai_dark.svg",
 	},
 
+	// Observability
+	"observability-axiom": {
+		light: "/observability/axiom_light.svg",
+		dark: "/observability/axiom_dark.svg",
+	},
+	"observability-datadog": {
+		color: "/observability/datadog.svg",
+	},
+	"observability-grafana": {
+		color: "/observability/grafana.svg",
+	},
+	"observability-langfuse": {
+		color: "/observability/langfuse.svg",
+	},
+	"observability-langsmith": {
+		color: "/observability/langsmith.svg",
+	},
+	"observability-sentry": {
+		color: "/observability/sentry.svg",
+	},
+	"observability-snowflake": {
+		color: "/observability/snowflake.svg",
+	},
+
 	// Languages
 	typescript: {
 		color: "/languages/typescript.svg",

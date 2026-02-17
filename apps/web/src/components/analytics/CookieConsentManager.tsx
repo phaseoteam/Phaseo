@@ -5,7 +5,9 @@ import Script from "next/script"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
+  ANALYTICS_CONSENT_EVENT,
   ANALYTICS_CONSENT_STORAGE_KEY,
+  ANALYTICS_CONSENT_COOKIE_NAME,
   type AnalyticsConsent,
   parseAnalyticsConsent,
   persistAnalyticsConsent,
@@ -43,9 +45,6 @@ function applyGaConsent(consent: AnalyticsConsent, gaMeasurementId?: string) {
     return
   }
 
-  const disableKey = `ga-disable-${gaMeasurementId}`
-  window[disableKey] = consent !== "accepted"
-
   if (typeof window.gtag === "function") {
     window.gtag(
       "consent",
@@ -65,8 +64,8 @@ export function CookieConsentManager({
   }, [])
 
   useEffect(() => {
-    if (consent !== "accepted" && consent !== "denied") return
-    applyGaConsent(consent, gaMeasurementId)
+    if (consent === "pending") return
+    applyGaConsent(consent ?? "denied", gaMeasurementId)
   }, [consent, gaMeasurementId])
 
   useEffect(() => {
@@ -77,9 +76,18 @@ export function CookieConsentManager({
       setConsent(next)
     }
 
+    const onConsent = (event: Event) => {
+      const customEvent = event as CustomEvent<AnalyticsConsent>
+      const next = parseAnalyticsConsent(customEvent.detail)
+      if (!next) return
+      setConsent(next)
+    }
+
     window.addEventListener("storage", onStorage)
+    window.addEventListener(ANALYTICS_CONSENT_EVENT, onConsent)
     return () => {
       window.removeEventListener("storage", onStorage)
+      window.removeEventListener(ANALYTICS_CONSENT_EVENT, onConsent)
     }
   }, [])
 
@@ -91,7 +99,7 @@ export function CookieConsentManager({
 
   return (
     <>
-      {gaMeasurementId && consent === "accepted" ? (
+      {gaMeasurementId ? (
         <>
           <Script
             id="google-analytics-loader"
@@ -104,7 +112,30 @@ export function CookieConsentManager({
             window.gtag = window.gtag || gtag;
             gtag('js', new Date());
             gtag('consent', 'default', ${JSON.stringify(GA_DENIED_CONSENT)});
-            gtag('consent', 'update', ${JSON.stringify(GA_GRANTED_CONSENT)});
+            (function() {
+              var consent = null;
+              try {
+                consent = window.localStorage.getItem('${ANALYTICS_CONSENT_STORAGE_KEY}');
+              } catch {}
+              if (!consent) {
+                var key = '${ANALYTICS_CONSENT_COOKIE_NAME}=';
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                  var cookie = cookies[i].trim();
+                  if (cookie.indexOf(key) === 0) {
+                    consent = cookie.slice(key.length);
+                    break;
+                  }
+                }
+              }
+              gtag(
+                'consent',
+                'update',
+                consent === 'accepted'
+                  ? ${JSON.stringify(GA_GRANTED_CONSENT)}
+                  : ${JSON.stringify(GA_DENIED_CONSENT)}
+              );
+            })();
             gtag('config', '${gaMeasurementId}', { anonymize_ip: true });
           `}</Script>
         </>

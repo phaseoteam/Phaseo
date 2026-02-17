@@ -17,3 +17,5 @@ turbo-*.log
 /internal
 # /supabase
 guides/private/
+/apps/api/reports
+/reports

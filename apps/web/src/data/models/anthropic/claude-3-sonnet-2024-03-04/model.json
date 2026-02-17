@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-3-family",
-      "rank": 68
+      "rank": 61
     },
     {
       "benchmark_id": "lmarena-text",
@@ -55,7 +55,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 46
+      "rank": 43
     }
   ]
 }

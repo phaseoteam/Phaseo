@@ -51,6 +51,7 @@ export default function HeaderClient({
 			<Button asChild variant="ghost" className="text-md rounded-lg">
 				<Link
 					href={href}
+					prefetch={false}
 					className={cn(
 						"text-sm font-medium transition-colors hover:text-primary",
 						// For the root path ('/'), only mark active on exact match.
@@ -108,7 +109,7 @@ export default function HeaderClient({
 									/>
 								</div>
 							) : (
-								<Link href="/sign-in" className="w-full block">
+								<Link href="/sign-in" prefetch={false} className="w-full block">
 									<Button
 										className="w-full rounded-lg text-xs px-4 py-2 font-semibold"
 										variant="outline"
@@ -136,7 +137,7 @@ export default function HeaderClient({
 					initialActiveTeamId={currentTeamId}
 				/>
 			) : (
-				<Link href="/sign-in">
+				<Link href="/sign-in" prefetch={false}>
 					<Button
 						variant="outline"
 						className="rounded-lg text-xs px-4 py-2 font-semibold"

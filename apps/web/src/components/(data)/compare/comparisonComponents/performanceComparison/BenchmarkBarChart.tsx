@@ -12,11 +12,11 @@ import {
 } from "recharts";
 
 const PASTEL_COLORS = [
-	// pink-300, rose-400, blue-400, emerald-400
-	"#f472b6", // pink-300
-	"#60a5fa", // blue-400
-	"#fb7185", // rose-400
-	"#34d399", // emerald-400
+	// sky-500, emerald-500, amber-500, indigo-500
+	"#0ea5e9", // sky-500
+	"#10b981", // emerald-500
+	"#f59e0b", // amber-500
+	"#6366f1", // indigo-500
 ];
 
 function getMaxScores(

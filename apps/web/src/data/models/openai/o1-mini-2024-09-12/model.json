@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 26
+      "rank": 24
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 26
+      "rank": 23
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
-      "rank": 45
+      "rank": 42
     },
     {
       "benchmark_id": "lmarena-text",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 29
+      "rank": 28
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": "16th June 2025",
       "source_link": "https://web.lmarena.ai/leaderboard",
-      "rank": 19
+      "rank": 18
     },
     {
       "benchmark_id": "nyt-connections",
@@ -94,7 +94,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 19
+      "rank": 17
     },
     {
       "benchmark_id": "simplebench",
@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 28
+      "rank": 27
     },
     {
       "benchmark_id": "thematic-generalisation",

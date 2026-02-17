@@ -481,10 +481,10 @@ export default function RecentTransactions({
 									const data = await resp.json();
 									window.location.href =
 										data?.url ??
-										"/dashboard/settings/credits";
+										"/settings/credits";
 								} catch {
 									window.location.href =
-										"/dashboard/settings/credits";
+										"/settings/credits";
 								}
 							}}
 						>

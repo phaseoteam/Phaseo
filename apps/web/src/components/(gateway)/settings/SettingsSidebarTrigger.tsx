@@ -8,11 +8,16 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 
 import type { NavItem } from "./Sidebar.config";
-import { SETTINGS_SIDEBAR } from "./Sidebar.config";
+import { getSettingsSidebar } from "./Sidebar.config";
 
-export default function SettingsSidebarTrigger() {
+export default function SettingsSidebarTrigger({
+	showBroadcast = true,
+}: {
+	showBroadcast?: boolean;
+}) {
 	const pathname = usePathname();
 	const { toggleSidebar } = useSidebar();
+	const navGroups = getSettingsSidebar({ showBroadcast });
 
 	function matchScore(item: NavItem) {
 		const path = pathname ?? "";
@@ -32,7 +37,7 @@ export default function SettingsSidebarTrigger() {
 		return null;
 	}
 
-	const allItems: NavItem[] = SETTINGS_SIDEBAR.flatMap((g) => g.items);
+	const allItems: NavItem[] = navGroups.flatMap((g) => g.items);
 	const activeItem =
 		allItems
 			.map((item) => ({ item, score: matchScore(item) }))

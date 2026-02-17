@@ -11,7 +11,24 @@
   "license": "Apache 2.0",
   "input_types": "text",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://console.mistral.ai/home"
+    },
+    {
+      "platform": "paper",
+      "url": "https://mistral.ai/static/research/magistral.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/magistral"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/mistralai/Magistral-Small-2506"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

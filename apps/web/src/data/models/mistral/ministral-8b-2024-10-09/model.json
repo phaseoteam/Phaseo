@@ -11,7 +11,20 @@
   "license": "Mistral AI Research License",
   "input_types": null,
   "output_types": null,
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://huggingface.co/mistralai/Ministral-8B-Instruct-2410"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/ministraux/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/mistralai/Ministral-8B-Instruct-2410"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

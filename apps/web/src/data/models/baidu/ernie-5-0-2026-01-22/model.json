@@ -9,8 +9,8 @@
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
-  "input_types": null,
-  "output_types": null,
+  "input_types": "text,image,video,audio",
+  "output_types": "text,image,video,audio",
   "links": [],
   "details": [],
   "benchmarks": []

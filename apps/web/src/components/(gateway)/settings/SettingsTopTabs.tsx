@@ -135,9 +135,10 @@ function getTabSet(
 		pathname.startsWith("/settings/routing") ||
 		pathname.startsWith("/settings/byok") ||
 		pathname.startsWith("/settings/presets") ||
+		pathname.startsWith("/settings/privacy") ||
 		pathname.startsWith("/settings/guardrails")
 	) {
-		return [
+		const tabs: Tab[] = [
 			{ href: "/settings/keys", label: "API Keys" },
 			{ href: "/settings/apps", label: "Apps" },
 			{
@@ -149,8 +150,10 @@ function getTabSet(
 			{ href: "/settings/routing", label: "Routing" },
 			{ href: "/settings/byok", label: "BYOK" },
 			{ href: "/settings/presets", label: "Presets", badge: "Beta" },
+			{ href: "/settings/privacy", label: "Privacy", badge: "Alpha" },
 			{ href: "/settings/guardrails", label: "Guardrails", badge: "Alpha" },
 		];
+		return tabs;
 	}
 
 	return null;

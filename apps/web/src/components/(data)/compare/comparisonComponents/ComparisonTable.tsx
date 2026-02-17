@@ -1,6 +1,6 @@
 import React from "react";
 import { ExtendedModel } from "@/data/types";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
 	Table,
 	TableBody,
@@ -12,11 +12,57 @@ import {
 import { Check, Star, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/Logo";
 import Link from "next/link";
+import { ProviderLogo } from "../ProviderLogo";
 
 interface ComparisonTableProps {
 	selectedModels: ExtendedModel[];
+}
+
+function renderBool(value: boolean | null | undefined) {
+	if (value === true) return <Check className="mx-auto h-4 w-4 text-emerald-600" />;
+	if (value === false) return <X className="mx-auto h-4 w-4 text-muted-foreground" />;
+	return <span className="block text-center text-xs text-muted-foreground">-</span>;
+}
+
+function formatMonthYear(value: string | null | undefined): string {
+	if (!value) return "-";
+	const d = new Date(value);
+	if (Number.isNaN(d.getTime())) return "-";
+	return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+function formatLicenseLabel(value: string | null | undefined): string {
+	const raw = typeof value === "string" ? value.trim() : "";
+	if (!raw) return "-";
+	const lower = raw.toLowerCase();
+	if (lower === "unknown" || lower === "n/a" || lower === "na" || lower === "tbd")
+		return "Unknown";
+	return raw;
+}
+
+function toTypeList(value: ExtendedModel["input_types"]): string[] {
+	if (!value) return [];
+	if (Array.isArray(value)) return value.filter(Boolean);
+	return String(value)
+		.split(",")
+		.map((v) => v.trim())
+		.filter(Boolean);
+}
+
+function normalizeTypeLabel(value: string): string {
+	const v = value.trim().toLowerCase();
+	if (v === "text") return "Text";
+	if (v === "image") return "Vision";
+	if (v === "audio") return "Audio";
+	if (v === "video") return "Video";
+	if (v === "embedding" || v === "embeddings") return "Embeddings";
+	return value;
+}
+
+function formatTypes(value: ExtendedModel["input_types"]): string {
+	const list = toTypeList(value).map(normalizeTypeLabel);
+	return list.length ? Array.from(new Set(list)).join(", ") : "-";
 }
 
 // Helper functions to get prices
@@ -118,42 +164,39 @@ export default function ComparisonTable({
 	const bestThroughput = findBestMetric("throughput");
 
 	return (
-		<>
+		<section className="space-y-3">
+			<header className="space-y-1">
+				<h2 className="text-lg font-semibold">Details</h2>
+				<p className="text-sm text-muted-foreground">
+					A deeper field-by-field view (including benchmarks, pricing, and links).
+				</p>
+			</header>
+
 			{/* Desktop Table View */}
 			<div className="hidden md:block">
-				<Card className="w-full">
-					<CardHeader>
-						<CardTitle>Model Comparison</CardTitle>
-					</CardHeader>
-					<CardContent className="max-h-[800px] overflow-auto relative">
+				<Card className="w-full border-border/60 bg-card shadow-sm">
+					<CardContent className="max-h-[800px] overflow-auto relative p-0">
 						<Table className="table-fixed relative">
 							<TableHeader className="sticky top-0 bg-white dark:bg-zinc-950 z-20 shadow-sm">
 								<TableRow>
-									<TableHead className="w-[200px] bg-white dark:bg-zinc-950 sticky left-0 z-30" />
+									<TableHead className="w-[200px] bg-white dark:bg-zinc-950 sticky left-0 z-30 h-auto py-3" />
 									{selectedModels.map((model) => (
 										<TableHead
 											key={model.id}
-											className="text-center bg-white dark:bg-zinc-950"
+											className="text-center bg-white dark:bg-zinc-950 h-auto py-3 align-bottom"
 											style={{
 												width: `calc((100% - 200px) / ${selectedModels.length})`,
 											}}
 										>
-											<div className="flex items-center gap-3 justify-center mb-4">
+											<div className="flex items-center gap-3 justify-center">
 												<Link
 													href={`/organisations/${model.provider.provider_id}`}
 													className="focus:outline-none"
 												>
-													<Logo
-														id={
-															model.provider
-																.provider_id
-														}
-														alt={
-															model.provider.name
-														}
-														width={32}
-														height={32}
-														className="h-8 w-8 rounded-full border bg-white object-contain"
+													<ProviderLogo
+														id={model.provider.provider_id}
+														alt={model.provider.name}
+														size="sm"
 													/>
 												</Link>
 												<div className="flex flex-col items-start">
@@ -214,21 +257,47 @@ export default function ComparisonTable({
 									))}
 								</TableRow>
 
-								{/* Multimodal */}
+								{/* Modalities */}
 								<TableRow>
 									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
-										Multimodal
+										Modalities
 									</TableCell>
 									{selectedModels.map((model) => (
-										<TableCell
-											key={model.id}
-											className="text-center"
-										>
-											{model.multimodal ? (
-												<Check className="mx-auto" />
-											) : (
-												<X className="mx-auto" />
-											)}
+										<TableCell key={model.id} className="text-center">
+											<div className="text-xs">
+												<div>
+													<span className="text-muted-foreground">In:</span>{" "}
+													{formatTypes(model.input_types)}
+												</div>
+												<div className="mt-1">
+													<span className="text-muted-foreground">Out:</span>{" "}
+													{formatTypes(model.output_types)}
+												</div>
+											</div>
+										</TableCell>
+									))}
+								</TableRow>
+
+								{/* Reasoning */}
+								<TableRow>
+									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
+										Reasoning
+									</TableCell>
+									{selectedModels.map((model) => (
+										<TableCell key={model.id} className="text-center">
+											{renderBool(model.reasoning)}
+										</TableCell>
+									))}
+								</TableRow>
+
+								{/* Web access */}
+								<TableRow>
+									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
+										Web access
+									</TableCell>
+									{selectedModels.map((model) => (
+										<TableCell key={model.id} className="text-center">
+											{renderBool(model.web_access)}
 										</TableCell>
 									))}
 								</TableRow>
@@ -283,7 +352,7 @@ export default function ComparisonTable({
 											key={model.id}
 											className="text-center"
 										>
-											{model.license || "-"}
+											{formatLicenseLabel(model.license)}
 										</TableCell>
 									))}
 								</TableRow>
@@ -298,14 +367,137 @@ export default function ComparisonTable({
 											key={model.id}
 											className="text-center"
 										>
-											{model.knowledge_cutoff
-												? new Date(
-														model.knowledge_cutoff
-												  ).toLocaleString("en-US", {
-														month: "short",
-														year: "numeric",
-												  })
-												: "-"}
+											{formatMonthYear(model.knowledge_cutoff)}
+										</TableCell>
+									))}
+								</TableRow>
+
+								{/* Status */}
+								<TableRow>
+									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
+										Status
+									</TableCell>
+									{selectedModels.map((model) => (
+										<TableCell key={model.id} className="text-center">
+											{model.status ?? "-"}
+										</TableCell>
+									))}
+								</TableRow>
+
+								{/* Release */}
+								<TableRow>
+									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
+										Release
+									</TableCell>
+									{selectedModels.map((model) => (
+										<TableCell key={model.id} className="text-center">
+											{formatMonthYear(model.release_date)}
+										</TableCell>
+									))}
+								</TableRow>
+
+								{/* Announced */}
+								<TableRow>
+									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
+										Announced
+									</TableCell>
+									{selectedModels.map((model) => (
+										<TableCell key={model.id} className="text-center">
+											{formatMonthYear(model.announced_date)}
+										</TableCell>
+									))}
+								</TableRow>
+
+								{/* Deprecation */}
+								<TableRow>
+									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
+										Deprecation
+									</TableCell>
+									{selectedModels.map((model) => (
+										<TableCell key={model.id} className="text-center">
+											{formatMonthYear(model.deprecation_date)}
+										</TableCell>
+									))}
+								</TableRow>
+
+								{/* Retirement */}
+								<TableRow>
+									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
+										Retirement
+									</TableCell>
+									{selectedModels.map((model) => (
+										<TableCell key={model.id} className="text-center">
+											{formatMonthYear(model.retirement_date)}
+										</TableCell>
+									))}
+								</TableRow>
+
+								{/* Links */}
+								<TableRow>
+									<TableCell className="font-medium sticky left-0 bg-white dark:bg-zinc-950 z-10">
+										Links
+									</TableCell>
+									{selectedModels.map((model) => (
+										<TableCell key={model.id} className="text-center">
+											<div className="flex flex-wrap justify-center gap-2 text-xs">
+												{model.api_reference_link ? (
+													<Link
+														href={model.api_reference_link}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="hover:underline"
+													>
+														Docs
+													</Link>
+												) : null}
+												{model.repository_link ? (
+													<Link
+														href={model.repository_link}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="hover:underline"
+													>
+														Repo
+													</Link>
+												) : null}
+												{model.paper_link ? (
+													<Link
+														href={model.paper_link}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="hover:underline"
+													>
+														Paper
+													</Link>
+												) : null}
+												{model.announcement_link ? (
+													<Link
+														href={model.announcement_link}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="hover:underline"
+													>
+														Announcement
+													</Link>
+												) : null}
+												{model.weights_link ? (
+													<Link
+														href={model.weights_link}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="hover:underline"
+													>
+														Weights
+													</Link>
+												) : null}
+												{!model.api_reference_link &&
+												!model.repository_link &&
+												!model.paper_link &&
+												!model.announcement_link &&
+												!model.weights_link ? (
+													<span className="text-muted-foreground">-</span>
+												) : null}
+											</div>
 										</TableCell>
 									))}
 								</TableRow>
@@ -346,7 +538,7 @@ export default function ComparisonTable({
 														bestInputPrice &&
 														bestInputPrice !==
 															null && (
-															<Star className="h-4 w-4 text-pink-400 fill-pink-400" />
+															<Star className="h-4 w-4 text-emerald-600 fill-emerald-500" />
 														)}
 												</div>
 												<div className="flex items-center justify-center gap-1">
@@ -361,7 +553,7 @@ export default function ComparisonTable({
 														bestOutputPrice &&
 														bestOutputPrice !==
 															null && (
-															<Star className="h-4 w-4 text-pink-400 fill-pink-400" />
+															<Star className="h-4 w-4 text-emerald-600 fill-emerald-500" />
 														)}
 												</div>
 											</TableCell>
@@ -389,7 +581,7 @@ export default function ComparisonTable({
 													{latency === bestLatency &&
 														bestLatency !==
 															null && (
-															<Star className="h-4 w-4 text-pink-400 fill-pink-400" />
+															<Star className="h-4 w-4 text-emerald-600 fill-emerald-500" />
 														)}
 												</div>
 											</TableCell>
@@ -418,7 +610,7 @@ export default function ComparisonTable({
 														bestThroughput &&
 														bestThroughput !==
 															null && (
-															<Star className="h-4 w-4 text-pink-400 fill-pink-400" />
+															<Star className="h-4 w-4 text-emerald-600 fill-emerald-500" />
 														)}
 												</div>
 											</TableCell>
@@ -457,6 +649,16 @@ export default function ComparisonTable({
 											String(score).trim().endsWith("%")
 									);
 
+									const order = selectedModels
+										.flatMap((model) => model.benchmark_results ?? [])
+										.find((b) => b.benchmark.name === benchmarkName)
+										?.benchmark.order;
+									const normalizedOrder = String(order ?? "").toLowerCase();
+									const isLowerBetter =
+										normalizedOrder === "ascending" ||
+										normalizedOrder.includes("ascending") ||
+										normalizedOrder.includes("lower");
+
 									// Parse all scores to numbers (strip % if needed)
 									const scores = rawScores.map((score) => {
 										if (
@@ -475,14 +677,16 @@ export default function ComparisonTable({
 										return score;
 									});
 
-									// Find the best score (max for both % and numeric)
+									// Find the best score (max by default; min for ascending/lower-better benchmarks)
 									const validScores = scores.filter(
 										(s) =>
 											typeof s === "number" && !isNaN(s)
 									) as number[];
 									const bestScore =
 										validScores.length > 0
-											? Math.max(...validScores)
+											? isLowerBetter
+												? Math.min(...validScores)
+												: Math.max(...validScores)
 											: null;
 
 									return (
@@ -521,9 +725,11 @@ export default function ComparisonTable({
 														!isPercent &&
 														bestScore &&
 														hasScore
-															? (numericScore /
-																	bestScore) *
-															  100
+															? isLowerBetter
+																? bestScore > 0 && numericScore > 0
+																	? (bestScore / numericScore) * 100
+																	: 0
+																: (numericScore / bestScore) * 100
 															: isPercent &&
 															  hasScore
 															? numericScore
@@ -547,7 +753,7 @@ export default function ComparisonTable({
 																				"h-2 w-full",
 																				numericScore ===
 																					bestScore
-																					? "[&>div]:bg-pink-400"
+																					? "[&>div]:bg-emerald-500"
 																					: "[&>div]:bg-zinc-200 dark:[&>div]:bg-zinc-700"
 																			)}
 																		/>
@@ -557,7 +763,7 @@ export default function ComparisonTable({
 																			"text-sm tabular-nums",
 																			numericScore ===
 																				bestScore
-																				? "text-pink-500 dark:text-pink-400 font-medium"
+																				? "text-emerald-700 dark:text-emerald-400 font-medium"
 																				: "text-zinc-500 dark:text-zinc-400"
 																		)}
 																	>
@@ -604,12 +810,10 @@ export default function ComparisonTable({
 										href={`/organisations/${model.provider.provider_id}`}
 										className="focus:outline-none"
 									>
-										<Logo
+										<ProviderLogo
 											id={model.provider.provider_id}
 											alt={model.provider.name}
-											width={32}
-											height={32}
-											className="h-8 w-8 rounded-full border bg-white object-contain"
+											size="sm"
 										/>
 									</Link>
 									<div className="flex flex-col">
@@ -656,18 +860,6 @@ export default function ComparisonTable({
 										</div>
 										<div className="flex justify-between">
 											<span className="font-medium">
-												Multimodal:
-											</span>
-											<span>
-												{model.multimodal ? (
-													<Check className="inline" />
-												) : (
-													<X className="inline" />
-												)}
-											</span>
-										</div>
-										<div className="flex justify-between">
-											<span className="font-medium">
 												Parameters:
 											</span>
 											<span>
@@ -696,7 +888,7 @@ export default function ComparisonTable({
 											<span className="font-medium">
 												License:
 											</span>
-											<span>{model.license || "-"}</span>
+											<span>{formatLicenseLabel(model.license)}</span>
 										</div>
 										<div className="flex justify-between">
 											<span className="font-medium">
@@ -739,7 +931,7 @@ export default function ComparisonTable({
 														: "-"}
 													{inputPrice ===
 														bestInputPrice && (
-														<Star className="inline h-4 w-4 text-pink-400 fill-pink-400" />
+														<Star className="inline h-4 w-4 text-emerald-600 fill-emerald-500" />
 													)}
 												</span>
 											</div>
@@ -754,7 +946,7 @@ export default function ComparisonTable({
 														: "-"}
 													{outputPrice ===
 														bestOutputPrice && (
-														<Star className="inline h-4 w-4 text-pink-400 fill-pink-400" />
+														<Star className="inline h-4 w-4 text-emerald-600 fill-emerald-500" />
 													)}
 												</span>
 											</div>
@@ -769,7 +961,7 @@ export default function ComparisonTable({
 													? `${latency}ms`
 													: "-"}
 												{latency === bestLatency && (
-													<Star className="inline h-4 w-4 text-pink-400 fill-pink-400" />
+													<Star className="inline h-4 w-4 text-emerald-600 fill-emerald-500" />
 												)}
 											</span>
 										</div>
@@ -784,7 +976,7 @@ export default function ComparisonTable({
 													: "-"}
 												{throughput ===
 													bestThroughput && (
-													<Star className="inline h-4 w-4 text-pink-400 fill-pink-400" />
+													<Star className="inline h-4 w-4 text-emerald-600 fill-emerald-500" />
 												)}
 											</span>
 										</div>
@@ -909,7 +1101,7 @@ export default function ComparisonTable({
 															{disp}
 														</span>
 														{num === bestVal && (
-															<Star className="inline h-4 w-4 text-pink-400 fill-pink-400" />
+															<Star className="inline h-4 w-4 text-emerald-600 fill-emerald-500" />
 														)}
 													</div>
 												);
@@ -921,6 +1113,6 @@ export default function ComparisonTable({
 					);
 				})}
 			</div>
-		</>
+		</section>
 	);
 }

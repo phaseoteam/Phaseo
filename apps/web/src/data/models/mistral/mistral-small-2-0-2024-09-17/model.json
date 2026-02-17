@@ -11,7 +11,24 @@
   "license": "Mistral AI Research License",
   "input_types": null,
   "output_types": null,
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.mistral.ai/api/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://console.mistral.ai/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/september-24-release/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/mistralai/Mistral-Small-Instruct-2409"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

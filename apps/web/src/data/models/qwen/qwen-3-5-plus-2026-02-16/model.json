@@ -1,0 +1,17 @@
+{
+  "model_id": "qwen/qwen-3-5-plus-2026-02-16",
+  "organisation_id": "qwen",
+  "name": "Qwen 3.5 Plus",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-02-16T00:00:00",
+  "release_date": "2026-02-16T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

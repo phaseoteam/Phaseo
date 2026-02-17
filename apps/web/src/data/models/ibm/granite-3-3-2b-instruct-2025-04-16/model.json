@@ -12,7 +12,28 @@
   "input_types": null,
   "output_types": null,
   "family_id": "ibm/granite-3-3",
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://www.ibm.com/granite/docs/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://www.ibm.com/granite/playground/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://huggingface.co/ibm-granite/granite-3.3-8b-base"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/ibm-granite/granite-3.3-language-models"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/ibm-granite/granite-3.3-8b-base"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

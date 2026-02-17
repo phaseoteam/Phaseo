@@ -31,7 +31,42 @@ async function KeysContent() {
 	const initialTeamId = await getTeamIdFromCookie();
 
 	// fetch API keys for the active team
-	const { data: apiKeys } = await supabase.from("keys").select("*").eq("team_id", initialTeamId);
+	const { data: apiKeys } = await supabase
+		.from("keys")
+		.select("*")
+		.eq("team_id", initialTeamId);
+
+	const usageByKey = new Map<
+		string,
+		{ requests: number; costNanos: number; lastUsedAt: string | null }
+	>();
+	if (initialTeamId) {
+		const dayStart = new Date();
+		dayStart.setUTCHours(0, 0, 0, 0);
+		const dayStartIso = dayStart.toISOString();
+
+		const { data: usageRows, error: usageError } = await supabase.rpc(
+			"get_team_key_usage",
+			{
+				p_team_id: initialTeamId,
+				p_day_start: dayStartIso,
+			},
+		);
+
+		if (usageError) {
+			console.error("[settings/keys] failed to load key usage", usageError);
+		}
+
+		for (const row of usageRows ?? []) {
+			const keyId = typeof row?.key_id === "string" ? row.key_id : null;
+			if (!keyId) continue;
+			usageByKey.set(keyId, {
+				requests: Number(row?.daily_request_count ?? 0) || 0,
+				costNanos: Number(row?.daily_cost_nanos ?? 0) || 0,
+				lastUsedAt: typeof row?.last_used_at === "string" ? row.last_used_at : null,
+			});
+		}
+	}
 
 	// fetch teams the user belongs to (assumes a `team_users` join table)
 	const { data: teamUsers } = await supabase
@@ -53,7 +88,22 @@ async function KeysContent() {
 		}
 	}
 
-	const keysArray = (apiKeys ?? []).map((k: any) => ({ ...k, last_used_at: null, current_usage_daily: 0 }));
+	const keysArray = (apiKeys ?? []).map((k: any) => {
+		const usage = usageByKey.get(k.id) ?? {
+			requests: 0,
+			costNanos: 0,
+			lastUsedAt: null,
+		};
+		return {
+			...k,
+			current_usage_daily: usage.requests,
+			current_usage_daily_cost_nanos: usage.costNanos,
+			last_used_at:
+				typeof k?.last_used_at === "string" && k.last_used_at.length > 0
+					? k.last_used_at
+					: usage.lastUsedAt,
+		};
+	});
 
 	// find the active team
 	const activeTeam = teams.find((t) => t.id === initialTeamId);

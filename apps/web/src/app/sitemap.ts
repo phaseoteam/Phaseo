@@ -79,7 +79,6 @@ const MODEL_SUFFIXES: RouteSuffix[] = [
     { suffix: "/quickstart", changeFrequency: "weekly", priority: 0.65 },
     { suffix: "/benchmarks", changeFrequency: "weekly", priority: 0.65 },
     { suffix: "/pricing", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/availability", changeFrequency: "weekly", priority: 0.6 },
     { suffix: "/family", changeFrequency: "weekly", priority: 0.6 },
     { suffix: "/timeline", changeFrequency: "weekly", priority: 0.6 },
     { suffix: "/performance", changeFrequency: "weekly", priority: 0.6 },

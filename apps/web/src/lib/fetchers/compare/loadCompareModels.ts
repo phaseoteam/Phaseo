@@ -8,6 +8,11 @@ interface DbSimpleModel {
 	model_id: string;
 	name: string;
 	organisation_id: string;
+	status: string | null;
+	announcement_date: string | null;
+	release_date: string | null;
+	deprecation_date: string | null;
+	retirement_date: string | null;
 	input_types: string | null;
 	output_types: string | null;
 	organisation: {
@@ -29,6 +34,11 @@ export async function loadCompareModels(
             model_id,
             name,
             organisation_id,
+            status,
+            announcement_date,
+            release_date,
+            deprecation_date,
+            retirement_date,
             input_types,
             output_types,
             organisation: data_organisations!data_models_organisation_id_fkey(
@@ -66,13 +76,13 @@ export async function loadCompareModels(
 		return {
 			id: dbModel.model_id,
 			name: dbModel.name,
-			status: null,
+			status: dbModel.status ?? null,
 			previous_model_id: null,
 			description: null,
-			announced_date: null,
-			release_date: null,
-			deprecation_date: null,
-			retirement_date: null,
+			announced_date: dbModel.announcement_date ?? null,
+			release_date: dbModel.release_date ?? null,
+			deprecation_date: dbModel.deprecation_date ?? null,
+			retirement_date: dbModel.retirement_date ?? null,
 			open_router_model_id: null,
 			input_context_length: null,
 			output_context_length: null,

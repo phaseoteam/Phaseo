@@ -6,5 +6,13 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/settings/:path*'], // only run on /settings and children
+    matcher: [
+        {
+            source: '/settings/:path*',
+            missing: [
+                { type: 'header', key: 'next-router-prefetch' },
+                { type: 'header', key: 'purpose', value: 'prefetch' },
+            ],
+        },
+    ],
 }

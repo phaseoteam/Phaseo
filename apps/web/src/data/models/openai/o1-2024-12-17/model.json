@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 12
+      "rank": 11
     },
     {
       "benchmark_id": "aime-2024",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 22
+      "rank": 18
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/openai-o3-mini/",
-      "rank": 28
+      "rank": 27
     },
     {
       "benchmark_id": "lisanbench",
@@ -126,7 +126,7 @@
       "is_self_reported": false,
       "other_info": "16th June 2025",
       "source_link": "https://web.lmarena.ai/leaderboard",
-      "rank": 18
+      "rank": 17
     },
     {
       "benchmark_id": "nyt-connections",

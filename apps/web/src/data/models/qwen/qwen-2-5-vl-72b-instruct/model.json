@@ -1,0 +1,38 @@
+{
+  "model_id": "qwen/qwen-2-5-vl-72b-instruct",
+  "organisation_id": "qwen",
+  "name": "Qwen 2.5 VL 72B Instruct",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [
+    {
+      "platform": "playground",
+      "url": "https://chat.qwen.ai/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/pdf/2502.13923"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://qwenlm.github.io/blog/qwen2.5-vl/"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/QwenLM/Qwen2.5-VL"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

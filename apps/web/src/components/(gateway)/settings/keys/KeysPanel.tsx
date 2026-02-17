@@ -7,7 +7,7 @@ import {
 	DropdownMenuTrigger,
 	DropdownMenuContent,
 } from "@/components/ui/dropdown-menu";
-import { Ban, CheckCircle2, MoreVertical, OctagonAlert } from "lucide-react";
+import { Ban, CheckCircle2, Infinity as InfinityIcon, MoreVertical, OctagonAlert } from "lucide-react";
 import {
 	Tooltip,
 	TooltipTrigger,
@@ -83,80 +83,166 @@ function fmtUsdFromNanos(v: number) {
 	}).format(usd);
 }
 
-type LimitPeriod = "D" | "W" | "M";
-
-function pickPrimaryRequestLimit(k: any): { period: LimitPeriod; value: number } | null {
-	const d = Number(k?.daily_limit_requests ?? 0) || 0;
-	const w = Number(k?.weekly_limit_requests ?? 0) || 0;
-	const m = Number(k?.monthly_limit_requests ?? 0) || 0;
-	if (d > 0) return { period: "D", value: d };
-	if (w > 0) return { period: "W", value: w };
-	if (m > 0) return { period: "M", value: m };
-	return null;
+function formatKeyReference(v?: string | null) {
+	const ref = typeof v === "string" ? v.trim() : "";
+	return ref ? `aistats_v1_sk_...${ref}` : "aistats_v1_sk_...";
 }
 
-function pickPrimarySpendLimit(k: any): { period: LimitPeriod; nanos: number } | null {
-	// cost nanos fields are stored as 0 for "unlimited".
-	const d = Number(k?.daily_limit_cost_nanos ?? 0) || 0;
-	const w = Number(k?.weekly_limit_cost_nanos ?? 0) || 0;
-	const m = Number(k?.monthly_limit_cost_nanos ?? 0) || 0;
-	if (d > 0) return { period: "D", nanos: d };
-	if (w > 0) return { period: "W", nanos: w };
-	if (m > 0) return { period: "M", nanos: m };
-	return null;
+function getKeyUsageVisuals(k: any, state: KeyState) {
+	const dailyLimit = Number(k?.daily_limit_requests ?? 0) || 0;
+	const weeklyLimit = Number(k?.weekly_limit_requests ?? 0) || 0;
+	const monthlyLimit = Number(k?.monthly_limit_requests ?? 0) || 0;
+	const currentUsage = Number(k?.current_usage_daily ?? 0) || 0;
+	const dailySpendLimit = Number(k?.daily_limit_cost_nanos ?? 0) || 0;
+	const weeklySpendLimit = Number(k?.weekly_limit_cost_nanos ?? 0) || 0;
+	const monthlySpendLimit = Number(k?.monthly_limit_cost_nanos ?? 0) || 0;
+	const currentDailySpend = Number(k?.current_usage_daily_cost_nanos ?? 0) || 0;
+
+	const reqPct = dailyLimit > 0 ? (currentUsage / dailyLimit) * 100 : null;
+	const reqTone =
+		state === "disabled"
+			? ("muted" as const)
+			: dailyLimit > 0 && reqPct !== null
+				? reqPct >= 100
+					? ("danger" as const)
+					: reqPct >= 80
+						? ("warn" as const)
+						: ("ok" as const)
+				: ("muted" as const);
+	const spendPct =
+		dailySpendLimit > 0 ? (currentDailySpend / dailySpendLimit) * 100 : null;
+	const spendTone =
+		state === "disabled"
+			? ("muted" as const)
+			: dailySpendLimit > 0 && spendPct !== null
+				? spendPct >= 100
+					? ("danger" as const)
+					: spendPct >= 80
+						? ("warn" as const)
+						: ("ok" as const)
+				: ("muted" as const);
+	const requestTooltipText = {
+		D: dailyLimit > 0
+			? `Daily limit: ${fmtCompactInt(dailyLimit)} | Used today: ${fmtCompactInt(currentUsage)}`
+			: `Daily limit: Unlimited | Used today: ${fmtCompactInt(currentUsage)}`,
+		W: weeklyLimit > 0
+			? `Weekly limit: ${fmtCompactInt(weeklyLimit)} | Usage progress not shown yet`
+			: "Weekly limit: Unlimited",
+		M: monthlyLimit > 0
+			? `Monthly limit: ${fmtCompactInt(monthlyLimit)} | Usage progress not shown yet`
+			: "Monthly limit: Unlimited",
+	} as const;
+	const spendTooltipText = {
+		D: dailySpendLimit > 0
+			? `Daily limit: ${fmtUsdFromNanos(dailySpendLimit)} | Spend today: ${fmtUsdFromNanos(currentDailySpend)}`
+			: `Daily limit: Unlimited | Spend today: ${fmtUsdFromNanos(currentDailySpend)}`,
+		W: weeklySpendLimit > 0
+			? `Weekly limit: ${fmtUsdFromNanos(weeklySpendLimit)} | Spend progress not shown yet`
+			: "Weekly limit: Unlimited",
+		M: monthlySpendLimit > 0
+			? `Monthly limit: ${fmtUsdFromNanos(monthlySpendLimit)} | Spend progress not shown yet`
+			: "Monthly limit: Unlimited",
+	} as const;
+
+	return {
+		dailyLimit,
+		weeklyLimit,
+		monthlyLimit,
+		currentUsage,
+		dailySpendLimit,
+		weeklySpendLimit,
+		monthlySpendLimit,
+		currentDailySpend,
+		reqPct,
+		reqTone,
+		spendPct,
+		spendTone,
+		requestTooltipText,
+		spendTooltipText,
+	};
 }
+
+type SiloMode = "progress" | "unlimited" | "unknown";
 
 function Silo({
 	label,
 	pct,
 	tone,
+	mode = "progress",
 }: {
 	label: string;
 	pct: number | null;
 	tone: "ok" | "warn" | "danger" | "muted";
+	mode?: SiloMode;
 }) {
-	const segments = 10;
 	const clamped = pct === null ? null : Math.max(0, Math.min(100, pct));
-	const filled =
-		clamped === null ? 0 : Math.round((clamped / 100) * segments);
+	const progressPct = clamped === null ? 0 : clamped;
 
 	const filledClass =
-		tone === "danger"
+		mode === "unlimited"
+			? "bg-sky-500/40 dark:bg-sky-400/35"
+			: tone === "danger"
 			? "bg-red-600"
 			: tone === "warn"
 				? "bg-amber-500"
 				: tone === "ok"
 					? "bg-emerald-600"
 					: "bg-zinc-400";
-	const emptyClass =
+	const trackClass =
 		tone === "muted"
 			? "bg-zinc-300 dark:bg-zinc-700"
 			: "bg-zinc-200 dark:bg-zinc-800";
+	const valueClass =
+		tone === "danger"
+			? "text-red-600"
+			: tone === "warn"
+				? "text-amber-600"
+				: tone === "ok"
+					? "text-emerald-600"
+					: "text-zinc-500";
 
 	return (
-		<div className="flex flex-col items-center gap-0.5 px-1">
-			<div className="flex items-center gap-0.5">
-				{Array.from({ length: segments }).map((_, i) => {
-					const on = i < filled;
-					return (
-						<div
-							// eslint-disable-next-line react/no-array-index-key
-							key={i}
-							className={[
-								"h-[10px] w-[2px] rounded-full",
-								on ? filledClass : emptyClass,
-								!on ? "opacity-90" : "",
-							]
-								.filter(Boolean)
-								.join(" ")}
-						/>
-					);
-				})}
+		<div className="flex items-center gap-2 px-1">
+			<div className="w-3 text-[10px] leading-none text-muted-foreground">{label}</div>
+			<div className={`relative h-1.5 flex-1 overflow-hidden rounded-full ${trackClass}`}>
+				{mode === "unknown" ? (
+					<div className="absolute inset-0 border border-dashed border-zinc-400/70 dark:border-zinc-500/70" />
+				) : (
+					<div
+						className={`h-full rounded-full ${filledClass}`}
+						style={{
+							width: mode === "unlimited" ? "100%" : `${progressPct}%`,
+						}}
+					/>
+				)}
 			</div>
-			<div className="text-[9px] leading-none text-muted-foreground">
-				{label}
+			<div className={`w-7 text-right text-[10px] leading-none ${valueClass}`}>
+				{mode === "unlimited" ? (
+					<InfinityIcon className="ml-auto h-3 w-3" />
+				) : mode === "unknown" ? (
+					"--"
+				) : (
+					`${Math.round(progressPct)}%`
+				)}
 			</div>
 		</div>
+	);
+}
+
+function SiloWithTooltip({
+	children,
+	content,
+}: {
+	children: React.ReactNode;
+	content: React.ReactNode;
+}) {
+	return (
+		<Tooltip delayDuration={0}>
+			<TooltipTrigger asChild>{children}</TooltipTrigger>
+			<TooltipContent className="max-w-xs">
+				<div className="text-xs">{content}</div>
+			</TooltipContent>
+		</Tooltip>
 	);
 }
 
@@ -193,52 +279,140 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 						</div>
 					) : (
 						<div className="rounded-lg border border-border/60 bg-card overflow-hidden">
-							<Table className="[&_tr:last-child]:border-b-0 table-fixed">
+							<div className="divide-y divide-border/60 md:hidden">
+								{team.keys.map((k: any) => {
+									const state = getKeyState(k);
+									const meta = stateMeta(state);
+									const visuals = getKeyUsageVisuals(k, state);
+
+									return (
+										<div key={k.id} className="space-y-3 p-3">
+											<div className="flex items-start justify-between gap-2">
+												<div className="min-w-0">
+													<div className="flex items-center gap-2 min-w-0">
+														<meta.Icon
+															aria-label={meta.label}
+															className={`h-4 w-4 shrink-0 ${meta.className}`}
+														/>
+														<div className="font-medium truncate">{k.name}</div>
+													</div>
+													<div className="mt-1 font-mono text-[11px] text-muted-foreground truncate">
+														{formatKeyReference(k.prefix)}
+													</div>
+												</div>
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-8 w-8"
+															aria-label="Actions"
+														>
+															<MoreVertical className="h-4 w-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent side="bottom" align="end">
+														<UsageItem k={k} />
+														<EditKeyItem k={k} />
+														<KeyLimitsItem k={k} />
+														<DeleteKeyItem k={k} />
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</div>
+
+											<div className="grid grid-cols-2 gap-3 text-xs">
+												<div>
+													<div className="text-muted-foreground">Last Used</div>
+													<div>{formatLastUsed(k.last_used_at)}</div>
+												</div>
+												<div>
+													<div className="text-muted-foreground">Expires</div>
+													<div>{formatExpiry(k.expires_at)}</div>
+												</div>
+											</div>
+
+											<div className="space-y-1.5">
+												<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+													Requests
+												</div>
+												<Silo
+													label="D"
+													pct={visuals.reqPct}
+													tone={visuals.reqTone}
+													mode={visuals.dailyLimit > 0 ? "progress" : "unlimited"}
+												/>
+												<Silo
+													label="W"
+													pct={null}
+													tone={state === "disabled" ? "muted" : "muted"}
+													mode={visuals.weeklyLimit > 0 ? "unknown" : "unlimited"}
+												/>
+												<Silo
+													label="M"
+													pct={null}
+													tone={state === "disabled" ? "muted" : "muted"}
+													mode={visuals.monthlyLimit > 0 ? "unknown" : "unlimited"}
+												/>
+											</div>
+
+											<div className="space-y-1.5">
+												<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+													Spend
+												</div>
+												<Silo
+													label="D"
+													pct={visuals.spendPct}
+													tone={visuals.spendTone}
+													mode={visuals.dailySpendLimit > 0 ? "progress" : "unlimited"}
+												/>
+												<Silo
+													label="W"
+													pct={null}
+													tone={state === "disabled" ? "muted" : "muted"}
+													mode={visuals.weeklySpendLimit > 0 ? "unknown" : "unlimited"}
+												/>
+												<Silo
+													label="M"
+													pct={null}
+													tone={state === "disabled" ? "muted" : "muted"}
+													mode={visuals.monthlySpendLimit > 0 ? "unknown" : "unlimited"}
+												/>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+
+							<Table className="hidden md:table [&_tr:last-child]:border-b-0 table-fixed [&_th]:px-4 [&_td]:px-4 [&_th]:align-middle [&_td]:align-middle">
 								<TableHeader className="bg-muted/30">
 									<TableRow>
-										<TableHead className="pl-4 w-[18rem]">
+										<TableHead className="w-[20rem]">
 											Key{" "}
 											<span className="ml-1 text-xs font-normal text-muted-foreground">
 												({team.keys.length})
 											</span>
 										</TableHead>
-										<TableHead className="hidden lg:table-cell w-[14rem]">Prefix</TableHead>
-										<TableHead className="hidden md:table-cell w-[12rem]">Requests</TableHead>
-										<TableHead className="hidden md:table-cell w-[12rem]">Spend</TableHead>
-										<TableHead className="hidden sm:table-cell w-[7rem] whitespace-nowrap">
+										<TableHead className="hidden lg:table-cell w-[12rem]">Key Ref</TableHead>
+										<TableHead className="hidden md:table-cell w-[14rem] pr-8">Requests</TableHead>
+										<TableHead className="hidden md:table-cell w-[14rem] pl-8">Spend</TableHead>
+										<TableHead className="hidden sm:table-cell w-[8rem] whitespace-nowrap">
 											Last Used
 										</TableHead>
-										<TableHead className="hidden sm:table-cell w-[6rem] whitespace-nowrap">
+										<TableHead className="hidden sm:table-cell w-[7rem] whitespace-nowrap">
 											Expires
 										</TableHead>
-										<TableHead className="w-10 text-right" />
+										<TableHead className="w-[3.5rem] text-right" />
 									</TableRow>
 								</TableHeader>
 								<TableBody>
 									{team.keys.map((k: any) => {
 										const state = getKeyState(k);
 										const meta = stateMeta(state);
-										const reqPrimary = pickPrimaryRequestLimit(k);
-										const spendPrimary = pickPrimarySpendLimit(k);
-
-										const dailyLimit = Number(k?.daily_limit_requests ?? 0) || 0;
-										const currentUsage = Number(k?.current_usage_daily ?? 0) || 0;
-										const reqPct =
-											dailyLimit > 0 ? (currentUsage / dailyLimit) * 100 : null;
-										const reqTone =
-											state === "disabled"
-												? ("muted" as const)
-												: dailyLimit > 0 && reqPct !== null
-													? reqPct >= 100
-														? ("danger" as const)
-														: reqPct >= 80
-															? ("warn" as const)
-															: ("ok" as const)
-													: ("muted" as const);
+										const visuals = getKeyUsageVisuals(k, state);
 
 										return (
 											<TableRow key={k.id}>
-												<TableCell className="pl-4">
+												<TableCell>
 													<div className="flex items-center gap-2 min-w-0">
 														<Tooltip delayDuration={0}>
 															<TooltipTrigger asChild>
@@ -256,75 +430,81 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 																{k.name}
 															</div>
 															<div className="font-mono text-xs text-muted-foreground truncate md:hidden">
-																{k.prefix}
+																{formatKeyReference(k.prefix)}
 															</div>
 														</div>
 													</div>
 												</TableCell>
 												<TableCell className="hidden lg:table-cell font-mono text-xs text-muted-foreground">
-													{k.prefix}
+													{formatKeyReference(k.prefix)}
 												</TableCell>
-												<TableCell className="hidden md:table-cell">
-													<Tooltip delayDuration={0}>
-														<TooltipTrigger asChild>
-															<div className="flex items-start gap-6">
-																<Silo label="D" pct={reqPct} tone={reqTone} />
-																<Silo
-																	label="W"
-																	pct={null}
-																	tone={state === "disabled" ? "muted" : "muted"}
-																/>
-																<Silo
-																	label="M"
-																	pct={null}
-																	tone={state === "disabled" ? "muted" : "muted"}
-																/>
-															</div>
-														</TooltipTrigger>
-														<TooltipContent className="max-w-xs">
-															<div className="text-xs font-medium">Requests</div>
-															<div className="mt-1 text-xs text-muted-foreground space-y-1">
-																<div>Daily: {Number(k?.daily_limit_requests ?? 0) > 0 ? fmtCompactInt(Number(k.daily_limit_requests)) : "Unlimited"}</div>
-																<div>Weekly: {Number(k?.weekly_limit_requests ?? 0) > 0 ? fmtCompactInt(Number(k.weekly_limit_requests)) : "Unlimited"}</div>
-																<div>Monthly: {Number(k?.monthly_limit_requests ?? 0) > 0 ? fmtCompactInt(Number(k.monthly_limit_requests)) : "Unlimited"}</div>
-																<div className="pt-1">
-																	Usage today: {fmtCompactInt(currentUsage)}
-																	{dailyLimit > 0 ? ` / ${fmtCompactInt(dailyLimit)}` : ""}
-																</div>
-															</div>
-														</TooltipContent>
-													</Tooltip>
-												</TableCell>
-												<TableCell className="hidden md:table-cell">
-													<Tooltip delayDuration={0}>
-														<TooltipTrigger asChild>
-															<div className="flex items-start gap-6">
+												<TableCell className="hidden md:table-cell pr-8">
+													<div className="space-y-1.5">
+														<SiloWithTooltip content={visuals.requestTooltipText.D}>
+															<div className="w-full">
 																<Silo
 																	label="D"
-																	pct={null}
-																	tone={state === "disabled" ? "muted" : "muted"}
+																	pct={visuals.reqPct}
+																	tone={visuals.reqTone}
+																	mode={visuals.dailyLimit > 0 ? "progress" : "unlimited"}
 																/>
+															</div>
+														</SiloWithTooltip>
+														<SiloWithTooltip content={visuals.requestTooltipText.W}>
+															<div className="w-full">
 																<Silo
 																	label="W"
 																	pct={null}
 																	tone={state === "disabled" ? "muted" : "muted"}
+																	mode={visuals.weeklyLimit > 0 ? "unknown" : "unlimited"}
 																/>
+															</div>
+														</SiloWithTooltip>
+														<SiloWithTooltip content={visuals.requestTooltipText.M}>
+															<div className="w-full">
 																<Silo
 																	label="M"
 																	pct={null}
 																	tone={state === "disabled" ? "muted" : "muted"}
+																	mode={visuals.monthlyLimit > 0 ? "unknown" : "unlimited"}
 																/>
 															</div>
-														</TooltipTrigger>
-														<TooltipContent className="max-w-xs">
-															<div className="text-xs font-medium">Spend</div>
-															<div className="mt-1 text-xs text-muted-foreground space-y-1">
-																<div>Daily: {Number(k?.daily_limit_cost_nanos ?? 0) > 0 ? fmtUsdFromNanos(Number(k.daily_limit_cost_nanos)) : "Unlimited"}</div>
-																<div>Weekly: {Number(k?.weekly_limit_cost_nanos ?? 0) > 0 ? fmtUsdFromNanos(Number(k.weekly_limit_cost_nanos)) : "Unlimited"}</div>
-																<div>Monthly: {Number(k?.monthly_limit_cost_nanos ?? 0) > 0 ? fmtUsdFromNanos(Number(k.monthly_limit_cost_nanos)) : "Unlimited"}</div>
+														</SiloWithTooltip>
+													</div>
+												</TableCell>
+												<TableCell className="hidden md:table-cell pl-8">
+													<div className="space-y-1.5">
+														<SiloWithTooltip content={visuals.spendTooltipText.D}>
+															<div className="w-full">
+																<Silo
+																	label="D"
+																	pct={visuals.spendPct}
+																	tone={visuals.spendTone}
+																	mode={visuals.dailySpendLimit > 0 ? "progress" : "unlimited"}
+																/>
 															</div>
-														</TooltipContent>
-													</Tooltip>
+														</SiloWithTooltip>
+														<SiloWithTooltip content={visuals.spendTooltipText.W}>
+															<div className="w-full">
+																<Silo
+																	label="W"
+																	pct={null}
+																	tone={state === "disabled" ? "muted" : "muted"}
+																	mode={visuals.weeklySpendLimit > 0 ? "unknown" : "unlimited"}
+																/>
+															</div>
+														</SiloWithTooltip>
+														<SiloWithTooltip content={visuals.spendTooltipText.M}>
+															<div className="w-full">
+																<Silo
+																	label="M"
+																	pct={null}
+																	tone={state === "disabled" ? "muted" : "muted"}
+																	mode={visuals.monthlySpendLimit > 0 ? "unknown" : "unlimited"}
+																/>
+															</div>
+														</SiloWithTooltip>
+													</div>
 												</TableCell>
 												<TableCell className="hidden sm:table-cell text-xs text-muted-foreground">
 													{formatLastUsed(k.last_used_at)}

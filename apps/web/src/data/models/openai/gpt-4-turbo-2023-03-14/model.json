@@ -51,7 +51,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 33
+      "rank": 32
     },
     {
       "benchmark_id": "simplebench",
@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 22
+      "rank": 21
     }
   ]
 }

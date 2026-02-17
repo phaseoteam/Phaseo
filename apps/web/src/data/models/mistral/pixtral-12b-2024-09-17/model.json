@@ -11,7 +11,28 @@
   "license": "Apache 2.0",
   "input_types": null,
   "output_types": null,
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.mistral.ai/platform/endpoints/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://chat.mistral.ai"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/pixtral-12b/"
+    },
+    {
+      "platform": "repository",
+      "url": "https://huggingface.co/mistralai/Pixtral-12B-2409"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/mistralai/Pixtral-12B-2409"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

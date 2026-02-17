@@ -51,7 +51,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 37
+      "rank": 33
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-3-haiku",
-      "rank": 77
+      "rank": 69
     },
     {
       "benchmark_id": "lmarena-text",
@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 53
+      "rank": 50
     },
     {
       "benchmark_id": "nyt-connections",
@@ -75,7 +75,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 37
+      "rank": 34
     }
   ]
 }

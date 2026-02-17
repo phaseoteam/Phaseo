@@ -4,5 +4,26 @@
   "country_code": "US",
   "description": "Cursor is an AI-assisted coding product built by Anysphere. Its mission is to accelerate software development by integrating state-of-the-art language models into a developer-first IDE experience for editing, navigation, refactoring and agentic code generation.",
   "colour": "#F54E00",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://cursor.com"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/cursor/cursor"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/cursor_ai"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/cursorai"
+    },
+    {
+      "platform": "discord",
+      "url": "https://discord.com/invite/cursor"
+    }
+  ]
 }

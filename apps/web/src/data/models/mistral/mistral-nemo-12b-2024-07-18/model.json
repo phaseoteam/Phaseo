@@ -11,7 +11,24 @@
   "license": "Apache 2.0",
   "input_types": "text",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.mistral.ai/getting-started/models/models_overview/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/mistral-nemo/"
+    },
+    {
+      "platform": "repository",
+      "url": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

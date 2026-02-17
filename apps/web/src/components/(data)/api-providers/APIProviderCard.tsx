@@ -24,7 +24,7 @@ export default function APIProviderCard({ api_provider }: Props) {
 			)}
 		>
 			<CardContent className="flex flex-row items-center gap-4 pt-6">
-				<Link href={`/api-providers/${id}`} className="group">
+				<Link href={`/api-providers/${id}`} prefetch={false} className="group">
 					<div className="w-12 h-12 relative flex items-center justify-center rounded-xl border">
 						<div className="w-9 h-9 relative">
 							<Logo
@@ -40,6 +40,7 @@ export default function APIProviderCard({ api_provider }: Props) {
 					<CardTitle className="truncate flex flex-col items-start gap-1">
 						<Link
 							href={`/api-providers/${id}`}
+							prefetch={false}
 							className="font-semibold"
 						>
 							<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
@@ -50,6 +51,7 @@ export default function APIProviderCard({ api_provider }: Props) {
 							<span className="mt-1 text-xs text-muted-foreground truncate flex items-center gap-1">
 								<Link
 									href={`/countries/${country.toLowerCase()}`}
+									prefetch={false}
 								>
 									<Image
 										src={`/flags/${country.toLowerCase()}.svg`}
@@ -66,6 +68,7 @@ export default function APIProviderCard({ api_provider }: Props) {
 				<Button asChild size="icon" variant="ghost" tabIndex={-1}>
 					<Link
 						href={`/api-providers/${id}`}
+						prefetch={false}
 						aria-label={`Go to ${name} details`}
 						tabIndex={-1}
 						className="group"

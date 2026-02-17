@@ -8,9 +8,9 @@
   "release_date": "2025-12-16T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
-  "input_types": null,
-  "output_types": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image",
+  "output_types": "text",
   "links": [],
   "details": [],
   "benchmarks": []

@@ -2138,19 +2138,121 @@ function ChatPlaygroundContent({
 	);
 
 	const handleEditMessage = useCallback(
-		(messageId: string, content: string) => {
-			if (!activeThread) return;
-			const nextThread = applyMessageUpdate(
+		async (messageId: string, content: string) => {
+			if (!activeThread || isSending) return;
+			const nextContent = content.trim();
+			if (!nextContent) return;
+			if (!isAuthenticated) {
+				setError("Sign in to start chatting.");
+				return;
+			}
+			if (!apiKey.trim()) {
+				setError("Add an API key in settings before sending.");
+				setSettingsOpen(true);
+				return;
+			}
+
+			const messageIndex = activeThread.messages.findIndex(
+				(message) => message.id === messageId,
+			);
+			if (messageIndex < 0) return;
+			const originalMessage = activeThread.messages[messageIndex];
+			if (!originalMessage || originalMessage.role !== "user") return;
+
+			const editedThread = applyMessageUpdate(
 				activeThread,
 				messageId,
-				(message) => ({
-					...message,
-					content,
-				}),
+				(message) => {
+					const variants = [
+						...ensureVariants(message),
+						{
+							id: generateId(),
+							content: nextContent,
+							createdAt: nowIso(),
+							usage: null,
+							meta: message.meta ?? null,
+						},
+					];
+					const activeVariantIndex = variants.length - 1;
+					return {
+						...message,
+						content: nextContent,
+						variants,
+						activeVariantIndex,
+					};
+				},
 			);
-			updateThreadState(nextThread, !temporaryMode);
+
+			const nextTitle = editedThread.titleLocked
+				? editedThread.title
+				: buildTitle(editedThread.messages);
+			const updatedThread = {
+				...editedThread,
+				title: nextTitle,
+				updatedAt: nowIso(),
+			};
+
+			await updateThreadState(updatedThread, !temporaryMode);
+
+			const nextUserMessageIndex = updatedThread.messages.findIndex(
+				(message, index) => index > messageIndex && message.role === "user",
+			);
+			const assistantRangeEnd =
+				nextUserMessageIndex === -1
+					? updatedThread.messages.length
+					: nextUserMessageIndex;
+			const targetAssistants = updatedThread.messages.slice(
+				messageIndex + 1,
+				assistantRangeEnd,
+			).filter((message) => message.role === "assistant");
+			const contextMessages = updatedThread.messages.slice(0, messageIndex + 1);
+
+			setIsSending(true);
+			try {
+				if (targetAssistants.length === 0) {
+					const targetModelId = updatedThread.modelId;
+					await executeCompletion(
+						buildThreadForModel(updatedThread, targetModelId),
+						contextMessages,
+						undefined,
+						undefined,
+						undefined,
+						targetModelId,
+						false,
+					);
+					return;
+				}
+
+				await Promise.all(
+					targetAssistants.map((assistantMessage) => {
+						const targetModelId =
+							assistantMessage.modelId ?? updatedThread.modelId;
+						return executeCompletion(
+							buildThreadForModel(updatedThread, targetModelId),
+							contextMessages,
+							assistantMessage.id,
+							undefined,
+							undefined,
+							targetModelId,
+							false,
+						);
+					}),
+				);
+			} finally {
+				setIsSending(false);
+			}
 		},
-		[activeThread, applyMessageUpdate, temporaryMode, updateThreadState],
+		[
+			activeThread,
+			apiKey,
+			applyMessageUpdate,
+			buildThreadForModel,
+			executeCompletion,
+			isAuthenticated,
+			isSending,
+			temporaryMode,
+			updateThreadState,
+		],
 	);
 
 	const handleSelectVariant = useCallback(

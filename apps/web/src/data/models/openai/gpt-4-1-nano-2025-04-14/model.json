@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 31
+      "rank": 29
     },
     {
       "benchmark_id": "aime-2024",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 32
+      "rank": 27
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 24
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 55
+      "rank": 52
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -118,7 +118,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 15
+      "rank": 13
     },
     {
       "benchmark_id": "lmarena-text",
@@ -126,7 +126,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 34
+      "rank": 33
     },
     {
       "benchmark_id": "nyt-connections",
@@ -134,7 +134,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 36
+      "rank": 33
     },
     {
       "benchmark_id": "openai-mrcr-2-needle-128k",

@@ -7,8 +7,11 @@ import { Separator } from "@/components/ui/separator";
 import MainCard from "./MainCard";
 import ComparisonDisplay from "./ComparisonDisplay";
 import { ExtendedModel } from "@/data/types";
-import { Logo } from "@/components/Logo";
 import ModelCombobox from "./ModelCombobox";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import { ProviderLogo } from "./ProviderLogo";
 
 type QuickComparison = {
 	title: string;
@@ -33,57 +36,95 @@ const encodeModelIdForUrl = (value: string): string => {
 	return `${organisationId}_${rest.join("/")}`;
 };
 
-const quickComparisons: QuickComparison[] = [
-	{
-		title: "Gemini 2.5 Pro Preview vs Grok 4 vs GPT-5 vs Claude Sonnet 4.5",
-		modelIds: [
-			"google/gemini-2-5-pro-preview-2025-06-05",
-			"x-ai/grok-4-2025-07-10",
-			"openai/gpt-5-2025-08-07",
-			"anthropic/claude-sonnet-4-5-2025-09-29",
-		],
-		logos: ["google", "xai", "openai", "anthropic"],
-	},
-	{
-		title: "Grok 4 vs GPT-5.1",
-		modelIds: ["x-ai/grok-4-2025-07-10", "openai/gpt-5-1-2025-11-12"],
-		logos: ["xai", "openai"],
-	},
-	{
-		title: "Claude Sonnet 4.5 vs Gemini 2.5 Pro Preview",
-		modelIds: [
-			"anthropic/claude-sonnet-4-5-2025-09-29",
-			"google/gemini-2-5-pro-preview-2025-06-05",
-		],
-		logos: ["anthropic", "google"],
-	},
-	{
-		title: "GPT-5 vs Claude Opus 4",
-		modelIds: ["openai/gpt-5-2025-08-07", "anthropic/claude-opus-4-2025-05-21"],
-		logos: ["openai", "anthropic"],
-	},
-	{
-		title: "Grok 4 vs Claude Sonnet 4.5",
-		modelIds: ["x-ai/grok-4-2025-07-10", "anthropic/claude-sonnet-4-5-2025-09-29"],
-		logos: ["xai", "anthropic"],
-	},
-	{
-		title: "Gemini 2.5 Pro Preview vs GPT-5.1",
-		modelIds: [
-			"google/gemini-2-5-pro-preview-2025-06-05",
-			"openai/gpt-5-1-2025-11-12",
-		],
-		logos: ["google", "openai"],
-	},
-	{
-		title: "Claude Sonnet 4.5 vs Grok 4 Max",
-		modelIds: [
-			"anthropic/claude-sonnet-4-5-2025-09-29",
-			"x-ai/grok-4-heavy-2025-07-10",
-		],
-		logos: ["anthropic", "xai"],
-	},
-];
+function toReleaseTs(value: string | null | undefined): number {
+	if (!value) return 0;
+	const ts = new Date(value).getTime();
+	return Number.isFinite(ts) ? ts : 0;
+}
+
+function pickLatestAcrossProviders(models: ExtendedModel[], count: number): ExtendedModel[] {
+	const sorted = [...models].sort(
+		(a, b) => toReleaseTs(b.release_date) - toReleaseTs(a.release_date)
+	);
+	const picked: ExtendedModel[] = [];
+	const seenProviders = new Set<string>();
+	for (const model of sorted) {
+		const providerId = model.provider?.provider_id ?? "";
+		if (!providerId) continue;
+		if (seenProviders.has(providerId)) continue;
+		picked.push(model);
+		seenProviders.add(providerId);
+		if (picked.length >= count) break;
+	}
+	return picked;
+}
+
+function pickLatestFromProvider(models: ExtendedModel[], providerId: string): ExtendedModel | null {
+	const candidates = models.filter((m) => m.provider?.provider_id === providerId);
+	if (!candidates.length) return null;
+	return candidates.reduce((best, next) =>
+		toReleaseTs(next.release_date) > toReleaseTs(best.release_date) ? next : best
+	);
+}
+
+function buildQuickComparisons(models: ExtendedModel[]): QuickComparison[] {
+	if (!models.length) return [];
+
+	const byRelease = [...models].sort(
+		(a, b) => toReleaseTs(b.release_date) - toReleaseTs(a.release_date)
+	);
+	const topTwo = byRelease.slice(0, 2);
+	const crossProvider = pickLatestAcrossProviders(models, 4);
+
+	const bigProviders = ["openai", "anthropic", "google", "x-ai"];
+	const bigFour = bigProviders
+		.map((providerId) => pickLatestFromProvider(models, providerId))
+		.filter(Boolean) as ExtendedModel[];
+
+	const out: QuickComparison[] = [];
+
+	if (crossProvider.length >= 2) {
+		out.push({
+			title: "Latest releases (cross-provider)",
+			modelIds: crossProvider.map((m) => m.id),
+			logos: crossProvider.map((m) => m.provider.provider_id),
+		});
+	}
+
+	if (topTwo.length === 2) {
+		out.push({
+			title: "Newest head-to-head",
+			modelIds: topTwo.map((m) => m.id),
+			logos: topTwo.map((m) => m.provider.provider_id),
+		});
+	}
+
+	if (bigFour.length >= 2) {
+		out.push({
+			title:
+				bigFour.length >= 4
+					? "Snapshot: major providers"
+					: "Snapshot: provider leaders",
+			modelIds: bigFour.slice(0, 4).map((m) => m.id),
+			logos: bigFour.slice(0, 4).map((m) => m.provider.provider_id),
+		});
+	}
+
+	if (out.length >= 3) return out.slice(0, 3);
+
+	// Fallback: just pick distinct providers in alphabetical order.
+	const alpha = [...models].sort((a, b) => a.name.localeCompare(b.name));
+	const fallback = pickLatestAcrossProviders(alpha, 4);
+	if (fallback.length >= 2) {
+		out.push({
+			title: "Starter pack",
+			modelIds: fallback.map((m) => m.id),
+			logos: fallback.map((m) => m.provider.provider_id),
+		});
+	}
+
+	return out.slice(0, 3);
+}
 
 const buildQuickComparisonHref = (modelIds: string[]): string => {
 	const params = new URLSearchParams();
@@ -143,77 +184,93 @@ export default function CompareDashboard({
 	);
 
 	if (selected.length === 0) {
-		const previewComparisons = quickComparisons.slice(0, 3);
+		const previewComparisons = buildQuickComparisons(models);
 
 		return (
-			<div className="flex flex-col items-center gap-8">
-				<div className="text-center space-y-2 max-w-2xl">
-					<h2 className="text-3xl font-bold tracking-tight">
-						Start a Model Comparison
+			<div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+				<div className="space-y-3">
+					<div className="flex flex-wrap items-center gap-2">
+						<Badge variant="secondary" className="text-[11px]">
+							Compare
+						</Badge>
+						<Badge variant="outline" className="text-[11px]">
+							Up to 4 models
+						</Badge>
+						<Badge variant="outline" className="text-[11px]">
+							Benchmarks
+						</Badge>
+						<Badge variant="outline" className="text-[11px]">
+							Pricing
+						</Badge>
+					</div>
+					<h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+						Compare models side-by-side
 					</h2>
-					<p className="text-muted-foreground">
-						Choose a curated matchup or pick any models yourself to
-						launch the comparison workspace.
+					<p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+						Build a shareable comparison across benchmarks, pricing, context,
+						availability, and release timelines.
 					</p>
 				</div>
 
-				<div className="grid w-full gap-6 lg:grid-cols-2 items-start">
+				<div className="grid gap-6 lg:grid-cols-2 items-start">
 					<section className="rounded-2xl border border-border/60 bg-card text-card-foreground p-6 shadow-sm flex flex-col gap-5">
 						<div className="space-y-1">
-							<p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+							<p className="text-xs font-medium text-muted-foreground">
 								Option 1
 							</p>
-							<h3 className="text-2xl font-semibold">
-								Use a Quick Comparison
-							</h3>
+							<h3 className="text-xl font-semibold">Quick comparisons</h3>
 							<p className="text-muted-foreground text-sm">
-								Pick from popular matchups curated by our team.
-								We&apos;ll load the results instantly.
+								Auto-generated from the latest model metadata.
 							</p>
 						</div>
 						<div className="space-y-3">
-							{previewComparisons.map((comparison) => (
-								<Link
-									key={comparison.title}
-									href={buildQuickComparisonHref(
-										comparison.modelIds
-									)}
-									className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/30 p-4 transition hover:border-primary"
-								>
-									<div className="flex flex-wrap items-center gap-2">
-										{comparison.logos.map((logoId) => (
-											<Logo
-												key={`${comparison.title}-${logoId}`}
-												id={logoId}
-												width={28}
-												height={28}
-												className="h-7 w-7"
-											/>
-										))}
-									</div>
-									<span className="text-sm font-medium leading-tight">
-										{comparison.title}
-									</span>
-								</Link>
-							))}
+							{previewComparisons.length ? (
+								previewComparisons.map((comparison) => (
+									<Link
+										key={comparison.title}
+										href={buildQuickComparisonHref(comparison.modelIds)}
+										className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background/50 p-4 transition hover:border-primary"
+									>
+										<div className="flex flex-wrap items-center gap-2">
+											{comparison.logos.map((logoId) => (
+												<ProviderLogo
+													key={`${comparison.title}-${logoId}`}
+													id={logoId}
+													alt={`${logoId} logo`}
+													size="sm"
+												/>
+											))}
+										</div>
+										<span className="text-sm font-medium leading-tight">
+											{comparison.title}
+										</span>
+										<span className="text-xs text-muted-foreground">
+											Click to load this matchup
+										</span>
+									</Link>
+								))
+							) : (
+								<div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+									No quick comparisons available yet.
+								</div>
+							)}
 						</div>
-						<p className="text-xs text-muted-foreground">
-							We keep these templates refreshed with the most
-							popular matchups each week.
-						</p>
+						<Button asChild variant="ghost" className="justify-between">
+							<Link href="/models">
+								Browse models
+								<ArrowRight className="h-4 w-4" />
+							</Link>
+						</Button>
 					</section>
 
 					<section className="rounded-2xl border border-border/60 bg-card text-card-foreground p-6 shadow-sm flex flex-col gap-4">
 						<div className="space-y-1">
-							<p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+							<p className="text-xs font-medium text-muted-foreground">
 								Option 2
 							</p>
-							<h3 className="text-2xl font-semibold">
-								Select Your Own Models
-							</h3>
+							<h3 className="text-xl font-semibold">Pick your own</h3>
 							<p className="text-sm text-muted-foreground">
-								Search for any combination (up to four models)
-								to build a bespoke comparison.
+								Search any models (up to four) and build a bespoke comparison.
 							</p>
 						</div>
 						<div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4">
@@ -224,9 +281,8 @@ export default function CompareDashboard({
 							/>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Tip: you can also use the picker pinned to the top
-							of the page - this panel just gives you a dedicated
-							starting point.
+							This is the same picker as the sticky header, just placed here as
+							a starting point.
 						</p>
 					</section>
 				</div>

@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 22
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -98,7 +98,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 22
+      "rank": 21
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -106,7 +106,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 4
+      "rank": 2
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -114,7 +114,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 4
+      "rank": 2
     }
   ]
 }

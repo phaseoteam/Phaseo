@@ -17,12 +17,8 @@ export default function ComparisonDisplay({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
-	selectedModels.forEach((model) => {
-		console.log(`${model.name}: ${JSON.stringify(model.prices)}`);
-	});
-
 	return (
-		<div className="w-full py-8 flex flex-col space-y-4">
+		<div className="w-full flex flex-col space-y-10">
 			<ComparisonHeader selectedModels={selectedModels} />
 			<OverviewCard selectedModels={selectedModels} />
 			<PerformanceBenchmarkGraph selectedModels={selectedModels} />

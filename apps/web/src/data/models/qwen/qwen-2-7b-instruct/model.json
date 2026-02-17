@@ -1,0 +1,38 @@
+{
+  "model_id": "qwen/qwen-2-7b-instruct",
+  "organisation_id": "qwen",
+  "name": "Qwen 2 7B Instruct",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://huggingface.co/Qwen/Qwen2-7B-Instruct"
+    },
+    {
+      "platform": "playground",
+      "url": "https://huggingface.co/Qwen/Qwen2-7B-Instruct"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2309.00071"
+    },
+    {
+      "platform": "repository",
+      "url": "https://huggingface.co/Qwen/Qwen2-7B-Instruct"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/Qwen/Qwen2-7B-Instruct"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

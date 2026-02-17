@@ -1,0 +1,38 @@
+{
+  "model_id": "qwen/qwen-2-5-14b",
+  "organisation_id": "qwen",
+  "name": "Qwen 2.5 14B",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://www.alibabacloud.com/help/en/model-studio/developer-reference/use-qwen-by-calling-api"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2407.10671"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://qwenlm.github.io/blog/qwen2.5-llm/"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/QwenLM/Qwen2.5"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-14B-Instruct"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

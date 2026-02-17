@@ -11,7 +11,28 @@
   "license": null,
   "input_types": null,
   "output_types": null,
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://www.minimax.io/platform"
+    },
+    {
+      "platform": "playground",
+      "url": "https://chat.minimax.io/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://github.com/MiniMax-AI/MiniMax-M1/blob/main/MiniMax_M1_tech_report.pdf"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/MiniMax-AI/MiniMax-M1"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/collections/MiniMaxAI/minimax-m1-68502ad9634ec0eeac8cf094"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

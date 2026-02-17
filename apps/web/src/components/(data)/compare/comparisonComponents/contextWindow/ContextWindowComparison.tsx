@@ -2,17 +2,14 @@ import { ExtendedModel } from "@/data/types";
 import {
 	Card,
 	CardHeader,
-	CardTitle,
-	CardDescription,
 	CardContent,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ContextWindowBarChart from "./ContextWindowBarChart";
 import React from "react";
-import { Star, Info } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { Info } from "lucide-react";
 import Link from "next/link";
-import { Logo } from "@/components/Logo";
+import { ProviderLogoName } from "../../ProviderLogoName";
 
 interface ContextWindowComparisonProps {
 	selectedModels: ExtendedModel[];
@@ -120,24 +117,23 @@ function getModelCountBadge(models: ExtendedModel[]) {
 		(m) => m.input_context_length != null && m.output_context_length != null
 	);
 	if (withInfo.length === models.length) {
-		return <Badge className="absolute top-4 right-4">All Models</Badge>;
+		return <Badge variant="outline" className="text-xs">All models have context</Badge>;
 	}
 	if (withInfo.length === 1) {
 		return (
-			<Badge className="absolute top-4 right-4">1 Model With Info</Badge>
+			<Badge variant="outline" className="text-xs">1 model has context</Badge>
 		);
 	}
 	if (withInfo.length === 0) {
 		return (
-			<Badge className="absolute top-4 right-4">
-				No Models With Info
+			<Badge variant="outline" className="text-xs">
+				No context data
 			</Badge>
 		);
 	}
 	return (
-		<Badge className="absolute top-4 right-4">
-			{models.length - withInfo.length} Model
-			{models.length - withInfo.length > 1 ? "s" : ""} Missing
+		<Badge variant="outline" className="text-xs">
+			{models.length - withInfo.length} missing
 		</Badge>
 	);
 }
@@ -146,51 +142,51 @@ export default function ContextWindowComparison({
 	selectedModels,
 }: ContextWindowComparisonProps) {
 	if (!selectedModels || selectedModels.length === 0) return null;
+
+	const anyContext = selectedModels.some(
+		(m) => m.input_context_length != null || m.output_context_length != null
+	);
+	if (!anyContext) return null;
+
 	const infoSentence = getInfoSentence(selectedModels);
 	return (
-		<Card className="mb-6 bg-white dark:bg-zinc-950 rounded-lg shadow">
-			<CardHeader className="flex flex-col items-start justify-between border-b border-b-zinc-200">
-				<CardTitle className="text-lg font-semibold">
-					Context Window
-				</CardTitle>
-				<CardDescription className="text-muted-foreground text-sm">
-					Maximum input and output token capacity
-				</CardDescription>
+		<section className="space-y-3">
+			<header className="flex items-start justify-between gap-4">
+				<div className="space-y-1">
+					<h2 className="text-lg font-semibold">Context window</h2>
+					<p className="text-sm text-muted-foreground">
+						Maximum input and output token capacity.
+					</p>
+				</div>
 				{getModelCountBadge(selectedModels)}
-			</CardHeader>
-			<CardContent className="p-6">
+			</header>
+
+			<div className="space-y-4">
 				{infoSentence && (
-					<div className="mb-4">
-						<Card className="border-none shadow-lg">
-							<CardContent className="py-4 text-sm text-left flex items-center justify-start">
-								<span className="relative flex h-4 w-4 items-center justify-center mr-4 shrink-0">
-									<span className="absolute h-6 w-6 rounded-full bg-blue-400/30" />
-									<Info className="relative h-full w-full text-blue-500 shrink-0" />
-								</span>
-								<span>{infoSentence}</span>
-							</CardContent>
-						</Card>
-					</div>
+					<Card className="border-border/60 bg-background/60 shadow-sm">
+						<CardContent className="py-4 text-sm text-left flex items-center justify-start">
+							<span className="relative flex h-4 w-4 items-center justify-center mr-4 shrink-0">
+								<span className="absolute h-6 w-6 rounded-full bg-blue-400/30" />
+								<Info className="relative h-full w-full text-blue-500 shrink-0" />
+							</span>
+							<span>{infoSentence}</span>
+						</CardContent>
+					</Card>
 				)}
-				<div className="flex flex-col md:flex-row w-full gap-4 mb-6">
+				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 w-full gap-4 mb-6">
 					{selectedModels.map((model) => (
 						<Card
 							key={model.id}
-							className="shadow border-none flex flex-col justify-between flex-1 min-w-0 mb-4 md:mb-0"
-							style={{ minWidth: 0 }}
+							className="shadow border-none flex flex-col justify-between min-w-0"
 						>
 							<CardHeader className="flex flex-row items-center gap-3 pb-2">
-								<Link
+								<ProviderLogoName
+									id={model.provider.provider_id}
+									name={model.provider.name}
 									href={`/organisations/${model.provider.provider_id}`}
-								>
-									<Logo
-										id={model.provider.provider_id}
-										alt={model.provider.name}
-										width={32}
-										height={32}
-										className="rounded-full border bg-white object-contain"
-									/>
-								</Link>
+									size="sm"
+									mobilePopover
+								/>
 								<div className="font-semibold truncate text-base leading-tight">
 									<Link
 										href={`/models/${encodeURIComponent(
@@ -233,7 +229,7 @@ export default function ContextWindowComparison({
 						</Card>
 					))}
 				</div>
-				<div className="hidden sm:block bg-muted p-4 rounded-lg text-center mb-4">
+				<div className="hidden sm:block rounded-xl border border-border/60 bg-background/60 p-4 text-center mb-4">
 					<ContextWindowBarChart
 						chartData={getBarChartData(selectedModels)}
 						models={selectedModels.map((m) => ({
@@ -244,8 +240,8 @@ export default function ContextWindowComparison({
 						barGap={32}
 					/>
 				</div>
-			</CardContent>
-		</Card>
+			</div>
+		</section>
 	);
 }
 

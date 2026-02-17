@@ -8,7 +8,7 @@
   "release_date": "2021-01-05T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
+  "license": "Proprietary",
   "input_types": "text",
   "output_types": "image",
   "links": [],

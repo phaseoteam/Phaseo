@@ -3,9 +3,18 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronDown, PanelLeftIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSidebar } from "@/components/ui/sidebar";
 
 type Tab = {
 	href: string;
@@ -27,7 +36,7 @@ const USAGE_TABS: Tab[] = [
 	{ href: "/settings/usage/alerts", label: "Alerts" },
 ];
 
-const API_TABS: Tab[] = [
+const API_TABS_BASE: Tab[] = [
 	{
 		href: "/settings/keys",
 		label: "API Keys",
@@ -42,6 +51,12 @@ const API_TABS: Tab[] = [
 	{ href: "/settings/routing", label: "Routing", match: ["/settings/routing"] },
 	{ href: "/settings/byok", label: "BYOK", match: ["/settings/byok"] },
 	{ href: "/settings/presets", label: "Presets", match: ["/settings/presets"] },
+	{
+		href: "/settings/privacy",
+		label: "Privacy",
+		match: ["/settings/privacy"],
+		badge: "Alpha",
+	},
 	{
 		href: "/settings/guardrails",
 		label: "Guardrails",
@@ -91,7 +106,10 @@ function resolveTabs(pathname: string): Tab[] | null {
 	}
 
 	// OAuth
-	if (pathname.startsWith("/settings/oauth-apps") || pathname.startsWith("/settings/authorized-apps")) {
+	if (
+		pathname.startsWith("/settings/oauth-apps") ||
+		pathname.startsWith("/settings/authorized-apps")
+	) {
 		return OAUTH_TABS;
 	}
 
@@ -112,9 +130,10 @@ function resolveTabs(pathname: string): Tab[] | null {
 		pathname.startsWith("/settings/routing") ||
 		pathname.startsWith("/settings/byok") ||
 		pathname.startsWith("/settings/presets") ||
+		pathname.startsWith("/settings/privacy") ||
 		pathname.startsWith("/settings/guardrails")
 	) {
-		return API_TABS;
+		return API_TABS_BASE;
 	}
 	// Developer and other pages: sidebar is enough.
 	return null;
@@ -139,6 +158,7 @@ function isActive(pathname: string, tab: Tab) {
 
 export default function SettingsTopTabsServer() {
 	const pathname = usePathname() ?? "";
+	const { toggleSidebar } = useSidebar();
 	const tabs = resolveTabs(pathname);
 
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
@@ -209,55 +229,114 @@ export default function SettingsTopTabsServer() {
 	if (!tabs?.length) return null;
 
 	return (
-		<nav
-			ref={containerRef}
-			className="relative flex gap-4 border-b border-border"
-			onMouseLeave={() => setIndicatorToHref(activeTab?.href ?? null)}
-			aria-label="Settings section navigation"
-		>
-			<div
-				aria-hidden="true"
-				className="pointer-events-none absolute bottom-0 h-0.5 rounded bg-muted-foreground transition-[left,width,opacity] duration-200 ease-out"
-				style={{
-					left: indicator.left,
-					width: indicator.width,
-					opacity: indicator.opacity,
-				}}
-			/>
-
-			{tabs.map((tab) => {
-				const active = isActive(pathname, tab);
-				return (
-					<Link
-						key={tab.href}
-						href={tab.href}
-						prefetch={false}
-						aria-current={active ? "page" : undefined}
-						ref={(el) => {
-							linkRefs.current[tab.href] = el;
-						}}
-						onMouseEnter={() => setIndicatorToHref(tab.href)}
-						onFocus={() => setIndicatorToHref(tab.href)}
-						className={cn(
-							"pb-2 px-2 text-sm font-medium transition-colors duration-150",
-							active ? "text-primary" : "text-muted-foreground hover:text-primary",
-						)}
+		<>
+			<nav className="md:hidden" aria-label="Settings section navigation">
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						className="h-9 shrink-0 px-3"
+						onClick={toggleSidebar}
+						aria-haspopup="dialog"
 					>
-						<span className="flex items-center gap-2">
-							<span>{tab.label}</span>
-							{tab.badge ? (
-								<Badge
-									variant="outline"
-									className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
-								>
-									{tab.badge}
-								</Badge>
-							) : null}
-						</span>
-					</Link>
-				);
-			})}
-		</nav>
+						<PanelLeftIcon className="mr-1.5 h-4 w-4" />
+						Sections
+					</Button>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="outline"
+								className="h-9 flex-1 justify-between min-w-0"
+							>
+								<span className="truncate">
+									{activeTab?.label ?? "Settings"}
+								</span>
+								<ChevronDown className="h-4 w-4 shrink-0" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							align="end"
+							className="w-[min(20rem,calc(100vw-1rem))]"
+						>
+							{tabs.map((tab) => {
+								const active = isActive(pathname, tab);
+								return (
+									<DropdownMenuItem key={tab.href} asChild>
+										<Link
+											href={tab.href}
+											prefetch={false}
+											aria-current={active ? "page" : undefined}
+											className="flex items-center gap-2"
+										>
+											<span className={cn("flex-1 truncate", active && "font-semibold")}>
+												{tab.label}
+											</span>
+											{tab.badge ? (
+												<Badge
+													variant="outline"
+													className="h-4 px-1 text-[9px] uppercase tracking-wide"
+												>
+													{tab.badge}
+												</Badge>
+											) : null}
+										</Link>
+									</DropdownMenuItem>
+								);
+							})}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</div>
+			</nav>
+
+			<nav
+				ref={containerRef}
+				className="relative hidden md:flex gap-4 border-b border-border"
+				onMouseLeave={() => setIndicatorToHref(activeTab?.href ?? null)}
+				aria-label="Settings section navigation"
+			>
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute bottom-0 h-0.5 rounded bg-muted-foreground transition-[left,width,opacity] duration-200 ease-out"
+					style={{
+						left: indicator.left,
+						width: indicator.width,
+						opacity: indicator.opacity,
+					}}
+				/>
+
+				{tabs.map((tab) => {
+					const active = isActive(pathname, tab);
+					return (
+						<Link
+							key={tab.href}
+							href={tab.href}
+							prefetch={false}
+							aria-current={active ? "page" : undefined}
+							ref={(el) => {
+								linkRefs.current[tab.href] = el;
+							}}
+							onMouseEnter={() => setIndicatorToHref(tab.href)}
+							onFocus={() => setIndicatorToHref(tab.href)}
+							className={cn(
+								"pb-2 px-2 text-sm font-medium transition-colors duration-150",
+								active ? "text-primary" : "text-muted-foreground hover:text-primary",
+							)}
+						>
+							<span className="flex items-center gap-2">
+								<span>{tab.label}</span>
+								{tab.badge ? (
+									<Badge
+										variant="outline"
+										className="h-5 px-1.5 text-[10px] uppercase tracking-wide"
+									>
+										{tab.badge}
+									</Badge>
+								) : null}
+							</span>
+						</Link>
+					);
+				})}
+			</nav>
+		</>
 	);
 }
 

@@ -76,12 +76,6 @@ export default async function Page({ searchParams }: PageProps = {}) {
 		? await getComparisonModelsCached(resolvedIds, includeHidden)
 		: [];
 
-	console.log("[compare] Page selection", {
-		raw: resolvedSearchParams?.models,
-		resolvedIds,
-		comparisonCount: comparisonData.length,
-	});
-
 	return (
 		<main className="flex min-h-screen flex-col">
 			<CompareMiniHeader models={typedModels} />

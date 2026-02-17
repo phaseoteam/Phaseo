@@ -1,7 +1,16 @@
 // Centralised sidebar config used by SettingsSidebar
 
 import type { LucideIcon } from "lucide-react";
-import { AppWindow, BarChart3, CreditCard, KeyRound, Package, User, Users } from "lucide-react";
+import {
+	AppWindow,
+	BarChart3,
+	CreditCard,
+	KeyRound,
+	Package,
+	RadioTower,
+	User,
+	Users,
+} from "lucide-react";
 
 export type NavItem = {
     href: string;
@@ -23,7 +32,7 @@ export type NavGroup = {
     items: NavItem[];
 };
 
-export const SETTINGS_SIDEBAR: NavGroup[] = [
+const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
     {
         heading: undefined,
         items: [
@@ -57,6 +66,7 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
 					"/settings/byok",
 					"/settings/presets",
 					"/settings/guardrails",
+					"/settings/privacy",
 				],
 			},
 		],
@@ -93,6 +103,13 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
 				badge: "Alpha",
 				match: ["/settings/oauth-apps", "/settings/authorized-apps"],
 			},
+			{
+				href: "/settings/broadcast",
+				label: "Broadcast",
+				icon: RadioTower,
+				badge: "Pre-Release",
+				match: ["/settings/broadcast", "/settings/observability"],
+			},
 			{ href: "/settings/sdk", label: "SDKs", icon: Package, match: ["/settings/sdk"] },
 		],
 	},
@@ -103,3 +120,17 @@ export const SETTINGS_SIDEBAR: NavGroup[] = [
     //   items: [{ href: "https://docs.yoursite.com", label: "Docs", external: true }],
     // },
 ];
+
+export function getSettingsSidebar(options?: { showBroadcast?: boolean }): NavGroup[] {
+	const showBroadcast = options?.showBroadcast ?? true;
+	return BASE_SETTINGS_SIDEBAR.map((group) => ({
+		...group,
+		items: group.items.filter((item) =>
+			showBroadcast ? true : item.href !== "/settings/broadcast",
+		),
+	})).filter((group) => group.items.length > 0);
+}
+
+export const SETTINGS_SIDEBAR: NavGroup[] = getSettingsSidebar({
+	showBroadcast: true,
+});

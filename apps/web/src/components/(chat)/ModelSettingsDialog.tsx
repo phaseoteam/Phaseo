@@ -28,6 +28,7 @@ import {
 import {
     Command,
     CommandEmpty,
+    CommandGroup,
     CommandInput,
     CommandItem,
     CommandList,
@@ -651,35 +652,30 @@ export function ModelSettingsDialog({
                         <CommandList className="max-h-[52vh]">
                             <CommandEmpty>No models found.</CommandEmpty>
                             {groupedModelChoices.map(([orgName, choices]) => (
-                                <div key={orgName} className="px-1 py-1">
-                                    <p className="mb-0.5 text-xs font-medium text-muted-foreground">
-                                        {orgName}
-                                    </p>
-                                    <div className="space-y-1">
-                                        {choices.map((choice) => (
-                                            <CommandItem
-                                                key={choice.id}
-                                                value={`${choice.label} ${choice.orgName} ${choice.id}`}
-                                                onSelect={() => {
-                                                    onModelChange?.(choice.id);
-                                                    setModelPickerOpen(false);
-                                                }}
-                                                className="gap-2"
-                                            >
-                                                <Logo
-                                                    id={choice.orgId}
-                                                    alt={choice.orgName}
-                                                    width={16}
-                                                    height={16}
-                                                    className="shrink-0"
-                                                />
-                                                <span className="truncate">
-                                                    {choice.label}
-                                                </span>
-                                            </CommandItem>
-                                        ))}
-                                    </div>
-                                </div>
+                                <CommandGroup key={orgName} heading={orgName}>
+                                    {choices.map((choice) => (
+                                        <CommandItem
+                                            key={choice.id}
+                                            value={`${choice.label} ${choice.orgName} ${choice.id}`}
+                                            onSelect={() => {
+                                                onModelChange?.(choice.id);
+                                                setModelPickerOpen(false);
+                                            }}
+                                            className="gap-2"
+                                        >
+                                            <Logo
+                                                id={choice.orgId}
+                                                alt={choice.orgName}
+                                                width={16}
+                                                height={16}
+                                                className="shrink-0"
+                                            />
+                                            <span className="truncate">
+                                                {choice.label}
+                                            </span>
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
                             ))}
                         </CommandList>
                     </Command>

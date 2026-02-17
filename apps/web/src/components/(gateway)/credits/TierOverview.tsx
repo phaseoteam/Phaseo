@@ -137,7 +137,7 @@ export default async function TierOverview({ teamId }: Props) {
 
 					{/* Learn More Link */}
 					<Link
-						href="/docs/pricing/tiers"
+						href="https://docs.ai-stats.phaseo.app"
 						className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 					>
 						<span>Learn about tiers and pricing</span>

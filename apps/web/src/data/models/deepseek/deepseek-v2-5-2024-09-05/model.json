@@ -11,7 +11,28 @@
   "license": "deepseek",
   "input_types": null,
   "output_types": null,
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://www.deepseek.com/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5"
+    },
+    {
+      "platform": "paper",
+      "url": "https://arxiv.org/abs/2405.04434"
+    },
+    {
+      "platform": "repository",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V2.5"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

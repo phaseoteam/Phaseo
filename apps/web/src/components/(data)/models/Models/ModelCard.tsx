@@ -28,6 +28,7 @@ export function ModelCard({ model }: { model: ModelCardType }) {
 			<CardContent className="flex flex-row items-center gap-3 pt-6">
 				<Link
 					href={`/organisations/${model.organisation_id}`}
+					prefetch={false}
 					className="group"
 					scroll
 				>
@@ -48,6 +49,7 @@ export function ModelCard({ model }: { model: ModelCardType }) {
 							<TooltipTrigger asChild>
 								<Link
 									href={`/models/${modelSlug}`}
+									prefetch={false}
 									className="font-semibold truncate leading-tight text-left"
 								>
 									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
@@ -67,6 +69,7 @@ export function ModelCard({ model }: { model: ModelCardType }) {
 					</div>
 					<Link
 						href={`/organisations/${model.organisation_id}`}
+						prefetch={false}
 						className="text-xs text-muted-foreground truncate flex items-center gap-1 text-left"
 					>
 						<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
@@ -90,6 +93,7 @@ export function ModelCard({ model }: { model: ModelCardType }) {
 					>
 						<Link
 							href={`/models/${modelSlug}`}
+							prefetch={false}
 							aria-label={`Go to ${model.name} details`}
 							tabIndex={-1}
 						>

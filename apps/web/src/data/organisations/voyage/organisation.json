@@ -4,5 +4,26 @@
   "country_code": "US",
   "description": "Voyage is a US AI company focused on retrieval infrastructure. Its mission is to power high-quality search and RAG systems with strong embedding and reranking models that help developers build accurate information retrieval and discovery experiences.",
   "colour": "#809641",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://www.voyageai.com"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/voyage-ai"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/voyageai"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/VoyageAI"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/voyageai"
+    }
+  ]
 }

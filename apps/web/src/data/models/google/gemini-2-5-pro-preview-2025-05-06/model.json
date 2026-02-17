@@ -53,7 +53,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 9
+      "rank": 8
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 12
+      "rank": 11
     },
     {
       "benchmark_id": "lmarena-text",
@@ -101,7 +101,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 12
+      "rank": 11
     },
     {
       "benchmark_id": "simpleqa",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 3
+      "rank": 2
     },
     {
       "benchmark_id": "swe-bench",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 10
+      "rank": 9
     },
     {
       "benchmark_id": "thematic-generalisation",

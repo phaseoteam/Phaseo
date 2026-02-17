@@ -11,7 +11,24 @@
   "license": "Mistral AI Research License",
   "input_types": null,
   "output_types": null,
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.mistral.ai/"
+    },
+    {
+      "platform": "playground",
+      "url": "https://chat.mistral.ai/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/mistral-large-2407/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/mistralai/Mistral-Large-Instruct-2407"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

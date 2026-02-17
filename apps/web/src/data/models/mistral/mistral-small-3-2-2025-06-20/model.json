@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 16
+      "rank": 14
     },
     {
       "benchmark_id": "gpqa",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 60
+      "rank": 54
     },
     {
       "benchmark_id": "humaneval",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "5 Shot CoT",
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 10
+      "rank": 8
     },
     {
       "benchmark_id": "mmmu",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "TotalAcc",
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 10
+      "rank": 9
     }
   ]
 }

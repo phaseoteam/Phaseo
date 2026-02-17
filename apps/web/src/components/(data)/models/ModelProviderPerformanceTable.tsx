@@ -101,6 +101,7 @@ export default function ModelProviderPerformanceTable({
 						<div className="flex items-center gap-3">
 							<Link
 								href={`/api-providers/${provider.provider}`}
+								prefetch={false}
 								className="inline-flex rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
 							>
 								<Logo
@@ -116,6 +117,7 @@ export default function ModelProviderPerformanceTable({
 							</Link>
 							<Link
 								href={`/api-providers/${provider.provider}`}
+								prefetch={false}
 								className="font-medium relative after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-sm"
 							>
 								{provider.providerName || provider.provider}

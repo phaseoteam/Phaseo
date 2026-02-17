@@ -12,7 +12,16 @@
   "input_types": "text,image",
   "output_types": "text",
   "family_id": "openai/gpt-4o",
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.openai.com/docs/models/chatgpt-4o-latest"
+    },
+    {
+      "platform": "playground",
+      "url": "https://platform.openai.com/playground/prompts?models=chatgpt-4o-latest"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

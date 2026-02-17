@@ -5,7 +5,7 @@ import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 function resolveSafeReturnUrl(request: Request, candidate: unknown): string {
     const siteBase = process.env.WEBSITE_URL || new URL(request.url).origin;
     const siteOrigin = new URL(siteBase).origin;
-    const fallback = new URL("/dashboard", siteOrigin).toString();
+    const fallback = new URL("/settings/credits", siteOrigin).toString();
 
     if (typeof candidate !== "string" || !candidate.trim()) {
         return fallback;

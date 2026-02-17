@@ -22,10 +22,43 @@ export function logWrite(table: string, op: string, payload: unknown, extra?: Re
     if (extra) console.log("  extra:", extra);
 }
 
+function formatSupabaseError(error: any): string {
+    if (!error) return "unknown_error";
+    const parts: string[] = [];
+    const message =
+        typeof error?.message === "string" && error.message.trim()
+            ? error.message.trim()
+            : String(error);
+    parts.push(message);
+
+    if (typeof error?.details === "string" && error.details.trim()) {
+        parts.push(`details=${error.details.trim()}`);
+    }
+    if (typeof error?.hint === "string" && error.hint.trim()) {
+        parts.push(`hint=${error.hint.trim()}`);
+    }
+    if (typeof error?.code === "string" && error.code.trim()) {
+        parts.push(`code=${error.code.trim()}`);
+    }
+
+    const causeCode = error?.cause && typeof error.cause.code === "string"
+        ? error.cause.code
+        : null;
+    if (causeCode) {
+        parts.push(`cause_code=${causeCode}`);
+    }
+
+    const normalized = parts.join(" | ");
+    if (/fetch failed|network|timed out|timeout/i.test(normalized)) {
+        return `${normalized} | network_hint=check Supabase reachability and NEXT_PUBLIC_SUPABASE_URL`;
+    }
+    return normalized;
+}
+
 /** Small helper to throw on Supabase errors with context */
 export function assertOk<T>(res: { data: T | null, error: any }, ctx: string) {
     if (res.error) {
-        throw new Error(`${ctx}: ${res.error.message || res.error}`);
+        throw new Error(`${ctx}: ${formatSupabaseError(res.error)}`);
     }
     return res.data as T;
 }

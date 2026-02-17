@@ -71,6 +71,7 @@ import {
 	Square,
 	X,
 } from "lucide-react";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
 
 export type ChatSendPayload = {
 	content: string;
@@ -186,11 +187,14 @@ function formatModelLabel(modelId: string) {
 	return parts.length > 1 ? parts.slice(1).join("/") : modelId;
 }
 
+function isInternalModelId(modelId: string) {
+	return modelId.includes("/");
+}
+
 function buildModelLink(modelId: string) {
 	if (!modelId) return "#";
-	const [org, ...rest] = modelId.split("/");
-	const modelSlug = rest.length ? rest.join("/") : modelId;
-	return `/models/${org}/${modelSlug}`;
+	const org = getOrgId(modelId);
+	return getModelDetailsHref(org, modelId) ?? "#";
 }
 
 function extractGeneratedVideoUrl(content: string): string | null {
@@ -807,11 +811,18 @@ export function ChatConversation({
 				(message.meta as any)?.reasoning_text ??
 				(message.meta as any)?.reasoning ??
 				null;
-			const modelId = message.modelId ?? activeThread.modelId;
-			const orgId = modelId ? getOrgId(modelId) : "ai-stats";
-			const modelLabel = modelId ? formatModelLabel(modelId) : "Model";
+			const displayModelId = message.modelId ?? activeThread.modelId;
+			const linkModelId = displayModelId
+				? isInternalModelId(displayModelId)
+					? displayModelId
+					: activeThread.modelId
+				: activeThread.modelId;
+			const orgId = linkModelId ? getOrgId(linkModelId) : "ai-stats";
+			const modelLabel = displayModelId
+				? formatModelLabel(displayModelId)
+				: "Model";
 			const orgName = orgNameById[orgId] ?? orgId;
-			const modelLink = buildModelLink(modelId);
+			const modelLink = buildModelLink(linkModelId);
 			const isEditing = editingId === message.id;
 			const userInlineAttachmentPreviews = isUser
 				? getInlineAttachmentPreviewsFromMeta(message.meta)
@@ -845,7 +856,7 @@ export function ChatConversation({
 						isUser ? "items-end" : "items-start",
 					)}
 				>
-					{!isUser && modelId && (
+					{!isUser && linkModelId && (
 						<Link
 							href={modelLink}
 							className="mb-2 inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"

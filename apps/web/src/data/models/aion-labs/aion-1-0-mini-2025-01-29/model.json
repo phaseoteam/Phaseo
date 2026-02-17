@@ -8,9 +8,9 @@
   "release_date": "2025-01-29T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
-  "input_types": null,
-  "output_types": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
   "links": [],
   "details": [],
   "benchmarks": []

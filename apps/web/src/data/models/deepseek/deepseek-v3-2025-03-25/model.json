@@ -58,7 +58,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 17
+      "rank": 15
     },
     {
       "benchmark_id": "aime-2024",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250325",
-      "rank": 24
+      "rank": 20
     },
     {
       "benchmark_id": "confabulations",
@@ -74,7 +74,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 33
+      "rank": 29
     },
     {
       "benchmark_id": "eqbench",
@@ -82,7 +82,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 13
+      "rank": 11
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250325",
-      "rank": 38
+      "rank": 36
     },
     {
       "benchmark_id": "lmarena-text",
@@ -114,7 +114,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 26
+      "rank": 24
     },
     {
       "benchmark_id": "simplebench",
@@ -122,7 +122,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 19
+      "rank": 18
     },
     {
       "benchmark_id": "thematic-generalisation",

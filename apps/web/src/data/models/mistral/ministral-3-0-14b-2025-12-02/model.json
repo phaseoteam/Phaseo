@@ -11,7 +11,12 @@
   "license": "Apache 2.0",
   "input_types": "text,image",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/mistral-3"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

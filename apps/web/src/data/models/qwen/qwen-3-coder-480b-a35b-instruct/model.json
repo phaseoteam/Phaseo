@@ -1,0 +1,34 @@
+{
+  "model_id": "qwen/qwen-3-coder-480b-a35b-instruct",
+  "organisation_id": "qwen",
+  "name": "Qwen 3 Coder 480B A35B Instruct",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [
+    {
+      "platform": "playground",
+      "url": "https://chat.qwen.ai/"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://qwenlm.github.io/blog/qwen3-coder/"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/QwenLM/Qwen3-Coder"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/Qwen/Qwen3-Coder-480B-A35B-Instruct"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

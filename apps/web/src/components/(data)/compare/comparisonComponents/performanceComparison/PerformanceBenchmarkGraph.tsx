@@ -6,9 +6,6 @@ import { Star } from "lucide-react";
 import {
 	Card,
 	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
 
@@ -39,7 +36,11 @@ function getScoresForBenchmarks(
 				scores[bench] = null;
 			} else {
 				// Determine ordering rule
-				const isLowerBetter = results[0].benchmark.order === "lower";
+				const order = String(results[0].benchmark.order ?? "").toLowerCase();
+				const isLowerBetter =
+					order === "ascending" ||
+					order.includes("ascending") ||
+					order.includes("lower");
 				let bestScore: number | null = null;
 				results.forEach((r) => {
 					let val = parseFloat(r.score.toString().replace("%", ""));
@@ -124,7 +125,7 @@ function CustomTooltip({
 			.join(", ")}`;
 	}
 	return (
-		<div className="bg-white dark:bg-zinc-900 rounded-lg shadow-lg p-3 border border-zinc-200 dark:border-zinc-800 min-w-[180px]">
+		<div className="rounded-lg border border-border bg-background p-3 shadow-lg min-w-[180px]">
 			<div className="font-semibold text-sm mb-1">{label}</div>
 			{scores.map((s: { name: string; value: number | null }) => (
 				<div key={s.name} className="flex justify-between text-xs mb-1">
@@ -132,7 +133,7 @@ function CustomTooltip({
 					<span>{s.value != null ? s.value.toFixed(2) : "-"}</span>
 				</div>
 			))}
-			<div className="mt-1 text-xs font-bold text-indigo-600">
+			<div className="mt-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
 				{leadText}
 			</div>
 		</div>
@@ -201,7 +202,7 @@ function getSignificanceAnalysis(
 	} else if (bPct > thresholdPct && bAvg > thresholdMargin) {
 		message = `${modelB.name} significantly outperforms ${modelA.name} across most benchmarks`;
 	} else if (aLeads > bLeads) {
-		message = `${modelA.name} slightly outperforms ${modelB.name})`;
+		message = `${modelA.name} slightly outperforms ${modelB.name}`;
 	} else if (bLeads > aLeads) {
 		message = `${modelB.name} slightly outperforms ${modelA.name}`;
 	} else {
@@ -233,22 +234,7 @@ export default function PerformanceBenchmarkGraph({
 	const commonBenchmarks = getCommonBenchmarks(selectedModels);
 	const benchmarkNameToId = getBenchmarkNameToIdMap(selectedModels);
 	if (commonBenchmarks.length === 0) {
-		return (
-			<Card className="bg-white dark:bg-zinc-950 rounded-lg">
-				<CardHeader className="flex flex-col items-start justify-between border-b border-b-zinc-200">
-					<CardTitle className="text-lg font-semibold mb-2">
-						Performance Benchmarks
-					</CardTitle>
-					<div className="text-muted-foreground text-sm">
-						Comparative analysis across standard metrics
-					</div>
-				</CardHeader>
-				<CardContent className="text-red-500 p-6">
-					No benchmarks are available that all selected models have in
-					common.
-				</CardContent>
-			</Card>
-		);
+		return null;
 	}
 	const models = getScoresForBenchmarks(selectedModels, commonBenchmarks);
 	const chartData = getBarChartData(models, commonBenchmarks);
@@ -259,28 +245,20 @@ export default function PerformanceBenchmarkGraph({
 			? getSignificanceAnalysis(models, commonBenchmarks)
 			: null;
 	return (
-		<Card className="mb-6 bg-white dark:bg-zinc-950 rounded-lg">
-			<CardHeader className="flex flex-row items-start justify-between border-b border-b-zinc-200">
-				<div className="flex flex-col">
-					<CardTitle className="text-lg font-semibold">
-						Performance Benchmarks
-					</CardTitle>
-					<CardDescription className="text-muted-foreground text-sm">
-						Comparative analysis across standard metrics
-					</CardDescription>
+		<section className="space-y-3">
+			<header className="flex items-start justify-between gap-4">
+				<div className="space-y-1">
+					<h2 className="text-lg font-semibold">Benchmarks</h2>
+					<p className="text-sm text-muted-foreground">
+						Comparative results across benchmarks shared by the selected models.
+					</p>
 				</div>
-				<div className="flex flex-col items-end flex-shrink-0">
-					<Badge className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-medium mt-1 transition-colors duration-150 hover:bg-pink-500/80 hover:text-white cursor-pointer">
-						<span className="relative flex size-2 mr-2">
-							<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink-400 opacity-75"></span>
-							<span className="relative inline-flex size-2 rounded-full bg-pink-500"></span>
-						</span>
-						{commonBenchmarks.length} Benchmark
-						{commonBenchmarks.length === 1 ? "" : "s"}
-					</Badge>
-				</div>
-			</CardHeader>
-			<div className="p-6">
+				<Badge variant="outline" className="text-xs">
+					{commonBenchmarks.length} benchmark{commonBenchmarks.length === 1 ? "" : "s"}
+				</Badge>
+			</header>
+
+			<div className="space-y-4">
 				{summary && <div className="mb-4 text-sm">{summary}</div>}
 				{significance && (
 					<div className="mb-4">
@@ -289,10 +267,10 @@ export default function PerformanceBenchmarkGraph({
 								<div className="flex items-center justify-start">
 									<span className="relative flex h-4 w-4 items-center justify-center mr-4 shrink-0">
 										{/* Soft background circle */}
-										<span className="absolute h-6 w-6 rounded-full bg-pink-400/30" />
+										<span className="absolute h-6 w-6 rounded-full bg-emerald-400/20" />
 
 										{/* Star icon */}
-										<Star className="relative h-full w-full text-pink-500 fill-pink-500 " />
+										<Star className="relative h-full w-full text-emerald-700 fill-emerald-500 dark:text-emerald-400 dark:fill-emerald-400" />
 									</span>
 									<span>{significance}</span>
 								</div>
@@ -301,7 +279,7 @@ export default function PerformanceBenchmarkGraph({
 					</div>
 				)}
 				{/* Desktop bar chart rendered above the table */}
-				<div className="hidden md:block bg-muted p-4 rounded-lg text-center mb-4">
+				<div className="hidden md:block rounded-xl border border-border/60 bg-background/60 p-4 text-center mb-4">
 					<BenchmarkBarChart
 						chartData={chartData}
 						models={models}
@@ -334,10 +312,10 @@ export default function PerformanceBenchmarkGraph({
 										{models.flatMap((model, idx) => {
 											const value = model.scores[bench];
 											const color = [
-												"#f472b6",
-												"#60a5fa",
-												"#fb7185",
-												"#34d399",
+												"#0ea5e9",
+												"#10b981",
+												"#f59e0b",
+												"#6366f1",
 											][idx % 4];
 											const span = (
 												<span
@@ -377,7 +355,7 @@ export default function PerformanceBenchmarkGraph({
 					{commonBenchmarks.map((bench) => (
 						<div
 							key={bench}
-							className="bg-white dark:bg-zinc-900 shadow rounded-lg p-4"
+							className="rounded-lg border border-border/60 bg-card shadow-sm p-4"
 						>
 							<div className="font-medium mb-2">
 								{benchmarkNameToId[bench] ? (
@@ -398,10 +376,10 @@ export default function PerformanceBenchmarkGraph({
 							{models.map((model, idx) => {
 								const value = model.scores[bench];
 								const color = [
-									"#f472b6",
-									"#60a5fa",
-									"#fb7185",
-									"#34d399",
+									"#0ea5e9",
+									"#10b981",
+									"#f59e0b",
+									"#6366f1",
 								][idx % 4];
 								return (
 									<div
@@ -429,6 +407,6 @@ export default function PerformanceBenchmarkGraph({
 					))}
 				</div>
 			</div>
-		</Card>
+		</section>
 	);
 }

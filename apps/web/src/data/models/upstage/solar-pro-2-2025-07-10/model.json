@@ -3,7 +3,7 @@
   "organisation_id": "upstage",
   "name": "Solar Pro 2 (2025-07-10)",
   "status": "Available",
-  "previous_model_id": null,
+  "previous_model_id": "upstage/solar-pro-2-preview-2025-05-20",
   "announced_date": "2025-07-10T00:00:00",
   "release_date": "2025-07-10T00:00:00",
   "deprecation_date": null,

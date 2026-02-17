@@ -117,6 +117,7 @@ export default function ModelsTableHeader({
 									>
 										<Link
 											href="/models"
+											prefetch={false}
 											aria-label="Card view"
 										>
 											<GridIcon className="h-4 w-4" />
@@ -140,6 +141,7 @@ export default function ModelsTableHeader({
 									>
 										<Link
 											href="/models/table"
+											prefetch={false}
 											aria-label="Table view"
 										>
 											<TableIcon className="h-4 w-4" />
@@ -165,6 +167,7 @@ export default function ModelsTableHeader({
 									>
 										<Link
 											href="/models/collections"
+											prefetch={false}
 											aria-label="Collections view"
 										>
 											<LayersIcon className="h-4 w-4" />
@@ -597,6 +600,7 @@ export default function ModelsTableHeader({
 									>
 										<Link
 											href="/models"
+											prefetch={false}
 											aria-label="Card view"
 										>
 											<GridIcon className="h-4 w-4" />
@@ -620,6 +624,7 @@ export default function ModelsTableHeader({
 									>
 										<Link
 											href="/models/table"
+											prefetch={false}
 											aria-label="Table view"
 										>
 											<TableIcon className="h-4 w-4" />
@@ -645,6 +650,7 @@ export default function ModelsTableHeader({
 									>
 										<Link
 											href="/models/collections"
+											prefetch={false}
 											aria-label="Collections view"
 										>
 											<LayersIcon className="h-4 w-4" />

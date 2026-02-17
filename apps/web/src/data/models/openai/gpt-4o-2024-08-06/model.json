@@ -43,7 +43,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 34
+      "rank": 29
     },
     {
       "benchmark_id": "confabulations",
@@ -51,7 +51,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 23
+      "rank": 20
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 61
+      "rank": 55
     },
     {
       "benchmark_id": "nyt-connections",
@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 23
+      "rank": 21
     },
     {
       "benchmark_id": "swe-bench",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 19
+      "rank": 18
     }
   ]
 }

@@ -59,7 +59,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 28
+      "rank": 26
     },
     {
       "benchmark_id": "confabulations",
@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 38
+      "rank": 34
     },
     {
       "benchmark_id": "elimination-game",
@@ -75,7 +75,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 20
+      "rank": 19
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-3-5-haiku",
-      "rank": 66
+      "rank": 59
     },
     {
       "benchmark_id": "livebench",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 16
+      "rank": 14
     },
     {
       "benchmark_id": "lmarena-text",
@@ -99,7 +99,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 36
+      "rank": 35
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": "16th June 2025",
       "source_link": "https://web.lmarena.ai/leaderboard",
-      "rank": 16
+      "rank": 15
     },
     {
       "benchmark_id": "nyt-connections",
@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 32
+      "rank": 29
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -123,7 +123,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 21
+      "rank": 20
     }
   ]
 }

@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 36
+      "rank": 32
     },
     {
       "benchmark_id": "elimination-game",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.amazon.science/publications/the-amazon-nova-family-of-models-technical-report-and-model-card",
-      "rank": 59
+      "rank": 53
     },
     {
       "benchmark_id": "lmarena-text",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 42
+      "rank": 39
     },
     {
       "benchmark_id": "nyt-connections",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 34
+      "rank": 31
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 18
+      "rank": 17
     }
   ]
 }

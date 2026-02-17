@@ -50,7 +50,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 19
+      "rank": 17
     },
     {
       "benchmark_id": "aime-2024",
@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1",
-      "rank": 28
+      "rank": 23
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -98,7 +98,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 10
+      "rank": 9
     },
     {
       "benchmark_id": "factscore-halluciation-rate",
@@ -114,7 +114,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1",
-      "rank": 41
+      "rank": 39
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -138,7 +138,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 12
+      "rank": 10
     },
     {
       "benchmark_id": "lmarena-text",
@@ -186,7 +186,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 20
+      "rank": 18
     },
     {
       "benchmark_id": "openai-mrcr-2-needle-128k",
@@ -210,7 +210,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 21
+      "rank": 20
     },
     {
       "benchmark_id": "swe-bench",
@@ -218,7 +218,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 15
+      "rank": 14
     },
     {
       "benchmark_id": "swe-lancer",

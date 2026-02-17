@@ -51,7 +51,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://sciarena.allen.ai/",
-      "rank": 14
+      "rank": 11
     },
     {
       "benchmark_id": "aidanbench",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": "64k Thinking",
       "source_link": "https://www.anthropic.com/news/claude-3-7-sonnet",
-      "rank": 18
+      "rank": 15
     },
     {
       "benchmark_id": "aime-2024",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": "Thinking",
       "source_link": null,
-      "rank": 18
+      "rank": 15
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -171,7 +171,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 28
+      "rank": 24
     },
     {
       "benchmark_id": "confabulations",
@@ -179,7 +179,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 28
+      "rank": 24
     },
     {
       "benchmark_id": "elimination-game",
@@ -203,7 +203,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com/",
-      "rank": 18
+      "rank": 16
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -235,7 +235,7 @@
       "is_self_reported": false,
       "other_info": "64k Thinking",
       "source_link": "https://livebench.ai/#/",
-      "rank": 8
+      "rank": 6
     },
     {
       "benchmark_id": "livebench",
@@ -243,7 +243,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 8
+      "rank": 6
     },
     {
       "benchmark_id": "lmarena-text",
@@ -251,7 +251,7 @@
       "is_self_reported": false,
       "other_info": "32k Thinking",
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 17
+      "rank": 16
     },
     {
       "benchmark_id": "lmarena-text",
@@ -259,7 +259,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 17
+      "rank": 16
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -275,7 +275,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 17
+      "rank": 15
     },
     {
       "benchmark_id": "nyt-connections",
@@ -283,7 +283,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 17
+      "rank": 15
     },
     {
       "benchmark_id": "simplebench",

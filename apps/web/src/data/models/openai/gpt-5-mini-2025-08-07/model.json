@@ -99,7 +99,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 9
+      "rank": 8
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -171,7 +171,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 15
+      "rank": 14
     },
     {
       "benchmark_id": "longfact-concepts-hallucination-rate",

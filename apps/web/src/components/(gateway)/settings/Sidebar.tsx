@@ -20,19 +20,22 @@ import {
 } from "@/components/ui/sidebar";
 
 import type { NavGroup, NavItem } from "./Sidebar.config";
-import { SETTINGS_SIDEBAR } from "./Sidebar.config";
+import { getSettingsSidebar } from "./Sidebar.config";
 
 export default function SettingsSidebar({
 	children,
+	showBroadcast = true,
 }: {
 	/**
 	 * Optional slot for lightweight, non-blocking sidebar adornments (e.g. alert counts).
 	 * This is rendered next to the "Usage" item label.
 	 */
 	children?: ReactNode;
+	showBroadcast?: boolean;
 }) {
 	const pathname = usePathname();
 	const { isMobile, setOpenMobile, toggleSidebar } = useSidebar();
+	const navGroups = getSettingsSidebar({ showBroadcast });
 
 	function matchScore(item: NavItem) {
 		const path = pathname ?? "";
@@ -52,7 +55,7 @@ export default function SettingsSidebar({
 		return null;
 	}
 
-	const allItems: NavItem[] = SETTINGS_SIDEBAR.flatMap((g) => g.items);
+	const allItems: NavItem[] = navGroups.flatMap((g) => g.items);
 	const activeItem =
 		allItems
 			.map((item) => ({ item, score: matchScore(item) }))
@@ -152,6 +155,7 @@ export default function SettingsSidebar({
 			<SidebarMenuButton asChild isActive={active}>
 				<Link
 					href={item.href}
+					prefetch={false}
 					aria-current={active ? "page" : undefined}
 					onClick={closeMobile}
 				>
@@ -183,7 +187,7 @@ export default function SettingsSidebar({
 			{/* Mobile can scroll the menu if needed; desktop stays fixed (no sidebar scroll). */}
 			<SidebarContent className="overflow-y-auto md:overflow-y-hidden">
 				<div className="pb-4">
-					{SETTINGS_SIDEBAR.map((group, idx) => (
+					{navGroups.map((group, idx) => (
 						<div key={`${group.heading ?? "group"}-${idx}`}>
 							<NavBlock group={group} />
 						</div>

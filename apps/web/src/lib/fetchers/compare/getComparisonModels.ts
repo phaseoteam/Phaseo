@@ -222,6 +222,36 @@ function summariseProviderPricing(groups: ProviderPricing[]): Price[] {
 		});
 	}
 
+	// Synthetic summary entry used by compare UI for "at a glance" pricing.
+	// Note: this uses the best observed standard prices across providers; it is not
+	// guaranteed to be a single provider that offers both minima simultaneously.
+	const inputCandidates = results
+		.map((r) => r.input_token_price)
+		.filter((v): v is number => v != null && Number.isFinite(v));
+	const outputCandidates = results
+		.map((r) => r.output_token_price)
+		.filter((v): v is number => v != null && Number.isFinite(v));
+	const minInput =
+		inputCandidates.length > 0 ? Math.min(...inputCandidates) : null;
+	const minOutput =
+		outputCandidates.length > 0 ? Math.min(...outputCandidates) : null;
+
+	if (minInput != null || minOutput != null) {
+		results.unshift({
+			input_token_price: minInput,
+			cached_input_token_price: minInput,
+			output_token_price: minOutput,
+			throughput: null,
+			latency: null,
+			source_link: null,
+			other_info: "Best observed standard token prices across providers.",
+			meter: "summary",
+			pricing_plan: "standard",
+			unit_size: 1,
+			currency: results.find((r) => r.currency)?.currency ?? "USD",
+		});
+	}
+
 	return results;
 }
 
@@ -360,7 +390,7 @@ export async function getComparisonModelsCached(
 	const cacheKey = [...uniqueOrdered].sort().join(",");
 	console.log("[compare] Fetching models for cache key", cacheKey);
 
-	// 👇 no cacheLife/cacheTag here any more
+	// Note: no cacheLife/cacheTag here; fetchComparisonModels is the cached boundary.
 	let resultMap = await fetchComparisonModels(cacheKey, includeHidden);
 
 	console.log("[compare] Received detailed models", resultMap);

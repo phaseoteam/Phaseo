@@ -71,6 +71,7 @@ export default async function TopModels({
 									<h4 className="font-semibold text-sm truncate pr-8 leading-tight">
 										<Link
 											href={`/models/${model.model_id}`}
+											prefetch={false}
 											className="inline-block text-foreground hover:text-primary"
 										>
 											<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">

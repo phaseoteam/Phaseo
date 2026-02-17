@@ -42,7 +42,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://sciarena.allen.ai/",
-      "rank": 10
+      "rank": 9
     },
     {
       "benchmark_id": "aime-2024",
@@ -50,7 +50,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 23
+      "rank": 19
     },
     {
       "benchmark_id": "aime-2025",
@@ -58,7 +58,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 29
+      "rank": 25
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 25
+      "rank": 24
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 2
+      "rank": 1
     },
     {
       "benchmark_id": "simplebench",

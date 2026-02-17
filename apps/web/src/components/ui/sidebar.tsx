@@ -97,7 +97,11 @@ function SidebarProvider({
 
 	// Helper to toggle the sidebar.
 	const toggleSidebar = React.useCallback(() => {
-		return isMobile
+		const mobileNow =
+			typeof window !== "undefined"
+				? window.matchMedia("(max-width: 767px)").matches
+				: isMobile;
+		return mobileNow
 			? setOpenMobile((open) => !open)
 			: setOpen((open) => !open);
 	}, [isMobile, setOpen, setOpenMobile]);

@@ -135,7 +135,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 5
+      "rank": 4
     },
     {
       "benchmark_id": "elimination-game",
@@ -143,7 +143,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 22
+      "rank": 21
     },
     {
       "benchmark_id": "eqbench",
@@ -223,7 +223,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 2
+      "rank": 1
     },
     {
       "benchmark_id": "swe-bench",
@@ -231,7 +231,7 @@
       "is_self_reported": true,
       "other_info": "Multiple Attempts",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 8
+      "rank": 7
     },
     {
       "benchmark_id": "swe-bench",
@@ -239,7 +239,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_images/gemini_2-5_procomp_benchmarks_cropped_light_3.gif",
-      "rank": 8
+      "rank": 7
     },
     {
       "benchmark_id": "thematic-generalisation",

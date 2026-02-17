@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 11
+      "rank": 10
     },
     {
       "benchmark_id": "confabulations",
@@ -86,7 +86,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 11
+      "rank": 10
     },
     {
       "benchmark_id": "elimination-game",
@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 22
+      "rank": 20
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -142,7 +142,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 23
+      "rank": 22
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 9
+      "rank": 7
     },
     {
       "benchmark_id": "mmmu",
@@ -166,7 +166,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 18
+      "rank": 16
     },
     {
       "benchmark_id": "nyt-connections",
@@ -174,7 +174,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 18
+      "rank": 16
     },
     {
       "benchmark_id": "simpleqa",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 8
+      "rank": 7
     },
     {
       "benchmark_id": "thematic-generalisation",

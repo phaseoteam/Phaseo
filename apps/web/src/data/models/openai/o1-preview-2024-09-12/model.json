@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 29
+      "rank": 24
     },
     {
       "benchmark_id": "confabulations",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 8
+      "rank": 7
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 33
+      "rank": 31
     },
     {
       "benchmark_id": "lmarena-text",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 18
+      "rank": 17
     },
     {
       "benchmark_id": "simplebench",

@@ -9,7 +9,7 @@
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
-  "input_types": "text,image, video",
+  "input_types": "text,image,video",
   "output_types": "text",
   "links": [
     {
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.amazon.science/publications/the-amazon-nova-family-of-models-technical-report-and-model-card",
-      "rank": 64
+      "rank": 57
     },
     {
       "benchmark_id": "lmarena-text",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 50
+      "rank": 47
     }
   ]
 }

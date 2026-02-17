@@ -207,9 +207,8 @@ export async function loadModels(
                 timeline: {}, // to be filled below
             });
 
-            if (coreRows.length >= 500) {
-                await flushCoreRows(coreRows.splice(0, coreRows.length));
-            }
+            // Ensure parent data_models rows exist before child-table upserts that FK on model_id.
+            await flushCoreRows(coreRows.splice(0, coreRows.length));
 
         const model_id = m.model_id;
 

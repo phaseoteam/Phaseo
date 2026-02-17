@@ -147,7 +147,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 14
+      "rank": 13
     },
     {
       "benchmark_id": "elimination-game",
@@ -155,7 +155,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 19
+      "rank": 18
     },
     {
       "benchmark_id": "eqbench",
@@ -219,7 +219,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 3
+      "rank": 1
     },
     {
       "benchmark_id": "livebench",
@@ -227,7 +227,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 3
+      "rank": 1
     },
     {
       "benchmark_id": "lmarena-text",

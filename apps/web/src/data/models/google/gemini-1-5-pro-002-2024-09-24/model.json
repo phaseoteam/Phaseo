@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
-      "rank": 24
+      "rank": 23
     },
     {
       "benchmark_id": "lmarena-webdev",
@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": "16th June 2025",
       "source_link": "https://web.lmarena.ai/leaderboard",
-      "rank": 21
+      "rank": 20
     },
     {
       "benchmark_id": "simplebench",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 20
+      "rank": 19
     }
   ]
 }

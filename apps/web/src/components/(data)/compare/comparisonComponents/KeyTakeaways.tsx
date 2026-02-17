@@ -1,5 +1,5 @@
 import type { ExtendedModel } from "@/data/types";
-import { Logo } from "@/components/Logo";
+import { ProviderLogo } from "../ProviderLogo";
 
 interface KeyTakeawaysProps {
 	selectedModels: ExtendedModel[];
@@ -24,8 +24,6 @@ function getOutputPrice(model: ExtendedModel): number | null {
 
 function getKeyPoints(model: ExtendedModel, allModels: ExtendedModel[]) {
 	const points: string[] = [];
-	// Multimodal
-	if (model.multimodal) points.push("Supports multimodal inputs");
 	// Context window
 	if (model.input_context_length && model.input_context_length >= 128000) {
 		points.push(
@@ -108,12 +106,10 @@ export default function KeyTakeaways({ selectedModels }: KeyTakeawaysProps) {
 						className="bg-muted rounded-lg shadow p-4 flex flex-col gap-2"
 					>
 						<div className="flex items-center gap-3 mb-2">
-							<Logo
+							<ProviderLogo
 								id={model.provider.provider_id}
 								alt={model.provider.name}
-								width={32}
-								height={32}
-								className="rounded-full border bg-white object-contain"
+								size="sm"
 							/>
 							<div>
 								<div className="font-bold text-lg leading-tight">

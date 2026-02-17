@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 18
+      "rank": 16
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": "Reasoning",
       "source_link": "https://aider.chat/docs/leaderboards/",
-      "rank": 18
+      "rank": 16
     },
     {
       "benchmark_id": "aime-2024",
@@ -142,7 +142,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 12
+      "rank": 11
     },
     {
       "benchmark_id": "elimination-game",
@@ -158,7 +158,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://eqbench.com",
-      "rank": 20
+      "rank": 18
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -222,7 +222,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 10
+      "rank": 8
     },
     {
       "benchmark_id": "livebench",
@@ -230,7 +230,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 10
+      "rank": 8
     },
     {
       "benchmark_id": "lmarena-text",
@@ -246,7 +246,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 8
+      "rank": 6
     },
     {
       "benchmark_id": "mmmu",
@@ -278,7 +278,7 @@
       "is_self_reported": false,
       "other_info": "No Reasoning",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 21
+      "rank": 19
     },
     {
       "benchmark_id": "simpleqa",
@@ -286,7 +286,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 4
+      "rank": 3
     },
     {
       "benchmark_id": "thematic-generalisation",

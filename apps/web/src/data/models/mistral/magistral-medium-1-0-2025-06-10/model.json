@@ -11,7 +11,24 @@
   "license": "Proprietary",
   "input_types": "text",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://console.mistral.ai/home"
+    },
+    {
+      "platform": "playground",
+      "url": "https://chat.mistral.ai/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://mistral.ai/static/research/magistral.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/magistral"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

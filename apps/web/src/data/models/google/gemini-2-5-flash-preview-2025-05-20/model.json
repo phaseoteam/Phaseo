@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 23
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 17
+      "rank": 16
     },
     {
       "benchmark_id": "lmarena-text",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 7
+      "rank": 6
     },
     {
       "benchmark_id": "swe-bench",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 13
+      "rank": 12
     }
   ]
 }

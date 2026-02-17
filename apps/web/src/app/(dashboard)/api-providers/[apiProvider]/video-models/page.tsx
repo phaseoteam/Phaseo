@@ -126,7 +126,7 @@ export default async function Page({
 									<a href="/contribute">Contribute</a>
 								</Button>
 								<Button variant="outline" asChild>
-									<a href="/docs">Learn more</a>
+									<a href="https://docs.ai-stats.phaseo.app">Learn more</a>
 								</Button>
 							</div>
 						</EmptyContent>

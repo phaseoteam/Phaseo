@@ -1,0 +1,17 @@
+{
+  "model_id": "qwen/qwen-3-guard-gen-4b",
+  "organisation_id": "qwen",
+  "name": "Qwen 3 Guard Gen 4B",
+  "status": null,
+  "previous_model_id": null,
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

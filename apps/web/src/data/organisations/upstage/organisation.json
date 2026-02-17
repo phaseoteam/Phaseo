@@ -4,5 +4,26 @@
   "country_code": "KR",
   "description": "Upstage is a South Korean AI company. Its mission is to improve work productivity by building cost-effective enterprise AI, including large language models (e.g., Solar) and document AI/OCR systems that automate and scale knowledge work.",
   "colour": "#5b52ff",
-  "organisation_links": []
+  "organisation_links": [
+    {
+      "platform": "website",
+      "url": "https://upstage.ai"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/upstageai"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/upstage"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/upstageai"
+    },
+    {
+      "platform": "linkedin",
+      "url": "https://www.linkedin.com/company/upstageai"
+    }
+  ]
 }

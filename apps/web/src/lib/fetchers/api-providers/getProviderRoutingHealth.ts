@@ -1,5 +1,6 @@
 "use server";
 
+import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 export type ProviderRoutingPairHealth = {
@@ -43,6 +44,11 @@ export async function getProviderRoutingHealth(
 	providerId: string,
 	options?: { windowHours?: number; maxPairs?: number },
 ): Promise<ProviderRoutingHealth | null> {
+	"use cache";
+
+	cacheLife("minutes");
+	cacheTag("data:gateway_provider_health_states");
+
 	if (!providerId) return null;
 	const windowHours = options?.windowHours ?? 24;
 	const maxPairs = options?.maxPairs ?? 24;

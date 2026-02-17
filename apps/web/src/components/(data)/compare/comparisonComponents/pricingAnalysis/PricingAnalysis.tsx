@@ -7,16 +7,10 @@ import {
 	CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import PricingBarChart from "./PricingBarChart";
 import React from "react";
-import {
-	HoverCard,
-	HoverCardTrigger,
-	HoverCardContent,
-} from "@/components/ui/hover-card";
 import Link from "next/link";
-import { Logo } from "@/components/Logo";
+import { ProviderLogoName } from "../../ProviderLogoName";
 
 interface PricingAnalysisProps {
 	selectedModels: ExtendedModel[];
@@ -45,6 +39,33 @@ function getTotalPrice(model: ExtendedModel): number | null {
 	const output = getOutputPrice(model);
 	if (input === null || output === null) return null;
 	return ((input * 1 + output * 3) * 1_000_000) / 4;
+}
+
+type PricingProvider = { id: string; name: string };
+
+function getPricingProviders(model: ExtendedModel): PricingProvider[] {
+	const providers: PricingProvider[] = [];
+	const seen = new Set<string>();
+
+	for (const price of model.prices ?? []) {
+		if (!price) continue;
+		if (price.meter === "summary") continue;
+		const providerId =
+			price.api_provider_id ??
+			(typeof price.api_provider === "string"
+				? price.api_provider
+				: price.api_provider?.api_provider_id);
+		if (!providerId) continue;
+		if (seen.has(providerId)) continue;
+		seen.add(providerId);
+		const providerName =
+			typeof price.api_provider === "object"
+				? price.api_provider.api_provider_name ?? providerId
+				: providerId;
+		providers.push({ id: providerId, name: providerName });
+	}
+
+	return providers;
 }
 
 function getCheapestBadge(models: ExtendedModel[]) {
@@ -76,82 +97,27 @@ function getCheapestBadge(models: ExtendedModel[]) {
 
 function getStatCards(models: ExtendedModel[]) {
 	return (
-		<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+		<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
 			{models.map((model) => {
 				const input = getInputPrice(model);
 				const output = getOutputPrice(model);
 				const total = getTotalPrice(model);
-
-				// Prepare multipliers for hover cards
-				const inputComparisons = models
-					.filter(
-						(m) => m.id !== model.id && getInputPrice(m) != null
-					)
-					.map((m) => {
-						const otherInput = getInputPrice(m);
-						const mult =
-							input && otherInput ? input / otherInput : 0;
-						let color = "text-gray-500";
-						if (mult > 1.01) color = "text-red-600 font-semibold";
-						else if (mult < 0.99)
-							color = "text-green-700 font-semibold";
-						return (
-							<div key={m.id} className={`mb-1 ${color}`}>
-								{mult.toFixed(2)}x vs {m.name}
-							</div>
-						);
-					});
-				const outputComparisons = models
-					.filter(
-						(m) => m.id !== model.id && getOutputPrice(m) != null
-					)
-					.map((m) => {
-						const otherOutput = getOutputPrice(m);
-						const mult =
-							output && otherOutput ? output / otherOutput : 0;
-						let color = "text-gray-500";
-						if (mult > 1.01) color = "text-red-600 font-semibold";
-						else if (mult < 0.99)
-							color = "text-green-700 font-semibold";
-						return (
-							<div key={m.id} className={`mb-1 ${color}`}>
-								{mult.toFixed(2)}x vs {m.name}
-							</div>
-						);
-					});
-				const totalComparisons = models
-					.filter(
-						(m) => m.id !== model.id && getTotalPrice(m) != null
-					)
-					.map((m) => {
-						const mTotal = getTotalPrice(m);
-						const mult = total && mTotal ? total / mTotal : 0;
-						let color = "text-gray-500";
-						if (mult > 1.01) color = "text-red-600 font-semibold";
-						else if (mult < 0.99)
-							color = "text-green-700 font-semibold";
-						return (
-							<div key={m.id} className={`mb-1 ${color}`}>
-								{mult.toFixed(2)}x vs {m.name}
-							</div>
-						);
-					});
+				const providers = getPricingProviders(model);
+				const shownProviders = providers.slice(0, 8);
+				const extraProviders = providers.length - shownProviders.length;
 
 				return (
 					<Card key={model.id} className="shadow border-none">
 						<CardHeader className="pb-2">
 							<CardTitle className="text-base font-semibold flex items-center gap-2">
-								<Link
+								<ProviderLogoName
+									id={model.provider.provider_id}
+									name={model.provider.name}
 									href={`/organisations/${model.provider.provider_id}`}
-								>
-									<Logo
-										id={model.provider.provider_id}
-										alt={model.provider.name}
-										width={20}
-										height={20}
-										className="mr-2 h-5 w-5 rounded-full border bg-white object-contain"
-									/>
-								</Link>
+									size="xxs"
+									className="mr-2"
+									mobilePopover
+								/>
 								<Link
 									href={`/models/${encodeURIComponent(
 										model.id
@@ -165,83 +131,69 @@ function getStatCards(models: ExtendedModel[]) {
 							</CardTitle>
 						</CardHeader>
 						<CardContent className="pt-0">
-							<div className="flex flex-col gap-2">
-								<div className="flex items-center justify-between text-sm">
-									<span>Input $/M</span>
-									<HoverCard>
-										<HoverCardTrigger asChild>
-											<span className="font-mono font-bold cursor-help">
-												{input != null
-													? `$${(
-															input * 1_000_000
-													  ).toFixed(2)}`
-													: "-"}
-											</span>
-										</HoverCardTrigger>
-										<HoverCardContent>
-											<div className="font-semibold mb-2">
-												Input price comparison
-											</div>
-											{inputComparisons.length > 0 ? (
-												inputComparisons
-											) : (
-												<span className="text-gray-400">
-													No other models to compare.
-												</span>
-											)}
-										</HoverCardContent>
-									</HoverCard>
+							<div className="grid grid-cols-3 gap-3">
+								<div className="space-y-0.5">
+									<div className="text-[11px] font-medium text-muted-foreground">
+										Input $/M
+									</div>
+									<div className="font-mono font-semibold text-foreground">
+										{input != null
+											? `$${(input * 1_000_000).toFixed(2)}`
+											: "-"}
+									</div>
 								</div>
-								<div className="flex items-center justify-between text-sm">
-									<span>Output $/M</span>
-									<HoverCard>
-										<HoverCardTrigger asChild>
-											<span className="font-mono font-bold cursor-help">
-												{output != null
-													? `$${(
-															output * 1_000_000
-													  ).toFixed(2)}`
-													: "-"}
-											</span>
-										</HoverCardTrigger>
-										<HoverCardContent>
-											<div className="font-semibold mb-2">
-												Output price comparison
-											</div>
-											{outputComparisons.length > 0 ? (
-												outputComparisons
-											) : (
-												<span className="text-gray-400">
-													No other models to compare.
-												</span>
-											)}
-										</HoverCardContent>
-									</HoverCard>
+								<div className="space-y-0.5">
+									<div className="text-[11px] font-medium text-muted-foreground">
+										Output $/M
+									</div>
+									<div className="font-mono font-semibold text-foreground">
+										{output != null
+											? `$${(output * 1_000_000).toFixed(2)}`
+											: "-"}
+									</div>
 								</div>
-								<div className="flex items-center justify-between text-sm mt-1 border-t pt-2">
-									<span>Total (1:3) $/M</span>
-									<HoverCard>
-										<HoverCardTrigger asChild>
-											<span className="font-mono font-bold cursor-help">
-												{total != null
-													? `$${total.toFixed(2)}`
-													: "-"}
-											</span>
-										</HoverCardTrigger>
-										<HoverCardContent>
-											<div className="font-semibold mb-2">
-												Total price (1:3) comparison
-											</div>
-											{totalComparisons.length > 0 ? (
-												totalComparisons
-											) : (
-												<span className="text-gray-400">
-													No other models to compare.
-												</span>
-											)}
-										</HoverCardContent>
-									</HoverCard>
+								<div className="space-y-0.5">
+									<div className="text-[11px] font-medium text-muted-foreground">
+										Total $/M
+									</div>
+									<div className="font-mono font-semibold text-foreground">
+										{total != null ? `$${total.toFixed(2)}` : "-"}
+									</div>
 								</div>
+							</div>
+
+							<div className="mt-3 space-y-2">
+								<div className="text-[11px] font-medium text-muted-foreground">
+									Providers
+								</div>
+								{shownProviders.length ? (
+									<div className="flex flex-wrap items-center gap-2">
+										{shownProviders.map((provider) => (
+											<div
+												key={`${model.id}-${provider.id}`}
+												title={provider.name}
+											>
+												<ProviderLogoName
+													id={provider.id}
+													name={provider.name}
+													href={`/api-providers/${provider.id}`}
+													size="xxs"
+													className="transition hover:opacity-90"
+													mobilePopover
+												/>
+											</div>
+										))}
+										{extraProviders > 0 ? (
+											<span className="text-xs text-muted-foreground">
+												+{extraProviders} more
+											</span>
+										) : null}
+									</div>
+								) : (
+									<p className="text-xs text-muted-foreground">
+										No providers found yet.
+									</p>
+								)}
 							</div>
 						</CardContent>
 					</Card>
@@ -304,8 +256,8 @@ function BarChartTooltip({ active, payload, label }: any) {
 }
 
 // Build per-meter comparison rows using the enriched Price entries
-// from loadCompareModels. We only keep meters that are present on
-// at least two selected models so the comparison is meaningful.
+// from loadCompareModels. We include every unique meter observed
+// across the selection and show `-` where a model has no data.
 type MeterComparisonRow = {
 	meter: string;
 	perModel: {
@@ -314,6 +266,34 @@ type MeterComparisonRow = {
 		pricePerMillion: number | null;
 	}[];
 };
+
+function formatMeterLabel(meter: string): string {
+	const key = meter.trim().toLowerCase();
+
+	// Common overrides to keep wording consistent and readable.
+	const overrides: Record<string, string> = {
+		input_token: "Input Tokens",
+		output_token: "Output Tokens",
+		cached_input_token: "Cached Input Tokens",
+		input_text: "Input Text",
+		output_text: "Output Text",
+		input_image: "Input Image",
+		output_image: "Output Image",
+		input_audio: "Input Audio",
+		output_audio: "Output Audio",
+		input_video: "Input Video",
+		output_video: "Output Video",
+		per_request: "Per Request",
+		request: "Per Request",
+	};
+
+	if (overrides[key]) return overrides[key];
+
+	// Fallback: snake_case or kebab-case -> Title Case.
+	return key
+		.replace(/[_-]+/g, " ")
+		.replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function buildMeterComparisonRows(
 	models: ExtendedModel[]
@@ -347,17 +327,21 @@ function buildMeterComparisonRows(
 				);
 			}
 
-			meterMap
-				.get(meterKey)!
-				.set(model.id, { pricePerMillion: perMillion });
+			const byModel = meterMap.get(meterKey)!;
+			const existing = byModel.get(model.id)?.pricePerMillion ?? null;
+			const next =
+				existing == null
+					? perMillion
+					: perMillion == null
+						? existing
+						: Math.min(existing, perMillion);
+			byModel.set(model.id, { pricePerMillion: next });
 		}
 	}
 
 	const rows: MeterComparisonRow[] = [];
 
 	for (const [meter, byModel] of meterMap.entries()) {
-		if (byModel.size < 2) continue;
-
 		const perModel = models.map((model) => {
 			const entry = byModel.get(model.id);
 			return {
@@ -382,21 +366,20 @@ export default function PricingAnalysis({
 	const meterRows = buildMeterComparisonRows(selectedModels);
 
 	return (
-		<Card className="mb-6 bg-white dark:bg-zinc-950 rounded-lg shadow">
-			<CardHeader className="flex flex-row items-start justify-between border-b border-b-zinc-200">
-				<div className="flex flex-col">
-					<CardTitle className="text-lg font-semibold">
-						Pricing Analysis
-					</CardTitle>
-					<CardDescription className="text-muted-foreground text-sm">
-						Price comparison per million tokens
-					</CardDescription>
+		<section className="space-y-3">
+			<header className="flex items-start justify-between gap-4">
+				<div className="space-y-1">
+					<h2 className="text-lg font-semibold">Pricing</h2>
+					<p className="text-sm text-muted-foreground">
+						Observed provider pricing per million tokens.
+					</p>
 				</div>
 				{getCheapestBadge(selectedModels)}
-			</CardHeader>
-			<CardContent className="p-6">
+			</header>
+
+			<div className="space-y-4">
 				{getStatCards(selectedModels)}
-				<div className="hidden sm:block bg-muted p-4 rounded-lg text-center">
+				<div className="hidden sm:block rounded-xl border border-border/60 bg-background/60 p-4 text-center">
 					<PricingBarChart
 						chartData={getBarChartData(selectedModels)}
 						models={selectedModels.map((m) => ({
@@ -415,8 +398,7 @@ export default function PricingAnalysis({
 									Pricing by meter
 								</div>
 								<p className="text-xs text-muted-foreground">
-									Comparing only meters that are present on at
-									least two selected models.
+									All unique meters observed across the selected models.
 								</p>
 							</div>
 						</div>
@@ -443,8 +425,8 @@ export default function PricingAnalysis({
 											key={row.meter}
 											className="border-b border-border/60 last:border-b-0"
 										>
-											<td className="px-3 py-2 text-left font-mono text-[11px]">
-												{row.meter}
+											<td className="px-3 py-2 text-left text-[11px] font-medium whitespace-nowrap">
+												{formatMeterLabel(row.meter)}
 											</td>
 											{row.perModel.map(
 												(entry, idx) => {
@@ -510,7 +492,7 @@ export default function PricingAnalysis({
 						</div>
 					</div>
 				)}
-			</CardContent>
-		</Card>
+			</div>
+		</section>
 	);
 }

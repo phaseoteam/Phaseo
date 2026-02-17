@@ -403,7 +403,7 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "effective_from": null,
+    "effective_from": "2026-02-12T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -447,6 +447,13 @@
           },
           {
             "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,

@@ -11,7 +11,56 @@
   "license": "Modified MIT",
   "input_types": "text",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.moonshot.ai/docs/introduction#"
+    },
+    {
+      "platform": "playground",
+      "url": "https://www.kimi.com/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/tech_report.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://x.com/Kimi_Moonshot/status/1943687594560332025"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/MoonshotAI/Kimi-K2"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/moonshotai/Kimi-K2-Base"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://platform.moonshot.ai/docs/introduction#"
+    },
+    {
+      "platform": "playground",
+      "url": "https://www.kimi.com/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/tech_report.pdf"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://x.com/Kimi_Moonshot/status/1943687594560332025"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/MoonshotAI/Kimi-K2"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/moonshotai/Kimi-K2-Instruct"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
-      "rank": 7
+      "rank": 5
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
-      "rank": 24
+      "rank": 23
     },
     {
       "benchmark_id": "aime-2025",
@@ -159,7 +159,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
-      "rank": 9
+      "rank": 8
     },
     {
       "benchmark_id": "terminal-bench",
@@ -167,7 +167,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.aboutamazon.com/news/aws/aws-agentic-ai-amazon-bedrock-nova-models?utm_source=SOCIAL&utm_medium=TWITTER&utm_term=amazonnews&utm_content=18915719359&linkId=884359814",
-      "rank": 4
+      "rank": 3
     },
     {
       "benchmark_id": "livecodebench-coding",

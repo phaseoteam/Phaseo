@@ -11,7 +11,28 @@
   "license": "MIT + Model License (Commercial use allowed)",
   "input_types": null,
   "output_types": null,
-  "links": [],
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://platform.deepseek.com"
+    },
+    {
+      "platform": "playground",
+      "url": "https://chat.deepseek.com"
+    },
+    {
+      "platform": "paper",
+      "url": "https://github.com/deepseek-ai/DeepSeek-V3/blob/main/DeepSeek_V3.pdf"
+    },
+    {
+      "platform": "repository",
+      "url": "https://github.com/deepseek-ai/DeepSeek-V3"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-V3"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

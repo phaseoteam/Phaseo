@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 21
+      "rank": 17
     },
     {
       "benchmark_id": "aime-2025",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 27
+      "rank": 23
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-reasoning",
-      "rank": 42
+      "rank": 40
     }
   ]
 }
