@@ -228,6 +228,7 @@ export function buildAxiomEvent(a: AxiomArgs) {
 
     // A single flat object (Axiom-friendly) following loggingsucks.com wide event pattern
     return {
+        event_type: "gateway.audit",
         // ====================================================================
         // IDENTITY & CORE
         // ====================================================================

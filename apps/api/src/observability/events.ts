@@ -174,6 +174,12 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const teamId = args.teamId ?? ctx?.teamId ?? "unknown";
         if (!requestId) return;
 
+        // Guard against duplicate wide-event emission for the same request context.
+        if (ctx && requestId !== "unknown") {
+            if ((ctx as any).__wideEventEmitted) return;
+            (ctx as any).__wideEventEmitted = true;
+        }
+
         const sanitizedGatewayRequest = ctx
             ? sanitizeForAxiom(ctx.rawBody ?? ctx.body ?? null)
             : null;
@@ -182,6 +188,11 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         );
         const sanitizedErrorDetails = sanitizeForAxiom(args.errorDetails ?? null);
         const sanitizedParamRoutingDiagnostics = sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null);
+        const sanitizedRoutingSnapshot = sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null);
+        const sanitizedRoutingDiagnostics = sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null);
+        const sanitizedAttemptErrors = sanitizeForAxiom((ctx as any)?.attemptErrors ?? null);
+        const sanitizedProviderEnablement = sanitizeForAxiom((ctx as any)?.providerEnablementDiagnostics ?? null);
+        const sanitizedProviderCandidateBuild = sanitizeForAxiom((ctx as any)?.providerCandidateBuildDiagnostics ?? null);
         const requestedParams = Array.isArray(ctx?.requestedParams) ? ctx.requestedParams : [];
         const mediaCounts = countMediaFromContext(ctx);
         const resolvedErrorType = classifyErrorType(args);
@@ -222,12 +233,11 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             param_routing_provider_count_after: ctx?.paramRoutingDiagnostics?.providerCountAfter ?? null,
             param_routing_dropped_provider_count: ctx?.paramRoutingDiagnostics?.droppedProviders?.length ?? null,
             param_routing_diagnostics_json: stringifyForAxiom(sanitizedParamRoutingDiagnostics),
-            routing_candidates_json: ctx && (ctx as any).routingSnapshot
-                ? JSON.stringify((ctx as any).routingSnapshot)
-                : null,
-            attempt_errors_json: ctx && (ctx as any).attemptErrors
-                ? JSON.stringify((ctx as any).attemptErrors)
-                : null,
+            routing_candidates_json: stringifyForAxiom(sanitizedRoutingSnapshot),
+            routing_diagnostics_json: stringifyForAxiom(sanitizedRoutingDiagnostics),
+            attempt_errors_json: stringifyForAxiom(sanitizedAttemptErrors),
+            provider_enablement_diagnostics_json: stringifyForAxiom(sanitizedProviderEnablement),
+            provider_candidate_build_diagnostics_json: stringifyForAxiom(sanitizedProviderCandidateBuild),
             latency_ms: toNum(ctx?.meta?.latency_ms),
             generation_ms: toNum(ctx?.meta?.generation_ms),
             internal_latency_ms: toNum((ctx as any)?.timing?.internal_latency_ms),

@@ -3,6 +3,7 @@
 
 import { expect } from "vitest";
 import { readSseFrames, parseSseJson } from "../../helpers/sse";
+import { resolveGatewayApiKeyFromEnv } from "../../helpers/gatewayKey";
 
 export interface ProviderTestConfig {
 	providerId: string;
@@ -44,10 +45,10 @@ export async function runProtocol(
 	config: ProviderTestConfig,
 	path: string,
 	body: any,
-	opts?: { stream?: boolean }
+	opts?: { stream?: boolean; headers?: Record<string, string> }
 ): Promise<any> {
 	const gatewayUrl = config.gatewayUrl ?? process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
-	const apiKey = config.gatewayApiKey ?? process.env.GATEWAY_API_KEY ?? "";
+	const apiKey = config.gatewayApiKey ?? resolveGatewayApiKeyFromEnv(process.env);
 
 	const requestBody =
 		body && typeof body === "object"
@@ -59,6 +60,7 @@ export async function runProtocol(
 		headers: {
 			"Content-Type": "application/json",
 			Authorization: `Bearer ${apiKey}`,
+			...(opts?.headers ?? {}),
 		},
 		body: JSON.stringify(requestBody),
 	});
@@ -123,17 +125,37 @@ export function expectUsageTokens(response: any, context: TestContext): void {
 	context.totalCostCents += getCostCents(response);
 }
 
+function getStreamFrameUsage(frame: any): any | null {
+	if (!frame || typeof frame !== "object") return null;
+	if (frame.usage && typeof frame.usage === "object") return frame.usage;
+	if (frame.response?.usage && typeof frame.response.usage === "object") return frame.response.usage;
+	if (frame.message?.usage && typeof frame.message.usage === "object") return frame.message.usage;
+	if (frame.delta?.usage && typeof frame.delta.usage === "object") return frame.delta.usage;
+	return null;
+}
+
 export function expectStreamFrames(frames: any[], context: TestContext): void {
 	const objects = frames.filter((entry) => entry && typeof entry === "object");
 	expect(objects.length).toBeGreaterThan(0);
 	const hasChoices = objects.some((entry) => Array.isArray(entry?.choices));
 	const hasResponse = objects.some((entry) => entry?.response || entry?.object === "response");
-	expect(hasChoices || hasResponse).toBe(true);
+	const hasAnthropicMessagesEvent = objects.some((entry) =>
+		typeof entry?.type === "string" &&
+		(
+			entry.type === "message_start" ||
+			entry.type === "content_block_start" ||
+			entry.type === "content_block_delta" ||
+			entry.type === "message_delta" ||
+			entry.type === "message_stop"
+		),
+	);
+	expect(hasChoices || hasResponse || hasAnthropicMessagesEvent).toBe(true);
 
 	// Track tokens and cost from streaming responses
 	for (const frame of objects) {
-		if (frame?.usage) {
-			const tokens = getTotalTokens(frame.usage);
+		const usage = getStreamFrameUsage(frame);
+		if (usage) {
+			const tokens = getTotalTokens(usage);
 			if (tokens > 0) {
 				context.totalTokensUsed += tokens;
 				context.totalCostCents += getCostCents(frame);

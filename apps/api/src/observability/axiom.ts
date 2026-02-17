@@ -5,13 +5,26 @@
 import { getBindings } from "@/runtime/env";
 
 export type WideEvent = Record<string, unknown>;
+let warnedMissingWideDataset = false;
+let warnedSharedDataset = false;
 
 export async function sendAxiomWideEvent(event: WideEvent) {
     const bindings = getBindings();
-    const dataset = bindings.AXIOM_WIDE_DATASET ?? bindings.AXIOM_DATASET;
+    const dataset = bindings.AXIOM_WIDE_DATASET;
     const token = bindings.AXIOM_API_KEY;
 
     if (!dataset || !token) {
+        if (!dataset && !warnedMissingWideDataset) {
+            warnedMissingWideDataset = true;
+            console.warn("[observability] AXIOM_WIDE_DATASET not set; skipping wide event ingestion.");
+        }
+        return;
+    }
+    if (bindings.AXIOM_DATASET && dataset === bindings.AXIOM_DATASET) {
+        if (!warnedSharedDataset) {
+            warnedSharedDataset = true;
+            console.warn("[observability] AXIOM_WIDE_DATASET matches AXIOM_DATASET; skipping wide event ingestion to avoid duplicates.");
+        }
         return;
     }
 
