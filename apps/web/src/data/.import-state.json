@@ -6200,7 +6200,7 @@
       }
     },
     "src/data/api_providers/anthropic/models.json": {
-      "hash": "f88d138374a5a703cf5b1b19c154b023",
+      "hash": "7e1f570679cb5565d10913ad8fd449d7",
       "meta": {
         "api_provider_id": "anthropic",
         "kind": "provider_models"
@@ -8568,14 +8568,6 @@
         "previous_model_id": "anthropic/claude-opus-4-5-2025-11-24"
       }
     },
-    "src/data/models/anthropic/claude-sonnet-5/model.json": {
-      "hash": "bc359111d6efef277da0c5bdde39be47",
-      "meta": {
-        "model_id": "anthropic/claude-sonnet-5",
-        "organisation_id": "anthropic",
-        "previous_model_id": "anthropic/claude-sonnet-4-5-2025-09-29"
-      }
-    },
     "src/data/models/mistral/voxtral-mini-transcribe-2-2026-02-04/model.json": {
       "hash": "59fdc739355761a19828612f66ac1aaf",
       "meta": {
@@ -9880,6 +9872,14 @@
         "capability_id": "text.generate",
         "model_id": "openai/gpt-oss-120b",
         "model_key": "cerebras:openai/gpt-oss-120b:text.generate"
+      }
+    },
+    "src/data/models/anthropic/claude-sonnet-4-6-2026-02-17/model.json": {
+      "hash": "62267f4fe4703cba632a2333997920fd",
+      "meta": {
+        "model_id": "anthropic/claude-sonnet-4-6-2026-02-17",
+        "organisation_id": "anthropic",
+        "previous_model_id": "anthropic/claude-sonnet-4-5-2025-09-29"
       }
     }
   }
