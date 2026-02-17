@@ -43,7 +43,9 @@ function ensureInfoContact() {
 }
 
 function ensureGlobalTag() {
-	const tagsIdx = lines.findIndex((line) => line.trim() === "tags:");
+	// Only treat top-level `tags:` as the global tags block.
+	// Operation-level tags are indented and must not be used here.
+	const tagsIdx = lines.findIndex((line) => /^tags:\s*$/.test(line));
 	if (tagsIdx !== -1) {
 		const tagsEnd = findBlockEnd(tagsIdx + 1, (line) => topLevelKeyRe.test(line));
 		const hasGatewayTag = lines
@@ -60,7 +62,7 @@ function ensureGlobalTag() {
 		return;
 	}
 
-	const pathsIdx = lines.findIndex((line) => line.trim() === "paths:");
+	const pathsIdx = lines.findIndex((line) => /^paths:\s*$/.test(line));
 	const insertAt = pathsIdx === -1 ? lines.length : pathsIdx;
 	lines.splice(
 		insertAt,
