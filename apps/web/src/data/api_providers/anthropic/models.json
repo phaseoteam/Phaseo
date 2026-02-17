@@ -917,7 +917,7 @@
     "provider_api_model_id": "anthropic:anthropic/claude-sonnet-4.6",
     "provider_model_slug": "claude-sonnet-4-6",
     "internal_model_id": "anthropic/claude-sonnet-4-6-2026-02-17",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
