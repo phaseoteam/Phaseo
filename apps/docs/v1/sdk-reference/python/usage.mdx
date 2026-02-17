@@ -15,11 +15,17 @@ client = AIStats(api_key="your-api-key")
 
 ```python
 completion = client.generate_text(
-    {"model": "openai/gpt-4o-mini", "messages": [{"role": "user", "content": "Hi!"}]}
+    {
+        "model": "openai/gpt-4o-mini",
+        "messages": [{"role": "user", "content": "Hi!"}],
+    }
 )
 
 for line in client.stream_text(
-    {"model": "openai/gpt-4o-mini", "messages": [{"role": "user", "content": "Stream a story"}]}
+    {
+        "model": "openai/gpt-4o-mini",
+        "messages": [{"role": "user", "content": "Stream a story"}],
+    }
 ):
     print(line)
 ```
@@ -28,70 +34,96 @@ for line in client.stream_text(
 
 ```python
 resp = client.generate_response(
-    {"model": "openai/gpt-4.1", "input": [{"role": "user", "content": [{"type": "output_text", "text": "Summarise"}]}]}
+    {
+        "model": "openai/gpt-4.1",
+        "input": [{"role": "user", "content": [{"type": "output_text", "text": "Summarise"}]}],
+    }
 )
 
 for line in client.stream_response(
-    {"model": "openai/gpt-4.1", "input": [{"role": "user", "content": [{"type": "output_text", "text": "Stream it"}]}]}
+    {
+        "model": "openai/gpt-4.1",
+        "input": [{"role": "user", "content": [{"type": "output_text", "text": "Stream it"}]}],
+    }
 ):
     print(line)
 ```
 
-## Images
+## Messages (Anthropic-compatible)
 
 ```python
-client.generate_image(
-    ImageGenerationRequest.model_validate({"model": "openai/gpt-image-1", "prompt": "A lighthouse at dusk"})
+message = client.generate_message(
+    {
+        "model": "anthropic/claude-3-5-sonnet-latest",
+        "messages": [{"role": "user", "content": "Hello from messages API"}],
+        "max_tokens": 128,
+    }
 )
 
-client.generate_image_edit(
-    ImageGenerationRequest.model_validate({"model": "openai/gpt-image-1", "prompt": "Make it sunset", "image": "data:image/png;base64,..."})
+for line in client.stream_messages(
+    {
+        "model": "anthropic/claude-3-5-sonnet-latest",
+        "messages": [{"role": "user", "content": "Stream a short hello"}],
+        "max_tokens": 128,
+        "stream": True,
+    }
+):
+    print(line)
+```
+
+## Embeddings and moderations
+
+```python
+embedding = client.generate_embedding(
+    {"model": "openai/text-embedding-3-large", "input": "Sample text"}
+)
+
+moderation = client.generate_moderation(
+    {"model": "openai/omni-moderation-latest", "input": "Text to check"}
 )
 ```
 
-## Audio
-
-```python
-client.generate_speech({"model": "openai/gpt-4o-mini-tts", "input": "Hello world"})
-client.generate_transcription({"model": "openai/gpt-4o-transcribe", "file": "data:audio/mp3;base64,..."})
-client.generate_translation({"model": "openai/gpt-4o-translate", "file": "data:audio/mp3;base64,..."})
-```
-
-## Video
-
-```python
-client.generate_video({"model": "openai/gpt-video-1", "prompt": "A serene mountain lake at sunrise"})
-```
-
-## Embeddings
-
-```python
-embedding = client.generate_embedding({"model": "openai/text-embedding-3-large", "input": "Sample text"})
-```
-
-## Moderations
-
-```python
-client.generate_moderation({"model": "openai/omni-moderation-latest", "input": "Text to check"})
-```
-
-## Batch & files
-
-```python
-uploaded = client.upload_file(purpose="batch", file=open("batchinput.jsonl", "rb"))
-batch = client.create_batch({"input_file_id": uploaded.id, "endpoint": "responses", "completion_window": "24h"})
-batch_status = client.get_batch(batch.id)
-files = client.list_files()
-```
-
-## Models & health
+## Models and health
 
 ```python
 models = client.get_models()
 health = client.get_health()
 ```
 
-## Errors
+## Control-plane helpers
+
+```python
+providers = client.list_providers()
+credits = client.get_credits({"team_id": "your-team-id"})
+activity = client.get_activity({"team_id": "your-team-id", "days": 30})
+```
+
+## Endpoints currently returning `coming_soon`
+
+These helpers exist in the SDK but currently return a placeholder payload:
+
+- `generate_image`, `generate_image_edit`
+- `generate_speech`, `generate_transcription`, `generate_translation`
+- `generate_video`
+- `create_batch`, `get_batch`
+- `upload_file`, `list_files`, `get_file`
+- `get_generation`
+
+```python
+placeholder = client.generate_video(
+    {"model": "openai/gpt-video-1", "prompt": "A mountain sunrise"}
+)
+
+print(placeholder)
+# {
+#   "status": "coming_soon",
+#   "endpoint": "videos",
+#   "message": "This endpoint is not yet supported in the SDK.",
+#   "payload": {...}
+# }
+```
+
+## Error handling
 
 ```python
 try:
@@ -100,63 +132,14 @@ except Exception as exc:
     print(f"API error: {exc}")
 ```
 
-Verify the API is operational and check system status.
-
-## Error Handling
-
-```python
-try:
-    response = await client.chat_completions(
-        model="invalid-model",
-        messages=[{"role": "user", "content": "Hello"}]
-    )
-except Exception as e:
-    print(f"API Error: {e}")
-    # Handle authentication, rate limits, etc.
-```
-
-Handle API errors gracefully including rate limits, authentication failures, and network issues.
-
-## Configuration Options
+## Configuration options
 
 ```python
 from ai_stats import AIStats
-import httpx
 
-# Custom configuration
 client = AIStats(
     api_key="your-api-key",
-    base_url="https://api.phaseo.app",  # Custom base URL
-    timeout=httpx.Timeout(30.0),  # Custom timeout
-    headers={"Custom-Header": "value"}  # Additional headers
+    base_url="https://api.phaseo.app/v1",
+    timeout=30.0,
 )
 ```
-
-Customize client behavior with base URLs, timeouts, headers, and other configuration options.
-
-## Type Hints
-
-```python
-from ai_stats import AIStats
-from typing import List, Dict, Any
-
-async def chat_with_model(
-    client: AIStats,
-    model: str,
-    messages: List[Dict[str, str]]
-) -> Dict[str, Any]:
-    return await client.chat_completions(
-        model=model,
-        messages=messages
-    )
-```
-
-Rich type hints for modern Python editors and IDEs, improving development experience.
-
-## Best Practices
-
--   Use `async with` context managers for proper resource cleanup
--   Handle rate limits with exponential backoff
--   Check credits before expensive operations
--   Use streaming for real-time user experiences
--   Store API keys securely (environment variables, not in code)

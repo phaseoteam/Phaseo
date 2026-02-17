@@ -1,20 +1,24 @@
 ---
 title: "Files"
-description: "Call /files with the Python SDK."
+description: "Python SDK placeholder for /files."
 ---
 
-**Methods**: `client.upload_file()`, `client.list_files()`, `client.get_file()`.
+<Note type="warning">
+  `upload_file`, `list_files`, and `get_file` currently return `coming_soon` placeholders.
+</Note>
 
-### Example
 ```python
-uploaded = client.upload_file(purpose="batch", file=open("batchinput.jsonl", "rb"))
+uploaded = client.upload_file(purpose="batch", file="...")
 files = client.list_files()
-file = client.get_file(uploaded.id)
+file_obj = client.get_file("file_123")
+
+print(uploaded)
+print(files)
+print(file_obj)
+# {
+#   "status": "coming_soon",
+#   "endpoint": "files",
+#   "message": "This endpoint is not yet supported in the SDK.",
+#   ...
+# }
 ```
-
-### Key parameters
-- `file` (required for upload): Blob/File/base64/string.
-- `purpose` (required for upload): e.g., `batch`.
-
-### Returns
-`FileObject` or `FileListResponse`

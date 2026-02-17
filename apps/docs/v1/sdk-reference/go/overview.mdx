@@ -1,22 +1,33 @@
 ---
 title: "Go SDK (preview)"
-description: "Generated client for the AI Stats Gateway. Models endpoint only for now."
+description: "Local-preview Go wrapper for the AI Stats API."
 ---
 
 <Note type="warning">
-	**SDKs are in very early alpha**: We're working as hard as we can to get
-	them into a stable state. Please bear with us as we iterate rapidly.
+  The Go SDK is in preview and is not yet published to a package registry.
 </Note>
 
--   Status: Preview (not yet published to pkg.go.dev).
--   Generate with `pnpm openapi:gen:go`.
--   Wrapper in `packages/sdk-go/index.go` exposes `GetModels`.
+The local wrapper at `packages/sdk/sdk-go/index.go` currently exposes these methods:
+
+- `GenerateText(...)`
+- `GenerateResponse(...)`
+- `GenerateEmbedding(...)`
+- `GenerateModeration(...)`
+- `GetModels(...)`
+
+For other endpoints, use the generated client under `packages/sdk/sdk-go/src/gen` directly.
 
 ```go
-client := aistats.New("YOUR_KEY", "https://api.phaseo.app/v1")
-resp, _, err := client.GetModels(context.Background(), nil)
-if err != nil { panic(err) }
-fmt.Println(resp.Models)
-```
+import (
+  "context"
+  "fmt"
+  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
+)
 
-TypeScript and Python SDKs are production-ready; other languages follow soon.
+client := aistats.New("YOUR_KEY", "https://api.phaseo.app/v1")
+models, err := client.GetModels(context.Background(), map[string]string{"limit": "5"})
+if err != nil {
+  panic(err)
+}
+fmt.Println(models)
+```

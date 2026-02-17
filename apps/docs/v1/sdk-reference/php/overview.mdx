@@ -1,19 +1,26 @@
 ---
 title: "PHP SDK (preview)"
-description: "Generated client for the AI Stats Gateway. Models endpoint only for now."
+description: "Local-preview PHP wrapper for the AI Stats API."
 ---
 
 <Note type="warning">
-  **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
+  The PHP SDK is in preview and is not yet published to Packagist.
 </Note>
 
-- Status: Preview (not yet on Packagist).
-- Generate with `pnpm openapi:gen:php`.
-- Wrapper `packages/sdk-php/src/index.php` exposes `getModels`.
+The local wrapper at `packages/sdk/sdk-php/src/index.php` currently exposes these methods:
+
+- `generateText(...)`
+- `generateResponse(...)`
+- `generateImage(...)`
+- `generateImageEdit(...)`
+- `generateEmbedding(...)`
+- `generateModeration(...)`
+- `generateTranscription(...)`
+- `generateTranslation(...)`
+- `listModels(...)`
+- `health()`
 
 ```php
 $client = new \AIStats\Sdk\Client('YOUR_KEY');
-$resp = $client->getModels(['limit' => 5]);
+$models = $client->listModels(['limit' => 5]);
 ```
-
-TypeScript and Python SDKs are production-ready; other languages follow soon.

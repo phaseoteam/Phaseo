@@ -1,9 +1,9 @@
 ---
 title: "Generation lookup"
-description: "Call /generation to retrieve a past generation."
+description: "Call /generations to retrieve a past generation."
 ---
 
-**Method**: Direct HTTP GET /generation/{id}
+**Method**: Direct HTTP GET `/generations?id=<request_id>`
 
 ### Example
 
@@ -11,7 +11,7 @@ description: "Call /generation to retrieve a past generation."
 var client = new HttpClient();
 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-var response = await client.GetAsync("https://api.phaseo.app/v1/generation/G-01ABC...");
+var response = await client.GetAsync("https://api.phaseo.app/v1/generations?id=G-01ABC...");
 ```
 
 ### Parameters

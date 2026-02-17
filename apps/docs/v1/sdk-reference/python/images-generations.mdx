@@ -1,40 +1,25 @@
 ---
 title: "Image generations"
-description: "Call /images/generations with the Python SDK."
+description: "Python SDK placeholder for /images/generations."
 ---
 
-**Method**: `client.generate_image()`.
+<Note type="warning">
+  This helper currently returns a `coming_soon` placeholder in the Python SDK.
+</Note>
 
-### Example
+**Method**: `client.generate_image()`
+
 ```python
-image = client.generate_image({
+result = client.generate_image({
     "model": "openai/gpt-image-1",
     "prompt": "A lighthouse at golden hour",
-    "size": "1024x1024",
-    "n": 1,
-    "response_format": "url",
 })
-```
 
-### Key parameters
-- `model` (required): Image-capable model id (e.g., `openai/gpt-image-1`).
-- `prompt` (required): Text prompt.
-- `n` (1–10): Number of images to generate.
-- `size`: e.g., `1024x1024`, `1024x1792`, `1792x1024`.
-- `quality`: `standard` or `hd` (model-dependent).
-- `style`: e.g., `vivid` or `natural` (model-dependent).
-- `response_format`: `url` or `b64_json`.
-- `user`: Optional end-user tag for safety/abuse tracking.
-
-### Returns
-`ImageGenerationResponse`
-
-```json
-{
-  "data": [
-    {
-      "url": "https://example.com/generated_image.png"
-    }
-  ]
-}
+print(result)
+# {
+#   "status": "coming_soon",
+#   "endpoint": "images/generations",
+#   "message": "This endpoint is not yet supported in the SDK.",
+#   "payload": {...}
+# }
 ```

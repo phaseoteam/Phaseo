@@ -1,33 +1,37 @@
 ---
 title: "Go SDK Installation"
-description: "How to install and set up the AI Stats Go SDK"
+description: "Set up the preview Go SDK from source."
 ---
 
 <Note type="warning">
-  **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
+  The Go SDK is not published yet. Use it from source for now.
 </Note>
 
-<Note type="warning">This package is yet to be published on Go modules, and will be coming ASAP.</Note>
+## Requirements
 
-```bash
-go get github.com/ai-stats/sdk-go
-```
+- Go 1.23+
+- Access to this repository
 
-## Installation
+## Install from local source
 
-**Coming Soon** - The Go SDK is currently in preview and not yet published to a package registry.
-
-For now, you can generate and use the client locally:
-
-- Ensure Go 1.21+.
-- From the repo root run `pnpm openapi:gen:go` to regenerate the client.
-- In your Go module, point to the generated code (preview path): `replace github.com/ai-stats/sdk-go => ./packages/sdk/sdk-go/src/gen`.
-- Import the convenience facade from `packages/sdk/sdk-go`.
+1. Regenerate the Go SDK (optional but recommended after API changes):
 
 ```bash
 pnpm openapi:gen:go
 ```
 
+2. In your `go.mod`, add a local `replace` to the SDK path:
+
 ```go
-import aistats "packages/sdk/sdk-go"
+go 1.23
+
+require github.com/AI-Stats/ai-stats-go-sdk-wrapper v0.0.0
+
+replace github.com/AI-Stats/ai-stats-go-sdk-wrapper => ../ai-stats-public/packages/sdk/sdk-go
+```
+
+3. Import the wrapper:
+
+```go
+import aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
 ```

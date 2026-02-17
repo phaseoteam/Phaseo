@@ -9,8 +9,9 @@ All errors from the AI Stats Gateway should be returned in a consistent JSON str
 {
 	"generation_id": "G-abc123",
 	"status_code": 401,
-	"error": "Detailed human-readable message",
-	"reason": "error_type"
+	"error": "validation_error",
+	"error_type": "user",
+	"description": "Input validation failed"
 }
 ```
 
@@ -18,12 +19,14 @@ Every response includes:
 
 - `generation_id`: a stable identifier you can share with support for faster investigation.
 - `status_code`: mirrors the HTTP status to make retries decisions easier.
-- `error`: a human-friendly explanation you can display to end users.
-- `reason`: a machine-readable error type that aligns with the types listed below.
+- `error`: a machine-readable error code (for example `validation_error`).
+- `error_type`: high-level classification (`user` or `system`).
+- `description`: a human-friendly explanation safe to display to end users.
+- `details` (optional): structured validation errors when `error` is `validation_error`.
 
 ---
 
-## Common error types
+## Common error codes
 
 | Type                   | HTTP Status | Description                                          |
 | ---------------------- | ----------- | ---------------------------------------------------- |
@@ -46,7 +49,7 @@ Every response includes:
 Example:
 
 ```js
-if (error.type === "rate_limit_error") {
+if (error.error === "rate_limit_error") {
 	await sleep(retryAfterMs);
 	return retryRequest();
 }

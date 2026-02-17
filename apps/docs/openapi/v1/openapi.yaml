@@ -1,43 +1,19 @@
 openapi: 3.0.3
 info:
     title: AI Stats Gateway API
-    description: >-
-        A gateway API for accessing various AI models with OpenAI-compatible
-        endpoints.
+    description: A gateway API for accessing various AI models with OpenAI-compatible endpoints.
     version: 1.0.0
     contact:
         name: AI Stats
         url: https://docs.ai-stats.phaseo.app
         email: danielbutler500@gmail.com
 servers:
-    - url: https://api.phaseo.app/v1
+    -
+        url: https://api.phaseo.app/v1
 security:
-    - BearerAuth: []
-tags:
-    - name: Gateway
-      description: Core AI Stats Gateway operations.
+    -
+        BearerAuth: []
 paths:
-    /:
-        get:
-            x-beta: true
-            tags:
-                - Gateway
-            operationId: root
-            summary: Root endpoint
-            description: Returns a welcome message.
-            responses:
-                "200":
-                    description: Welcome message
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    message:
-                                        type: string
-                                    timestamp:
-                                        type: string
-                                        format: date-time
     /health:
         get:
             x-beta: true
@@ -66,56 +42,65 @@ paths:
             summary: List models
             description: Returns a list of available models.
             parameters:
-                - name: endpoints
-                  in: query
-                  description: Filter by endpoints
-                  schema:
-                      type: array
-                      items:
-                          type: string
-                - name: organisation
-                  in: query
-                  description: Filter by organisation
-                  schema:
-                      oneOf:
-                          - $ref: "#/components/schemas/OrganisationId"
-                          - $ref: "#/components/schemas/OrganisationIdList"
-                - name: input_types
-                  in: query
-                  description: Filter by input types
-                  schema:
-                      type: array
-                      items:
-                          type: string
-                - name: output_types
-                  in: query
-                  description: Filter by output types
-                  schema:
-                      type: array
-                      items:
-                          type: string
-                - name: params
-                  in: query
-                  description: Filter by params
-                  schema:
-                      type: array
-                      items:
-                          type: string
-                - name: limit
-                  in: query
-                  description: Limit the number of results
-                  schema:
-                      type: integer
-                      default: 50
-                      minimum: 1
-                      maximum: 250
-                - name: offset
-                  in: query
-                  description: Offset for pagination
-                  schema:
-                      type: integer
-                      default: 0
-                      minimum: 0
+                -
+                    name: endpoints
+                    in: query
+                    description: Filter by endpoints
+                    schema:
+                        type: array
+                        items:
+                            type: string
+                -
+                    name: organisation
+                    in: query
+                    description: Filter by organisation
+                    schema:
+                        oneOf:
+                            -
+                                $ref: "#/components/schemas/OrganisationId"
+                            -
+                                $ref: "#/components/schemas/OrganisationIdList"
+                -
+                    name: input_types
+                    in: query
+                    description: Filter by input types
+                    schema:
+                        type: array
+                        items:
+                            type: string
+                -
+                    name: output_types
+                    in: query
+                    description: Filter by output types
+                    schema:
+                        type: array
+                        items:
+                            type: string
+                -
+                    name: params
+                    in: query
+                    description: Filter by params
+                    schema:
+                        type: array
+                        items:
+                            type: string
+                -
+                    name: limit
+                    in: query
+                    description: Limit the number of results
+                    schema:
+                        type: integer
+                        default: 50
+                        minimum: 1
+                        maximum: 250
+                -
+                    name: offset
+                    in: query
+                    description: Offset for pagination
+                    schema:
+                        type: integer
+                        default: 0
+                        minimum: 0
             responses:
                 "200":
                     description: List of models
@@ -158,20 +143,22 @@ paths:
             summary: List providers
             description: Returns a list of available API providers.
             parameters:
-                - name: limit
-                  in: query
-                  description: Limit the number of results
-                  schema:
-                      type: integer
-                      default: 50
-                      minimum: 1
-                      maximum: 250
-                - name: offset
-                  in: query
-                  description: Offset for pagination
-                  schema:
-                      type: integer
-                      default: 0
+                -
+                    name: limit
+                    in: query
+                    description: Limit the number of results
+                    schema:
+                        type: integer
+                        default: 50
+                        minimum: 1
+                        maximum: 250
+                -
+                    name: offset
+                    in: query
+                    description: Offset for pagination
+                    schema:
+                        type: integer
+                        default: 0
             responses:
                 "200":
                     description: List of providers
@@ -218,12 +205,13 @@ paths:
             summary: Get generation
             description: Retrieve a specific generation by ID.
             parameters:
-                - name: id
-                  in: query
-                  required: true
-                  description: The ID of the generation
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: query
+                    required: true
+                    description: The ID of the generation
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Generation data
@@ -452,9 +440,7 @@ paths:
                 - Gateway
             operationId: createImageEdit
             summary: Create image edit
-            description: >-
-                Creates an edited or extended image given an original image and a
-                prompt.
+            description: Creates an edited or extended image given an original image and a prompt.
             requestBody:
                 required: true
                 content:
@@ -498,12 +484,13 @@ paths:
             summary: Get video status
             description: Retrieves the status for a video generation request.
             parameters:
-                - name: video_id
-                  in: path
-                  required: true
-                  description: The ID of the video generation request.
-                  schema:
-                      type: string
+                -
+                    name: video_id
+                    in: path
+                    required: true
+                    description: The ID of the video generation request.
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Video status response
@@ -519,12 +506,13 @@ paths:
             summary: Delete video
             description: Deletes a video generation request.
             parameters:
-                - name: video_id
-                  in: path
-                  required: true
-                  description: The ID of the video generation request.
-                  schema:
-                      type: string
+                -
+                    name: video_id
+                    in: path
+                    required: true
+                    description: The ID of the video generation request.
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Video deletion response
@@ -541,12 +529,13 @@ paths:
             summary: Get video content
             description: Downloads the rendered video content.
             parameters:
-                - name: video_id
-                  in: path
-                  required: true
-                  description: The ID of the video generation request.
-                  schema:
-                      type: string
+                -
+                    name: video_id
+                    in: path
+                    required: true
+                    description: The ID of the video generation request.
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Video content
@@ -606,12 +595,13 @@ paths:
             summary: Get music generation status
             description: Retrieves the status for a music generation request.
             parameters:
-                - name: music_id
-                  in: path
-                  required: true
-                  description: The ID of the music generation request.
-                  schema:
-                      type: string
+                -
+                    name: music_id
+                    in: path
+                    required: true
+                    description: The ID of the music generation request.
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Music generation status response
@@ -663,12 +653,13 @@ paths:
             summary: Retrieve file
             description: Returns information about a specific file.
             parameters:
-                - name: file_id
-                  in: path
-                  required: true
-                  description: The ID of the file to retrieve.
-                  schema:
-                      type: string
+                -
+                    name: file_id
+                    in: path
+                    required: true
+                    description: The ID of the file to retrieve.
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: File information
@@ -706,12 +697,13 @@ paths:
             summary: Retrieve batch
             description: Retrieves a batch.
             parameters:
-                - name: batch_id
-                  in: path
-                  required: true
-                  description: The ID of the batch to retrieve.
-                  schema:
-                      type: string
+                -
+                    name: batch_id
+                    in: path
+                    required: true
+                    description: The ID of the batch to retrieve.
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Batch information
@@ -761,12 +753,13 @@ paths:
             summary: Get remaining credits
             description: Returns the remaining credits and usage statistics for a team.
             parameters:
-                - name: team_id
-                  in: query
-                  description: The team ID to query
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: team_id
+                    in: query
+                    description: The team ID to query
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Credit information
@@ -814,35 +807,39 @@ paths:
             summary: Get activity
             description: Returns recent API activity for a team.
             parameters:
-                - name: team_id
-                  in: query
-                  description: The team ID to query
-                  required: true
-                  schema:
-                      type: string
-                - name: days
-                  in: query
-                  description: Number of days to look back
-                  schema:
-                      type: integer
-                      default: 30
-                      minimum: 1
-                      maximum: 90
-                - name: limit
-                  in: query
-                  description: Maximum number of records to return
-                  schema:
-                      type: integer
-                      default: 50
-                      minimum: 1
-                      maximum: 250
-                - name: offset
-                  in: query
-                  description: Pagination offset
-                  schema:
-                      type: integer
-                      default: 0
-                      minimum: 0
+                -
+                    name: team_id
+                    in: query
+                    description: The team ID to query
+                    required: true
+                    schema:
+                        type: string
+                -
+                    name: days
+                    in: query
+                    description: Number of days to look back
+                    schema:
+                        type: integer
+                        default: 30
+                        minimum: 1
+                        maximum: 90
+                -
+                    name: limit
+                    in: query
+                    description: Maximum number of records to return
+                    schema:
+                        type: integer
+                        default: 50
+                        minimum: 1
+                        maximum: 250
+                -
+                    name: offset
+                    in: query
+                    description: Pagination offset
+                    schema:
+                        type: integer
+                        default: 0
+                        minimum: 0
             responses:
                 "200":
                     description: Activity data
@@ -868,7 +865,7 @@ paths:
                                         example: 1250
                                     total_cost_cents:
                                         type: number
-                                        example: 12.50
+                                        example: 12.5
                                     activity:
                                         type: array
                                         items:
@@ -894,27 +891,29 @@ paths:
             summary: List management API keys
             description: Returns all management API keys for a team.
             parameters:
-                - name: team_id
-                  in: query
-                  description: The team ID to query
-                  required: true
-                  schema:
-                      type: string
-                - name: limit
-                  in: query
-                  description: Maximum number of keys to return
-                  schema:
-                      type: integer
-                      default: 50
-                      minimum: 1
-                      maximum: 250
-                - name: offset
-                  in: query
-                  description: Pagination offset
-                  schema:
-                      type: integer
-                      default: 0
-                      minimum: 0
+                -
+                    name: team_id
+                    in: query
+                    description: The team ID to query
+                    schema:
+                        type: string
+                -
+                    name: limit
+                    in: query
+                    description: Maximum number of keys to return
+                    schema:
+                        type: integer
+                        default: 50
+                        minimum: 1
+                        maximum: 250
+                -
+                    name: offset
+                    in: query
+                    description: Pagination offset
+                    schema:
+                        type: integer
+                        default: 0
+                        minimum: 0
             responses:
                 "200":
                     description: List of management API keys
@@ -951,6 +950,83 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createProvisioningKey
+            summary: Create management API key
+            description: Creates a new management API key.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - name
+                            properties:
+                                name:
+                                    type: string
+                                    description: Name for the key.
+                                team_id:
+                                    type: string
+                                    description: Team scope for internal callers.
+                                created_by:
+                                    type: string
+                                    description: Creator user ID for internal callers.
+                                scopes:
+                                    oneOf:
+                                        -
+                                            type: string
+                                        -
+                                            type: array
+                                            items:
+                                                type: string
+                                status:
+                                    type: string
+                                    enum:
+                                        - active
+                                        - disabled
+                                        - revoked
+                                soft_blocked:
+                                    type: boolean
+            responses:
+                "201":
+                    description: Management API key created
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    key:
+                                        $ref: "#/components/schemas/ProvisioningKeyWithValue"
+                "400":
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Forbidden
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "503":
+                    description: Server misconfiguration
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
     /management/keys/{id}:
         get:
             x-beta: true
@@ -960,12 +1036,13 @@ paths:
             summary: Get management API key
             description: Returns details of a specific management API key.
             parameters:
-                - name: id
-                  in: path
-                  description: The management API key ID
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: path
+                    description: The management API key ID
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Management API key details
@@ -999,12 +1076,13 @@ paths:
             summary: Update management API key
             description: Updates the name, status, or blocked state of a management API key.
             parameters:
-                - name: id
-                  in: path
-                  description: The management API key ID
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: path
+                    description: The management API key ID
+                    required: true
+                    schema:
+                        type: string
             requestBody:
                 required: true
                 content:
@@ -1065,12 +1143,13 @@ paths:
             summary: Delete management API key
             description: Permanently deletes a management API key.
             parameters:
-                - name: id
-                  in: path
-                  description: The management API key ID
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: path
+                    description: The management API key ID
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Key deleted successfully
@@ -1105,21 +1184,23 @@ paths:
             summary: List organisations
             description: Returns a list of available organisations.
             parameters:
-                - name: limit
-                  in: query
-                  description: Limit the number of results
-                  schema:
-                      type: integer
-                      default: 50
-                      minimum: 1
-                      maximum: 250
-                - name: offset
-                  in: query
-                  description: Offset for pagination
-                  schema:
-                      type: integer
-                      default: 0
-                      minimum: 0
+                -
+                    name: limit
+                    in: query
+                    description: Limit the number of results
+                    schema:
+                        type: integer
+                        default: 50
+                        minimum: 1
+                        maximum: 250
+                -
+                    name: offset
+                    in: query
+                    description: Offset for pagination
+                    schema:
+                        type: integer
+                        default: 0
+                        minimum: 0
             responses:
                 "200":
                     description: List of organisations
@@ -1263,33 +1344,37 @@ paths:
             summary: Provider derank status
             description: Returns breaker-based derank/recovery status for a provider.
             parameters:
-                - name: provider_id
-                  in: path
-                  required: true
-                  description: Provider identifier.
-                  schema:
-                      type: string
-                - name: window_hours
-                  in: query
-                  description: Observation window in hours.
-                  schema:
-                      type: integer
-                      minimum: 1
-                      maximum: 168
-                - name: max_pairs
-                  in: query
-                  description: Max endpoint/model tuples to inspect.
-                  schema:
-                      type: integer
-                      minimum: 1
-                      maximum: 100
-                - name: fetch_limit
-                  in: query
-                  description: Max recent requests to scan.
-                  schema:
-                      type: integer
-                      minimum: 50
-                      maximum: 2000
+                -
+                    name: provider_id
+                    in: path
+                    required: true
+                    description: Provider identifier.
+                    schema:
+                        type: string
+                -
+                    name: window_hours
+                    in: query
+                    description: Observation window in hours.
+                    schema:
+                        type: integer
+                        minimum: 1
+                        maximum: 168
+                -
+                    name: max_pairs
+                    in: query
+                    description: Max endpoint/model tuples to inspect.
+                    schema:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                -
+                    name: fetch_limit
+                    in: query
+                    description: Max recent requests to scan.
+                    schema:
+                        type: integer
+                        minimum: 50
+                        maximum: 2000
             responses:
                 "200":
                     description: Provider derank snapshot
@@ -1310,14 +1395,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-                "503":
-                    description: Control secret not configured
+                "500":
+                    description: Error
                     content:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-                "500":
-                    description: Error
+                "503":
+                    description: Control secret not configured
                     content:
                         application/json:
                             schema:
@@ -1331,27 +1416,29 @@ paths:
             summary: List provisioning keys
             description: Alias of management keys endpoint.
             parameters:
-                - name: team_id
-                  in: query
-                  description: The team ID to query
-                  required: true
-                  schema:
-                      type: string
-                - name: limit
-                  in: query
-                  description: Maximum number of keys to return
-                  schema:
-                      type: integer
-                      default: 50
-                      minimum: 1
-                      maximum: 250
-                - name: offset
-                  in: query
-                  description: Pagination offset
-                  schema:
-                      type: integer
-                      default: 0
-                      minimum: 0
+                -
+                    name: team_id
+                    in: query
+                    description: The team ID to query
+                    schema:
+                        type: string
+                -
+                    name: limit
+                    in: query
+                    description: Maximum number of keys to return
+                    schema:
+                        type: integer
+                        default: 50
+                        minimum: 1
+                        maximum: 250
+                -
+                    name: offset
+                    in: query
+                    description: Pagination offset
+                    schema:
+                        type: integer
+                        default: 0
+                        minimum: 0
             responses:
                 "200":
                     description: List of provisioning keys
@@ -1366,6 +1453,56 @@ paths:
                                         type: array
                                         items:
                                             $ref: "#/components/schemas/ProvisioningKey"
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createProvisioningKeyAlias
+            summary: Create provisioning key
+            description: Alias of management key create endpoint.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - name
+                            properties:
+                                name:
+                                    type: string
+                                team_id:
+                                    type: string
+                                created_by:
+                                    type: string
+                                scopes:
+                                    oneOf:
+                                        -
+                                            type: string
+                                        -
+                                            type: array
+                                            items:
+                                                type: string
+                                status:
+                                    type: string
+                                    enum:
+                                        - active
+                                        - disabled
+                                        - revoked
+                                soft_blocked:
+                                    type: boolean
+            responses:
+                "201":
+                    description: Provisioning key created
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    key:
+                                        $ref: "#/components/schemas/ProvisioningKeyWithValue"
     /provisioning/keys/{id}:
         get:
             x-beta: true
@@ -1375,11 +1512,12 @@ paths:
             summary: Get provisioning key
             description: Alias of management key details endpoint.
             parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Provisioning key details
@@ -1396,11 +1534,12 @@ paths:
             summary: Update provisioning key
             description: Alias of management key update endpoint.
             parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             requestBody:
                 required: true
                 content:
@@ -1424,11 +1563,12 @@ paths:
             summary: Delete provisioning key
             description: Alias of management key delete endpoint.
             parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Provisioning key deleted
@@ -1446,12 +1586,13 @@ paths:
             summary: Invalidate key cache
             description: Bumps cache version for key id/kid and invalidates key cache entries.
             parameters:
-                - name: id
-                  in: path
-                  description: Gateway key ID.
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: path
+                    description: Gateway key ID.
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Key cache invalidated
@@ -1478,14 +1619,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-                "503":
-                    description: Control secret not configured
+                "500":
+                    description: Error
                     content:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
-                "500":
-                    description: Error
+                "503":
+                    description: Control secret not configured
                     content:
                         application/json:
                             schema:
@@ -1587,11 +1728,12 @@ paths:
             summary: Get OAuth client
             description: Returns details for an OAuth client.
             parameters:
-                - name: client_id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: client_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: OAuth client details
@@ -1614,11 +1756,12 @@ paths:
             summary: Update OAuth client
             description: Updates OAuth client metadata and redirect URIs.
             parameters:
-                - name: client_id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: client_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             requestBody:
                 required: true
                 content:
@@ -1654,11 +1797,12 @@ paths:
             summary: Delete OAuth client
             description: Deletes an OAuth client and related metadata.
             parameters:
-                - name: client_id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: client_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: OAuth client deleted
@@ -1682,11 +1826,12 @@ paths:
             summary: Regenerate OAuth client secret
             description: Regenerates and returns a new OAuth client secret.
             parameters:
-                - name: client_id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: client_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: OAuth client secret regenerated
@@ -1731,11 +1876,12 @@ paths:
             summary: Get video status (alias)
             description: Alias of /videos/{video_id}.
             parameters:
-                - name: video_id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: video_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Video status response
@@ -1751,11 +1897,12 @@ paths:
             summary: Delete video (alias)
             description: Alias of /videos/{video_id}.
             parameters:
-                - name: video_id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: video_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Video deletion response
@@ -1772,11 +1919,12 @@ paths:
             summary: Get video content (alias)
             description: Alias of /videos/{video_id}/content.
             parameters:
-                - name: video_id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: video_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Video content
@@ -1815,11 +1963,12 @@ paths:
             summary: Get music generation status (alias)
             description: Alias of /music/generate/{music_id}.
             parameters:
-                - name: music_id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: music_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Music generation status response
@@ -1857,11 +2006,12 @@ paths:
             summary: Retrieve batch (alias)
             description: Alias of /batches/{batch_id}.
             parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                      type: string
+                -
+                    name: id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Batch information
@@ -1874,9 +2024,9 @@ paths:
             x-beta: true
             tags:
                 - Gateway
-            operationId: listEndpointsPlaceholder
-            summary: List endpoints (placeholder)
-            description: Placeholder route; currently returns not implemented.
+            operationId: listEndpoints
+            summary: List endpoints
+            description: Lists currently exposed gateway endpoint IDs and sample models.
             responses:
                 "200":
                     description: Endpoint metadata
@@ -1895,20 +2045,14 @@ paths:
                                         type: array
                                         items:
                                             $ref: "#/components/schemas/ModelId"
-                "501":
-                    description: Not implemented
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ErrorResponse"
     /keys:
         get:
             x-beta: true
             tags:
                 - Gateway
-            operationId: listKeysPlaceholder
-            summary: List keys (placeholder)
-            description: Placeholder route; currently returns not implemented.
+            operationId: listProvisioningKeysLegacy
+            summary: List keys (legacy alias)
+            description: Legacy alias of /management/keys.
             responses:
                 "200":
                     description: Keys list
@@ -1923,40 +2067,71 @@ paths:
                                         type: array
                                         items:
                                             $ref: "#/components/schemas/ProvisioningKey"
-                "501":
-                    description: Not implemented
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ErrorResponse"
         post:
             x-beta: true
             tags:
                 - Gateway
-            operationId: createKeyPlaceholder
-            summary: Create key (placeholder)
-            description: Placeholder route; currently returns not implemented.
+            operationId: createProvisioningKeyLegacy
+            summary: Create key (legacy alias)
+            description: Legacy alias of /management/keys create.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - name
+                            properties:
+                                name:
+                                    type: string
+                                team_id:
+                                    type: string
+                                created_by:
+                                    type: string
+                                scopes:
+                                    oneOf:
+                                        -
+                                            type: string
+                                        -
+                                            type: array
+                                            items:
+                                                type: string
+                                status:
+                                    type: string
+                                    enum:
+                                        - active
+                                        - disabled
+                                        - revoked
+                                soft_blocked:
+                                    type: boolean
             responses:
-                "200":
+                "201":
                     description: Created key
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/ProvisioningKeyWithValue"
-                "501":
-                    description: Not implemented
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ErrorResponse"
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    key:
+                                        $ref: "#/components/schemas/ProvisioningKeyWithValue"
     /key:
         get:
             x-beta: true
             tags:
                 - Gateway
-            operationId: getKeyPlaceholder
-            summary: Get key (placeholder)
-            description: Placeholder route; currently returns not implemented.
+            operationId: getProvisioningKeyLegacy
+            summary: Get key (legacy alias)
+            description: Legacy alias of /management/keys/{id} using query parameter id.
+            parameters:
+                -
+                    name: id
+                    in: query
+                    required: true
+                    schema:
+                        type: string
             responses:
                 "200":
                     description: Key information
@@ -1968,13 +2143,10 @@ paths:
                                     ok:
                                         type: boolean
                                     key:
-                                        $ref: "#/components/schemas/ProvisioningKey"
-                "501":
-                    description: Not implemented
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ErrorResponse"
+                                        $ref: "#/components/schemas/ProvisioningKeyDetail"
+tags:
+    - name: Gateway
+      description: Core AI Stats Gateway operations.
 components:
     securitySchemes:
         BearerAuth:
@@ -2023,22 +2195,22 @@ components:
             properties:
                 api_provider_id:
                     type: string
-                    example: "openai"
+                    example: openai
                 api_provider_name:
                     type: string
                     nullable: true
-                    example: "OpenAI"
+                    example: OpenAI
                 description:
                     type: string
                     nullable: true
                 link:
                     type: string
                     nullable: true
-                    example: "https://openai.com"
+                    example: https://openai.com
                 country_code:
                     type: string
                     nullable: true
-                    example: "US"
+                    example: US
         Model:
             type: object
             properties:
@@ -2145,8 +2317,10 @@ components:
                     default: true
                 tool_choice:
                     oneOf:
-                        - type: string
-                        - type: object
+                        -
+                            type: string
+                        -
+                            type: object
                 top_k:
                     type: integer
                     minimum: 1
@@ -2163,13 +2337,15 @@ components:
                     maximum: 1
                 response_format:
                     oneOf:
-                        - type: string
-                        - type: object
-                          properties:
-                              type:
-                                  type: string
-                              schema:
-                                  type: object
+                        -
+                            type: string
+                        -
+                            type: object
+                            properties:
+                                type:
+                                    type: string
+                                schema:
+                                    type: object
                 usage:
                     type: boolean
                 provider:
@@ -2197,10 +2373,12 @@ components:
                         - tool
                 content:
                     oneOf:
-                        - type: string
-                        - type: array
-                          items:
-                              $ref: "#/components/schemas/MessageContentPart"
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                $ref: "#/components/schemas/MessageContentPart"
                 name:
                     type: string
                 tool_calls:
@@ -2213,11 +2391,16 @@ components:
                 propertyName: role
         MessageContentPart:
             oneOf:
-                - $ref: "#/components/schemas/TextContentPart"
-                - $ref: "#/components/schemas/ImageContentPart"
-                - $ref: "#/components/schemas/AudioContentPart"
-                - $ref: "#/components/schemas/VideoContentPart"
-                - $ref: "#/components/schemas/ToolCallContentPart"
+                -
+                    $ref: "#/components/schemas/TextContentPart"
+                -
+                    $ref: "#/components/schemas/ImageContentPart"
+                -
+                    $ref: "#/components/schemas/AudioContentPart"
+                -
+                    $ref: "#/components/schemas/VideoContentPart"
+                -
+                    $ref: "#/components/schemas/ToolCallContentPart"
         TextContentPart:
             type: object
             required:
@@ -2398,10 +2581,12 @@ components:
                     type: string
                 system:
                     oneOf:
-                        - type: string
-                        - type: array
-                          items:
-                              type: object
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                type: object
                 messages:
                     type: array
                     minItems: 1
@@ -2427,8 +2612,10 @@ components:
                         $ref: "#/components/schemas/AnthropicTool"
                 tool_choice:
                     oneOf:
-                        - type: string
-                        - type: object
+                        -
+                            type: string
+                        -
+                            type: object
                 stream:
                     type: boolean
                 metadata:
@@ -2475,10 +2662,12 @@ components:
                         - assistant
                 content:
                     oneOf:
-                        - type: string
-                        - type: array
-                          items:
-                              $ref: "#/components/schemas/AnthropicContentBlock"
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                $ref: "#/components/schemas/AnthropicContentBlock"
         AnthropicContentBlock:
             type: object
             properties:
@@ -2545,8 +2734,10 @@ components:
                         type: object
                 conversation:
                     oneOf:
-                        - type: string
-                        - type: object
+                        -
+                            type: string
+                        -
+                            type: object
                 include:
                     type: array
                     items:
@@ -2612,8 +2803,10 @@ components:
                     type: object
                 tool_choice:
                     oneOf:
-                        - type: string
-                        - type: object
+                        -
+                            type: string
+                        -
+                            type: object
                 tools:
                     type: array
                     items:
@@ -2670,17 +2863,21 @@ components:
                     type: string
                 input:
                     oneOf:
-                        - type: string
-                        - type: array
-                          items:
-                              type: string
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                type: string
                 inputs:
                     description: Alias for input.
                     oneOf:
-                        - type: string
-                        - type: array
-                          items:
-                              type: string
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                type: string
                 encoding_format:
                     type: string
                 dimensions:
@@ -2727,12 +2924,14 @@ components:
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
             anyOf:
-                - required:
-                      - model
-                      - input
-                - required:
-                      - model
-                      - inputs
+                -
+                    required:
+                        - model
+                        - input
+                -
+                    required:
+                        - model
+                        - inputs
         EmbeddingsResponse:
             type: object
             properties:
@@ -2772,12 +2971,16 @@ components:
                     $ref: "#/components/schemas/DebugOptions"
                 input:
                     oneOf:
-                        - type: string
-                        - type: array
-                          items:
-                              oneOf:
-                                  - $ref: "#/components/schemas/TextModerationInput"
-                                  - $ref: "#/components/schemas/ImageModerationInput"
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                oneOf:
+                                    -
+                                        $ref: "#/components/schemas/TextModerationInput"
+                                    -
+                                        $ref: "#/components/schemas/ImageModerationInput"
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
         TextModerationInput:
@@ -3041,14 +3244,84 @@ components:
                     type: string
                 seconds:
                     oneOf:
-                        - type: integer
-                        - type: string
+                        -
+                            type: integer
+                        -
+                            type: string
                 size:
+                    type: string
+                quality:
                     type: string
                 input_reference:
                     type: string
                 input_reference_mime_type:
                     type: string
+                input:
+                    type: object
+                    properties:
+                        image:
+                            oneOf:
+                                -
+                                    type: string
+                                -
+                                    type: object
+                        video:
+                            oneOf:
+                                -
+                                    type: string
+                                -
+                                    type: object
+                        last_frame:
+                            oneOf:
+                                -
+                                    type: string
+                                -
+                                    type: object
+                        reference_images:
+                            type: array
+                            items:
+                                type: object
+                                properties:
+                                    reference_type:
+                                        type: string
+                                    image:
+                                        oneOf:
+                                            -
+                                                type: string
+                                            -
+                                                type: object
+                                    uri:
+                                        type: string
+                                    url:
+                                        type: string
+                input_image:
+                    oneOf:
+                        -
+                            type: string
+                        -
+                            type: object
+                input_video:
+                    oneOf:
+                        -
+                            type: string
+                        -
+                            type: object
+                last_frame:
+                    oneOf:
+                        -
+                            type: string
+                        -
+                            type: object
+                input_last_frame:
+                    oneOf:
+                        -
+                            type: string
+                        -
+                            type: object
+                reference_images:
+                    type: array
+                    items:
+                        type: object
                 duration:
                     type: integer
                     minimum: 1
@@ -3065,10 +3338,16 @@ components:
                     type: string
                 sample_count:
                     type: integer
+                number_of_videos:
+                    type: integer
                 seed:
                     type: integer
                 person_generation:
                     type: string
+                generate_audio:
+                    type: boolean
+                enhance_prompt:
+                    type: boolean
                 output_storage_uri:
                     type: string
                 provider:
@@ -4160,25 +4439,25 @@ components:
                     example: false
                 error:
                     type: string
-                    example: "error_type"
+                    example: error_type
                 message:
                     type: string
-                    example: "Human-readable error message"
+                    example: Human-readable error message
         ActivityEntry:
             type: object
             properties:
                 request_id:
                     type: string
-                    example: "req_abc123"
+                    example: req_abc123
                 provider:
                     type: string
-                    example: "openai"
+                    example: openai
                 model:
                     type: string
-                    example: "gpt-4o"
+                    example: gpt-4o
                 endpoint:
                     type: string
-                    example: "chat.completions"
+                    example: chat.completions
                 usage:
                     type: object
                     properties:
@@ -4204,23 +4483,23 @@ components:
                 id:
                     type: string
                     format: uuid
-                    example: "11111111-1111-4111-8111-111111111111"
+                    example: 11111111-1111-4111-8111-111111111111
                 name:
                     type: string
-                    example: "Production Key"
+                    example: Production Key
                 prefix:
                     type: string
-                    example: "pk_abc123"
+                    example: pk_abc123
                 status:
                     type: string
                     enum:
                         - active
                         - disabled
                         - revoked
-                    example: "active"
+                    example: active
                 scopes:
                     type: string
-                    example: "read,write"
+                    example: read,write
                 created_at:
                     type: string
                     format: date-time
@@ -4236,23 +4515,23 @@ components:
                 id:
                     type: string
                     format: uuid
-                    example: "11111111-1111-4111-8111-111111111111"
+                    example: 11111111-1111-4111-8111-111111111111
                 name:
                     type: string
-                    example: "My New Key"
+                    example: My New Key
                 prefix:
                     type: string
-                    example: "pk_abc123xy"
+                    example: pk_abc123xy
                 status:
                     type: string
                     enum:
                         - active
                         - disabled
                         - revoked
-                    example: "active"
+                    example: active
                 scopes:
                     type: string
-                    example: "read,write"
+                    example: read,write
                 created_at:
                     type: string
                     format: date-time
@@ -4260,38 +4539,38 @@ components:
                 key:
                     type: string
                     description: The raw management API key. Only returned on creation.
-                    example: "pk_abc123xy_abc123def456..."
+                    example: pk_abc123xy_abc123def456...
         ProvisioningKeyDetail:
             type: object
             properties:
                 id:
                     type: string
                     format: uuid
-                    example: "11111111-1111-4111-8111-111111111111"
+                    example: 11111111-1111-4111-8111-111111111111
                 team_id:
                     type: string
                     format: uuid
-                    example: "22222222-2222-4222-8222-222222222222"
+                    example: 22222222-2222-4222-8222-222222222222
                 name:
                     type: string
-                    example: "Production Key"
+                    example: Production Key
                 prefix:
                     type: string
-                    example: "pk_abc123"
+                    example: pk_abc123
                 status:
                     type: string
                     enum:
                         - active
                         - disabled
                         - revoked
-                    example: "active"
+                    example: active
                 scopes:
                     type: string
-                    example: "read,write"
+                    example: read,write
                 created_by:
                     type: string
                     format: uuid
-                    example: "33333333-3333-4333-8333-333333333333"
+                    example: 33333333-3333-4333-8333-333333333333
                 created_at:
                     type: string
                     format: date-time

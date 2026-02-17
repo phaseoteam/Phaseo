@@ -3,40 +3,38 @@ title: "IR and Protocols"
 description: "How the gateway normalizes requests and maps protocols to IR."
 ---
 
-The gateway uses an intermediate representation (IR) to avoid N x M converters. Each protocol converts to IR once, and each provider surface converts from IR once.
+The gateway uses a shared intermediate representation (IR) so each protocol only needs one decode path and one encode path.
 
-## IR folder
+## IR and shared schemas
 
-`apps/api/src/ir` defines the normalized request and response shapes.
+`apps/api/src/core` defines normalized request and response primitives:
 
-- `types.ts` defines IR request/response types, content parts, tool definitions, and metadata.
-- `streaming.ts` defines the internal streaming event shape used by emitters.
+- `ir.ts` defines shared IR request/response types.
+- `schemas.ts` defines Zod request schemas for each endpoint.
+- `types.ts` defines endpoint and pipeline type contracts.
 
 ## Protocol folders
 
-`apps/api/src/protocols` holds protocol-specific logic.
+`apps/api/src/protocols` holds protocol-specific mapping logic.
 
 ### OpenAI Chat
 
-`apps/api/src/protocols/openai/chat` includes:
+`apps/api/src/protocols/openai-chat` includes:
 
-- `to_ir.ts` converts chat completion requests into IR.
-- `from_ir.ts` converts IR into OpenAI chat request payloads.
-- `response_to_ir.ts` normalizes OpenAI chat responses back into IR.
+- `decode.ts` to map chat-completions input into IR.
+- `encode.ts` to map IR responses back to chat-completions shape.
 
 ### OpenAI Responses
 
-`apps/api/src/protocols/openai/responses` includes:
+`apps/api/src/protocols/openai-responses` includes:
 
-- `to_ir.ts` converts Responses API requests into IR.
-- `from_ir.ts` converts IR into Responses API payloads.
-- `response_to_ir.ts` normalizes Responses API outputs into IR.
+- `decode.ts` to map Responses API input into IR.
+- `encode.ts` to map IR responses back to Responses API shape.
 
 ### Anthropic Messages
 
-`apps/api/src/protocols/anthropic/messages` includes:
+`apps/api/src/protocols/anthropic-messages` includes:
 
-- `schema.ts` defines Zod validation for Messages API requests.
-- `to_ir.ts` converts Messages API payloads into IR.
-- `from_ir.ts` converts IR responses into Anthropic format.
-- `stream.ts` converts OpenAI-compatible SSE into Anthropic streaming events.
+- `decode.ts` for Messages API input to IR.
+- `encode.ts` for IR to Messages API output.
+- Streaming helpers for Anthropic SSE event mapping.

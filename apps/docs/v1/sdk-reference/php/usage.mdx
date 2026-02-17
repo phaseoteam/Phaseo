@@ -1,218 +1,83 @@
 ---
 title: "PHP SDK Usage"
-description: "Endpoint-by-endpoint examples using the PHP SDK."
+description: "Current wrapper methods supported by the preview PHP SDK."
 ---
 
 ## Setup
 
 ```php
 <?php
-require 'vendor/autoload.php';
+require_once __DIR__ . '/../ai-stats-public/packages/sdk/sdk-php/src/index.php';
 
-use AIStats\Sdk\Configuration;
-
-$apiKey = getenv('AI_STATS_API_KEY');
-$config = Configuration::getDefaultConfiguration()
-    ->setHost('https://api.phaseo.app/v1')
-    ->setApiKey('GatewayAuth', 'Bearer ' . $apiKey);
+$client = new \AIStats\Sdk\Client(getenv('AI_STATS_API_KEY'));
 ```
 
 ## Chat completions
 
 ```php
-use AIStats\Sdk\Api\CompletionsApi;
-use AIStats\Sdk\Model\ChatCompletionsRequest;
-use AIStats\Sdk\Model\ChatMessageUser;
-use AIStats\Sdk\Model\MessageContentText;
-
-$completionsApi = new CompletionsApi(null, $config);
-
-$message = new ChatMessageUser([
-    'role' => 'user',
-    'content' => new MessageContentText(['text' => 'What is AI Stats?'])
+$chat = $client->generateText([
+  'model' => 'openai/gpt-5-nano',
+  'messages' => [
+    ['role' => 'user', 'content' => 'Hello']
+  ],
 ]);
-
-$request = new ChatCompletionsRequest([
-    'model' => 'openai/gpt-4o-mini',
-    'messages' => [$message],
-    'temperature' => 0.7
-]);
-
-$completion = $completionsApi->createChatCompletion($request);
-echo $completion->getChoices()[0]->getMessage()->getContent()->getText();
 ```
 
 ## Responses
 
 ```php
-use AIStats\Sdk\Api\ResponsesApi;
-use AIStats\Sdk\Model\ResponsesRequest;
-
-$responsesApi = new ResponsesApi(null, $config);
-
-$request = new ResponsesRequest([
-    'model' => 'openai/gpt-4.1',
-    'input' => [
-        [
-            'role' => 'user',
-            'content' => [
-                [
-                    'type' => 'output_text',
-                    'text' => 'Summarise this'
-                ]
-            ]
-        ]
-    ]
+$response = $client->generateResponse([
+  'model' => 'openai/gpt-5-nano',
+  'input' => 'Reply with: php sdk works',
 ]);
-
-$response = $responsesApi->createResponse($request);
-echo $response->getOutput()[0]['content'][0]['text'];
 ```
 
 ## Images
 
 ```php
-use AIStats\Sdk\Api\ImagesApi;
-use AIStats\Sdk\Model\ImagesGenerationsRequest;
-
-$imagesApi = new ImagesApi(null, $config);
-
-$request = new ImagesGenerationsRequest([
-    'model' => 'openai/gpt-image-1',
-    'prompt' => 'A lighthouse at golden hour'
+$image = $client->generateImage([
+  'model' => 'openai/gpt-image-1',
+  'prompt' => 'A lighthouse at golden hour',
 ]);
 
-$image = $imagesApi->imagesGenerationsPost($request);
-echo $image->getData()[0]->getUrl();
+$edit = $client->generateImageEdit([
+  'model' => 'openai/gpt-image-1',
+  'prompt' => 'Make it sunset',
+  'image' => 'data:image/png;base64,...',
+]);
 ```
 
 ## Audio
 
 ```php
-use AIStats\Sdk\Api\AudioApi;
-use AIStats\Sdk\Model\AudioSpeechRequest;
-use AIStats\Sdk\Model\AudioTranscriptionsRequest;
-
-$audioApi = new AudioApi(null, $config);
-
-// Speech
-$speechRequest = new AudioSpeechRequest([
-    'model' => 'openai/gpt-4o-mini-tts',
-    'input' => 'Hello world'
+$transcript = $client->generateTranscription([
+  'model' => 'openai/gpt-4o-transcribe',
+  'audio_b64' => 'base64-audio',
 ]);
-$speech = $audioApi->audioSpeechPost($speechRequest);
 
-// Transcription
-$transcriptionRequest = new AudioTranscriptionsRequest([
-    'model' => 'openai/gpt-4o-transcribe',
-    'file' => '/path/to/audio.mp3'
+$translation = $client->generateTranslation([
+  'model' => 'openai/gpt-4o-transcribe',
+  'audio_b64' => 'base64-audio',
 ]);
-$transcription = $audioApi->audioTranscriptionsPost($transcriptionRequest);
 ```
 
-## Video
+## Embeddings and moderations
 
 ```php
-use AIStats\Sdk\Api\VideoApi;
-use AIStats\Sdk\Model\VideoGenerationRequest;
-
-$videoApi = new VideoApi(null, $config);
-
-$request = new VideoGenerationRequest([
-    'model' => 'openai/gpt-video-1',
-    'prompt' => 'A serene mountain lake at sunrise'
+$embedding = $client->generateEmbedding([
+  'model' => 'openai/text-embedding-3-large',
+  'input' => 'Sample text',
 ]);
 
-$video = $videoApi->videoGenerationPost($request);
-echo $video->getData()[0]->getUrl();
-```
-
-## Embeddings
-
-```php
-use AIStats\Sdk\Api\EmbeddingsApi;
-use AIStats\Sdk\Model\EmbeddingsRequest;
-
-$embeddingsApi = new EmbeddingsApi(null, $config);
-
-$request = new EmbeddingsRequest([
-    'model' => 'openai/text-embedding-3-large',
-    'input' => 'Sample text'
+$moderation = $client->generateModeration([
+  'model' => 'openai/omni-moderation-latest',
+  'input' => 'Some text to check',
 ]);
-
-$embedding = $embeddingsApi->embeddingsPost($request);
-print_r($embedding->getData()[0]->getEmbedding());
 ```
 
-## Moderations
+## Models and health
 
 ```php
-use AIStats\Sdk\Api\ModerationsApi;
-use AIStats\Sdk\Model\ModerationsRequest;
-
-$moderationsApi = new ModerationsApi(null, $config);
-
-$request = new ModerationsRequest([
-    'model' => 'openai/omni-moderation-latest',
-    'input' => 'Some text to check'
-]);
-
-$moderation = $moderationsApi->moderationsPost($request);
-print_r($moderation->getResults()[0]);
-```
-
-## Batch & files
-
-```php
-use AIStats\Sdk\Api\FilesApi;
-use AIStats\Sdk\Api\BatchesApi;
-use AIStats\Sdk\Model\FilesRequest;
-use AIStats\Sdk\Model\BatchesRequest;
-
-$filesApi = new FilesApi(null, $config);
-$batchesApi = new BatchesApi(null, $config);
-
-// Upload file
-$fileRequest = new FilesRequest([
-    'purpose' => 'batch',
-    'file' => '/path/to/file.json'
-]);
-$file = $filesApi->filesPost($fileRequest);
-
-// Create batch
-$batchRequest = new BatchesRequest([
-    'input_file_id' => $file->getId(),
-    'endpoint' => 'responses',
-    'completion_window' => '24h'
-]);
-$batch = $batchesApi->batchesPost($batchRequest);
-
-// Get batch status
-$batchStatus = $batchesApi->batchesIdGet($batch->getId());
-
-// List files
-$files = $filesApi->filesGet();
-```
-
-## Models & health
-
-```php
-use AIStats\Sdk\Api\ModelsApi;
-use AIStats\Sdk\Api\HealthApi;
-
-$modelsApi = new ModelsApi(null, $config);
-$healthApi = new HealthApi(null, $config);
-
-$models = $modelsApi->modelsGet();
-$health = $healthApi->healthGet();
-```
-
-## Error handling
-
-```php
-try {
-    $response = $responsesApi->createResponse($invalidRequest);
-} catch (\AIStats\Sdk\ApiException $e) {
-    echo 'API Error: ' . $e->getMessage();
-}
+$models = $client->listModels(['limit' => 10]);
+$health = $client->health();
 ```

@@ -1,19 +1,29 @@
 ---
 title: "Ruby SDK (preview)"
-description: "Generated client for the AI Stats Gateway. Models endpoint only for now."
+description: "Local-preview Ruby wrapper for the AI Stats API."
 ---
 
 <Note type="warning">
-  **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
+  The Ruby SDK is in preview and is not yet published to RubyGems.
 </Note>
 
-- Status: Preview (not yet on RubyGems).
-- Generate with `pnpm openapi:gen:ruby`.
-- Wrapper `packages/sdk-ruby/lib/index.rb` exposes `get_models`.
+The local wrapper at `packages/sdk/sdk-ruby/lib/index.rb` currently exposes these methods:
+
+- `generate_text(...)`
+- `generate_response(...)`
+- `generate_image(...)`
+- `generate_image_edit(...)`
+- `generate_embedding(...)`
+- `generate_moderation(...)`
+- `generate_speech(...)`
+- `generate_transcription(...)`
+- `generate_translation(...)`
+- `list_models(...)`
+- `health`
 
 ```ruby
-client = AIStatsSdk::Client.new(api_key: "YOUR_KEY")
-resp = client.get_models(limit: 5)
-```
+require_relative '../ai-stats-public/packages/sdk/sdk-ruby/lib/index'
 
-TypeScript and Python SDKs are production-ready; other languages follow soon.
+client = AIStatsSdk::Client.new(api_key: 'YOUR_KEY')
+models = client.list_models(limit: 5)
+```

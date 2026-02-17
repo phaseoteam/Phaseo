@@ -1,174 +1,85 @@
 ---
 title: "Ruby SDK Usage"
-description: "Endpoint-by-endpoint examples using the Ruby SDK."
+description: "Current wrapper methods supported by the preview Ruby SDK."
 ---
 
 ## Setup
 
 ```ruby
-require 'ai_stats_sdk'
+require_relative '../ai-stats-public/packages/sdk/sdk-ruby/lib/index'
 
-config = AIStatsSdk::Configuration.default
-config.access_token = 'your_api_key'
-api_client = AIStatsSdk::ApiClient.new(config)
+client = AIStatsSdk::Client.new(api_key: ENV.fetch('AI_STATS_API_KEY'))
 ```
 
 ## Chat completions
 
 ```ruby
-completions_api = AIStatsSdk::CompletionsApi.new(api_client)
-
-request = AIStatsSdk::ChatCompletionsRequest.new(
-  model: 'openai/gpt-4o-mini',
-  messages: [
-    AIStatsSdk::ChatMessageUser.new(content: 'Hello', role: 'user')
-  ],
-  temperature: 0.7
+chat = client.generate_text(
+  model: 'openai/gpt-5-nano',
+  messages: [{ role: 'user', content: 'Hello' }]
 )
-
-completion = completions_api.create_chat_completion(request)
 ```
 
 ## Responses
 
 ```ruby
-responses_api = AIStatsSdk::ResponsesApi.new(api_client)
-
-request = AIStatsSdk::ResponsesRequest.new(
-  model: 'openai/gpt-4.1',
-  input: [{ role: 'user', content: [{ type: 'output_text', text: 'Summarise this' }] }]
+response = client.generate_response(
+  model: 'openai/gpt-5-nano',
+  input: 'Reply with: ruby sdk works'
 )
-
-response = responses_api.create_response(request)
 ```
 
 ## Images
 
 ```ruby
-images_api = AIStatsSdk::ImagesApi.new(api_client)
-
-request = AIStatsSdk::ImageGenerationRequest.new(
+image = client.generate_image(
   model: 'openai/gpt-image-1',
   prompt: 'A lighthouse at golden hour'
 )
 
-image = images_api.images_generations_post(request)
-
-edit_request = AIStatsSdk::ImagesEditRequest.new(
+edit = client.generate_image_edit(
   model: 'openai/gpt-image-1',
   prompt: 'Make it sunset',
   image: 'data:image/png;base64,...'
 )
-
-edited = images_api.images_edits_post(edit_request)
 ```
 
 ## Audio
 
 ```ruby
-audio_api = AIStatsSdk::AudioApi.new(api_client)
-
-speech_request = AIStatsSdk::AudioSpeechRequest.new(
+speech = client.generate_speech(
   model: 'openai/gpt-4o-mini-tts',
   input: 'Hello world'
 )
 
-speech = audio_api.audio_speech_post(speech_request)
-
-transcription_request = AIStatsSdk::AudioTranscriptionRequest.new(
+transcription = client.generate_transcription(
   model: 'openai/gpt-4o-transcribe',
-  audio_b64: 'base64_audio_data'
+  audio_b64: 'base64-audio'
 )
 
-transcript = audio_api.audio_transcriptions_post(transcription_request)
-
-translation_request = AIStatsSdk::AudioTranslationRequest.new(
-  model: 'openai/gpt-4o-translate',
-  audio_b64: 'base64_audio_data'
+translation = client.generate_translation(
+  model: 'openai/gpt-4o-transcribe',
+  audio_b64: 'base64-audio'
 )
-
-translated = audio_api.audio_translations_post(translation_request)
 ```
 
-## Video
+## Embeddings and moderations
 
 ```ruby
-video_api = AIStatsSdk::VideoApi.new(api_client)
-
-request = AIStatsSdk::VideoGenerationRequest.new(
-  model: 'openai/gpt-video-1',
-  prompt: 'A serene mountain lake at sunrise'
-)
-
-video = video_api.video_generation_post(request)
-```
-
-## Embeddings
-
-```ruby
-require 'net/http'
-require 'json'
-
-uri = URI('https://api.phaseo.app/v1/embeddings')
-http = Net::HTTP.new(uri.host, uri.port)
-http.use_ssl = true
-request = Net::HTTP::Post.new(uri)
-request['Authorization'] = 'Bearer your_api_key'
-request['Content-Type'] = 'application/json'
-request.body = {
+embedding = client.generate_embedding(
   model: 'openai/text-embedding-3-large',
   input: 'Sample text'
-}.to_json
+)
 
-response = http.request(request)
-embedding = JSON.parse(response.body)
-```
-
-## Moderations
-
-```ruby
-moderations_api = AIStatsSdk::ModerationsApi.new(api_client)
-
-request = AIStatsSdk::ModerationRequest.new(
+moderation = client.generate_moderation(
   model: 'openai/omni-moderation-latest',
   input: 'Some text to check'
 )
-
-moderation = moderations_api.moderations_post(request)
 ```
 
-## Batch & files
+## Models and health
 
 ```ruby
-files_api = AIStatsSdk::FilesApi.new(api_client)
-beta_api = AIStatsSdk::BetaApi.new(api_client)
-
-uploaded = files_api.files_post(purpose: 'batch', file: file_data)
-batch = beta_api.batches_post(AIStatsSdk::BatchRequest.new(
-  input_file_id: uploaded.id,
-  endpoint: 'responses',
-  completion_window: '24h'
-))
-batch_status = beta_api.batches_batch_id_get(batch.id)
-files = files_api.files_get
-```
-
-## Models & health
-
-```ruby
-client = AIStatsSdk::Client.new(api_key: 'your_api_key')
-models = client.get_models
-
-analytics_api = AIStatsSdk::AnalyticsApi.new(api_client)
-health = analytics_api.healthz_get
-```
-
-## Error handling
-
-```ruby
-begin
-  # some call
-rescue => e
-  puts "API Error: #{e.message}"
-end
+models = client.list_models(limit: 10)
+health = client.health
 ```

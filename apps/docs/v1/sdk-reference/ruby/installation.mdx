@@ -1,28 +1,29 @@
 ---
 title: "Ruby SDK Installation"
-description: "How to install and set up the AI Stats Ruby SDK"
+description: "Set up the preview Ruby SDK from source."
 ---
 
 <Note type="warning">
-  **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
+  The Ruby SDK is not published on RubyGems yet. Use it from source for now.
 </Note>
 
-<Note type="warning">This package is yet to be published on RubyGems, and will be coming ASAP.</Note>
+## Requirements
 
-```bash
-gem install ai-stats-ruby-sdk
-```
+- Ruby 3.1+
+- Access to this repository
 
-## Installation
+## Install from local source
 
-**Coming Soon** - The Ruby SDK is currently in preview and not yet published to RubyGems.
-
-For now, you can generate and use the client locally:
-
-- Requires Ruby 3.1+ and Bundler.
-- Regenerate client: `pnpm openapi:gen:ruby` (outputs to `packages/sdk/sdk-ruby/lib/gen`).
-- Add `packages/sdk/sdk-ruby` to your Gemfile as a path gem.
+1. Regenerate generated files (optional but recommended after API changes):
 
 ```bash
 pnpm openapi:gen:ruby
 ```
+
+2. Load the SDK directly from the repository path:
+
+```ruby
+require_relative '../ai-stats-public/packages/sdk/sdk-ruby/lib/index'
+```
+
+This loads the local preview wrapper and generated operations.

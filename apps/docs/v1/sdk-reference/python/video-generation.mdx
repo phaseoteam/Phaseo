@@ -1,22 +1,25 @@
 ---
 title: "Video generation"
-description: "Call /video/generation with the Python SDK."
+description: "Python SDK placeholder for /videos."
 ---
 
-**Method**: `client.generate_video()`.
+<Note type="warning">
+  This helper currently returns a `coming_soon` placeholder in the Python SDK.
+</Note>
 
-### Example
+**Method**: `client.generate_video()`
+
 ```python
-video = client.generate_video({
-  "model": "openai/gpt-video-1",
-  "prompt": "A calm ocean at dusk",
-});
+result = client.generate_video({
+    "model": "openai/gpt-video-1",
+    "prompt": "A calm ocean at dusk",
+})
+
+print(result)
+# {
+#   "status": "coming_soon",
+#   "endpoint": "videos",
+#   "message": "This endpoint is not yet supported in the SDK.",
+#   "payload": {...}
+# }
 ```
-
-### Key parameters
-- `model` (required): Video-capable model id.
-- `prompt` (required): Text description of the video.
-- Optional provider-specific controls (per API spec), e.g., duration, format, or aspect (when supported by the upstream).
-
-### Returns
-`VideoGenerationResponse`

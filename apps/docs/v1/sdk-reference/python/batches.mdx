@@ -1,22 +1,27 @@
 ---
 title: "Batches"
-description: "Call /batches with the Python SDK."
+description: "Python SDK placeholder for /batches."
 ---
 
-**Methods**: `client.create_batch()`, `client.get_batch()`.
+<Note type="warning">
+  `client.create_batch()` and `client.get_batch()` currently return `coming_soon` placeholders.
+</Note>
 
-### Example
 ```python
-uploaded = client.upload_file(purpose="batch", file=open("batchinput.jsonl", "rb"))
-batch = client.create_batch({"endpoint": "responses", "input_file_id": uploaded.id, "completion_window": "24h"})
-status = client.get_batch(batch.id)
+batch = client.create_batch({
+    "endpoint": "responses",
+    "input_file_id": "file_123",
+    "completion_window": "24h",
+})
+
+status = client.get_batch("batch_123")
+
+print(batch)
+print(status)
+# {
+#   "status": "coming_soon",
+#   "endpoint": "batches",
+#   "message": "This endpoint is not yet supported in the SDK.",
+#   ...
+# }
 ```
-
-### Key parameters
-- `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
-- `input_file_id` (required): File id uploaded via `/files`.
-- `completion_window`: e.g., `24h`.
-- `metadata`: Optional object stored with the batch.
-
-### Returns
-`BatchResponse`

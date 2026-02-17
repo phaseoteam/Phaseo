@@ -3,27 +3,27 @@ title: "Providers and Adapters"
 description: "How provider adapters are structured and where to add new ones."
 ---
 
-Provider adapters live under `apps/api/src/lib/gateway/providers`. Each adapter implements an `execute` method and maps gateway-normalized payloads to provider-native calls.
+Provider adapters live under `apps/api/src/providers`. Each adapter maps gateway-normalized payloads to provider-native requests and normalizes provider responses back to gateway shape.
 
 ## Folder layout
 
 | Folder | Purpose | Key files |
 | --- | --- | --- |
-| `providers/openai` | Native OpenAI endpoints (chat, responses, images, audio). | `index.ts`, `endpoints/*.ts` |
-| `providers/openai-compatible` | Shared OpenAI-compatible transport for third parties. | `config.ts`, `surface_*.ts` |
-| `providers/anthropic` | Anthropic message endpoints. | `index.ts`, `endpoints/*.ts` |
-| `providers/x-ai` | xAI adapter wiring. | `index.ts` |
-| `providers/xiaomi` | Xiaomi adapter wiring. | `index.ts` |
+| `providers/openai` | Native OpenAI endpoint mappings. | `index.ts`, `endpoints/*.ts` |
+| `providers/openai-compatible` | Shared compatibility transport for OpenAI-like providers. | `config.ts`, `index.ts` |
+| `providers/anthropic` | Anthropic provider mappings. | `index.ts`, `endpoints/*.ts` |
+| `providers/google-ai-studio` | Google AI Studio provider mappings. | `index.ts`, `endpoints/*.ts` |
+| `providers/x-ai` | xAI provider mappings. | `index.ts`, `endpoints/*.ts` |
 
 ## Key shared files
 
 - `providers/index.ts` resolves adapters by provider id.
-- `providers/types.ts` defines adapter inputs, streaming results, and usage merging.
-- `providers/keys.ts` handles provider key resolution and BYOK logic.
+- `providers/types.ts` defines adapter contracts and return types.
+- `providers/keys.ts` resolves BYOK and managed-key behavior.
 
 ## Adding a provider
 
-1. Add a new folder under `providers/`.
-2. Implement `index.ts` with an adapter that supports the needed endpoints.
+1. Add a new folder under `apps/api/src/providers`.
+2. Implement an adapter in `index.ts` for supported endpoints.
 3. Register the adapter in `providers/index.ts`.
-4. Add routing metadata in the registry or context RPC.
+4. Add provider metadata/capabilities so routing can target it.

@@ -7,37 +7,37 @@ description: "Official Python client for the AI Stats Gateway API"
   **SDKs are in very early alpha**: We're working as hard as we can to get them into a stable state. Please bear with us as we iterate rapidly.
 </Note>
 
-The AI Stats Python SDK provides an asynchronous-first, type-safe Python client for the AI Stats Gateway API. Built with modern Python features, it offers both async and sync interfaces with rich type hints.
+The AI Stats Python SDK currently provides a synchronous client for the AI Stats Gateway API.
 
 ## Features
 
--   **Async-first**: Built with `asyncio` and `httpx` for high performance
--   **Type-safe**: Full type hints for modern Python editors and IDEs
--   **Dual interface**: Both async (`AIStats`) and sync (`AIStatsSync`) clients
--   **Streaming support**: Built-in streaming helpers for real-time responses
--   **Comprehensive**: Covers all Gateway API endpoints
+-   Typed request models generated from the OpenAPI spec.
+-   Built-in helpers for chat, responses, messages, embeddings, and moderations.
+-   Streaming helpers for text, responses, and messages (`stream_*` iterators).
+-   Control-plane helpers such as models, health, providers, credits, and activity.
 
-## Quick Example
+Some surfaces are still stubbed in the Python SDK and return a `coming_soon` payload (for example images, audio, video, files, batches, and generation lookup).
+
+## Quick example
 
 ```python
-import asyncio
 from ai_stats import AIStats
 
-async def main():
-    async with AIStats(api_key="your-api-key") as client:
-        response = await client.chat_completions(
-            model="openai/gpt-4o-mini",
-            messages=[{"role": "user", "content": "Hello, how are you?"}]
-        )
-        print(response["choices"][0]["message"]["content"])
+client = AIStats(api_key="your-api-key")
 
-asyncio.run(main())
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5-nano",
+        "input": "Reply with: python sdk works",
+    }
+)
+
+print(response.get("id"))
 ```
 
-## What's Included
+## What's included
 
--   `AIStats` async client for high-performance applications
--   `AIStatsSync` sync client for simpler use cases
--   Streaming helpers for real-time responses
--   Rich type hints and error handling
--   Full API coverage including chat completions, models, credits, and more
+-   `AIStats` client
+-   `chat.completions.create(...)` and `responses.create(...)` compatibility helpers
+-   Streaming iterators for text, responses, and messages
+-   Generated request/response models in `ai_stats.models`

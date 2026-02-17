@@ -12,7 +12,7 @@ The Gateway exposes multiple modalities through a unified API surface. Each endp
 | Text | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Structured and conversational outputs. |
 | Images | `/v1/images/generations`, `/v1/images/edits` | Text-to-image and image editing. |
 | Audio | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Speech synthesis and speech-to-text. |
-| Video | `/v1/video/generation`, `/v1/video/status`, `/v1/video/content`, `/v1/video/delete` | Generate and retrieve video outputs. |
+| Video | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | Create asynchronous video jobs, poll status, fetch content, and delete jobs. |
 | Music | `/v1/music/generate` | Music generation via supported providers. |
 | OCR | `/v1/ocr` | Extract text from images where supported. |
 

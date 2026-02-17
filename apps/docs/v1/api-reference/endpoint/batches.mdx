@@ -4,3 +4,6 @@ badge: "Beta"
 openapi: "POST /batches"
 description: "Create OpenAI-compatible batch jobs referencing an uploaded file."
 ---
+
+After creating a batch, poll status with `GET /batches/{batch_id}`.
+

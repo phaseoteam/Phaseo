@@ -30,7 +30,7 @@ Management API keys have elevated privileges and should be handled with extra ca
 
 ## Creating a Management API Key
 
-You can create a management API key through the dashboard or via the API.
+You can create a management API key through the dashboard.
 
 ### Using the Dashboard
 
@@ -41,10 +41,14 @@ You can create a management API key through the dashboard or via the API.
 5. Click **Create Key**
 6. **Copy and store the key immediately** - it won't be shown again
 
-### Using the API
+### Using the API (Coming Soon)
+
+<Note>
+`POST /v1/management/keys` is planned but not generally available yet.
+</Note>
 
 ```bash
-curl -X POST https://gateway.ai-stats.com/v1/management/keys \
+curl -X POST https://api.phaseo.app/v1/management/keys \
   -H "Authorization: Bearer <existing-management-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -62,7 +66,7 @@ curl -X POST https://gateway.ai-stats.com/v1/management/keys \
 Check your team's current credit balance and recent usage:
 
 ```bash
-curl https://gateway.ai-stats.com/v1/credits?team_id=your-team-id \
+curl https://api.phaseo.app/v1/credits?team_id=your-team-id \
   -H "Authorization: Bearer <management-api-key>"
 ```
 
@@ -83,7 +87,7 @@ Response:
 Get a detailed breakdown of recent API activity:
 
 ```bash
-curl "https://gateway.ai-stats.com/v1/activity?team_id=your-team-id&days=30" \
+curl "https://api.phaseo.app/v1/activity?team_id=your-team-id&days=30" \
   -H "Authorization: Bearer <management-api-key>"
 ```
 
@@ -92,7 +96,7 @@ curl "https://gateway.ai-stats.com/v1/activity?team_id=your-team-id&days=30" \
 View all management API keys in your team:
 
 ```bash
-curl "https://gateway.ai-stats.com/v1/management/keys?team_id=your-team-id" \
+curl "https://api.phaseo.app/v1/management/keys?team_id=your-team-id" \
   -H "Authorization: Bearer <management-api-key>"
 ```
 
@@ -101,7 +105,7 @@ curl "https://gateway.ai-stats.com/v1/management/keys?team_id=your-team-id" \
 Modify key properties like name or status:
 
 ```bash
-curl -X PATCH https://gateway.ai-stats.com/v1/management/keys/key-id \
+curl -X PATCH https://api.phaseo.app/v1/management/keys/key-id \
   -H "Authorization: Bearer <management-api-key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -127,7 +131,7 @@ Permanently revoke a key:
 Permanently remove a management API key:
 
 ```bash
-curl -X DELETE https://gateway.ai-stats.com/v1/management/keys/key-id \
+curl -X DELETE https://api.phaseo.app/v1/management/keys/key-id \
   -H "Authorization: Bearer <management-api-key>"
 ```
 
@@ -138,7 +142,7 @@ Management API keys support granular permission levels:
 | Scope | Capabilities |
 |-------|-------------|
 | `read` | View credits, activity, and list keys |
-| `write` | Create, update, and delete keys |
+| `write` | Update and delete keys |
 
 You can combine scopes with a comma: `"read,write"` grants full access.
 
@@ -149,7 +153,7 @@ You can combine scopes with a comma: `"read,write"` grants full access.
 Always store management API keys in environment variables:
 
 ```bash
-export MANAGEMENT_API_KEY="pk_your_key_here"
+export MANAGEMENT_API_KEY="aistats_v1_sk_xx_xxx"
 ```
 
 In your application:
@@ -168,8 +172,8 @@ Here's a complete example for a CI/CD pipeline:
 MANAGEMENT_API_KEY="$MANAGEMENT_API_KEY"
 TEAM_ID="$TEAM_ID"
 
-# Create a new key for this deployment
-RESPONSE=$(curl -s -X POST https://gateway.ai-stats.com/v1/management/keys \
+# Create support for automated key creation when the endpoint becomes available
+RESPONSE=$(curl -s -X POST https://api.phaseo.app/v1/management/keys \
   -H "Authorization: Bearer $MANAGEMENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{\"team_id\":\"$TEAM_ID\",\"name\":\"Deploy-$(date +%Y%m%d)\",\"scopes\":\"read,write\"}")
@@ -226,3 +230,4 @@ Monitor these patterns to detect potential issues:
 - [API Reference: Management API Keys](../api-reference/endpoint/management/index.mdx)
 - [API Keys Management](./authentication.mdx)
 - [Authentication Guide](./authentication.mdx)
+

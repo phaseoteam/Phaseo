@@ -1,26 +1,25 @@
 ---
 title: "Audio speech"
-description: "Call /audio/speech with the Python SDK."
+description: "Python SDK placeholder for /audio/speech."
 ---
 
-**Method**: `client.generate_speech()`.
+<Note type="warning">
+  This helper currently returns a `coming_soon` placeholder in the Python SDK.
+</Note>
 
-### Example
+**Method**: `client.generate_speech()`
+
 ```python
-speech = client.generate_speech({
+result = client.generate_speech({
     "model": "openai/gpt-4o-mini-tts",
     "input": "Hello world",
-    "voice": "alloy",
-    "format": "mp3",
 })
+
+print(result)
+# {
+#   "status": "coming_soon",
+#   "endpoint": "audio/speech",
+#   "message": "This endpoint is not yet supported in the SDK.",
+#   "payload": {...}
+# }
 ```
-
-### Key parameters
-- `model` (required): TTS-capable model id.
-- `input` (required): Text to synthesize.
-- `voice`: Voice preset (model-dependent, e.g., `alloy`).
-- `format`: `mp3`, `wav`, `flac`, etc.
-- `speed`: Playback speed multiplier (typically 0.25–4).
-
-### Returns
-Audio binary (Blob)

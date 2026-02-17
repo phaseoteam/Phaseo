@@ -1,82 +1,63 @@
 ---
 title: "Go SDK Usage"
-description: "Examples for calling each endpoint with the Go SDK facade."
+description: "Current wrapper methods supported by the preview Go SDK."
 ---
+
+## Setup
 
 ```go
 import (
   "context"
-  aistats "packages/sdk-go"
-  gen "packages/sdk-go/src/gen"
+  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
 client := aistats.New("<API_KEY>", "https://api.phaseo.app/v1")
+ctx := context.Background()
 ```
 
-### Chat completions
+## Chat completions
 
 ```go
-resp, _, err := client.GenerateText(context.Background(), gen.ChatCompletionsRequest{
-  Model:    "openai/gpt-4o-mini",
-  Messages: []gen.ChatMessage{{Role: "user", Content: "Hello!"}},
+chatResp, err := client.GenerateText(ctx, gen.ChatCompletionsRequest{
+  Model: "openai/gpt-5-nano",
+  Messages: []gen.ChatMessage{{Role: "user", Content: "Hello"}},
 })
 ```
 
-### Responses
+## Responses
 
 ```go
-resp, _, err := client.GenerateResponse(context.Background(), gen.ResponsesRequest{
-  Model: "openai/gpt-4.1",
-  Input: []map[string]interface{}{{"role": "user", "content": []map[string]string{{"type": "output_text", "text": "Hi"}}}},
+resp, err := client.GenerateResponse(ctx, gen.ResponsesRequest{
+  Model: "openai/gpt-5-nano",
+  Input: "Reply with: go sdk works",
 })
 ```
 
-### Images
+## Embeddings
 
 ```go
-img, _, err := client.Images.ImagesGenerationsPost(context.Background(), gen.ImageGenerationRequest{
-  Model:  "openai/gpt-image-1",
-  Prompt: "A lighthouse at golden hour",
+embedding, err := client.GenerateEmbedding(ctx, map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
 })
 ```
 
-### Audio
+## Moderations
 
 ```go
-speech, _, err := client.Audio.AudioSpeechPost(context.Background(), gen.AudioSpeechRequest{
-  Model: "openai/gpt-4o-mini-tts",
-  Input: "Hello",
+moderation, err := client.GenerateModeration(ctx, map[string]interface{}{
+  "model": "openai/omni-moderation-latest",
+  "input": "Some text to check",
 })
 ```
 
-### Video
+## Models
 
 ```go
-video, _, err := client.Video.VideoGenerationPost(context.Background(), gen.VideoGenerationRequest{
-  Model:  "openai/gpt-video-1",
-  Prompt: "Calm ocean at sunset",
-})
+models, err := client.GetModels(ctx, map[string]string{"limit": "10"})
 ```
 
-### Moderations
+## Current limits
 
-```go
-mod, _, err := client.Moderations.ModerationsPost(context.Background(), gen.ModerationRequest{
-  Model: "openai/omni-moderation-latest",
-  Input: "Text to check",
-})
-```
-
-### Batch & files
-
-```go
-batch, _, err := client.CreateBatch(context.Background(), gen.BatchRequest{Endpoint: "responses"})
-fileList, _, _ := client.Files.FilesGet(context.Background())
-```
-
-### Models & health
-
-```go
-models, _, _ := client.GetModels(context.Background(), nil)
-health, _, _ := client.Analytics.HealthzGet(context.Background())
-```
+The preview Go wrapper does not yet expose dedicated helpers for images, audio, video, files, batches, generation lookup, or health. Use generated operations in `src/gen` for those endpoints.

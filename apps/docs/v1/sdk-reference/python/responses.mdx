@@ -27,11 +27,11 @@ for line in client.stream_response({
 ### Key parameters
 - `model` (required): Target model id.
 - `input` (required): Ordered array of input items (messages, tool calls, etc.).
-- `temperature` (0–2): Higher = more random.
-- `top_p` (0–1) / `top_k` (>=1): Nucleus / k-best sampling controls.
-- `max_output_tokens` (int): Hard cap on tokens generated per response; `max_output_tokens_per_message` to cap each message item.
+- `temperature` (0-2): Higher = more random.
+- `top_p` (0-1) / `top_k` (>=1): Nucleus / k-best sampling controls.
+- `max_output_tokens` (int): Hard cap on tokens generated per response.
 - Tools: `tools` (definitions), `tool_choice` (auto/none/specific), `max_tool_calls` (int), `parallel_tool_calls` (bool).
-- Logprobs: `logprobs` (bool), `top_logprobs` (0–20) to return per-token logprobs.
+- Logprobs: `logprobs` (bool), `top_logprobs` (0-20) to return per-token logprobs.
 - Output: `response_format` (json/text), `service_tier`, `store` (bool), `stream` (bool).
 - Metadata: `metadata` (object) for passthrough, `reasoning` (object) for effort hints.
 - Gateway extras: `usage` (bool to request usage), `meta` (bool to include meta block).
@@ -43,7 +43,8 @@ for line in client.stream_response({
 {
   "id": "resp_123",
   "object": "response",
-  "created": 1677652288,
+  "created_at": 1677652288,
+  "status": "completed",
   "model": "gpt-4.1",
   "output": [
     {
@@ -53,7 +54,7 @@ for line in client.stream_response({
       "role": "assistant",
       "content": [
         {
-          "type": "text",
+          "type": "output_text",
           "text": "Hello there, how may I assist you today?"
         }
       ]
@@ -70,11 +71,11 @@ for line in client.stream_response({
 Or newline-delimited SSE frames when `stream: true`:
 
 ```
-data: {"id":"resp_123","object":"response","created":1677652288,"model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[]}]}
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[]}]}
 
-data: {"id":"resp_123","object":"response","created":1677652288,"model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[{"type":"text","text":"Hello"}]}]}
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[{"type":"output_text","text":"Hello"}]}]}
 
-data: {"id":"resp_123","object":"response","created":1677652288,"model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"completed","role":"assistant","content":[{"type":"text","text":"Hello there, how may I assist you today?"}]}],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"completed","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello there, how may I assist you today?"}]}],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}
 
 data: [DONE]
 ```

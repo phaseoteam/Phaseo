@@ -9,62 +9,57 @@ description: "How to install and set up the AI Stats Python SDK"
 
 ## Installation
 
-Install the SDK using pip:
-
 ```bash
 pip install ai-stats-py-sdk
 ```
 
 ## Requirements
 
--   Python 3.9+
--   `httpx` (automatically installed as dependency)
+- Python 3.10+
 
 ## Setup
 
-### API Key
+### API key
 
-You'll need an AI Stats API key to use the SDK. Get one from the [AI Stats Dashboard](https://ai-stats.phaseo.app).
+Create an API key in the [AI Stats Dashboard](https://ai-stats.phaseo.app/gateway/keys).
 
-### Environment Variables
-
-Set your API key as an environment variable:
+### Environment variable
 
 ```bash
-export AI_STATS_API_KEY="your-api-key-here"
+export AI_STATS_API_KEY="aistats_v1_sk_xx_xxx"
 ```
 
-### Basic Usage (Async)
+### Basic usage
 
 ```python
-import asyncio
+from ai_stats import AIStats
+import os
+
+client = AIStats(api_key=os.environ["AI_STATS_API_KEY"])
+
+response = client.generate_text(
+    {
+        "model": "openai/gpt-5-nano",
+        "messages": [{"role": "user", "content": "Hello!"}],
+    }
+)
+
+print(response["choices"][0]["message"]["content"])
+```
+
+### Optional client configuration
+
+```python
 from ai_stats import AIStats
 
-async def main():
-    async with AIStats(api_key="your-api-key") as client:
-        response = await client.chat_completions(
-            model="openai/gpt-4o-mini",
-            messages=[{"role": "user", "content": "Hello!"}]
-        )
-        print(response["choices"][0]["message"]["content"])
-
-asyncio.run(main())
+client = AIStats(
+    api_key="your-api-key",
+    base_url="https://api.phaseo.app/v1",
+    timeout=30.0,
+)
 ```
 
-### Basic Usage (Sync)
+## Next steps
 
-```python
-from ai_stats import AIStatsSync
-
-with AIStatsSync(api_key="your-api-key") as client:
-    response = client.chat_completions(
-        model="openai/gpt-4o-mini",
-        messages=[{"role": "user", "content": "Hello!"}]
-    )
-    print(response["choices"][0]["message"]["content"])
-```
-
-## Next Steps
-
--   Check out the [Usage Guide](./usage.mdx) for detailed examples
--   View the [API Reference](../../api-reference/introduction.mdx) for endpoint documentation
+- Check out the [Usage Guide](./usage.mdx)
+- Browse the [API Reference](../../api-reference/introduction.mdx)

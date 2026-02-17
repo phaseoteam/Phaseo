@@ -120,7 +120,7 @@ interface AuthorizationParams {
 }
 
 function buildAuthorizationUrl(params: AuthorizationParams): string {
-  const url = new URL('https://gateway.aistats.ai/oauth/consent');
+  const url = new URL('https://api.phaseo.app/oauth/consent');
 
   url.searchParams.set('client_id', params.clientId);
   url.searchParams.set('redirect_uri', params.redirectUri);
@@ -381,7 +381,7 @@ class TokenManager {
 ```typescript
 class AIStatsClient {
   private tokenManager = new TokenManager();
-  private baseUrl = 'https://gateway.aistats.ai';
+  private baseUrl = 'https://api.phaseo.app';
 
   async chat(params: {
     model: string;
@@ -493,7 +493,7 @@ function handleTokenError(error: TokenError) {
 
 ```typescript
 async function makeAPIRequest(token: string) {
-  const response = await fetch('https://gateway.aistats.ai/v1/chat/completions', {
+  const response = await fetch('https://api.phaseo.app/v1/chat/completions', {
     headers: { Authorization: `Bearer ${token}` },
     // ...
   });
@@ -645,7 +645,7 @@ app.post('/webhooks/oauth', async (req, res) => {
 });
 ```
 
-### Multi-Tenant Support
+### Multi-Tenant Support (Coming Soon)
 
 ```typescript
 // Each user can authorize your app for multiple teams
@@ -657,15 +657,10 @@ interface Authorization {
 }
 
 async function getUserAuthorizations(userId: string): Promise<Authorization[]> {
-  // Fetch all active authorizations for user
-  const response = await fetch(
-    `https://gateway.aistats.ai/v1/control/authorizations?user_id=${userId}`,
-    {
-      headers: { Authorization: `Bearer ${adminToken}` },
-    }
-  );
-
-  return response.json();
+  // Coming Soon:
+  // Public listing endpoints for OAuth authorizations are not yet available.
+  // For now, track active authorizations in your own app/session state.
+  return [];
 }
 ```
 
@@ -737,4 +732,5 @@ Need help with your OAuth integration?
 - **Discord:** [Join our community](https://discord.gg/aistats)
 - **Email:** support@aistats.ai
 - **GitHub:** [OAuth Examples](https://github.com/ai-stats/oauth-examples)
+
 

@@ -13,7 +13,7 @@ The Gateway uses bearer tokens for authentication. Every request must include a 
 -   **Management API keys** allow you to manage your API keys programmatically. See the [Management API Keys](./management-api-keys.mdx) guide for details.
 -   **Rotation** is manual today, but you can create a new key at any time without downtime.
 
-Keys follow the format `aistats_v1_k_xx_xxx`. Treat them like passwords and avoid storing them in client-side code or public repositories.
+Keys follow the format `aistats_v1_sk_xx_xxx`. Treat them like passwords and avoid storing them in client-side code or public repositories.
 
 ---
 
@@ -22,7 +22,7 @@ Keys follow the format `aistats_v1_k_xx_xxx`. Treat them like passwords and avoi
 Include the key in the `Authorization` header on every request:
 
 ```http
-Authorization: Bearer aistats_v1_k_ab_cdefghijklmnop
+Authorization: Bearer aistats_v1_sk_ab_cdefghijklmnop
 ```
 
 Most HTTP clients expose a dedicated configuration property. For example, with `fetch`:

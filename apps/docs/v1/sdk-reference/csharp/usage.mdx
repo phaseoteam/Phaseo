@@ -1,80 +1,66 @@
 ---
 title: "C# SDK Usage"
-description: "Examples for calling each endpoint with the C# SDK facade."
+description: "Current wrapper methods supported by the preview C# SDK."
 ---
+
+## Setup
 
 ```csharp
 using AiStatsSdk;
-using AiStatsSdk.Model;
 
 var client = new Client("<API_KEY>");
 ```
 
-### Chat completions
+## Chat completions
 
 ```csharp
-var completion = client.GenerateText(new ChatCompletionsRequest(
-    model: "openai/gpt-4o-mini",
-    messages: new List<ChatMessage> { new ChatMessage(role: "user", content: "Hello!") }
-));
-```
-
-### Responses
-
-```csharp
-var resp = client.GenerateResponse(new ResponsesRequest(
-    model: "openai/gpt-4.1",
-    input: new List<Dictionary<string, object>>
+var chat = await client.GenerateText(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-5-nano",
+  ["messages"] = new[]
+  {
+    new Dictionary<string, object>
     {
-        new()
-        {
-            ["role"] = "user",
-            ["content"] = new List<Dictionary<string, object>>
-            {
-                new() { ["type"] = "output_text", ["text"] = "Summarise" }
-            }
-        }
+      ["role"] = "user",
+      ["content"] = "Hello"
     }
-));
+  }
+});
 ```
 
-### Images
+## Responses
 
 ```csharp
-var image = client.ImagesApi.ImagesGenerationsPost(new ImageGenerationRequest(
-    model: "openai/gpt-image-1",
-    prompt: "A lighthouse at golden hour"
-));
+var resp = await client.GenerateResponse(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-5-nano",
+  ["input"] = "Reply with: csharp sdk works"
+});
 ```
 
-### Audio
+## Images
 
 ```csharp
-var speech = client.AudioApi.AudioSpeechPost(new AudioSpeechRequest(model: "openai/gpt-4o-mini-tts", input: "Hello"));
+var image = await client.GenerateImage(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-image-1",
+  ["prompt"] = "A lighthouse at golden hour"
+});
 ```
 
-### Video
+## Moderations
 
 ```csharp
-var video = client.VideoApi.VideoGenerationPost(new VideoGenerationRequest(model: "openai/gpt-video-1", prompt: "Ocean at dusk"));
+var moderation = await client.GenerateModeration(new Dictionary<string, object>
+{
+  ["model"] = "openai/omni-moderation-latest",
+  ["input"] = "Some text to check"
+});
 ```
 
-### Moderations
+## Models and health
 
 ```csharp
-var mod = client.ModerationsApi.ModerationsPost(new ModerationRequest(model: "openai/omni-moderation-latest", input: "Text"));
-```
-
-### Batch & files
-
-```csharp
-var batch = client.CreateBatch(new BatchRequest(endpoint: "responses"));
-var files = client.ListFiles();
-```
-
-### Models & health
-
-```csharp
-var models = client.GetModels();
-var health = client.GetHealth();
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "10" });
+var health = await client.Health();
 ```

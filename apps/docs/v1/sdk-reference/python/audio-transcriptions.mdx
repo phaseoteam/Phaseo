@@ -1,26 +1,25 @@
 ---
 title: "Audio transcriptions"
-description: "Call /audio/transcriptions with the Python SDK."
+description: "Python SDK placeholder for /audio/transcriptions."
 ---
 
-**Method**: `client.generate_transcription()`.
+<Note type="warning">
+  This helper currently returns a `coming_soon` placeholder in the Python SDK.
+</Note>
 
-### Example
+**Method**: `client.generate_transcription()`
+
 ```python
-transcript = client.generate_transcription({
+result = client.generate_transcription({
     "model": "openai/gpt-4o-transcribe",
-    "file": "data:audio/mp3;base64,...",
-    "language": "en",
+    "audio_b64": "base64-audio",
 })
+
+print(result)
+# {
+#   "status": "coming_soon",
+#   "endpoint": "audio/transcriptions",
+#   "message": "This endpoint is not yet supported in the SDK.",
+#   "payload": {...}
+# }
 ```
-
-### Key parameters
-- `model` (required): Transcription-capable model id.
-- `file` (required): Audio data (URL, base64, or binary).
-- `language`: Hint language code (e.g., `en`).
-- `prompt`: Optional context to improve accuracy.
-- `temperature` (0–2): Sampling randomness.
-- `response_format`: `json`, `text`, `srt`, `verbose_json`, etc.
-
-### Returns
-`AudioTranscriptionResponse`

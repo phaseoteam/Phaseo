@@ -1,6 +1,10 @@
 ---
 title: "Generation lookup (Beta)"
 badge: "Beta"
-openapi: "GET /generation"
+openapi: "GET /generations"
 ---
-Fetches the stored audit record for a given `request_id` that belongs to your team. Provide `id` as a query parameter to retrieve the stored generation record.
+Fetches the stored audit record for a given `request_id` that belongs to your team.
+
+Use:
+- `GET /v1/generations?id=<request_id>`
+

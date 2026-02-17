@@ -3,23 +3,23 @@ title: "Gateway Architecture Overview"
 description: "High-level map of the API gateway folders and their responsibilities."
 ---
 
-This section documents how the gateway codebase is organized. It is written to help you find the right folder quickly and understand what each file does.
+This section documents how the gateway codebase is organized so you can quickly find where behavior is implemented.
 
-## apps/api/src layout
+## `apps/api/src` layout
 
 | Folder | Purpose | Key files |
 | --- | --- | --- |
-| `apps/api/src/routes` | HTTP routing and endpoint registration. | `root.ts`, `v1/index.ts`, `v1/control/health.ts`, `v1/control/models.ts` |
-| `apps/api/src/lib/gateway` | Request pipeline, adapters, pricing, and telemetry. | `pipeline.ts`, `execute/`, `before/`, `after/` |
-| `apps/api/src/ir` | Intermediate representation (IR) for normalized requests/responses. | `types.ts`, `streaming.ts` |
-| `apps/api/src/protocols` | Protocol-specific parsing and emitters. | `openai/`, `anthropic/` |
-| `apps/api/src/router` | Surface selection and strictness handling. | `surfaces.ts`, `strictness.ts`, `param_classifier.ts` |
-| `apps/api/src/runtime` | Runtime env bindings and helpers. | `env.ts` |
-| `apps/api/src/lib` | Shared schemas, error handler, and utilities. | `schemas.ts`, `types.ts`, `error-handler.ts` |
+| `apps/api/src/routes` | HTTP routing and endpoint registration. | `root.ts`, `v1/index.ts`, `v1/data/index.ts`, `v1/control/index.ts` |
+| `apps/api/src/pipeline` | Request lifecycle (before/execute/after), pricing, usage, and audit. | `index.ts`, `before/`, `execute/`, `after/`, `audit/` |
+| `apps/api/src/core` | Shared schemas, IR types, and low-level utilities used across layers. | `schemas.ts`, `ir.ts`, `types.ts`, `error-handler.ts` |
+| `apps/api/src/protocols` | Protocol-specific decoding/encoding for OpenAI and Anthropic surfaces. | `openai-chat/`, `openai-responses/`, `anthropic-messages/` |
+| `apps/api/src/providers` | Provider adapters and provider-specific endpoint mapping. | `openai/`, `openai-compatible/`, `anthropic/`, `google-ai-studio/` |
+| `apps/api/src/runtime` | Environment bindings and runtime helpers. | `env.ts` |
+| `apps/api/src/observability` | Wide-event telemetry emitters and privacy helpers. | `events.ts`, `axiom.ts`, `privacy.ts` |
 
 ## How requests flow
 
 1. Routes register protocol-accurate endpoints under `apps/api/src/routes`.
-2. Protocol parsers map request bodies into the IR (`apps/api/src/ir`).
-3. The gateway pipeline selects providers and executes upstream calls.
-4. Responses are normalized back into IR and emitted in the original protocol shape.
+2. Pipeline `before` validates auth/body/model and builds request context.
+3. Pipeline `execute` selects an adapter and performs upstream calls.
+4. Pipeline `after` formats protocol-specific responses, usage, and telemetry.
