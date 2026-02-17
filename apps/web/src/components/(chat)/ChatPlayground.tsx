@@ -581,8 +581,6 @@ function ChatPlaygroundContent({
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
-			const storedKey =
-				window.localStorage.getItem(STORAGE_KEYS.apiKey) ?? "";
 			const storedBase =
 				window.localStorage.getItem(STORAGE_KEYS.baseUrl) ?? BASE_URL;
 			const storedActive = window.localStorage.getItem(
@@ -612,7 +610,7 @@ function ChatPlaygroundContent({
 					storedModel) ||
 				defaultModelId;
 			if (!mounted) return;
-			setApiKey(storedKey);
+			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
 			setBaseUrl(storedBase);
 			setLastModelId(resolvedModel);
 			setPersonalization({
@@ -963,13 +961,12 @@ function ChatPlaygroundContent({
 	);
 
 	const handleSaveSettings = useCallback(() => {
-		window.localStorage.setItem(STORAGE_KEYS.apiKey, apiKey.trim());
 		window.localStorage.setItem(
 			STORAGE_KEYS.baseUrl,
 			baseUrl.trim() || BASE_URL,
 		);
 		setSettingsOpen(false);
-	}, [apiKey, baseUrl]);
+	}, [baseUrl]);
 
 	const executeCompletion = useCallback(
 		async (

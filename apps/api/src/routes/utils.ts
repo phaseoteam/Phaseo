@@ -17,6 +17,30 @@ type CacheOptions = {
 
 const encoder = new TextEncoder();
 
+function stringifyJsonBody(body: unknown): string {
+    const seen = new WeakSet<object>();
+    return JSON.stringify(
+        body,
+        (key, value) => {
+            if (key === "stack" || key === "stackTrace" || key === "stacktrace") {
+                return undefined;
+            }
+            if (value instanceof Error) {
+                return {
+                    name: value.name,
+                    message: value.message,
+                };
+            }
+            if (typeof value === "object" && value !== null) {
+                if (seen.has(value)) return "[Circular]";
+                seen.add(value);
+            }
+            return value;
+        },
+        2
+    );
+}
+
 export function withRuntime(handler: Handler) {
     return async (c: Context<{ Bindings: GatewayBindings }>) => {
         configureRuntime(c.env);
@@ -33,7 +57,7 @@ export function withRuntime(handler: Handler) {
 }
 
 export function json(body: any, status = 200, headers: Record<string, string> = {}) {
-    return new Response(JSON.stringify(body, null, 2), {
+    return new Response(stringifyJsonBody(body), {
         status,
         headers: {
             "Content-Type": "application/json",

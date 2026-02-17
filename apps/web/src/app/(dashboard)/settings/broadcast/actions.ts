@@ -153,6 +153,56 @@ function resolveTestEndpoint(
 	return "";
 }
 
+function isPrivateIpv4(hostname: string): boolean {
+	const parts = hostname.split(".").map((segment) => Number(segment));
+	if (parts.length !== 4 || parts.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) {
+		return false;
+	}
+	const [a, b] = parts;
+	if (a === 10 || a === 127 || a === 0) return true;
+	if (a === 169 && b === 254) return true;
+	if (a === 172 && b >= 16 && b <= 31) return true;
+	if (a === 192 && b === 168) return true;
+	return false;
+}
+
+function isPrivateIpv6(hostname: string): boolean {
+	const normalized = hostname.toLowerCase();
+	if (normalized === "::1") return true;
+	if (normalized.startsWith("fe80:")) return true;
+	if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+	return false;
+}
+
+function validateOutboundEndpoint(endpoint: string): { ok: true; value: string } | { ok: false; reason: string } {
+	let parsed: URL;
+	try {
+		parsed = new URL(endpoint);
+	} catch {
+		return { ok: false, reason: "Endpoint must be a valid absolute URL." };
+	}
+
+	if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+		return { ok: false, reason: "Endpoint protocol must be http or https." };
+	}
+	if (parsed.username || parsed.password) {
+		return { ok: false, reason: "Endpoint must not include URL credentials." };
+	}
+
+	const hostname = parsed.hostname.toLowerCase();
+	if (!hostname) {
+		return { ok: false, reason: "Endpoint hostname is required." };
+	}
+	if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".local")) {
+		return { ok: false, reason: "Endpoint hostname is not allowed." };
+	}
+	if (isPrivateIpv4(hostname) || isPrivateIpv6(hostname)) {
+		return { ok: false, reason: "Private or loopback endpoint addresses are not allowed." };
+	}
+
+	return { ok: true, value: parsed.toString() };
+}
+
 function normalizeDestinationId(destinationId: string): string {
 	if (destinationId === "arize_ai") return "arize";
 	if (destinationId === "new_relic_ai") return "new_relic";
@@ -684,6 +734,10 @@ export async function testBroadcastConnectionFromConfigAction(args: {
 	if (!endpoint) {
 		throw new Error("Missing endpoint for this destination configuration.");
 	}
+	const validatedEndpoint = validateOutboundEndpoint(endpoint);
+	if (!validatedEndpoint.ok) {
+		throw new Error(validatedEndpoint.reason);
+	}
 
 	const method = normalizeTraceMethod(getConfigValue(config, "method"));
 	const headers = buildConnectionTestHeaders(destinationId, config);
@@ -692,7 +746,7 @@ export async function testBroadcastConnectionFromConfigAction(args: {
 	const timeout = setTimeout(() => controller.abort(), 10_000);
 
 	try {
-		const response = await fetch(endpoint, {
+		const response = await fetch(validatedEndpoint.value, {
 			method,
 			headers,
 			body: JSON.stringify({ resourceSpans: [] }),

@@ -71,6 +71,13 @@ function looksLikeGatewayAuthToken(token: string): boolean {
     return token.split(".").length === 3;
 }
 
+function redactSensitiveText(input: string): string {
+    return input
+        .replace(/aistats_v1_sk_[A-Za-z0-9_-]+_[A-Za-z0-9._~-]+/g, "aistats_v1_sk_[REDACTED]")
+        .replace(/Bearer\s+[A-Za-z0-9._~+\-/=]+/gi, "Bearer [REDACTED]")
+        .replace(/\bsk-[A-Za-z0-9._~-]+\b/g, "sk-[REDACTED]");
+}
+
 function resolveGatewayApiKey(argsKey?: string): {
     key: string;
     source: string;
@@ -487,7 +494,7 @@ async function main() {
     }
 
     if (apiKeyResolved.derivedFromPlayground) {
-        console.log(`[live-provider-tests] derived gateway API key from ${apiKeyResolved.source}`);
+        console.log("[live-provider-tests] derived gateway API key from playground environment");
     }
 
     let providers = args.providers;
@@ -534,6 +541,7 @@ async function main() {
 }
 
 main().catch((error) => {
-    console.error(`[live-provider-tests] ${String(error instanceof Error ? error.message : error)}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[live-provider-tests] ${redactSensitiveText(message)}`);
     process.exit(1);
 });

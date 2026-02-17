@@ -242,6 +242,30 @@ function extractGeneratedImageUrl(content: string): string | null {
 	return null;
 }
 
+function sanitizeHttpMediaUrl(value: string | null | undefined): string | null {
+	if (!value) return null;
+	try {
+		const parsed = new URL(value);
+		if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+			return null;
+		}
+		return parsed.toString();
+	} catch {
+		return null;
+	}
+}
+
+function sanitizeAttachmentMediaUrl(value: string | null | undefined): string | null {
+	if (!value) return null;
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+	if (trimmed.startsWith("blob:")) return trimmed;
+	if (/^data:(image|audio|video)\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$/i.test(trimmed)) {
+		return trimmed;
+	}
+	return sanitizeHttpMediaUrl(trimmed);
+}
+
 function inferAudioMimeType(url: string) {
 	const normalized = url.toLowerCase();
 	if (normalized.includes(".wav")) return "audio/wav";
@@ -314,25 +338,26 @@ function getInlineAttachmentPreviewsFromMeta(
 			const item = entry as Record<string, unknown>;
 			const dataUrl =
 				typeof item.dataUrl === "string" ? item.dataUrl : null;
-			if (!dataUrl) return null;
+			const safeDataUrl = sanitizeAttachmentMediaUrl(dataUrl);
+			if (!safeDataUrl) return null;
 			const mimeType =
 				typeof item.mimeType === "string" && item.mimeType.trim()
 					? item.mimeType
-					: dataUrl.startsWith("data:")
-						? (dataUrl.slice(5).split(";")[0] ?? undefined)
+					: safeDataUrl.startsWith("data:")
+						? (safeDataUrl.slice(5).split(";")[0] ?? undefined)
 						: undefined;
 			const isImage =
 				(typeof item.isImage === "boolean" && item.isImage) ||
 				Boolean(mimeType?.startsWith("image/")) ||
-				dataUrl.startsWith("data:image/");
+				safeDataUrl.startsWith("data:image/");
 			const isAudio =
 				(typeof item.isAudio === "boolean" && item.isAudio) ||
 				Boolean(mimeType?.startsWith("audio/")) ||
-				dataUrl.startsWith("data:audio/");
+				safeDataUrl.startsWith("data:audio/");
 			const isVideo =
 				(typeof item.isVideo === "boolean" && item.isVideo) ||
 				Boolean(mimeType?.startsWith("video/")) ||
-				dataUrl.startsWith("data:video/");
+				safeDataUrl.startsWith("data:video/");
 			if (!isImage && !isAudio && !isVideo) return null;
 			return {
 				name:
@@ -340,7 +365,7 @@ function getInlineAttachmentPreviewsFromMeta(
 						? item.name
 						: "image",
 				mimeType,
-				dataUrl,
+				dataUrl: safeDataUrl,
 				isImage,
 				isAudio,
 				isVideo,
@@ -789,19 +814,25 @@ export function ChatConversation({
 			const activeVariantIndex = message.activeVariantIndex ?? 0;
 			const activeVariant = variants[activeVariantIndex] ?? variants[0];
 			const content = activeVariant?.content ?? message.content;
-			const videoUrl = isUser ? null : extractGeneratedVideoUrl(content);
+			const videoUrl = isUser
+				? null
+				: sanitizeHttpMediaUrl(extractGeneratedVideoUrl(content));
 			const contentWithoutVideoLink = videoUrl
 				? stripMarkdownLink(content, videoUrl)
 				: content;
 			const audioUrl = isUser
 				? null
-				: extractGeneratedAudioUrl(contentWithoutVideoLink);
+				: sanitizeHttpMediaUrl(
+						extractGeneratedAudioUrl(contentWithoutVideoLink),
+					);
 			const contentWithoutAudioLink = audioUrl
 				? stripMarkdownLink(contentWithoutVideoLink, audioUrl)
 				: contentWithoutVideoLink;
 			const imageUrl = isUser
 				? null
-				: extractGeneratedImageUrl(contentWithoutAudioLink);
+				: sanitizeHttpMediaUrl(
+						extractGeneratedImageUrl(contentWithoutAudioLink),
+					);
 			const contentWithoutMediaLinks = imageUrl
 				? stripMarkdownLink(contentWithoutAudioLink, imageUrl)
 				: contentWithoutAudioLink;
@@ -1553,7 +1584,11 @@ export function ChatConversation({
 									>
 										{attachmentPreviewUrls[index] ? (
 											<img
-												src={attachmentPreviewUrls[index] ?? undefined}
+												src={
+													sanitizeAttachmentMediaUrl(
+														attachmentPreviewUrls[index],
+													) ?? undefined
+												}
 												alt={file.name}
 												className="h-5 w-5 rounded object-cover shrink-0"
 											/>

@@ -17,10 +17,15 @@ const KEY_PREFIX = "aistats_v1_sk_";
 const encoder = new TextEncoder();
 
 function randomBase62(length: number): string {
-	const bytes = crypto.getRandomValues(new Uint8Array(length));
+	const unbiasedLimit = Math.floor(256 / BASE62.length) * BASE62.length;
 	let out = "";
-	for (let i = 0; i < bytes.length; i++) {
-		out += BASE62[bytes[i] % BASE62.length];
+	while (out.length < length) {
+		const bytes = crypto.getRandomValues(new Uint8Array(length));
+		for (let i = 0; i < bytes.length && out.length < length; i++) {
+			const value = bytes[i];
+			if (value >= unbiasedLimit) continue;
+			out += BASE62[value % BASE62.length];
+		}
 	}
 	return out;
 }

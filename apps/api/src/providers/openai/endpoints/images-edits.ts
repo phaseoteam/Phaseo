@@ -30,13 +30,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
                 maxBytes: 25 * 1024 * 1024,
             });
             imageUploads.push(upload);
-        } catch (error) {
+        } catch {
             return {
                 kind: "completed",
                 upstream: new Response(
                     JSON.stringify({
                         error: "Invalid image input. Provide reachable image URLs or valid base64 payloads.",
-                        message: error instanceof Error ? error.message : String(error),
                         index: i,
                     }),
                     { status: 400, headers: { "Content-Type": "application/json" } },
@@ -62,13 +61,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
                 fallbackFilename: "mask",
                 maxBytes: 4 * 1024 * 1024,
             });
-        } catch (error) {
+        } catch {
             return {
                 kind: "completed",
                 upstream: new Response(
                     JSON.stringify({
                         error: "Invalid mask input. Provide a reachable image URL or valid base64 payload.",
-                        message: error instanceof Error ? error.message : String(error),
                     }),
                     { status: 400, headers: { "Content-Type": "application/json" } },
                 ),
