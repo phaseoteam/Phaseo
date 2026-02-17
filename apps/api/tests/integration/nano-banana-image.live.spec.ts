@@ -1,12 +1,15 @@
 import { beforeAll, describe, expect, it } from "vitest";
+import { parseSseJson, readSseFrames } from "../helpers/sse";
+import { resolveGatewayApiKeyFromEnv } from "../helpers/gatewayKey";
 
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
-const GATEWAY_API_KEY = process.env.GATEWAY_API_KEY ?? "";
+const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
 const LIVE_RUN = (process.env.LIVE_RUN ?? "").trim() === "1";
 const DEFAULT_MODELS = [
-    "google/gemini-2-5-flash-image",
-    "google/gemini-3-pro-image-preview",
-    "google/gemini-2-5-flash-image-preview",
+    "google/gemini-2.5-flash-image",
+    "google/gemini-2-5-flash-image-2025-10-02",
+    "google/gemini-2-5-flash-image-preview-2025-08-25",
+    "google/gemini-3-pro-image-preview-2025-11-20",
 ] as const;
 const MODEL = (process.env.LIVE_NANO_BANANA_MODEL ?? "").trim();
 
@@ -124,7 +127,6 @@ async function postWithModalitiesFallback(path: "/responses" | "/chat/completion
             ? {
                 model,
                 input: prompt,
-                temperature: 0,
                 max_output_tokens: 24,
                 usage: true,
                 meta: true,
@@ -133,7 +135,6 @@ async function postWithModalitiesFallback(path: "/responses" | "/chat/completion
                 ? {
                     model,
                     messages: [{ role: "user", content: prompt }],
-                    temperature: 0,
                     max_output_tokens: 24,
                     usage: true,
                     meta: true,
@@ -142,7 +143,6 @@ async function postWithModalitiesFallback(path: "/responses" | "/chat/completion
                     model,
                     max_tokens: 64,
                     messages: [{ role: "user", content: prompt }],
-                    temperature: 0,
                     usage: true,
                     meta: true,
                 };
@@ -161,6 +161,62 @@ async function postWithModalitiesFallback(path: "/responses" | "/chat/completion
     const withoutModalities = await postJson(path, baseBody);
     if (!withoutModalities.res.ok) {
         throw new Error(`${path} retry failed (${withoutModalities.res.status}): ${withoutModalities.text}`);
+    }
+    return withoutModalities;
+}
+
+async function postStreamWithModalitiesFallback(path: "/responses" | "/chat/completions", model: string) {
+    const prompt = "Generate a tiny blue square image and include it in your response.";
+    const baseBody =
+        path === "/responses"
+            ? {
+                model,
+                input: prompt,
+                max_output_tokens: 64,
+                usage: true,
+                meta: true,
+                stream: true,
+            }
+            : {
+                model,
+                messages: [{ role: "user", content: prompt }],
+                max_output_tokens: 64,
+                usage: true,
+                meta: true,
+                stream: true,
+            };
+
+    const withModalities = await fetch(resolveGatewayUrl(path), {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+            ...baseBody,
+            modalities: ["text", "image"],
+        }),
+    });
+    if (withModalities.ok) return withModalities;
+
+    const fallbackText = await withModalities.clone().text();
+    let fallbackJson: any = null;
+    try {
+        fallbackJson = fallbackText ? JSON.parse(fallbackText) : null;
+    } catch {
+        fallbackJson = { raw: fallbackText };
+    }
+
+    if (withModalities.status !== 400 || !hasUnsupportedModalitiesError(fallbackJson)) {
+        throw new Error(`${path} stream failed (${withModalities.status}): ${fallbackText}`);
+    }
+
+    console.warn(`[nano-banana-live] ${path}: modalities unsupported for ${model}, retrying stream without modalities`);
+    const withoutModalities = await fetch(resolveGatewayUrl(path), {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(baseBody),
+    });
+    if (!withoutModalities.ok) {
+        const text = await withoutModalities.text();
+        throw new Error(`${path} stream retry failed (${withoutModalities.status}): ${text}`);
     }
     return withoutModalities;
 }
@@ -191,6 +247,12 @@ function extractChatImages(payload: any): any[] {
 function extractMessagesImages(payload: any): any[] {
     const blocks = Array.isArray(payload?.content) ? payload.content : [];
     return blocks.filter((block: any) => block?.type === "image");
+}
+
+function extractUsage(payload: any): any {
+    if (payload?.usage && typeof payload.usage === "object") return payload.usage;
+    if (payload?.response?.usage && typeof payload.response.usage === "object") return payload.response.usage;
+    return null;
 }
 
 describeLive("Nano Banana image output on text.generate surfaces", () => {
@@ -236,5 +298,33 @@ describeLive("Nano Banana image output on text.generate surfaces", () => {
             "image block source.type should be base64 or url"
         ).toBe(true);
         expect(getTotalTokens(jsonBody?.usage), "/messages should include non-zero usage").toBeGreaterThan(0);
+    }, 120_000);
+
+    it("streams image output on /responses with non-zero usage", async () => {
+        const res = await postStreamWithModalitiesFallback("/responses", selectedModel);
+        const frames = await readSseFrames(res);
+        const objects = parseSseJson(frames).filter((entry) => entry && typeof entry === "object") as any[];
+        const hasImage = objects.some((entry) => extractResponsesImages(entry?.response ?? entry).length > 0);
+        expect(hasImage, "expected at least one output_image in /responses stream").toBe(true);
+
+        const usageCarrier = [...objects].reverse().find((entry) => extractUsage(entry));
+        expect(getTotalTokens(extractUsage(usageCarrier)), "/responses stream should include non-zero usage").toBeGreaterThan(0);
+    }, 120_000);
+
+    it("streams image output on /chat/completions with non-zero usage", async () => {
+        const res = await postStreamWithModalitiesFallback("/chat/completions", selectedModel);
+        const frames = await readSseFrames(res);
+        const objects = parseSseJson(frames).filter((entry) => entry && typeof entry === "object") as any[];
+        const hasImage = objects.some((entry) => {
+            const fromMessage = extractChatImages(entry).length > 0;
+            const fromDelta = Array.isArray(entry?.choices)
+                ? entry.choices.some((choice: any) => Array.isArray(choice?.delta?.images) && choice.delta.images.length > 0)
+                : false;
+            return fromMessage || fromDelta;
+        });
+        expect(hasImage, "expected at least one image block in /chat/completions stream").toBe(true);
+
+        const usageCarrier = [...objects].reverse().find((entry) => extractUsage(entry));
+        expect(getTotalTokens(extractUsage(usageCarrier)), "/chat stream should include non-zero usage").toBeGreaterThan(0);
     }, 120_000);
 });

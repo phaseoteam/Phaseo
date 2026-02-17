@@ -8,6 +8,24 @@ import { zaiQuirks } from "../../providers/z-ai/quirks";
 
 describe("Z.AI Quirks", () => {
 	describe("transformRequest", () => {
+		it("maps developer role to system", () => {
+			const request: Record<string, any> = {
+				messages: [
+					{ role: "developer", content: "use strict json" },
+					{ role: "user", content: "hello" },
+				],
+			};
+
+			zaiQuirks.transformRequest!({
+				request,
+				ir: {} as any,
+			});
+
+			expect(request.messages[0].role).toBe("system");
+			expect(request.messages[0].content).toBe("use strict json");
+			expect(request.messages[1].role).toBe("user");
+		});
+
 		it("enables thinking when reasoning.enabled=true", () => {
 			const request: Record<string, any> = {};
 			zaiQuirks.transformRequest!({

@@ -420,6 +420,44 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.stream).toBe(true);
 	});
 
+	it("should decode image_config and filter invalid font inputs", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 2048,
+			messages: [{ role: "user", content: "Generate image" }],
+			modalities: ["text", "image"],
+			image_config: {
+				aspect_ratio: "1:1",
+				image_size: "4K",
+				font_inputs: [
+					{
+						font_url: "https://example.com/font.ttf",
+						text: "Title",
+					},
+					{
+						font_url: "https://example.com/missing-text.ttf",
+					},
+				],
+				super_resolution_references: ["https://example.com/ref.png"],
+			},
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+
+		expect(ir.modalities).toEqual(["text", "image"]);
+		expect(ir.imageConfig).toEqual({
+			aspectRatio: "1:1",
+			imageSize: "4K",
+			fontInputs: [
+				{
+					fontUrl: "https://example.com/font.ttf",
+					text: "Title",
+				},
+			],
+			superResolutionReferences: ["https://example.com/ref.png"],
+		});
+	});
+
 	it("should map speed fast to priority service tier", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",

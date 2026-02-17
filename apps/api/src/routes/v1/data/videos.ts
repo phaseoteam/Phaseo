@@ -26,9 +26,13 @@ export const videosRoutes = new Hono<Env>();
 videosRoutes.post("/", withRuntime(videoHandler));
 
 const OPENAI_PROVIDER_ID = "openai";
+const XAI_PROVIDER_ID = "x-ai";
+const MINIMAX_PROVIDER_ID = "minimax";
 const GOOGLE_BASE_URL = "https://generativelanguage.googleapis.com";
 const GOOGLE_OPERATION_PREFIX = "gaiop_";
 const DASHSCOPE_TASK_PREFIX = "dscope_";
+const XAI_VIDEO_PREFIX = "xaivid_";
+const MINIMAX_VIDEO_PREFIX = "mmxvid_";
 
 type VideoRouteAuth = {
 	requestId: string;
@@ -216,6 +220,28 @@ function decodeDashscopeTaskId(videoId: string): string | null {
 	}
 }
 
+function decodeXAiVideoId(videoId: string): string | null {
+	if (!videoId.startsWith(XAI_VIDEO_PREFIX)) return null;
+	const b64 = videoId.slice(XAI_VIDEO_PREFIX.length).replace(/-/g, "+").replace(/_/g, "/");
+	const padded = b64 + "===".slice((b64.length + 3) % 4);
+	try {
+		return atob(padded);
+	} catch {
+		return null;
+	}
+}
+
+function decodeMiniMaxVideoId(videoId: string): string | null {
+	if (!videoId.startsWith(MINIMAX_VIDEO_PREFIX)) return null;
+	const b64 = videoId.slice(MINIMAX_VIDEO_PREFIX.length).replace(/-/g, "+").replace(/_/g, "/");
+	const padded = b64 + "===".slice((b64.length + 3) % 4);
+	try {
+		return atob(padded);
+	} catch {
+		return null;
+	}
+}
+
 async function fetchGoogleOperation(operationName: string) {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY;
@@ -249,6 +275,106 @@ async function fetchDashscopeTask(taskId: string) {
 			"Content-Type": "application/json",
 		},
 	});
+}
+
+async function fetchXAiVideoStatus(videoId: string) {
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const key = bindings.X_AI_API_KEY || bindings.XAI_API_KEY;
+	if (!key) {
+		return err("upstream_error", {
+			reason: "xai_key_missing",
+		});
+	}
+	const res = await fetch(openAICompatUrl(XAI_PROVIDER_ID, `/videos/generations/${encodeURIComponent(videoId)}`), {
+		method: "GET",
+		headers: {
+			...openAICompatHeaders(XAI_PROVIDER_ID, key),
+			"Accept": "application/json",
+		},
+	});
+	return res;
+}
+
+async function fetchXAiVideoContent(videoId: string) {
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const key = bindings.X_AI_API_KEY || bindings.XAI_API_KEY;
+	if (!key) {
+		return err("upstream_error", {
+			reason: "xai_key_missing",
+		});
+	}
+	const res = await fetch(openAICompatUrl(XAI_PROVIDER_ID, `/videos/generations/${encodeURIComponent(videoId)}/content`), {
+		method: "GET",
+		headers: {
+			...openAICompatHeaders(XAI_PROVIDER_ID, key),
+			"Accept": "*/*",
+		},
+	});
+	return res;
+}
+
+async function fetchMiniMaxVideoTask(taskId: string) {
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const key = bindings.MINIMAX_API_KEY;
+	if (!key) {
+		return err("upstream_error", {
+			reason: "minimax_key_missing",
+		});
+	}
+	const baseUrl = String(bindings.MINIMAX_BASE_URL || "https://api.minimax.io").replace(/\/+$/, "");
+	return fetch(`${baseUrl}/v1/query/video_generation?task_id=${encodeURIComponent(taskId)}`, {
+		method: "GET",
+		headers: {
+			Authorization: `Bearer ${key}`,
+			"Content-Type": "application/json",
+		},
+	});
+}
+
+function mapMiniMaxVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+	const status = String(value ?? "").toLowerCase();
+	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
+		return "completed";
+	}
+	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
+	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
+	return "queued";
+}
+
+function mapXAiVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+	const status = String(value ?? "").toLowerCase();
+	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
+		return "completed";
+	}
+	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
+	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
+	return "queued";
+}
+
+function extractVideoOutputFromPayload(payload: any): Array<{ index: number; uri: string | null; mime_type: string | null }> {
+	const output = Array.isArray(payload?.output)
+		? payload.output
+		: Array.isArray(payload?.data)
+			? payload.data
+			: [];
+	if (output.length > 0) {
+		return output.map((item: any, index: number) => ({
+			index,
+			uri: item?.url ?? item?.uri ?? item?.video_url ?? item?.videoUrl ?? null,
+			mime_type: item?.mime_type ?? item?.mimeType ?? "video/mp4",
+		}));
+	}
+	const videoUrl =
+		payload?.video_url ??
+		payload?.videoUrl ??
+		payload?.output?.video_url ??
+		payload?.output?.videoUrl ??
+		payload?.data?.video_url ??
+		payload?.data?.videoUrl;
+	if (typeof videoUrl === "string" && videoUrl.length > 0) {
+		return [{ index: 0, uri: videoUrl, mime_type: "video/mp4" }];
+	}
+	return [];
 }
 
 videosRoutes.get("/:videoId", withRuntime(async (req) => {
@@ -383,6 +509,101 @@ videosRoutes.get("/:videoId", withRuntime(async (req) => {
 			headers: { "Content-Type": "application/json" },
 		});
 	}
+	const xaiVideoId = decodeXAiVideoId(id);
+	if (xaiVideoId) {
+		const res = await fetchXAiVideoStatus(xaiVideoId);
+		if (!(res instanceof Response)) return res;
+		if (!res.ok) return res;
+		const json = await res.clone().json().catch(() => null);
+		const status = mapXAiVideoStatus(json?.status);
+		const output = extractVideoOutputFromPayload(json);
+		const meta = await getVideoJobMeta(authValue.teamId, id);
+		const providerId = meta?.provider ?? XAI_PROVIDER_ID;
+		const model = String(json?.model ?? json?.data?.model ?? meta?.model ?? "").trim();
+		const seconds = toPositiveNumber(
+			json?.seconds ??
+			json?.duration_seconds ??
+			json?.duration ??
+			meta?.seconds
+		);
+		const requestOptions = {
+			size: String(json?.size ?? meta?.size ?? ""),
+			quality: String(json?.quality ?? meta?.quality ?? ""),
+		};
+		const charge = status === "completed"
+			? await maybeChargeVideoCompletion({
+				auth: authValue,
+				providerId,
+				model,
+				videoId: id,
+				seconds,
+				requestOptions,
+			})
+			: { charged: false };
+		const usage = status === "completed" ? buildVideoUsage(seconds, charge.pricedUsage) : undefined;
+		return new Response(JSON.stringify({
+			id,
+			object: "video",
+			status,
+			provider: providerId,
+			model: model || null,
+			nativeResponseId: xaiVideoId,
+			result: json,
+			output,
+			...(usage ? { usage } : {}),
+		}), {
+			status: 200,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
+	const minimaxTaskId = decodeMiniMaxVideoId(id);
+	if (minimaxTaskId) {
+		const res = await fetchMiniMaxVideoTask(minimaxTaskId);
+		if (!(res instanceof Response)) return res;
+		if (!res.ok) return res;
+		const json = await res.clone().json().catch(() => null);
+		const status = mapMiniMaxVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status);
+		const output = extractVideoOutputFromPayload(json);
+		const meta = await getVideoJobMeta(authValue.teamId, id);
+		const providerId = meta?.provider ?? MINIMAX_PROVIDER_ID;
+		const model = String(json?.model ?? json?.data?.model ?? meta?.model ?? "").trim();
+		const seconds = toPositiveNumber(
+			json?.seconds ??
+			json?.duration_seconds ??
+			json?.duration ??
+			json?.data?.duration ??
+			meta?.seconds
+		);
+		const requestOptions = {
+			size: String(json?.size ?? meta?.size ?? ""),
+			quality: String(json?.quality ?? meta?.quality ?? ""),
+		};
+		const charge = status === "completed"
+			? await maybeChargeVideoCompletion({
+				auth: authValue,
+				providerId,
+				model,
+				videoId: id,
+				seconds,
+				requestOptions,
+			})
+			: { charged: false };
+		const usage = status === "completed" ? buildVideoUsage(seconds, charge.pricedUsage) : undefined;
+		return new Response(JSON.stringify({
+			id,
+			object: "video",
+			status,
+			provider: providerId,
+			model: model || null,
+			nativeResponseId: minimaxTaskId,
+			result: json,
+			output,
+			...(usage ? { usage } : {}),
+		}), {
+			status: 200,
+			headers: { "Content-Type": "application/json" },
+		});
+	}
 
 	const openAiStatusRes = await fetchOpenAIVideoStatus(req, authValue, id);
 	const contentType = openAiStatusRes.headers.get("content-type") ?? "";
@@ -504,6 +725,70 @@ videosRoutes.get("/:videoId/content", withRuntime(async (req) => {
 			headers: videoRes.headers,
 		});
 	}
+	const xaiVideoId = decodeXAiVideoId(id);
+	if (xaiVideoId) {
+		const contentRes = await fetchXAiVideoContent(xaiVideoId);
+		if (!(contentRes instanceof Response)) return contentRes;
+		if (contentRes.ok) {
+			return new Response(contentRes.body, {
+				status: contentRes.status,
+				headers: contentRes.headers,
+			});
+		}
+		const statusRes = await fetchXAiVideoStatus(xaiVideoId);
+		if (!(statusRes instanceof Response)) return statusRes;
+		if (!statusRes.ok) return statusRes;
+		const json = await statusRes.clone().json().catch(() => null);
+		const status = mapXAiVideoStatus(json?.status);
+		if (status !== "completed") {
+			return err("not_ready", {
+				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
+				request_id: auth.value.requestId,
+				team_id: auth.value.teamId,
+			});
+		}
+		const uri = extractVideoOutputFromPayload(json)?.[0]?.uri;
+		if (!uri) {
+			return err("upstream_error", {
+				reason: "missing_video_uri",
+				request_id: auth.value.requestId,
+				team_id: auth.value.teamId,
+			});
+		}
+		const videoRes = await fetch(uri, { method: "GET" });
+		return new Response(videoRes.body, {
+			status: videoRes.status,
+			headers: videoRes.headers,
+		});
+	}
+	const minimaxTaskId = decodeMiniMaxVideoId(id);
+	if (minimaxTaskId) {
+		const statusRes = await fetchMiniMaxVideoTask(minimaxTaskId);
+		if (!(statusRes instanceof Response)) return statusRes;
+		if (!statusRes.ok) return statusRes;
+		const json = await statusRes.clone().json().catch(() => null);
+		const status = mapMiniMaxVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status);
+		if (status !== "completed") {
+			return err("not_ready", {
+				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
+				request_id: auth.value.requestId,
+				team_id: auth.value.teamId,
+			});
+		}
+		const uri = extractVideoOutputFromPayload(json)?.[0]?.uri;
+		if (!uri) {
+			return err("upstream_error", {
+				reason: "missing_video_uri",
+				request_id: auth.value.requestId,
+				team_id: auth.value.teamId,
+			});
+		}
+		const videoRes = await fetch(uri, { method: "GET" });
+		return new Response(videoRes.body, {
+			status: videoRes.status,
+			headers: videoRes.headers,
+		});
+	}
 	return proxyOpenAIVideoRequest(req, auth.value, `/videos/${encodeURIComponent(id)}/content`, "GET");
 }));
 
@@ -530,6 +815,22 @@ videosRoutes.delete("/:videoId", withRuntime(async (req) => {
 	if (dashscopeTaskId) {
 		return err("not_supported", {
 			reason: "dashscope_video_delete_unsupported",
+			request_id: auth.value.requestId,
+			team_id: auth.value.teamId,
+		});
+	}
+	const xaiVideoId = decodeXAiVideoId(id);
+	if (xaiVideoId) {
+		return err("not_supported", {
+			reason: "xai_video_delete_unsupported",
+			request_id: auth.value.requestId,
+			team_id: auth.value.teamId,
+		});
+	}
+	const minimaxTaskId = decodeMiniMaxVideoId(id);
+	if (minimaxTaskId) {
+		return err("not_supported", {
+			reason: "minimax_video_delete_unsupported",
 			request_id: auth.value.requestId,
 			team_id: auth.value.teamId,
 		});

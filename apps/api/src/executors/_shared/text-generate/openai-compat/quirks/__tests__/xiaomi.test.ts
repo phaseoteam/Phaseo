@@ -21,6 +21,62 @@ describe("Xiaomi quirks", () => {
 		});
 	});
 
+	it("adds chat_template_kwargs.enable_thinking=false when reasoning is disabled", () => {
+		const request: Record<string, unknown> = {};
+		const ir: any = {
+			reasoning: {
+				enabled: false,
+			},
+		};
+
+		xiaomiQuirks.transformRequest?.({ request, ir });
+
+		expect(request.chat_template_kwargs).toEqual({
+			enable_thinking: false,
+		});
+	});
+
+	it("maps developer role to system", () => {
+		const request: Record<string, any> = {
+			messages: [
+				{ role: "developer", content: "format as JSON" },
+				{ role: "user", content: "hello" },
+			],
+		};
+		const ir: any = {};
+
+		xiaomiQuirks.transformRequest?.({ request, ir });
+
+		expect(request.messages[0].role).toBe("system");
+		expect(request.messages[1].role).toBe("user");
+	});
+
+	it("downgrades json_schema to json_object and injects schema instruction", () => {
+		const request: Record<string, any> = {
+			response_format: {
+				type: "json_schema",
+				json_schema: {
+					name: "answer",
+					schema: {
+						type: "object",
+						properties: {
+							answer: { type: "string" },
+						},
+						required: ["answer"],
+					},
+				},
+			},
+			messages: [{ role: "user", content: "Return one answer." }],
+		};
+		const ir: any = {};
+
+		xiaomiQuirks.transformRequest?.({ request, ir });
+
+		expect(request.response_format).toEqual({ type: "json_object" });
+		expect(request.messages[0].role).toBe("system");
+		expect(String(request.messages[0].content)).toContain("The JSON must match this schema");
+	});
+
 	it("extracts reasoning_content into reasoning blocks", () => {
 		const result = xiaomiQuirks.extractReasoning?.({
 			choice: {

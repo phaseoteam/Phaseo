@@ -48,7 +48,7 @@ describe("validateProviderDocsCompliance", () => {
 		}
 	});
 
-	it("filters out xai alias when /responses includes instructions", () => {
+	it("keeps xai alias when /responses includes instructions (advisory only)", () => {
 		const result = validateProviderDocsCompliance({
 			endpoint: "responses",
 			body: {
@@ -65,11 +65,11 @@ describe("validateProviderDocsCompliance", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.providers.map((p) => p.providerId)).toEqual(["openai"]);
+			expect(result.providers.map((p) => p.providerId)).toEqual(["xai", "openai"]);
 		}
 	});
 
-	it("returns validation_error when xai is the only provider and instructions are present", async () => {
+	it("does not return validation_error when xai is the only provider and instructions are present", async () => {
 		const result = validateProviderDocsCompliance({
 			endpoint: "responses",
 			body: {
@@ -84,11 +84,9 @@ describe("validateProviderDocsCompliance", () => {
 			requestedParams: ["instructions"],
 		});
 
-		expect(result.ok).toBe(false);
-		if (!result.ok) {
-			const json = await result.response.json();
-			expect(json.error).toBe("validation_error");
-			expect(JSON.stringify(json.details ?? [])).toContain("\"instructions\"");
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.providers.map((p) => p.providerId)).toEqual(["xai"]);
 		}
 	});
 });

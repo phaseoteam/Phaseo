@@ -16,11 +16,44 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         ...adapterPayload,
         model: args.providerModelSlug || adapterPayload.model,
     };
+    if (body.format !== undefined) {
+        return {
+            kind: "completed",
+            upstream: new Response(
+                JSON.stringify({
+                    error: {
+                        type: "invalid_request_error",
+                        message: 'OpenAI audio.speech expects "response_format" (not legacy "format").',
+                        param: "format",
+                    },
+                }),
+                { status: 400, headers: { "Content-Type": "application/json" } },
+            ),
+            bill: {
+                cost_cents: 0,
+                currency: "USD" as const,
+                usage: undefined as any,
+                upstream_id: null,
+                finish_reason: null,
+            },
+            keySource: keyInfo.source,
+            byokKeyId: keyInfo.byokId,
+        };
+    }
+    const requestBody = {
+        model: body.model,
+        input: body.input,
+        voice: body.voice,
+        response_format: body.response_format,
+        stream_format: body.stream_format,
+        speed: body.speed,
+        instructions: body.instructions,
+    };
 
     const res = await fetch(openAICompatUrl(args.providerId, "/audio/speech"), {
         method: "POST",
         headers: openAICompatHeaders(args.providerId, keyInfo.key),
-        body: JSON.stringify(body),
+        body: JSON.stringify(requestBody),
     });
 
     const bill = {

@@ -35,10 +35,59 @@ function mapOpenAiVideoStatus(value: unknown): IRVideoGenerationResponse["status
 	return "queued";
 }
 
-async function resolveInputReferenceBlob(ir: IRVideoGenerationRequest): Promise<{ blob: Blob; name: string } | null> {
-	const ref = ir.inputReference?.trim();
+function extractInputReferenceCandidate(value: unknown): string | undefined {
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		return trimmed.length > 0 ? trimmed : undefined;
+	}
+	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+	const source = value as Record<string, unknown>;
+	const directCandidates = [
+		source.url,
+		source.uri,
+		source.input_reference,
+		source.inputReference,
+		source.gcs_uri,
+		source.gcsUri,
+	];
+	for (const candidate of directCandidates) {
+		if (typeof candidate === "string" && candidate.trim().length > 0) {
+			return candidate.trim();
+		}
+	}
+
+	const imageBytes =
+		typeof source.image_bytes === "string"
+			? source.image_bytes
+			: typeof source.imageBytes === "string"
+				? source.imageBytes
+				: undefined;
+	if (imageBytes && imageBytes.trim().length > 0) {
+		const mimeType =
+			typeof source.mime_type === "string"
+				? source.mime_type
+				: typeof source.mimeType === "string"
+					? source.mimeType
+					: "application/octet-stream";
+		return `data:${mimeType};base64,${imageBytes.trim()}`;
+	}
+
+	return undefined;
+}
+
+function resolveInputReferenceValue(ir: IRVideoGenerationRequest): string | undefined {
+	return extractInputReferenceCandidate(ir.inputReference) ??
+		extractInputReferenceCandidate(ir.inputImage) ??
+		extractInputReferenceCandidate(ir.input?.image);
+}
+
+async function resolveInputReferenceBlob(
+	refValue: string,
+	mimeTypeHint?: string,
+): Promise<{ blob: Blob; name: string } | null> {
+	const ref = refValue?.trim();
 	if (!ref) return null;
-	let mimeType = ir.inputReferenceMimeType ?? "application/octet-stream";
+	let mimeType = mimeTypeHint ?? "application/octet-stream";
 	let fileBlob: Blob | null = null;
 	let filename = "reference";
 
@@ -110,20 +159,20 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		() => bindings.OPENAI_API_KEY,
 	);
 	const seconds = parseDurationSeconds(ir);
+	const inputReference = resolveInputReferenceValue(ir);
 	const mappedRequestEnabled = Boolean(args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest);
 
 	let headers = openAICompatHeaders("openai", keyInfo.key);
 	let requestBody: BodyInit;
 	let mappedRequest: string | undefined;
 
-	if (ir.inputReference) {
+	if (inputReference) {
 		const form = new FormData();
 		form.append("model", model);
 		form.append("prompt", ir.prompt);
 		if (seconds != null) form.append("seconds", String(seconds));
 		if (ir.size) form.append("size", ir.size);
-		if (ir.quality) form.append("quality", ir.quality);
-		const resolved = await resolveInputReferenceBlob(ir);
+		const resolved = await resolveInputReferenceBlob(inputReference, ir.inputReferenceMimeType);
 		if (resolved) {
 			form.append("input_reference", resolved.blob, resolved.name);
 		}
@@ -135,7 +184,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				prompt: ir.prompt,
 				...(seconds != null ? { seconds } : {}),
 				...(ir.size ? { size: ir.size } : {}),
-				...(ir.quality ? { quality: ir.quality } : {}),
 				input_reference: "[multipart]",
 			});
 		}
@@ -145,7 +193,6 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			prompt: ir.prompt,
 			...(seconds != null ? { seconds } : {}),
 			...(ir.size ? { size: ir.size } : {}),
-			...(ir.quality ? { quality: ir.quality } : {}),
 		};
 		requestBody = JSON.stringify(jsonBody);
 		if (mappedRequestEnabled) mappedRequest = JSON.stringify(jsonBody);

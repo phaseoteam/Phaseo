@@ -15,14 +15,25 @@ function toSunoStatus(value: unknown): "queued" | "in_progress" | "completed" | 
 	if (status === "PENDING" || status === "TEXT_SUCCESS" || status === "FIRST_SUCCESS" || status === "RUNNING") {
 		return "in_progress";
 	}
-	if (status === "CREATE_TASK_FAILED" || status === "CALLBACK_EXCEPTION" || status === "FAILED") return "failed";
+	if (
+		status === "CREATE_TASK_FAILED" ||
+		status === "CALLBACK_EXCEPTION" ||
+		status === "GENERATE_AUDIO_FAILED" ||
+		status === "SENSITIVE_WORD_ERROR" ||
+		status === "FAILED" ||
+		status === "ERROR"
+	) {
+		return "failed";
+	}
 	return "queued";
 }
 
 function extractTaskId(payload: any): string | undefined {
 	const id =
 		payload?.data?.taskId ??
+		payload?.data?.task_id ??
 		payload?.taskId ??
+		payload?.task_id ??
 		payload?.id;
 	if (id == null) return undefined;
 	const asString = String(id).trim();
@@ -65,6 +76,14 @@ function validateSunoRequestShape(payload: MusicGenerateRequest): string | null 
 	}
 
 	return null;
+}
+
+function pruneUndefined<T extends Record<string, unknown>>(input: T): T {
+	const output: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(input)) {
+		if (value !== undefined) output[key] = value;
+	}
+	return output as T;
 }
 
 /**
@@ -112,9 +131,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	const model = sunoParams.model ?? args.providerModelSlug ?? typedPayload.model;
 
 	const requestBody: Record<string, unknown> = {
+		...pruneUndefined({ ...sunoParams }),
 		customMode: sunoParams.customMode ?? false,
 		instrumental: sunoParams.instrumental ?? false,
-		callBackUrl: sunoParams.callBackUrl ?? undefined,
 		model,
 	};
 
@@ -123,6 +142,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	if (sunoParams.style) requestBody.style = sunoParams.style;
 	if (sunoParams.title) requestBody.title = sunoParams.title;
 	if (sunoParams.personaId) requestBody.personaId = sunoParams.personaId;
+	if (sunoParams.personaModel) requestBody.personaModel = sunoParams.personaModel;
 	if (sunoParams.negativeTags) requestBody.negativeTags = sunoParams.negativeTags;
 	if (sunoParams.vocalGender) requestBody.vocalGender = sunoParams.vocalGender;
 	if (typeof sunoParams.styleWeight === "number") requestBody.styleWeight = sunoParams.styleWeight;

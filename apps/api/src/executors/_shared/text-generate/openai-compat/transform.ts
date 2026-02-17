@@ -37,6 +37,11 @@ export function irToOpenAIResponses(
 					role: "system",
 					content: msg.content.map(mapContentPart).map(c => typeof c === 'string' ? c : c.text).join(''),
 				});
+			} else if (msg.role === "developer") {
+				messages.push({
+					role: "developer",
+					content: msg.content.map(mapContentPart).map(c => typeof c === 'string' ? c : c.text).join(''),
+				});
 			} else if (msg.role === "user") {
 				messages.push({
 					role: "user",
@@ -93,6 +98,12 @@ export function irToOpenAIResponses(
 			inputItems.push({
 				type: "message",
 				role: "system",
+				content: msg.content.map(mapContentPart),
+			});
+		} else if (msg.role === "developer") {
+			inputItems.push({
+				type: "message",
+				role: "developer",
 				content: msg.content.map(mapContentPart),
 			});
 		} else if (msg.role === "user") {
@@ -246,8 +257,34 @@ export function irToOpenAIResponses(
 	if (ir.maxToolCalls !== undefined) request.max_tool_calls = ir.maxToolCalls;
 	if (ir.background !== undefined) request.background = ir.background;
 	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
+	if (ir.speed !== undefined) request.speed = ir.speed;
+	if (ir.store !== undefined) request.store = ir.store;
+	if (ir.streamOptions !== undefined) request.stream_options = ir.streamOptions;
+	if (ir.truncation !== undefined) request.truncation = ir.truncation;
+	if (ir.include !== undefined) request.include = ir.include;
+	if (ir.conversation !== undefined) request.conversation = ir.conversation;
+	if (ir.previousResponseId !== undefined) request.previous_response_id = ir.previousResponseId;
+	if (ir.prompt !== undefined) request.prompt = ir.prompt;
 	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
+	if (ir.modalities !== undefined) request.modalities = ir.modalities;
+	if (ir.imageConfig !== undefined) {
+		request.image_config = {
+			...(ir.imageConfig.aspectRatio !== undefined ? { aspect_ratio: ir.imageConfig.aspectRatio } : {}),
+			...(ir.imageConfig.imageSize !== undefined ? { image_size: ir.imageConfig.imageSize } : {}),
+			...(Array.isArray(ir.imageConfig.fontInputs)
+				? {
+					font_inputs: ir.imageConfig.fontInputs.map((entry) => ({
+						font_url: entry.fontUrl,
+						text: entry.text,
+					})),
+				}
+				: {}),
+			...(Array.isArray(ir.imageConfig.superResolutionReferences)
+				? { super_resolution_references: ir.imageConfig.superResolutionReferences }
+				: {}),
+		};
+	}
 	if (ir.userId) request.user = ir.userId;
 	if (ir.metadata) request.metadata = ir.metadata;
 
@@ -294,19 +331,19 @@ function mapContentPart(part: IRContentPart): any {
         }
 
 	if (part.type === "audio") {
+		const inputAudio = part.source === "url"
+			? { url: part.data, ...(part.format ? { format: part.format } : {}) }
+			: { data: part.data, format: part.format || "wav" };
 		return {
 			type: "input_audio",
-			input_audio: {
-				data: part.data,
-				format: part.format || "wav",
-			},
+			input_audio: inputAudio,
 		};
 	}
 
 	if (part.type === "video") {
 		return {
 			type: "input_video",
-			video_url: part.url,
+			video_url: { url: part.url },
 		};
 	}
 

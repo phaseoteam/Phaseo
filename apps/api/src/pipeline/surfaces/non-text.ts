@@ -127,6 +127,11 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 				n: body?.n,
 				quality: body?.quality,
 				responseFormat: body?.response_format,
+				outputFormat: body?.output_format,
+				outputCompression: body?.output_compression,
+				background: body?.background,
+				moderation: body?.moderation,
+				inputFidelity: body?.input_fidelity,
 				style: body?.style,
 				userId: body?.user,
 				rawRequest: body,
@@ -137,6 +142,8 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 				input: body?.input,
 				voice: body?.voice,
 				format: body?.format,
+				responseFormat: body?.response_format ?? body?.format,
+				streamFormat: body?.stream_format,
 				speed: body?.speed,
 				instructions: body?.instructions,
 				userId: body?.user,
@@ -145,21 +152,25 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 		case "audio.transcription":
 			return {
 				model: body?.model,
-				audioUrl: body?.audio_url,
-				audioBase64: body?.audio_b64,
+				file: body?.file,
 				language: body?.language,
 				prompt: body?.prompt,
 				temperature: body?.temperature,
+				responseFormat: body?.response_format,
+				timestampGranularities: Array.isArray(body?.timestamp_granularities)
+					? body.timestamp_granularities
+					: undefined,
+				include: Array.isArray(body?.include) ? body.include : undefined,
 				rawRequest: body,
 			};
 		case "audio.translations":
 			return {
 				model: body?.model,
-				audioUrl: body?.audio_url,
-				audioBase64: body?.audio_b64,
+				file: body?.file,
 				language: body?.language,
 				prompt: body?.prompt,
 				temperature: body?.temperature,
+				responseFormat: body?.response_format,
 				rawRequest: body,
 			};
 		case "ocr":
@@ -178,6 +189,7 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 				vendor: {
 					suno: body?.suno,
 					elevenlabs: body?.elevenlabs,
+					minimax: body?.minimax,
 				},
 				rawRequest: body,
 			};

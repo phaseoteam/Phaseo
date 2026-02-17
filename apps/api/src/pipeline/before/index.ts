@@ -15,6 +15,7 @@ import { validateCapabilities } from "./capabilityValidation";
 import { isDebugAllowed } from "../debug";
 import { isProviderCapabilityEnabled, normalizeCapability } from "@/executors";
 import { adapterFor } from "@/providers/index";
+import type { ProviderEnablementDiagnostics } from "./types";
 
 /**
  * BEFORE STAGE
@@ -76,7 +77,7 @@ export async function beforeRequest(
         })
     );
     if (!c.ok) return c as { ok: false; response: Response };
-    const { context, providers, resolvedModel } = c.value;
+    const { context, providers, resolvedModel, candidateDiagnostics } = c.value;
 
     // 5.3) Apply preset configuration if present
     let mergedBody = body;
@@ -148,12 +149,44 @@ export async function beforeRequest(
         "ocr",
         "music.generate",
     ]);
+    const providerEnablementDropped: ProviderEnablementDiagnostics["dropped"] = [];
     const enabledProviders = filteredProviders.filter((provider) => {
         if (executorManagedCapabilities.has(normalizedCapability)) {
-            return isProviderCapabilityEnabled(provider.providerId, normalizedCapability);
+            const enabled = isProviderCapabilityEnabled(provider.providerId, normalizedCapability);
+            if (!enabled) {
+                providerEnablementDropped.push({
+                    providerId: provider.providerId,
+                    reason: "capability_disabled",
+                });
+            }
+            return enabled;
         }
-        return Boolean(adapterFor(provider.providerId, endpoint));
+        const hasAdapter = Boolean(adapterFor(provider.providerId, endpoint));
+        if (!hasAdapter) {
+            providerEnablementDropped.push({
+                providerId: provider.providerId,
+                reason: "adapter_missing",
+            });
+        }
+        return hasAdapter;
     });
+    const providerEnablementDiagnostics: ProviderEnablementDiagnostics = {
+        capability: normalizedCapability,
+        providersBefore: filteredProviders.map((provider) => provider.providerId),
+        providersAfter: enabledProviders.map((provider) => provider.providerId),
+        dropped: providerEnablementDropped,
+    };
+    if (providerEnablementDropped.length > 0 || enabledProviders.length === 0) {
+        console.log("[gateway] provider enablement", {
+            requestId,
+            model: resolvedModel || model,
+            endpoint,
+            capability: normalizedCapability,
+            beforeCount: providerEnablementDiagnostics.providersBefore.length,
+            afterCount: providerEnablementDiagnostics.providersAfter.length,
+            dropped: providerEnablementDiagnostics.dropped,
+        });
+    }
     if (!enabledProviders.length) {
         return {
             ok: false,
@@ -162,6 +195,8 @@ export async function beforeRequest(
                 endpoint,
                 request_id: requestId,
                 team_id: teamId,
+                provider_enablement: providerEnablementDiagnostics,
+                provider_candidate_diagnostics: candidateDiagnostics,
             }),
         };
     }
@@ -224,6 +259,8 @@ export async function beforeRequest(
         requestPath: requestPath ?? undefined,
         requestedParams: capabilityValidation.requestedParams,
         paramRoutingDiagnostics: capabilityValidation.paramRoutingDiagnostics,
+        providerCandidateBuildDiagnostics: candidateDiagnostics,
+        providerEnablementDiagnostics,
         providers: enabledProviders,
         providerCapabilitiesBeta: betaCapabilities,
         pricing: context.pricing,

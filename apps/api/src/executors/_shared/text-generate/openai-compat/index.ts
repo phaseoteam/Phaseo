@@ -24,6 +24,11 @@ import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { sanitizeOpenAICompatRequest } from "./provider-policy";
+import {
+	adaptRequestFromUpstreamError,
+	readErrorPayload,
+	shouldFallbackToChatFromError,
+} from "./retry-policy";
 
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	// Use upstream start time from pipeline (set before executor is called)
@@ -38,56 +43,119 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	// Choose endpoint based on provider capabilities
 	const modelForRouting = args.providerModelSlug ?? args.ir.model;
 	const defaultRoute = resolveOpenAICompatRoute(args.providerId, modelForRouting);
-	const route = resolvePreferredRoute(args, defaultRoute);
-	const useResponses = route === "responses";
-	const isLegacyCompletions = route === "legacy_completions";
-	const endpoint = useResponses ? "/responses" : (isLegacyCompletions ? "/completions" : "/chat/completions");
+	let route: "responses" | "chat" | "legacy_completions" = resolvePreferredRoute(args, defaultRoute);
 
-	// Transform IR -> OpenAI format (Responses or Chat based on support)
-	const requestPayload = useResponses
-		? irToOpenAIResponses(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams)
-		: (isLegacyCompletions
-			? irToOpenAICompletions(args.ir, args.providerModelSlug)
-			: irToOpenAIChat(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams));
+	const endpointForRoute = (targetRoute: "responses" | "chat" | "legacy_completions") =>
+		targetRoute === "responses" ? "/responses" : (targetRoute === "legacy_completions" ? "/completions" : "/chat/completions");
 
-	// Always stream upstream for first-byte latency
-	const payload = {
-		...requestPayload,
-		stream: true,
-	};
-	if (!useResponses && !isLegacyCompletions) {
-		payload.stream_options = {
-			...(payload.stream_options ?? {}),
-			include_usage: true,
+	const buildPayloadForRoute = (targetRoute: "responses" | "chat" | "legacy_completions"): Record<string, any> => {
+		const requestPayload = targetRoute === "responses"
+			? irToOpenAIResponses(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams)
+			: (targetRoute === "legacy_completions"
+				? irToOpenAICompletions(args.ir, args.providerModelSlug)
+				: irToOpenAIChat(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams));
+
+		// Keep upstream streaming enabled by default for first-byte latency. Tool requests are
+		// forced non-stream upstream due provider compatibility constraints.
+		const hasTools = Array.isArray(requestPayload.tools) && requestPayload.tools.length > 0;
+		const shouldStream = !hasTools;
+		const payload: Record<string, any> = {
+			...requestPayload,
+			stream: Boolean(shouldStream),
 		};
-	}
-	const sanitized = sanitizeOpenAICompatRequest({
-		providerId: args.providerId,
-		route,
-		model: modelForRouting,
-		request: payload,
-	});
-	const requestBody = JSON.stringify(sanitized.request);
-	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
-	if (args.meta.debug?.enabled && sanitized.dropped.length > 0) {
-		console.log("[gateway-debug] provider request sanitized", {
-			provider: args.providerId,
-			route,
-			dropped: sanitized.dropped,
-		});
-	}
-	try {
-		(args.ir as any).rawRequest = sanitized.request;
-	} catch {
-		// ignore if readonly
-	}
+		if (targetRoute === "chat" && payload.stream === true) {
+			payload.stream_options = {
+				...(payload.stream_options ?? {}),
+				include_usage: true,
+			};
+		}
+		return payload;
+	};
 
-	// Execute upstream call
-	const res = await fetch(openAICompatUrl(args.providerId, endpoint), {
-		method: "POST",
-		headers: openAICompatHeaders(args.providerId, keyInfo.key),
-		body: requestBody,
-	});
+	const sendPayload = async (
+		targetRoute: "responses" | "chat" | "legacy_completions",
+		payload: Record<string, any>,
+	) => {
+		const sanitized = sanitizeOpenAICompatRequest({
+			providerId: args.providerId,
+			route: targetRoute,
+			model: modelForRouting,
+			request: payload,
+		});
+		const requestBody = JSON.stringify(sanitized.request);
+		if (args.meta.debug?.enabled && sanitized.dropped.length > 0) {
+			console.log("[gateway-debug] provider request sanitized", {
+				provider: args.providerId,
+				route: targetRoute,
+				dropped: sanitized.dropped,
+			});
+		}
+		try {
+			(args.ir as any).rawRequest = sanitized.request;
+		} catch {
+			// ignore if readonly
+		}
+
+		const response = await fetch(openAICompatUrl(args.providerId, endpointForRoute(targetRoute)), {
+			method: "POST",
+			headers: openAICompatHeaders(args.providerId, keyInfo.key),
+			body: requestBody,
+		});
+
+		return {
+			response,
+			requestBody,
+			request: sanitized.request,
+		};
+	};
+
+	let attempt = await sendPayload(route, buildPayloadForRoute(route));
+	let res = attempt.response;
+	let requestBody = attempt.requestBody;
+	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+
+	let adaptiveRetryCount = 0;
+	while (!res.ok && adaptiveRetryCount < 3) {
+		const { errorText, errorPayload } = await readErrorPayload(res);
+
+		// Some providers advertise OpenAI compatibility but don't implement /responses yet.
+		// Fallback once to /chat/completions when /responses endpoint is unavailable.
+		if (shouldFallbackToChatFromError({ route, status: res.status, errorText }) && route === "responses") {
+			route = "chat";
+			attempt = await sendPayload(route, buildPayloadForRoute(route));
+			res = attempt.response;
+			requestBody = attempt.requestBody;
+			mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+			adaptiveRetryCount += 1;
+			continue;
+		}
+
+		const adapted = adaptRequestFromUpstreamError({
+			providerId: args.providerId,
+			route,
+			request: attempt.request,
+			errorText,
+			errorPayload,
+		});
+		if (!adapted.changed) {
+			break;
+		}
+
+		if (args.meta.debug?.enabled) {
+			console.log("[gateway-debug] provider request adapted from upstream error", {
+				provider: args.providerId,
+				route,
+				status: res.status,
+				dropped: adapted.dropped,
+			});
+		}
+
+		attempt = await sendPayload(route, adapted.request);
+		res = attempt.response;
+		requestBody = attempt.requestBody;
+		mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
+		adaptiveRetryCount += 1;
+	}
 
 	const bill: Bill = {
 		cost_cents: 0,
@@ -1431,6 +1499,24 @@ export async function bufferStreamToIR(
 				if (payload?.usage) {
 					finalResponse.usage = payload.usage;
 				}
+			}
+		}
+	}
+	buf += decoder.decode();
+
+	if (!finalResponse) {
+		// Some providers ignore stream=true and return a regular JSON response body.
+		const fallbackText = buf.trim();
+		if (fallbackText) {
+			try {
+				const parsed = JSON.parse(fallbackText);
+				if (route === "responses" && parsed?.response) {
+					finalResponse = parsed.response;
+				} else {
+					finalResponse = parsed;
+				}
+			} catch {
+				// Keep existing error path below.
 			}
 		}
 	}

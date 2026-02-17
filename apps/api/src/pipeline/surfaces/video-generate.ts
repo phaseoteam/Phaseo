@@ -10,6 +10,15 @@ import { auditFailure } from "../audit";
 import type { PipelineRunnerArgs } from "./types";
 
 function decodeVideoRequestToIR(body: any): IRVideoGenerationRequest {
+	const input = body?.input && typeof body.input === "object" && !Array.isArray(body.input)
+		? body.input
+		: undefined;
+	const referenceImages = Array.isArray(body?.reference_images)
+		? body.reference_images
+		: Array.isArray(input?.reference_images)
+			? input.reference_images
+			: undefined;
+
 	return {
 		model: body?.model,
 		prompt: body?.prompt,
@@ -18,6 +27,18 @@ function decodeVideoRequestToIR(body: any): IRVideoGenerationRequest {
 		quality: body?.quality,
 		inputReference: body?.input_reference,
 		inputReferenceMimeType: body?.input_reference_mime_type,
+		input: input
+			? {
+				image: input?.image,
+				video: input?.video,
+				lastFrame: input?.last_frame ?? input?.lastFrame,
+				referenceImages,
+			}
+			: undefined,
+		inputImage: body?.input_image ?? input?.image,
+		inputVideo: body?.input_video ?? input?.video,
+		lastFrame: body?.input_last_frame ?? body?.last_frame ?? input?.last_frame ?? input?.lastFrame,
+		referenceImages,
 		duration: body?.duration,
 		durationSeconds: body?.duration_seconds,
 		ratio: body?.ratio,
@@ -25,8 +46,11 @@ function decodeVideoRequestToIR(body: any): IRVideoGenerationRequest {
 		resolution: body?.resolution,
 		negativePrompt: body?.negative_prompt,
 		sampleCount: body?.sample_count,
+		numberOfVideos: body?.number_of_videos,
 		seed: body?.seed,
 		personGeneration: body?.person_generation,
+		generateAudio: body?.generate_audio,
+		enhancePrompt: body?.enhance_prompt,
 		outputStorageUri: body?.output_storage_uri,
 		rawRequest: body,
 	};

@@ -52,13 +52,25 @@ function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
             if (!entry || typeof entry !== "object") return entry;
             const e = entry as Record<string, unknown>;
             return {
+                attempt_number: e.attempt_number ?? null,
                 provider: e.provider ?? null,
                 endpoint: e.endpoint ?? null,
+                model: e.model ?? null,
+                provider_model_slug: e.provider_model_slug ?? null,
                 type: e.type ?? e.reason ?? null,
                 reason: e.reason ?? null,
                 message: e.message ?? null,
                 status: e.status ?? null,
+                status_text: e.status_text ?? null,
                 code: e.code ?? null,
+                key_source: e.key_source ?? null,
+                byok_key_id: e.byok_key_id ?? null,
+                upstream_url: e.upstream_url ?? null,
+                upstream_error_code: e.upstream_error_code ?? null,
+                upstream_error_type: e.upstream_error_type ?? null,
+                upstream_error_message: e.upstream_error_message ?? null,
+                upstream_error_description: e.upstream_error_description ?? null,
+                upstream_payload_preview: e.upstream_payload_preview ?? null,
             };
         })
         : attemptErrors;
@@ -448,6 +460,7 @@ export async function handleError({
     if (debugEnabled) {
         errorPayload.debug = {
             upstream: body,
+            attempt_errors: redactErrorValue((ctx as any)?.attemptErrors ?? null),
         };
     }
 

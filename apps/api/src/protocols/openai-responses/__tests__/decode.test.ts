@@ -42,6 +42,22 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.messages[1].role).toBe("user");
 	});
 
+	it("should decode content-style instructions as system message content", () => {
+		const request = {
+			model: "gpt-4",
+			instructions: [
+				{ type: "input_text", text: "Use strict JSON." },
+			],
+			input: "Hello",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.messages[0].role).toBe("system");
+		expect(ir.messages[0].content).toEqual([
+			{ type: "text", text: "Use strict JSON." },
+		]);
+	});
+
 	it("should decode input array with message items", () => {
 		const request = {
 			model: "gpt-4",
@@ -423,6 +439,74 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.stream).toBe(true);
 	});
 
+	it("should preserve json_schema strict=false in response_format", () => {
+		const request = {
+			model: "gpt-4",
+			input: "Hello",
+			response_format: {
+				type: "json_schema",
+				json_schema: {
+					name: "answer",
+					schema: { type: "object" },
+					strict: false,
+				},
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.responseFormat).toEqual({
+			type: "json_schema",
+			name: "answer",
+			schema: { type: "object" },
+			strict: false,
+		});
+	});
+
+	it("should decode max_completion_tokens alias", () => {
+		const request = {
+			model: "gpt-4",
+			input: "Hello",
+			max_completion_tokens: 321,
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.maxTokens).toBe(321);
+	});
+
+	it("should decode image_config", () => {
+		const request = {
+			model: "google/gemini-2-5-flash-image",
+			input: "Generate image",
+			modalities: ["text", "image"],
+			image_config: {
+				aspect_ratio: "4:3",
+				image_size: "1K",
+				font_inputs: [
+					{
+						font_url: "https://example.com/font.ttf",
+						text: "Caption",
+					},
+				],
+				super_resolution_references: ["https://example.com/ref.png"],
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+
+		expect(ir.modalities).toEqual(["text", "image"]);
+		expect(ir.imageConfig).toEqual({
+			aspectRatio: "4:3",
+			imageSize: "1K",
+			fontInputs: [
+				{
+					fontUrl: "https://example.com/font.ttf",
+					text: "Caption",
+				},
+			],
+			superResolutionReferences: ["https://example.com/ref.png"],
+		});
+	});
+
 	it("should map speed fast to priority service tier", () => {
 		const request = {
 			model: "gpt-4",
@@ -447,7 +531,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.speed).toBeUndefined();
 	});
 
-	it("should handle developer role as system", () => {
+	it("should preserve developer role", () => {
 		const request = {
 			model: "gpt-4",
 			input: [
@@ -461,7 +545,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
-		expect(ir.messages[0].role).toBe("system");
+		expect(ir.messages[0].role).toBe("developer");
 	});
 
 	it("should handle empty input array", () => {
@@ -544,6 +628,60 @@ describe("decodeOpenAIResponsesRequest", () => {
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
 		expect(ir.metadata).toEqual({ custom: "value" });
+	});
+
+	it("should merge metadata and user fields", () => {
+		const request = {
+			model: "gpt-4",
+			input: "Hello",
+			metadata: { custom: "value" },
+			user: "user-42",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.metadata).toEqual({ custom: "value", user: "user-42" });
+		expect(ir.userId).toBe("user-42");
+	});
+
+	it("does not set service tier when omitted", () => {
+		const request = {
+			model: "gpt-4",
+			input: "Hello",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.serviceTier).toBeUndefined();
+	});
+
+	it("should decode responses-specific request controls into IR", () => {
+		const request = {
+			model: "gpt-4.1",
+			input: "Hello",
+			store: true,
+			truncation: "auto",
+			include: ["reasoning.encrypted_content"],
+			conversation: "conv_123",
+			previous_response_id: "resp_123",
+			stream_options: { include_usage: true },
+			prompt: {
+				id: "pmpt_1",
+				variables: { topic: "math" },
+				version: "2",
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.store).toBe(true);
+		expect(ir.truncation).toBe("auto");
+		expect(ir.include).toEqual(["reasoning.encrypted_content"]);
+		expect(ir.conversation).toBe("conv_123");
+		expect(ir.previousResponseId).toBe("resp_123");
+		expect(ir.streamOptions).toEqual({ include_usage: true });
+		expect(ir.prompt).toEqual({
+			id: "pmpt_1",
+			variables: { topic: "math" },
+			version: "2",
+		});
 	});
 });
 

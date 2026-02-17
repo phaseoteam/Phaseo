@@ -28,6 +28,32 @@ function parseOffsetParam(raw: string | null): number {
 	return Math.floor(parsed);
 }
 
+function resolveScopedTeamId(args: {
+	authTeamId: string;
+	requestedTeamId: string | null;
+	internal?: boolean;
+}): { ok: true; teamId: string } | { ok: false; response: Response } {
+	const requested = args.requestedTeamId?.trim();
+	if (!requested) {
+		return { ok: true, teamId: args.authTeamId };
+	}
+	if (!args.internal && requested !== args.authTeamId) {
+		return {
+			ok: false,
+			response: json(
+				{
+					ok: false,
+					error: "forbidden",
+					message: "team_id must match authenticated team",
+				},
+				403,
+				{ "Cache-Control": "no-store" }
+			),
+		};
+	}
+	return { ok: true, teamId: requested };
+}
+
 async function handleCredits(req: Request) {
 	const auth = await guardAuth(req);
 	if (!auth.ok) {
@@ -35,10 +61,15 @@ async function handleCredits(req: Request) {
 	}
 
 	const url = new URL(req.url);
-	const teamId = url.searchParams.get("team_id");
-	if (!teamId) {
-		return json({ ok: false, error: "team_id is required" }, 400);
+	const teamScope = resolveScopedTeamId({
+		authTeamId: auth.value.teamId,
+		requestedTeamId: url.searchParams.get("team_id"),
+		internal: auth.value.internal,
+	});
+	if (teamScope.ok === false) {
+		return teamScope.response;
 	}
+	const teamId = teamScope.teamId;
 
 	try {
 		const supabase = getSupabaseAdmin();
@@ -99,14 +130,18 @@ async function handleActivity(req: Request) {
 	}
 
 	const url = new URL(req.url);
-	const teamId = url.searchParams.get("team_id");
+	const teamScope = resolveScopedTeamId({
+		authTeamId: auth.value.teamId,
+		requestedTeamId: url.searchParams.get("team_id"),
+		internal: auth.value.internal,
+	});
+	if (teamScope.ok === false) {
+		return teamScope.response;
+	}
+	const teamId = teamScope.teamId;
 	const days = parseInt(url.searchParams.get("days") || "30", 10);
 	const limit = parsePaginationParam(url.searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
 	const offset = parseOffsetParam(url.searchParams.get("offset"));
-
-	if (!teamId) {
-		return json({ ok: false, error: "team_id is required" }, 400);
-	}
 
 	try {
 		const supabase = getSupabaseAdmin();

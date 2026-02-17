@@ -45,6 +45,10 @@ afterAll(() => {
 	teardownTestRuntime();
 });
 
+function makeAudioFile(filename = "audio.wav"): File {
+	return new File([new Uint8Array([1, 2, 3])], filename, { type: "audio/wav" });
+}
+
 describe("ElevenLabs audio endpoints", () => {
 	it("maps audio.speech to text-to-speech with model slug conversion", async () => {
 		let capturedBody: any = null;
@@ -111,9 +115,9 @@ describe("ElevenLabs audio endpoints", () => {
 		expect(result.upstream.status).toBe(400);
 	});
 
-	it("maps audio.transcription to speech-to-text with cloud_storage_url", async () => {
+	it("maps audio.transcription to speech-to-text with multipart file upload", async () => {
 		let formModelId: string | null = null;
-		let formCloudStorageUrl: string | null = null;
+		let fileName: string | null = null;
 		const mock = installFetchMock([
 			{
 				match: (url, init) => {
@@ -121,7 +125,8 @@ describe("ElevenLabs audio endpoints", () => {
 					const form = init?.body as FormData | undefined;
 					if (form && typeof (form as any).get === "function") {
 						formModelId = String(form.get("model_id") ?? "");
-						formCloudStorageUrl = String(form.get("cloud_storage_url") ?? "");
+						const file = form.get("file");
+						fileName = typeof File !== "undefined" && file instanceof File ? file.name : null;
 					}
 					return true;
 				},
@@ -134,7 +139,7 @@ describe("ElevenLabs audio endpoints", () => {
 			model: "eleven-labs/scribe-v2-2026-01-09",
 			body: {
 				model: "eleven-labs/scribe-v2-2026-01-09",
-				audio_url: "https://example.com/audio.wav",
+				file: makeAudioFile("sample.wav"),
 			},
 			meta: REQUEST_META,
 			teamId: "team_test",
@@ -154,16 +159,32 @@ describe("ElevenLabs audio endpoints", () => {
 		expect(result.normalized?.text).toBe("Transcribed");
 		expect(result.normalized?.usage?.requests).toBe(1);
 		expect(formModelId).toBe("scribe_v2");
-		expect(formCloudStorageUrl).toBe("https://example.com/audio.wav");
+		expect(fileName).toBe("sample.wav");
 	});
 
-	it("returns 400 when ElevenLabs audio.transcription audio_b64 is invalid", async () => {
+	it("forwards language_code for ElevenLabs transcriptions", async () => {
+		let languageCode: string | null = null;
+		const mock = installFetchMock([
+			{
+				match: (url, init) => {
+					if (!url.includes("/v1/speech-to-text")) return false;
+					const form = init?.body as FormData | undefined;
+					if (form && typeof (form as any).get === "function") {
+						languageCode = String(form.get("language_code") ?? "");
+					}
+					return true;
+				},
+				response: jsonResponse({ text: "Transcribed" }),
+			},
+		]);
+
 		const result = await execTranscription({
 			endpoint: "audio.transcription",
 			model: "eleven-labs/scribe-v1",
 			body: {
 				model: "eleven-labs/scribe-v1",
-				audio_b64: "%%%",
+				file: makeAudioFile("lang.wav"),
+				language: "en",
 			},
 			meta: REQUEST_META,
 			teamId: "team_test",
@@ -177,6 +198,9 @@ describe("ElevenLabs audio endpoints", () => {
 			stream: false,
 		} as any);
 
-		expect(result.upstream.status).toBe(400);
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(languageCode).toBe("en");
 	});
 });

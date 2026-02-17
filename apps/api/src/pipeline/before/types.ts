@@ -224,6 +224,27 @@ export type ParamRoutingDiagnostics = {
     }>;
 };
 
+export type ProviderCandidateBuildDiagnostics = {
+    totalProviders: number;
+    supportsEndpointCount: number;
+    droppedUnsupportedEndpoint: string[];
+    droppedMissingAdapter: Array<{
+        providerId: string;
+        endpoint: Endpoint;
+    }>;
+    candidateCount: number;
+};
+
+export type ProviderEnablementDiagnostics = {
+    capability: string;
+    providersBefore: string[];
+    providersAfter: string[];
+    dropped: Array<{
+        providerId: string;
+        reason: "capability_disabled" | "adapter_missing";
+    }>;
+};
+
 /**
  * The main context object passed through the entire pipeline
  * Contains all information needed for request processing
@@ -244,6 +265,8 @@ export type PipelineContext = {
     requestPath?: string;
     requestedParams?: string[];
     paramRoutingDiagnostics?: ParamRoutingDiagnostics;
+    providerCandidateBuildDiagnostics?: ProviderCandidateBuildDiagnostics;
+    providerEnablementDiagnostics?: ProviderEnablementDiagnostics;
     providers: ProviderCandidate[];
     pricing: Record<string, PriceCard>;
     gating: {
@@ -259,6 +282,7 @@ export type PipelineContext = {
     internal?: boolean;
     timing?: Record<string, number>;
     timer?: Timer;
+    routingDiagnostics?: Record<string, any> | null;
     // Enrichment data for observability (wide events)
     teamEnrichment?: TeamEnrichment | null;
     keyEnrichment?: KeyEnrichment | null;

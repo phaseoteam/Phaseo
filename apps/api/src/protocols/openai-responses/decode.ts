@@ -30,12 +30,17 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	const messages: IRMessage[] = [];
 	const input = (req as any).input_items ?? req.input;
 	const pendingUserParts: IRContentPart[] = [];
+	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
+	const metadata = (req as any).user
+		? { ...(metadataFromRequest ?? {}), user: (req as any).user }
+		: metadataFromRequest;
 
-	// Handle instructions as system message
-	if (req.instructions) {
+	// Handle instructions as a system message (string or content-like object/array).
+	const instructions = (req as any).instructions;
+	if (instructions != null) {
 		messages.push({
 			role: "system",
-			content: normalizeOpenAIContent(req.instructions),
+			content: normalizeOpenAIContent(instructions),
 		});
 	}
 
@@ -77,7 +82,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 
 					if (item.role === "user" || item.role === "system" || item.role === "developer") {
 						messages.push({
-							role: item.role === "developer" ? "system" : item.role,
+							role: item.role,
 							content,
 						});
 					} else if (item.role === "assistant") {
@@ -202,7 +207,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		stream: req.stream ?? false,
 
 		// Generation parameters
-		maxTokens: (req as any).max_output_tokens ?? (req as any).max_tokens,
+		maxTokens: (req as any).max_output_tokens ?? (req as any).max_completion_tokens ?? (req as any).max_tokens,
 		temperature: req.temperature,
 		topP: req.top_p,
 		topK: (req as any).top_k,
@@ -227,16 +232,37 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		logprobs: (req as any).logprobs,
 		topLogprobs: (req as any).top_logprobs,
 		stop: (req as any).stop,
-		metadata: req.metadata,
+		streamOptions: (req as any).stream_options,
+		store: (req as any).store,
+		truncation: (req as any).truncation,
+		include: (req as any).include,
+		conversation: (req as any).conversation,
+		previousResponseId: (req as any).previous_response_id,
+		prompt: (req as any).prompt,
+		metadata,
 		background: (req as any).background,
 		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
 		serviceTier: resolveRequestedServiceTier({
 			service_tier: (req as any).service_tier,
 			speed: (req as any).speed,
 		}),
+		userId: (req as any).user,
 		promptCacheKey: (req as any).prompt_cache_key,
 		safetyIdentifier: (req as any).safety_identifier,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
+		imageConfig: (req as any).image_config
+			? {
+				aspectRatio: (req as any).image_config.aspect_ratio,
+				imageSize: (req as any).image_config.image_size,
+				fontInputs: Array.isArray((req as any).image_config.font_inputs)
+					? (req as any).image_config.font_inputs.map((entry: any) => ({
+						fontUrl: entry?.font_url,
+						text: entry?.text,
+					}))
+					: undefined,
+				superResolutionReferences: (req as any).image_config.super_resolution_references,
+			}
+			: undefined,
 	};
 }
 
@@ -263,7 +289,7 @@ function normalizeResponsesFormat(format: any): IRChatRequest["responseFormat"] 
 				type: "json_schema",
 				schema: format.schema || format.json_schema?.schema || format.json_schema?.schema_,
 				name: format.name || format.json_schema?.name,
-				strict: format.strict || format.json_schema?.strict,
+				strict: format.strict ?? format.json_schema?.strict,
 			};
 		}
 
@@ -279,6 +305,9 @@ function resolveRequestedServiceTier(input: {
 }): string | undefined {
 	const speed = typeof input.speed === "string" ? input.speed.toLowerCase() : undefined;
 	if (speed === "fast") return "priority";
-	return typeof input.service_tier === "string" ? input.service_tier : undefined;
+	if (typeof input.service_tier === "string" && input.service_tier.length > 0) {
+		return input.service_tier;
+	}
+	return undefined;
 }
 

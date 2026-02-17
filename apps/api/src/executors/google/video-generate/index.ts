@@ -33,21 +33,102 @@ function toDurationSeconds(ir: IRVideoGenerationRequest): number | undefined {
 	return undefined;
 }
 
+function toNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeGoogleMediaSource(value: unknown): Record<string, any> | undefined {
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		if (!trimmed) return undefined;
+		const dataUrlMatch = trimmed.match(/^data:([^;]+);base64,(.+)$/);
+		if (dataUrlMatch) {
+			return {
+				mimeType: dataUrlMatch[1],
+				imageBytes: dataUrlMatch[2],
+			};
+		}
+		if (trimmed.startsWith("gs://")) {
+			return { gcsUri: trimmed };
+		}
+		return { uri: trimmed };
+	}
+
+	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+	const source = { ...(value as Record<string, any>) };
+	const gcsUri = toNonEmptyString(source.gcsUri) ?? toNonEmptyString(source.gcs_uri);
+	const uri = toNonEmptyString(source.uri) ?? toNonEmptyString(source.url);
+	const imageBytes = toNonEmptyString(source.imageBytes) ?? toNonEmptyString(source.image_bytes);
+	const mimeType = toNonEmptyString(source.mimeType) ?? toNonEmptyString(source.mime_type);
+
+	delete source.gcs_uri;
+	delete source.image_bytes;
+	delete source.mime_type;
+
+	if (!source.gcsUri && gcsUri) source.gcsUri = gcsUri;
+	if (!source.uri && uri) source.uri = uri;
+	if (!source.imageBytes && imageBytes) source.imageBytes = imageBytes;
+	if (!source.mimeType && mimeType) source.mimeType = mimeType;
+
+	return Object.keys(source).length > 0 ? source : undefined;
+}
+
+function normalizeReferenceImages(value: unknown): Array<Record<string, any>> | undefined {
+	if (!Array.isArray(value)) return undefined;
+	const out = value
+		.map((entry) => {
+			if (typeof entry === "string") {
+				const image = normalizeGoogleMediaSource(entry);
+				return image ? { image } : null;
+			}
+			if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+			const record = entry as Record<string, any>;
+			const image = normalizeGoogleMediaSource(record.image ?? record.uri ?? record.url ?? record.gcsUri ?? record.gcs_uri);
+			const referenceType = toNonEmptyString(record.referenceType) ?? toNonEmptyString(record.reference_type);
+			const normalized: Record<string, any> = {};
+			if (referenceType) normalized.referenceType = referenceType;
+			if (image) normalized.image = image;
+			return Object.keys(normalized).length > 0 ? normalized : null;
+		})
+		.filter((item): item is Record<string, any> => Boolean(item));
+	return out.length ? out : undefined;
+}
+
 function irToGoogleVideoRequest(ir: IRVideoGenerationRequest): any {
 	const durationSeconds = toDurationSeconds(ir);
 	const aspectRatio = ir.aspectRatio ?? ir.ratio;
+	const numberOfVideos =
+		typeof ir.numberOfVideos === "number"
+			? ir.numberOfVideos
+			: typeof ir.sampleCount === "number"
+				? ir.sampleCount
+				: undefined;
+	const inputImage = normalizeGoogleMediaSource(ir.inputImage ?? ir.input?.image ?? ir.inputReference);
+	const inputVideo = normalizeGoogleMediaSource(ir.inputVideo ?? ir.input?.video);
+	const lastFrame = normalizeGoogleMediaSource(ir.lastFrame ?? ir.input?.lastFrame);
+	const referenceImages = normalizeReferenceImages(ir.referenceImages ?? ir.input?.referenceImages);
 	const parameters: Record<string, any> = {
 		...(typeof durationSeconds === "number" ? { durationSeconds } : {}),
 		...(aspectRatio ? { aspectRatio } : {}),
 		...(ir.resolution ? { resolution: ir.resolution } : {}),
 		...(ir.negativePrompt ? { negativePrompt: ir.negativePrompt } : {}),
-		...(typeof ir.sampleCount === "number" ? { sampleCount: ir.sampleCount } : {}),
+		...(typeof numberOfVideos === "number" ? { numberOfVideos } : {}),
 		...(typeof ir.seed === "number" ? { seed: ir.seed } : {}),
 		...(ir.personGeneration ? { personGeneration: ir.personGeneration } : {}),
+		...(typeof ir.generateAudio === "boolean" ? { generateAudio: ir.generateAudio } : {}),
+		...(typeof ir.enhancePrompt === "boolean" ? { enhancePrompt: ir.enhancePrompt } : {}),
 		...(ir.outputStorageUri ? { storageUri: ir.outputStorageUri } : {}),
 	};
+	const instance: Record<string, any> = { prompt: ir.prompt };
+	if (inputImage) instance.image = inputImage;
+	if (inputVideo) instance.video = inputVideo;
+	if (lastFrame) instance.lastFrame = lastFrame;
+	if (referenceImages) instance.referenceImages = referenceImages;
+
 	return {
-		instances: [{ prompt: ir.prompt }],
+		instances: [instance],
 		...(Object.keys(parameters).length > 0 ? { parameters } : {}),
 	};
 }

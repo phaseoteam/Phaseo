@@ -18,6 +18,10 @@ function mapGatewayToOpenAIImages(body: ImagesGenerationRequest) {
         n: body.n,
         quality: body.quality,
         response_format: body.response_format,
+        output_format: body.output_format,
+        output_compression: body.output_compression,
+        background: body.background,
+        moderation: body.moderation,
         size: body.size,
         style: body.style,
         user: body.user,
@@ -28,6 +32,7 @@ function mapOpenAIToGatewayImages(json: any): any {
     return {
         created: json.created,
         data: json.data,
+        usage: json.usage,
     };
 }
 
@@ -54,10 +59,13 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     };
     const json = await res.clone().json().catch(() => null);
     const normalized = json ? mapOpenAIToGatewayImages(json) : undefined;
-    
-    // Calculate pricing
-    if (normalized?.usage) {
-        const pricedUsage = computeBill(normalized.usage, args.pricingCard);
+
+    if (res.ok && args.pricingCard) {
+        // Image providers are commonly priced by request count.
+        const usageMeters = normalized?.usage && typeof normalized.usage === "object"
+            ? { ...(normalized.usage as Record<string, number>), requests: 1 }
+            : { requests: 1, total_tokens: 0 };
+        const pricedUsage = computeBill(usageMeters, args.pricingCard);
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;
         bill.usage = pricedUsage;

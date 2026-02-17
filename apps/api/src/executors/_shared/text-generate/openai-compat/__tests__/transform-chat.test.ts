@@ -302,6 +302,130 @@ describe("openAIChatToIR", () => {
 			expect(ir.choices[0].message.toolCalls?.[0].name).toBe("get_weather");
 			expect(ir.choices[0].finishReason).toBe("tool_calls");
 		});
+
+		it("extracts Cerebras reasoning from message.reasoning", () => {
+			const response = {
+				id: "chatcmpl_cerebras",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "qwen-3-235b-a22b-instruct-2507",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "final",
+							reasoning: "step-by-step",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 5,
+					completion_tokens: 5,
+					total_tokens: 10,
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_cerebras", "qwen-3-235b-a22b-instruct-2507", "cerebras");
+			expect(ir.choices[0].message.content).toEqual([
+				{ type: "reasoning_text", text: "step-by-step" },
+				{ type: "text", text: "final" },
+			]);
+		});
+
+		it("extracts DeepSeek reasoning from message.reasoning_content", () => {
+			const response = {
+				id: "chatcmpl_deepseek",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "deepseek-chat",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "final",
+							reasoning_content: "chain-of-thought",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 5,
+					completion_tokens: 5,
+					total_tokens: 10,
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_deepseek", "deepseek-chat", "deepseek");
+			expect(ir.choices[0].message.content).toEqual([
+				{ type: "reasoning_text", text: "chain-of-thought" },
+				{ type: "text", text: "final" },
+			]);
+		});
+
+		it("extracts Novita reasoning from message.reasoning_content", () => {
+			const response = {
+				id: "chatcmpl_novita",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "deepseek/deepseek-r1-turbo",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "final",
+							reasoning_content: "novita-thought",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 5,
+					completion_tokens: 5,
+					total_tokens: 10,
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_novita", "deepseek/deepseek-r1-turbo", "novitaai");
+			expect(ir.choices[0].message.content).toEqual([
+				{ type: "reasoning_text", text: "novita-thought" },
+				{ type: "text", text: "final" },
+			]);
+		});
+
+		it("extracts Perplexity reasoning from message.reasoning_content", () => {
+			const response = {
+				id: "chatcmpl_perplexity",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "sonar-reasoning-pro",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "final",
+							reasoning_content: "perplexity-thought",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 5,
+					completion_tokens: 5,
+					total_tokens: 10,
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_perplexity", "sonar-reasoning-pro", "perplexity");
+			expect(ir.choices[0].message.content).toEqual([
+				{ type: "reasoning_text", text: "perplexity-thought" },
+				{ type: "text", text: "final" },
+			]);
+		});
 	});
 });
 
@@ -318,6 +442,28 @@ describe("irToOpenAIChat", () => {
 		} as any, "mistral-large-latest", "mistral");
 
 		expect(request.parallel_tool_calls).toBe(false);
+	});
+
+	it("maps Mistral developer role and random_seed", () => {
+		const request = irToOpenAIChat({
+			model: "mistral/mistral-large-latest",
+			messages: [
+				{
+					role: "developer",
+					content: [{ type: "text", text: "Be concise." }],
+				},
+				{
+					role: "user",
+					content: [{ type: "text", text: "hello" }],
+				},
+			],
+			stream: false,
+			seed: 11,
+		} as any, "mistral-large-latest", "mistral");
+
+		expect(request.messages[0].role).toBe("system");
+		expect(request.seed).toBeUndefined();
+		expect(request.random_seed).toBe(11);
 	});
 
 	it("preserves caller-provided OpenAI reasoning.summary", () => {
@@ -355,6 +501,89 @@ describe("irToOpenAIChat", () => {
 		expect(request.reasoning).toBeDefined();
 		expect(request.reasoning.effort).toBe("high");
 		expect(request.reasoning.summary).toBe("auto");
+	});
+
+	it("maps Arcee reasoning configuration to reasoning_effort", () => {
+		const request = irToOpenAIChat({
+			model: "arcee-ai/coder-large",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			reasoning: {
+				effort: "xhigh",
+			},
+		} as any, "arcee-ai/coder-large", "arcee");
+
+		expect(request.reasoning_effort).toBe("high");
+		expect(request.reasoning).toBeUndefined();
+	});
+
+	it("maps Cerebras reasoning/service tier and rewrites developer role", () => {
+		const request = irToOpenAIChat({
+			model: "cerebras/qwen-3-235b-a22b-instruct-2507",
+			messages: [
+				{
+					role: "developer",
+					content: [{ type: "text", text: "Use concise answers." }],
+				},
+				{
+					role: "user",
+					content: [{ type: "text", text: "hi" }],
+				},
+			],
+			stream: false,
+			reasoning: {
+				effort: "high",
+			},
+			serviceTier: "standard",
+		} as any, "qwen-3-235b-a22b-instruct-2507", "cerebras");
+
+		expect(request.reasoning_effort).toBe("high");
+		expect(request.service_tier).toBe("default");
+		expect(request.messages[0].role).toBe("system");
+	});
+
+	it("maps OpenAI service_tier=standard to default", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-5-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			serviceTier: "standard",
+		} as any, "gpt-5-nano", "openai");
+
+		expect(request.service_tier).toBe("default");
+	});
+
+	it("maps DeepSeek assistant reasoning_content and keeps json_object response_format", () => {
+		const request = irToOpenAIChat({
+			model: "deepseek/deepseek-chat",
+			messages: [
+				{
+					role: "assistant",
+					content: [
+						{ type: "reasoning_text", text: "analysis" },
+						{ type: "text", text: "answer" },
+					],
+				},
+				{
+					role: "user",
+					content: [{ type: "text", text: "next" }],
+				},
+			],
+			stream: false,
+			responseFormat: {
+				type: "json_object",
+			},
+		} as any, "deepseek-chat", "deepseek");
+
+		expect(request.messages[0].content).toBe("answer");
+		expect(request.messages[0].reasoning_content).toBe("analysis");
+		expect(request.response_format).toEqual({ type: "json_object" });
 	});
 });
 

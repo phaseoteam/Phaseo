@@ -135,8 +135,15 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
 function buildTransformSnapshot(ctx: PipelineContext, result?: RequestResult) {
 	const attemptErrors = Array.isArray((ctx as any).attemptErrors) ? (ctx as any).attemptErrors : null;
 	const routingSnapshot = Array.isArray((ctx as any).routingSnapshot) ? (ctx as any).routingSnapshot : null;
+	const routingDiagnostics = (ctx as any).routingDiagnostics ?? null;
 	const requestedParams = Array.isArray(ctx.requestedParams) ? ctx.requestedParams : null;
 	const paramRoutingDiagnostics = ctx.paramRoutingDiagnostics ? sanitizeForAxiom(ctx.paramRoutingDiagnostics) : null;
+	const providerEnablementDiagnostics = ctx.providerEnablementDiagnostics
+		? sanitizeForAxiom(ctx.providerEnablementDiagnostics)
+		: null;
+	const providerCandidateBuildDiagnostics = ctx.providerCandidateBuildDiagnostics
+		? sanitizeForAxiom(ctx.providerCandidateBuildDiagnostics)
+		: null;
 	const sanitizedGatewayRequest = sanitizeForAxiom(ctx.rawBody ?? ctx.body ?? null);
 	const sanitizedUpstreamRequest = sanitizeJsonStringForAxiom(result?.mappedRequest ?? null);
 
@@ -151,8 +158,11 @@ function buildTransformSnapshot(ctx: PipelineContext, result?: RequestResult) {
 		upstream_request_present: Boolean(result?.mappedRequest),
 		requested_params: requestedParams,
 		param_routing_diagnostics: paramRoutingDiagnostics,
+		provider_enablement_diagnostics: providerEnablementDiagnostics,
+		provider_candidate_build_diagnostics: providerCandidateBuildDiagnostics,
 		attempt_errors: sanitizeForAxiom(attemptErrors),
 		routing_snapshot: sanitizeForAxiom(routingSnapshot),
+		routing_diagnostics: sanitizeForAxiom(routingDiagnostics),
 	};
 }
 

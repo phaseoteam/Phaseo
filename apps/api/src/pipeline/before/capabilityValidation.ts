@@ -6,7 +6,6 @@ import type { Endpoint } from "@core/types";
 import type { ParamRoutingDiagnostics, ProviderCandidate } from "./types";
 import { err } from "./http";
 import { providerSupportsParam, extractRequestedParams, getUnknownTopLevelParams } from "./paramCapabilities";
-import { isParamSupported, getResponseFormatConfig } from "./paramConfig";
 import { validateProviderDocsCompliance } from "./providerDocsValidation";
 
 type ValidationResult =
@@ -173,58 +172,9 @@ function validateParameterSupport(args: {
 		}));
 	}
 
-	// Check if any parameter is unsupported by all providers
-	const unsupportedParams = requested.filter((param) =>
-		supportMap[param].every((info) => !info.supported)
-	);
-
-	if (unsupportedParams.length) {
-		const details = unsupportedParams.map((param) => ({
-			message: `Model "${args.model}" has no providers that support parameter: ${param}`,
-			path: param.split("."),
-			keyword: "unsupported_param",
-			params: { param, model: args.model },
-		}));
-		return {
-			ok: false,
-			response: err("validation_error", {
-				details,
-				request_id: args.requestId,
-				team_id: args.teamId,
-			}),
-		};
-	}
-
-	// Filter to providers that support ALL requested parameters
-	const filtered = args.providers.filter((provider) =>
-		requested.every(
-			(param) =>
-				isAlwaysSupported(param) ||
-				providerSupportsParam(provider, param, { assumeSupportedOnMissingConfig: false }),
-		)
-	);
-
-	if (!filtered.length) {
-		const paramsList = requested.join(", ");
-		const details = [{
-			message: `Model "${args.model}" has no providers that support all requested parameters: ${paramsList}`,
-			path: ["parameters"],
-			keyword: "unsupported_param_combo",
-			params: { parameters: requested, model: args.model },
-		}];
-		return {
-			ok: false,
-			response: err("validation_error", {
-				details,
-				request_id: args.requestId,
-				team_id: args.teamId,
-			}),
-		};
-	}
-
 	return {
 		ok: true,
-		providers: filtered,
+		providers: args.providers,
 		body: args.body,
 		requestedParams: requested,
 		supportMap,
@@ -241,47 +191,10 @@ function validateResponseFormat(args: {
 	teamId: string;
 	model: string;
 }): StageValidationResult {
-	const responseFormat = args.body.response_format;
-	if (!responseFormat) {
-		return { ok: true, providers: args.providers, body: args.body };
-	}
-
-	const formatType = typeof responseFormat === "string"
-		? responseFormat
-		: responseFormat.type;
-
-	if (!formatType) {
-		return { ok: true, providers: args.providers, body: args.body };
-	}
-
-	// Filter providers that support response_format
-	const filtered = args.providers.filter((provider) => {
-		const params = provider.capabilityParams;
-		if (!isParamSupported(params, "response_format")) return false;
-
-		// Check if specific format type is supported
-		const formatConfig = getResponseFormatConfig(params);
-		if (!formatConfig.types || formatConfig.types.length === 0) return true; // no restrictions
-		return formatConfig.types.includes(formatType);
-	});
-
-	if (!filtered.length) {
-		return {
-			ok: false,
-			response: err("validation_error", {
-				details: [{
-					message: `Model "${args.model}" has no providers that support response_format type: ${formatType}`,
-					path: ["response_format", "type"],
-					keyword: "unsupported_response_format",
-					params: { formatType, model: args.model },
-				}],
-				request_id: args.requestId,
-				team_id: args.teamId,
-			}),
-		};
-	}
-
-	return { ok: true, providers: filtered, body: args.body };
+	void args.requestId;
+	void args.teamId;
+	void args.model;
+	return { ok: true, providers: args.providers, body: args.body };
 }
 
 /**
@@ -341,41 +254,10 @@ function validateStructuredOutputs(args: {
 	teamId: string;
 	model: string;
 }): StageValidationResult {
-	// Check if structured outputs requested
-	const hasStructuredOutputs =
-		args.body.structured_outputs === true ||
-		(args.body.response_format?.type === "json_schema" && args.body.response_format?.strict === true);
-
-	if (!hasStructuredOutputs) {
-		return { ok: true, providers: args.providers, body: args.body };
-	}
-
-	// Filter providers that support structured outputs
-	const filtered = args.providers.filter((provider) => {
-		const params = provider.capabilityParams;
-		const formatConfig = getResponseFormatConfig(params);
-		// If metadata is missing, treat support as unknown and allow through.
-		// Explicit false remains a hard block.
-		return formatConfig.supported && formatConfig.structuredOutputs !== false;
-	});
-
-	if (!filtered.length) {
-		return {
-			ok: false,
-			response: err("validation_error", {
-				details: [{
-					message: `Model "${args.model}" has no providers that support structured outputs (strict JSON schemas)`,
-					path: ["response_format", "strict"],
-					keyword: "unsupported_structured_outputs",
-					params: { model: args.model },
-				}],
-				request_id: args.requestId,
-				team_id: args.teamId,
-			}),
-		};
-	}
-
-	return { ok: true, providers: filtered, body: args.body };
+	void args.requestId;
+	void args.teamId;
+	void args.model;
+	return { ok: true, providers: args.providers, body: args.body };
 }
 
 /**

@@ -1,5 +1,3 @@
-import { table } from "@visulima/tabular";
-
 export default class TableReporter {
     constructor() {
         this.results = [];
@@ -25,6 +23,28 @@ export default class TableReporter {
             ]),
         ];
         console.log("\nTest Summary");
-        console.log(table(rows));
+        console.log(renderTable(rows));
     }
+}
+
+function renderTable(rows) {
+    const widths = rows[0].map((_, columnIndex) => {
+        let width = 0;
+        for (const row of rows) {
+            const value = String(row[columnIndex] ?? "");
+            if (value.length > width) width = value.length;
+        }
+        return width;
+    });
+
+    const separator = `+-${widths.map((width) => "-".repeat(width)).join("-+-")}-+`;
+    const formatRow = (row) => `| ${row.map((cell, index) => String(cell ?? "").padEnd(widths[index], " ")).join(" | ")} |`;
+
+    const lines = [separator, formatRow(rows[0]), separator];
+    for (let i = 1; i < rows.length; i += 1) {
+        lines.push(formatRow(rows[i]));
+    }
+    lines.push(separator);
+
+    return lines.join("\n");
 }

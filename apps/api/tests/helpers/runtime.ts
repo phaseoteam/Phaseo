@@ -66,6 +66,8 @@ export function setupTestRuntime() {
         ALIBABA_BASE_URL: "https://api.alibaba.example",
         AMAZON_BEDROCK_API_KEY: "test-bedrock-key",
         AMAZON_BEDROCK_BASE_URL: "https://api.bedrock.example",
+        ARCEE_API_KEY: "test-arcee-key",
+        ARCEE_BASE_URL: "https://api.arcee.example",
         ATLAS_CLOUD_API_KEY: "test-atlas-key",
         ATLAS_CLOUD_BASE_URL: "https://api.atlas.example",
         BASETEN_API_KEY: "test-baseten-key",

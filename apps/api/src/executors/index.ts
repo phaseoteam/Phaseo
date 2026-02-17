@@ -14,8 +14,8 @@
 
 import type { ProviderExecutor } from "./types";
 import { isOpenAICompatProvider } from "@providers/openai-compatible/config";
+import { supportsAdapterBackedCapability, type AdapterBackedCapability } from "@providers/capabilities";
 import type { Endpoint } from "@core/types";
-import { adapterFor } from "@providers/index";
 
 // Text generation executors (migrated providers only)
 import { executor as openaiText } from "./openai/text-generate";
@@ -48,11 +48,14 @@ import { executor as openaiModerations } from "./openai/moderations";
 
 import { executor as openaiVideo } from "./openai/video-generate";
 import { nonTextAdapterExecutor } from "./_shared/non-text/adapter-bridge";
+import { executor as blackForestLabsImage } from "./black-forest-labs/image-generate";
 
 // Video generation executors
 import { executor as googleVideo } from "./google/video-generate";
-import { executor as falVideo } from "./fal/video-generate";
 import { executor as alibabaVideo } from "./alibaba/video-generate";
+import { executor as xAiVideo } from "./x-ai/video-generate";
+import { executor as minimaxVideo } from "./minimax/video-generate";
+import { executor as minimaxMusic } from "./minimax/music-generate";
 
 type Capability =
 	| "text.generate"
@@ -67,14 +70,6 @@ type Capability =
 	| "ocr"
 	| "music.generate";
 type ProviderCapabilityMap = Partial<Record<Capability, ProviderExecutor>>;
-type AdapterBackedCapability =
-	| "image.generate"
-	| "image.edit"
-	| "audio.speech"
-	| "audio.transcription"
-	| "audio.translations"
-	| "ocr"
-	| "music.generate";
 
 const ADAPTER_BACKED_ENDPOINTS: Record<AdapterBackedCapability, Endpoint> = {
 	"image.generate": "images.generations",
@@ -115,23 +110,7 @@ function resolveAdapterBackedEndpoint(capability: Capability): Endpoint | null {
 }
 
 function providerSupportsAdapterCapability(providerId: string, capability: AdapterBackedCapability): boolean {
-	switch (capability) {
-		case "image.generate":
-			return isOpenAICompatProvider(providerId);
-		case "image.edit":
-			return isOpenAICompatProvider(providerId) && providerId !== "google-ai-studio";
-		case "audio.translations":
-			return isOpenAICompatProvider(providerId) && providerId !== "google-ai-studio";
-		case "audio.speech":
-		case "audio.transcription":
-			return (isOpenAICompatProvider(providerId) && providerId !== "google-ai-studio") || providerId === "elevenlabs";
-		case "ocr":
-			return providerId === "mistral";
-		case "music.generate":
-			return providerId === "suno" || providerId === "elevenlabs";
-		default:
-			return false;
-	}
+	return supportsAdapterBackedCapability(providerId, capability);
 }
 
 export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
@@ -157,11 +136,11 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		embeddings: googleAiStudioEmbeddings,
 		"video.generate": googleVideo,
 	},
-	"x-ai": { "text.generate": xAiText },
-	xai: { "text.generate": xAiText },
+	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo },
+	xai: { "text.generate": xAiText, "video.generate": xAiVideo },
 	deepseek: { "text.generate": deepseekText },
-	minimax: { "text.generate": minimaxText },
-	"minimax-lightning": { "text.generate": minimaxText },
+	minimax: { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic },
+	"minimax-lightning": { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic },
 	alibaba: { "text.generate": alibabaText, "video.generate": alibabaVideo },
 	qwen: { "text.generate": qwenText, "video.generate": alibabaVideo },
 	"z-ai": { "text.generate": zAiText },
@@ -174,12 +153,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	aionlabs: { "text.generate": aionLabsText },
 	"amazon-bedrock": { "text.generate": amazonBedrockText },
 	"google-vertex": { "text.generate": googleVertexText },
-	fal: {
-		"video.generate": falVideo,
-	},
-	"fal-ai": {
-		"video.generate": falVideo,
-	},
+	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage },
 };
 
 export function resolveProviderExecutor(providerId: string, capability: string): ProviderExecutor | null {
@@ -199,8 +173,7 @@ export function resolveProviderExecutor(providerId: string, capability: string):
 	const adapterEndpoint = resolveAdapterBackedEndpoint(normalizedCapability);
 	if (
 		adapterEndpoint &&
-		providerSupportsAdapterCapability(providerId, normalizedCapability as AdapterBackedCapability) &&
-		adapterFor(providerId, adapterEndpoint)
+		providerSupportsAdapterCapability(providerId, normalizedCapability as AdapterBackedCapability)
 	) {
 		return nonTextAdapterExecutor;
 	}
@@ -221,8 +194,7 @@ export function isProviderCapabilityEnabled(providerId: string, capability: stri
 	const adapterEndpoint = resolveAdapterBackedEndpoint(normalizedCapability);
 	return Boolean(
 		adapterEndpoint &&
-		providerSupportsAdapterCapability(providerId, normalizedCapability as AdapterBackedCapability) &&
-		adapterFor(providerId, adapterEndpoint),
+		providerSupportsAdapterCapability(providerId, normalizedCapability as AdapterBackedCapability),
 	);
 }
 

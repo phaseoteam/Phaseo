@@ -25,7 +25,6 @@ controlRouter.route("/models", modelsRoutes);
 controlRouter.route("/generations", generationsRoutes);
 controlRouter.route("/organisations", organisationsRoutes);
 controlRouter.route("/providers", providersRoutes);
-controlRouter.route("/", placeholdersRoutes);
 controlRouter.route("/health", healthRoutes);
 controlRouter.route("/analytics", analyticsRoutes);
 controlRouter.route("/pricing", pricingRoutes);
@@ -35,6 +34,7 @@ controlRouter.route("/management", managementRoutes);
 controlRouter.route("/provisioning", provisioningRoutes);
 controlRouter.route("/keys", keysRoutes);
 controlRouter.route("/oauth-clients", oauthClientsRoutes);
+controlRouter.route("/", placeholdersRoutes);
 
 
 

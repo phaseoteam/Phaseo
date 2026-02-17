@@ -45,6 +45,12 @@ export type AnthropicMessagesRequest = {
 	reasoning?: {
 		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 	};
+	image_config?: {
+		aspect_ratio?: string;
+		image_size?: "1K" | "2K" | "4K";
+		font_inputs?: Array<{ font_url?: string; text?: string }>;
+		super_resolution_references?: string[];
+	};
 };
 
 export type AnthropicMessage = {
@@ -208,6 +214,21 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		speed: typeof req.speed === "string" ? req.speed : undefined,
 		serviceTier: resolveRequestedServiceTier(req),
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
+		imageConfig: req.image_config
+			? {
+				aspectRatio: req.image_config.aspect_ratio,
+				imageSize: req.image_config.image_size,
+				fontInputs: Array.isArray(req.image_config.font_inputs)
+					? req.image_config.font_inputs
+						.filter((entry) => typeof entry?.font_url === "string" && typeof entry?.text === "string")
+						.map((entry) => ({
+							fontUrl: entry.font_url as string,
+							text: entry.text as string,
+						}))
+					: undefined,
+				superResolutionReferences: req.image_config.super_resolution_references,
+			}
+			: undefined,
 	};
 }
 

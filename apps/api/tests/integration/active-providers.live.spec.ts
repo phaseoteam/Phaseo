@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { parseSseJson, readSseFrames } from "../helpers/sse";
+import { resolveGatewayApiKeyFromEnv } from "../helpers/gatewayKey";
 
 const DEFAULT_ACTIVE_PROVIDERS = [
     "openai",
@@ -17,12 +18,22 @@ const DEFAULT_ACTIVE_PROVIDERS = [
     "xiaomi",
 ] as const;
 
-const DEFAULT_SCENARIOS = ["responses_nonstream_hi"] as const;
+const DEFAULT_SCENARIOS = [
+    "responses_nonstream_hi",
+    "responses_stream_hi",
+    "responses_nonstream_tool",
+    "responses_nonstream_structured",
+    "chat_nonstream_hi",
+    "chat_stream_hi",
+    "chat_nonstream_tool",
+    "chat_nonstream_structured",
+] as const;
 
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
-const GATEWAY_API_KEY = process.env.GATEWAY_API_KEY ?? "";
+const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
 const LIVE_RUN = (process.env.LIVE_RUN ?? "").trim() === "1";
 const REQUIRE_USAGE = (process.env.LIVE_REQUIRE_USAGE ?? "1").trim() !== "0";
+const REQUIRE_USAGE_NONZERO = (process.env.LIVE_REQUIRE_USAGE_NONZERO ?? "1").trim() !== "0";
 const ALLOW_TRANSIENT_FAILURES = (process.env.LIVE_ALLOW_TRANSIENT_FAILURES ?? "1").trim() !== "0";
 const MAX_OUTPUT_TOKENS = Number(process.env.LIVE_MAX_OUTPUT_TOKENS ?? "12");
 const MESSAGES_MAX_TOKENS_BASE = Math.max(MAX_OUTPUT_TOKENS, 16);
@@ -34,6 +45,7 @@ type ScenarioId =
     | "responses_nonstream_hi"
     | "chat_nonstream_hi"
     | "messages_nonstream_hi"
+    | "chat_stream_hi"
     | "responses_stream_hi"
     | "responses_nonstream_tool"
     | "chat_nonstream_tool"
@@ -108,6 +120,23 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
             messages: [{ role: "user", content: "Hi" }],
         }),
     },
+    chat_stream_hi: {
+        id: "chat_stream_hi",
+        endpoint: "/chat/completions",
+        stream: true,
+        buildBody: (model) => {
+            const body: Record<string, unknown> = {
+                model,
+                messages: [{ role: "user", content: "Hi" }],
+                stream: true,
+            };
+            if (INCLUDE_TUNING_PARAMS) {
+                body.max_output_tokens = MAX_OUTPUT_TOKENS;
+                body.temperature = 0;
+            }
+            return body;
+        },
+    },
     responses_stream_hi: {
         id: "responses_stream_hi",
         endpoint: "/responses",
@@ -132,7 +161,6 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         buildBody: (model) => ({
             model,
             input: "Call get_weather for London and return a tool call.",
-            temperature: 0,
             tools: [{
                 type: "function",
                 function: {
@@ -174,7 +202,6 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         buildBody: (model) => ({
             model,
             messages: [{ role: "user", content: "Call get_weather for London and return a tool call." }],
-            temperature: 0,
             tools: [{
                 type: "function",
                 function: {
@@ -239,7 +266,6 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         buildBody: (model) => ({
             model,
             input: "Return JSON only with keys city and weather, where city is London.",
-            temperature: 0,
             text: {
                 format: {
                     type: "json_schema",
@@ -272,7 +298,6 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         buildBody: (model) => ({
             model,
             messages: [{ role: "user", content: "Return JSON only with keys city and weather, where city is London." }],
-            temperature: 0,
             response_format: {
                 type: "json_schema",
                 json_schema: {
@@ -586,6 +611,42 @@ function extractUsage(payload: any): any {
     return null;
 }
 
+function usageTokenTotal(usage: any): number {
+    if (!usage || typeof usage !== "object") return 0;
+    const total = Number(usage.total_tokens ?? usage.totalTokens);
+    if (Number.isFinite(total) && total > 0) return total;
+
+    const input = Number(
+        usage.input_tokens ??
+        usage.inputTokens ??
+        usage.prompt_tokens ??
+        usage.promptTokens ??
+        usage.input_text_tokens ??
+        usage.inputTextTokens ??
+        0,
+    );
+    const output = Number(
+        usage.output_tokens ??
+        usage.outputTokens ??
+        usage.completion_tokens ??
+        usage.completionTokens ??
+        usage.output_text_tokens ??
+        usage.outputTextTokens ??
+        0,
+    );
+    const sum = (Number.isFinite(input) ? input : 0) + (Number.isFinite(output) ? output : 0);
+    return sum > 0 ? sum : 0;
+}
+
+function hasAnyPositiveUsageMetric(usage: any): boolean {
+    if (!usage || typeof usage !== "object") return false;
+    for (const value of Object.values(usage)) {
+        if (typeof value === "number" && Number.isFinite(value) && value > 0) return true;
+        if (value && typeof value === "object" && hasAnyPositiveUsageMetric(value)) return true;
+    }
+    return false;
+}
+
 function assertHasUsage(payload: any, context: string) {
     if (!REQUIRE_USAGE) return;
     const usage = extractUsage(payload);
@@ -593,6 +654,13 @@ function assertHasUsage(payload: any, context: string) {
         usage,
         `${context} missing usage (set LIVE_REQUIRE_USAGE=0 to bypass temporarily)`
     ).toBeTruthy();
+    if (!REQUIRE_USAGE_NONZERO) return;
+    const tokenTotal = usageTokenTotal(usage);
+    const hasPositive = tokenTotal > 0 || hasAnyPositiveUsageMetric(usage);
+    expect(
+        hasPositive,
+        `${context} usage present but zero-valued (set LIVE_REQUIRE_USAGE_NONZERO=0 to bypass temporarily)`,
+    ).toBe(true);
 }
 
 async function runScenario(providerId: string, model: string, scenario: Scenario) {
@@ -648,14 +716,14 @@ async function runScenario(providerId: string, model: string, scenario: Scenario
     }
     const frames = await readSseFrames(res);
     const objects = parseSseJson(frames).filter((entry) => typeof entry === "object") as any[];
-    const lastObject = objects[objects.length - 1] ?? null;
-    assertHasUsage(lastObject, requestTag);
+    const usageCarrier = [...objects].reverse().find((entry) => extractUsage(entry)) ?? objects[objects.length - 1] ?? null;
+    assertHasUsage(usageCarrier, requestTag);
     console.log(JSON.stringify({
         tag: requestTag,
         status: res.status,
         elapsedMs,
         frameCount: objects.length,
-        usage: extractUsage(lastObject),
+        usage: extractUsage(usageCarrier),
     }));
 }
 

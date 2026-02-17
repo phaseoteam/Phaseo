@@ -41,4 +41,15 @@ describe("normalizeTextUsageForPricing", () => {
 		expect(usage?.output_video_tokens).toBe(3);
 		expect(usage?.cached_write_text_tokens).toBe(2);
 	});
+
+	it("passes through request-count usage meters", () => {
+		const usage = normalizeTextUsageForPricing({
+			prompt_tokens: 10,
+			completion_tokens: 3,
+			total_tokens: 13,
+			request_count: 1,
+		});
+
+		expect(usage?.requests).toBe(1);
+	});
 });

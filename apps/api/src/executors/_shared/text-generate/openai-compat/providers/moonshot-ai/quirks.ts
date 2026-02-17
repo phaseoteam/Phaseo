@@ -12,6 +12,16 @@ export const moonshotQuirks: ProviderQuirks = {
 	transformRequest: ({ request }) => {
 		// Moonshot compatibility validates schema payload shape differently.
 		applyJsonSchemaFallback(request);
+
+		// Moonshot chat schema is stricter on role enums than OpenAI's newer "developer" role.
+		// Normalize to "system" before upstream dispatch.
+		if (Array.isArray(request?.messages)) {
+			request.messages = request.messages.map((msg: any) =>
+				msg?.role === "developer"
+					? { ...msg, role: "system" }
+					: msg,
+			);
+		}
 	},
 };
 

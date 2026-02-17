@@ -67,19 +67,33 @@ export function normalizeOpenAIContent(content: string | any[]): IRContentPart[]
 		}
 
 		if (part?.type === "input_audio") {
+			const audioData = part.input_audio?.data || part.data;
+			const audioUrl =
+				part.input_audio?.url ||
+				part.audio_url?.url ||
+				part.audio_url ||
+				part.url;
 			return {
 				type: "audio",
-				source: "data",
-				data: part.input_audio?.data || part.data,
+				source: audioUrl ? "url" : "data",
+				data: audioUrl || audioData,
 				format: part.input_audio?.format || part.format,
 			} as IRContentPart;
 		}
 
-		if (part?.type === "input_video") {
+		if (part?.type === "input_video" || part?.type === "video_url") {
+			const url =
+				(typeof part.video_url === "string" ? part.video_url : undefined) ||
+				part.video_url?.url ||
+				(typeof part.url === "string" ? part.url : undefined) ||
+				part.url?.url;
+			if (!url) {
+				return { type: "text", text: asString(part) };
+			}
 			return {
 				type: "video",
 				source: "url",
-				url: part.video_url || part.url,
+				url,
 			} as IRContentPart;
 		}
 

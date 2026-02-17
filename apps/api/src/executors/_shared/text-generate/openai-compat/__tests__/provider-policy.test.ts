@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sanitizeOpenAICompatRequest } from "../provider-policy";
 
 describe("sanitizeOpenAICompatRequest", () => {
-	it("drops instructions for xai responses route", () => {
+	it("preserves instructions for xai responses route", () => {
 		const { request, dropped } = sanitizeOpenAICompatRequest({
 			providerId: "xai",
 			route: "responses",
@@ -14,11 +14,11 @@ describe("sanitizeOpenAICompatRequest", () => {
 			},
 		});
 
-		expect(request.instructions).toBeUndefined();
-		expect(dropped).toContain("instructions");
+		expect(request.instructions).toBe("be concise");
+		expect(dropped).toEqual([]);
 	});
 
-	it("drops service_tier for x-ai", () => {
+	it("preserves service_tier for x-ai", () => {
 		for (const providerId of ["x-ai", "xai"]) {
 			const { request, dropped } = sanitizeOpenAICompatRequest({
 				providerId,
@@ -31,12 +31,12 @@ describe("sanitizeOpenAICompatRequest", () => {
 				},
 			});
 
-			expect(request.service_tier).toBeUndefined();
-			expect(dropped).toContain("service_tier");
+			expect(request.service_tier).toBe("standard");
+			expect(dropped).toEqual([]);
 		}
 	});
 
-	it("maps legacy standard service_tier to default", () => {
+	it("does not rewrite service_tier values", () => {
 		const { request } = sanitizeOpenAICompatRequest({
 			providerId: "openai",
 			route: "chat",
@@ -48,10 +48,10 @@ describe("sanitizeOpenAICompatRequest", () => {
 			},
 		});
 
-		expect(request.service_tier).toBe("default");
+		expect(request.service_tier).toBe("standard");
 	});
 
-	it("maps qwen max_tokens to max_completion_tokens", () => {
+	it("preserves qwen max_tokens as provided", () => {
 		const { request } = sanitizeOpenAICompatRequest({
 			providerId: "qwen",
 			route: "chat",
@@ -62,11 +62,11 @@ describe("sanitizeOpenAICompatRequest", () => {
 			},
 		});
 
-		expect(request.max_tokens).toBeUndefined();
-		expect(request.max_completion_tokens).toBe(512);
+		expect(request.max_tokens).toBe(512);
+		expect(request.max_completion_tokens).toBeUndefined();
 	});
 
-	it("maps alibaba max_tokens to max_completion_tokens", () => {
+	it("preserves alibaba max_tokens as provided", () => {
 		const { request } = sanitizeOpenAICompatRequest({
 			providerId: "alibaba",
 			route: "chat",
@@ -77,11 +77,11 @@ describe("sanitizeOpenAICompatRequest", () => {
 			},
 		});
 
-		expect(request.max_tokens).toBeUndefined();
-		expect(request.max_completion_tokens).toBe(256);
+		expect(request.max_tokens).toBe(256);
+		expect(request.max_completion_tokens).toBeUndefined();
 	});
 
-	it("drops unsupported Groq fields", () => {
+	it("preserves Groq fields and message name", () => {
 		const { request, dropped } = sanitizeOpenAICompatRequest({
 			providerId: "groq",
 			route: "chat",
@@ -97,14 +97,14 @@ describe("sanitizeOpenAICompatRequest", () => {
 			},
 		});
 
-		expect(request.logprobs).toBeUndefined();
-		expect(request.top_logprobs).toBeUndefined();
-		expect(request.logit_bias).toBeUndefined();
-		expect(request.messages[0].name).toBeUndefined();
-		expect(dropped).toEqual(expect.arrayContaining(["logprobs", "top_logprobs", "logit_bias"]));
+		expect(request.logprobs).toBe(true);
+		expect(request.top_logprobs).toBe(5);
+		expect(request.logit_bias).toEqual({ "42": 1 });
+		expect(request.messages[0].name).toBe("alice");
+		expect(dropped).toEqual([]);
 	});
 
-	it("drops unsupported Cerebras fields", () => {
+	it("preserves Cerebras fields", () => {
 		const { request, dropped } = sanitizeOpenAICompatRequest({
 			providerId: "cerebras",
 			route: "chat",
@@ -117,13 +117,13 @@ describe("sanitizeOpenAICompatRequest", () => {
 			},
 		});
 
-		expect(request.frequency_penalty).toBeUndefined();
-		expect(request.presence_penalty).toBeUndefined();
-		expect(request.logit_bias).toBeUndefined();
-		expect(dropped).toEqual(expect.arrayContaining(["frequency_penalty", "presence_penalty", "logit_bias"]));
+		expect(request.frequency_penalty).toBe(0.5);
+		expect(request.presence_penalty).toBe(0.5);
+		expect(request.logit_bias).toEqual({ "42": 1 });
+		expect(dropped).toEqual([]);
 	});
 
-	it("normalizes Mistral chat payload fields", () => {
+	it("preserves Mistral payload fields", () => {
 		const { request, dropped } = sanitizeOpenAICompatRequest({
 			providerId: "mistral",
 			route: "chat",
@@ -138,31 +138,15 @@ describe("sanitizeOpenAICompatRequest", () => {
 			},
 		});
 
-		expect(request.seed).toBeUndefined();
-		expect(request.random_seed).toBe(7);
-		expect(request.stream_options).toBeUndefined();
-		expect(request.user).toBeUndefined();
+		expect(request.seed).toBe(7);
+		expect(request.random_seed).toBeUndefined();
+		expect(request.stream_options).toEqual({ include_usage: true });
+		expect(request.user).toBe("user_123");
 		expect(request.temperature).toBe(1.3);
-		expect(dropped).toEqual(expect.arrayContaining(["seed", "stream_options", "user"]));
+		expect(dropped).toEqual([]);
 	});
 
-	it("drops out-of-range Mistral temperature", () => {
-		const { request, dropped } = sanitizeOpenAICompatRequest({
-			providerId: "mistral",
-			route: "chat",
-			model: "mistral-large-latest",
-			request: {
-				model: "mistral-large-latest",
-				temperature: 1.7,
-				messages: [{ role: "user", content: "hello" }],
-			},
-		});
-
-		expect(request.temperature).toBeUndefined();
-		expect(dropped).toContain("temperature");
-	});
-
-	it("drops Anthropic-incompatible controls for bedrock/vertex gateways", () => {
+	it("preserves Anthropic-style controls for bedrock/vertex gateways", () => {
 		for (const providerId of ["amazon-bedrock", "google-vertex"]) {
 			const { request, dropped } = sanitizeOpenAICompatRequest({
 				providerId,
@@ -178,14 +162,12 @@ describe("sanitizeOpenAICompatRequest", () => {
 				},
 			});
 
-			expect(request.frequency_penalty).toBeUndefined();
-			expect(request.presence_penalty).toBeUndefined();
-			expect(request.logit_bias).toBeUndefined();
-			expect(request.logprobs).toBeUndefined();
-			expect(request.top_logprobs).toBeUndefined();
-			expect(dropped).toEqual(
-				expect.arrayContaining(["frequency_penalty", "presence_penalty", "logit_bias", "logprobs", "top_logprobs"]),
-			);
+			expect(request.frequency_penalty).toBe(0.2);
+			expect(request.presence_penalty).toBe(0.2);
+			expect(request.logit_bias).toEqual({ "42": 1 });
+			expect(request.logprobs).toBe(true);
+			expect(request.top_logprobs).toBe(5);
+			expect(dropped).toEqual([]);
 		}
 	});
 });

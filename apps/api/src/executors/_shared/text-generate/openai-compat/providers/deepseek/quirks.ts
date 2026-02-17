@@ -17,16 +17,14 @@ export const deepseekQuirks: ProviderQuirks = {
 	transformRequest: ({ request }) => {
 		applyJsonSchemaFallback(request);
 
-		// DeepSeek currently rejects response_format for some active models/endpoints.
-		// Keep schema enforcement in prompt instructions only.
-		if ("response_format" in request) {
-			delete request.response_format;
-		}
-		if (request.text && typeof request.text === "object" && "format" in request.text) {
-			delete request.text.format;
-			if (Object.keys(request.text).length === 0) {
-				delete request.text;
-			}
+		// DeepSeek documents system/user/assistant/tool message roles.
+		// Normalize gateway "developer" role to "system" for compatibility.
+		if (Array.isArray(request.messages)) {
+			request.messages = request.messages.map((msg: any) =>
+				msg?.role === "developer"
+					? { ...msg, role: "system" }
+					: msg,
+			);
 		}
 	},
 

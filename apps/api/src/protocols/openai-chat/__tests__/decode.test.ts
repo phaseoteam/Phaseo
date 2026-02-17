@@ -145,7 +145,7 @@ describe("decodeOpenAIChatRequest", () => {
 					content: [
 						{
 							type: "input_video",
-							video_url: "https://example.com/video.mp4",
+							video_url: { url: "https://example.com/video.mp4" },
 						},
 					],
 				},
@@ -158,6 +158,47 @@ describe("decodeOpenAIChatRequest", () => {
 			type: "video",
 			source: "url",
 			url: "https://example.com/video.mp4",
+		});
+	});
+
+	it("should preserve developer role messages", () => {
+		const request = {
+			model: "gpt-4",
+			messages: [
+				{ role: "developer", content: "Follow company style." },
+				{ role: "user", content: "Hello" },
+			],
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.messages[0].role).toBe("developer");
+	});
+
+	it("should decode audio url content", () => {
+		const request = {
+			model: "gpt-4.1",
+			messages: [
+				{
+					role: "user",
+					content: [
+						{
+							type: "input_audio",
+							input_audio: {
+								url: "https://example.com/audio.mp3",
+							},
+						},
+					],
+				},
+			],
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+
+		expect(ir.messages[0].content[0]).toEqual({
+			type: "audio",
+			source: "url",
+			data: "https://example.com/audio.mp3",
+			format: undefined,
 		});
 	});
 
@@ -277,6 +318,30 @@ describe("decodeOpenAIChatRequest", () => {
 		}
 	});
 
+	it("should preserve assistant reasoning_content as reasoning_text", () => {
+		const request = {
+			model: "deepseek-chat",
+			messages: [
+				{
+					role: "assistant",
+					content: "final answer",
+					reasoning_content: "hidden reasoning",
+				},
+				{ role: "user", content: "next question" },
+			],
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+
+		expect(ir.messages[0].role).toBe("assistant");
+		if (ir.messages[0].role === "assistant") {
+			expect(ir.messages[0].content).toEqual([
+				{ type: "reasoning_text", text: "hidden reasoning" },
+				{ type: "text", text: "final answer" },
+			]);
+		}
+	});
+
 	it("should decode tool results", () => {
 		const request = {
 			model: "gpt-4",
@@ -337,6 +402,91 @@ describe("decodeOpenAIChatRequest", () => {
 		expect(ir.stream).toBe(true);
 	});
 
+	it("should decode stream_options and service controls", () => {
+		const request = {
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "Hello" }],
+			stream_options: { include_usage: true },
+			service_tier: "standard",
+			speed: "slow",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.streamOptions).toEqual({ include_usage: true });
+		expect(ir.serviceTier).toBe("standard");
+		expect(ir.speed).toBe("slow");
+	});
+
+	it("should preserve json_schema strict=false in response_format", () => {
+		const request = {
+			model: "gpt-4",
+			messages: [{ role: "user", content: "Hello" }],
+			response_format: {
+				type: "json_schema",
+				json_schema: {
+					name: "answer",
+					schema: { type: "object" },
+					strict: false,
+				},
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.responseFormat).toEqual({
+			type: "json_schema",
+			name: "answer",
+			schema: { type: "object" },
+			strict: false,
+		});
+	});
+
+	it("should prefer max_completion_tokens over other max token aliases", () => {
+		const request = {
+			model: "gpt-4",
+			messages: [{ role: "user", content: "Hello" }],
+			max_completion_tokens: 777,
+			max_tokens: 123,
+			max_output_tokens: 456,
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.maxTokens).toBe(777);
+	});
+
+	it("should decode image_config", () => {
+		const request = {
+			model: "google/gemini-2-5-flash-image",
+			messages: [{ role: "user", content: "Generate image" }],
+			modalities: ["text", "image"],
+			image_config: {
+				aspect_ratio: "16:9",
+				image_size: "2K",
+				font_inputs: [
+					{
+						font_url: "https://example.com/font.ttf",
+						text: "Hello",
+					},
+				],
+				super_resolution_references: ["https://example.com/ref.png"],
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+
+		expect(ir.modalities).toEqual(["text", "image"]);
+		expect(ir.imageConfig).toEqual({
+			aspectRatio: "16:9",
+			imageSize: "2K",
+			fontInputs: [
+				{
+					fontUrl: "https://example.com/font.ttf",
+					text: "Hello",
+				},
+			],
+			superResolutionReferences: ["https://example.com/ref.png"],
+		});
+	});
+
 	it("should map speed fast to priority service tier", () => {
 		const request = {
 			model: "gpt-4",
@@ -375,7 +525,29 @@ describe("decodeOpenAIChatRequest", () => {
 		expect(ir.metadata?.user).toBe("user-123");
 	});
 
-	it("should handle developer role as system", () => {
+	it("should merge metadata and user fields", () => {
+		const request = {
+			model: "gpt-4",
+			messages: [{ role: "user", content: "Hello" }],
+			user: "user-123",
+			metadata: { trace: "abc" },
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.metadata).toEqual({ trace: "abc", user: "user-123" });
+	});
+
+	it("does not set service tier when omitted", () => {
+		const request = {
+			model: "gpt-4",
+			messages: [{ role: "user", content: "Hello" }],
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.serviceTier).toBeUndefined();
+	});
+
+	it("should preserve developer role in messages", () => {
 		const request = {
 			model: "gpt-4",
 			messages: [
@@ -386,7 +558,7 @@ describe("decodeOpenAIChatRequest", () => {
 
 		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
 
-		expect(ir.messages[0].role).toBe("system");
+		expect(ir.messages[0].role).toBe("developer");
 		expect(ir.messages[0].content).toEqual([
 			{ type: "text", text: "System instructions" },
 		]);

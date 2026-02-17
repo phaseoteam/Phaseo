@@ -1,10 +1,11 @@
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import { readSseFrames, parseSseJson } from "../helpers/sse";
 import { imageToBase64 } from "../helpers/image";
+import { resolveGatewayApiKeyFromEnv } from "../helpers/gatewayKey";
 
 const MODEL = "openai/gpt-5-nano-2025-08-07";
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
-const GATEWAY_API_KEY = process.env.GATEWAY_API_KEY ?? "";
+const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
 const IMAGE_URL = "https://th.bing.com/th/id/R.b72dfea01bd45b862fa3c43228acc6ec?rik=KPkihyX9%2bIBwtA&riu=http%3a%2f%2ffoundtheworld.com%2fwp-content%2fuploads%2f2015%2f12%2fGolden-Gate-Bridge-4.jpg&ehk=mtwSRtfSVm9rpOZrEwBTNC%2fySKmIQekLMD2opw%2b71zs%3d&risl=&pid=ImgRaw&r=0";
 const VALID_IMAGE_B64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 

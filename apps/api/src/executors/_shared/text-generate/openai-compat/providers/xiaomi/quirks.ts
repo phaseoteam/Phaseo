@@ -20,14 +20,29 @@ export const xiaomiQuirks: ProviderQuirks = {
 		// Xiaomi rejects OpenAI json_schema envelope on chat-completions compatibility.
 		applyJsonSchemaFallback(request);
 
-		// Check if reasoning is enabled in the IR
-		const reasoningEnabled = ir.reasoning?.enabled ??
-			(ir.reasoning?.effort && ir.reasoning.effort !== "none");
+		// Xiaomi OpenAI-compat endpoints do not document "developer" role.
+		// Normalize to "system" for better compatibility.
+		if (Array.isArray(request.messages)) {
+			for (const message of request.messages) {
+				if (message?.role === "developer") {
+					message.role = "system";
+				}
+			}
+		}
 
-		if (reasoningEnabled) {
-			// Xiaomi uses a nested parameter format
+		// Xiaomi uses a nested parameter format: chat_template_kwargs.enable_thinking
+		// Set explicitly for both enabled and disabled reasoning to avoid upstream defaults.
+		const reasoning = ir.reasoning;
+		const reasoningEnabled =
+			reasoning?.enabled ??
+			(typeof reasoning?.effort === "string" ? reasoning.effort !== "none" : undefined);
+
+		if (typeof reasoningEnabled === "boolean") {
 			request.chat_template_kwargs = {
-				enable_thinking: true,
+				...(request.chat_template_kwargs && typeof request.chat_template_kwargs === "object"
+					? request.chat_template_kwargs
+					: {}),
+				enable_thinking: reasoningEnabled,
 			};
 		}
 	},

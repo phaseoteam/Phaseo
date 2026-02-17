@@ -18,10 +18,27 @@
 
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
-import { getSupabaseAdmin } from "@/runtime/env";
+import { getSupabaseAdmin, configureRuntime, clearRuntime } from "@/runtime/env";
 import { z } from "zod";
+import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
 
 const app = new Hono<Env>();
+
+function extractUserIdFromBearer(req: Request): string | null {
+	const authHeader = req.headers.get("authorization");
+	if (!authHeader?.startsWith("Bearer ")) return null;
+	const token = authHeader.slice(7).trim();
+	const parts = token.split(".");
+	if (parts.length !== 3) return null;
+	try {
+		const payloadRaw = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+		const padded = payloadRaw + "===".slice((payloadRaw.length + 3) % 4);
+		const payload = JSON.parse(atob(padded));
+		return typeof payload?.user_id === "string" ? payload.user_id : null;
+	} catch {
+		return null;
+	}
+}
 
 function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { teamId: string | null; userId: string | null } {
 	return {
@@ -29,6 +46,27 @@ function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { teamId: st
 		userId: typeof ctx?.userId === "string" ? ctx.userId : null,
 	};
 }
+
+app.use("*", async (c, next) => {
+	configureRuntime(c.env);
+	try {
+		const auth = await guardAuth(c.req.raw);
+		if (!auth.ok) {
+			return (auth as GuardErr).response;
+		}
+		c.set("ctx", {
+			teamId: auth.value.teamId,
+			userId: extractUserIdFromBearer(c.req.raw),
+			apiKeyId: auth.value.apiKeyId,
+			apiKeyRef: auth.value.apiKeyRef,
+			apiKeyKid: auth.value.apiKeyKid,
+			internal: auth.value.internal,
+		});
+		return await next();
+	} finally {
+		clearRuntime();
+	}
+});
 
 // Validation schemas
 const createOAuthClientSchema = z.object({
@@ -62,6 +100,15 @@ app.post("/", async (c) => {
 		const authCtx = readAuthContext(c.get("ctx"));
 		if (!authCtx.teamId) {
 			return c.json({ error: "Unauthorized" }, 401);
+		}
+		if (!authCtx.userId) {
+			return c.json(
+				{
+					error: "user_token_required",
+					message: "OAuth client creation requires a user-scoped OAuth token",
+				},
+				400
+			);
 		}
 
 		// Parse and validate input

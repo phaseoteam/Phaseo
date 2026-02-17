@@ -8,7 +8,12 @@ import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { getProviderQuirks } from "@executors/_shared/text-generate/openai-compat/quirks";
 import { sanitizeOpenAICompatRequest } from "@executors/_shared/text-generate/openai-compat/provider-policy";
+import {
+	adaptRequestFromUpstreamError,
+	readErrorPayload,
+} from "@executors/_shared/text-generate/openai-compat/retry-policy";
 import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
 import { resolveProviderKey } from "@providers/keys";
 import { getBindings } from "@/runtime/env";
@@ -206,6 +211,7 @@ function cherryPickIRParams(
 			switch (entry) {
 				case "max_tokens":
 				case "max_output_tokens":
+				case "max_completion_tokens":
 					return "maxTokens";
 				case "temperature":
 					return "temperature";
@@ -274,50 +280,104 @@ function cherryPickIRParams(
 
 async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
+	const irRequest = args.ir as IRChatRequest;
+	const quirks = getProviderQuirks(args.providerId);
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta },
 		() => (getBindings() as any).X_AI_API_KEY || (getBindings() as any).XAI_API_KEY,
 	);
 
-	const modelForRoutingRaw = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
+	const modelForRoutingRaw = args.providerModelSlug ?? irRequest.model;
 	const modelForRouting = resolveXAiModelForRequest(
 		modelForRoutingRaw,
-		(args.ir as IRChatRequest).reasoning,
+		irRequest.reasoning,
 	);
 	const requestPayload = irToOpenAIResponses(
-		args.ir as IRChatRequest,
+		irRequest,
 		modelForRouting,
 		"openai",
 		args.capabilityParams,
 	);
 
-	if ((args.ir as IRChatRequest).stream) {
+	if (irRequest.stream) {
 		requestPayload.stream = true;
 		requestPayload.stream_options = {
 			...(requestPayload.stream_options ?? {}),
 			include_usage: true,
 		};
 	}
-	const sanitized = sanitizeOpenAICompatRequest({
-		providerId: args.providerId,
-		route: "responses",
-		model: modelForRouting,
-		request: requestPayload,
-	});
-	const requestBody = JSON.stringify(sanitized.request);
-	const captureRequest = Boolean(args.meta.debug?.return_upstream_request || args.meta.debug?.trace);
-	const mappedRequest = captureRequest ? requestBody : undefined;
-	try {
-		(args.ir as any).rawRequest = sanitized.request;
-	} catch {
-		// ignore if readonly
+
+	if (quirks.transformRequest) {
+		quirks.transformRequest({
+			request: requestPayload,
+			ir: irRequest,
+			model: modelForRouting,
+		});
 	}
 
-	const res = await fetch(openAICompatUrl(args.providerId, "/responses"), {
-		method: "POST",
-		headers: openAICompatHeaders(args.providerId, keyInfo.key),
-		body: requestBody,
-	});
+	const captureRequest = Boolean(args.meta.debug?.return_upstream_request || args.meta.debug?.trace);
+	const sendPayload = async (payload: Record<string, any>) => {
+		const sanitized = sanitizeOpenAICompatRequest({
+			providerId: args.providerId,
+			route: "responses",
+			model: modelForRouting,
+			request: payload,
+		});
+		if (args.meta.debug?.enabled && sanitized.dropped.length > 0) {
+			console.log("[gateway-debug] x-ai request sanitized", {
+				provider: args.providerId,
+				dropped: sanitized.dropped,
+			});
+		}
+		try {
+			(args.ir as any).rawRequest = sanitized.request;
+		} catch {
+			// ignore if readonly
+		}
+		const requestBody = JSON.stringify(sanitized.request);
+		const response = await fetch(openAICompatUrl(args.providerId, "/responses"), {
+			method: "POST",
+			headers: openAICompatHeaders(args.providerId, keyInfo.key),
+			body: requestBody,
+		});
+		return {
+			response,
+			request: sanitized.request,
+			requestBody,
+		};
+	};
+
+	let attempt = await sendPayload(requestPayload);
+	let res = attempt.response;
+	let requestBody = attempt.requestBody;
+	let mappedRequest = captureRequest ? requestBody : undefined;
+
+	let adaptiveRetryCount = 0;
+	while (!res.ok && adaptiveRetryCount < 3) {
+		const { errorText, errorPayload } = await readErrorPayload(res);
+		const adapted = adaptRequestFromUpstreamError({
+			providerId: args.providerId,
+			route: "responses",
+			request: attempt.request,
+			errorText,
+			errorPayload,
+		});
+		if (!adapted.changed) {
+			break;
+		}
+		if (args.meta.debug?.enabled) {
+			console.log("[gateway-debug] x-ai request adapted from upstream error", {
+				provider: args.providerId,
+				status: res.status,
+				dropped: adapted.dropped,
+			});
+		}
+		attempt = await sendPayload(adapted.request);
+		res = attempt.response;
+		requestBody = attempt.requestBody;
+		mappedRequest = captureRequest ? requestBody : undefined;
+		adaptiveRetryCount += 1;
+	}
 
 	const bill: Bill = {
 		cost_cents: 0,
@@ -340,7 +400,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		};
 	}
 
-	if ((args.ir as IRChatRequest).stream) {
+	if (irRequest.stream) {
 		const stream = resolveStreamForProtocol(res, args, "responses");
 		return {
 			kind: "stream",
@@ -360,6 +420,8 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 
 	const json = await res.json().catch(() => null);
 	if (json && typeof json === "object") {
+		quirks.normalizeResponse?.({ response: json, ir: irRequest });
+
 		const bindings = getBindings();
 		if (bindings.XAI_DEBUG_USAGE === "1") {
 			console.log("[x-ai][usage-debug] raw usage:", (json as any).usage ?? null);
@@ -367,13 +429,23 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	}
 
 	const ir = json
-		? openAIResponsesToIR(json, args.requestId, (args.ir as IRChatRequest).model, args.providerId)
+		? openAIResponsesToIR(json, args.requestId, irRequest.model, args.providerId)
 		: undefined;
 	if (ir) {
 		(ir as any).rawResponse = json;
 	}
 
-	const usageMeters = normalizeTextUsageForPricing(json?.usage);
+	const usageMetersBase = normalizeTextUsageForPricing(json?.usage);
+	const usageMeters = usageMetersBase
+		? { ...usageMetersBase, requests: usageMetersBase.requests ?? 1 }
+		: {
+			requests: 1,
+			input_tokens: 0,
+			input_text_tokens: 0,
+			output_tokens: 0,
+			output_text_tokens: 0,
+			total_tokens: 0,
+		};
 	if (usageMeters) {
 		const priced = computeBill(usageMeters, args.pricingCard);
 		bill.cost_cents = priced.pricing.total_cents;

@@ -8,6 +8,7 @@
 import type { ChatCompletionsRequest } from "@core/schemas";
 import type {
 	IRChatRequest,
+	IRContentPart,
 	IRMessage,
 	IRToolCall,
 	IRToolResult,
@@ -30,6 +31,10 @@ import { normalizeOpenAIContent } from "../shared/normalizeContent";
  */
 export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequest {
 	const reqAny = req as any;
+	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
+	const metadata = req.user
+		? { ...(metadataFromRequest ?? {}), user: req.user }
+		: metadataFromRequest;
 	// Transform messages
 	const messages: IRMessage[] = [];
 
@@ -43,18 +48,23 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 
 	// Transform message array
 	for (const msgAny of req.messages as Array<any>) {
-		const normalizedRole =
-			msgAny.role === "developer" ? "system" : msgAny.role;
+		const normalizedRole = msgAny.role;
 
-		if (normalizedRole === "system" || normalizedRole === "user") {
+		if (normalizedRole === "system" || normalizedRole === "developer" || normalizedRole === "user") {
 			messages.push({
 				role: normalizedRole,
 				content: normalizeOpenAIContent(msgAny.content),
 			});
 		} else if (normalizedRole === "assistant") {
+			const assistantContent = normalizeOpenAIContent(msgAny.content || "");
+			const reasoningContent = typeof msgAny.reasoning_content === "string" ? msgAny.reasoning_content : "";
+			const content: IRContentPart[] = reasoningContent
+				? [{ type: "reasoning_text", text: reasoningContent } as const, ...assistantContent]
+				: assistantContent;
+
 			messages.push({
 				role: "assistant",
-				content: normalizeOpenAIContent(msgAny.content || ""),
+				content,
 				toolCalls: Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined,
 			});
 		} else if (normalizedRole === "tool") {
@@ -88,7 +98,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		stream: req.stream ?? false,
 
 		// Generation parameters
-		maxTokens: req.max_tokens ?? req.max_output_tokens,
+		maxTokens: (req as any).max_completion_tokens ?? req.max_tokens ?? req.max_output_tokens,
 		temperature: req.temperature,
 		topP: req.top_p,
 		topK: req.top_k,
@@ -98,6 +108,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		tools,
 		toolChoice,
 		parallelToolCalls: req.parallel_tool_calls,
+		maxToolCalls: (req as any).max_tool_calls,
 
 		// Reasoning
 		reasoning: req.reasoning
@@ -112,6 +123,19 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		// Response format
 		responseFormat: normalizeResponseFormat(req.response_format),
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
+		imageConfig: (req as any).image_config
+			? {
+				aspectRatio: (req as any).image_config.aspect_ratio,
+				imageSize: (req as any).image_config.image_size,
+				fontInputs: Array.isArray((req as any).image_config.font_inputs)
+					? (req as any).image_config.font_inputs.map((entry: any) => ({
+						fontUrl: entry?.font_url,
+						text: entry?.text,
+					}))
+					: undefined,
+				superResolutionReferences: (req as any).image_config.super_resolution_references,
+			}
+			: undefined,
 
 		// Advanced parameters
 		frequencyPenalty: req.frequency_penalty,
@@ -120,15 +144,19 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		logprobs: req.logprobs,
 		topLogprobs: req.top_logprobs,
 		stop: reqAny.stop,
+		streamOptions: req.stream_options,
+		background: (req as any).background,
 		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
 		serviceTier: resolveRequestedServiceTier({
 			service_tier: (req as any).service_tier,
 			speed: (req as any).speed,
 		}),
+		promptCacheKey: (req as any).prompt_cache_key,
+		safetyIdentifier: (req as any).safety_identifier,
 
 		// Metadata
 		userId: req.user_id ?? req.user,
-		metadata: req.user ? { user: req.user } : undefined,
+		metadata,
 	};
 }
 
@@ -204,7 +232,7 @@ function normalizeResponseFormat(format: any): IRChatRequest["responseFormat"] {
 				type: "json_schema",
 				schema: format.schema || format.json_schema?.schema || format.json_schema?.schema_,
 				name: format.name || format.json_schema?.name,
-				strict: format.strict || format.json_schema?.strict,
+				strict: format.strict ?? format.json_schema?.strict,
 			};
 		}
 
@@ -220,6 +248,9 @@ function resolveRequestedServiceTier(input: {
 }): string | undefined {
 	const speed = typeof input.speed === "string" ? input.speed.toLowerCase() : undefined;
 	if (speed === "fast") return "priority";
-	return typeof input.service_tier === "string" ? input.service_tier : undefined;
+	if (typeof input.service_tier === "string" && input.service_tier.length > 0) {
+		return input.service_tier;
+	}
+	return undefined;
 }
 

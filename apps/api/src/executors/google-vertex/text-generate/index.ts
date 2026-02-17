@@ -9,6 +9,7 @@ import { resolveStreamForProtocol } from "@executors/_shared/text-generate/opena
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { irToAnthropicMessages, anthropicMessagesToIR } from "@executors/anthropic/text-generate";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
+import { transformStream as transformGoogleGeminiStream } from "@executors/google-ai-studio/text-generate";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey } from "@providers/keys";
@@ -56,10 +57,18 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	} else if (route.family === "gemini") {
 		const normalizedIr = withNormalizedReasoning(irRequest, args.capabilityParams, route.modelForPath);
 		payload = await irToGemini(normalizedIr, route.modelForPath);
-		endpoint = `${apiBase}/publishers/google/models/${encodeURIComponent(route.modelForPath)}:generateContent`;
+		endpoint = irRequest.stream
+			? `${apiBase}/publishers/google/models/${encodeURIComponent(route.modelForPath)}:streamGenerateContent?alt=sse`
+			: `${apiBase}/publishers/google/models/${encodeURIComponent(route.modelForPath)}:generateContent`;
 	} else {
 		payload = irToOpenAIChat(irRequest, route.modelForPayload, args.providerId, args.capabilityParams);
-		payload.stream = false;
+		payload.stream = Boolean(irRequest.stream);
+		if (payload.stream === true) {
+			payload.stream_options = {
+				...(payload.stream_options ?? {}),
+				include_usage: true,
+			};
+		}
 		endpoint = `${apiBase}/endpoints/openapi/chat/completions`;
 	}
 
@@ -96,6 +105,51 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
 		};
+	}
+
+	if (irRequest.stream && res.body) {
+		if (route.family === "gemini") {
+			const stream = transformGoogleGeminiStream(res.body, args);
+			return {
+				kind: "stream",
+				stream,
+				usageFinalizer: async () => null,
+				bill,
+				upstream: res,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				timing: {
+					latencyMs: undefined,
+					generationMs: undefined,
+				},
+			};
+		}
+
+		if (route.family === "openapi_chat") {
+			const stream = resolveStreamForProtocol(
+				new Response(res.body, {
+					status: res.status,
+					headers: res.headers,
+				}),
+				args,
+				"chat",
+			);
+			return {
+				kind: "stream",
+				stream,
+				usageFinalizer: async () => null,
+				bill,
+				upstream: res,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				timing: {
+					latencyMs: undefined,
+					generationMs: undefined,
+				},
+			};
+		}
 	}
 
 	const json = await res.json();
@@ -192,7 +246,7 @@ export function transformStream(stream: ReadableStream<Uint8Array>): ReadableStr
 	return stream;
 }
 
-function resolveVertexModelRoute(model: string): VertexModelRoute {
+export function resolveVertexModelRoute(model: string): VertexModelRoute {
 	const value = model.trim();
 	const lower = value.toLowerCase();
 
@@ -238,9 +292,9 @@ function resolveVertexApiBase(bindings: Record<string, any>): string {
 	return `https://${encodeURIComponent(location)}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}`;
 }
 
-async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
+export async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
 	const contents: any[] = [];
-	let systemInstruction: any = null;
+	const systemInstructionParts: any[] = [];
 	const toolNamesById = new Map<string, string>();
 
 	for (const msg of ir.messages) {
@@ -253,21 +307,21 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 
 	for (const msg of ir.messages) {
 		if (msg.role === "system" || msg.role === "developer") {
-			const parts = await irPartsToGeminiParts(msg.content);
-			systemInstruction = { parts };
+			const parts = await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true });
+			systemInstructionParts.push(...parts);
 			continue;
 		}
 		if (msg.role === "user") {
 			contents.push({
 				role: "user",
-				parts: await irPartsToGeminiParts(msg.content),
+				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true }),
 			});
 			continue;
 		}
 		if (msg.role === "assistant") {
 			contents.push({
 				role: "model",
-				parts: await irPartsToGeminiParts(msg.content),
+				parts: await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true }),
 			});
 			continue;
 		}
@@ -295,7 +349,6 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 	}
 
 	const request: any = { contents };
-	if (systemInstruction) request.systemInstruction = systemInstruction;
 
 	const generationConfig: any = {};
 	if (ir.temperature !== undefined) generationConfig.temperature = ir.temperature;
@@ -320,7 +373,11 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 		} else if (ir.reasoning?.maxTokens !== undefined) {
 			thinkingConfig.thinkingBudget = ir.reasoning.maxTokens;
 		} else if (ir.reasoning?.enabled) {
-			thinkingConfig.thinkingBudget = -1;
+			if (isGemini3) {
+				thinkingConfig.thinkingLevel = "HIGH";
+			} else {
+				thinkingConfig.thinkingBudget = -1;
+			}
 		}
 		generationConfig.thinkingConfig = thinkingConfig;
 	}
@@ -330,6 +387,21 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 	} else if (ir.responseFormat?.type === "json_schema") {
 		generationConfig.responseMimeType = "application/json";
 		generationConfig.responseSchema = ir.responseFormat.schema;
+
+		const schemaText = (() => {
+			try {
+				return JSON.stringify(ir.responseFormat?.schema ?? {});
+			} catch {
+				return "";
+			}
+		})();
+		if (schemaText) {
+			systemInstructionParts.push({
+				text:
+					`Return only valid JSON that matches this schema exactly: ${schemaText}. ` +
+					"Do not include markdown or any extra text.",
+			});
+		}
 	}
 
 	if (Array.isArray(ir.modalities) && ir.modalities.length > 0) {
@@ -339,7 +411,21 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 		if (mapped.length > 0) generationConfig.responseModalities = mapped;
 	}
 
+	if (ir.imageConfig) {
+		const imageConfig: any = {};
+		if (ir.imageConfig.aspectRatio) {
+			imageConfig.aspectRatio = ir.imageConfig.aspectRatio;
+		}
+		if (ir.imageConfig.imageSize) {
+			imageConfig.imageSize = ir.imageConfig.imageSize;
+		}
+		if (Object.keys(imageConfig).length > 0) {
+			generationConfig.imageConfig = imageConfig;
+		}
+	}
+
 	if (Object.keys(generationConfig).length > 0) request.generationConfig = generationConfig;
+	if (systemInstructionParts.length > 0) request.systemInstruction = { parts: systemInstructionParts };
 
 	if (ir.tools && ir.tools.length > 0) {
 		request.tools = [{
@@ -365,7 +451,7 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 	return request;
 }
 
-function geminiToIR(
+export function geminiToIR(
 	json: any,
 	requestId: string,
 	model: string,
@@ -381,7 +467,16 @@ function geminiToIR(
 			for (const part of candidate.content.parts) {
 				const inlineData = normalizeGeminiInlineData(part);
 				if (part.text) {
-					contentParts.push({ type: "text", text: part.text });
+					if (part.thought) {
+						contentParts.push({
+							type: "reasoning_text",
+							text: part.text,
+							thoughtSignature: part.thought_signature,
+							summary: part.thought_summary,
+						} as any);
+					} else {
+						contentParts.push({ type: "text", text: part.text });
+					}
 				} else if (inlineData?.data) {
 					contentParts.push({
 						type: "image",

@@ -12,6 +12,18 @@ export type MusicJobMeta = {
 	model?: string | null;
 	duration?: number | null;
 	format?: string | null;
+	status?: "queued" | "in_progress" | "completed" | "failed" | string | null;
+	nativeResponseId?: string | null;
+	output?: Array<{
+		index?: number;
+		id?: string | null;
+		audio_url?: string | null;
+		stream_audio_url?: string | null;
+		image_url?: string | null;
+		title?: string | null;
+		tags?: string | null;
+		duration?: number | null;
+	}> | null;
 	createdAt?: number;
 };
 

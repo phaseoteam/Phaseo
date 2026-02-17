@@ -1,6 +1,6 @@
-// Purpose: Shared non-text executor bridge.
-// Why: Reuses provider adapter endpoint logic while enforcing IR execution flow.
-// How: Converts endpoint IR <-> adapter payloads and delegates upstream execution.
+// Purpose: Shared non-text executor.
+// Why: Keeps non-text execution on the IR path without going through adapter registry dispatch.
+// How: Converts endpoint IR <-> provider payloads and calls provider endpoint executors directly.
 
 import type {
 	IRAudioSpeechRequest,
@@ -19,9 +19,19 @@ import type {
 } from "@core/ir";
 import type { Endpoint } from "@core/types";
 import type { ProviderExecuteArgs } from "@providers/types";
-import { adapterFor } from "@providers/index";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import type { ProviderExecutor } from "@executors/types";
+import { isOpenAICompatProvider } from "@providers/openai-compatible/config";
+import * as openaiImages from "@providers/openai/endpoints/images";
+import * as openaiImagesEdits from "@providers/openai/endpoints/images-edits";
+import * as openaiAudioSpeech from "@providers/openai/endpoints/audio-speech";
+import * as openaiAudioTranscription from "@providers/openai/endpoints/audio-transcription";
+import * as openaiAudioTranslation from "@providers/openai/endpoints/audio-translation";
+import * as mistralOcr from "@providers/mistral/endpoints/ocr";
+import * as elevenLabsAudioSpeech from "@providers/elevenlabs/endpoints/audio-speech";
+import * as elevenLabsAudioTranscription from "@providers/elevenlabs/endpoints/audio-transcription";
+import * as elevenLabsMusic from "@providers/elevenlabs/endpoints/music-generate";
+import * as sunoMusic from "@providers/suno/endpoints/music-generate";
 
 type NonTextEndpoint =
 	| "images.generations"
@@ -109,6 +119,10 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				n: request.n,
 				quality: request.quality,
 				response_format: request.responseFormat,
+				output_format: request.outputFormat,
+				output_compression: request.outputCompression,
+				background: request.background,
+				moderation: request.moderation,
 				style: request.style,
 				user: request.userId,
 			};
@@ -124,6 +138,13 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				prompt: request.prompt,
 				size: request.size,
 				n: request.n,
+				quality: request.quality ?? raw.quality,
+				response_format: request.responseFormat ?? raw.response_format,
+				output_format: request.outputFormat ?? raw.output_format,
+				output_compression: request.outputCompression ?? raw.output_compression,
+				background: request.background ?? raw.background,
+				moderation: request.moderation ?? raw.moderation,
+				input_fidelity: request.inputFidelity ?? raw.input_fidelity,
 				user: request.userId ?? raw.user,
 			};
 		}
@@ -135,6 +156,8 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				input: request.input,
 				voice: request.voice,
 				format: request.format,
+				response_format: request.responseFormat ?? request.format,
+				stream_format: request.streamFormat,
 				speed: request.speed,
 				instructions: request.instructions,
 				user: request.userId,
@@ -145,11 +168,13 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 			const request = ir as IRAudioTranscriptionRequest;
 			return {
 				model: providerModel,
-				audio_url: request.audioUrl,
-				audio_b64: request.audioBase64,
+				file: request.file,
 				language: request.language,
 				prompt: request.prompt,
 				temperature: request.temperature,
+				response_format: request.responseFormat,
+				timestamp_granularities: request.timestampGranularities,
+				include: request.include,
 			};
 		}
 
@@ -157,11 +182,11 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 			const request = ir as IRAudioTranslationRequest;
 			return {
 				model: providerModel,
-				audio_url: request.audioUrl,
-				audio_b64: request.audioBase64,
+				file: request.file,
 				language: request.language,
 				prompt: request.prompt,
 				temperature: request.temperature,
+				response_format: request.responseFormat,
 			};
 		}
 
@@ -183,6 +208,7 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				format: request.format,
 				suno: (request.vendor as any)?.suno,
 				elevenlabs: (request.vendor as any)?.elevenlabs,
+				minimax: (request.vendor as any)?.minimax,
 			};
 		}
 	}
@@ -312,17 +338,63 @@ async function parseJsonIfAny(response: Response): Promise<any | null> {
 	return response.clone().json().catch(() => null);
 }
 
+async function executeProviderEndpoint(
+	endpoint: NonTextEndpoint,
+	providerId: string,
+	providerArgs: ProviderExecuteArgs,
+) {
+	switch (endpoint) {
+		case "images.generations":
+			if (!isOpenAICompatProvider(providerId)) {
+				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
+			}
+			return openaiImages.exec(providerArgs);
+		case "images.edits":
+			if (!isOpenAICompatProvider(providerId)) {
+				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
+			}
+			return openaiImagesEdits.exec(providerArgs);
+		case "audio.speech":
+			if (providerId === "elevenlabs") {
+				return elevenLabsAudioSpeech.exec(providerArgs);
+			}
+			if (!isOpenAICompatProvider(providerId)) {
+				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
+			}
+			return openaiAudioSpeech.exec(providerArgs);
+		case "audio.transcription":
+			if (providerId === "elevenlabs") {
+				return elevenLabsAudioTranscription.exec(providerArgs);
+			}
+			if (!isOpenAICompatProvider(providerId)) {
+				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
+			}
+			return openaiAudioTranscription.exec(providerArgs);
+		case "audio.translations":
+			if (!isOpenAICompatProvider(providerId)) {
+				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
+			}
+			return openaiAudioTranslation.exec(providerArgs);
+		case "ocr":
+			if (providerId !== "mistral") {
+				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
+			}
+			return mistralOcr.exec(providerArgs);
+		case "music.generate":
+			if (providerId === "suno") return sunoMusic.exec(providerArgs);
+			if (providerId === "elevenlabs") return elevenLabsMusic.exec(providerArgs);
+			throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
+		default:
+			throw new Error(`non_text_unsupported_endpoint_${endpoint}`);
+	}
+}
+
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	if (!isNonTextEndpoint(args.endpoint)) {
-		throw new Error(`adapter_bridge_non_text_unsupported_endpoint_${args.endpoint}`);
+		throw new Error(`non_text_unsupported_endpoint_${args.endpoint}`);
 	}
 
 	const providerModel = args.providerModelSlug || (args.ir as any).model;
-	const adapter = adapterFor(args.providerId, args.endpoint);
-	if (!adapter) {
-		throw new Error(`adapter_bridge_missing_adapter_${args.providerId}_${args.endpoint}`);
-	}
-
 	const body = irToAdapterBody(args.endpoint, args.ir, providerModel);
 	const mappedRequest = (() => {
 		if (!(args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)) return undefined;
@@ -357,7 +429,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		stream: false,
 	};
 
-	const adapterResult = await adapter.execute(providerArgs);
+	const adapterResult = await executeProviderEndpoint(args.endpoint, args.providerId, providerArgs);
 	const keySource = adapterResult.keySource ?? "gateway";
 	const byokKeyId = adapterResult.byokKeyId ?? null;
 

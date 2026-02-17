@@ -7,16 +7,76 @@ import { z } from "zod";
 import type { Endpoint, RequestMeta } from "@core/types";
 import { getEdgeMeta } from "@core/edge";
 import { err } from "./http";
-import { extractModel, formatZodErrors, buildProviderCandidates } from "./utils";
+import { extractModel, formatZodErrors, buildProviderCandidatesWithDiagnostics } from "./utils";
 import { fetchGatewayContext } from "./context";
 import { generatePublicId } from "./genId";
 import { isDebugAllowed } from "../debug";
 import type { DebugOptions } from "@core/types";
 import { authenticate, type AuthFailure } from "./auth";
 import { readAttributionHeaders } from "../after/attribution";
+import type { ProviderCandidateBuildDiagnostics } from "./types";
 
 const MIN_CREDIT_AMOUNT = 1.0;
 const TRUTHY_VALUES = new Set(["1", "true", "yes"]);
+const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities"]);
+const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities"]);
+
+function normalizeFormKey(key: string): { key: string; array: boolean } {
+    if (/\[\]$/.test(key)) {
+        return { key: key.slice(0, -2), array: true };
+    }
+    const indexed = key.match(/^(.*)\[(\d+)\]$/);
+    if (indexed) {
+        return { key: indexed[1], array: true };
+    }
+    return { key, array: false };
+}
+
+function maybeParseJsonFormValue(key: string, value: string): unknown {
+    if (!FORM_JSON_FIELDS.has(key)) return value;
+    const trimmed = value.trim();
+    if (!trimmed || (!trimmed.startsWith("{") && !trimmed.startsWith("["))) return value;
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        return value;
+    }
+}
+
+function appendFormField(output: Record<string, unknown>, key: string, value: FormDataEntryValue): void {
+    const { key: normalizedKey, array } = normalizeFormKey(key);
+    const forceArray = array || FORM_FORCE_ARRAY_FIELDS.has(normalizedKey);
+    const parsedValue = typeof value === "string"
+        ? maybeParseJsonFormValue(normalizedKey, value)
+        : value;
+    if (!forceArray && !(normalizedKey in output)) {
+        output[normalizedKey] = parsedValue;
+        return;
+    }
+    const current = output[normalizedKey];
+    if (forceArray && current === undefined) {
+        output[normalizedKey] = Array.isArray(parsedValue) ? [...parsedValue] : [parsedValue];
+        return;
+    }
+    if (Array.isArray(current)) {
+        if (Array.isArray(parsedValue)) {
+            current.push(...parsedValue);
+        } else {
+            current.push(parsedValue);
+        }
+        return;
+    }
+    output[normalizedKey] = current === undefined ? [parsedValue] : [current, parsedValue];
+}
+
+async function parseFormBody(req: Request): Promise<Record<string, unknown>> {
+    const form = await req.formData();
+    const output: Record<string, unknown> = {};
+    for (const [key, value] of form.entries()) {
+        appendFormField(output, key, value);
+    }
+    return output;
+}
 
 export function normalizeReturnFlag(value: unknown): boolean {
     if (typeof value === "boolean") return value;
@@ -58,7 +118,12 @@ export async function guardAuth(req: Request): Promise<GuardResult<{
 }
 
 export async function guardJson(req: Request, teamId: string, requestId: string): Promise<GuardResult<any>> {
+    const contentType = (req.headers.get("content-type") || "").toLowerCase();
     try {
+        if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
+            const body = await parseFormBody(req);
+            return { ok: true, value: body };
+        }
         const body = await req.json();
         return { ok: true, value: body };
     } catch {
@@ -100,7 +165,7 @@ export async function guardContext(args: {
     requestId: string;
     internal?: boolean;
     disableCache?: boolean;
-}): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null }>> {
+}): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
     try {
         const context = await fetchGatewayContext({
             teamId: args.teamId,
@@ -145,7 +210,7 @@ export async function guardContext(args: {
             };
         }
 
-        const providers = buildProviderCandidates(context);
+        const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
         if (!providers.length) {
             return {
                 ok: false,
@@ -154,11 +219,20 @@ export async function guardContext(args: {
                     endpoint: args.endpoint,
                     request_id: args.requestId,
                     team_id: args.teamId,
+                    provider_candidate_diagnostics: candidateDiagnostics,
                 }),
             };
         }
 
-        return { ok: true, value: { context, providers, resolvedModel: context.resolvedModel } };
+        return {
+            ok: true,
+            value: {
+                context,
+                providers,
+                resolvedModel: context.resolvedModel,
+                candidateDiagnostics,
+            },
+        };
     } catch (e) {
         console.error("[guardContext] gateway_context_failed", e);
         return {

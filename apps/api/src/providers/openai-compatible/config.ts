@@ -31,6 +31,21 @@ const OPENAI_LEGACY_COMPLETIONS_MODELS = new Set<string>([
     "openai/davinci-002",
 ]);
 
+const ALIBABA_RESPONSES_MODELS = new Set<string>([
+    "qwen3.5-plus",
+    "qwen3.5-plus-2026-02-15",
+    "qwen3.5-397b-a17b",
+    "qwen3-max",
+    "qwen3-max-2026-01-23",
+    "qwen3-max-preview",
+    "qwen-plus",
+    "qwen-plus-latest",
+    "qwen-max",
+    "qwen-max-latest",
+]);
+
+const ALIBABA_RESPONSES_PATH_PREFIX = "/api/v2/apps/protocols/compatible-mode/v1";
+
 const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     openai: {
         providerId: "openai",
@@ -40,7 +55,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "OPENAI_BASE_URL",
         supportsResponses: true,
     },
-    // AI21 - OpenAI-style Studio API
+    // Alibaba DashScope OpenAI-compatible API
     alibaba: {
         providerId: "alibaba",
         baseUrl: "https://dashscope-intl.aliyuncs.com",
@@ -277,9 +292,11 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     novitaai: {
         providerId: "novitaai",
         baseUrl: "https://api.novita.ai",
-        pathPrefix: "/v3/openai",
+        // Novita OpenAI-compatible endpoints are documented under /openai/v1.
+        pathPrefix: "/openai/v1",
         apiKeyEnv: "NOVITA_API_KEY",
         baseUrlEnv: "NOVITA_BASE_URL",
+        supportsResponses: false,
     },
     crusoe: {
         providerId: "crusoe",
@@ -389,6 +406,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/inference/v1",
         apiKeyEnv: "FIREWORKS_API_KEY",
         baseUrlEnv: "FIREWORKS_BASE_URL",
+        supportsResponses: true,
     },
     perplexity: {
         providerId: "perplexity",
@@ -396,6 +414,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "",
         apiKeyEnv: "PERPLEXITY_API_KEY",
         baseUrlEnv: "PERPLEXITY_BASE_URL",
+        supportsResponses: false,
     },
     liquid: {
         providerId: "liquid",
@@ -489,8 +508,13 @@ export function isOpenAICompatProvider(providerId: string): boolean {
 
 export function openAICompatUrl(providerId: string, path: string): string {
     const config = resolveOpenAICompatConfig(providerId);
-    const base = config.baseUrl?.replace(/\/+$/, "") ?? "";
-    const configuredPrefix = normalizePathSegment(config.pathPrefix ?? "/v1");
+    const suffix = normalizePathSegment(path);
+    const isAlibabaResponsesRoute =
+        (providerId === "alibaba" || providerId === "qwen") && suffix === "/responses";
+    let base = config.baseUrl?.replace(/\/+$/, "") ?? "";
+    const configuredPrefix = normalizePathSegment(
+        isAlibabaResponsesRoute ? ALIBABA_RESPONSES_PATH_PREFIX : (config.pathPrefix ?? "/v1"),
+    );
     let prefix = configuredPrefix;
 
     // Many provider docs specify a base URL that already includes a path prefix
@@ -501,13 +525,20 @@ export function openAICompatUrl(providerId: string, path: string): string {
             const basePath = parsed.pathname.replace(/\/+$/, "");
             if (basePath === configuredPrefix || basePath.endsWith(configuredPrefix)) {
                 prefix = "";
+            } else if (isAlibabaResponsesRoute) {
+                const chatPrefix = normalizePathSegment(config.pathPrefix ?? "");
+                if (chatPrefix && (basePath === chatPrefix || basePath.endsWith(chatPrefix))) {
+                    // Alibaba Responses lives under a different prefix than Chat.
+                    // If callers configure base URL ending in chat prefix, trim it before appending responses prefix.
+                    const trimmedBasePath = basePath.slice(0, basePath.length - chatPrefix.length).replace(/\/+$/, "");
+                    base = `${parsed.origin}${trimmedBasePath}`;
+                }
             }
         } catch {
             // Ignore parse failures; fallback keeps existing behavior.
         }
     }
 
-    const suffix = normalizePathSegment(path);
     return `${base}${prefix}${suffix}`;
 }
 
@@ -542,6 +573,19 @@ function normalizeOpenAIModelName(model?: string | null): string {
     return parts[parts.length - 1] || value;
 }
 
+function supportsAlibabaResponsesModel(model?: string | null): boolean {
+    const normalized = normalizeOpenAIModelName(model).toLowerCase();
+    if (!normalized) return false;
+    if (ALIBABA_RESPONSES_MODELS.has(normalized)) return true;
+    // Allow pinned release tags in supported model families.
+    return normalized.startsWith("qwen3.5-plus-")
+        || normalized.startsWith("qwen3.5-397b-a17b-")
+        || normalized.startsWith("qwen3-max-")
+        || normalized.startsWith("qwen3-max-preview-")
+        || normalized.startsWith("qwen-plus-")
+        || normalized.startsWith("qwen-max-");
+}
+
 export function resolveOpenAICompatRoute(providerId: string, model?: string | null): OpenAICompatRoute {
     const config = resolveOpenAICompatConfig(providerId);
     const normalized = normalizeOpenAIModelName(model);
@@ -554,6 +598,10 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
             return "chat";
         }
         return "responses";
+    }
+
+    if (providerId === "alibaba" || providerId === "qwen") {
+        return supportsAlibabaResponsesModel(normalized) ? "responses" : "chat";
     }
 
     if (typeof config.supportsResponses === "boolean") {

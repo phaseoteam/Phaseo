@@ -8,10 +8,25 @@
 import type { ProviderQuirks } from "../../quirks/types";
 import { applyJsonSchemaFallback } from "../../quirks/structured";
 
+function isReasoningModel(model: unknown): boolean {
+	if (typeof model !== "string") return false;
+	const normalized = model.toLowerCase();
+	if (normalized.includes("non-reasoning")) return false;
+	return normalized.includes("reasoning") || normalized.includes("grok-4");
+}
+
 export const xAiQuirks: ProviderQuirks = {
-	transformRequest: ({ request }) => {
+	transformRequest: ({ request, model }) => {
 		// xAI rejects some OpenAI json_schema forms on compatibility endpoints.
 		applyJsonSchemaFallback(request);
+
+		// xAI reasoning models reject presence_penalty/frequency_penalty/stop.
+		// Keep requests compatible by stripping these upfront.
+		if (isReasoningModel(model ?? request?.model)) {
+			delete request.presence_penalty;
+			delete request.frequency_penalty;
+			delete request.stop;
+		}
 	},
 
 	normalizeResponse: ({ response }) => {
@@ -35,6 +50,11 @@ export const xAiQuirks: ProviderQuirks = {
 		}
 		if (usage.total_tokens == null && (usage.input_tokens != null || usage.output_tokens != null)) {
 			usage.total_tokens = (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
+		}
+
+		// Keep request-count meter available for request-priced cards.
+		if (typeof usage.requests !== "number") {
+			usage.requests = 1;
 		}
 	},
 };

@@ -18,42 +18,6 @@ function resolveElevenLabsModelSlug(requestedModel: string, providerModelSlug?: 
 	return normalized.replace(/-/g, "_");
 }
 
-function decodeAudioBase64(input: string): { bytes: Uint8Array; mimeType: string; filename: string } {
-	const trimmed = input.trim();
-	const dataUrl = trimmed.match(/^data:([^;]+);base64,(.+)$/);
-	let base64 = trimmed;
-	let mimeType = "audio/wav";
-
-	if (dataUrl) {
-		mimeType = dataUrl[1] || mimeType;
-		base64 = dataUrl[2] || "";
-	}
-
-	const binary = atob(base64);
-	const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-	let ext = "wav";
-	if (mimeType.includes("mpeg") || mimeType.includes("mp3")) ext = "mp3";
-	else if (mimeType.includes("ogg")) ext = "ogg";
-	else if (mimeType.includes("aac")) ext = "aac";
-	else if (mimeType.includes("flac")) ext = "flac";
-	return { bytes, mimeType, filename: `audio.${ext}` };
-}
-
-function invalidAudioResponse(): Response {
-	return new Response(
-		JSON.stringify({
-			error: {
-				type: "invalid_request_error",
-				message: 'Invalid "audio_b64" value for ElevenLabs audio.transcription.',
-			},
-		}),
-		{
-			status: 400,
-			headers: { "Content-Type": "application/json" },
-		},
-	);
-}
-
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	const keyInfo = resolveProviderKey(args, () => {
 		const bindings = getBindings() as any;
@@ -71,30 +35,10 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	if (typedPayload.language) {
 		form.append("language_code", typedPayload.language);
 	}
-
-	if (typedPayload.audio_url) {
-		form.append("cloud_storage_url", typedPayload.audio_url);
-	} else if (typedPayload.audio_b64) {
-		let decoded: { bytes: Uint8Array; mimeType: string; filename: string };
-		try {
-			decoded = decodeAudioBase64(typedPayload.audio_b64);
-		} catch {
-			return {
-				kind: "completed",
-				upstream: invalidAudioResponse(),
-				bill: {
-					cost_cents: 0,
-					currency: "USD",
-					usage: undefined,
-					upstream_id: null,
-					finish_reason: null,
-				},
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-			};
-		}
-		form.append("file", new Blob([Uint8Array.from(decoded.bytes)], { type: decoded.mimeType }), decoded.filename);
-	}
+	const filename = typeof File !== "undefined" && typedPayload.file instanceof File && typedPayload.file.name
+		? typedPayload.file.name
+		: "audio";
+	form.append("file", typedPayload.file, filename);
 
 	const res = await fetch(`${baseUrl}/v1/speech-to-text`, {
 		method: "POST",

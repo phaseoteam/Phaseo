@@ -240,6 +240,29 @@ export type RoutedCandidate = {
     health: ProviderHealth;
 };
 
+export type RoutingFilterStageDiagnostics = {
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "health_breaker";
+    beforeCount: number;
+    afterCount: number;
+    droppedProviders: Array<{
+        providerId: string;
+        reason: string;
+    }>;
+};
+
+export type RoutingDiagnostics = {
+    model: string;
+    endpoint: Endpoint;
+    priority: Priority;
+    routingMode: RoutingMode;
+    strictPriority: boolean;
+    includeAlpha: boolean;
+    betaChannelEnabled: boolean;
+    providerCapabilitiesBeta: boolean;
+    filterStages: RoutingFilterStageDiagnostics[];
+    finalCandidateCount: number;
+};
+
 /**
  * Extracts the requested max_tokens from the request body
  */
@@ -295,9 +318,10 @@ export async function routeProviders(
         body?: any;
         routingMode?: string | null;
         betaChannelEnabled?: boolean;
+        providerCapabilitiesBeta?: boolean;
         requestId?: string | null;
     }
-): Promise<RoutedCandidate[]> {
+): Promise<{ ranked: RoutedCandidate[]; diagnostics: RoutingDiagnostics }> {
     const { base, priority, strict } = parsePriority(ctx.model);
     const mode = normalizeRoutingMode(ctx.routingMode);
     const preset = applyRoutingMode(PRESETS[priority], mode);
@@ -313,30 +337,83 @@ export async function routeProviders(
     const ignoreHints = normalizeProviderList(hints.ignore ?? []);
     const orderedHints = normalizeProviderList(hints.order ?? []);
     const betaChannelEnabled = Boolean(ctx.betaChannelEnabled);
+    const providerCapabilitiesBeta = Boolean(ctx.providerCapabilitiesBeta);
+    const allowBetaProviders = betaChannelEnabled || providerCapabilitiesBeta;
     const requestedMaxTokens = getRequestedMaxTokens(ctx.body);
+    const filterStages: RoutingFilterStageDiagnostics[] = [];
+
+    const pushStage = (
+        stage: RoutingFilterStageDiagnostics["stage"],
+        before: ProviderCandidate[],
+        after: ProviderCandidate[],
+        reasonForDrop: (candidate: ProviderCandidate) => string,
+    ) => {
+        const afterSet = new Set(after.map((candidate) => candidate.providerId));
+        const droppedProviders = before
+            .filter((candidate) => !afterSet.has(candidate.providerId))
+            .map((candidate) => ({
+                providerId: candidate.providerId,
+                reason: reasonForDrop(candidate),
+            }));
+        filterStages.push({
+            stage,
+            beforeCount: before.length,
+            afterCount: after.length,
+            droppedProviders,
+        });
+    };
 
     let poolCandidates = candidates;
     if (onlyHints.length) {
+        const before = poolCandidates;
         const allow = new Set(onlyHints);
         poolCandidates = poolCandidates.filter(c => allow.has(c.adapter.name));
+        pushStage("hints.only", before, poolCandidates, () => "not_in_provider.only");
     }
     if (ignoreHints.length) {
+        const before = poolCandidates;
         const deny = new Set(ignoreHints);
         poolCandidates = poolCandidates.filter(c => !deny.has(c.adapter.name));
+        pushStage("hints.ignore", before, poolCandidates, () => "listed_in_provider.ignore");
     }
     if (!poolCandidates.length) poolCandidates = candidates;
 
     // Channel/status gating before health scoring.
+    const beforeStatusGate = poolCandidates;
     poolCandidates = poolCandidates.filter((candidate) => {
         const status = normalizeProviderStatus(candidate.providerStatus);
         if (status === "active") return true;
-        if (status === "beta") return betaChannelEnabled;
+        if (status === "beta") return allowBetaProviders;
         if (status === "alpha") return includeAlpha;
         return false;
     });
+    pushStage("status_gate", beforeStatusGate, poolCandidates, (candidate) => {
+        const status = normalizeProviderStatus(candidate.providerStatus);
+        if (status === "beta") return "beta_requires_team_beta_channel";
+        if (status === "alpha") return "alpha_requires_provider.include_alpha";
+        if (status === "not_ready") return "provider_status_not_ready";
+        return `provider_status_${status}`;
+    });
 
     if (!poolCandidates.length) {
-        return [];
+        const diagnostics: RoutingDiagnostics = {
+            model: ctx.model,
+            endpoint: ctx.endpoint,
+            priority,
+            routingMode: mode,
+            strictPriority: strict,
+            includeAlpha,
+            betaChannelEnabled,
+            providerCapabilitiesBeta,
+            filterStages,
+            finalCandidateCount: 0,
+        };
+        console.log("[gateway] provider pool empty", {
+            model: ctx.model,
+            endpoint: ctx.endpoint,
+            diagnostics,
+        });
+        return { ranked: [], diagnostics };
     }
 
     if (orderedHints.length) {
@@ -359,6 +436,19 @@ export async function routeProviders(
     const now = Date.now();
     const viable = healths.filter(x => !(x.h.breaker === "open" && (x.h.breaker_until_ms ?? 0) > now));
     const pool = viable.length ? viable : healths;
+    if (viable.length !== healths.length) {
+        filterStages.push({
+            stage: "health_breaker",
+            beforeCount: healths.length,
+            afterCount: pool.length,
+            droppedProviders: healths
+                .filter((entry) => entry.h.breaker === "open" && (entry.h.breaker_until_ms ?? 0) > now)
+                .map((entry) => ({
+                    providerId: entry.candidate.providerId,
+                    reason: "breaker_open",
+                })),
+        });
+    }
     console.log("[gateway] provider pool", {
         model: ctx.model,
         endpoint: ctx.endpoint,
@@ -370,6 +460,7 @@ export async function routeProviders(
                 entry.h.breaker === "open" &&
                 (entry.h.breaker_until_ms ?? 0) > now
         ).length,
+        filterStages,
     });
 
     const latP50s = pool.map(v => v.h.lat_ewma_60s);
@@ -427,16 +518,76 @@ export async function routeProviders(
         const orderedSet = new Set(ordered.map((entry) => entry.adapter.name));
         const remaining = scored.filter((entry) => !orderedSet.has(entry.adapter.name));
         if (strict) {
-            return [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
+            const ranked = [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
+            return {
+                ranked,
+                diagnostics: {
+                    model: ctx.model,
+                    endpoint: ctx.endpoint,
+                    priority,
+                    routingMode: mode,
+                    strictPriority: strict,
+                    includeAlpha,
+                    betaChannelEnabled,
+                    providerCapabilitiesBeta,
+                    filterStages,
+                    finalCandidateCount: ranked.length,
+                },
+            };
         }
-        return [...ordered, ...weightedOrder(remaining, (s) => s.score, rng)];
+        const ranked = [...ordered, ...weightedOrder(remaining, (s) => s.score, rng)];
+        return {
+            ranked,
+            diagnostics: {
+                model: ctx.model,
+                endpoint: ctx.endpoint,
+                priority,
+                routingMode: mode,
+                strictPriority: strict,
+                includeAlpha,
+                betaChannelEnabled,
+                providerCapabilitiesBeta,
+                filterStages,
+                finalCandidateCount: ranked.length,
+            },
+        };
     }
 
     if (strict) {
-        return [...scored].sort((a, b) => b.score - a.score);
+        const ranked = [...scored].sort((a, b) => b.score - a.score);
+        return {
+            ranked,
+            diagnostics: {
+                model: ctx.model,
+                endpoint: ctx.endpoint,
+                priority,
+                routingMode: mode,
+                strictPriority: strict,
+                includeAlpha,
+                betaChannelEnabled,
+                providerCapabilitiesBeta,
+                filterStages,
+                finalCandidateCount: ranked.length,
+            },
+        };
     }
 
-    return weightedOrder(scored, (s) => s.score, rng);
+    const ranked = weightedOrder(scored, (s) => s.score, rng);
+    return {
+        ranked,
+        diagnostics: {
+            model: ctx.model,
+            endpoint: ctx.endpoint,
+            priority,
+            routingMode: mode,
+            strictPriority: strict,
+            includeAlpha,
+            betaChannelEnabled,
+            providerCapabilitiesBeta,
+            filterStages,
+            finalCandidateCount: ranked.length,
+        },
+    };
 }
 
 

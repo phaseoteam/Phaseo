@@ -239,5 +239,123 @@ describe("irToOpenAIResponses", () => {
 		expect(request.reasoning.effort).toBe("low");
 		expect(request.reasoning.summary).toBe("auto");
 	});
+
+	it("maps OpenAI service_tier=standard to default", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hi" }],
+			}],
+			stream: false,
+			serviceTier: "standard",
+		} as any, "gpt-5-nano", "openai");
+
+		expect(request.service_tier).toBe("default");
+	});
+
+	it("normalizes Fireworks responses payload shape", () => {
+		const request = irToOpenAIResponses({
+			model: "fireworks/llama",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hello" }],
+			}],
+			stream: false,
+			tools: [{
+				name: "lookup",
+				description: "Lookup records",
+				parameters: { type: "object", properties: {} },
+			}],
+			toolChoice: { name: "lookup" },
+			responseFormat: {
+				type: "json_object",
+			},
+		} as any, "accounts/fireworks/models/llama-v3p3-70b-instruct", "fireworks");
+
+		expect(request.input).toBeDefined();
+		expect(request.input_items).toBeUndefined();
+		expect(request.tools).toEqual([{
+			type: "function",
+			name: "lookup",
+			description: "Lookup records",
+			parameters: { type: "object", properties: {} },
+		}]);
+		expect(request.tool_choice).toEqual({
+			type: "function",
+			name: "lookup",
+		});
+		expect(request.response_format).toBeUndefined();
+		expect(request.text).toEqual({
+			format: { type: "json_object" },
+		});
+	});
+
+	it("normalizes Groq responses payload shape", () => {
+		const request = irToOpenAIResponses({
+			model: "groq/llama",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hello" }],
+			}],
+			stream: false,
+			tools: [{
+				name: "lookup",
+				description: "Lookup records",
+				parameters: { type: "object", properties: {} },
+			}],
+			toolChoice: { name: "lookup" },
+			responseFormat: {
+				type: "json_schema",
+				name: "result",
+				schema: {
+					type: "object",
+					properties: { answer: { type: "string" } },
+					required: ["answer"],
+				},
+			},
+			store: true,
+			previousResponseId: "resp_prev_1",
+			truncation: "auto",
+			include: ["usage"],
+			prompt: "reuse me",
+			promptCacheKey: "cache_1",
+			safetyIdentifier: "safety_1",
+		} as any, "llama-3.3-70b-versatile", "groq");
+
+		expect(request.input).toBeDefined();
+		expect(request.input_items).toBeUndefined();
+		expect(request.tools).toEqual([{
+			type: "function",
+			name: "lookup",
+			description: "Lookup records",
+			parameters: { type: "object", properties: {} },
+		}]);
+		expect(request.tool_choice).toEqual({
+			type: "function",
+			name: "lookup",
+		});
+		expect(request.response_format).toBeUndefined();
+		expect(request.text).toEqual({
+			format: {
+				type: "json_schema",
+				name: "result",
+				schema: {
+					type: "object",
+					properties: { answer: { type: "string" } },
+					required: ["answer"],
+					additionalProperties: false,
+				},
+				strict: true,
+			},
+		});
+		expect(request.store).toBeUndefined();
+		expect(request.previous_response_id).toBeUndefined();
+		expect(request.truncation).toBeUndefined();
+		expect(request.include).toBeUndefined();
+		expect(request.prompt).toBeUndefined();
+		expect(request.prompt_cache_key).toBeUndefined();
+		expect(request.safety_identifier).toBeUndefined();
+	});
 });
 

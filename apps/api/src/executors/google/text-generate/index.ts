@@ -150,6 +150,23 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 		}
 	}
 
+	// Image generation configuration (multimodal text.generate)
+	if (ir.imageConfig) {
+		const imageConfig: any = {};
+
+		if (ir.imageConfig.aspectRatio) {
+			imageConfig.aspectRatio = ir.imageConfig.aspectRatio;
+		}
+
+		if (ir.imageConfig.imageSize) {
+			imageConfig.imageSize = ir.imageConfig.imageSize;
+		}
+
+		if (Object.keys(imageConfig).length > 0) {
+			generationConfig.imageConfig = imageConfig;
+		}
+	}
+
 	if (Object.keys(generationConfig).length > 0) {
 		request.generationConfig = generationConfig;
 	}

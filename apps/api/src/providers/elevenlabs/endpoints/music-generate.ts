@@ -9,6 +9,7 @@ import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
 import { computeBill } from "@pipeline/pricing/engine";
+import { saveMusicJobMeta } from "@core/music-jobs";
 
 function toBase64(buffer: ArrayBuffer): string {
 	const bytes = new Uint8Array(buffer);
@@ -59,6 +60,23 @@ function normalizeMusicPayload(json: any, modelId: string, fallbackId: string | 
 	};
 }
 
+function pruneUndefined<T extends Record<string, unknown>>(input: T): T {
+	const output: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(input)) {
+		if (value !== undefined) output[key] = value;
+	}
+	return output as T;
+}
+
+function defaultOutputFormatForGatewayFormat(format?: string | null): string | undefined {
+	const normalized = String(format ?? "").trim().toLowerCase();
+	if (!normalized) return undefined;
+	if (normalized === "mp3") return "mp3_44100_128";
+	if (normalized === "wav") return "pcm_44100";
+	if (normalized === "aac" || normalized === "ogg") return "mp3_44100_128";
+	return undefined;
+}
+
 /**
  * ElevenLabs Music/Sound Generation API
  * Docs: https://elevenlabs.io/docs/api-reference/sound-generation
@@ -80,6 +98,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         (typeof typedPayload.duration === "number" ? typedPayload.duration * 1000 : null);
 
     const requestBody: any = {
+        ...pruneUndefined({ ...elevenParams }),
         prompt,
         composition_plan: compositionPlan,
         music_length_ms: musicLengthMs,
@@ -96,7 +115,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const outputFormat =
         elevenParams.output_format ??
-        (typedPayload.format ? "mp3_44100_128" : undefined);
+        defaultOutputFormatForGatewayFormat(typedPayload.format);
+    delete requestBody.output_format;
     const query = outputFormat ? `?output_format=${encodeURIComponent(outputFormat)}` : "";
     const bindings = getBindings() as any;
     const baseUrl = String(bindings.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");
@@ -165,6 +185,32 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
                 bill.currency = pricedUsage.pricing.currency;
                 bill.usage = pricedUsage;
             }
+        }
+    }
+
+    if (res.ok && normalized?.id) {
+        try {
+            const firstOutput = Array.isArray(normalized.output) ? normalized.output[0] : null;
+            const durationSeconds =
+                typeof firstOutput?.duration === "number"
+                    ? firstOutput.duration
+                    : (typeof typedPayload.duration === "number" ? typedPayload.duration : null);
+            await saveMusicJobMeta(args.teamId, String(normalized.id), {
+                provider: "elevenlabs",
+                model: requestBody.model_id ?? null,
+                duration: durationSeconds,
+                format: typedPayload.format ?? null,
+                status: normalized?.status ?? null,
+                nativeResponseId: normalized?.nativeResponseId ?? null,
+                output: Array.isArray(normalized.output) ? normalized.output : null,
+                createdAt: Date.now(),
+            });
+        } catch (err) {
+            console.error("elevenlabs_music_job_meta_store_failed", {
+                error: err,
+                teamId: args.teamId,
+                musicId: normalized.id,
+            });
         }
     }
 

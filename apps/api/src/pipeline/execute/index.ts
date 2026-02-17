@@ -71,6 +71,108 @@ function shouldFallbackFromByok(status: number | null | undefined): boolean {
 	return code >= 500;
 }
 
+const ATTEMPT_PREVIEW_LIMIT = 320;
+
+function truncateAttemptText(value: unknown, limit = ATTEMPT_PREVIEW_LIMIT): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+	if (trimmed.length <= limit) return trimmed;
+	return `${trimmed.slice(0, limit)}...[truncated ${trimmed.length - limit} chars]`;
+}
+
+function extractUpstreamErrorSummary(payload: unknown): {
+	upstream_error_code: string | null;
+	upstream_error_type: string | null;
+	upstream_error_message: string | null;
+	upstream_error_description: string | null;
+} {
+	if (!payload || typeof payload !== "object") {
+		return {
+			upstream_error_code: null,
+			upstream_error_type: null,
+			upstream_error_message: null,
+			upstream_error_description: null,
+		};
+	}
+
+	const obj = payload as Record<string, unknown>;
+	const innerError =
+		obj.error && typeof obj.error === "object" ? (obj.error as Record<string, unknown>) : null;
+	const fallbackCode =
+		typeof obj.error === "string"
+			? obj.error
+			: typeof obj.code === "string"
+				? obj.code
+				: typeof obj.error_code === "string"
+					? obj.error_code
+					: null;
+	const fallbackType =
+		typeof obj.error_type === "string"
+			? obj.error_type
+			: typeof obj.type === "string"
+				? obj.type
+				: null;
+	const fallbackMessage = truncateAttemptText(
+		typeof obj.message === "string" ? obj.message : null,
+	);
+	const fallbackDescription = truncateAttemptText(
+		typeof obj.description === "string" ? obj.description : null,
+	);
+
+	return {
+		upstream_error_code:
+			typeof innerError?.code === "string"
+				? innerError.code
+				: typeof innerError?.type === "string"
+					? innerError.type
+					: fallbackCode,
+		upstream_error_type:
+			typeof innerError?.type === "string" ? innerError.type : fallbackType,
+		upstream_error_message:
+			truncateAttemptText(
+				typeof innerError?.message === "string" ? innerError.message : null,
+			) ?? fallbackMessage,
+		upstream_error_description:
+			truncateAttemptText(
+				typeof innerError?.description === "string" ? innerError.description : null,
+			) ?? fallbackDescription,
+	};
+}
+
+async function readUpstreamFailurePayload(result: {
+	upstream: Response;
+	rawResponse?: unknown;
+}): Promise<{ payload: unknown; payload_preview: string | null }> {
+	if (result.rawResponse !== undefined) {
+		const rawPreview = truncateAttemptText(
+			typeof result.rawResponse === "string"
+				? result.rawResponse
+				: JSON.stringify(result.rawResponse),
+		);
+		return { payload: result.rawResponse, payload_preview: rawPreview };
+	}
+
+	try {
+		const clone = result.upstream.clone();
+		const text = await clone.text();
+		if (!text) {
+			return { payload: null, payload_preview: null };
+		}
+		try {
+			const parsed = JSON.parse(text);
+			return {
+				payload: parsed,
+				payload_preview: truncateAttemptText(JSON.stringify(parsed)),
+			};
+		} catch {
+			return { payload: text, payload_preview: truncateAttemptText(text) };
+		}
+	} catch {
+		return { payload: null, payload_preview: null };
+	}
+}
+
 /**
  * IR-aware request result
  * Similar to RequestResult but works with IR
@@ -283,6 +385,9 @@ async function attemptProviderWithIR(
 	const byokAlwaysUse = Array.isArray(candidate.byokMeta)
 		? candidate.byokMeta.some((meta) => meta?.alwaysUse === true)
 		: false;
+	const providerModelSlug = typeof candidate.providerModelSlug === "string"
+		? candidate.providerModelSlug.trim()
+		: candidate.providerModelSlug;
 
 	// Get pricing card
 	const pricingCard = candidate.pricingCard;
@@ -328,7 +433,7 @@ async function attemptProviderWithIR(
 				{
 					capabilityParams: candidate.capabilityParams,
 					providerMaxOutputTokens: candidate.maxOutputTokens,
-					modelForReasoning: candidate.providerModelSlug ?? baseModel,
+					modelForReasoning: providerModelSlug ?? baseModel,
 				},
 			)
 			: ir;
@@ -341,7 +446,7 @@ async function attemptProviderWithIR(
 				endpoint: ctx.endpoint,
 				protocol: ctx.protocol as any,
 				capability: ctx.capability,
-				providerModelSlug: candidate.providerModelSlug,
+				providerModelSlug,
 				capabilityParams: candidate.capabilityParams,
 				maxInputTokens: candidate.maxInputTokens,
 				maxOutputTokens: candidate.maxOutputTokens,
@@ -423,11 +528,22 @@ async function attemptProviderWithIR(
 			}
 		}
 		if (!executorResult.upstream.ok) {
+			const upstreamFailure = await readUpstreamFailurePayload(executorResult);
+			const upstreamSummary = extractUpstreamErrorSummary(upstreamFailure.payload);
 			attemptErrors.push({
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
+				model: baseModel,
+				provider_model_slug: providerModelSlug ?? null,
+				attempt_number: attemptErrors.length + 1,
 				type: "upstream_non_2xx",
 				status: executorResult.upstream.status,
+				status_text: executorResult.upstream.statusText || null,
+				upstream_url: executorResult.upstream.url || null,
+				key_source: executorResult.keySource ?? null,
+				byok_key_id: executorResult.byokKeyId ?? null,
+				upstream_payload_preview: upstreamFailure.payload_preview,
+				...upstreamSummary,
 			});
 		}
 

@@ -27,9 +27,11 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
     "x-ai": createOpenAICompatibleAdapter("x-ai"), // xAI is OpenAI-compatible, uses openai_compat executor
+    xai: createOpenAICompatibleAdapter("xai"),
     xiaomi: XiaomiAdapter,
     azure: AzureAdapter,
     ai21: AI21Adapter,
+    arcee: createOpenAICompatibleAdapter("arcee"),
     "arcee-ai": createOpenAICompatibleAdapter("arcee-ai"),
     "bytedance-seed": createOpenAICompatibleAdapter("bytedance-seed"),
     mistral: createOpenAICompatibleAdapter("mistral"),
@@ -50,6 +52,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     featherless: createOpenAICompatibleAdapter("featherless"),
     friendli: createOpenAICompatibleAdapter("friendli"),
     gmicloud: createOpenAICompatibleAdapter("gmicloud"),
+    google: createOpenAICompatibleAdapter("google"),
     groq: createOpenAICompatibleAdapter("groq"),
     hyperbolic: createOpenAICompatibleAdapter("hyperbolic"),
     inception: createOpenAICompatibleAdapter("inception"),
@@ -60,6 +63,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "minimax-lightning": createOpenAICompatibleAdapter("minimax-lightning"),
     "moonshot-ai-turbo": createOpenAICompatibleAdapter("moonshot-ai-turbo"),
     morph: createOpenAICompatibleAdapter("morph"),
+    morpheus: createOpenAICompatibleAdapter("morpheus"),
     "z-ai": createOpenAICompatibleAdapter("z-ai"),
     zai: createOpenAICompatibleAdapter("zai"),
     "moonshot-ai": createOpenAICompatibleAdapter("moonshot-ai"),
@@ -177,13 +181,3 @@ export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdap
 export function adapterById(providerId: string): ProviderAdapter | null {
     return ADAPTERS[providerId] ?? null;
 }
-
-
-
-
-
-
-
-
-
-

@@ -24,6 +24,23 @@ type ParsedMinimaxContent = {
 	toolCalls: MinimaxParsedToolCall[];
 };
 
+function extractReasoningDetailsText(details: unknown): string[] {
+	if (!Array.isArray(details)) return [];
+	const out: string[] = [];
+	for (const entry of details) {
+		if (typeof entry === "string" && entry.length > 0) {
+			out.push(entry);
+			continue;
+		}
+		if (!entry || typeof entry !== "object") continue;
+		const text = (entry as any).text;
+		if (typeof text === "string" && text.length > 0) {
+			out.push(text);
+		}
+	}
+	return out;
+}
+
 function extractMessageText(message: any): string {
 	if (!message) return "";
 	if (typeof message.content === "string") return message.content;
@@ -180,16 +197,44 @@ export const minimaxQuirks: ProviderQuirks = {
 	 * MiniMax compatibility layer is inconsistent with OpenAI json_schema envelope.
 	 * Use json_object with schema instruction fallback.
 	 */
-	transformRequest: ({ request }) => {
+	transformRequest: ({ request, ir }) => {
 		applyJsonSchemaFallback(request);
+
+		// MiniMax compatibility docs do not define a "developer" role.
+		// Normalize it to "system" before upstream dispatch.
+		if (Array.isArray(request.messages)) {
+			request.messages = request.messages.map((msg: any) =>
+				msg?.role === "developer"
+					? { ...msg, role: "system" }
+					: msg,
+			);
+		}
+
+		// MiniMax only supports n=1.
+		if (request.n != null && request.n !== 1) {
+			delete request.n;
+		}
+
+		// Enable interleaved thinking compatibility format by default when reasoning/tools are used.
+		// This yields reasoning_details and improves pass-back continuity for tool loops.
+		const reasoningEnabled =
+			ir.reasoning?.enabled ??
+			(typeof ir.reasoning?.effort === "string" ? ir.reasoning.effort !== "none" : false);
+		if (
+			(reasoningEnabled || (Array.isArray(request.tools) && request.tools.length > 0)) &&
+			request.reasoning_split == null
+		) {
+			request.reasoning_split = true;
+		}
 	},
 
 	extractReasoning: ({ choice, rawContent }) => {
 		const parsed = parseMinimaxInterleavedText(rawContent);
 		const reasoningContent = choice.message?.reasoning_content;
+		const reasoningDetails = extractReasoningDetailsText(choice.message?.reasoning_details);
 		const reasoning = typeof reasoningContent === "string" && reasoningContent.length > 0
 			? [reasoningContent]
-			: parsed.reasoning;
+			: (reasoningDetails.length > 0 ? reasoningDetails : parsed.reasoning);
 		return {
 			main: parsed.main,
 			reasoning,
@@ -203,6 +248,7 @@ export const minimaxQuirks: ProviderQuirks = {
 			reasoningChunks: string[];
 			contentChunks: string[];
 			thinkState: ReturnType<typeof createAionThinkStreamState>;
+			reasoningDetailsSoFar: string;
 		}>());
 
 		const isFinal =
@@ -215,6 +261,7 @@ export const minimaxQuirks: ProviderQuirks = {
 				reasoningChunks: [],
 				contentChunks: [],
 				thinkState: createAionThinkStreamState(),
+				reasoningDetailsSoFar: "",
 			};
 			if (!stateMap.has(idx)) stateMap.set(idx, state);
 
@@ -235,6 +282,25 @@ export const minimaxQuirks: ProviderQuirks = {
 				state.reasoningChunks.push(choice.delta.reasoning_content);
 			}
 
+			if (Array.isArray(choice.delta?.reasoning_details)) {
+				const detailsText = extractReasoningDetailsText(choice.delta.reasoning_details).join("");
+				if (detailsText.length > 0) {
+					const previous = state.reasoningDetailsSoFar;
+					let deltaText = detailsText;
+					if (previous && detailsText.startsWith(previous)) {
+						deltaText = detailsText.slice(previous.length);
+					} else if (detailsText === previous) {
+						deltaText = "";
+					}
+					state.reasoningDetailsSoFar = detailsText;
+					if (deltaText.length > 0) {
+						state.reasoningChunks.push(deltaText);
+						choice.delta.reasoning_content =
+							`${choice.delta.reasoning_content ?? ""}${deltaText}`;
+					}
+				}
+			}
+
 			if (isFinal) {
 				choice.message ??= {};
 
@@ -250,7 +316,10 @@ export const minimaxQuirks: ProviderQuirks = {
 					? state.reasoningChunks.join("")
 					: (typeof choice.message.reasoning_content === "string" && choice.message.reasoning_content.length > 0
 						? choice.message.reasoning_content
-						: parsed.reasoning.join(""));
+						: (() => {
+							const detailsText = extractReasoningDetailsText(choice.message.reasoning_details).join("");
+							return detailsText.length > 0 ? detailsText : parsed.reasoning.join("");
+						})());
 				if (reasoning) {
 					choice.message.reasoning_content ??= reasoning;
 					if (!choice.message.reasoning_details) {
@@ -302,11 +371,17 @@ export const minimaxQuirks: ProviderQuirks = {
 				const message = choice?.message;
 				if (!message) continue;
 				const parsed = parseMinimaxInterleavedText(extractMessageText(message));
+				const reasoningFromDetails = extractReasoningDetailsText(message.reasoning_details);
 				if (parsed.main || typeof message.content === "string") {
 					setMessageText(message, parsed.main);
 				}
-				if (!message.reasoning_content && parsed.reasoning.length > 0) {
-					message.reasoning_content = parsed.reasoning.join("");
+				if (!message.reasoning_content) {
+					const reasoningText = reasoningFromDetails.length > 0
+						? reasoningFromDetails.join("")
+						: parsed.reasoning.join("");
+					if (reasoningText.length > 0) {
+						message.reasoning_content = reasoningText;
+					}
 				}
 				if ((!Array.isArray(message.tool_calls) || message.tool_calls.length === 0) && parsed.toolCalls.length > 0) {
 					message.tool_calls = parsed.toolCalls.map((toolCall, idx) => ({
@@ -342,14 +417,18 @@ export const minimaxQuirks: ProviderQuirks = {
 
 			const text = extractMessageText(item);
 			const parsed = parseMinimaxInterleavedText(text);
-			if (parsed.reasoning.length > 0) {
+			const reasoningFromDetails = extractReasoningDetailsText(item.reasoning_details);
+			const reasoningText = reasoningFromDetails.length > 0
+				? reasoningFromDetails.join("")
+				: parsed.reasoning.join("");
+			if (reasoningText.length > 0) {
 				normalizedItems.push({
 					type: "reasoning",
 					id: `${item.id ?? "reasoning"}_minimax_reasoning`,
 					status: item.status ?? "completed",
 					content: [{
 						type: "output_text",
-						text: parsed.reasoning.join(""),
+						text: reasoningText,
 						annotations: [],
 					}],
 				});

@@ -9,6 +9,16 @@ import type { ProviderQuirks } from "../../quirks/types";
 
 export const zaiQuirks: ProviderQuirks = {
 	transformRequest: ({ request, ir }) => {
+		// Z.AI chat compatibility docs do not define a "developer" role.
+		// Normalize it to "system" before upstream dispatch.
+		if (Array.isArray(request.messages)) {
+			request.messages = request.messages.map((msg: any) =>
+				msg?.role === "developer"
+					? { ...msg, role: "system" }
+					: msg,
+			);
+		}
+
 		// Z.AI 4.7 supports boolean thinking toggle via reasoning.enabled.
 		// Keep effort-based fallback for older calls, but treat enabled=false as authoritative.
 		const reasoningEnabled =

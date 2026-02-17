@@ -28,16 +28,41 @@ export function irToOpenAIChat(
 				role: "system",
 				content: msg.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
 			});
+		} else if (msg.role === "developer") {
+			messages.push({
+				role: "developer",
+				content: msg.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
+			});
 		} else if (msg.role === "user") {
 			messages.push({
 				role: "user",
 				content: mapIRContentToOpenAI(msg.content),
 			});
 		} else if (msg.role === "assistant") {
+			const assistantText = msg.content
+				.filter((c) => c.type === "text")
+				.map((c) => c.text)
+				.join("");
+			const assistantReasoning = msg.content
+				.filter((c) => c.type === "reasoning_text")
+				.map((c) => c.text)
+				.join("");
+
 			const message: any = {
 				role: "assistant",
-				content: msg.content.map((c) => (c.type === "text" ? c.text : "")).join("") || null,
+				content: assistantText || null,
 			};
+
+			const providerSupportsAssistantReasoningContent =
+				providerId === "deepseek" ||
+				providerId === "z-ai" ||
+				providerId === "zai" ||
+				providerId === "xiaomi" ||
+				providerId === "minimax" ||
+				providerId === "minimax-lightning";
+			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
+				message.reasoning_content = assistantReasoning;
+			}
 
 			if (msg.toolCalls && msg.toolCalls.length > 0) {
 				message.tool_calls = msg.toolCalls.map((tc) => ({
@@ -73,6 +98,10 @@ export function irToOpenAIChat(
 	if (ir.maxTokens !== undefined) request.max_tokens = ir.maxTokens;
 	if (ir.temperature !== undefined) request.temperature = ir.temperature;
 	if (ir.topP !== undefined) request.top_p = ir.topP;
+	if (ir.topK !== undefined) request.top_k = ir.topK;
+	if (ir.logitBias !== undefined) request.logit_bias = ir.logitBias;
+	if (ir.logprobs !== undefined) request.logprobs = ir.logprobs;
+	if (ir.topLogprobs !== undefined) request.top_logprobs = ir.topLogprobs;
 
 	applyReasoningParams({ ir, request, providerId });
 
@@ -102,6 +131,9 @@ export function irToOpenAIChat(
 	if (ir.parallelToolCalls !== undefined) {
 		request.parallel_tool_calls = ir.parallelToolCalls;
 	}
+	if (ir.maxToolCalls !== undefined) {
+		request.max_tool_calls = ir.maxToolCalls;
+	}
 
 	// Response format
 	if (ir.responseFormat) {
@@ -128,8 +160,34 @@ export function irToOpenAIChat(
 	// Other parameters
 	if (ir.frequencyPenalty !== undefined) request.frequency_penalty = ir.frequencyPenalty;
 	if (ir.presencePenalty !== undefined) request.presence_penalty = ir.presencePenalty;
+	if (ir.repetitionPenalty !== undefined) request.repetition_penalty = ir.repetitionPenalty;
 	if (ir.stop) request.stop = ir.stop;
 	if (ir.seed !== undefined) request.seed = ir.seed;
+	if (ir.background !== undefined) request.background = ir.background;
+	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
+	if (ir.speed !== undefined) request.speed = ir.speed;
+	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
+	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
+	if (ir.streamOptions !== undefined) request.stream_options = ir.streamOptions;
+	if (ir.metadata !== undefined) request.metadata = ir.metadata;
+	if (ir.modalities !== undefined) request.modalities = ir.modalities;
+	if (ir.imageConfig !== undefined) {
+		request.image_config = {
+			...(ir.imageConfig.aspectRatio !== undefined ? { aspect_ratio: ir.imageConfig.aspectRatio } : {}),
+			...(ir.imageConfig.imageSize !== undefined ? { image_size: ir.imageConfig.imageSize } : {}),
+			...(Array.isArray(ir.imageConfig.fontInputs)
+				? {
+					font_inputs: ir.imageConfig.fontInputs.map((entry) => ({
+						font_url: entry.fontUrl,
+						text: entry.text,
+					})),
+				}
+				: {}),
+			...(Array.isArray(ir.imageConfig.superResolutionReferences)
+				? { super_resolution_references: ir.imageConfig.superResolutionReferences }
+				: {}),
+		};
+	}
 	if (ir.userId !== undefined) request.user = ir.userId;
 
 	// Apply provider-specific request transformations after base params are set.
@@ -166,9 +224,19 @@ function mapIRContentToOpenAI(content: IRContentPart[]): any {
 		}
 
 		if (part.type === "audio") {
+			const inputAudio = part.source === "url"
+				? { url: part.data, ...(part.format ? { format: part.format } : {}) }
+				: { data: part.data, format: part.format || "wav" };
 			return {
 				type: "input_audio",
-				input_audio: { data: part.data, format: part.format || "wav" },
+				input_audio: inputAudio,
+			};
+		}
+
+		if (part.type === "video") {
+			return {
+				type: "input_video",
+				video_url: { url: part.url },
 			};
 		}
 

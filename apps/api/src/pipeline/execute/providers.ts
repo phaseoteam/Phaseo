@@ -11,20 +11,24 @@ export async function rankProviders(
     candidates: ProviderCandidate[],
     ctx: PipelineContext
 ) {
-    const ranked = await routeProviders(candidates, {
+    const routed = await routeProviders(candidates, {
         endpoint: ctx.endpoint,
         model: ctx.model,
         teamId: ctx.teamId,
         body: ctx.body,
         routingMode: ctx.routingMode ?? ctx.teamSettings?.routingMode ?? null,
         betaChannelEnabled: ctx.teamSettings?.betaChannelEnabled ?? false,
+        providerCapabilitiesBeta: ctx.providerCapabilitiesBeta ?? false,
         requestId: ctx.requestId ?? null,
     });
+    const ranked = routed.ranked;
     (ctx as any).routingSnapshot = ranked.map((entry) => ({
         provider: entry.adapter.name,
         breaker: entry.health.breaker,
         breaker_until_ms: entry.health.breaker_until_ms,
+        score: Number.isFinite(entry.score) ? Number(entry.score.toFixed(6)) : entry.score,
     }));
+    (ctx as any).routingDiagnostics = routed.diagnostics;
     return ranked;
 }
 

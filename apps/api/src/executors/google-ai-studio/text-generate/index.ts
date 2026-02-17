@@ -30,9 +30,9 @@ import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage"
  * - `generationConfig` for parameters
  * - Model in URL path, not request body
  */
-async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
+export async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Promise<any> {
 	const contents: any[] = [];
-	let systemInstruction: any = null;
+	const systemInstructionParts: any[] = [];
 	const toolNamesById = new Map<string, string>();
 
 	for (const msg of ir.messages) {
@@ -45,10 +45,10 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 
 	// Process messages
 	for (const msg of ir.messages) {
-		if (msg.role === "system") {
-			// System messages go in systemInstruction, not contents
+		if (msg.role === "system" || msg.role === "developer") {
+			// System/developer messages go in systemInstruction, not contents.
 			const parts = await irPartsToGeminiParts(msg.content, { preserveReasoningAsThought: true });
-			systemInstruction = { parts };
+			systemInstructionParts.push(...parts);
 		} else if (msg.role === "user") {
 			contents.push({
 				role: "user",
@@ -86,10 +86,6 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 	const request: any = {
 		contents,
 	};
-
-	if (systemInstruction) {
-		request.systemInstruction = systemInstruction;
-	}
 
 	// Build generationConfig
 	const generationConfig: any = {};
@@ -158,11 +154,7 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 				const schemaInstruction =
 					`Return only valid JSON that matches this schema exactly: ${schemaText}. ` +
 					"Do not include markdown or any extra text.";
-				if (!systemInstruction) {
-					systemInstruction = { parts: [{ text: schemaInstruction }] };
-				} else if (Array.isArray(systemInstruction.parts)) {
-					systemInstruction.parts.push({ text: schemaInstruction });
-				}
+				systemInstructionParts.push({ text: schemaInstruction });
 			}
 		}
 	}
@@ -177,8 +169,29 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 		}
 	}
 
+	// Image generation configuration (multimodal text.generate)
+	if (ir.imageConfig) {
+		const imageConfig: any = {};
+
+		if (ir.imageConfig.aspectRatio) {
+			imageConfig.aspectRatio = ir.imageConfig.aspectRatio;
+		}
+
+		if (ir.imageConfig.imageSize) {
+			imageConfig.imageSize = ir.imageConfig.imageSize;
+		}
+
+		if (Object.keys(imageConfig).length > 0) {
+			generationConfig.imageConfig = imageConfig;
+		}
+	}
+
 	if (Object.keys(generationConfig).length > 0) {
 		request.generationConfig = generationConfig;
+	}
+
+	if (systemInstructionParts.length > 0) {
+		request.systemInstruction = { parts: systemInstructionParts };
 	}
 
 	// Tools (function calling)

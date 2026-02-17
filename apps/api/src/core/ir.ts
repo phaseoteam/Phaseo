@@ -155,6 +155,32 @@ export type IRResponseFormat =
 	| { type: "json_schema"; schema: Record<string, any>; name?: string; strict?: boolean };
 
 /**
+ * Image generation configuration for multimodal text.generate requests
+ * Enables models to generate images alongside text in text.generate responses.
+ */
+export type IRImageConfig = {
+	/**
+	 * Aspect ratio for generated images (for example: "1:1", "16:9")
+	 */
+	aspectRatio?: string;
+	/**
+	 * Output image resolution tiers used by some models (for example: "1K", "2K", "4K")
+	 */
+	imageSize?: "1K" | "2K" | "4K";
+	/**
+	 * Custom font rendering inputs (provider-specific)
+	 */
+	fontInputs?: Array<{
+		fontUrl: string;
+		text: string;
+	}>;
+	/**
+	 * Super-resolution reference images (provider-specific)
+	 */
+	superResolutionReferences?: string[];
+};
+
+/**
  * Complete chat request in IR format
  * This can be decoded from any protocol and encoded to any provider protocol
  */
@@ -184,6 +210,8 @@ export type IRChatRequest = {
 	responseFormat?: IRResponseFormat;
 	// Output modalities (text, image)
 	modalities?: Array<"text" | "image">;
+	// Optional image configuration for multimodal text generation
+	imageConfig?: IRImageConfig;
 
 	// Advanced parameters
 	frequencyPenalty?: number;
@@ -193,6 +221,17 @@ export type IRChatRequest = {
 	stop?: string | string[];
 	logprobs?: boolean;
 	topLogprobs?: number;
+	streamOptions?: Record<string, any>;
+	store?: boolean;
+	truncation?: string;
+	include?: string[];
+	conversation?: string | Record<string, any>;
+	previousResponseId?: string;
+	prompt?: {
+		id: string;
+		variables?: Record<string, any>;
+		version?: string;
+	};
 	background?: boolean;
 	serviceTier?: string;
 	speed?: string;
@@ -297,12 +336,17 @@ export type IRModerationsResponse = {
 export type IRImageGenerationRequest = {
 	model: string;
 	prompt: string;
-	image?: string;
+	image?: string | string[];
 	mask?: string;
 	size?: string;
 	n?: number;
 	quality?: string;
 	responseFormat?: string;
+	outputFormat?: "png" | "jpeg" | "webp";
+	outputCompression?: number;
+	background?: "transparent" | "opaque" | "auto";
+	moderation?: "auto" | "low";
+	inputFidelity?: "high" | "low";
 	style?: string;
 	userId?: string;
 	rawRequest?: any;
@@ -332,6 +376,8 @@ export type IRAudioSpeechRequest = {
 	input: string;
 	voice?: string;
 	format?: "mp3" | "wav" | "ogg" | "aac";
+	responseFormat?: "mp3" | "wav" | "aac" | "flac" | "opus" | "pcm";
+	streamFormat?: "audio" | "sse";
 	speed?: number;
 	instructions?: string;
 	userId?: string;
@@ -354,11 +400,13 @@ export type IRAudioSpeechResponse = {
 
 export type IRAudioTranscriptionRequest = {
 	model: string;
-	audioUrl?: string;
-	audioBase64?: string;
+	file: File | Blob;
 	language?: string;
 	prompt?: string;
 	temperature?: number;
+	responseFormat?: string;
+	timestampGranularities?: Array<"word" | "segment">;
+	include?: string[];
 	rawRequest?: any;
 };
 
@@ -375,11 +423,11 @@ export type IRAudioTranscriptionResponse = {
 
 export type IRAudioTranslationRequest = {
 	model: string;
-	audioUrl?: string;
-	audioBase64?: string;
+	file: File | Blob;
 	language?: string;
 	prompt?: string;
 	temperature?: number;
+	responseFormat?: string;
 	rawRequest?: any;
 };
 
@@ -406,6 +454,16 @@ export type IRVideoGenerationRequest = {
 	quality?: string;
 	inputReference?: string;
 	inputReferenceMimeType?: string;
+	input?: {
+		image?: string | Record<string, any>;
+		video?: string | Record<string, any>;
+		lastFrame?: string | Record<string, any>;
+		referenceImages?: Array<Record<string, any>>;
+	};
+	inputImage?: string | Record<string, any>;
+	inputVideo?: string | Record<string, any>;
+	lastFrame?: string | Record<string, any>;
+	referenceImages?: Array<Record<string, any>>;
 	duration?: number;
 	durationSeconds?: number;
 	ratio?: string;
@@ -413,8 +471,11 @@ export type IRVideoGenerationRequest = {
 	resolution?: string;
 	negativePrompt?: string;
 	sampleCount?: number;
+	numberOfVideos?: number;
 	seed?: number;
 	personGeneration?: string;
+	generateAudio?: boolean;
+	enhancePrompt?: boolean;
 	outputStorageUri?: string;
 	rawRequest?: any;
 };

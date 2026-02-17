@@ -65,6 +65,7 @@ export function cherryPickIRParams(
 			switch (entry) {
 				case "max_tokens":
 				case "max_output_tokens":
+				case "max_completion_tokens":
 					return "maxTokens";
 				case "temperature":
 					return "temperature";
@@ -96,10 +97,30 @@ export function cherryPickIRParams(
 					return "maxToolCalls";
 				case "response_format":
 					return "responseFormat";
+				case "modalities":
+					return "modalities";
+				case "image_config":
+					return "imageConfig";
+				case "stream_options":
+					return "streamOptions";
+				case "store":
+					return "store";
+				case "truncation":
+					return "truncation";
+				case "include":
+					return "include";
+				case "conversation":
+					return "conversation";
+				case "previous_response_id":
+					return "previousResponseId";
+				case "prompt":
+					return "prompt";
 				case "background":
 					return "background";
 				case "service_tier":
 					return "serviceTier";
+				case "speed":
+					return "speed";
 				case "prompt_cache_key":
 					return "promptCacheKey";
 				case "safety_identifier":

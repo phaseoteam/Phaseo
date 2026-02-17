@@ -94,6 +94,11 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 		"_ext.outputVideoTokens",
 		"output_tokens_details.output_videos",
 	]);
+	const requests = pickFirstNumber(usageRaw, [
+		"requests",
+		"request_count",
+		"_ext.requests",
+	]);
 
 	const meters: Record<string, number> = {
 		input_tokens: inputTokens ?? 0,
@@ -112,6 +117,7 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 	if (typeof outputImageTokens === "number") meters.output_image_tokens = outputImageTokens;
 	if (typeof outputAudioTokens === "number") meters.output_audio_tokens = outputAudioTokens;
 	if (typeof outputVideoTokens === "number") meters.output_video_tokens = outputVideoTokens;
+	if (typeof requests === "number") meters.requests = requests;
 
 	return meters;
 }
