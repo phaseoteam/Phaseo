@@ -122,21 +122,6 @@ func CreateImageEdit(client *Client, path map[string]string, query map[string]st
 	return out, nil
 }
 
-func CreateKeyPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/keys"
-	data, err := client.Request("POST", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
 func CreateModeration(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/moderations"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
@@ -169,6 +154,51 @@ func CreateOAuthClient(client *Client, path map[string]string, query map[string]
 
 func CreateOcr(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/ocr"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func CreateProvisioningKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/management/keys"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func CreateProvisioningKeyAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/provisioning/keys"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func CreateProvisioningKeyLegacy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/keys"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -437,21 +467,6 @@ func GetGeneration(client *Client, path map[string]string, query map[string]stri
 	return out, nil
 }
 
-func GetKeyPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/key"
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
 func GetMusicGeneration(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/music/generate/" + url.PathEscape(path["music_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -529,6 +544,21 @@ func GetProvisioningKey(client *Client, path map[string]string, query map[string
 
 func GetProvisioningKeyAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/provisioning/keys/" + url.PathEscape(path["id"])
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func GetProvisioningKeyLegacy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/key"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -632,7 +662,7 @@ func InvalidateGatewayKeyCache(client *Client, path map[string]string, query map
 	return out, nil
 }
 
-func ListEndpointsPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+func ListEndpoints(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/endpoints"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -649,21 +679,6 @@ func ListEndpointsPlaceholder(client *Client, path map[string]string, query map[
 
 func ListFiles(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/files"
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func ListKeysPlaceholder(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/keys"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -782,6 +797,21 @@ func ListProvisioningKeysAlias(client *Client, path map[string]string, query map
 	return out, nil
 }
 
+func ListProvisioningKeysLegacy(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/keys"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func RegenerateOAuthClientSecret(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"]) + "/regenerate-secret"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
@@ -829,21 +859,6 @@ func RetrieveBatchAlias(client *Client, path map[string]string, query map[string
 
 func RetrieveFile(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/files/" + url.PathEscape(path["file_id"])
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	var out map[string]interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero map[string]interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
-func Root(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}

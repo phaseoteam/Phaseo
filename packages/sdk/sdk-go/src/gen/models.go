@@ -1336,15 +1336,25 @@ type VideoGenerationRequest struct {
 	AspectRatio *string `json:"aspect_ratio,omitempty"`
 	Duration *int `json:"duration,omitempty"`
 	DurationSeconds *int `json:"duration_seconds,omitempty"`
+	EnhancePrompt *bool `json:"enhance_prompt,omitempty"`
+	GenerateAudio *bool `json:"generate_audio,omitempty"`
+	Input *map[string]interface{} `json:"input,omitempty"`
+	InputImage interface{} `json:"input_image,omitempty"`
+	InputLastFrame interface{} `json:"input_last_frame,omitempty"`
 	InputReference *string `json:"input_reference,omitempty"`
 	InputReferenceMimeType *string `json:"input_reference_mime_type,omitempty"`
+	InputVideo interface{} `json:"input_video,omitempty"`
+	LastFrame interface{} `json:"last_frame,omitempty"`
 	Model string `json:"model"`
 	NegativePrompt *string `json:"negative_prompt,omitempty"`
+	NumberOfVideos *int `json:"number_of_videos,omitempty"`
 	OutputStorageUri *string `json:"output_storage_uri,omitempty"`
 	PersonGeneration *string `json:"person_generation,omitempty"`
 	Prompt string `json:"prompt"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Quality *string `json:"quality,omitempty"`
 	Ratio *string `json:"ratio,omitempty"`
+	ReferenceImages *[]map[string]interface{} `json:"reference_images,omitempty"`
 	Resolution *string `json:"resolution,omitempty"`
 	SampleCount *int `json:"sample_count,omitempty"`
 	Seconds interface{} `json:"seconds,omitempty"`

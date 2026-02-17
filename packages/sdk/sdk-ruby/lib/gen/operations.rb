@@ -51,12 +51,6 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.createKeyPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/keys"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.createModeration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/moderations"
@@ -72,6 +66,24 @@ module AiStats
       def self.createOcr(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/ocr"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createProvisioningKey(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/management/keys"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createProvisioningKeyAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/provisioning/keys"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createProvisioningKeyLegacy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/keys"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -177,12 +189,6 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.getKeyPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/key"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.getMusicGeneration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/music/generate/#{path["music_id"]}"
@@ -216,6 +222,12 @@ module AiStats
       def self.getProvisioningKeyAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/provisioning/keys/#{path["id"]}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getProvisioningKeyLegacy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/key"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -255,7 +267,7 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.listEndpointsPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.listEndpoints(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/endpoints"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
@@ -264,12 +276,6 @@ module AiStats
       def self.listFiles(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/files"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.listKeysPlaceholder(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/keys"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -315,6 +321,12 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listProvisioningKeysLegacy(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/keys"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.regenerateOAuthClientSecret(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/oauth-clients/#{path["client_id"]}/regenerate-secret"
@@ -336,12 +348,6 @@ module AiStats
       def self.retrieveFile(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/files/#{path["file_id"]}"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.root(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

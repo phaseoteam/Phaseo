@@ -59,13 +59,6 @@ function createImageEdit(Client $client, ?array $path = null, ?array $query = nu
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
-function createKeyPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/keys";
-	return $client->request("POST", $resolvedPath, $query, $headers, $body);
-}
-
 function createModeration(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -84,6 +77,27 @@ function createOcr(Client $client, ?array $path = null, ?array $query = null, ?a
 {
 	$path = $path ?? [];
 	$resolvedPath = "/ocr";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createProvisioningKey(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/management/keys";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createProvisioningKeyAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/provisioning/keys";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createProvisioningKeyLegacy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/keys";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -206,13 +220,6 @@ function getGeneration(Client $client, ?array $path = null, ?array $query = null
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function getKeyPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/key";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
 function getMusicGeneration(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -252,6 +259,13 @@ function getProvisioningKeyAlias(Client $client, ?array $path = null, ?array $qu
 {
 	$path = $path ?? [];
 	$resolvedPath = "/provisioning/keys/{$path["id"]}";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getProvisioningKeyLegacy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/key";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -297,7 +311,7 @@ function invalidateGatewayKeyCache(Client $client, ?array $path = null, ?array $
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
-function listEndpointsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function listEndpoints(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	$resolvedPath = "/endpoints";
@@ -308,13 +322,6 @@ function listFiles(Client $client, ?array $path = null, ?array $query = null, ?a
 {
 	$path = $path ?? [];
 	$resolvedPath = "/files";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function listKeysPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/keys";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -367,6 +374,13 @@ function listProvisioningKeysAlias(Client $client, ?array $path = null, ?array $
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listProvisioningKeysLegacy(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/keys";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function regenerateOAuthClientSecret(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -392,13 +406,6 @@ function retrieveFile(Client $client, ?array $path = null, ?array $query = null,
 {
 	$path = $path ?? [];
 	$resolvedPath = "/files/{$path["file_id"]}";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function root(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

@@ -102,18 +102,6 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> CreateKeyPlaceholderAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/keys";
-		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
-	}
-
 	public static Task<Dictionary<string, object>?> CreateModerationAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -147,6 +135,42 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/ocr";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> CreateProvisioningKeyAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/management/keys";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> CreateProvisioningKeyAliasAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/provisioning/keys";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> CreateProvisioningKeyLegacyAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/keys";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
@@ -354,18 +378,6 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> GetKeyPlaceholderAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/key";
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
-	}
-
 	public static Task<Dictionary<string, object>?> GetMusicGenerationAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -435,6 +447,18 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/provisioning/keys/" + (path != null && path.ContainsKey("id") ? path["id"] : "");
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> GetProvisioningKeyLegacyAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/key";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -510,7 +534,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> ListEndpointsPlaceholderAsync(
+	public static Task<Dictionary<string, object>?> ListEndpointsAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -531,18 +555,6 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/files";
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Task<Dictionary<string, object>?> ListKeysPlaceholderAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/keys";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -630,6 +642,18 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Task<Dictionary<string, object>?> ListProvisioningKeysLegacyAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/keys";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> RegenerateOAuthClientSecretAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -675,18 +699,6 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/files/" + (path != null && path.ContainsKey("file_id") ? path["file_id"] : "");
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Task<Dictionary<string, object>?> RootAsync(
-		Client client,
-		Dictionary<string, string>? path = null,
-		Dictionary<string, string>? query = null,
-		Dictionary<string, string>? headers = null,
-		object? body = null
-	)
-	{
-		var resolvedPath = "/";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 

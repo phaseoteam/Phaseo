@@ -812,47 +812,6 @@ export async function createImageEdit(
   });
 }
 
-export type CreateKeyPlaceholderParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Placeholder route; currently returns not implemented.
- */
-export async function createKeyPlaceholder(
-  client: Client,
-  args: CreateKeyPlaceholderParams = {},
-): Promise<{
-  created_at?: string;
-  id?: string;
-  key?: string;
-  name?: string;
-  prefix?: string;
-  scopes?: string;
-  status?: "active" | "disabled" | "revoked";
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/keys";
-  return client.request<{
-    created_at?: string;
-    id?: string;
-    key?: string;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  }>({
-    method: "POST",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type CreateModerationParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -1045,6 +1004,168 @@ export async function createOcr(
   const resolvedPath = "/ocr";
   return client.request<{
     [key: string]: unknown;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateProvisioningKeyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    created_by?: string;
+    name: string;
+    scopes?: string | string[];
+    soft_blocked?: boolean;
+    status?: "active" | "disabled" | "revoked";
+    team_id?: string;
+  };
+};
+
+/**
+ * Creates a new management API key.
+ */
+export async function createProvisioningKey(
+  client: Client,
+  args: CreateProvisioningKeyParams = {},
+): Promise<{
+  key?: {
+    created_at?: string;
+    id?: string;
+    key?: string;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    status?: "active" | "disabled" | "revoked";
+  };
+  ok?: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/management/keys";
+  return client.request<{
+    key?: {
+      created_at?: string;
+      id?: string;
+      key?: string;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      status?: "active" | "disabled" | "revoked";
+    };
+    ok?: boolean;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateProvisioningKeyAliasParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    created_by?: string;
+    name: string;
+    scopes?: string | string[];
+    soft_blocked?: boolean;
+    status?: "active" | "disabled" | "revoked";
+    team_id?: string;
+  };
+};
+
+/**
+ * Alias of management key create endpoint.
+ */
+export async function createProvisioningKeyAlias(
+  client: Client,
+  args: CreateProvisioningKeyAliasParams = {},
+): Promise<{
+  key?: {
+    created_at?: string;
+    id?: string;
+    key?: string;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    status?: "active" | "disabled" | "revoked";
+  };
+  ok?: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/provisioning/keys";
+  return client.request<{
+    key?: {
+      created_at?: string;
+      id?: string;
+      key?: string;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      status?: "active" | "disabled" | "revoked";
+    };
+    ok?: boolean;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateProvisioningKeyLegacyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    created_by?: string;
+    name: string;
+    scopes?: string | string[];
+    soft_blocked?: boolean;
+    status?: "active" | "disabled" | "revoked";
+    team_id?: string;
+  };
+};
+
+/**
+ * Legacy alias of /management/keys create.
+ */
+export async function createProvisioningKeyLegacy(
+  client: Client,
+  args: CreateProvisioningKeyLegacyParams = {},
+): Promise<{
+  key?: {
+    created_at?: string;
+    id?: string;
+    key?: string;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    status?: "active" | "disabled" | "revoked";
+  };
+  ok?: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/keys";
+  return client.request<{
+    key?: {
+      created_at?: string;
+      id?: string;
+      key?: string;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      status?: "active" | "disabled" | "revoked";
+    };
+    ok?: boolean;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -1287,10 +1408,28 @@ export type CreateVideoParams = {
     aspect_ratio?: string;
     duration?: number;
     duration_seconds?: number;
+    enhance_prompt?: boolean;
+    generate_audio?: boolean;
+    input?: {
+      image?: string | {};
+      last_frame?: string | {};
+      reference_images?: {
+        image?: string | {};
+        reference_type?: string;
+        uri?: string;
+        url?: string;
+      }[];
+      video?: string | {};
+    };
+    input_image?: string | {};
+    input_last_frame?: string | {};
     input_reference?: string;
     input_reference_mime_type?: string;
+    input_video?: string | {};
+    last_frame?: string | {};
     model: string;
     negative_prompt?: string;
+    number_of_videos?: number;
     output_storage_uri?: string;
     person_generation?: string;
     prompt: string;
@@ -1300,7 +1439,9 @@ export type CreateVideoParams = {
       only?: string[];
       order?: string[];
     };
+    quality?: string;
     ratio?: string;
+    reference_images?: {}[];
     resolution?: string;
     sample_count?: number;
     seconds?: number | string;
@@ -1357,10 +1498,28 @@ export type CreateVideoAliasParams = {
     aspect_ratio?: string;
     duration?: number;
     duration_seconds?: number;
+    enhance_prompt?: boolean;
+    generate_audio?: boolean;
+    input?: {
+      image?: string | {};
+      last_frame?: string | {};
+      reference_images?: {
+        image?: string | {};
+        reference_type?: string;
+        uri?: string;
+        url?: string;
+      }[];
+      video?: string | {};
+    };
+    input_image?: string | {};
+    input_last_frame?: string | {};
     input_reference?: string;
     input_reference_mime_type?: string;
+    input_video?: string | {};
+    last_frame?: string | {};
     model: string;
     negative_prompt?: string;
+    number_of_videos?: number;
     output_storage_uri?: string;
     person_generation?: string;
     prompt: string;
@@ -1370,7 +1529,9 @@ export type CreateVideoAliasParams = {
       only?: string[];
       order?: string[];
     };
+    quality?: string;
     ratio?: string;
+    reference_images?: {}[];
     resolution?: string;
     sample_count?: number;
     seconds?: number | string;
@@ -2096,53 +2257,6 @@ export async function getGeneration(
   });
 }
 
-export type GetKeyPlaceholderParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Placeholder route; currently returns not implemented.
- */
-export async function getKeyPlaceholder(
-  client: Client,
-  args: GetKeyPlaceholderParams = {},
-): Promise<{
-  key?: {
-    created_at?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  };
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/key";
-  return client.request<{
-    key?: {
-      created_at?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    };
-    ok?: boolean;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type GetMusicGenerationParams = {
   path?: {
     music_id: string;
@@ -2348,6 +2462,61 @@ export async function getProvisioningKeyAlias(
   const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
     [key: string]: unknown;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetProvisioningKeyLegacyParams = {
+  path?: Record<string, never>;
+  query?: {
+    id: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Legacy alias of /management/keys/{id} using query parameter id.
+ */
+export async function getProvisioningKeyLegacy(
+  client: Client,
+  args: GetProvisioningKeyLegacyParams = {},
+): Promise<{
+  key?: {
+    created_at?: string;
+    created_by?: string;
+    id?: string;
+    last_used_at?: string | null;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    soft_blocked?: boolean;
+    status?: "active" | "disabled" | "revoked";
+    team_id?: string;
+  };
+  ok?: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/key";
+  return client.request<{
+    key?: {
+      created_at?: string;
+      created_by?: string;
+      id?: string;
+      last_used_at?: string | null;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      soft_blocked?: boolean;
+      status?: "active" | "disabled" | "revoked";
+      team_id?: string;
+    };
+    ok?: boolean;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -2569,7 +2738,7 @@ export async function invalidateGatewayKeyCache(
   });
 }
 
-export type ListEndpointsPlaceholderParams = {
+export type ListEndpointsParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
   headers?: Record<string, never>;
@@ -2577,11 +2746,11 @@ export type ListEndpointsPlaceholderParams = {
 };
 
 /**
- * Placeholder route; currently returns not implemented.
+ * Lists currently exposed gateway endpoint IDs and sample models.
  */
-export async function listEndpointsPlaceholder(
+export async function listEndpoints(
   client: Client,
-  args: ListEndpointsPlaceholderParams = {},
+  args: ListEndpointsParams = {},
 ): Promise<{
   endpoints?: string[];
   ok?: boolean;
@@ -3831,53 +4000,6 @@ export async function listFiles(
   });
 }
 
-export type ListKeysPlaceholderParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Placeholder route; currently returns not implemented.
- */
-export async function listKeysPlaceholder(
-  client: Client,
-  args: ListKeysPlaceholderParams = {},
-): Promise<{
-  keys?: {
-    created_at?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  }[];
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/keys";
-  return client.request<{
-    keys?: {
-      created_at?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    }[];
-    ok?: boolean;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type ListModelsParams = {
   path?: Record<string, never>;
   query?: {
@@ -4188,7 +4310,7 @@ export type ListProvisioningKeysParams = {
   query?: {
     limit?: number;
     offset?: number;
-    team_id: string;
+    team_id?: string;
   };
   headers?: Record<string, never>;
   body?: never;
@@ -4245,7 +4367,7 @@ export type ListProvisioningKeysAliasParams = {
   query?: {
     limit?: number;
     offset?: number;
-    team_id: string;
+    team_id?: string;
   };
   headers?: Record<string, never>;
   body?: never;
@@ -4271,6 +4393,53 @@ export async function listProvisioningKeysAlias(
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/provisioning/keys";
+  return client.request<{
+    keys?: {
+      created_at?: string;
+      id?: string;
+      last_used_at?: string | null;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      status?: "active" | "disabled" | "revoked";
+    }[];
+    ok?: boolean;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListProvisioningKeysLegacyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Legacy alias of /management/keys.
+ */
+export async function listProvisioningKeysLegacy(
+  client: Client,
+  args: ListProvisioningKeysLegacyParams = {},
+): Promise<{
+  keys?: {
+    created_at?: string;
+    id?: string;
+    last_used_at?: string | null;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    status?: "active" | "disabled" | "revoked";
+  }[];
+  ok?: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/keys";
   return client.request<{
     keys?: {
       created_at?: string;
@@ -4512,37 +4681,6 @@ export async function retrieveFile(
     purpose?: string;
     status?: string;
     status_details?: {};
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type RootParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Returns a welcome message.
- */
-export async function root(
-  client: Client,
-  args: RootParams = {},
-): Promise<{
-  message?: string;
-  timestamp?: string;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/";
-  return client.request<{
-    message?: string;
-    timestamp?: string;
   }>({
     method: "GET",
     path: resolvedPath,

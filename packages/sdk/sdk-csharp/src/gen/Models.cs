@@ -1391,17 +1391,41 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("duration_seconds")]
 	public int? DurationSeconds { get; set; }
 
+	[JsonPropertyName("enhance_prompt")]
+	public bool? EnhancePrompt { get; set; }
+
+	[JsonPropertyName("generate_audio")]
+	public bool? GenerateAudio { get; set; }
+
+	[JsonPropertyName("input")]
+	public Dictionary<string, object>? Input { get; set; }
+
+	[JsonPropertyName("input_image")]
+	public object? InputImage { get; set; }
+
+	[JsonPropertyName("input_last_frame")]
+	public object? InputLastFrame { get; set; }
+
 	[JsonPropertyName("input_reference")]
 	public string? InputReference { get; set; }
 
 	[JsonPropertyName("input_reference_mime_type")]
 	public string? InputReferenceMimeType { get; set; }
 
+	[JsonPropertyName("input_video")]
+	public object? InputVideo { get; set; }
+
+	[JsonPropertyName("last_frame")]
+	public object? LastFrame { get; set; }
+
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
 	[JsonPropertyName("negative_prompt")]
 	public string? NegativePrompt { get; set; }
+
+	[JsonPropertyName("number_of_videos")]
+	public int? NumberOfVideos { get; set; }
 
 	[JsonPropertyName("output_storage_uri")]
 	public string? OutputStorageUri { get; set; }
@@ -1415,8 +1439,14 @@ public sealed class VideoGenerationRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("quality")]
+	public string? Quality { get; set; }
+
 	[JsonPropertyName("ratio")]
 	public string? Ratio { get; set; }
+
+	[JsonPropertyName("reference_images")]
+	public List<Dictionary<string, object>>? ReferenceImages { get; set; }
 
 	[JsonPropertyName("resolution")]
 	public string? Resolution { get; set; }
