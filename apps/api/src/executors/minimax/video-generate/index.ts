@@ -155,9 +155,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 	}
 
+	// Async create requests should only bill request metering.
+	// Completion-duration billing is handled by /videos/:id when the job is done.
 	const usageMeters: Record<string, number> = {
 		requests: 1,
-		...(seconds != null ? { output_video_seconds: seconds } : {}),
 	};
 	if (args.pricingCard) {
 		const priced = computeBill(usageMeters, args.pricingCard, { model });

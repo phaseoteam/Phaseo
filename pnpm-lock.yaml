@@ -169,9 +169,6 @@ importers:
       '@dqbd/tiktoken':
         specifier: ^1.0.22
         version: 1.0.22
-      '@flags-sdk/vercel':
-        specifier: ^1.0.1
-        version: 1.0.1(@vercel/flags-core@1.0.1(@aws-sdk/credential-provider-web-identity@3.972.6)(flags@4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)))(flags@4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.2(react-hook-form@7.71.1(react@19.2.4))
@@ -346,9 +343,6 @@ importers:
       fast-xml-parser:
         specifier: ^5.3.5
         version: 5.3.5
-      flags:
-        specifier: ^4.0.3
-        version: 4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       fuse.js:
         specifier: ^6.6.2
         version: 6.6.2
@@ -1604,10 +1598,6 @@ packages:
     peerDependencies:
       '@noble/ciphers': ^1.0.0
 
-  '@edge-runtime/cookies@5.0.2':
-    resolution: {integrity: sha512-Sd8LcWpZk/SWEeKGE8LT6gMm5MGfX/wm+GPnh1eBEtCpya3vYqn37wYknwAHw92ONoyyREl1hJwxV/Qx2DWNOg==}
-    engines: {node: '>=16'}
-
   '@electron/get@2.0.3':
     resolution: {integrity: sha512-Qkzpg2s9GnVV2I2BjRksUi43U5e6+zaQMcjoJy0C+C5oxaKl+fmckGDQFtRpZpZV0NQekuZZ+tGz7EA9TVnQtQ==}
     engines: {node: '>=12'}
@@ -2412,12 +2402,6 @@ packages:
   '@eslint/plugin-kit@0.6.0':
     resolution: {integrity: sha512-bIZEUzOI1jkhviX2cp5vNyXQc6olzb2ohewQubuYlMXZ2Q/XjBO0x0XhGPvc9fjSIiUN0vw+0hq53BJ4eQSJKQ==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
-
-  '@flags-sdk/vercel@1.0.1':
-    resolution: {integrity: sha512-RKdoetYr0Qp6ecbiary4QRmwkl0FYvRlA0hE0u/chz1Ao4NOV05x+moisUvAt4oNMSpgNjCcwtrg9ct1iF1mAw==}
-    peerDependencies:
-      '@vercel/flags-core': 1.0.1
-      flags: '*'
 
   '@floating-ui/core@1.7.4':
     resolution: {integrity: sha512-C3HlIdsBxszvm5McXlB8PeOEWfBhcGBTZGkGlWc2U0KFY5IwG5OQEuQ8rq52DZmcHDlPLd+YFBK+cZcytwIFWg==}
@@ -5655,37 +5639,12 @@ packages:
       vue-router:
         optional: true
 
-  '@vercel/flags-core@1.0.1':
-    resolution: {integrity: sha512-jlj7J/bctERGbFYVCGK2DNXQ2dz2ol7Km2kduhJ0QMrqCsIlloq4HY6jgyJPToe9VpPleJyqT6TaYJACUqdCYg==}
-    peerDependencies:
-      '@openfeature/server-sdk': 1.18.0
-      flags: '*'
-      next: '*'
-    peerDependenciesMeta:
-      '@openfeature/server-sdk':
-        optional: true
-      next:
-        optional: true
-
-  '@vercel/functions@3.4.2':
-    resolution: {integrity: sha512-WDsNNuGOOUhRYxfcSgk8nlXaYW/6u1Lw2eaKm0y4+gDPGK/hwmYIeP2hESfccuCiPXd5ZGO8Jz/V5Ud3ZByoUQ==}
-    engines: {node: '>= 20'}
-    peerDependencies:
-      '@aws-sdk/credential-provider-web-identity': '*'
-    peerDependenciesMeta:
-      '@aws-sdk/credential-provider-web-identity':
-        optional: true
-
   '@vercel/og@0.6.8':
     resolution: {integrity: sha512-e4kQK9mP8ntpo3dACWirGod/hHv4qO5JMj9a/0a2AZto7b4persj5YP7t1Er372gTtYFTYxNhMx34jRvHooglw==}
     engines: {node: '>=16'}
 
   '@vercel/oidc@3.1.0':
     resolution: {integrity: sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w==}
-    engines: {node: '>= 20'}
-
-  '@vercel/oidc@3.2.0':
-    resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
 
   '@visulima/tabular@3.1.3':
@@ -7673,26 +7632,6 @@ packages:
   fix-dts-default-cjs-exports@1.0.1:
     resolution: {integrity: sha512-pVIECanWFC61Hzl2+oOCtoJ3F17kglZC/6N94eRWycFgBH35hHx0Li604ZIzhseh97mf2p0cv7vVrOZGoqhlEg==}
 
-  flags@4.0.3:
-    resolution: {integrity: sha512-rLkO+Hn6dSEsDZm6lHuXr3GjfHf8N67lhXCFUeSRBjDdb/43ez5Je8DC/K0HzMtl3LcWc7zgF79V/3WzJXVm/w==}
-    peerDependencies:
-      '@opentelemetry/api': ^1.7.0
-      '@sveltejs/kit': '*'
-      next: '*'
-      react: '*'
-      react-dom: '*'
-    peerDependenciesMeta:
-      '@opentelemetry/api':
-        optional: true
-      '@sveltejs/kit':
-        optional: true
-      next:
-        optional: true
-      react:
-        optional: true
-      react-dom:
-        optional: true
-
   flat-cache@4.0.1:
     resolution: {integrity: sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw==}
     engines: {node: '>=16'}
@@ -8680,12 +8619,6 @@ packages:
   joi@17.13.3:
     resolution: {integrity: sha512-otDA4ldcIx+ZXsKHWmp0YizCweVRZG96J10b0FevjfuncLO1oX59THoAmHkNubYJ+9gWsYsp5k8v4ib6oDv1fA==}
 
-  jose@5.10.0:
-    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
-
-  jose@5.2.1:
-    resolution: {integrity: sha512-qiaQhtQRw6YrOaOj0v59h3R6hUY9NvxBmmnMfKemkqYmBB0tEc97NbLP7ix44VP5p9/0YHG8Vyhzuo5YBNwviA==}
-
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
@@ -8695,10 +8628,6 @@ packages:
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
-
-  js-xxhash@4.0.0:
-    resolution: {integrity: sha512-3Q2eIqG6s1KEBBmkj9tGM9lef8LJbuRyTVBdI3GpTnrvtytunjLPO0wqABp5qhtMzfA32jYn1FlnIV7GH1RAHQ==}
-    engines: {node: '>=18.0.0'}
 
   js-yaml@3.14.2:
     resolution: {integrity: sha512-PMSmkqxr106Xa156c2M265Z+FTrPl+oxd/rgOQy2tijQeK5TxQ43psO1ZCwhVOSdnn+RzkzlRz/eY4BgJBYVpg==}
@@ -13282,8 +13211,6 @@ snapshots:
     dependencies:
       '@noble/ciphers': 1.3.0
 
-  '@edge-runtime/cookies@5.0.2': {}
-
   '@electron/get@2.0.3':
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
@@ -13742,11 +13669,6 @@ snapshots:
     dependencies:
       '@eslint/core': 1.1.0
       levn: 0.4.1
-
-  '@flags-sdk/vercel@1.0.1(@vercel/flags-core@1.0.1(@aws-sdk/credential-provider-web-identity@3.972.6)(flags@4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)))(flags@4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
-    dependencies:
-      '@vercel/flags-core': 1.0.1(@aws-sdk/credential-provider-web-identity@3.972.6)(flags@4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
-      flags: 4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
   '@floating-ui/core@1.7.4':
     dependencies:
@@ -18115,23 +18037,6 @@ snapshots:
       next: 16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react: 19.2.4
 
-  '@vercel/flags-core@1.0.1(@aws-sdk/credential-provider-web-identity@3.972.6)(flags@4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
-    dependencies:
-      '@vercel/functions': 3.4.2(@aws-sdk/credential-provider-web-identity@3.972.6)
-      flags: 4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      jose: 5.2.1
-      js-xxhash: 4.0.0
-    optionalDependencies:
-      next: 16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-web-identity'
-
-  '@vercel/functions@3.4.2(@aws-sdk/credential-provider-web-identity@3.972.6)':
-    dependencies:
-      '@vercel/oidc': 3.2.0
-    optionalDependencies:
-      '@aws-sdk/credential-provider-web-identity': 3.972.6
-
   '@vercel/og@0.6.8':
     dependencies:
       '@resvg/resvg-wasm': 2.4.0
@@ -18139,8 +18044,6 @@ snapshots:
       yoga-wasm-web: 0.3.3
 
   '@vercel/oidc@3.1.0': {}
-
-  '@vercel/oidc@3.2.0': {}
 
   '@visulima/tabular@3.1.3': {}
 
@@ -20642,16 +20545,6 @@ snapshots:
       mlly: 1.8.0
       rollup: 4.57.1
 
-  flags@4.0.3(@opentelemetry/api@1.9.0)(next@16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
-    dependencies:
-      '@edge-runtime/cookies': 5.0.2
-      jose: 5.10.0
-    optionalDependencies:
-      '@opentelemetry/api': 1.9.0
-      next: 16.1.5(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      react: 19.2.4
-      react-dom: 19.2.4(react@19.2.4)
-
   flat-cache@4.0.1:
     dependencies:
       flatted: 3.3.3
@@ -22037,17 +21930,11 @@ snapshots:
       '@sideway/formula': 3.0.1
       '@sideway/pinpoint': 2.0.0
 
-  jose@5.10.0: {}
-
-  jose@5.2.1: {}
-
   joycon@3.1.1: {}
 
   js-tokens@10.0.0: {}
 
   js-tokens@4.0.0: {}
-
-  js-xxhash@4.0.0: {}
 
   js-yaml@3.14.2:
     dependencies:

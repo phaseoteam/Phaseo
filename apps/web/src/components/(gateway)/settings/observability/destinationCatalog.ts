@@ -1,5 +1,5 @@
 export type DestinationId =
-	| "arize_ai"
+	| "arize"
 	| "braintrust"
 	| "clickhouse"
 	| "comet_opik"
@@ -7,7 +7,7 @@ export type DestinationId =
 	| "grafana_cloud"
 	| "langfuse"
 	| "langsmith"
-	| "new_relic_ai"
+	| "new_relic"
 	| "otel_collector"
 	| "posthog"
 	| "s3"
@@ -40,7 +40,7 @@ export type ComingSoonDestination = {
 
 export const AVAILABLE_DESTINATIONS: DestinationDefinition[] = [
 	{
-		id: "arize_ai",
+		id: "arize",
 		label: "Arize AI",
 		description: "Send traces to Arize with API + space credentials.",
 		fields: [
@@ -156,7 +156,7 @@ export const AVAILABLE_DESTINATIONS: DestinationDefinition[] = [
 		],
 	},
 	{
-		id: "new_relic_ai",
+		id: "new_relic",
 		label: "New Relic AI",
 		description: "Write traces into New Relic AI monitoring.",
 		fields: [

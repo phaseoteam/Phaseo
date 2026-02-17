@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
 	ArrowLeft,
@@ -40,7 +41,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { testBroadcastConnectionFromConfigAction } from "@/app/(dashboard)/settings/broadcast/actions";
+import {
+	createBroadcastDestinationAction,
+	testBroadcastConnectionFromConfigAction,
+} from "@/app/(dashboard)/settings/broadcast/actions";
 import type { DestinationDefinition } from "@/components/(gateway)/settings/observability/destinationCatalog";
 
 type KeyOption = {
@@ -197,6 +201,7 @@ export default function BroadcastDestinationCreateClient(props: {
 	keys: KeyOption[];
 }) {
 	const { destination, keys, providerOptions, modelOptions } = props;
+	const router = useRouter();
 	const [destinationName, setDestinationName] = useState(destination.label);
 	const [excludePromptsAndOutputs, setExcludePromptsAndOutputs] = useState(false);
 	const [samplingRate, setSamplingRate] = useState("1");
@@ -206,6 +211,7 @@ export default function BroadcastDestinationCreateClient(props: {
 		),
 	);
 	const [isTestingConnection, setIsTestingConnection] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
 	const [selectedKeyIds, setSelectedKeyIds] = useState<string[]>([]);
 	const [groupJoin, setGroupJoin] = useState<GroupLogic>("or");
 	const [ruleGroups, setRuleGroups] = useState<RuleGroup[]>([]);
@@ -213,6 +219,7 @@ export default function BroadcastDestinationCreateClient(props: {
 	const parsedSamplingRate = Number(samplingRate);
 	const samplingValid =
 		Number.isFinite(parsedSamplingRate) && parsedSamplingRate >= 0 && parsedSamplingRate <= 1;
+	const hasDestinationName = destinationName.trim().length > 0;
 
 	const hasAllRequiredConnectionValues = useMemo(
 		() =>
@@ -224,7 +231,39 @@ export default function BroadcastDestinationCreateClient(props: {
 		[config, destination.fields],
 	);
 
-	const canSave = hasAllRequiredConnectionValues && samplingValid;
+	const canSave = hasDestinationName && hasAllRequiredConnectionValues && samplingValid;
+
+	async function handleSave() {
+		if (!canSave || isSaving) return;
+		setIsSaving(true);
+		try {
+			await createBroadcastDestinationAction({
+				destinationId: destination.id,
+				name: destinationName.trim(),
+				config,
+				privacyExcludePromptsAndOutputs: excludePromptsAndOutputs,
+				samplingRate: parsedSamplingRate,
+				groupJoin,
+				keyIds: selectedKeyIds,
+				ruleGroups: ruleGroups.map((group) => ({
+					match: group.match,
+					rules: group.rules.map((rule) => ({
+						field: rule.field,
+						condition: rule.condition,
+						value: rule.value,
+					})),
+				})),
+			});
+			toast.success("Destination saved");
+			router.push("/settings/broadcast");
+			router.refresh();
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Failed to save destination";
+			toast.error(message);
+		} finally {
+			setIsSaving(false);
+		}
+	}
 
 	async function handleTestConnection() {
 		if (isTestingConnection) return;
@@ -329,9 +368,9 @@ export default function BroadcastDestinationCreateClient(props: {
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
-					<Button disabled={!canSave}>
+					<Button disabled={!canSave || isSaving} onClick={handleSave}>
 						<Save className="mr-2 h-4 w-4" />
-						Save Destination
+						{isSaving ? "Saving..." : "Save Destination"}
 					</Button>
 				</div>
 			</div>

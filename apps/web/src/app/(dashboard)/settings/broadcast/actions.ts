@@ -18,6 +18,76 @@ type BroadcastDestinationRow = {
 	destination_config: Record<string, unknown> | null;
 };
 
+type BroadcastRuleField =
+	| "model"
+	| "provider"
+	| "session_id"
+	| "user_id"
+	| "api_key_name"
+	| "finish_reason"
+	| "input"
+	| "output"
+	| "total_cost"
+	| "total_tokens"
+	| "prompt_tokens"
+	| "completion_tokens";
+
+type BroadcastRuleCondition =
+	| "equals"
+	| "not_equals"
+	| "contains"
+	| "not_contains"
+	| "starts_with"
+	| "ends_with"
+	| "exists"
+	| "not_exists"
+	| "matches_regex";
+
+type CreateBroadcastDestinationInput = {
+	destinationId: string;
+	name: string;
+	config: Record<string, string>;
+	privacyExcludePromptsAndOutputs?: boolean;
+	samplingRate?: number;
+	groupJoin?: "and" | "or";
+	keyIds?: string[];
+	ruleGroups?: Array<{
+		match: "and" | "or";
+		rules: Array<{
+			field: BroadcastRuleField;
+			condition: BroadcastRuleCondition;
+			value?: string;
+		}>;
+	}>;
+};
+
+const ALLOWED_RULE_FIELDS = new Set<BroadcastRuleField>([
+	"model",
+	"provider",
+	"session_id",
+	"user_id",
+	"api_key_name",
+	"finish_reason",
+	"input",
+	"output",
+	"total_cost",
+	"total_tokens",
+	"prompt_tokens",
+	"completion_tokens",
+]);
+
+const ALLOWED_RULE_CONDITIONS = new Set<BroadcastRuleCondition>([
+	"equals",
+	"not_equals",
+	"contains",
+	"not_contains",
+	"starts_with",
+	"ends_with",
+	"exists",
+	"not_exists",
+	"matches_regex",
+]);
+
 function isObject(value: unknown): value is Record<string, unknown> {
 	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -83,6 +153,12 @@ function resolveTestEndpoint(
 	return "";
 }
 
+function normalizeDestinationId(destinationId: string): string {
+	if (destinationId === "arize_ai") return "arize";
+	if (destinationId === "new_relic_ai") return "new_relic";
+	return destinationId;
+}
+
 function buildConnectionTestHeaders(
 	destinationId: string,
 	config: Record<string, unknown>,
@@ -111,7 +187,7 @@ function buildConnectionTestHeaders(
 		if (apiKey) headers["DD-API-KEY"] = apiKey;
 	}
 
-	if (destinationId === "new_relic_ai" && !headers["api-key"]) {
+	if ((destinationId === "new_relic" || destinationId === "new_relic_ai") && !headers["api-key"]) {
 		const licenseKey = getConfigValue(config, "license_key");
 		if (licenseKey) headers["api-key"] = licenseKey;
 	}
@@ -296,6 +372,152 @@ async function getDestinationForTeam(
 	if (!data) throw new Error("Destination not found");
 
 	return { supabase, row: data as BroadcastDestinationRow };
+}
+
+export async function createBroadcastDestinationAction(args: CreateBroadcastDestinationInput) {
+	const { supabase, user } = await requireAuthenticatedUser();
+	const teamId = await getTeamIdFromCookie();
+	if (!teamId) throw new Error("Missing team id");
+	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+
+	const destinationId = normalizeDestinationId(String(args.destinationId ?? "").trim());
+	if (!destinationId) throw new Error("Missing destination id");
+
+	const name = String(args.name ?? "").trim();
+	if (!name) throw new Error("Destination name is required");
+
+	const samplingRate = Number(args.samplingRate ?? 1);
+	if (!Number.isFinite(samplingRate) || samplingRate < 0 || samplingRate > 1) {
+		throw new Error("Sampling rate must be between 0 and 1");
+	}
+
+	const groupJoin: "and" | "or" = args.groupJoin === "and" ? "and" : "or";
+	const privacyExcludePromptsAndOutputs = Boolean(args.privacyExcludePromptsAndOutputs);
+
+	const rawConfig = isObject(args.config) ? args.config : {};
+	const destinationConfig: Record<string, string> = {};
+	for (const [key, value] of Object.entries(rawConfig)) {
+		if (!key.trim()) continue;
+		if (typeof value !== "string") continue;
+		destinationConfig[key.trim()] = value;
+	}
+
+	const requestedKeyIds = Array.isArray(args.keyIds)
+		? Array.from(
+				new Set(
+					args.keyIds
+						.map((value) => String(value ?? "").trim())
+						.filter((value) => value.length > 0),
+				),
+			)
+		: [];
+
+	const rawRuleGroups = Array.isArray(args.ruleGroups) ? args.ruleGroups : [];
+	const normalizedRuleGroups = rawRuleGroups
+		.map((group) => ({
+			match: group?.match === "and" ? "and" : "or",
+			rules: Array.isArray(group?.rules)
+				? group.rules
+						.map((rule) => {
+							const field = String(rule?.field ?? "") as BroadcastRuleField;
+							const condition = String(rule?.condition ?? "") as BroadcastRuleCondition;
+							if (!ALLOWED_RULE_FIELDS.has(field) || !ALLOWED_RULE_CONDITIONS.has(condition)) {
+								return null;
+							}
+							const needsValue = condition !== "exists" && condition !== "not_exists";
+							const value = needsValue ? String(rule?.value ?? "").trim() : "";
+							return {
+								field,
+								condition,
+								value: needsValue ? (value.length ? value : null) : null,
+							};
+						})
+						.filter((rule): rule is { field: BroadcastRuleField; condition: BroadcastRuleCondition; value: string | null } => Boolean(rule))
+				: [],
+		}))
+		.filter((group) => group.rules.length > 0);
+
+	let destinationRowId: string | null = null;
+
+	try {
+		const { data: createdDestination, error: insertDestinationError } = await supabase
+			.from("team_broadcast_destinations")
+			.insert({
+				team_id: teamId,
+				destination_id: destinationId,
+				name,
+				enabled: true,
+				destination_config: destinationConfig,
+				privacy_exclude_prompts_and_outputs: privacyExcludePromptsAndOutputs,
+				sampling_rate: samplingRate,
+				group_join_operator: groupJoin,
+			})
+			.select("id")
+			.single();
+		if (insertDestinationError) throw insertDestinationError;
+		destinationRowId = String(createdDestination.id);
+
+		if (requestedKeyIds.length > 0) {
+			const { data: existingKeys, error: existingKeysError } = await supabase
+				.from("keys")
+				.select("id")
+				.eq("team_id", teamId)
+				.in("id", requestedKeyIds);
+			if (existingKeysError) throw existingKeysError;
+
+			const validKeyIds = (existingKeys ?? []).map((row: { id: string }) => row.id).filter(Boolean);
+			if (validKeyIds.length > 0) {
+				const { error: insertKeysError } = await supabase
+					.from("broadcast_destination_keys")
+					.insert(validKeyIds.map((keyId) => ({ destination_id: destinationRowId, key_id: keyId })));
+				if (insertKeysError) throw insertKeysError;
+			}
+		}
+
+		for (let groupIndex = 0; groupIndex < normalizedRuleGroups.length; groupIndex++) {
+			const group = normalizedRuleGroups[groupIndex]!;
+			const { data: createdGroup, error: insertGroupError } = await supabase
+				.from("broadcast_destination_rule_groups")
+				.insert({
+					destination_id: destinationRowId,
+					name: `Group ${groupIndex + 1}`,
+					match_operator: group.match,
+					position: groupIndex,
+				})
+				.select("id")
+				.single();
+			if (insertGroupError) throw insertGroupError;
+
+			const rulesPayload = group.rules.map((rule, ruleIndex) => ({
+				rule_group_id: createdGroup.id,
+				field: rule.field,
+				condition: rule.condition,
+				value: rule.value,
+				position: ruleIndex,
+			}));
+			if (rulesPayload.length > 0) {
+				const { error: insertRulesError } = await supabase
+					.from("broadcast_destination_rules")
+					.insert(rulesPayload);
+				if (insertRulesError) throw insertRulesError;
+			}
+		}
+
+		revalidatePath("/settings/broadcast");
+		return {
+			ok: true,
+			id: destinationRowId,
+		};
+	} catch (error) {
+		if (destinationRowId) {
+			await supabase
+				.from("team_broadcast_destinations")
+				.delete()
+				.eq("id", destinationRowId)
+				.eq("team_id", teamId);
+		}
+		throw error;
+	}
 }
 
 export async function disableBroadcastDestinationAction(id: string) {
