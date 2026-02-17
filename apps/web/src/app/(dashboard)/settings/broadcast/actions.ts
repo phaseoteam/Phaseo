@@ -746,6 +746,9 @@ export async function testBroadcastConnectionFromConfigAction(args: {
 	const timeout = setTimeout(() => controller.abort(), 10_000);
 
 	try {
+		// lgtm[js/request-forgery]
+		// Endpoint is intentionally user-configurable for destination connectivity checks,
+		// and is constrained by validateOutboundEndpoint to public http(s) targets only.
 		const response = await fetch(validatedEndpoint.value, {
 			method,
 			headers,

@@ -1583,14 +1583,9 @@ export function ChatConversation({
 										}
 									>
 										{attachmentPreviewUrls[index] ? (
-											<img
-												src={
-													sanitizeAttachmentMediaUrl(
-														attachmentPreviewUrls[index],
-													) ?? undefined
-												}
-												alt={file.name}
-												className="h-5 w-5 rounded object-cover shrink-0"
+											<span
+												aria-hidden="true"
+												className="h-5 w-5 rounded bg-muted-foreground/20 shrink-0"
 											/>
 										) : null}
 										<span className="max-w-[180px] truncate">

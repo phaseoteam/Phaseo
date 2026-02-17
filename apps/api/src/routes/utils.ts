@@ -17,6 +17,10 @@ type CacheOptions = {
 
 const encoder = new TextEncoder();
 
+function looksLikeStackTrace(value: string): boolean {
+    return /\n\s*at\s+[^\n]+/i.test(value) || /Error:\s*[^\n]+/i.test(value);
+}
+
 function stringifyJsonBody(body: unknown): string {
     const seen = new WeakSet<object>();
     return JSON.stringify(
@@ -28,8 +32,10 @@ function stringifyJsonBody(body: unknown): string {
             if (value instanceof Error) {
                 return {
                     name: value.name,
-                    message: value.message,
                 };
+            }
+            if (typeof value === "string" && looksLikeStackTrace(value)) {
+                return "[redacted]";
             }
             if (typeof value === "object" && value !== null) {
                 if (seen.has(value)) return "[Circular]";
@@ -57,6 +63,8 @@ export function withRuntime(handler: Handler) {
 }
 
 export function json(body: any, status = 200, headers: Record<string, string> = {}) {
+    // lgtm[js/stack-trace-exposure]
+    // Stack-like content is stripped in stringifyJsonBody before response serialization.
     return new Response(stringifyJsonBody(body), {
         status,
         headers: {
