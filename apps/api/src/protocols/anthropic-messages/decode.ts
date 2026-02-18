@@ -14,6 +14,7 @@ import type {
 	IRTool,
 } from "@core/ir";
 import { mapAnthropicEffortToIr } from "@core/reasoningEffort";
+import { resolveServiceTierFromSpeedAndTier } from "../shared/text-normalizers";
 
 /**
  * Anthropic Messages request type
@@ -212,7 +213,10 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		stop: req.stop_sequences,
 		metadata: req.metadata,
 		speed: typeof req.speed === "string" ? req.speed : undefined,
-		serviceTier: resolveRequestedServiceTier(req),
+		serviceTier: resolveServiceTierFromSpeedAndTier({
+			service_tier: req.service_tier,
+			speed: req.speed,
+		}),
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 		imageConfig: req.image_config
 			? {
@@ -333,11 +337,5 @@ function normalizeAnthropicToolChoice(choice: any): IRChatRequest["toolChoice"] 
 	}
 
 	return undefined;
-}
-
-function resolveRequestedServiceTier(req: AnthropicMessagesRequest): string | undefined {
-	const speed = typeof req.speed === "string" ? req.speed.toLowerCase() : undefined;
-	if (speed === "fast") return "priority";
-	return typeof req.service_tier === "string" ? req.service_tier : undefined;
 }
 

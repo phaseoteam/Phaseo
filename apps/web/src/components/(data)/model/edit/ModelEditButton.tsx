@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
-import ModelEditDialog from "./ModelEditDialog";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 
 interface ModelEditButtonProps {
 	modelId: string;
@@ -28,5 +30,15 @@ export default async function ModelEditButton({
 		return null;
 	}
 
-	return <ModelEditDialog modelId={modelId} tab={tab} />;
+	const href = tab
+		? `/internal/data/models/edit/${modelId}?tab=${encodeURIComponent(tab)}`
+		: `/internal/data/models/edit/${modelId}`;
+
+	return (
+		<Button variant="outline" size="icon-sm" asChild>
+			<Link href={href} aria-label="Edit model">
+				<Pencil className="h-4 w-4" />
+			</Link>
+		</Button>
+	);
 }

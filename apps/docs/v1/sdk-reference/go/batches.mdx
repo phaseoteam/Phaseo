@@ -1,49 +1,35 @@
 ---
 title: "Batches"
-description: "Call /batches with the Go SDK."
+description: "Use the generated Go client for /batches."
 ---
 
-**Methods**: `client.CreateBatch()`, `client.GetBatch()`.
+The preview Go wrapper does not yet expose batch helpers. Use the generated
+client in `src/gen`.
 
-### Example
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
-    "packages/sdk-go/src/gen"
+  "fmt"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
+client := gen.NewClient("https://api.phaseo.app/v1")
+client.Headers["Authorization"] = "Bearer " + apiKey
 
-req := gen.BatchRequest{
-    Endpoint: "responses",
-    InputFileId: "file_123",
-    CompletionWindow: &"24h",
-}
-
-batch, _, err := client.CreateBatch(ctx, req)
+created, err := gen.CreateBatch(client, nil, nil, nil, map[string]interface{}{
+  "endpoint": "responses",
+  "input_file_id": "file_123",
+})
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Batch created:", batch.Id)
 
-status, _, err := client.GetBatch(ctx, batch.Id)
+status, err := gen.RetrieveBatch(client, map[string]string{
+  "batch_id": fmt.Sprint(created["id"]),
+}, nil, nil, nil)
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Batch status:", status.Status)
+
+fmt.Println(status)
 ```
-
-### Key parameters
-- `endpoint` (required): Target endpoint for batch items (e.g., `responses`).
-- `input_file_id` (required): File id uploaded via `/files`.
-- `completion_window`: e.g., `24h`.
-- `metadata`: Optional object stored with the batch.
-
-### Returns
-`BatchResponse`
 

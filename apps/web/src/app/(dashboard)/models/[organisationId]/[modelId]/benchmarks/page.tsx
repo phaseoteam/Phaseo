@@ -3,8 +3,6 @@ import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmarks";
 import {
 	getModelBenchmarkHighlights,
-	getModelBenchmarkTableData,
-	getModelBenchmarkComparisonData,
 } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { getModelOverview } from "@/lib/fetchers/models/getModel";
 import type { Metadata } from "next";
@@ -50,13 +48,13 @@ export async function generateMetadata(props: {
 
 	const description = [
 		`${model.name} benchmarks by ${organisationName} on AI Stats.`,
-		"Review benchmark scores, comparisons, and trends across industry-standard evaluations.",
+		"Review benchmark highlights and use Compare for side-by-side benchmark analysis.",
 	]
 		.filter(Boolean)
 		.join(" ");
 
 	return buildMetadata({
-		title: `${model.name} Benchmarks - Performance Metrics & Comparisons`,
+		title: `${model.name} Benchmarks - Performance Highlights`,
 		description,
 		path,
 		keywords: [
@@ -64,7 +62,7 @@ export async function generateMetadata(props: {
 			`${model.name} benchmarks`,
 			`${organisationName} AI`,
 			"AI model performance",
-			"benchmark comparisons",
+			"AI model comparisons",
 			"AI Stats",
 		],
 		imagePath,
@@ -80,20 +78,17 @@ export default async function Page({
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
 
-	const [highlightCards, benchmarkTableData, comparisonData] =
-		await Promise.all([
-			getModelBenchmarkHighlights(modelId, includeHidden),
-			getModelBenchmarkTableData(modelId, includeHidden),
-			getModelBenchmarkComparisonData(modelId, includeHidden),
-		]);
+	const highlightCards = await getModelBenchmarkHighlights(
+		modelId,
+		includeHidden
+	);
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="benchmarks" includeHidden={includeHidden}>
 			<ModelBenchmarks
 				modelId={modelId}
-				benchmarkTableData={benchmarkTableData}
-				benchmarkComparisonData={comparisonData}
 				highlightCards={highlightCards}
+				mode="summary"
 			/>
 		</ModelDetailShell>
 	);

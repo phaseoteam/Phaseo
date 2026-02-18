@@ -15,7 +15,16 @@
 		"test:live": "pnpm exec vitest run tests/integration/openai-gpt5-nano.live.spec.ts",
 		"test:live:active": "pnpm exec vitest run tests/integration/active-providers.live.spec.ts",
 		"test:live:provider": "tsx scripts/run-live-provider-tests.ts",
+		"test:live:provider:arcee": "tsx scripts/run-live-provider-tests.ts --provider arcee",
+		"test:live:provider:baseten": "tsx scripts/run-live-provider-tests.ts --provider baseten",
+		"test:live:provider:chutes": "tsx scripts/run-live-provider-tests.ts --provider chutes",
+		"test:live:provider:cohere": "tsx scripts/run-live-provider-tests.ts --provider cohere",
+		"test:live:provider:cohere:chat": "tsx scripts/run-live-provider-tests.ts --provider cohere --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured",
+		"test:live:provider:deepinfra": "tsx scripts/run-live-provider-tests.ts --provider deepinfra",
+		"test:live:provider:together": "tsx scripts/run-live-provider-tests.ts --provider together",
+		"test:live:provider:together:chat": "tsx scripts/run-live-provider-tests.ts --provider together --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured",
 		"test:live:all-providers": "tsx scripts/run-live-provider-tests.ts --all-providers",
+		"test:live:all-api-providers": "tsx scripts/run-live-provider-tests.ts --all-api-providers",
 		"test:live:nano-banana": "pnpm exec vitest run tests/integration/nano-banana-image.live.spec.ts"
 	},
 	"dependencies": {

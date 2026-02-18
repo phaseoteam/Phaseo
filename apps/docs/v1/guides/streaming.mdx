@@ -1,0 +1,49 @@
+---
+title: "Streaming"
+description: "Use server-sent events (SSE) for low-latency token delivery."
+---
+
+Streaming returns incremental output as SSE frames so users see responses earlier.
+
+## Supported endpoints
+
+- `/v1/responses`
+- `/v1/chat/completions`
+- `/v1/messages`
+
+## Request
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Stream a short hello message.",
+    "stream": true
+  }'
+```
+
+## Response
+
+```text
+data: {"id":"resp_...","object":"response","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## SDK options
+
+- TypeScript SDK: `client.streamResponse()` and `client.streamText()`
+- Python SDK: `client.stream_response()` and `client.stream_text()`
+- Vercel AI SDK: `streamText(...)` with `@ai-stats/ai-sdk-provider`
+
+## Important limitation
+
+At current gateway request-validation level, combining tools with `stream: true` is rejected (`400 invalid_request`). Use non-streaming for tool-calling loops.
+
+## Next guides
+
+1. [SSE Event Reference](./streaming-sse)
+2. [Streaming in Production](./streaming-production)

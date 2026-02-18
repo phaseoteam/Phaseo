@@ -102,5 +102,44 @@
         ]
       }
     ]
+  },
+  {
+    "api_model_id": "meta/llama-3.1-8b",
+    "provider_api_model_id": "cerebras:meta/llama-3.1-8b",
+    "provider_model_slug": "\tllama3.1-8b",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": "FP16",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-instruct-2507",
+    "provider_api_model_id": "cerebras:qwen/qwen3-235b-a22b-instruct-2507",
+    "provider_model_slug": "qwen-3-235b-a22b-instruct-2507",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": "FP16",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "z-ai/glm-4.7",
+    "provider_api_model_id": "cerebras:z-ai/glm-4.7",
+    "provider_model_slug": "zai-glm-4.7",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": "FP16",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

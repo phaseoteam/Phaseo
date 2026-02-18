@@ -160,6 +160,9 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				stream_format: request.streamFormat,
 				speed: request.speed,
 				instructions: request.instructions,
+				config: {
+					elevenlabs: (request.vendor as any)?.elevenlabs,
+				},
 				user: request.userId,
 			};
 		}

@@ -1,30 +1,25 @@
 ---
 title: "Health"
-description: "Call /health with the Go SDK."
+description: "Use the generated Go client for /health."
 ---
 
-**Method**: `client.Analytics.HealthzGet()`.
+The preview Go wrapper does not yet expose a health helper. Use the generated
+client in `src/gen`.
 
-### Example
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
+  "fmt"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
+client := gen.NewClient("https://api.phaseo.app/v1")
+client.Headers["Authorization"] = "Bearer " + apiKey
 
-health, _, err := client.Analytics.HealthzGet(ctx).Execute()
+health, err := gen.Healthz(client, nil, nil, nil, nil)
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Health status:", health.Status)
-```
 
-### Returns
-`HealthzGet200Response`
+fmt.Println(health)
+```
 

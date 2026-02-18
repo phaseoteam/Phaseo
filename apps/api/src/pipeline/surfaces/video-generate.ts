@@ -7,6 +7,10 @@ import { handleError } from "@core/error-handler";
 import { doRequestWithIR } from "../execute";
 import { finalizeRequest } from "../after";
 import { auditFailure } from "../audit";
+import {
+	buildPipelineExecutionErrorResponse,
+	logPipelineExecutionError,
+} from "../error-response";
 import type { PipelineRunnerArgs } from "./types";
 
 function decodeVideoRequestToIR(body: any): IRVideoGenerationRequest {
@@ -125,15 +129,12 @@ export async function runVideoGeneratePipeline(args: PipelineRunnerArgs): Promis
 			timingHeader: header || undefined,
 		});
 	} catch (err) {
-		console.error("Video IR pipeline error:", err);
+		logPipelineExecutionError("video-generate", err);
 		const header = timing.timer.header();
 		pre.ctx.timing = timing.timer.snapshot();
 		return await handleError({
 			stage: "execute",
-			res: new Response(JSON.stringify({ error: "IR pipeline error", message: String(err) }), {
-				status: 500,
-				headers: { "Content-Type": "application/json" },
-			}),
+			res: buildPipelineExecutionErrorResponse(err, pre.ctx),
 			endpoint,
 			ctx: pre.ctx,
 			timingHeader: header || undefined,

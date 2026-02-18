@@ -458,9 +458,25 @@ export async function handleError({
         errorPayload.details = body.details;
     }
     if (debugEnabled) {
+        const routingDebug = ctx
+            ? {
+                requested_params: sanitizeForAxiom(ctx.requestedParams ?? null),
+                param_routing_diagnostics: sanitizeForAxiom(ctx.paramRoutingDiagnostics ?? null),
+                provider_enablement_diagnostics: sanitizeForAxiom(
+                    ctx.providerEnablementDiagnostics ?? null,
+                ),
+                provider_candidate_build_diagnostics: sanitizeForAxiom(
+                    ctx.providerCandidateBuildDiagnostics ?? null,
+                ),
+                routing_snapshot: sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null),
+                routing_diagnostics: sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null),
+            }
+            : null;
+
         errorPayload.debug = {
             upstream: body,
             attempt_errors: redactErrorValue((ctx as any)?.attemptErrors ?? null),
+            routing: routingDebug,
         };
     }
 

@@ -1,16 +1,27 @@
 ---
-title: "Audio transcriptions (Preview)"
-description: "Preview SDK usage for Audio transcriptions."
+title: "Audio transcriptions"
+description: "Use the generated Go client for /audio/transcriptions."
 ---
 
-This SDK is in **preview**. Use the generated client for this endpoint.
-
-Suggested call: AudioApi#audioTranscriptionsPost
+The preview Go wrapper does not yet expose an audio-transcription helper. Use
+the generated client in `src/gen`.
 
 ```go
-// Instantiate the generated API client for Go
-// Call AudioApi#audioTranscriptionsPost with the request body matching the API reference.
-```
+import (
+  "fmt"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+)
 
-Parameters and request/response shapes are identical to the REST API. Consult the API reference for the full field list.
+client := gen.NewClient("https://api.phaseo.app/v1")
+client.Headers["Authorization"] = "Bearer " + apiKey
+
+resp, err := gen.CreateTranscription(client, nil, nil, nil, map[string]interface{}{
+  "model": "openai/whisper-1",
+  "audio_b64": "data:audio/wav;base64,...",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
 

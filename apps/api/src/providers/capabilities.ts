@@ -3,28 +3,24 @@
 // How: Exposes provider profile metadata and adapter-backed capability checks.
 
 import { isOpenAICompatProvider } from "./openai-compatible/config";
-
-export type AdapterBackedCapability =
-	| "image.generate"
-	| "image.edit"
-	| "audio.speech"
-	| "audio.transcription"
-	| "audio.translations"
-	| "ocr"
-	| "music.generate";
+import {
+	getProviderProfile,
+	type AdapterBackedCapability,
+} from "./providerProfiles";
+export type { AdapterBackedCapability } from "./providerProfiles";
 
 export type ProviderCapabilityProfile = {
 	textOnly?: boolean;
 	adapterBackedOverrides?: Partial<Record<AdapterBackedCapability, boolean>>;
 };
 
-const PROVIDER_CAPABILITY_PROFILES: Record<string, ProviderCapabilityProfile> = {
-	ai21: { textOnly: true },
-	xiaomi: { textOnly: true },
-};
-
 export function getProviderCapabilityProfile(providerId: string): ProviderCapabilityProfile {
-	return PROVIDER_CAPABILITY_PROFILES[providerId] ?? {};
+	const profile = getProviderProfile(providerId);
+	if (!profile) return {};
+	return {
+		textOnly: profile.textOnly,
+		adapterBackedOverrides: profile.adapterBackedOverrides,
+	};
 }
 
 function defaultAdapterBackedSupport(providerId: string, capability: AdapterBackedCapability): boolean {

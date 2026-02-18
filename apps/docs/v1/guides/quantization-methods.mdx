@@ -1,0 +1,46 @@
+---
+title: "Quantization Methods"
+description: "How quantization methods differ from numeric formats, and why method choice matters."
+---
+
+Numeric format (`FP8`, `INT8`, `INT4`) tells you precision.
+
+Quantization method tells you **how** that precision was applied.
+
+## Why methods matter
+
+Two `INT4` variants can behave very differently because method choices affect:
+
+- Accuracy retention
+- Runtime compatibility
+- Memory layout and serving performance
+- Calibration requirements
+
+## Common method families
+
+| Method family | Typical purpose | Notes |
+| --- | --- | --- |
+| `AWQ` | Preserve key activation-sensitive weights | Common for practical inference quality/efficiency balance |
+| `GPTQ` | Post-training quantization with error minimization | Popular for compact local inference variants |
+| `GGUF` | Packaging format used by llama.cpp ecosystems | Often combined with different quantization levels (`Q4`, `Q5`, etc.) |
+| `EXL2` | Aggressive low-bit variants in ExLlama ecosystems | High throughput focus with architecture/runtime constraints |
+
+## Method vs format example
+
+`INT4` is the precision target.  
+`AWQ INT4` and `GPTQ INT4` are different realizations of that target.
+
+## Practical guidance
+
+1. Pick runtime first (what you can deploy reliably).
+2. Filter to method families that runtime supports.
+3. Benchmark multiple quantization methods for the same precision target.
+4. Track failure modes, not just average benchmark scores.
+
+## Evaluation checklist
+
+- Structured output correctness
+- Long-context faithfulness
+- Tool call reliability
+- Safety/moderation behavior
+- Tail latency under load

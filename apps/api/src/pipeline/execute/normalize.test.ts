@@ -63,4 +63,27 @@ describe("normalizeIRForProvider", () => {
 		const normalized = normalizeIRForProvider(ir, "openai", "openai.responses");
 		expect(normalized.reasoning?.effort).toBe("minimal");
 	});
+
+	it("defaults OpenAI anthropic.messages requests to minimal reasoning", () => {
+		const ir = baseIr({
+			model: "openai/gpt-5-nano",
+			maxTokens: 64,
+		});
+
+		const normalized = normalizeIRForProvider(ir, "openai", "anthropic.messages");
+		expect(normalized.reasoning?.effort).toBe("minimal");
+		expect(normalized.reasoning?.summary).toBe("auto");
+	});
+
+	it("keeps explicit anthropic.messages reasoning settings", () => {
+		const ir = baseIr({
+			model: "openai/gpt-5-nano",
+			maxTokens: 64,
+			reasoning: { effort: "high" },
+		});
+
+		const normalized = normalizeIRForProvider(ir, "openai", "anthropic.messages");
+		expect(normalized.reasoning?.effort).toBe("high");
+		expect(normalized.reasoning?.summary).toBe("auto");
+	});
 });

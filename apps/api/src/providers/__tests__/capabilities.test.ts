@@ -17,8 +17,10 @@ const NON_TEXT_CAPABILITIES: AdapterBackedCapability[] = [
 ];
 
 describe("provider capability profiles", () => {
-	it("marks AI21 and Xiaomi as text-only", () => {
+	it("marks AI21, Arcee, and Xiaomi as text-only", () => {
 		expect(getProviderCapabilityProfile("ai21").textOnly).toBe(true);
+		expect(getProviderCapabilityProfile("arcee").textOnly).toBe(true);
+		expect(getProviderCapabilityProfile("arcee-ai").textOnly).toBe(true);
 		expect(getProviderCapabilityProfile("xiaomi").textOnly).toBe(true);
 	});
 
@@ -27,6 +29,14 @@ describe("provider capability profiles", () => {
 			expect(
 				supportsAdapterBackedCapability("ai21", capability),
 				`ai21 should not support ${capability}`,
+			).toBe(false);
+			expect(
+				supportsAdapterBackedCapability("arcee", capability),
+				`arcee should not support ${capability}`,
+			).toBe(false);
+			expect(
+				supportsAdapterBackedCapability("arcee-ai", capability),
+				`arcee-ai should not support ${capability}`,
 			).toBe(false);
 			expect(
 				supportsAdapterBackedCapability("xiaomi", capability),

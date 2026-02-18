@@ -4,15 +4,15 @@
 // How: Wraps streaming responses and finalizes usage.
 
 import { passthroughWithPricing, passthrough } from "./streaming";
+import type { UnifiedStreamEvent } from "./stream-events";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleSuccessAudit } from "./audit";
-import { recordUsageAndCharge } from "../pricing/persist";
+import { recordUsageAndChargeOnce } from "./charge";
 import { shapeUsageForClient } from "../usage";
 import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
-import { emitGatewayRequestEvent } from "@observability/events";
 import { onCallEnd, reportProbeResult, maybeOpenOnRecentErrors } from "../execute/health";
 import { getBaseModel } from "../execute/utils";
 import { logDebugEvent, previewValue } from "../debug";
@@ -42,6 +42,7 @@ export async function handleStreamResponse(
     // Cache native ID from first chunk to avoid checking every frame
     let cachedNativeId: string | undefined;
     let cachedFinishReason: string | null = null;
+    const streamedToolCallKeys = new Set<string>();
     const requestedToolCount = countRequestedTools(ctx.body);
     const requestedToolResultCount = countRequestedToolResults(ctx.body);
     let cachedOutputToolCallCount: number | null = null;
@@ -54,6 +55,22 @@ export async function handleStreamResponse(
             mappedRequest: previewValue(result.mappedRequest),
         });
     }
+
+    const onStreamEvent = (event: UnifiedStreamEvent) => {
+        if (event.type === "delta_tool") {
+            const key =
+                event.toolCallId ??
+                `choice:${event.choiceIndex ?? 0}:tool:${event.toolIndex ?? streamedToolCallKeys.size}`;
+            streamedToolCallKeys.add(key);
+            cachedOutputToolCallCount = streamedToolCallKeys.size;
+            return;
+        }
+
+        if (event.type === "stop" && event.finishReason) {
+            cachedFinishReason = normalizeFinishReason(event.finishReason, result.provider);
+            result.bill.finish_reason = cachedFinishReason;
+        }
+    };
 
     const resp = await passthroughWithPricing({
         upstream,
@@ -185,6 +202,27 @@ export async function handleStreamResponse(
                     delete (next.meta as Record<string, unknown>).finish_reason;
                 }
             }
+            if (
+                (includeMeta || ctx.meta?.debug?.enabled) &&
+                (next?.usage || next?.response?.usage || next?.object === "chat.completion" || next?.object === "response")
+            ) {
+                next.meta = {
+                    ...next.meta,
+                    routing: {
+                        selected_provider: result.provider,
+                        requested_params: ctx.requestedParams ?? [],
+                        param_provider_count_before:
+                            ctx.paramRoutingDiagnostics?.providerCountBefore ?? null,
+                        param_provider_count_after:
+                            ctx.paramRoutingDiagnostics?.providerCountAfter ?? null,
+                        param_dropped_providers:
+                            ctx.paramRoutingDiagnostics?.droppedProviders?.map((entry) => ({
+                                provider: entry.providerId,
+                                unsupported_params: entry.unsupportedParams,
+                            })) ?? [],
+                    },
+                };
+            }
             if (ctx.meta?.echoUpstreamRequest && result.mappedRequest) {
                 if (next.usage || next.response?.usage || next.object === "chat.completion" || next.object === "response") {
                     next.upstream_request = result.mappedRequest;
@@ -192,6 +230,7 @@ export async function handleStreamResponse(
             }
             return next;
         },
+        onStreamEvent,
         onFinalSnapshot: (snapshot: any) => {
             const payload = snapshot?.response ?? snapshot;
             const finishReason = normalizeFinishReason(
@@ -294,38 +333,12 @@ export async function handleStreamResponse(
                     upstreamStatus,
                     result.bill.upstream_id ?? null
                 );
-                await emitGatewayRequestEvent({
-                    ctx,
-                    result,
-                    statusCode: upstreamStatus,
-                    success: true,
-                    finishReason: normalizedFinishReason,
-                    usage: result.bill.usage ?? null,
-                    pricing: {
-                        total_cents: bill.cost_cents,
-                        total_nanos: totalNanosOverride,
-                        currency: bill.currency ?? null,
-                    },
-                    mappedRequest: result.mappedRequest ?? null,
-                });
 
-                try {
-                    if (totalNanosOverride > 0) {
-                        await recordUsageAndCharge({
-                            requestId: ctx.requestId,
-                            teamId: ctx.teamId,
-                            cost_nanos: totalNanosOverride,
-                        });
-                    }
-                } catch (chargeErr) {
-                    console.error("recordUsageAndCharge failed", {
-                        error: chargeErr,
-                        requestId: ctx.requestId,
-                        teamId: ctx.teamId,
-                        endpoint: ctx.endpoint,
-                        cost_nanos: totalNanosOverride,
-                    });
-                }
+                await recordUsageAndChargeOnce({
+                    ctx,
+                    costNanos: totalNanosOverride,
+                    endpoint: ctx.endpoint,
+                });
                 return true;
             };
 
@@ -348,20 +361,6 @@ export async function handleStreamResponse(
                     upstreamStatus,
                     result.bill.upstream_id ?? null
                 );
-                await emitGatewayRequestEvent({
-                    ctx,
-                    result,
-                    statusCode: upstreamStatus,
-                    success: true,
-                    finishReason: cachedFinishReason,
-                    usage: null,
-                    pricing: {
-                        total_cents: 0,
-                        total_nanos: 0,
-                        currency: result.bill.currency ?? card?.currency ?? "USD",
-                    },
-                    mappedRequest: result.mappedRequest ?? null,
-                });
                 return;
             }
 
@@ -405,38 +404,12 @@ export async function handleStreamResponse(
                 upstreamStatus,
                 result.bill.upstream_id ?? null
             );
-            await emitGatewayRequestEvent({
-                ctx,
-                result,
-                statusCode: upstreamStatus,
-                success: true,
-                finishReason: cachedFinishReason,
-                usage: pricedUsage,
-                pricing: {
-                    total_cents: totalCents,
-                    total_nanos: totalNanos,
-                    currency,
-                },
-                mappedRequest: result.mappedRequest ?? null,
-            });
 
-            try {
-                if (totalNanos > 0) {
-                    await recordUsageAndCharge({
-                        requestId: ctx.requestId,
-                        teamId: ctx.teamId,
-                        cost_nanos: totalNanos,
-                    });
-                }
-            } catch (chargeErr) {
-                console.error("recordUsageAndCharge failed", {
-                    error: chargeErr,
-                    requestId: ctx.requestId,
-                    teamId: ctx.teamId,
-                    endpoint: ctx.endpoint,
-                    cost_nanos: totalNanos,
-                });
-            }
+            await recordUsageAndChargeOnce({
+                ctx,
+                costNanos: totalNanos,
+                endpoint: ctx.endpoint,
+            });
             } finally {
                 releaseRuntime();
             }

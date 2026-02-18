@@ -1,241 +1,22 @@
-// Purpose: Pipeline module for the gateway request lifecycle.
-// Why: Keeps parameter capability checks centralized and reusable.
-// How: Normalizes endpoint params, validates unknown fields, and filters providers by support.
+// Purpose: Pipeline module for parameter capability checks.
+// Why: Keeps text-endpoint param extraction and provider support checks reusable.
+// How: Uses code-first text param policy + provider capability metadata.
 
 import type { Endpoint } from "@core/types";
 import type { ProviderCandidate } from "./types";
-import { err } from "./http";
-
-type ProviderSupportInfo = {
-	providerId: string;
-	supported: boolean;
-};
-
-type TextEndpoint = "chat.completions" | "responses" | "messages";
-
-type EndpointParamRegistry = {
-	allowedTopLevel: Set<string>;
-	keyToCanonicalParam: Record<string, string>;
-};
-
-const ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
-	"chat.completions": {
-		allowedTopLevel: new Set([
-			"model",
-			"system",
-			"messages",
-			"usage",
-			"reasoning",
-			"frequency_penalty",
-			"logit_bias",
-			"max_output_tokens",
-			"max_completion_tokens",
-			"max_tokens",
-			"meta",
-			"echo_upstream_request",
-			"debug",
-			"presence_penalty",
-			"seed",
-			"stream",
-			"temperature",
-			"tools",
-			"max_tool_calls",
-			"max_tools_calls",
-			"parallel_tool_calls",
-			"tool_choice",
-			"top_k",
-			"logprobs",
-			"top_logprobs",
-			"top_p",
-			"stop",
-			"response_format",
-			"modalities",
-			"image_config",
-			"user_id",
-			"user",
-			"service_tier",
-			"speed",
-			"route",
-			"session_id",
-			"models",
-			"plugins",
-			"trace",
-			"provider",
-		]),
-		keyToCanonicalParam: {
-			tools: "tools",
-			tool_choice: "tool_choice",
-			parallel_tool_calls: "parallel_tool_calls",
-			max_tool_calls: "max_tool_calls",
-			max_tools_calls: "max_tool_calls",
-			temperature: "temperature",
-			top_p: "top_p",
-			top_k: "top_k",
-			max_tokens: "max_tokens",
-			max_output_tokens: "max_tokens",
-			max_completion_tokens: "max_tokens",
-			stop: "stop",
-			logit_bias: "logit_bias",
-			seed: "seed",
-			response_format: "response_format",
-			modalities: "modalities",
-			image_config: "image_config",
-			logprobs: "logprobs",
-			top_logprobs: "top_logprobs",
-			presence_penalty: "presence_penalty",
-			frequency_penalty: "frequency_penalty",
-			reasoning: "reasoning",
-			service_tier: "service_tier",
-			speed: "speed",
-		},
-	},
-	responses: {
-		allowedTopLevel: new Set([
-			"model",
-			"models",
-			"input",
-			"input_items",
-			"messages",
-			"usage",
-			"conversation",
-			"include",
-			"instructions",
-			"max_output_tokens",
-			"max_completion_tokens",
-			"max_tokens",
-			"max_tool_calls",
-			"max_tools_calls",
-			"metadata",
-			"plugins",
-			"session_id",
-			"trace",
-			"parallel_tool_calls",
-			"previous_response_id",
-			"frequency_penalty",
-			"presence_penalty",
-			"prompt",
-			"prompt_cache_key",
-			"prompt_cache_retention",
-			"modalities",
-			"image_config",
-			"reasoning",
-			"safety_identifier",
-			"service_tier",
-			"speed",
-			"store",
-			"stream",
-			"stream_options",
-			"temperature",
-			"text",
-			"response_format",
-			"tool_choice",
-			"tools",
-			"top_logprobs",
-			"top_p",
-			"top_k",
-			"truncation",
-			"background",
-			"user",
-			"meta",
-			"echo_upstream_request",
-			"debug",
-			"provider",
-			"stop",
-			"logit_bias",
-			"logprobs",
-			"seed",
-		]),
-		keyToCanonicalParam: {
-			tools: "tools",
-			tool_choice: "tool_choice",
-			parallel_tool_calls: "parallel_tool_calls",
-			max_tool_calls: "max_tool_calls",
-			max_tools_calls: "max_tool_calls",
-			temperature: "temperature",
-			top_p: "top_p",
-			top_k: "top_k",
-			max_tokens: "max_tokens",
-			max_output_tokens: "max_tokens",
-			max_completion_tokens: "max_tokens",
-			stop: "stop",
-			logit_bias: "logit_bias",
-			seed: "seed",
-			response_format: "response_format",
-			modalities: "modalities",
-			image_config: "image_config",
-			logprobs: "logprobs",
-			top_logprobs: "top_logprobs",
-			presence_penalty: "presence_penalty",
-			frequency_penalty: "frequency_penalty",
-			reasoning: "reasoning",
-			service_tier: "service_tier",
-			speed: "speed",
-			prompt_cache_key: "prompt_cache_key",
-			safety_identifier: "safety_identifier",
-			background: "background",
-			instructions: "instructions",
-		},
-	},
-	messages: {
-		allowedTopLevel: new Set([
-			"model",
-			"messages",
-			"system",
-			"usage",
-			"max_tokens",
-			"max_output_tokens",
-			"temperature",
-			"top_p",
-			"top_k",
-			"stream",
-			"tools",
-			"tool_choice",
-			"metadata",
-			"service_tier",
-			"speed",
-			"modalities",
-			"image_config",
-			"stop_sequences",
-			"thinking",
-			"meta",
-			"echo_upstream_request",
-			"debug",
-			"provider",
-		]),
-		keyToCanonicalParam: {
-			tools: "tools",
-			tool_choice: "tool_choice",
-			max_tokens: "max_tokens",
-			max_output_tokens: "max_tokens",
-			temperature: "temperature",
-			top_p: "top_p",
-			top_k: "top_k",
-			stop_sequences: "stop",
-			modalities: "modalities",
-			image_config: "image_config",
-			thinking: "reasoning",
-			service_tier: "service_tier",
-			speed: "speed",
-		},
-	},
-};
-
-const CAPABILITY_PARAM_ALIASES: Record<string, string[]> = {
-	max_tokens: ["max_tokens", "max_output_tokens", "max_completion_tokens"],
-	max_tool_calls: ["max_tool_calls", "max_tools_calls"],
-	stop: ["stop", "stop_sequences"],
-	reasoning: ["reasoning", "thinking"],
-	service_tier: ["service_tier", "serviceTier"],
-	response_format: ["response_format", "text", "structured_outputs"],
-	image_config: ["image_config", "imageConfig"],
-	logprobs: ["logprobs", "top_logprobs"],
-	top_logprobs: ["top_logprobs", "logprobs"],
-};
+import {
+	expandCapabilityParamAliases,
+	isAlwaysSupportedParam,
+	resolveProviderParamSupportOverride,
+	textEndpointRegistryFor,
+} from "./textParamPolicy";
 
 function normalizeParamPaths(paths: string[]): string[] {
 	const unique = new Set<string>();
-	for (const p of paths) {
-		if (typeof p === "string" && p.trim().length) unique.add(p);
+	for (const path of paths) {
+		if (typeof path === "string" && path.trim().length > 0) {
+			unique.add(path);
+		}
 	}
 	return Array.from(unique);
 }
@@ -263,13 +44,6 @@ function hasNestedPath(obj: Record<string, unknown>, segments: string[]): boolea
 	return true;
 }
 
-function registryFor(endpoint: Endpoint): EndpointParamRegistry | null {
-	if (endpoint === "chat.completions" || endpoint === "responses" || endpoint === "messages") {
-		return ENDPOINT_REGISTRY[endpoint];
-	}
-	return null;
-}
-
 function hasToolUsageInMessages(messages: any[]): boolean {
 	return messages.some((msg) =>
 		msg &&
@@ -291,22 +65,20 @@ function hasToolUsageInResponsesInput(items: any[]): boolean {
 
 export function getUnknownTopLevelParams(endpoint: Endpoint, rawBody: any): string[] {
 	if (!rawBody || typeof rawBody !== "object") return [];
-	const registry = registryFor(endpoint);
+	const registry = textEndpointRegistryFor(endpoint);
 	if (!registry) return [];
 	return Object.keys(rawBody).filter((key) => !registry.allowedTopLevel.has(key));
 }
 
 export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string[] {
 	if (!rawBody || typeof rawBody !== "object") return [];
-	const registry = registryFor(endpoint);
+	const registry = textEndpointRegistryFor(endpoint);
 	if (!registry) return [];
 
 	const params: string[] = [];
 	for (const [key, canonical] of Object.entries(registry.keyToCanonicalParam)) {
 		if (Object.prototype.hasOwnProperty.call(rawBody, key)) {
 			const rawValue = rawBody[key];
-			// For reasoning/thinking objects, track child keys instead of parent.
-			// Example: reasoning:{effort:"high"} -> reasoning.effort
 			if (canonical === "reasoning" && isPlainObject(rawValue)) {
 				params.push(...getObjectChildParamPaths("reasoning", rawValue));
 			} else {
@@ -324,10 +96,18 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 	if (Array.isArray(rawBody.messages) && hasToolUsageInMessages(rawBody.messages)) {
 		params.push("tools");
 	}
-	if (endpoint === "responses" && Array.isArray(rawBody.input_items) && hasToolUsageInResponsesInput(rawBody.input_items)) {
+	if (
+		endpoint === "responses" &&
+		Array.isArray(rawBody.input_items) &&
+		hasToolUsageInResponsesInput(rawBody.input_items)
+	) {
 		params.push("tools");
 	}
-	if (endpoint === "responses" && Array.isArray(rawBody.input) && hasToolUsageInResponsesInput(rawBody.input)) {
+	if (
+		endpoint === "responses" &&
+		Array.isArray(rawBody.input) &&
+		hasToolUsageInResponsesInput(rawBody.input)
+	) {
 		params.push("tools");
 	}
 
@@ -336,13 +116,21 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 
 /**
  * Check if a provider supports a specific parameter.
- * Uses canonical + alias keys against provider capability metadata.
+ * Uses code-level overrides first, then falls back to capability metadata.
  */
 export function providerSupportsParam(
 	candidate: ProviderCandidate,
 	paramPath: string,
-	options?: { assumeSupportedOnMissingConfig?: boolean }
+	options?: { assumeSupportedOnMissingConfig?: boolean },
 ): boolean {
+	const override = resolveProviderParamSupportOverride(
+		candidate.providerId,
+		paramPath,
+	);
+	if (typeof override === "boolean") {
+		return override;
+	}
+
 	const params = candidate.capabilityParams;
 	if (!params || typeof params !== "object") {
 		return options?.assumeSupportedOnMissingConfig ?? false;
@@ -357,9 +145,8 @@ export function providerSupportsParam(
 	const [root, ...rest] = segments;
 	if (!root) return false;
 
-	const keysToCheck = CAPABILITY_PARAM_ALIASES[root] ?? [root];
+	const keysToCheck = expandCapabilityParamAliases(root);
 	for (const key of keysToCheck) {
-		// Root-level declaration (e.g., "reasoning") supports all sub-fields.
 		if (key in params) {
 			if (rest.length === 0) return true;
 			const rootValue = (params as Record<string, unknown>)[key];
@@ -368,7 +155,6 @@ export function providerSupportsParam(
 			}
 		}
 
-		// Flattened declaration (e.g., "reasoning.effort")
 		if (rest.length > 0 && `${key}.${rest.join(".")}` in params) {
 			return true;
 		}
@@ -376,100 +162,23 @@ export function providerSupportsParam(
 	return false;
 }
 
-export function guardProviderParams(args: {
+export function getUnsupportedParamsForProvider(args: {
 	endpoint: Endpoint;
-	rawBody: any;
-	requestId: string;
-	teamId: string;
-	providers: ProviderCandidate[];
-	betaEnabled: boolean;
-}):
-	| { ok: true; providers: ProviderCandidate[]; requestedParams: string[] }
-	| { ok: false; response: Response } {
-	if (!args.betaEnabled) {
-		return { ok: true, providers: args.providers, requestedParams: [] };
+	requestedParams: string[];
+	candidate: ProviderCandidate;
+	assumeSupportedOnMissingConfig?: boolean;
+}): string[] {
+	const out: string[] = [];
+	for (const param of args.requestedParams) {
+		if (isAlwaysSupportedParam(args.endpoint, param)) continue;
+		if (
+			!providerSupportsParam(args.candidate, param, {
+				assumeSupportedOnMissingConfig:
+					args.assumeSupportedOnMissingConfig ?? false,
+			})
+		) {
+			out.push(param);
+		}
 	}
-
-	const unknown = getUnknownTopLevelParams(args.endpoint, args.rawBody);
-	if (unknown.length) {
-		return {
-			ok: false,
-			response: err("validation_error", {
-				details: unknown.map((param) => ({
-					message: `Unknown parameter: ${param}`,
-					path: [param],
-					keyword: "unknown_param",
-					params: { param },
-				})),
-				request_id: args.requestId,
-				team_id: args.teamId,
-			}),
-		};
-	}
-
-	const requested = extractRequestedParams(args.endpoint, args.rawBody);
-	if (!requested.length) {
-		return { ok: true, providers: args.providers, requestedParams: [] };
-	}
-
-	const isAlwaysSupported = (param: string): boolean =>
-		(args.endpoint === "messages" && param === "max_tokens") ||
-		// `modalities` support is validated by modality-aware routing, not param capability keys.
-		param === "modalities";
-
-	const supportMap: Record<string, ProviderSupportInfo[]> = {};
-	for (const param of requested) {
-		supportMap[param] = args.providers.map((provider) => ({
-			providerId: provider.providerId,
-			supported:
-				isAlwaysSupported(param) ||
-				providerSupportsParam(provider, param, { assumeSupportedOnMissingConfig: false }),
-		}));
-	}
-
-	const unsupportedParams = requested.filter((param) =>
-		supportMap[param].every((info) => !info.supported)
-	);
-
-	if (unsupportedParams.length) {
-		return {
-			ok: false,
-			response: err("validation_error", {
-				details: unsupportedParams.map((param) => ({
-					message: `Unsupported parameter: ${param}`,
-					path: param.split("."),
-					keyword: "unsupported_param",
-					params: { param },
-				})),
-				request_id: args.requestId,
-				team_id: args.teamId,
-			}),
-		};
-	}
-
-	const filtered = args.providers.filter((provider) =>
-		requested.every(
-			(param) =>
-				isAlwaysSupported(param) ||
-				providerSupportsParam(provider, param, { assumeSupportedOnMissingConfig: false }),
-		),
-	);
-
-	if (!filtered.length) {
-		return {
-			ok: false,
-			response: err("validation_error", {
-				details: requested.map((param) => ({
-					message: `No single provider supports parameter: ${param}`,
-					path: param.split("."),
-					keyword: "unsupported_param_combo",
-					params: { param },
-				})),
-				request_id: args.requestId,
-				team_id: args.teamId,
-			}),
-		};
-	}
-
-	return { ok: true, providers: filtered, requestedParams: requested };
+	return out;
 }

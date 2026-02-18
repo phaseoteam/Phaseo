@@ -1,32 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PRICING_METER_VALUES } from '../lib/pricing/meters';
 
 const DATA_ROOT = path.resolve(fileURLToPath(new URL('.', import.meta.url)));
 
-const KNOWN_METERS = new Set<string>([
-    'input_text_tokens',
-    'input_image',
-    'input_image_tokens',
-    'input_video_seconds',
-    'input_video_tokens',
-    'input_audio_tokens',
-    'output_text_tokens',
-    'output_image_tokens',
-    'output_video_tokens',
-    'output_video_seconds',
-    'output_audio_tokens',
-    'output_image',
-    'cached_write_tokens',
-    'cached_write_text_tokens',
-    'cached_read_text_tokens',
-    'cached_read_image_tokens',
-    'cached_read_video_tokens',
-    'cached_read_audio_tokens',
-    'embedding_tokens',
-    'requests',
-    'total_tokens',
-]);
+const KNOWN_METERS = new Set<string>(PRICING_METER_VALUES);
 
 const ALLOWED_BILL_MODES = new Set<string>(['all', 'over', 'between']);
 

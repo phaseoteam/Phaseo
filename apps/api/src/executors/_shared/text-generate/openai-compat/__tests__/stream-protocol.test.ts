@@ -156,6 +156,46 @@ describe("resolveStreamForProtocol", () => {
 		expect(output).toContain("event: message_stop");
 	});
 
+	it("converts chat-chunk stream to anthropic messages stream on responses route", async () => {
+		const upstream = makeSseResponse([
+			{
+				data: {
+					id: "chatcmpl_msg_1",
+					object: "chat.completion.chunk",
+					created: 1710000006,
+					model: "test-model",
+					choices: [{ index: 0, delta: { content: "Hello " } }],
+				},
+			},
+			{
+				data: {
+					id: "chatcmpl_msg_1",
+					object: "chat.completion.chunk",
+					created: 1710000006,
+					model: "test-model",
+					choices: [{ index: 0, delta: { content: "there" }, finish_reason: "stop" }],
+					usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 },
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				endpoint: "messages",
+				protocol: "anthropic.messages",
+			}),
+			"responses",
+		);
+
+		const output = await readStreamText(stream);
+		expect(output).toContain("event: message_start");
+		expect(output).toContain("event: content_block_delta");
+		expect(output).toContain("\"text_delta\"");
+		expect(output).toContain("event: message_stop");
+	});
+
 	it("converts responses function-call stream events to chat tool_call deltas", async () => {
 		const upstream = makeSseResponse([
 			{

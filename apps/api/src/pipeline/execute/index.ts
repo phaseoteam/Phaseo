@@ -18,7 +18,6 @@ import { guardCandidates, guardPricingFound, guardAllFailed } from "./guards";
 import { err } from "./http";
 import { getBaseModel, calculateMaxTries } from "./utils";
 import { rankProviders } from "./providers";
-import { attemptProvider } from "./attempt";
 import { resolveProviderExecutor } from "../../executors";
 import { admitThroughBreaker, onCallEnd, onCallStart, maybeOpenOnRecentErrors, reportProbeResult } from "./health";
 import { logDebugEvent, previewValue, parseJsonLoose } from "../debug";
@@ -204,51 +203,6 @@ export type IRRequestResult = {
 };
 
 export type RequestResult = IRRequestResult;
-
-/**
- * Execute request using adapter pipeline (non-IR surfaces like media/OCR/music).
- */
-export async function doRequestWithAdapters(
-	ctx: PipelineContext,
-	timing: PipelineTiming,
-): Promise<Response | { ok: true; result: IRRequestResult }> {
-	const baseModel = getBaseModel(ctx.model);
-
-	const candidatesGuard = await guardCandidates(ctx, timing);
-	if (!candidatesGuard.ok) return (candidatesGuard as { ok: false; response: Response }).response;
-	const candidates = candidatesGuard.value;
-
-	const anyPricingAvailable = candidates.some((entry) => Boolean(entry.pricingCard));
-	if (!anyPricingAvailable) {
-		const pricingGuard = await guardPricingFound(false, ctx, timing);
-		if (!pricingGuard.ok) return (pricingGuard as { ok: false; response: Response }).response;
-	}
-
-	const ranked = await rankProviders(candidates, ctx);
-	const maxTries = calculateMaxTries(ranked.length);
-	let anyPricingFound = anyPricingAvailable;
-
-	for (let attempt = 0; attempt < maxTries; attempt++) {
-		const choice = ranked[attempt];
-		const result = await attemptProvider(choice, ctx, timing, baseModel);
-
-		if (result.ok) {
-			return { ok: true, result: result.result as IRRequestResult };
-		}
-
-		if ("skip" in result && (result.skip === "no_pricing" || result.skip === "blocked")) {
-			continue;
-		}
-
-		anyPricingFound = true;
-	}
-
-	const pricingGuard = await guardPricingFound(anyPricingFound, ctx, timing);
-	if (!pricingGuard.ok) return (pricingGuard as { ok: false; response: Response }).response;
-
-	const failureGuard = await guardAllFailed(ctx, timing);
-	return (failureGuard as { ok: false; response: Response }).response;
-}
 
 /**
  * Execute request using IR pipeline

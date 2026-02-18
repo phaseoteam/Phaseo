@@ -1,0 +1,28 @@
+[
+  {
+    "api_model_id": "z-ai/glm-5",
+    "provider_api_model_id": "deepinfra:z-ai/glm-5",
+    "provider_model_slug": "zai-org/GLM-5",
+    "internal_model_id": "z-ai/glm-5-2026-02-11",
+    "is_active_gateway": null,
+    "quantization_scheme": "FP8",
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": null,
+    "provider_api_model_id": "deepinfra",
+    "provider_model_slug": "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  }
+]

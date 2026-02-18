@@ -165,6 +165,12 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         delete context.context;
     }
 
+    // Anthropic 1M pricing thresholds are based on input + cache read + cache write tokens.
+    context.long_context_input_tokens =
+        (meters.input_text_tokens ?? 0) +
+        (meters.cached_read_text_tokens ?? 0) +
+        (meters.cached_write_text_tokens ?? 0);
+
     logPricingDebug("splitUsage_output", {
         meters,
         context,

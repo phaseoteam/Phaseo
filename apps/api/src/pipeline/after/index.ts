@@ -13,11 +13,10 @@ import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "
 import { handleStreamResponse, handlePassthroughFallback } from "./stream";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
-import { recordUsageAndCharge } from "../pricing/persist";
+import { recordUsageAndChargeOnce } from "./charge";
 import { shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
-import { emitGatewayRequestEvent } from "@observability/events";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 
 function decodeBase64ToBytes(value: string): Uint8Array {
@@ -143,6 +142,21 @@ async function handleNonStreamResponse(
         generation_ms: generationMs,
         latency_ms: latencyMs,
     };
+    if (ctx.meta?.debug?.enabled || ctx.meta.returnMeta) {
+        payload.meta.routing = {
+            selected_provider: result.provider,
+            requested_params: ctx.requestedParams ?? [],
+            param_provider_count_before:
+                ctx.paramRoutingDiagnostics?.providerCountBefore ?? null,
+            param_provider_count_after:
+                ctx.paramRoutingDiagnostics?.providerCountAfter ?? null,
+            param_dropped_providers:
+                ctx.paramRoutingDiagnostics?.droppedProviders?.map((entry) => ({
+                    provider: entry.providerId,
+                    unsupported_params: entry.unsupportedParams,
+                })) ?? [],
+        };
+    }
 
     // Update result billing
     result.bill.cost_cents = totalCents;
@@ -172,40 +186,13 @@ async function handleNonStreamResponse(
             nativeResponseId ?? null
         )
     );
-    await emitGatewayRequestEvent({
-        ctx,
-        result,
-        statusCode: result.upstream.status,
-        success: true,
-        finishReason,
-        usage: payload.usage ?? null,
-        pricing: {
-            total_cents: totalCents,
-            total_nanos: totalNanos,
-            currency,
-        },
-        mappedRequest: result.mappedRequest ?? null,
-    });
     // Record usage and charge wallet
     await ctx.timer.span("after_record_usage_charge", async () => {
-        try {
-            if (totalNanos > 0) {
-                await recordUsageAndCharge({
-                    requestId: ctx.requestId,
-                    teamId: ctx.teamId,
-                    cost_nanos: totalNanos,
-                });
-            }
-        } catch (chargeErr) {
-            console.error("recordUsageAndCharge failed", {
-                error: chargeErr,
-                requestId: ctx.requestId,
-                teamId: ctx.teamId,
-                endpoint: ctx.endpoint,
-                cost_nanos: totalNanos,
-            });
-            // Continue with response even if charging fails
-        }
+        await recordUsageAndChargeOnce({
+            ctx,
+            costNanos: totalNanos,
+            endpoint: ctx.endpoint,
+        });
     });
 
     const includeMeta = ctx.meta.returnMeta ?? false;

@@ -8,7 +8,7 @@
     {
       "meter": "input_text_tokens",
       "unit": "token",
-      "unit_size": 1,
+      "unit_size": 1000000,
       "price_per_unit": 0.0,
       "currency": "USD",
       "tiering_mode": "flat",
@@ -21,7 +21,7 @@
     {
       "meter": "output_text_tokens",
       "unit": "token",
-      "unit_size": 1,
+      "unit_size": 1000000,
       "price_per_unit": 0.0,
       "currency": "USD",
       "tiering_mode": "flat",

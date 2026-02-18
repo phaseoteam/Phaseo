@@ -3,6 +3,7 @@
 // How: Maps IR to OpenAI formats and normalizes streaming events.
 
 import type { ProviderQuirks } from "../../quirks/types";
+import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 
 type CerebrasReasoningEffort = "none" | "low" | "medium" | "high";
 const CEREBRAS_UNSUPPORTED_FIELDS = [
@@ -25,12 +26,6 @@ function mapReasoningEffortToCerebras(value?: string): CerebrasReasoningEffort |
 		default:
 			return undefined;
 	}
-}
-
-function normalizeCerebrasServiceTier(value: unknown): string | undefined {
-	if (typeof value !== "string" || value.length === 0) return undefined;
-	if (value === "standard") return "default";
-	return value;
 }
 
 function isObject(value: unknown): value is Record<string, any> {
@@ -119,7 +114,10 @@ export const cerebrasQuirks: ProviderQuirks = {
 			);
 		}
 
-		const normalizedTier = normalizeCerebrasServiceTier(request.service_tier);
+		const normalizedTier = normalizeTextProviderServiceTier(
+			"cerebras",
+			request.service_tier,
+		);
 		if (normalizedTier) {
 			request.service_tier = normalizedTier;
 		}

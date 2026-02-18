@@ -3,6 +3,10 @@
 // How: Exposes helpers used by before/execute/after orchestration.
 
 import type { Endpoint } from "@core/types";
+import {
+    resolveCanonicalTokenUsage,
+    resolveRequestCountUsage,
+} from "@core/usage-normalization";
 
 const pickNumber = (obj: any, path: string): number | undefined => {
     if (!obj || typeof obj !== "object") return undefined;
@@ -93,12 +97,19 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
         if (video && base.input_video_count == null) base.input_video_count = video;
     }
 
-    const tokensIn = pickNumber(base, "input_tokens") ?? pickNumber(base, "input_text_tokens") ?? pickNumber(base, "prompt_tokens") ?? 0;
-    const tokensOut = pickNumber(base, "output_tokens") ?? pickNumber(base, "output_text_tokens") ?? pickNumber(base, "completion_tokens") ?? 0;
-    const totalTokens = pickNumber(base, "total_tokens") ?? tokensIn + tokensOut;
+    const canonicalTokens = resolveCanonicalTokenUsage(base);
+    const tokensIn = canonicalTokens.inputTokens;
+    const tokensOut = canonicalTokens.outputTokens;
+    const totalTokens = canonicalTokens.totalTokens;
 
-    const cachedRead = pickNumber(base, "cached_read_text_tokens") ?? pickNumber(base, "input_tokens_details.cached_tokens");
-    const cachedWrite = pickNumber(base, "cached_write_text_tokens") ?? pickNumber(base, "output_tokens_details.cached_tokens");
+    const cachedRead =
+        pickNumber(base, "cached_read_text_tokens") ??
+        pickNumber(base, "input_tokens_details.cached_tokens") ??
+        pickNumber(base, "cache_read_input_tokens");
+    const cachedWrite =
+        pickNumber(base, "cached_write_text_tokens") ??
+        pickNumber(base, "output_tokens_details.cached_tokens") ??
+        pickNumber(base, "cache_creation_input_tokens");
     const reasoningTokens = pickNumber(base, "reasoning_tokens") ?? pickNumber(base, "output_tokens_details.reasoning_tokens");
 
     // Multimodal signals (prefer tokenized meters, then detail fields, then count-based fallbacks).
@@ -150,6 +161,12 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
     base.input_tokens = tokensIn;
     base.output_tokens = tokensOut;
     base.total_tokens = totalTokens;
+    if (base.requests == null) {
+        const requestCount = resolveRequestCountUsage(base);
+        if (typeof requestCount === "number") {
+            base.requests = requestCount;
+        }
+    }
 
     // Preserve legacy fields for billing/past consumers
     base.input_text_tokens = pickNumber(base, "input_text_tokens") ?? tokensIn;

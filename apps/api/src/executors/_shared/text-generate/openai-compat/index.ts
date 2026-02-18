@@ -331,11 +331,11 @@ export function resolveStreamForProtocol(
 			const responsesStream = transformChatStreamToResponses(legacyStream, args, state);
 			return transformResponsesStreamToAnthropic(responsesStream, args);
 		}
-		if (route === "chat") {
-			const responsesStream = transformChatStreamToResponses(res.body, args, state);
-			return transformResponsesStreamToAnthropic(responsesStream, args);
-		}
-		return transformResponsesStreamToAnthropic(res.body, args);
+		// Always normalize through chat->responses adapter first.
+		// This keeps /messages streaming compatible whether upstream emits responses events
+		// or chat-completion chunks on a responses route.
+		const responsesStream = transformChatStreamToResponses(res.body, args, state);
+		return transformResponsesStreamToAnthropic(responsesStream, args);
 	}
 
 	// Default: passthrough (responses protocol or unknown)

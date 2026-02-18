@@ -1,7 +1,7 @@
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
-import BenchmarkEditDialog from "./BenchmarkEditDialog";
+import { createClient } from "@/utils/supabase/server";
+import Link from "next/link";
 
 interface BenchmarkEditButtonProps {
   benchmarkId: string;
@@ -28,5 +28,14 @@ export default async function BenchmarkEditButton({
     return null;
   }
 
-  return <BenchmarkEditDialog benchmarkId={benchmarkId} />;
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <Link
+        href={`/internal/data/benchmarks/${benchmarkId}/edit`}
+        aria-label="Edit benchmark"
+      >
+        <Pencil className="h-4 w-4" />
+      </Link>
+    </Button>
+  );
 }

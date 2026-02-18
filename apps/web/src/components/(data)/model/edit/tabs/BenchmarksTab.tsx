@@ -29,9 +29,10 @@ interface BenchmarkResult {
 
 interface BenchmarksTabProps {
   modelId: string
+  onBenchmarksChange?: (benchmarks: BenchmarkResult[]) => void
 }
 
-export default function BenchmarksTab({ modelId }: BenchmarksTabProps) {
+export default function BenchmarksTab({ modelId, onBenchmarksChange }: BenchmarksTabProps) {
   const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([])
   const [availableBenchmarks, setAvailableBenchmarks] = useState<Array<{ id: string; name: string }>>([])
 
@@ -72,6 +73,10 @@ export default function BenchmarksTab({ modelId }: BenchmarksTabProps) {
     }
     fetchData()
   }, [modelId])
+
+  useEffect(() => {
+    onBenchmarksChange?.(benchmarks)
+  }, [benchmarks, onBenchmarksChange])
 
   const updateBenchmark = (id: string, field: string, value: any) => {
     setBenchmarks(benchmarks.map((b) => (b.id === id ? { ...b, [field]: value } : b)))

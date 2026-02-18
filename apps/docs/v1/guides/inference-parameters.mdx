@@ -1,0 +1,38 @@
+---
+title: "Inference Parameters"
+description: "How core request parameters affect quality, determinism, latency, and cost."
+---
+
+Quantization is one half of model behavior.  
+Inference parameters are the other half.
+
+## Core parameters
+
+| Parameter | What it controls | Typical effect |
+| --- | --- | --- |
+| `temperature` | Randomness in token selection | Higher = more creative/variable, lower = more deterministic |
+| `top_p` | Nucleus sampling cutoff | Lower = safer/more focused outputs |
+| `top_k` | Candidate token pool size (where supported) | Lower = tighter and more predictable outputs |
+| `max_tokens` / `max_output_tokens` | Max generated output length | Caps cost and latency, may truncate responses |
+| `stop` | Explicit stopping sequences | Improves output framing and parser reliability |
+| `seed` | Random seed (when supported) | Improves reproducibility for debugging/testing |
+
+## Interactions to watch
+
+- `temperature` and `top_p` both affect randomness. Change one at a time while tuning.
+- Aggressive low-bit quantization + high randomness can amplify output instability.
+- Low `max_tokens` can look like model failure when it is just truncation.
+
+## Recommended defaults (starting point)
+
+- `temperature`: `0.2` to `0.7` depending on creativity needs
+- `top_p`: `0.9` to `1.0`
+- `max_tokens`: sized to your expected output class, not a huge blanket value
+
+## Tuning workflow
+
+1. Fix quantization first.
+2. Lock an eval set.
+3. Sweep one parameter at a time.
+4. Compare quality + latency + token usage.
+5. Keep separate presets per endpoint/use case.

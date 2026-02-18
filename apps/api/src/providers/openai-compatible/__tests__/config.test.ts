@@ -37,6 +37,10 @@ describe("resolveOpenAICompatRoute", () => {
 
 		expect(resolveOpenAICompatRoute("arcee", "arcee-ai/coder-large")).toBe("chat");
 		expect(resolveOpenAICompatRoute("arcee-ai", "coder-large")).toBe("chat");
+		expect(resolveOpenAICompatRoute("baseten", "openai/gpt-oss-120b")).toBe("chat");
+		expect(resolveOpenAICompatRoute("chutes", "Qwen/Qwen3-235B-A22B-Thinking-2507")).toBe("chat");
+		expect(resolveOpenAICompatRoute("cohere", "command-a-03-2025")).toBe("chat");
+		expect(resolveOpenAICompatRoute("deepinfra", "meta-llama/Meta-Llama-3.1-8B-Instruct")).toBe("chat");
 		expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");
 		expect(resolveOpenAICompatRoute("minimax", "minimax-m2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("alibaba", "qwen3.5-plus")).toBe("responses");
@@ -54,6 +58,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("moonshot-ai", "kimi-k2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("novitaai", "deepseek/deepseek-r1-turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("perplexity", "sonar")).toBe("chat");
+		expect(resolveOpenAICompatRoute("together", "meta-llama/Llama-3.3-70B-Instruct-Turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("cerebras", "llama3.1-70b")).toBe("chat");
 		expect(resolveOpenAICompatRoute("fireworks", "accounts/fireworks/models/llama-v3p3-70b-instruct")).toBe("responses");
 		expect(resolveOpenAICompatRoute("groq", "llama-3.3-70b-versatile")).toBe("responses");
@@ -140,6 +145,50 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("builds baseten chat-completions endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			BASETEN_API_KEY: "test-baseten-key",
+		} as any);
+
+		expect(openAICompatUrl("baseten", "/chat/completions")).toBe(
+			"https://api.baseten.co/v1/chat/completions",
+		);
+	});
+
+	it("builds chutes chat-completions endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			CHUTES_API_KEY: "test-chutes-key",
+		} as any);
+
+		expect(openAICompatUrl("chutes", "/chat/completions")).toBe(
+			"https://llm.chutes.ai/v1/chat/completions",
+		);
+	});
+
+	it("builds cohere chat-completions endpoint with /compatibility/v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			COHERE_API_KEY: "test-cohere-key",
+		} as any);
+
+		expect(openAICompatUrl("cohere", "/chat/completions")).toBe(
+			"https://api.cohere.ai/compatibility/v1/chat/completions",
+		);
+	});
+
+	it("builds deepinfra chat-completions endpoint with /v1/openai prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			DEEPINFRA_API_KEY: "test-deepinfra-key",
+		} as any);
+
+		expect(openAICompatUrl("deepinfra", "/chat/completions")).toBe(
+			"https://api.deepinfra.com/v1/openai/chat/completions",
+		);
+	});
+
 	it("builds groq chat and responses endpoints with /openai/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
@@ -201,6 +250,17 @@ describe("openAICompatUrl", () => {
 
 		expect(openAICompatUrl("perplexity", "/chat/completions")).toBe(
 			"https://api.perplexity.ai/chat/completions",
+		);
+	});
+
+	it("builds together chat endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			TOGETHER_API_KEY: "test-together-key",
+		} as any);
+
+		expect(openAICompatUrl("together", "/chat/completions")).toBe(
+			"https://api.together.xyz/v1/chat/completions",
 		);
 	});
 });

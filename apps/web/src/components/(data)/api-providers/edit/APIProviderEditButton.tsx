@@ -1,7 +1,7 @@
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
-import APIProviderEditDialog from "./APIProviderEditDialog";
+import { createClient } from "@/utils/supabase/server";
+import Link from "next/link";
 
 interface APIProviderEditButtonProps {
   apiProviderId: string;
@@ -28,5 +28,14 @@ export default async function APIProviderEditButton({
     return null;
   }
 
-  return <APIProviderEditDialog apiProviderId={apiProviderId} />;
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <Link
+        href={`/internal/data/api-providers/${apiProviderId}/edit`}
+        aria-label="Edit API provider"
+      >
+        <Pencil className="h-4 w-4" />
+      </Link>
+    </Button>
+  );
 }

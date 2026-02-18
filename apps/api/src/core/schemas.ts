@@ -648,6 +648,16 @@ export const AudioSpeechSchema = z.object({
     stream_format: z.enum(["audio", "sse"]).optional(),
     speed: z.number().positive().optional(),
     instructions: z.string().optional(),
+    config: z.object({
+        elevenlabs: z.object({
+            output_format: z.string().optional(),
+            language_code: z.string().optional(),
+            voice_settings: z.record(z.any()).optional(),
+            seed: z.number().int().optional(),
+            pronunciation_dictionary_locators: z.array(z.any()).optional(),
+            enable_logging: z.boolean().optional(),
+        }).passthrough().optional(),
+    }).passthrough().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,

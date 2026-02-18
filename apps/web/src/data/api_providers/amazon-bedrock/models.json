@@ -193,5 +193,31 @@
     "effective_from": "2025-08-05T00:00:00",
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "ai21/jamba-1.5-large",
+    "provider_api_model_id": "amazon-bedrock:ai21/jamba-1.5-large",
+    "provider_model_slug": null,
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "ai21/jamba-1.5-mini",
+    "provider_api_model_id": "amazon-bedrock:ai21/jamba-1.5-mini",
+    "provider_model_slug": null,
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

@@ -37,4 +37,43 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.input_image_tokens).toBeUndefined();
 		expect(shaped.output_image_tokens).toBeUndefined();
 	});
+
+	it("derives canonical token split when only total_tokens is provided", () => {
+		const shaped = shapeUsageForClient({
+			total_tokens: 12,
+		});
+
+		expect(shaped.input_tokens).toBe(12);
+		expect(shaped.output_tokens).toBe(0);
+		expect(shaped.total_tokens).toBe(12);
+		expect(shaped.input_text_tokens).toBe(12);
+		expect(shaped.output_text_tokens).toBe(0);
+		expect(shaped.requests).toBe(1);
+	});
+
+	it("preserves explicit request meter when provider reports one", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 2,
+			output_tokens: 3,
+			total_tokens: 5,
+			request_count: 7,
+		});
+
+		expect(shaped.requests).toBe(7);
+	});
+
+	it("maps Anthropic cache usage fields to gateway cache meters", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 100,
+			output_tokens: 20,
+			total_tokens: 120,
+			cache_read_input_tokens: 45,
+			cache_creation_input_tokens: 12,
+		});
+
+		expect(shaped.cached_read_text_tokens).toBe(45);
+		expect(shaped.cached_write_text_tokens).toBe(12);
+		expect(shaped.input_tokens_details.cached_tokens).toBe(45);
+		expect(shaped.output_tokens_details.cached_tokens).toBe(12);
+	});
 });

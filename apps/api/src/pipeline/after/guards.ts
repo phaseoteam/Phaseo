@@ -8,7 +8,10 @@ import type { RequestResult } from "../execute";
 import { makeHeaders, createResponse } from "./http";
 import { handleFailureAudit } from "./audit";
 import { parseJsonLoose } from "../debug";
-import { extractRequestedParams, providerSupportsParam } from "../before/paramCapabilities";
+import {
+	extractRequestedParams,
+	getUnsupportedParamsForProvider,
+} from "../before/paramCapabilities";
 
 export type AfterGuardOk<T> = { ok: true; value: T };
 export type AfterGuardErr = { ok: false; response: Response };
@@ -35,12 +38,12 @@ export async function guardUpstreamStatus(
             const requested = ctx.requestedParams ?? extractRequestedParams(ctx.endpoint, ctx.rawBody);
             const providerCandidate = ctx.providers.find((p) => p.providerId === result.provider);
             const unsupported = providerCandidate
-                ? requested.filter(
-                    (param) =>
-                        !providerSupportsParam(providerCandidate, param, {
-                            assumeSupportedOnMissingConfig: true,
-                        }),
-                )
+                ? getUnsupportedParamsForProvider({
+                    endpoint: ctx.endpoint,
+                    requestedParams: requested,
+                    candidate: providerCandidate,
+                    assumeSupportedOnMissingConfig: true,
+                })
                 : [];
 
             if (unsupported.length) {

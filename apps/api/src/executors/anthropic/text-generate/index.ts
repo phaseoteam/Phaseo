@@ -614,6 +614,14 @@ export function anthropicMessagesToIR(
 				inputTokens: json.usage.input_tokens || 0,
 				outputTokens: json.usage.output_tokens || 0,
 				totalTokens: (json.usage.input_tokens || 0) + (json.usage.output_tokens || 0),
+				cachedInputTokens:
+					typeof json.usage.cache_read_input_tokens === "number"
+						? json.usage.cache_read_input_tokens
+						: undefined,
+				_ext:
+					typeof json.usage.cache_creation_input_tokens === "number"
+						? { cachedWriteTokens: json.usage.cache_creation_input_tokens }
+						: undefined,
 			}
 			: undefined,
 		serviceTier: resolveAnthropicServiceTierFromResponse(json),

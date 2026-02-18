@@ -95,6 +95,114 @@ describe("ElevenLabs audio endpoints", () => {
 		expect(result.bill.usage).toBeDefined();
 	});
 
+	it("prefers response_format mapping for ElevenLabs output_format", async () => {
+		let capturedUrl = "";
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/v1/text-to-speech/voice_abc"),
+				response: new Response("AUDIO", {
+					status: 200,
+					headers: {
+						"Content-Type": "audio/mpeg",
+					},
+				}),
+				onRequest: (call) => {
+					capturedUrl = call.url;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "eleven-labs/eleven-v3",
+			body: {
+				model: "eleven-labs/eleven-v3",
+				input: "Hello world",
+				voice: "voice_abc",
+				format: "mp3",
+				response_format: "wav",
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "elevenlabs",
+			byokMeta: [],
+			pricingCard: PRICING_CARD,
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedUrl).toContain("output_format=pcm_44100");
+	});
+
+	it("maps OAI audio input schema and elevenlabs extensions into ElevenLabs TTS request", async () => {
+		let capturedBody: any = null;
+		let capturedUrl = "";
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/v1/text-to-speech/voice_abc"),
+				response: new Response("AUDIO", {
+					status: 200,
+					headers: {
+						"Content-Type": "audio/mpeg",
+					},
+				}),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+					capturedUrl = call.url;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "eleven-labs/eleven-v3",
+			body: {
+				model: "eleven-labs/eleven-v3",
+				input: "Hello world",
+				voice: "voice_abc",
+				response_format: "mp3",
+				speed: 1.15,
+				config: {
+					elevenlabs: {
+						output_format: "mp3_22050_32",
+						language_code: "en",
+						enable_logging: false,
+						seed: 7,
+						voice_settings: {
+							stability: 0.42,
+						},
+						pronunciation_dictionary_locators: [
+							{ id: "dict_1", version_id: "1" },
+						],
+					},
+				},
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "elevenlabs",
+			byokMeta: [],
+			pricingCard: PRICING_CARD,
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedUrl).toContain("output_format=mp3_22050_32");
+		expect(capturedUrl).toContain("enable_logging=false");
+		expect(capturedBody?.text).toBe("Hello world");
+		expect(capturedBody?.model_id).toBe("eleven_v3");
+		expect(capturedBody?.language_code).toBe("en");
+		expect(capturedBody?.seed).toBe(7);
+		expect(capturedBody?.voice_settings?.stability).toBe(0.42);
+		expect(capturedBody?.voice_settings?.speed).toBe(1.15);
+		expect(Array.isArray(capturedBody?.pronunciation_dictionary_locators)).toBe(true);
+	});
+
 	it("returns 400 when ElevenLabs audio.speech voice is missing", async () => {
 		const result = await execSpeech({
 			endpoint: "audio.speech",

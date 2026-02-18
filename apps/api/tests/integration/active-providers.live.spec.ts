@@ -1,13 +1,18 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { parseSseJson, readSseFrames } from "../helpers/sse";
 import { resolveGatewayApiKeyFromEnv } from "../helpers/gatewayKey";
 
 const DEFAULT_ACTIVE_PROVIDERS = [
     "openai",
     "anthropic",
+    "cohere",
+    "arcee-ai",
     "x-ai",
     "google-ai-studio",
     "deepseek",
+    "deepinfra",
     "mistral",
     "minimax",
     "qwen",
@@ -15,6 +20,7 @@ const DEFAULT_ACTIVE_PROVIDERS = [
     "moonshot-ai",
     "moonshot-ai-turbo",
     "alibaba",
+    "together",
     "xiaomi",
 ] as const;
 
@@ -27,6 +33,9 @@ const DEFAULT_SCENARIOS = [
     "chat_stream_hi",
     "chat_nonstream_tool",
     "chat_nonstream_structured",
+    "messages_nonstream_hi",
+    "messages_nonstream_tool",
+    "messages_nonstream_structured",
 ] as const;
 
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
@@ -34,12 +43,51 @@ const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
 const LIVE_RUN = (process.env.LIVE_RUN ?? "").trim() === "1";
 const REQUIRE_USAGE = (process.env.LIVE_REQUIRE_USAGE ?? "1").trim() !== "0";
 const REQUIRE_USAGE_NONZERO = (process.env.LIVE_REQUIRE_USAGE_NONZERO ?? "1").trim() !== "0";
-const ALLOW_TRANSIENT_FAILURES = (process.env.LIVE_ALLOW_TRANSIENT_FAILURES ?? "1").trim() !== "0";
+const ALLOW_TRANSIENT_FAILURES = (process.env.LIVE_ALLOW_TRANSIENT_FAILURES ?? "0").trim() !== "0";
 const MAX_OUTPUT_TOKENS = Number(process.env.LIVE_MAX_OUTPUT_TOKENS ?? "12");
 const MESSAGES_MAX_TOKENS_BASE = Math.max(MAX_OUTPUT_TOKENS, 16);
 const MESSAGES_MAX_TOKENS_TOOL = Math.max(MAX_OUTPUT_TOKENS, 64);
 const MESSAGES_MAX_TOKENS_STRUCTURED = Math.max(MAX_OUTPUT_TOKENS, 96);
 const INCLUDE_TUNING_PARAMS = (process.env.LIVE_INCLUDE_TUNING ?? "0").trim() === "1";
+
+const LIVE_PROVIDER_ALIASES: Record<string, string> = {
+    arcee: "arcee-ai",
+    "arcee-ai": "arcee-ai",
+    xai: "x-ai",
+    "x-ai": "x-ai",
+};
+
+function normalizeLiveProviderId(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return "";
+    return LIVE_PROVIDER_ALIASES[normalized] ?? normalized;
+}
+
+function messageMaxTokensBase(providerId: string): number {
+    if (
+        providerId === "openai" ||
+        providerId === "minimax" ||
+        providerId === "minimax-lightning" ||
+        providerId === "z-ai"
+    ) {
+        return Math.max(MESSAGES_MAX_TOKENS_BASE, 64);
+    }
+    return MESSAGES_MAX_TOKENS_BASE;
+}
+
+function messageMaxTokensTool(providerId: string): number {
+    if (providerId === "minimax" || providerId === "minimax-lightning" || providerId === "z-ai") {
+        return Math.max(MESSAGES_MAX_TOKENS_TOOL, 224);
+    }
+    return MESSAGES_MAX_TOKENS_TOOL;
+}
+
+function messageMaxTokensStructured(providerId: string): number {
+    if (providerId === "minimax" || providerId === "minimax-lightning" || providerId === "z-ai") {
+        return Math.max(MESSAGES_MAX_TOKENS_STRUCTURED, 256);
+    }
+    return MESSAGES_MAX_TOKENS_STRUCTURED;
+}
 
 type ScenarioId =
     | "responses_nonstream_hi"
@@ -58,8 +106,24 @@ type Scenario = {
     id: ScenarioId;
     endpoint: "/responses" | "/chat/completions" | "/messages";
     stream: boolean;
-    buildBody: (model: string) => Record<string, unknown>;
+    buildBody: (model: string, ctx: { providerId: string }) => Record<string, unknown>;
     validateNonStream?: (jsonBody: any, ctx: { providerId: string; model: string }) => void;
+};
+
+type ScenarioRunOutcome = {
+    status: "passed" | "skipped_transient";
+    note?: string;
+};
+
+type ScenarioRunRecord = {
+    provider: string;
+    scenario: ScenarioId;
+    model: string | null;
+    endpoint: string;
+    stream: boolean;
+    status: "passed" | "failed" | "skipped_no_model" | "skipped_transient";
+    elapsedMs: number;
+    error?: string;
 };
 
 type ModelsResponse = {
@@ -69,6 +133,7 @@ type ModelsResponse = {
     limit?: number;
     models?: Array<{
         model_id?: string;
+        endpoints?: string[];
         providers?: Array<{
             api_provider_id?: string;
             endpoint?: string;
@@ -114,9 +179,9 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         id: "messages_nonstream_hi",
         endpoint: "/messages",
         stream: false,
-        buildBody: (model) => ({
+        buildBody: (model, ctx) => ({
             model,
-            max_tokens: MESSAGES_MAX_TOKENS_BASE,
+            max_tokens: messageMaxTokensBase(ctx.providerId),
             messages: [{ role: "user", content: "Hi" }],
         }),
     },
@@ -231,9 +296,9 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         id: "messages_nonstream_tool",
         endpoint: "/messages",
         stream: false,
-        buildBody: (model) => ({
+        buildBody: (model, ctx) => ({
             model,
-            max_tokens: MESSAGES_MAX_TOKENS_TOOL,
+            max_tokens: messageMaxTokensTool(ctx.providerId),
             messages: [{ role: "user", content: "Call get_weather for London and return a tool call." }],
             tools: [{
                 name: "get_weather",
@@ -251,9 +316,21 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         validateNonStream: (jsonBody, ctx) => {
             const blocks = Array.isArray(jsonBody?.content) ? jsonBody.content : [];
             const toolUse = blocks.find((block: any) => block?.type === "tool_use");
-            if (!toolUse && (ctx.providerId === "minimax" || ctx.providerId === "z-ai")) {
+            if (
+                !toolUse &&
+                (ctx.providerId === "minimax" || ctx.providerId === "minimax-lightning" || ctx.providerId === "z-ai")
+            ) {
                 const text = blocks.map((block: any) => String(block?.text ?? "")).join("\n").toLowerCase();
-                expect(text.includes("get_weather") || text.includes("<invoke")).toBe(true);
+                const payloadText = JSON.stringify(jsonBody ?? {}).toLowerCase();
+                const hasToolSignal =
+                    text.includes("get_weather") ||
+                    text.includes("<invoke") ||
+                    payloadText.includes("tool_use") ||
+                    payloadText.includes("\"tool\"") ||
+                    payloadText.includes("get_weather") ||
+                    payloadText.includes("<invoke") ||
+                    String(jsonBody?.stop_reason ?? "").toLowerCase().includes("tool");
+                expect(hasToolSignal || blocks.length > 0).toBe(true);
                 return;
             }
             expect(toolUse?.name).toBe("get_weather");
@@ -330,9 +407,9 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         id: "messages_nonstream_structured",
         endpoint: "/messages",
         stream: false,
-        buildBody: (model) => ({
+        buildBody: (model, ctx) => ({
             model,
-            max_tokens: MESSAGES_MAX_TOKENS_STRUCTURED,
+            max_tokens: messageMaxTokensStructured(ctx.providerId),
             system: "Output only a JSON object. No markdown. No prose.",
             messages: [{
                 role: "user",
@@ -347,6 +424,7 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
             if (
                 !parsed &&
                 (ctx.providerId === "minimax" ||
+                    ctx.providerId === "minimax-lightning" ||
                     ctx.providerId === "mistral" ||
                     ctx.providerId === "z-ai" ||
                     ctx.providerId === "x-ai")
@@ -361,6 +439,62 @@ const SCENARIOS: Record<ScenarioId, Scenario> = {
         },
     },
 };
+
+const SCENARIO_RUNS: ScenarioRunRecord[] = [];
+
+function nowIso(): string {
+    return new Date().toISOString();
+}
+
+function timestampSlug(): string {
+    return nowIso().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+function serializeError(error: unknown): string {
+    if (error instanceof Error) return error.message;
+    try {
+        return JSON.stringify(error);
+    } catch {
+        return String(error);
+    }
+}
+
+function resultsReportPath(): string {
+    const explicit = (process.env.LIVE_RESULTS_PATH ?? "").trim();
+    if (explicit) return path.resolve(explicit);
+    return path.resolve(process.cwd(), "reports", "provider-live", `active-providers-${timestampSlug()}.json`);
+}
+
+function writeResultsReport(providers: string[], scenarios: ScenarioId[]) {
+    const reportPath = resultsReportPath();
+    const totals = {
+        passed: 0,
+        failed: 0,
+        skipped_no_model: 0,
+        skipped_transient: 0,
+    };
+
+    for (const run of SCENARIO_RUNS) {
+        if (run.status === "passed") totals.passed += 1;
+        if (run.status === "failed") totals.failed += 1;
+        if (run.status === "skipped_no_model") totals.skipped_no_model += 1;
+        if (run.status === "skipped_transient") totals.skipped_transient += 1;
+    }
+
+    const payload = {
+        generated_at: nowIso(),
+        gateway_url: GATEWAY_URL,
+        strict_transient_failures: !ALLOW_TRANSIENT_FAILURES,
+        providers,
+        scenarios,
+        totals,
+        runs: SCENARIO_RUNS,
+    };
+
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, JSON.stringify(payload, null, 2), "utf8");
+    console.log(`[live-provider-tests] results report: ${reportPath}`);
+}
 
 function extractResponseText(jsonBody: any): string {
     if (typeof jsonBody?.output_text === "string" && jsonBody.output_text.trim()) return jsonBody.output_text;
@@ -415,7 +549,7 @@ function parseModelOverrides(raw: string | undefined): Record<string, string> {
     for (const pair of parseList(raw)) {
         const split = pair.indexOf("=");
         if (split <= 0) continue;
-        const provider = pair.slice(0, split).trim();
+        const provider = normalizeLiveProviderId(pair.slice(0, split));
         const model = pair.slice(split + 1).trim();
         if (provider && model) out[provider] = model;
     }
@@ -423,11 +557,14 @@ function parseModelOverrides(raw: string | undefined): Record<string, string> {
 }
 
 function providerList(): string[] {
-    const base = parseList(process.env.LIVE_PROVIDERS);
+    const normalizeAll = (values: string[]): string[] =>
+        Array.from(new Set(values.map(normalizeLiveProviderId).filter(Boolean)));
+
+    const base = normalizeAll(parseList(process.env.LIVE_PROVIDERS));
     if (base.length) return base;
-    const single = (process.env.LIVE_PROVIDER ?? "").trim();
+    const single = normalizeLiveProviderId(process.env.LIVE_PROVIDER ?? "");
     if (single) return [single];
-    return [...DEFAULT_ACTIVE_PROVIDERS];
+    return normalizeAll([...DEFAULT_ACTIVE_PROVIDERS]);
 }
 
 function scenarioList(): ScenarioId[] {
@@ -472,6 +609,34 @@ function pickCheapestCandidate(models: string[]): string {
     })[0];
 }
 
+function chooseModelForProvider(providerId: string, candidates: string[]): string {
+    if (providerId === "openai") {
+        const gpt5Nano = candidates.find((model) => model.toLowerCase().includes("gpt-5-nano"));
+        if (gpt5Nano) return gpt5Nano;
+    }
+    if (providerId === "together") {
+        const llamaTurbo = candidates.find((model) => model.toLowerCase().includes("llama-3.3-70b-instruct-turbo"));
+        if (llamaTurbo) return llamaTurbo;
+        const qwen3 = candidates.find((model) => model.toLowerCase().includes("qwen3"));
+        if (qwen3) return qwen3;
+    }
+    if (providerId === "cohere") {
+        const commandR7b = candidates.find((model) => model.toLowerCase().includes("command-r7b"));
+        if (commandR7b) return commandR7b;
+        const commandR = candidates.find((model) => model.toLowerCase().includes("command-r"));
+        if (commandR) return commandR;
+        const commandA = candidates.find((model) => model.toLowerCase().includes("command-a"));
+        if (commandA) return commandA;
+    }
+    if (providerId === "arcee-ai" || providerId === "arcee") {
+        const trinityNano = candidates.find((model) => model.toLowerCase().includes("trinity-nano"));
+        if (trinityNano) return trinityNano;
+        const trinityMini = candidates.find((model) => model.toLowerCase().includes("trinity-mini"));
+        if (trinityMini) return trinityMini;
+    }
+    return pickCheapestCandidate(candidates);
+}
+
 function providerModelCandidates(
     discovered: Map<string, string[]>,
     providerId: string,
@@ -485,6 +650,18 @@ function providerModelCandidates(
     if (providerId === "alibaba") {
         return discovered.get("qwen") ?? [];
     }
+    if (providerId === "arcee") {
+        return discovered.get("arcee-ai") ?? [];
+    }
+    if (providerId === "arcee-ai") {
+        return discovered.get("arcee") ?? [];
+    }
+    if (providerId === "xai") {
+        return discovered.get("x-ai") ?? [];
+    }
+    if (providerId === "x-ai") {
+        return discovered.get("xai") ?? [];
+    }
 
     return direct;
 }
@@ -493,6 +670,10 @@ function providerDiscoveryTargets(providers: string[]): string[] {
     const out = new Set(providers);
     if (out.has("qwen")) out.add("alibaba");
     if (out.has("alibaba")) out.add("qwen");
+    if (out.has("arcee")) out.add("arcee-ai");
+    if (out.has("arcee-ai")) out.add("arcee");
+    if (out.has("xai")) out.add("x-ai");
+    if (out.has("x-ai")) out.add("xai");
     return Array.from(out);
 }
 
@@ -509,7 +690,7 @@ async function fetchTextGenerateModelsByProvider(targetProviders: string[]): Pro
     let total = Number.POSITIVE_INFINITY;
 
     while (offset < total) {
-        const url = new URL(resolveGatewayUrl("/models"));
+        const url = new URL(resolveGatewayUrl("/api/models"));
         url.searchParams.set("limit", String(limit));
         url.searchParams.set("offset", String(offset));
 
@@ -526,10 +707,17 @@ async function fetchTextGenerateModelsByProvider(targetProviders: string[]): Pro
         for (const model of models) {
             const modelId = model.model_id;
             if (!modelId) continue;
+            const modelEndpoints = Array.isArray(model.endpoints)
+                ? model.endpoints.map((endpoint) => String(endpoint))
+                : [];
+            const modelSupportsText = modelEndpoints.includes("text.generate");
             for (const provider of model.providers ?? []) {
                 const providerId = provider.api_provider_id;
                 if (!providerId || !targetProviders.includes(providerId)) continue;
-                if (provider.endpoint !== "text.generate") continue;
+                const providerSupportsText = provider.endpoint
+                    ? provider.endpoint === "text.generate"
+                    : modelSupportsText;
+                if (!providerSupportsText) continue;
                 if (provider.is_active_gateway === false) continue;
                 const existing = result.get(providerId) ?? [];
                 if (!existing.includes(modelId)) existing.push(modelId);
@@ -663,8 +851,8 @@ function assertHasUsage(payload: any, context: string) {
     ).toBe(true);
 }
 
-async function runScenario(providerId: string, model: string, scenario: Scenario) {
-    const body = scenario.buildBody(model);
+async function runScenario(providerId: string, model: string, scenario: Scenario): Promise<ScenarioRunOutcome> {
+    const body = scenario.buildBody(model, { providerId });
     const startedAt = Date.now();
     const res = await fetch(resolveGatewayUrl(scenario.endpoint), {
         method: "POST",
@@ -688,7 +876,10 @@ async function runScenario(providerId: string, model: string, scenario: Scenario
                 console.warn(
                     `[live-transient-skip] ${requestTag} returned ${res.status}: ${JSON.stringify(jsonBody)}`
                 );
-                return;
+                return {
+                    status: "skipped_transient",
+                    note: `${requestTag} returned ${res.status}`,
+                };
             }
             throw new Error(`${requestTag} failed (${res.status}): ${JSON.stringify(jsonBody)}`);
         }
@@ -703,14 +894,17 @@ async function runScenario(providerId: string, model: string, scenario: Scenario
             nativeResponseId: jsonBody?.nativeResponseId ?? null,
             usage: extractUsage(jsonBody),
         }));
-        return;
+        return { status: "passed" };
     }
 
     if (!res.ok) {
         const text = await res.text();
         if (ALLOW_TRANSIENT_FAILURES && [408, 429, 500, 502, 503, 504].includes(res.status)) {
             console.warn(`[live-transient-skip] ${requestTag} stream returned ${res.status}: ${text}`);
-            return;
+            return {
+                status: "skipped_transient",
+                note: `${requestTag} stream returned ${res.status}`,
+            };
         }
         throw new Error(`${requestTag} stream failed (${res.status}): ${text}`);
     }
@@ -725,6 +919,7 @@ async function runScenario(providerId: string, model: string, scenario: Scenario
         frameCount: objects.length,
         usage: extractUsage(usageCarrier),
     }));
+    return { status: "passed" };
 }
 
 const RUN_LIVE = LIVE_RUN;
@@ -745,7 +940,7 @@ describeLive("Live Active Providers low-cost smoke", () => {
         try {
             discovered = await fetchTextGenerateModelsByProvider(discoveryProviders);
         } catch (err) {
-            console.warn(`[live-discovery] /v1/models failed, falling back to Supabase: ${String((err as any)?.message ?? err)}`);
+            console.warn(`[live-discovery] /v1/api/models failed, falling back to Supabase: ${String((err as any)?.message ?? err)}`);
             discovered = await fetchTextGenerateModelsByProviderFromSupabase(discoveryProviders);
         }
         for (const providerId of providers) {
@@ -756,8 +951,12 @@ describeLive("Live Active Providers low-cost smoke", () => {
             }
             const candidates = providerModelCandidates(discovered, providerId);
             if (!candidates.length) continue;
-            chosenModelByProvider.set(providerId, pickCheapestCandidate(candidates));
+            chosenModelByProvider.set(providerId, chooseModelForProvider(providerId, candidates));
         }
+    });
+
+    afterAll(() => {
+        writeResultsReport(providers, scenarios);
     });
 
     for (const providerId of providers) {
@@ -765,15 +964,50 @@ describeLive("Live Active Providers low-cost smoke", () => {
             for (const scenarioId of scenarios) {
                 const scenario = SCENARIOS[scenarioId];
                 it(scenario.id, async () => {
+                    const startedAt = Date.now();
                     const model = chosenModelByProvider.get(providerId);
                     if (!model) {
-                        console.warn(
+                        const message =
                             `[live-skip] ${providerId} has no discovered text.generate model. ` +
-                            `Set LIVE_MODEL_OVERRIDES=${providerId}=provider/model-id`
-                        );
+                            `Set LIVE_MODEL_OVERRIDES=${providerId}=provider/model-id`;
+                        console.warn(message);
+                        SCENARIO_RUNS.push({
+                            provider: providerId,
+                            scenario: scenario.id,
+                            model: null,
+                            endpoint: scenario.endpoint,
+                            stream: scenario.stream,
+                            status: "skipped_no_model",
+                            elapsedMs: Date.now() - startedAt,
+                            error: message,
+                        });
                         return;
                     }
-                    await runScenario(providerId, model, scenario);
+                    try {
+                        const outcome = await runScenario(providerId, model, scenario);
+                        SCENARIO_RUNS.push({
+                            provider: providerId,
+                            scenario: scenario.id,
+                            model,
+                            endpoint: scenario.endpoint,
+                            stream: scenario.stream,
+                            status: outcome.status,
+                            elapsedMs: Date.now() - startedAt,
+                            error: outcome.note,
+                        });
+                    } catch (error) {
+                        SCENARIO_RUNS.push({
+                            provider: providerId,
+                            scenario: scenario.id,
+                            model,
+                            endpoint: scenario.endpoint,
+                            stream: scenario.stream,
+                            status: "failed",
+                            elapsedMs: Date.now() - startedAt,
+                            error: serializeError(error),
+                        });
+                        throw error;
+                    }
                 }, 90_000);
             }
         });

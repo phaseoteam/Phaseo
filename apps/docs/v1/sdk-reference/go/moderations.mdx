@@ -1,41 +1,28 @@
 ---
 title: "Moderations"
-description: "Call /moderations with the Go SDK."
+description: "Call /moderations with the Go wrapper."
 ---
 
-**Method**: `client.Moderations.ModerationsPost()`.
+Use the wrapper method:
 
-### Example
+- `client.GenerateModeration(ctx, req)`
+
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
-    "packages/sdk-go/src/gen"
+  "context"
+  "fmt"
+  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
-
-req := gen.ModerationRequest{
-    Model: "openai/omni-moderation-latest",
-    Input: gen.StringAsModerationRequestInput(&"Text to classify"),
-}
-
-moderation, _, err := client.Moderations.ModerationsPost(ctx).ModerationRequest(req).Execute()
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.GenerateModeration(context.Background(), map[string]interface{}{
+  "model": "openai/omni-moderation-latest",
+  "input": "some text to classify",
+})
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Moderation result:", moderation.Results[0].Flagged)
+
+fmt.Println(resp)
 ```
-
-### Key parameters
-- `model` (required): Moderation model id (e.g., `openai/omni-moderation-latest`).
-- `input` (required): String or array of content items (text or image_url).
-- Optional: `categories`/`severity` filters (when supported), `user` tag.
-
-### Returns
-`ModerationResponse`
 

@@ -13,9 +13,14 @@ import type {
 	IRToolCall,
 	IRToolResult,
 	IRTool,
-	IRToolChoice,
 } from "@core/ir";
 import { normalizeOpenAIContent } from "../shared/normalizeContent";
+import {
+	normalizeImageConfig,
+	normalizeOpenAIToolChoice,
+	normalizeResponseFormat,
+	resolveServiceTierFromSpeedAndTier,
+} from "../shared/text-normalizers";
 
 /**
  * Decode OpenAI Chat Completions request to IR format
@@ -89,7 +94,9 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 	}));
 
 	// Transform tool choice
-	const toolChoice = normalizeToolChoice(req.tool_choice);
+	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice, {
+		unknownStringFallback: "auto",
+	});
 
 	// Build IR request
 	return {
@@ -123,19 +130,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		// Response format
 		responseFormat: normalizeResponseFormat(req.response_format),
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
-		imageConfig: (req as any).image_config
-			? {
-				aspectRatio: (req as any).image_config.aspect_ratio,
-				imageSize: (req as any).image_config.image_size,
-				fontInputs: Array.isArray((req as any).image_config.font_inputs)
-					? (req as any).image_config.font_inputs.map((entry: any) => ({
-						fontUrl: entry?.font_url,
-						text: entry?.text,
-					}))
-					: undefined,
-				superResolutionReferences: (req as any).image_config.super_resolution_references,
-			}
-			: undefined,
+		imageConfig: normalizeImageConfig((req as any).image_config),
 
 		// Advanced parameters
 		frequencyPenalty: req.frequency_penalty,
@@ -147,7 +142,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		streamOptions: req.stream_options,
 		background: (req as any).background,
 		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
-		serviceTier: resolveRequestedServiceTier({
+		serviceTier: resolveServiceTierFromSpeedAndTier({
 			service_tier: (req as any).service_tier,
 			speed: (req as any).speed,
 		}),
@@ -175,82 +170,5 @@ function decodeToolCall(tc: any): IRToolCall {
 		name: tc.function?.name || tc.name,
 		arguments: tc.function?.arguments || tc.arguments || "{}",
 	};
-}
-
-/**
- * Normalize tool choice to IR format
- */
-function normalizeToolChoice(choice: any): IRToolChoice | undefined {
-	if (!choice) return undefined;
-
-	if (typeof choice === "string") {
-		if (choice === "auto") return "auto";
-		if (choice === "none") return "none";
-		if (choice === "required") return "required";
-		return "auto"; // Default fallback
-	}
-
-	if (typeof choice === "object") {
-		// OpenAI format: {type: "function", function: {name: "foo"}}
-		if (choice.type === "function" && choice.function?.name) {
-			return { name: choice.function.name };
-		}
-		// Direct name format: {name: "foo"}
-		if (choice.name) {
-			return { name: choice.name };
-		}
-	}
-
-	return undefined;
-}
-
-/**
- * Normalize response format to IR
- */
-function normalizeResponseFormat(format: any): IRChatRequest["responseFormat"] {
-	if (!format) return undefined;
-
-	// String format (legacy)
-	if (typeof format === "string") {
-		if (format === "json_object" || format === "json") {
-			return { type: "json_object" };
-		}
-		return { type: "text" };
-	}
-
-	// Object format
-	if (typeof format === "object") {
-		if (format.type === "json_object" || format.type === "json") {
-			return {
-				type: "json_object",
-				schema: format.schema,
-			};
-		}
-
-		if (format.type === "json_schema") {
-			return {
-				type: "json_schema",
-				schema: format.schema || format.json_schema?.schema || format.json_schema?.schema_,
-				name: format.name || format.json_schema?.name,
-				strict: format.strict ?? format.json_schema?.strict,
-			};
-		}
-
-		return { type: "text" };
-	}
-
-	return undefined;
-}
-
-function resolveRequestedServiceTier(input: {
-	service_tier?: unknown;
-	speed?: unknown;
-}): string | undefined {
-	const speed = typeof input.speed === "string" ? input.speed.toLowerCase() : undefined;
-	if (speed === "fast") return "priority";
-	if (typeof input.service_tier === "string" && input.service_tier.length > 0) {
-		return input.service_tier;
-	}
-	return undefined;
 }
 

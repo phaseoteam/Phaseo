@@ -1,0 +1,93 @@
+[
+  {
+    "api_model_id": "cohere/command-a",
+    "provider_api_model_id": "cohere:cohere/command-a",
+    "provider_model_slug": "command-a-03-2025",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "cohere/command-a-reasoning",
+    "provider_api_model_id": "cohere:cohere/command-a-reasoning",
+    "provider_model_slug": "command-a-reasoning-08-2025",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "cohere/command-a-translate",
+    "provider_api_model_id": "cohere:cohere/command-a-translate",
+    "provider_model_slug": "command-a-translate-08-2025",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "cohere/command-a-vision",
+    "provider_api_model_id": "cohere:cohere/command-a-vision",
+    "provider_model_slug": "command-a-vision-07-2025",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "cohere/command-r7b",
+    "provider_api_model_id": "cohere:cohere/command-r7b",
+    "provider_model_slug": "command-r7b-12-2024",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "cohere/command-r-plus",
+    "provider_api_model_id": "cohere:cohere/command-r-plus",
+    "provider_model_slug": "command-r-plus-08-2024",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "cohere/command-r",
+    "provider_api_model_id": "cohere:cohere/command-r",
+    "provider_model_slug": "command-r-08-2024",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  }
+]

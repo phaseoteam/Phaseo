@@ -1,0 +1,44 @@
+---
+title: "Structured Output Validation"
+description: "Server-side validation, retries, and fallback strategies for structured output."
+---
+
+Even with schema-constrained generation, always validate output on your server.
+
+## Recommended loop
+
+1. Request schema-constrained output.
+2. Parse JSON.
+3. Validate against your server schema.
+4. Retry once with a corrective prompt if invalid.
+5. Fallback to safe failure if still invalid.
+
+## Validation example (TypeScript)
+
+```typescript
+import { z } from "zod";
+
+const Summary = z.object({
+  order_id: z.string(),
+  total_usd: z.number(),
+  status: z.enum(["pending", "paid", "failed"]),
+});
+
+function parseStructuredContent(content: string) {
+  const data = JSON.parse(content);
+  return Summary.parse(data);
+}
+```
+
+## Corrective retry prompt
+
+When validation fails, send a short corrective instruction:
+
+`Your previous output did not match schema. Return valid JSON only, with required fields and no extra keys.`
+
+## Production guidance
+
+- Keep one schema per use case and version it.
+- Track validation failure rates by model id.
+- Alert on sudden schema failure spikes after model changes.
+

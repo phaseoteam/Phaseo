@@ -64,10 +64,42 @@
 								"expanded": false,
 								"pages": [
 									"v1/guides/routing-and-fallbacks",
-									"v1/guides/tool-calling",
-									"v1/guides/structured-outputs",
 									"v1/guides/presets",
 									"v1/guides/multimodality",
+									{
+										"group": "Tooling",
+										"expanded": false,
+										"pages": [
+											"v1/guides/tool-calling",
+											"v1/guides/tool-calling-patterns",
+											"v1/guides/tool-calling-safety",
+											"v1/guides/structured-outputs",
+											"v1/guides/structured-outputs-schemas",
+											"v1/guides/structured-outputs-validation"
+										]
+									},
+									{
+										"group": "Streaming",
+										"expanded": false,
+										"pages": [
+											"v1/guides/streaming",
+											"v1/guides/streaming-sse",
+											"v1/guides/streaming-production"
+										]
+									},
+									{
+										"group": "Model Optimization",
+										"expanded": false,
+										"pages": [
+											"v1/guides/model-quantization",
+											"v1/guides/quantization-formats",
+											"v1/guides/quantization-methods",
+											"v1/guides/quantization-selection",
+											"v1/guides/inference-parameters",
+											"v1/guides/sampling-and-decoding",
+											"v1/guides/context-and-token-budgeting"
+										]
+									},
 									"v1/guides/app-attribution"
 								]
 							},
@@ -339,24 +371,11 @@
 										"expanded": false,
 										"pages": [
 											"v1/api-reference/endpoint/management/index",
+											"v1/api-reference/endpoint/management/keys-create",
 											"v1/api-reference/endpoint/management/keys-list",
 											"v1/api-reference/endpoint/management/keys-get",
 											"v1/api-reference/endpoint/management/keys-update",
 											"v1/api-reference/endpoint/management/keys-delete"
-										]
-									}
-								]
-							},
-							{
-								"group": "Coming Soon",
-								"icon": "hourglass",
-								"expanded": false,
-								"pages": [
-									{
-										"group": "Management API Keys",
-										"expanded": false,
-										"pages": [
-											"v1/api-reference/endpoint/management/keys-create"
 										]
 									}
 								]

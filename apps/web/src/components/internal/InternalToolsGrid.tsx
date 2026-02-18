@@ -21,11 +21,11 @@ import {
 const internalTools = [
 	{
 		id: "audit",
-		title: "Models Audit",
+		title: "Data Audit",
 		description:
-			"Comprehensive view of all models with provider support, benchmark data, and pricing information.",
+			"Manage models, organisations, API providers, and benchmarks from dedicated CRUD pages.",
 		icon: FileCheck,
-		href: "/internal/audit",
+		href: "/internal/data",
 		comingSoon: false,
 	},
 	{

@@ -8,8 +8,8 @@
     {
       "meter": "input_text_tokens",
       "unit": "token",
-      "unit_size": 1,
-      "price_per_unit": 7.5e-08,
+      "unit_size": 1000000,
+      "price_per_unit": 0.075,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "batch",
@@ -21,8 +21,8 @@
     {
       "meter": "output_text_tokens",
       "unit": "token",
-      "unit_size": 1,
-      "price_per_unit": 3e-07,
+      "unit_size": 1000000,
+      "price_per_unit": 0.3,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "batch",

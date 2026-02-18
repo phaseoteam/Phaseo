@@ -52,4 +52,28 @@ describe("normalizeTextUsageForPricing", () => {
 
 		expect(usage?.requests).toBe(1);
 	});
+
+	it("infers missing token split from total-only usage payloads", () => {
+		const usage = normalizeTextUsageForPricing({
+			total_tokens: 21,
+		});
+
+		expect(usage?.input_tokens).toBe(21);
+		expect(usage?.output_tokens).toBe(0);
+		expect(usage?.total_tokens).toBe(21);
+		expect(usage?.requests).toBe(1);
+	});
+
+	it("maps Anthropic cache usage fields to pricing meters", () => {
+		const usage = normalizeTextUsageForPricing({
+			input_tokens: 1200,
+			output_tokens: 300,
+			total_tokens: 1500,
+			cache_read_input_tokens: 800,
+			cache_creation_input_tokens: 500,
+		});
+
+		expect(usage?.cached_read_text_tokens).toBe(800);
+		expect(usage?.cached_write_text_tokens).toBe(500);
+	});
 });

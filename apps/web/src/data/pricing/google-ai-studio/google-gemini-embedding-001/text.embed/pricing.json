@@ -8,8 +8,8 @@
     {
       "meter": "input_text_tokens",
       "unit": "token",
-      "unit_size": 1,
-      "price_per_unit": 1.5e-07,
+      "unit_size": 1000000,
+      "price_per_unit": 0.15,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "standard",

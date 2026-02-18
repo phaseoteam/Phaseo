@@ -217,7 +217,13 @@ export type ParamRoutingDiagnostics = {
         unsupportedParams: string[];
     }>;
     filteringStages: Array<{
-        stage: "param_support" | "provider_docs" | "response_format" | "structured_outputs" | "token_limits";
+        stage:
+            | "param_support"
+            | "param_preference"
+            | "provider_docs"
+            | "response_format"
+            | "structured_outputs"
+            | "token_limits";
         beforeCount: number;
         afterCount: number;
         droppedProviders: string[];

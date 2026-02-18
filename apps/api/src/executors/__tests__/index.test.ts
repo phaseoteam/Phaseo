@@ -178,8 +178,10 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("xiaomi", "audio.transcription")).toBeNull();
 		expect(resolveProviderExecutor("xiaomi", "video.generation")).toBeNull();
 		expect(resolveProviderExecutor("fireworks", "video.generation")).toBeNull();
-		expect(resolveProviderExecutor("arcee", "images.generations")).toBeTruthy();
-		expect(resolveProviderExecutor("arcee", "audio.transcription")).toBeTruthy();
+		expect(resolveProviderExecutor("arcee", "images.generations")).toBeNull();
+		expect(resolveProviderExecutor("arcee", "audio.transcription")).toBeNull();
+		expect(resolveProviderExecutor("arcee-ai", "images.generations")).toBeNull();
+		expect(resolveProviderExecutor("arcee-ai", "audio.transcription")).toBeNull();
 		expect(resolveProviderExecutor("morpheus", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("morpheus", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("google", "images.generations")).toBeTruthy();

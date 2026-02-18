@@ -22,6 +22,10 @@ import { handleError } from "@core/error-handler";
 import { doRequestWithIR } from "../execute";
 import { finalizeRequest } from "../after";
 import { auditFailure } from "../audit";
+import {
+	buildPipelineExecutionErrorResponse,
+	logPipelineExecutionError,
+} from "../error-response";
 import type { PipelineRunnerArgs } from "./types";
 
 type NonTextEndpoint =
@@ -146,6 +150,9 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 				streamFormat: body?.stream_format,
 				speed: body?.speed,
 				instructions: body?.instructions,
+				vendor: {
+					elevenlabs: body?.config?.elevenlabs,
+				},
 				userId: body?.user,
 				rawRequest: body,
 			};
@@ -343,15 +350,12 @@ export async function runNonTextPipeline(args: PipelineRunnerArgs): Promise<Resp
 			timingHeader: header || undefined,
 		});
 	} catch (err) {
-		console.error("Non-text IR pipeline error:", err);
+		logPipelineExecutionError("non-text", err);
 		const header = timing.timer.header();
 		pre.ctx.timing = timing.timer.snapshot();
 		return await handleError({
 			stage: "execute",
-			res: new Response(JSON.stringify({ error: "IR pipeline error", message: String(err) }), {
-				status: 500,
-				headers: { "Content-Type": "application/json" },
-			}),
+			res: buildPipelineExecutionErrorResponse(err, pre.ctx),
 			endpoint,
 			ctx: pre.ctx,
 			timingHeader: header || undefined,

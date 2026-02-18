@@ -24,7 +24,6 @@ export default async function SettingsLayout({
 	const { data: authData } = await supabase.auth.getUser();
 	const userId = authData.user?.id ?? null;
 	const teamId = await getTeamIdFromCookie();
-
 	let showBroadcast = false;
 	if (userId && teamId) {
 		const { data: membership } = await supabase

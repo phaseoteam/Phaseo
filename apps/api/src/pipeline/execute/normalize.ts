@@ -4,10 +4,15 @@
 
 import type { IRChatRequest } from "@core/ir";
 import type { Protocol } from "@protocols/detect";
-
-const DEFAULT_ANTHROPIC_MAX_TOKENS = 4096;
-const REASONING_EFFORT_ORDER = ["none", "minimal", "low", "medium", "high", "xhigh"] as const;
-type ReasoningEffort = (typeof REASONING_EFFORT_ORDER)[number];
+import {
+	DEFAULT_ANTHROPIC_MAX_TOKENS,
+	fallbackReasoningEfforts,
+	isReasoningEffort,
+	protocolTemperatureMax,
+	providerTemperatureMax,
+	REASONING_EFFORT_ORDER,
+	type ReasoningEffort,
+} from "./textNormalizePolicy";
 type ParamRange = {
     min?: number;
     max?: number;
@@ -16,18 +21,6 @@ type ParamRange = {
 
 function clamp(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
-}
-
-function protocolTemperatureMax(protocol?: Protocol): number {
-    return protocol === "anthropic.messages" ? 1 : 2;
-}
-
-function providerTemperatureMax(providerId: string): number {
-    return providerId === "anthropic" ? 1 : 2;
-}
-
-function isReasoningEffort(value: unknown): value is ReasoningEffort {
-    return typeof value === "string" && REASONING_EFFORT_ORDER.includes(value as ReasoningEffort);
 }
 
 function toFiniteNumber(value: unknown): number | undefined {
@@ -100,24 +93,6 @@ function clampByRange(value: number, range: ParamRange): number {
     if (!Number.isFinite(min)) return Math.min(value, max);
     if (!Number.isFinite(max)) return Math.max(value, min);
     return clamp(value, min, max);
-}
-
-function fallbackReasoningEfforts(providerId: string, model: string): ReasoningEffort[] {
-    const provider = providerId.toLowerCase();
-    const m = model.toLowerCase();
-
-    if (provider === "anthropic") {
-        return ["low", "medium", "high", "xhigh"];
-    }
-
-    if (provider === "openai" || provider === "azure") {
-        if (m.includes("gpt-5.1-codex-max")) return ["none", "minimal", "low", "medium", "high", "xhigh"];
-        if (m.includes("gpt-5.2") || m.includes("gpt-5.3")) return ["none", "minimal", "low", "medium", "high", "xhigh"];
-        if (m.includes("gpt-5.1")) return ["none", "minimal", "low", "medium", "high"];
-        if (m.includes("gpt-5")) return ["minimal", "low", "medium", "high"];
-    }
-
-    return [...REASONING_EFFORT_ORDER];
 }
 
 function getReasoningEffortAllowlist(
@@ -290,9 +265,14 @@ export function normalizeIRForProvider(
         nextTopLogprobs = clampByRange(ir.topLogprobs, range);
     }
 
-    let nextReasoning = ir.reasoning;
-    if (ir.reasoning) {
-        const reasoning = { ...ir.reasoning };
+	let nextReasoning = ir.reasoning;
+	if (!nextReasoning && providerId === "openai" && protocol === "anthropic.messages") {
+		// Anthropic Messages requests usually expect "thinking off" unless explicitly enabled.
+		// OpenAI reasoning models can exhaust small max_tokens budgets with hidden reasoning.
+		nextReasoning = { effort: "minimal" };
+	}
+	if (nextReasoning) {
+		const reasoning = { ...nextReasoning };
 
         if (providerId === "openai" && reasoning.summary == null) {
             // Keep OpenAI responses stable when callers omit summary.
@@ -319,8 +299,8 @@ export function normalizeIRForProvider(
             reasoning.maxTokens = clampByRange(reasoning.maxTokens, range);
         }
 
-        nextReasoning = reasoning;
-    }
+		nextReasoning = reasoning;
+	}
 
     const needsMaxTokens = nextMaxTokens !== undefined && nextMaxTokens !== ir.maxTokens;
     const needsTemp =

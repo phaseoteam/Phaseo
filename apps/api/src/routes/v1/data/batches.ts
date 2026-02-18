@@ -4,29 +4,10 @@
 
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
-import { withRuntime } from "../../utils";
+import { json, withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
-import { getBindings } from "@/runtime/env";
-
-const BASE_URL = "https://api.openai.com";
-
-async function proxyBatch(req: Request, path: string, method: string, body?: BodyInit | null) {
-    const key = getBindings().OPENAI_API_KEY;
-    if (!key) return err("upstream_error", { reason: "openai_key_missing" });
-
-    const headers = new Headers(req.headers);
-    headers.set("Authorization", `Bearer ${key}`);
-    headers.set("Host", "api.openai.com");
-
-    const upstream = await fetch(`${BASE_URL}${path}`, {
-        method,
-        headers,
-        body,
-    });
-    return upstream;
-}
 
 async function handleCreate(req: Request) {
     const auth = await authenticate(req);
@@ -34,7 +15,11 @@ async function handleCreate(req: Request) {
         const reason = (auth as AuthFailure).reason;
         return err("unauthorised", { reason });
     }
-    return proxyBatch(req, "/v1/batches", "POST", req.body);
+    return json({
+        status_code: 501,
+        error: "not_implemented",
+        description: "Batch endpoint is not implemented yet.",
+    }, 501, { "Cache-Control": "no-store" });
 }
 
 async function handleRetrieve(req: Request, id: string) {
@@ -43,7 +28,12 @@ async function handleRetrieve(req: Request, id: string) {
         const reason = (auth as AuthFailure).reason;
         return err("unauthorised", { reason });
     }
-    return proxyBatch(req, `/v1/batches/${encodeURIComponent(id)}`, "GET");
+    return json({
+        status_code: 501,
+        error: "not_implemented",
+        description: "Batch endpoint is not implemented yet.",
+        batch_id: id || null,
+    }, 501, { "Cache-Control": "no-store" });
 }
 
 export const batchRoutes = new Hono<Env>();

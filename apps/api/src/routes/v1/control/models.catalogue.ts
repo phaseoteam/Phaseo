@@ -344,14 +344,15 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const providerModelIds = (providerRows ?? [])
         .map((row) => row.provider_api_model_id)
         .filter((id): id is string => Boolean(id));
-    const { data: capabilityRows, error: capabilityError } = await supabase
+    const { data: capabilityRowsRaw, error: capabilityError } = await supabase
         .from("data_api_provider_model_capabilities")
-        .select("provider_api_model_id, capability_id, params, effective_from, effective_to")
+        .select("provider_api_model_id, capability_id, params")
         .eq("status", "active")
         .in("provider_api_model_id", providerModelIds);
     if (capabilityError) {
         throw new Error(capabilityError.message || "Failed to load provider capabilities");
     }
+    const capabilityRows = (capabilityRowsRaw ?? []) as CapabilityRow[];
 
     const aliasMap = new Map<string, string[]>();
     const apiModelIds = Array.from(
@@ -402,7 +403,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     }
 
     const capabilitiesByProviderModel = new Map<string, CapabilityRow[]>();
-    for (const cap of capabilityRows ?? []) {
+    for (const cap of capabilityRows) {
         if (!cap?.provider_api_model_id || !cap?.capability_id) continue;
         if (!withinEffectiveWindow(cap.effective_from, cap.effective_to, now)) continue;
         const existing = capabilitiesByProviderModel.get(cap.provider_api_model_id) ?? [];
@@ -447,7 +448,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     }
 
     const comboMap = new Map<string, { model_id: string | null; provider_id: string }>();
-    for (const cap of capabilityRows ?? []) {
+    for (const cap of capabilityRows) {
         if (!cap?.provider_api_model_id || !cap?.capability_id) continue;
         const providerModel = (providerRows ?? []).find(
             (row) => row.provider_api_model_id === cap.provider_api_model_id

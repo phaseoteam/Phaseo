@@ -1,63 +1,39 @@
 ---
 title: "Responses"
-description: "Call the Responses API with the Go SDK."
+description: "Call /responses with the Go wrapper."
 ---
 
-**Method**: `client.GenerateResponse()` (stream with `client.StreamResponse()`).
+Use the wrapper method:
 
-### Example
+- `client.GenerateResponse(ctx, req)`
+
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
-    "packages/sdk-go/src/gen"
+  "context"
+  "fmt"
+  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
-
-req := gen.ResponsesRequest{
-    Model: "openai/gpt-4.1",
-    Input: []map[string]interface{}{
-        {
-            "role": "user",
-            "content": []map[string]interface{}{
-                {"type": "output_text", "text": "Summarise this text"},
-            },
-        },
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+input := map[string]interface{}{
+  "role": "user",
+  "content": []map[string]interface{}{
+    {
+      "type": "input_text",
+      "text": "Reply with: responses endpoint works",
     },
-    Temperature: &[]float32{0.7}[0],
-    Stream:      &[]bool{false}[0],
+  },
 }
-
-resp, _, err := client.GenerateResponse(ctx, req)
+resp, err := client.GenerateResponse(context.Background(), gen.ResponsesRequest{
+  Model: "openai/gpt-5-nano",
+  Input: &input,
+})
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Response:", resp.Output[0].Content[0].Text)
+
+fmt.Println(resp)
 ```
 
-### Streaming
-```go
-// Note: Streaming is not yet implemented in the Go facade.
-// Use the raw API service for streaming.
-```
-
-### Key parameters
-- `model` (required): Target model id.
-- `input` (required): Ordered array of input items (messages, tool calls, etc.).
-- `temperature` (0–2): Higher = more random.
-- `top_p` (0–1) / `top_k` (>=1): Nucleus / k-best sampling controls.
-- `max_output_tokens` (int): Hard cap on tokens generated per response; `max_output_tokens_per_message` to cap each message item.
-- Tools: `tools` (definitions), `tool_choice` (auto/none/specific), `max_tool_calls` (int), `parallel_tool_calls` (bool).
-- Logprobs: `logprobs` (bool), `top_logprobs` (0–20) to return per-token logprobs.
-- Output: `response_format` (json/text), `service_tier`, `store` (bool), `stream` (bool).
-- Metadata: `metadata` (object) for passthrough, `reasoning` (object) for effort hints.
-- Gateway extras: `usage` (bool to request usage), `meta` (bool to include meta block).
-
-### Returns
-`ResponsesResponse` (normal JSON) or newline-delimited SSE frames when `stream: true`.
-
+Streaming is not yet exposed as a dedicated helper in the wrapper.

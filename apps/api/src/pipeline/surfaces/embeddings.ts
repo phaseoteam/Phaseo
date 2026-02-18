@@ -8,6 +8,10 @@ import { encodeOpenAIEmbeddingsResponse } from "@protocols/openai-embeddings/enc
 import { doRequestWithIR } from "../execute";
 import { finalizeRequest } from "../after";
 import { auditFailure } from "../audit";
+import {
+	buildPipelineExecutionErrorResponse,
+	logPipelineExecutionError,
+} from "../error-response";
 import type { PipelineRunnerArgs } from "./types";
 
 export async function runEmbeddingsPipeline(args: PipelineRunnerArgs): Promise<Response> {
@@ -55,15 +59,12 @@ export async function runEmbeddingsPipeline(args: PipelineRunnerArgs): Promise<R
 			timingHeader: header || undefined,
 		});
 	} catch (err) {
-		console.error("IR pipeline error:", err);
+		logPipelineExecutionError("embeddings", err);
 		const header = timing.timer.header();
 		pre.ctx.timing = timing.timer.snapshot();
 		return await handleError({
 			stage: "execute",
-			res: new Response(JSON.stringify({ error: "IR pipeline error", message: String(err) }), {
-				status: 500,
-				headers: { "Content-Type": "application/json" },
-			}),
+			res: buildPipelineExecutionErrorResponse(err, pre.ctx),
 			endpoint,
 			ctx: pre.ctx,
 			timingHeader: header || undefined,

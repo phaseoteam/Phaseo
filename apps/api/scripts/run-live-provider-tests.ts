@@ -16,6 +16,7 @@ type CliArgs = {
     requireUsageNonzero?: string;
     allowTransientFailures?: string;
     allProviders: boolean;
+    allApiProviders: boolean;
     vitestArgs: string[];
     help: boolean;
 };
@@ -23,6 +24,7 @@ type CliArgs = {
 type ModelsResponse = {
     total?: number;
     models?: Array<{
+        endpoints?: string[];
         providers?: Array<{
             api_provider_id?: string;
             endpoint?: string;
@@ -43,12 +45,53 @@ type ProviderCapabilityRow = {
     provider_api_model_id?: string | null;
 };
 
+type ProvidersResponse = {
+    total?: number;
+    providers?: Array<{
+        api_provider_id?: string;
+    }>;
+};
+
+type SupabaseProviderRow = {
+    api_provider_id?: string | null;
+};
+
+const PROVIDER_ALIASES: Record<string, string> = {
+    arcee: "arcee-ai",
+    "arcee-ai": "arcee-ai",
+    xai: "x-ai",
+    "x-ai": "x-ai",
+};
+
 function parseCsv(value: string | undefined): string[] {
     if (!value) return [];
     return value
         .split(/[\s,]+/)
         .map((entry) => entry.trim())
         .filter(Boolean);
+}
+
+function normalizeProviderId(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return "";
+    return PROVIDER_ALIASES[normalized] ?? normalized;
+}
+
+function normalizeProviderList(values: string[]): string[] {
+    return [...new Set(values.map(normalizeProviderId).filter(Boolean))];
+}
+
+function normalizeModelOverrides(values: string[]): string[] {
+    const out = new Map<string, string>();
+    for (const entry of values) {
+        const split = entry.indexOf("=");
+        if (split <= 0) continue;
+        const provider = normalizeProviderId(entry.slice(0, split));
+        const model = entry.slice(split + 1).trim();
+        if (!provider || !model) continue;
+        out.set(provider, `${provider}=${model}`);
+    }
+    return [...out.values()];
 }
 
 function parseBooleanEnv(value: string | undefined): string | undefined {
@@ -166,6 +209,7 @@ function parseArgs(argv: string[]): CliArgs {
         scenarios: [],
         modelOverrides: [],
         allProviders: false,
+        allApiProviders: false,
         vitestArgs: [],
         help: false,
     };
@@ -186,6 +230,10 @@ function parseArgs(argv: string[]): CliArgs {
         }
         if (arg === "--all-providers") {
             out.allProviders = true;
+            continue;
+        }
+        if (arg === "--all-api-providers") {
+            out.allApiProviders = true;
             continue;
         }
         if (arg === "--provider") {
@@ -288,9 +336,9 @@ function parseArgs(argv: string[]): CliArgs {
         }
     }
 
-    out.providers = [...new Set(out.providers)];
+    out.providers = normalizeProviderList(out.providers);
     out.scenarios = [...new Set(out.scenarios)];
-    out.modelOverrides = [...new Set(out.modelOverrides)];
+    out.modelOverrides = normalizeModelOverrides(out.modelOverrides);
     return out;
 }
 
@@ -310,12 +358,19 @@ function printUsage() {
     console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider openai");
     console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --providers openai,anthropic");
     console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --all-providers");
+    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --all-api-providers");
     console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider x-ai --scenario chat_stream_hi");
+    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider baseten");
+    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider cohere --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured");
+    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider together --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured");
+    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --providers arcee,deepinfra,together");
+    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider -- --provider arcee --model-override arcee=arcee-ai/trinity-mini");
     console.log("");
     console.log("Flags:");
     console.log("  --provider <id>               Provider ID (repeatable or comma-separated)");
     console.log("  --providers <csv>             Provider IDs as CSV");
-    console.log("  --all-providers               Discover all active text.generate providers from /v1/models");
+    console.log("  --all-providers               Discover all active text.generate providers from /v1/api/models");
+    console.log("  --all-api-providers           Discover all API providers from /v1/providers");
     console.log("  --scenario <id>               Scenario ID (repeatable or comma-separated)");
     console.log("  --scenarios <csv>             Scenario IDs as CSV");
     console.log("  --model-override p=model      Override model selection for a provider (repeatable)");
@@ -325,14 +380,31 @@ function printUsage() {
     console.log("  --include-tuning[=true|false] Sets LIVE_INCLUDE_TUNING");
     console.log("  --require-usage[=true|false]  Sets LIVE_REQUIRE_USAGE");
     console.log("  --require-usage-nonzero[=true|false] Sets LIVE_REQUIRE_USAGE_NONZERO");
-    console.log("  --allow-transient-failures[=true|false] Sets LIVE_ALLOW_TRANSIENT_FAILURES");
+    console.log("  --allow-transient-failures[=true|false] Sets LIVE_ALLOW_TRANSIENT_FAILURES (default: false)");
     console.log("  --                            Pass remaining args through to vitest");
 }
 
 function resolveGatewayModelsUrl(base: string): string {
     const gatewayUrl = normalizeGatewayUrl(base);
     const normalized = gatewayUrl.endsWith("/") ? gatewayUrl.slice(0, -1) : gatewayUrl;
-    return `${normalized}/models`;
+    return `${normalized}/api/models`;
+}
+
+function resolveGatewayProvidersUrl(base: string): string {
+    const gatewayUrl = normalizeGatewayUrl(base);
+    const normalized = gatewayUrl.endsWith("/") ? gatewayUrl.slice(0, -1) : gatewayUrl;
+    return `${normalized}/providers`;
+}
+
+function timestampStamp(): string {
+    const now = new Date();
+    const yyyy = now.getUTCFullYear();
+    const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(now.getUTCDate()).padStart(2, "0");
+    const hh = String(now.getUTCHours()).padStart(2, "0");
+    const min = String(now.getUTCMinutes()).padStart(2, "0");
+    const ss = String(now.getUTCSeconds()).padStart(2, "0");
+    return `${yyyy}${mm}${dd}-${hh}${min}${ss}`;
 }
 
 async function discoverAllTextProviders(gatewayUrl: string, apiKey: string): Promise<string[]> {
@@ -355,13 +427,20 @@ async function discoverAllTextProviders(gatewayUrl: string, apiKey: string): Pro
         });
         const payload = await response.json() as ModelsResponse;
         if (!response.ok) {
-            throw new Error(`Failed to discover providers from /v1/models (${response.status}): ${JSON.stringify(payload)}`);
+            throw new Error(`Failed to discover providers from /v1/api/models (${response.status}): ${JSON.stringify(payload)}`);
         }
 
         const models = payload.models ?? [];
         for (const model of models) {
+            const modelEndpoints = Array.isArray(model.endpoints)
+                ? model.endpoints.map((endpoint) => String(endpoint))
+                : [];
+            const modelSupportsText = modelEndpoints.includes("text.generate");
             for (const provider of model.providers ?? []) {
-                if (provider.endpoint !== "text.generate") continue;
+                const providerSupportsText = provider.endpoint
+                    ? provider.endpoint === "text.generate"
+                    : modelSupportsText;
+                if (!providerSupportsText) continue;
                 if (provider.is_active_gateway === false) continue;
                 if (!provider.api_provider_id) continue;
                 providers.add(provider.api_provider_id);
@@ -371,6 +450,43 @@ async function discoverAllTextProviders(gatewayUrl: string, apiKey: string): Pro
         total = typeof payload.total === "number" ? payload.total : models.length;
         offset += limit;
         if (!models.length) break;
+    }
+
+    return [...providers].sort((a, b) => a.localeCompare(b));
+}
+
+async function discoverAllApiProviders(gatewayUrl: string, apiKey: string): Promise<string[]> {
+    const providers = new Set<string>();
+    const baseUrl = resolveGatewayProvidersUrl(gatewayUrl);
+    let offset = 0;
+    const limit = 250;
+    let total = Number.POSITIVE_INFINITY;
+
+    while (offset < total) {
+        const url = new URL(baseUrl);
+        url.searchParams.set("offset", String(offset));
+        url.searchParams.set("limit", String(limit));
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+            },
+        });
+        const payload = await response.json() as ProvidersResponse;
+        if (!response.ok) {
+            throw new Error(`Failed to discover providers from /v1/providers (${response.status}): ${JSON.stringify(payload)}`);
+        }
+
+        const rows = payload.providers ?? [];
+        for (const row of rows) {
+            if (!row.api_provider_id) continue;
+            providers.add(row.api_provider_id);
+        }
+
+        total = typeof payload.total === "number" ? payload.total : rows.length;
+        offset += limit;
+        if (!rows.length) break;
     }
 
     return [...providers].sort((a, b) => a.localeCompare(b));
@@ -437,6 +553,34 @@ async function discoverAllTextProvidersFromSupabase(): Promise<string[]> {
     return [...providers].sort((a, b) => a.localeCompare(b));
 }
 
+async function discoverAllApiProvidersFromSupabase(): Promise<string[]> {
+    const supabaseUrl = normalizeEnvValue(process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL);
+    const supabaseKey = normalizeEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Supabase env vars missing for provider discovery fallback");
+    }
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: { persistSession: false },
+    });
+
+    const providersRes = await supabase
+        .from("data_api_providers")
+        .select("api_provider_id");
+    if (providersRes.error) {
+        throw new Error(providersRes.error.message);
+    }
+
+    const providers = new Set<string>();
+    for (const row of (providersRes.data ?? []) as SupabaseProviderRow[]) {
+        if (!row?.api_provider_id) continue;
+        providers.add(String(row.api_provider_id));
+    }
+
+    return [...providers].sort((a, b) => a.localeCompare(b));
+}
+
 function runVitest(cwd: string, env: NodeJS.ProcessEnv, args: string[]): Promise<number> {
     return new Promise((resolve, reject) => {
         const cleaned = sanitizeEnvForSpawn(env);
@@ -498,18 +642,33 @@ async function main() {
     }
 
     let providers = args.providers;
-    if (!providers.length || args.allProviders) {
-        try {
-            providers = await discoverAllTextProviders(gatewayUrl, apiKey);
-        } catch (error) {
-            console.warn(
-                `[live-provider-tests] /v1/models discovery failed, falling back to Supabase: ${String((error as Error)?.message ?? error)}`
-            );
-            providers = await discoverAllTextProvidersFromSupabase();
+    if (!providers.length || args.allProviders || args.allApiProviders) {
+        if (args.allApiProviders) {
+            try {
+                providers = await discoverAllApiProviders(gatewayUrl, apiKey);
+            } catch (error) {
+                console.warn(
+                    `[live-provider-tests] /v1/providers discovery failed, falling back to Supabase: ${String((error as Error)?.message ?? error)}`
+                );
+                providers = await discoverAllApiProvidersFromSupabase();
+            }
+        } else {
+            try {
+                providers = await discoverAllTextProviders(gatewayUrl, apiKey);
+            } catch (error) {
+                console.warn(
+                    `[live-provider-tests] /v1/api/models discovery failed, falling back to Supabase: ${String((error as Error)?.message ?? error)}`
+                );
+                providers = await discoverAllTextProvidersFromSupabase();
+            }
         }
     }
+    providers = normalizeProviderList(providers);
     if (!providers.length) {
-        throw new Error("No providers resolved. Pass --provider or ensure /v1/models has active text.generate providers.");
+        if (args.allApiProviders) {
+            throw new Error("No providers resolved. Ensure /v1/providers returns providers or pass --provider.");
+        }
+        throw new Error("No providers resolved. Pass --provider or ensure /v1/api/models has active text.generate providers.");
     }
 
     const env: NodeJS.ProcessEnv = {
@@ -518,6 +677,10 @@ async function main() {
         GATEWAY_URL: gatewayUrl,
         GATEWAY_API_KEY: apiKey,
         LIVE_PROVIDERS: providers.join(","),
+        LIVE_ALLOW_TRANSIENT_FAILURES:
+            args.allowTransientFailures ??
+            parseBooleanEnv(process.env.LIVE_ALLOW_TRANSIENT_FAILURES) ??
+            "0",
     };
 
     if (args.scenarios.length) {
@@ -530,9 +693,22 @@ async function main() {
     if (args.includeTuning) env.LIVE_INCLUDE_TUNING = args.includeTuning;
     if (args.requireUsage) env.LIVE_REQUIRE_USAGE = args.requireUsage;
     if (args.requireUsageNonzero) env.LIVE_REQUIRE_USAGE_NONZERO = args.requireUsageNonzero;
-    if (args.allowTransientFailures) env.LIVE_ALLOW_TRANSIENT_FAILURES = args.allowTransientFailures;
+    const reportSlug = args.allApiProviders
+        ? "all-api-providers"
+        : (args.allProviders || providers.length > 4
+            ? "all-providers"
+            : providers.join("-").replace(/[^a-zA-Z0-9_-]+/g, "-"));
+    const reportPath = path.join(
+        apiRoot,
+        "reports",
+        "provider-live",
+        `${reportSlug}-${timestampStamp()}.json`
+    );
+    env.LIVE_RESULTS_PATH = reportPath;
 
     console.log(`[live-provider-tests] providers=${providers.join(",")}`);
+    console.log(`[live-provider-tests] allowTransientFailures=${env.LIVE_ALLOW_TRANSIENT_FAILURES === "1"}`);
+    console.log(`[live-provider-tests] results=${reportPath}`);
     if (args.scenarios.length) {
         console.log(`[live-provider-tests] scenarios=${args.scenarios.join(",")}`);
     }

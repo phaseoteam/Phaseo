@@ -1,94 +1,35 @@
 ---
 title: "Chat completions"
-description: "Call /chat/completions with the Go SDK."
+description: "Call /chat/completions with the Go wrapper."
 ---
 
-**Method**: `client.GenerateText()` (stream with `client.StreamText()`).
+Use the wrapper method:
 
-### Example
+- `client.GenerateText(ctx, req)`
+
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
-    "packages/sdk-go/src/gen"
+  "context"
+  "fmt"
+  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
-
-req := gen.ChatCompletionsRequest{
-    Model: "openai/gpt-4o-mini",
-    Messages: []gen.ChatMessage{
-        gen.ChatMessageUserAsChatMessage(&gen.ChatMessageUser{
-            Role: "user",
-            Content: gen.StringAsMessageContent(&"Write a limerick about lighthouses."),
-        }),
-    },
-    Temperature: &[]float32{0.5}[0],
-}
-
-resp, _, err := client.GenerateText(ctx, req)
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Println(resp.Choices[0].Message.Content)
-```
-
-### Streaming
-```go
-// Note: Streaming is not yet implemented in the Go facade.
-// Use the raw API service for streaming.
-```
-
-### Key parameters
-- `model` (required): Target model id.
-- `messages` (required): Ordered messages with roles `system|user|assistant|tool`; content as strings or parts.
-- Sampling: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
-- Length/penalties: `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
-- Tools: `tools` (definitions), `tool_choice` (auto/none/specific tool), `max_tool_calls` (int), `parallel_tool_calls` (bool).
-- Logprobs: `logprobs` (bool), `top_logprobs` (0–20).
-- Output: `response_format` (json/text), `metadata` (object passthrough), `stream` (bool), `service_tier`.
-- Gateway extras: `usage` (bool to request usage), `meta` (bool to include meta block).
-
-### Returns
-`ChatCompletionsResponse`
-
-```json
-{
-  "id": "chatcmpl-123",
-  "object": "chat.completion",
-  "created": 1677652288,
-  "model": "gpt-3.5-turbo-0125",
-  "choices": [
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.GenerateText(context.Background(), gen.ChatCompletionsRequest{
+  Model: "openai/gpt-5-nano",
+  Messages: []map[string]interface{}{
     {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "Hello there, how may I assist you today?"
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 9,
-    "completion_tokens": 12,
-    "total_tokens": 21
-  }
+      "role": "user",
+      "content": "Write a one-line haiku.",
+    },
+  },
+})
+if err != nil {
+  panic(err)
 }
+
+fmt.Println(resp)
 ```
 
-Or SSE frames when `stream: true`:
-
-```
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
-
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
-
-data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
-
-data: [DONE]
-```
-
+Streaming is not yet exposed as a dedicated helper in the wrapper.

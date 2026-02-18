@@ -1,0 +1,143 @@
+{
+  "key": "novitaai:qwen/qwen3-max:text.generate",
+  "api_provider_id": "novitaai",
+  "provider_slug": "novitaai",
+  "api_model_id": "qwen/qwen3-max",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.845,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32768.0
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.4,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32768.0
+        },
+        {
+          "path": "input_text_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 131072.0
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.11,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 131072.0
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.38,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32768.0
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5.64,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 32768.0
+        },
+        {
+          "path": "input_text_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 2,
+          "value": 131072.0
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 8.45,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_text_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 131072.0
+        }
+      ],
+      "priority": 100
+    }
+  ]
+}

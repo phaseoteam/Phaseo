@@ -19,6 +19,8 @@ interface DetailsTabProps {
   modelId: string
   model: ModelData
   onModelChange: (model: ModelData) => void
+  onDetailsChange?: (details: ModelDetail[]) => void
+  onLinksChange?: (links: ModelLink[]) => void
 }
 
 interface ModelDetail {
@@ -46,7 +48,7 @@ const LINK_PLATFORMS = [
   { value: "other", label: "Other" },
 ]
 
-export default function DetailsTab({ modelId, model, onModelChange }: DetailsTabProps) {
+export default function DetailsTab({ modelId, model, onModelChange, onDetailsChange, onLinksChange }: DetailsTabProps) {
   const [details, setDetails] = useState<ModelDetail[]>([
     { id: "1", detail_name: "parameter_count", detail_value: "" },
     { id: "2", detail_name: "input_context_length", detail_value: "" },
@@ -94,6 +96,14 @@ export default function DetailsTab({ modelId, model, onModelChange }: DetailsTab
     }
     fetchData()
   }, [modelId])
+
+  useEffect(() => {
+    onDetailsChange?.(details)
+  }, [details, onDetailsChange])
+
+  useEffect(() => {
+    onLinksChange?.(links)
+  }, [links, onLinksChange])
 
   const parseTypes = (types: string | null): string[] => {
     if (!types) return []

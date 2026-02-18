@@ -25,11 +25,12 @@ All endpoint paths in this page are relative to that `/v1` base URL.
 ## Authentication
 
 All endpoints require a gateway API key to help mitigate abuse. Supply it as
-an `Authorization: Bearer` header. Keys have the form `aistats_v1_sk_` and
-map back to the teams you manage inside the dashboard.
+an `Authorization: Bearer` header. Keys use the format
+`aistats_v1_sk_<kid>_<secret>` and map back to the teams you manage inside the
+dashboard.
 
 ```http
-Authorization: Bearer aistats_v1_sk_XXXX_example
+Authorization: Bearer aistats_v1_sk_<kid>_<secret>
 ```
 
 If authentication fails you will receive a **401** error response.
@@ -49,7 +50,7 @@ The table below outlines the main endpoints available in the AI Stats Gateway ri
 | `GET /videos/{video_id}/content`, `DELETE /videos/{video_id}` | Fetch completed video bytes or delete a job. |
 | `POST /music/generate`, `GET /music/generate/{music_id}` | Create and poll music generation jobs. |
 | `POST /ocr`, `POST /batches`, `GET /batches/{batch_id}`, `POST /files`, `GET /files`, `GET /files/{file_id}` | OCR, batch, and file operations. |
-| `GET /models`, `GET /providers`, `GET /health`, `GET /generations?id=...` | Control-plane discovery and audit lookup endpoints. |
+| `GET /models`, `GET /providers`, `GET /health`, `GET /generations?id=...`, `GET/POST /management/keys`, `GET/PATCH/DELETE /management/keys/{id}` | Control-plane discovery and management endpoints. |
 
 Use the `endpoints` query parameter on `GET /models` to reproduce the per-surface catalogues (chat, moderations, embeddings, images, video, or audio) without bouncing between separate endpoints.
 
@@ -57,7 +58,6 @@ The following endpoints are documented, but still under active work:
 
 | Endpoint | Description |
 | --- | --- |
-| `POST /management/keys` | Coming Soon. |
 | `GET /endpoints`, `GET /keys`, `POST /keys`, `GET /key` | Coming Soon placeholder endpoints. |
 
 Responses include an optional `usage` and `meta` object with your usage, in both tokens and pricing, broken down into clear lines to
@@ -66,8 +66,8 @@ to support auditing and debugging.
 
 ## Rate limits & billing
 
-We apply apply no rate limits directly on our platform, any rate limits are upstream, applied by the providers themselves,
-we are working to get higher rate limits from the upstream providers to ensure that our users have a smooth experience.
+We apply no rate limits directly on our platform. Any rate limits are upstream, applied by providers themselves.
+We are working to get higher rate limits from upstream providers to ensure that users have a smooth experience.
 
 We apply credit checks prior to all requests made, ensuring that you have a minimum of $1.00 of credit in the team wallet.
 We do this to ensure that users do not accidentally rack up large bills on their accounts. You can top up your team wallet

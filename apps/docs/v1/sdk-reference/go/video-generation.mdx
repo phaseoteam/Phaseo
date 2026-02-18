@@ -1,41 +1,28 @@
 ---
 title: "Video generation"
-description: "Call /video/generation with the Go SDK."
+description: "Use the generated Go client for /videos."
 ---
 
-**Method**: `client.Video.VideoGenerationPost()`.
+The preview Go wrapper does not yet expose video helpers. Use the generated
+client in `src/gen`.
 
-### Example
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
-    "packages/sdk-go/src/gen"
+  "fmt"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
+client := gen.NewClient("https://api.phaseo.app/v1")
+client.Headers["Authorization"] = "Bearer " + apiKey
 
-req := gen.VideoGenerationRequest{
-    Model:  "openai/gpt-video-1",
-    Prompt: "A calm ocean at dusk",
-}
-
-video, _, err := client.Video.VideoGenerationPost(ctx).VideoGenerationRequest(req).Execute()
+job, err := gen.CreateVideo(client, nil, nil, nil, map[string]interface{}{
+  "model": "openai/sora-2",
+  "prompt": "A cinematic sunrise over a mountain lake",
+})
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Generated video:", video.Video[0].Url)
+
+fmt.Println(job)
 ```
-
-### Key parameters
-- `model` (required): Video-capable model id.
-- `prompt` (required): Text description of the video.
-- Optional provider-specific controls (per API spec), e.g., duration, format, or aspect (when supported by the upstream).
-
-### Returns
-`VideoGenerationResponse`
 

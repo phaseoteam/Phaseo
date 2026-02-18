@@ -42,7 +42,7 @@ First, create an OAuth application in the AI Stats dashboard.
 
 ```bash
 curl -X POST https://api.phaseo.app/v1/oauth-clients \
-  -H "Authorization: Bearer aistats_v1_sk_YOUR_API_KEY" \
+  -H "Authorization: Bearer aistats_v1_sk_<kid>_<secret>" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "My App",

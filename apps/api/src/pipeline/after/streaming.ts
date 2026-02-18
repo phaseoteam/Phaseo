@@ -5,6 +5,15 @@
 
 import type { PipelineContext } from "../before/types";
 import type { PriceCard } from "../pricing";
+import {
+	detectStreamProtocol,
+	extractUnifiedStreamEvents,
+	type UnifiedStreamEvent,
+} from "./stream-events";
+import {
+	encodeUnifiedStreamEvent,
+	type StreamProtocol,
+} from "@protocols/stream/encode";
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -35,6 +44,10 @@ type PassthroughWithPricingOpts = {
      */
     onFinalSnapshot?: (snapshot: any) => void;
     /**
+     * Called for each canonical stream event extracted from protocol frames.
+     */
+    onStreamEvent?: (event: UnifiedStreamEvent) => void | Promise<void>;
+    /**
      * Optional Server-Timing value; if present we'll include it.
      */
     timingHeader?: string;
@@ -46,7 +59,7 @@ type PassthroughWithPricingOpts = {
  *  - detecting the final snapshot frame with `usage` to trigger onFinalUsage
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
-    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, timingHeader, ctx, provider } = opts;
+    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
 
     const reader = upstream.body?.getReader();
     const dec = new TextDecoder();
@@ -112,6 +125,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
         let buf = "";
         let sawFinalUsage = false;
+        let lastSeenUsage: any = null;
 
         try {
             while (true) {
@@ -163,43 +177,106 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         }
                     }
 
-                    const usageCandidate = json?.usage ?? json?.response?.usage ?? null;
-                    const isFinalSnapshot = !sawFinalUsage && (
-                        json?.object === "chat.completion" ||
-                        json?.object === "response" ||
-                        usageCandidate
+                    const events = extractUnifiedStreamEvents({
+                        protocol: ctx.protocol,
+                        eventName,
+                        frame: json,
+                    });
+                    const detectedProtocol = detectStreamProtocol({
+                        protocol: undefined,
+                        eventName,
+                        frame: json,
+                    });
+                    const targetProtocol: StreamProtocol | null =
+                        ctx.protocol === "openai.chat.completions" ||
+                        ctx.protocol === "openai.responses" ||
+                        ctx.protocol === "anthropic.messages"
+                            ? ctx.protocol
+                            : null;
+                    if (onStreamEvent && events.length > 0) {
+                        for (const event of events) {
+                            try {
+                                await onStreamEvent(event);
+                            } catch {
+                                // Never let event consumer errors break stream forwarding.
+                            }
+                        }
+                    }
+
+                    const usageFromEvents =
+                        events
+                            .slice()
+                            .reverse()
+                            .find((event) => event.type === "usage")?.usage ?? null;
+                    if (usageFromEvents) {
+                        lastSeenUsage = usageFromEvents;
+                    }
+
+                    const finalSnapshotFromEvents =
+                        events.find((event) => event.type === "snapshot" && event.isFinal)
+                            ?.payload ?? null;
+                    const terminalByEvents = events.some(
+                        (event) =>
+                            event.type === "stop" ||
+                            (event.type === "snapshot" && event.isFinal),
                     );
+                    const usageCandidate = usageFromEvents ?? json?.usage ?? json?.response?.usage ?? null;
+
+                    const fallbackTerminal =
+                        !terminalByEvents &&
+                        !sawFinalUsage &&
+                        (json?.object === "chat.completion" || json?.object === "response");
+
+                    const isFinalSnapshot = !sawFinalUsage && (terminalByEvents || fallbackTerminal);
 
                     if (isFinalSnapshot) {
                         sawFinalUsage = true;
-            if (typeof ctx.meta.generation_ms !== "number") {
-                if (typeof ctx.meta.upstreamStartMs === "number") {
-                    ctx.meta.generation_ms = Math.round(Date.now() - ctx.meta.upstreamStartMs);
-                } else if (firstFrameAt !== null) {
-                    ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
-                }
-            }
+                        if (typeof ctx.meta.generation_ms !== "number") {
+                            if (typeof ctx.meta.upstreamStartMs === "number") {
+                                ctx.meta.generation_ms = Math.round(Date.now() - ctx.meta.upstreamStartMs);
+                            } else if (firstFrameAt !== null) {
+                                ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
+                            }
+                        }
                     }
 
-                    // Allow caller to enrich the frame (gateway id/provider/nativeResponseId)
-                    if (rewriteFrame) {
-                        try { json = rewriteFrame(json) ?? json; } catch { }
-                    }
+                    const shouldReencode =
+                        Boolean(targetProtocol) &&
+                        Boolean(detectedProtocol) &&
+                        targetProtocol !== detectedProtocol &&
+                        events.length > 0;
+
+                    const outboundFrames: Array<{ eventName?: string | null; frame: any }> = shouldReencode
+                        ? events
+                            .map((event) =>
+                                encodeUnifiedStreamEvent(targetProtocol as StreamProtocol, event, {
+                                    requestId: ctx.requestId,
+                                    model: ctx.model,
+                                }),
+                            )
+                            .filter((entry): entry is { eventName?: string | null; frame: Record<string, any> } => Boolean(entry))
+                        : [{ eventName, frame: json }];
 
                     // Detect final snapshot to extract usage for billing   
                     if (isFinalSnapshot) {
                         if (onFinalSnapshot) {
-                            try { onFinalSnapshot(json); } catch { }
+                            try { onFinalSnapshot(finalSnapshotFromEvents ?? json); } catch { }
                         }
-                        await finalizeUsage(usageCandidate, "complete");    
+                        await finalizeUsage(usageCandidate ?? lastSeenUsage, "complete");    
                     }
 
-                    await writeJson(json, eventName);
+                    for (const outbound of outboundFrames) {
+                        let frameOut: any = outbound.frame;
+                        if (rewriteFrame) {
+                            try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }
+                        }
+                        await writeJson(frameOut, outbound.eventName ?? null);
+                    }
                 }
             }
         } finally {
             if (!sawFinalUsage) {
-                await finalizeUsage(null, "aborted");
+                await finalizeUsage(lastSeenUsage, "aborted");
             }
             if (!downstreamClosed) {
                 try { await writer.close(); } catch { }

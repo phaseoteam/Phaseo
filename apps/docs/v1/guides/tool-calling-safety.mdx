@@ -1,0 +1,46 @@
+---
+title: "Tool Calling Safety and Validation"
+description: "Validate tool arguments, harden execution, and avoid unsafe model actions."
+---
+
+Treat model-generated tool arguments as untrusted input.
+
+## Safety checklist
+
+- Keep tool schemas minimal and explicit.
+- Validate parsed arguments before execution.
+- Allowlist tool names; reject unknown tools.
+- Add timeouts and retries for external calls.
+- Log call id, tool name, and validation failures.
+
+## Request validation example (TypeScript + Zod)
+
+```typescript
+import { z } from "zod";
+
+const WeatherArgs = z.object({
+  city: z.string().min(1),
+});
+
+function executeToolCall(name: string, rawArgs: string) {
+  if (name !== "get_weather") {
+    throw new Error(`Unsupported tool: ${name}`);
+  }
+
+  const parsed = WeatherArgs.parse(JSON.parse(rawArgs));
+  return getWeather(parsed.city);
+}
+```
+
+## Failure strategy
+
+If validation fails:
+
+1. Do not execute the tool.
+2. Return a controlled error payload into the next model turn.
+3. Ask the model to retry with corrected arguments.
+
+## Streaming note
+
+For now, keep tool-calling requests non-streaming (`stream: false`) to satisfy gateway request validation.
+

@@ -17,9 +17,17 @@ function resolveElevenLabsModelSlug(requestedModel: string, providerModelSlug?: 
 	return tail.replace(/-/g, "_");
 }
 
-function resolveOutputFormat(format?: AudioSpeechRequest["format"]): string | undefined {
-	if (format === "mp3") return "mp3_44100_128";
-	if (format === "wav") return "pcm_44100";
+function resolveOutputFormat(
+	responseFormat?: AudioSpeechRequest["response_format"],
+	format?: AudioSpeechRequest["format"],
+	explicitOutputFormat?: string,
+): string | undefined {
+	const explicit = explicitOutputFormat?.trim();
+	if (explicit) return explicit;
+
+	const target = responseFormat ?? format;
+	if (target === "mp3") return "mp3_44100_128";
+	if (target === "wav" || target === "pcm") return "pcm_44100";
 	return undefined;
 }
 
@@ -48,6 +56,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	const typedPayload = adapterPayload as AudioSpeechRequest;
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = String(bindings.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");
+	const elevenlabsParams = (typedPayload.config?.elevenlabs ?? {}) as Record<string, any>;
 
 	const voiceId = (typedPayload.voice ?? "").trim();
 	if (!voiceId) {
@@ -67,20 +76,64 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	}
 
 	const modelId = resolveElevenLabsModelSlug(typedPayload.model, args.providerModelSlug);
-	const outputFormat = resolveOutputFormat(typedPayload.format);
-	const query = outputFormat ? `?output_format=${encodeURIComponent(outputFormat)}` : "";
+	const outputFormat = resolveOutputFormat(
+		typedPayload.response_format,
+		typedPayload.format,
+		typeof elevenlabsParams.output_format === "string" ? elevenlabsParams.output_format : undefined,
+	);
+	const queryParams = new URLSearchParams();
+	if (outputFormat) {
+		queryParams.set("output_format", outputFormat);
+	}
+	if (typeof elevenlabsParams.enable_logging === "boolean") {
+		queryParams.set("enable_logging", elevenlabsParams.enable_logging ? "true" : "false");
+	}
+	const query = queryParams.toString();
 
-	const res = await fetch(`${baseUrl}/v1/text-to-speech/${encodeURIComponent(voiceId)}${query}`, {
+	const requestBody: Record<string, any> = {
+		text: typedPayload.input,
+		model_id: modelId,
+	};
+	if (typeof elevenlabsParams.language_code === "string" && elevenlabsParams.language_code.trim()) {
+		requestBody.language_code = elevenlabsParams.language_code.trim();
+	}
+	const voiceSettings =
+		elevenlabsParams.voice_settings && typeof elevenlabsParams.voice_settings === "object"
+			? { ...elevenlabsParams.voice_settings }
+			: undefined;
+	if (
+		typeof typedPayload.speed === "number" &&
+		Number.isFinite(typedPayload.speed) &&
+		typedPayload.speed > 0
+	) {
+		const settings = voiceSettings ?? {};
+		if (settings.speed == null) {
+			settings.speed = typedPayload.speed;
+		}
+		if (Object.keys(settings).length > 0) {
+			requestBody.voice_settings = settings;
+		}
+	} else if (voiceSettings && Object.keys(voiceSettings).length > 0) {
+		requestBody.voice_settings = voiceSettings;
+	}
+	if (typeof elevenlabsParams.seed === "number" && Number.isInteger(elevenlabsParams.seed)) {
+		requestBody.seed = elevenlabsParams.seed;
+	}
+	if (Array.isArray(elevenlabsParams.pronunciation_dictionary_locators)) {
+		requestBody.pronunciation_dictionary_locators = elevenlabsParams.pronunciation_dictionary_locators;
+	}
+
+	const res = await fetch(
+		`${baseUrl}/v1/text-to-speech/${encodeURIComponent(voiceId)}${query ? `?${query}` : ""}`,
+		{
 		method: "POST",
 		headers: {
 			"xi-api-key": keyInfo.key,
 			"Content-Type": "application/json",
 		},
-		body: JSON.stringify({
-			text: typedPayload.input,
-			model_id: modelId,
-		}),
-	});
+		body: JSON.stringify(requestBody),
+	},
+	);
 
 	const bill = {
 		cost_cents: 0,

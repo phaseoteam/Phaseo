@@ -1,0 +1,33 @@
+{
+  "key": "novitaai:qwen/qwen2.5-7b:text.generate",
+  "api_provider_id": "novitaai",
+  "provider_slug": "novitaai",
+  "api_model_id": "qwen/qwen2.5-7b",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_video_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.07,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

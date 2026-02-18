@@ -10,6 +10,10 @@ import { auditFailure } from "./audit";
 import { Timer } from "./telemetry/timer";
 import type { PipelineTiming } from "./execute";
 import { resolvePipeline } from "./registry";
+import {
+	buildPipelineExecutionErrorResponse,
+	logPipelineExecutionError,
+} from "./error-response";
 
 export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) {
     const { endpoint, schema } = opts;
@@ -49,15 +53,12 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             const runner = resolvePipeline(endpoint);
             return runner({ pre, req, endpoint, timing });
         } catch (err) {
-            console.error("IR pipeline error:", err);
+            logPipelineExecutionError("entrypoint", err);
             const header = timing.timer.header();
             pre.ctx.timing = timing.timer.snapshot();
             return await handleError({
                 stage: "execute",
-                res: new Response(JSON.stringify({ error: "IR pipeline error", message: String(err) }), {
-                    status: 500,
-                    headers: { "Content-Type": "application/json" },
-                }),
+                res: buildPipelineExecutionErrorResponse(err, pre.ctx),
                 endpoint,
                 ctx: pre.ctx,
                 timingHeader: header || undefined,

@@ -6,6 +6,7 @@ import type { Endpoint } from "@core/types";
 import type { ParamRoutingDiagnostics, ProviderCandidate } from "./types";
 import { err } from "./http";
 import { providerSupportsParam, extractRequestedParams, getUnknownTopLevelParams } from "./paramCapabilities";
+import { isAlwaysSupportedParam } from "./textParamPolicy";
 import { validateProviderDocsCompliance } from "./providerDocsValidation";
 
 type ValidationResult =
@@ -101,6 +102,45 @@ function pushFilteringStage(
 	});
 }
 
+function preferProvidersByRequestedParams(args: {
+	providers: ProviderCandidate[];
+	requestedParams: string[];
+	supportMap: Record<string, ProviderSupportInfo[]>;
+}): ProviderCandidate[] {
+	if (args.providers.length <= 1 || args.requestedParams.length === 0) {
+		return args.providers;
+	}
+
+	const unsupportedCountByProvider = new Map<string, number>();
+	for (const provider of args.providers) {
+		let unsupported = 0;
+		for (const param of args.requestedParams) {
+			const rows = args.supportMap[param] ?? [];
+			const support = rows.find((row) => row.providerId === provider.providerId);
+			if (support && !support.supported) unsupported += 1;
+		}
+		unsupportedCountByProvider.set(provider.providerId, unsupported);
+	}
+
+	let minUnsupported = Number.POSITIVE_INFINITY;
+	for (const count of unsupportedCountByProvider.values()) {
+		if (count < minUnsupported) minUnsupported = count;
+	}
+	if (!Number.isFinite(minUnsupported)) return args.providers;
+
+	// Routing fallback rule: if nobody supports any requested params, keep the full pool.
+	if (minUnsupported >= args.requestedParams.length) {
+		return args.providers;
+	}
+
+	const preferred = args.providers.filter(
+		(provider) =>
+			(unsupportedCountByProvider.get(provider.providerId) ?? Number.POSITIVE_INFINITY) ===
+			minUnsupported,
+	);
+	return preferred.length > 0 ? preferred : args.providers;
+}
+
 /**
  * Gets the max_tokens value from the request body, checking both field names
  */
@@ -155,19 +195,13 @@ function validateParameterSupport(args: {
 		};
 	}
 
-	const isAlwaysSupported = (param: string): boolean =>
-		(args.endpoint === "messages" && param === "max_tokens") ||
-		// `modalities` is enforced by modality-aware routing in execute stage
-		// using provider input/output modality metadata, not per-param capability keys.
-		param === "modalities";
-
 	// Build support map for each parameter
 	const supportMap: Record<string, ProviderSupportInfo[]> = {};
 	for (const param of requested) {
 		supportMap[param] = args.providers.map((provider) => ({
 			providerId: provider.providerId,
 			supported:
-				isAlwaysSupported(param) ||
+				isAlwaysSupportedParam(args.endpoint, param) ||
 				providerSupportsParam(provider, param, { assumeSupportedOnMissingConfig: false }),
 		}));
 	}
@@ -289,6 +323,18 @@ export function validateCapabilities(args: {
 	if ("response" in paramResult) return { ok: false, response: paramResult.response };
 	pushFilteringStage(filteringStages, "param_support", initialProviders, paramResult.providers);
 
+	const preferredProviders = preferProvidersByRequestedParams({
+		providers: paramResult.providers,
+		requestedParams: paramResult.requestedParams,
+		supportMap: paramResult.supportMap,
+	});
+	pushFilteringStage(
+		filteringStages,
+		"param_preference",
+		paramResult.providers,
+		preferredProviders,
+	);
+
 	// Step 1.5: Provider docs validation (hard constraints from provider API docs)
 	const docsResult = validateProviderDocsCompliance({
 		endpoint: args.endpoint,
@@ -296,11 +342,11 @@ export function validateCapabilities(args: {
 		requestId: args.requestId,
 		teamId: args.teamId,
 		model: args.model,
-		providers: paramResult.providers,
+		providers: preferredProviders,
 		requestedParams: paramResult.requestedParams,
 	});
 	if ("response" in docsResult) return { ok: false, response: docsResult.response };
-	pushFilteringStage(filteringStages, "provider_docs", paramResult.providers, docsResult.providers);
+	pushFilteringStage(filteringStages, "provider_docs", preferredProviders, docsResult.providers);
 
 	// Step 2: Response format validation
 	const formatResult = validateResponseFormat({

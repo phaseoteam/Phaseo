@@ -4,12 +4,20 @@
 
 import type { IRChatRequest } from "@core/ir";
 import { handleError } from "@core/error-handler";
-import { detectProtocol } from "@protocols/detect";
+import { detectTextProtocol } from "@protocols/detect";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
 import { finalizeRequest } from "../after";
 import { auditFailure } from "../audit";
 import type { PipelineRunnerArgs } from "./types";
+import {
+	buildPipelineExecutionErrorResponse,
+	logPipelineExecutionError,
+} from "../error-response";
+import {
+	buildTextIRContractErrorResponse,
+	validateTextIRContract,
+} from "../text-ir-contract";
 
 export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise<Response> {
 	const { pre, req, endpoint, timing } = args;
@@ -18,7 +26,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		// Protocol detection
 		timing.timer.mark("protocol_detect");
 		const requestPath = new URL(req.url).pathname;
-		const protocol = detectProtocol(endpoint, requestPath);
+		const protocol = detectTextProtocol(endpoint, requestPath);
 		(pre.ctx as any).protocol = protocol; // Store for observability
 		timing.timer.end("protocol_detect");
 
@@ -27,6 +35,22 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		const ir: IRChatRequest = decodeProtocol(protocol, pre.ctx.body);
 		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
+
+		// Enforce canonical IR invariants before provider execution.
+		const irIssues = validateTextIRContract(ir);
+		if (irIssues.length > 0) {
+			const header = timing.timer.header();
+			pre.ctx.timing = timing.timer.snapshot();
+			return await handleError({
+				stage: "execute",
+				res: buildTextIRContractErrorResponse(irIssues, pre.ctx),
+				endpoint,
+				ctx: pre.ctx,
+				timingHeader: header || undefined,
+				auditFailure,
+				req,
+			});
+		}
 
 		// Execute with IR
 		timing.timer.mark("execute_start");
@@ -71,15 +95,12 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			timingHeader: header || undefined,
 		});
 	} catch (err) {
-		console.error("IR pipeline error:", err);
+		logPipelineExecutionError("text-generate", err);
 		const header = timing.timer.header();
 		pre.ctx.timing = timing.timer.snapshot();
 		return await handleError({
 			stage: "execute",
-			res: new Response(JSON.stringify({ error: "IR pipeline error", message: String(err) }), {
-				status: 500,
-				headers: { "Content-Type": "application/json" },
-			}),
+			res: buildPipelineExecutionErrorResponse(err, pre.ctx),
 			endpoint,
 			ctx: pre.ctx,
 			timingHeader: header || undefined,

@@ -15,6 +15,12 @@ import type {
 import type { ResponsesRequest } from "@core/schemas";
 import { decodeOpenAIChatRequest } from "../openai-chat/decode";
 import { normalizeOpenAIContent } from "../shared/normalizeContent";
+import {
+	normalizeImageConfig,
+	normalizeOpenAIToolChoice,
+	normalizeResponseFormat,
+	resolveServiceTierFromSpeedAndTier,
+} from "../shared/text-normalizers";
 
 /**
  * Decode OpenAI Responses request to IR format
@@ -172,23 +178,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	}));
 
 	// Transform tool choice
-	let toolChoice: IRChatRequest["toolChoice"] = undefined;
-	if (req.tool_choice) {
-		if (typeof req.tool_choice === "string") {
-			if (req.tool_choice === "auto") toolChoice = "auto";
-			else if (req.tool_choice === "required" || req.tool_choice === "any") toolChoice = "required";
-			else if (req.tool_choice === "none") toolChoice = "none";
-		} else if (typeof req.tool_choice === "object") {
-			if ((req.tool_choice as any).name) {
-				toolChoice = { name: (req.tool_choice as any).name };
-			} else if (
-				(req.tool_choice as any).type === "function" &&
-				(req.tool_choice as any).function?.name
-			) {
-				toolChoice = { name: (req.tool_choice as any).function.name };
-			}
-		}
-	}
+	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice);
 
 	// Transform reasoning
 	let reasoning: IRReasoning | undefined = undefined;
@@ -223,7 +213,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		reasoning,
 
 		// Response format
-		responseFormat: normalizeResponsesFormat((req as any).response_format ?? (req as any).text?.format),
+		responseFormat: normalizeResponseFormat((req as any).response_format ?? (req as any).text?.format),
 
 		// Advanced parameters
 		frequencyPenalty: (req as any).frequency_penalty,
@@ -242,7 +232,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		metadata,
 		background: (req as any).background,
 		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
-		serviceTier: resolveRequestedServiceTier({
+		serviceTier: resolveServiceTierFromSpeedAndTier({
 			service_tier: (req as any).service_tier,
 			speed: (req as any).speed,
 		}),
@@ -250,64 +240,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		promptCacheKey: (req as any).prompt_cache_key,
 		safetyIdentifier: (req as any).safety_identifier,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
-		imageConfig: (req as any).image_config
-			? {
-				aspectRatio: (req as any).image_config.aspect_ratio,
-				imageSize: (req as any).image_config.image_size,
-				fontInputs: Array.isArray((req as any).image_config.font_inputs)
-					? (req as any).image_config.font_inputs.map((entry: any) => ({
-						fontUrl: entry?.font_url,
-						text: entry?.text,
-					}))
-					: undefined,
-				superResolutionReferences: (req as any).image_config.super_resolution_references,
-			}
-			: undefined,
+		imageConfig: normalizeImageConfig((req as any).image_config),
 	};
-}
-
-function normalizeResponsesFormat(format: any): IRChatRequest["responseFormat"] {
-	if (!format) return undefined;
-
-	if (typeof format === "string") {
-		if (format === "json_object" || format === "json") {
-			return { type: "json_object" };
-		}
-		return { type: "text" };
-	}
-
-	if (typeof format === "object") {
-		if (format.type === "json_object" || format.type === "json") {
-			return {
-				type: "json_object",
-				schema: format.schema,
-			};
-		}
-
-		if (format.type === "json_schema") {
-			return {
-				type: "json_schema",
-				schema: format.schema || format.json_schema?.schema || format.json_schema?.schema_,
-				name: format.name || format.json_schema?.name,
-				strict: format.strict ?? format.json_schema?.strict,
-			};
-		}
-
-		return { type: "text" };
-	}
-
-	return undefined;
-}
-
-function resolveRequestedServiceTier(input: {
-	service_tier?: unknown;
-	speed?: unknown;
-}): string | undefined {
-	const speed = typeof input.speed === "string" ? input.speed.toLowerCase() : undefined;
-	if (speed === "fast") return "priority";
-	if (typeof input.service_tier === "string" && input.service_tier.length > 0) {
-		return input.service_tier;
-	}
-	return undefined;
 }
 

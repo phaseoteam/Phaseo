@@ -1,0 +1,15 @@
+[
+  {
+    "api_model_id": null,
+    "provider_api_model_id": "atlascloud",
+    "provider_model_slug": "meituan-longcat/LongCat-Flash-Chat",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  }
+]

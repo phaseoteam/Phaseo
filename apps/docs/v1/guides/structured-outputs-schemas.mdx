@@ -1,0 +1,61 @@
+---
+title: "Structured Output Schemas"
+description: "How to design practical JSON schemas for model output."
+---
+
+Good schema design matters more than model choice for reliable structured outputs.
+
+## Start simple
+
+- Prefer flat objects over deeply nested structures.
+- Use `required` for every field you need.
+- Set `additionalProperties: false` when you need strict shape control.
+
+## Request
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Return a purchase summary for order 42." }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "purchase_summary",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "total_usd": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid", "failed"] }
+        },
+        "required": ["order_id", "total_usd", "status"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+## Response
+
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "content": "{\"order_id\":\"42\",\"total_usd\":19.99,\"status\":\"paid\"}"
+      }
+    }
+  ]
+}
+```
+
+## Common mistakes
+
+- Optional fields that should be required.
+- Overly broad string fields instead of enum constraints.
+- Schema drift between docs and server-side validator.
+

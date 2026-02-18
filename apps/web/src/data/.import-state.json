@@ -9881,6 +9881,15 @@
         "organisation_id": "anthropic",
         "previous_model_id": "anthropic/claude-sonnet-4-5-2025-09-29"
       }
+    },
+    "src/data/pricing/anthropic/anthropic-claude-sonnet-4.6/text.generate/pricing.json": {
+      "hash": "2a62312546b1f534b8e8221b815e5022",
+      "meta": {
+        "api_provider_id": "anthropic",
+        "capability_id": "text.generate",
+        "model_id": "anthropic/claude-sonnet-4.6",
+        "model_key": "anthropic:anthropic/claude-sonnet-4.6:text.generate"
+      }
     }
   }
 }

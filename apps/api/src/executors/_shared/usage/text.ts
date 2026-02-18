@@ -2,6 +2,12 @@
 // Why: Providers return different token key names; pricing expects stable meters.
 // How: Coerces common usage field variants into canonical meter keys.
 
+import {
+	pickFirstFiniteNumber,
+	resolveCanonicalTokenUsage,
+	resolveRequestCountUsage,
+} from "@core/usage-normalization";
+
 function pickNumber(source: any, path: string): number | undefined {
 	if (!source || typeof source !== "object") return undefined;
 	const parts = path.split(".");
@@ -14,36 +20,17 @@ function pickNumber(source: any, path: string): number | undefined {
 }
 
 function pickFirstNumber(source: any, paths: string[]): number | undefined {
-	for (const path of paths) {
-		const value = pickNumber(source, path);
-		if (typeof value === "number" && Number.isFinite(value)) return value;
-	}
-	return undefined;
+	return pickFirstFiniteNumber(source, paths);
 }
 
 export function normalizeTextUsageForPricing(usageRaw: any): Record<string, number> | undefined {
 	if (!usageRaw || typeof usageRaw !== "object") return undefined;
 
-	const inputTokens = pickFirstNumber(usageRaw, [
-		"input_tokens",
-		"prompt_tokens",
-		"inputTokens",
-		"promptTokenCount",
-	]);
-	const outputTokens = pickFirstNumber(usageRaw, [
-		"output_tokens",
-		"completion_tokens",
-		"outputTokens",
-		"candidatesTokenCount",
-	]);
-	const totalTokens = pickFirstNumber(usageRaw, [
-		"total_tokens",
-		"totalTokens",
-		"totalTokenCount",
-	]) ?? ((inputTokens ?? 0) + (outputTokens ?? 0));
+	const tokenUsage = resolveCanonicalTokenUsage(usageRaw);
 
 	const cachedReadTokens = pickFirstNumber(usageRaw, [
 		"cached_read_text_tokens",
+		"cache_read_input_tokens",
 		"cachedInputTokens",
 		"cachedContentTokenCount",
 		"input_tokens_details.cached_tokens",
@@ -51,6 +38,7 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 	]);
 	const cachedWriteTokens = pickFirstNumber(usageRaw, [
 		"cached_write_text_tokens",
+		"cache_creation_input_tokens",
 		"_ext.cachedWriteTokens",
 		"output_tokens_details.cached_tokens",
 		"completion_tokens_details.cached_tokens",
@@ -94,18 +82,14 @@ export function normalizeTextUsageForPricing(usageRaw: any): Record<string, numb
 		"_ext.outputVideoTokens",
 		"output_tokens_details.output_videos",
 	]);
-	const requests = pickFirstNumber(usageRaw, [
-		"requests",
-		"request_count",
-		"_ext.requests",
-	]);
+	const requests = resolveRequestCountUsage(usageRaw);
 
 	const meters: Record<string, number> = {
-		input_tokens: inputTokens ?? 0,
-		input_text_tokens: inputTokens ?? 0,
-		output_tokens: outputTokens ?? 0,
-		output_text_tokens: outputTokens ?? 0,
-		total_tokens: totalTokens ?? 0,
+		input_tokens: tokenUsage.inputTokens,
+		input_text_tokens: tokenUsage.inputTokens,
+		output_tokens: tokenUsage.outputTokens,
+		output_text_tokens: tokenUsage.outputTokens,
+		total_tokens: tokenUsage.totalTokens,
 	};
 
 	if (typeof cachedReadTokens === "number") meters.cached_read_text_tokens = cachedReadTokens;

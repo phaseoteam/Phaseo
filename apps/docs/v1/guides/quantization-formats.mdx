@@ -1,0 +1,43 @@
+---
+title: "Quantization Formats"
+description: "BF16, FP16, FP8, FP4, INT8, INT4 and what each format means in practice."
+---
+
+This guide explains common precision formats you will see in model variants and inference runtimes.
+
+## Quick reference
+
+| Format | Typical usage | Main benefit | Main risk |
+| --- | --- | --- | --- |
+| `FP32` | Baseline/full precision | Maximum numerical stability | Highest memory and compute cost |
+| `BF16` | Training + high-quality inference | Strong quality with better efficiency vs FP32 | Still heavier than 8-bit/4-bit |
+| `FP16` | Common inference/training paths | Good speed and memory reduction | Lower dynamic range than BF16 |
+| `FP8` | Throughput-focused inference/training | Large speed/memory gains | Noticeable quality regressions on difficult prompts |
+| `FP4` | Aggressive efficiency modes | Very high density and low cost | Higher output degradation risk |
+| `INT8` | Widely supported inference quantization | Strong efficiency with moderate quality impact | Calibration/sensitivity issues for some models |
+| `INT4` | Cost-sensitive deployment | Very low memory and high throughput | Bigger quality and robustness tradeoffs |
+
+## BF16 vs FP16
+
+- `BF16` keeps a larger exponent range, which helps stability.
+- `FP16` is still common and often fast, but can be less stable for some workloads.
+- For quality-critical production paths, `BF16` is often the safer default when available.
+
+## FP8 and FP4
+
+- `FP8` usually gives a good efficiency jump while keeping usable quality for many tasks.
+- `FP4` pushes efficiency further, but degradation is more likely (especially nuanced reasoning, long contexts, and strict structured outputs).
+
+## Integer formats (INT8 / INT4)
+
+- Usually optimized for inference throughput and memory.
+- Quality depends heavily on quantization method, calibration, and model architecture.
+- `INT8` is generally easier to deploy safely than `INT4`.
+
+## Reading model labels
+
+You may see labels like:
+
+- `bf16`, `fp16`, `fp8`, `int8`, `q4`, `4bit`, `8bit`
+
+Naming is not fully standardized across providers. Always verify exact variant details in the model/provider documentation.

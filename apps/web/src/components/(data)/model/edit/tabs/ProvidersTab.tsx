@@ -25,6 +25,7 @@ interface ProviderModel {
   is_active_gateway: boolean
   input_modalities: string | null
   output_modalities: string | null
+  quantization_scheme: string | null
   effective_from: string | null
   effective_to: string | null
   provider_name?: string
@@ -41,12 +42,14 @@ interface ProvidersTabProps {
   model: ModelData
   onModelChange: (model: ModelData) => void
   providers: Array<{ id: string; name: string }>
+  onProviderModelsChange?: (providerModels: ProviderModel[]) => void
 }
 
-export default function ProvidersTab({ modelId, model, onModelChange, providers }: ProvidersTabProps) {
+export default function ProvidersTab({ modelId, model, onModelChange, providers, onProviderModelsChange }: ProvidersTabProps) {
   const [providerModels, setProviderModels] = useState<ProviderModel[]>([])
   const [families, setFamilies] = useState<Array<{ id: string; name: string }>>([])
   const [selectedFamily, setSelectedFamily] = useState<string>("")
+  const modalityOptions = ["text", "image", "audio", "video"]
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,6 +87,7 @@ export default function ProvidersTab({ modelId, model, onModelChange, providers 
             is_active_gateway: pm.is_active_gateway,
             input_modalities: pm.input_modalities,
             output_modalities: pm.output_modalities,
+            quantization_scheme: pm.quantization_scheme,
             effective_from: pm.effective_from,
             effective_to: pm.effective_to,
             provider_name: prov?.api_provider_name ?? pm.provider_id,
@@ -95,8 +99,16 @@ export default function ProvidersTab({ modelId, model, onModelChange, providers 
     fetchData()
   }, [modelId])
 
-  const parseTypes = (types: string | null): string[] => {
+  useEffect(() => {
+    onProviderModelsChange?.(providerModels)
+  }, [providerModels, onProviderModelsChange])
+
+  const parseTypes = (types: unknown): string[] => {
     if (!types) return []
+    if (Array.isArray(types)) {
+      return types.map((t) => String(t).trim().toLowerCase()).filter(Boolean)
+    }
+    if (typeof types !== "string") return []
     if (types.startsWith("[")) {
       try {
         const parsed = JSON.parse(types)
@@ -178,6 +190,7 @@ export default function ProvidersTab({ modelId, model, onModelChange, providers 
                 is_active_gateway: false,
                 input_modalities: null,
                 output_modalities: null,
+                quantization_scheme: null,
                 effective_from: null,
                 effective_to: null,
                 provider_name: providers[0]?.name || "",
@@ -222,27 +235,70 @@ export default function ProvidersTab({ modelId, model, onModelChange, providers 
                 />
                 <Label className="text-xs">Gateway</Label>
               </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={pm.input_modalities?.includes("text")}
-                  onCheckedChange={(checked) => {
-                    const modalities = parseTypes(pm.input_modalities)
-                    const newModalities = checked ? [...new Set([...modalities, "text"])] : modalities.filter((m) => m !== "text")
-                    updateProviderModel(pm.id, "input_modalities", newModalities.join(","))
-                  }}
-                />
-                <Label className="text-xs">Text Input</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <Label className="text-xs">Input</Label>
+                {modalityOptions.map((modality) => (
+                  <label key={`${pm.id}-in-${modality}`} className="flex items-center gap-1">
+                    <Checkbox
+                      checked={parseTypes(pm.input_modalities).includes(modality)}
+                      onCheckedChange={(checked) => {
+                        const modalities = parseTypes(pm.input_modalities)
+                        const newModalities = checked === true
+                          ? [...new Set([...modalities, modality])]
+                          : modalities.filter((m) => m !== modality)
+                        updateProviderModel(pm.id, "input_modalities", newModalities.join(","))
+                      }}
+                    />
+                    <span className="text-xs">{modality}</span>
+                  </label>
+                ))}
               </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={pm.output_modalities?.includes("text")}
-                  onCheckedChange={(checked) => {
-                    const modalities = parseTypes(pm.output_modalities)
-                    const newModalities = checked ? [...new Set([...modalities, "text"])] : modalities.filter((m) => m !== "text")
-                    updateProviderModel(pm.id, "output_modalities", newModalities.join(","))
-                  }}
+              <div className="flex flex-wrap items-center gap-2">
+                <Label className="text-xs">Output</Label>
+                {modalityOptions.map((modality) => (
+                  <label key={`${pm.id}-out-${modality}`} className="flex items-center gap-1">
+                    <Checkbox
+                      checked={parseTypes(pm.output_modalities).includes(modality)}
+                      onCheckedChange={(checked) => {
+                        const modalities = parseTypes(pm.output_modalities)
+                        const newModalities = checked === true
+                          ? [...new Set([...modalities, modality])]
+                          : modalities.filter((m) => m !== modality)
+                        updateProviderModel(pm.id, "output_modalities", newModalities.join(","))
+                      }}
+                    />
+                    <span className="text-xs">{modality}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label className="text-xs">Quantization</Label>
+                <Input
+                  value={pm.quantization_scheme || ""}
+                  onChange={(e) => updateProviderModel(pm.id, "quantization_scheme", e.target.value)}
+                  placeholder="e.g., FP16, INT8"
+                  className="h-8 text-xs"
                 />
-                <Label className="text-xs">Text Output</Label>
+              </div>
+              <div>
+                <Label className="text-xs">Effective From</Label>
+                <Input
+                  type="date"
+                  value={pm.effective_from ? pm.effective_from.split("T")[0] : ""}
+                  onChange={(e) => updateProviderModel(pm.id, "effective_from", e.target.value || null)}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Effective To</Label>
+                <Input
+                  type="date"
+                  value={pm.effective_to ? pm.effective_to.split("T")[0] : ""}
+                  onChange={(e) => updateProviderModel(pm.id, "effective_to", e.target.value || null)}
+                  className="h-8 text-xs"
+                />
               </div>
             </div>
           </div>

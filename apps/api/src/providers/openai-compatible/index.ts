@@ -13,7 +13,6 @@ import * as audioSpeech from "../openai/endpoints/audio-speech";
 import * as audioTranscription from "../openai/endpoints/audio-transcription";
 import * as audioTranslation from "../openai/endpoints/audio-translation";
 import * as video from "../openai/endpoints/video";
-import * as batch from "../openai/endpoints/batch";
 import { supportsOpenAICompatResponses } from "./config";
 
 export function createOpenAICompatibleAdapter(providerId: string): ProviderAdapter {
@@ -44,8 +43,6 @@ export function createOpenAICompatibleAdapter(providerId: string): ProviderAdapt
                     return audioTranslation.exec(args);
                 case "video.generation":
                     return video.exec(args);
-                case "batch":
-                    return batch.exec(args);
                 default:
                     throw new Error(`${providerId}: unsupported endpoint ${args.endpoint}`);
             }

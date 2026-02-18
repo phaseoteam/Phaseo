@@ -4,32 +4,10 @@
 
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
-import { withRuntime } from "../../utils";
+import { json, withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
-import { getBindings } from "@/runtime/env";
-
-const BASE_URL = "https://api.openai.com";
-
-async function proxyToOpenAI(req: Request, path: string, method: string) {
-    const key = getBindings().OPENAI_API_KEY;
-    if (!key) {
-        return err("upstream_error", { reason: "openai_key_missing" });
-    }
-
-    const headers = new Headers(req.headers);
-    headers.set("Authorization", `Bearer ${key}`);
-    headers.set("Host", "api.openai.com");
-
-    const upstream = await fetch(`${BASE_URL}${path}`, {
-        method,
-        headers,
-        body: method === "GET" ? undefined : req.body,
-    });
-
-    return upstream;
-}
 
 async function handleUpload(req: Request) {
     const auth = await authenticate(req);
@@ -37,7 +15,11 @@ async function handleUpload(req: Request) {
         const reason = (auth as AuthFailure).reason;
         return err("unauthorised", { reason });
     }
-    return proxyToOpenAI(req, "/v1/files", "POST");
+    return json({
+        status_code: 501,
+        error: "not_implemented",
+        description: "Files endpoint is not implemented yet.",
+    }, 501, { "Cache-Control": "no-store" });
 }
 
 async function handleList(req: Request) {
@@ -46,7 +28,11 @@ async function handleList(req: Request) {
         const reason = (auth as AuthFailure).reason;
         return err("unauthorised", { reason });
     }
-    return proxyToOpenAI(req, "/v1/files", "GET");
+    return json({
+        status_code: 501,
+        error: "not_implemented",
+        description: "Files endpoint is not implemented yet.",
+    }, 501, { "Cache-Control": "no-store" });
 }
 
 async function handleRetrieve(req: Request, id: string) {
@@ -55,7 +41,12 @@ async function handleRetrieve(req: Request, id: string) {
         const reason = (auth as AuthFailure).reason;
         return err("unauthorised", { reason });
     }
-    return proxyToOpenAI(req, `/v1/files/${encodeURIComponent(id)}`, "GET");
+    return json({
+        status_code: 501,
+        error: "not_implemented",
+        description: "Files endpoint is not implemented yet.",
+        file_id: id || null,
+    }, 501, { "Cache-Control": "no-store" });
 }
 
 export const filesRoutes = new Hono<Env>();

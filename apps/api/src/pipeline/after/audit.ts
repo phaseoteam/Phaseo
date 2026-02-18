@@ -389,6 +389,20 @@ export async function handleSuccessAudit(
             requestEnrichment,
             routingContext,
         });
+        await emitGatewayRequestEvent({
+            ctx,
+            result,
+            statusCode,
+            success: true,
+            finishReason,
+            usage: usageWithMultimodal ?? null,
+            pricing: {
+                total_cents: totalCents,
+                total_nanos: totalNanos,
+                currency,
+            },
+            mappedRequest: result.mappedRequest ?? null,
+        });
     } catch (auditErr) {
         console.error("auditSuccess failed", auditErr);
     }

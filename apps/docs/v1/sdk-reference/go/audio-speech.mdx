@@ -1,16 +1,27 @@
 ---
-title: "Audio speech (Preview)"
-description: "Preview SDK usage for Audio speech."
+title: "Audio speech"
+description: "Use the generated Go client for /audio/speech."
 ---
 
-This SDK is in **preview**. Use the generated client for this endpoint.
-
-Suggested call: AudioApi#audioSpeechPost
+The preview Go wrapper does not yet expose an audio-speech helper. Use the generated
+client in `src/gen`.
 
 ```go
-// Instantiate the generated API client for Go
-// Call AudioApi#audioSpeechPost with the request body matching the API reference.
-```
+import (
+  "fmt"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
+)
 
-Parameters and request/response shapes are identical to the REST API. Consult the API reference for the full field list.
+client := gen.NewClient("https://api.phaseo.app/v1")
+client.Headers["Authorization"] = "Bearer " + apiKey
+
+resp, err := gen.CreateSpeech(client, nil, nil, nil, map[string]interface{}{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from AI Stats",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
 

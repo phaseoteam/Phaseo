@@ -8,8 +8,8 @@
     {
       "meter": "input_text_tokens",
       "unit": "token",
-      "unit_size": 1,
-      "price_per_unit": 3e-07,
+      "unit_size": 1000000,
+      "price_per_unit": 0.3,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "standard",
@@ -21,8 +21,8 @@
     {
       "meter": "output_text_tokens",
       "unit": "token",
-      "unit_size": 1,
-      "price_per_unit": 2.4e-06,
+      "unit_size": 1000000,
+      "price_per_unit": 2.4,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "standard",
@@ -34,8 +34,8 @@
     {
       "meter": "cached_read_text_tokens",
       "unit": "token",
-      "unit_size": 1,
-      "price_per_unit": 3e-08,
+      "unit_size": 1000000,
+      "price_per_unit": 0.03,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "standard",
@@ -47,8 +47,8 @@
     {
       "meter": "cached_write_text_tokens",
       "unit": "token",
-      "unit_size": 1,
-      "price_per_unit": 3.75e-07,
+      "unit_size": 1000000,
+      "price_per_unit": 0.375,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "standard",

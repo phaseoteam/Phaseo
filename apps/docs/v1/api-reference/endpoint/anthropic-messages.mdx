@@ -19,5 +19,6 @@ Set `stream: true` to receive server-sent events in Anthropic format (`message_s
 ## Notes
 
 - The gateway honors the Anthropic request shape and supports tool use fields.
+- At current request-validation level, `stream: true` with tools is rejected with `400 invalid_request`. Use non-streaming tool loops for now.
 - The `X-AIStats-Strictness` header controls how unsupported parameters are handled.
 

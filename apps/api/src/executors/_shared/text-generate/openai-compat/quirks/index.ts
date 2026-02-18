@@ -21,6 +21,9 @@ import { fireworksQuirks } from "../providers/fireworks/quirks";
 import { novitaQuirks } from "../providers/novitaai/quirks";
 import { perplexityQuirks } from "../providers/perplexity/quirks";
 import { openAIQuirks } from "../providers/openai/quirks";
+import { basetenQuirks } from "../providers/baseten/quirks";
+import { cohereQuirks } from "../providers/cohere/quirks";
+import { togetherQuirks } from "../providers/together/quirks";
 import { defaultQuirks } from "./default";
 
 /**
@@ -50,6 +53,9 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"novita-ai": novitaQuirks,
 	perplexity: perplexityQuirks,
 	openai: openAIQuirks,
+	baseten: basetenQuirks,
+	cohere: cohereQuirks,
+	together: togetherQuirks,
 	// Note: Google quirks removed - Google now uses native implementation, not OpenAI-compat
 };
 

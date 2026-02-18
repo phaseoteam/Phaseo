@@ -14,7 +14,6 @@ import * as audioTranscription from "./endpoints/audio-transcription";
 import * as audioTranslation from "./endpoints/audio-translation";
 import * as imagesEdits from "./endpoints/images-edits";
 import * as video from "./endpoints/video";
-import * as batch from "./endpoints/batch";
 
 export const OpenAIAdapter: ProviderAdapter = {
     name: "openai",
@@ -30,7 +29,6 @@ export const OpenAIAdapter: ProviderAdapter = {
             case "audio.transcription": return audioTranscription.exec(args);
             case "audio.translations": return audioTranslation.exec(args);
             case "video.generation": return video.exec(args);
-            case "batch": return batch.exec(args);
 
             // Other endpoints to be implemented
 

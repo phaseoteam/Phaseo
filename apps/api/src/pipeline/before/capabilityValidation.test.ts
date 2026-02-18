@@ -68,7 +68,7 @@ describe("validateCapabilities", () => {
 		}
 	});
 
-	it("keeps providers even when only some advertise requested params", () => {
+	it("prefers providers that support more requested params", () => {
 		const result = validateCapabilities({
 			endpoint: "chat.completions",
 			rawBody: {
@@ -94,11 +94,16 @@ describe("validateCapabilities", () => {
 
 		expect(result.ok).toBe(true);
 		if (result.ok) {
-			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai", "anthropic"]);
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
 			expect(result.requestedParams).toEqual(["temperature", "max_tokens"]);
 			expect(result.paramRoutingDiagnostics.providerCountBefore).toBe(2);
-			expect(result.paramRoutingDiagnostics.providerCountAfter).toBe(2);
-			expect(result.paramRoutingDiagnostics.droppedProviders).toEqual([]);
+			expect(result.paramRoutingDiagnostics.providerCountAfter).toBe(1);
+			expect(result.paramRoutingDiagnostics.droppedProviders).toEqual([
+				{
+					providerId: "anthropic",
+					unsupportedParams: ["temperature"],
+				},
+			]);
 		}
 	});
 
@@ -218,7 +223,7 @@ describe("validateCapabilities", () => {
 		}
 	});
 
-	it("accepts image_config without filtering providers by capability metadata", () => {
+	it("prefers providers that explicitly support image_config", () => {
 		const result = validateCapabilities({
 			endpoint: "responses",
 			rawBody: {
@@ -249,7 +254,7 @@ describe("validateCapabilities", () => {
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.requestedParams).toContain("image_config");
-			expect(result.providers.map((p: any) => p.providerId)).toEqual(["google-ai-studio", "openai"]);
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["google-ai-studio"]);
 		}
 	});
 

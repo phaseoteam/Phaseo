@@ -1,18 +1,73 @@
 ---
 title: "Structured Outputs"
-description: "Produce JSON or schema-validated responses from models."
+description: "Return predictable JSON with json_object or json_schema output formats."
 ---
 
-Structured outputs help you get predictable JSON from models. The Gateway passes structured-output settings through to providers that support them.
+Structured outputs let you enforce machine-readable output instead of free-form text.
 
-## Where to use it
+## Endpoint support
 
-Structured outputs are commonly used with `/v1/responses` and `/v1/chat/completions`. Some providers also expose schema enforcement on `/v1/messages`.
+Use structured outputs on:
 
-Check the [API Reference](../api-reference/introduction.mdx) for the supported request fields and response formats.
+- `/v1/chat/completions` with `response_format`
+- `/v1/responses` with `text.format`
+- `/v1/messages` can still return JSON text, but does not use the same `response_format` contract
 
-## Best practices
+## Request
 
-- Keep schemas small and explicit.
-- Validate responses on the server before trusting them.
-- Combine structured outputs with tool calling for reliable workflows.
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## Response
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## Contract notes
+
+- `response_format.type` should be `text`, `json_object`, or `json_schema`.
+- For `json_schema`, include a schema object (`response_format.json_schema.schema` on chat-style payloads, or `text.format.schema` on responses-style payloads).
+- Validate JSON on your server before downstream use.
+
+## Next guides
+
+1. [Structured Output Schemas](./structured-outputs-schemas)
+2. [Validation and Fallback Patterns](./structured-outputs-validation)

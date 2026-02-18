@@ -37,6 +37,8 @@ import { executor as moonshotText } from "./moonshotai/text-generate";
 import { executor as aionLabsText } from "./aion-labs/text-generate";
 import { executor as amazonBedrockText } from "./amazon-bedrock/text-generate";
 import { executor as googleVertexText } from "./google-vertex/text-generate";
+import { executor as deepinfraText } from "./deepinfra/text-generate";
+import { executor as togetherText } from "./together/text-generate";
 
 // Embeddings executors (migrated providers only)
 import { executor as openaiEmbeddings } from "./openai/embeddings";
@@ -153,6 +155,8 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	aionlabs: { "text.generate": aionLabsText },
 	"amazon-bedrock": { "text.generate": amazonBedrockText },
 	"google-vertex": { "text.generate": googleVertexText },
+	deepinfra: { "text.generate": deepinfraText },
+	together: { "text.generate": togetherText },
 	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage },
 };
 

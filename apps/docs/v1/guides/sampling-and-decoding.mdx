@@ -1,0 +1,37 @@
+---
+title: "Sampling and Decoding"
+description: "How decoding strategies and penalties shape model outputs."
+---
+
+Decoding controls how the next token is chosen from model probabilities.
+
+## Common controls
+
+| Control | Purpose | Notes |
+| --- | --- | --- |
+| `temperature` | Global randomness control | Most commonly tuned first |
+| `top_p` | Restricts to cumulative probability mass | Often paired with moderate temperature |
+| `top_k` | Restricts to top-K tokens | Not available on every provider |
+| `frequency_penalty` | Discourages repeated tokens/phrases | Helps reduce repetitive loops |
+| `presence_penalty` | Encourages introducing new tokens/topics | Useful for broader exploration |
+| `repetition_penalty` | Penalizes repeated text patterns (provider/model dependent) | Similar goal, different implementation semantics |
+
+## Typical presets
+
+| Use case | Suggested profile |
+| --- | --- |
+| Deterministic extraction/classification | `temperature` low (`0.0` to `0.2`), narrow sampling |
+| Balanced assistant output | `temperature` medium (`0.3` to `0.7`), `top_p` near `0.9` to `1.0` |
+| Creative generation | Higher `temperature` and broader sampling with tighter evaluation |
+
+## Failure patterns
+
+- Too random: inconsistent facts, unstable structured output.
+- Too deterministic: repetitive or bland completions.
+- Over-penalized: awkward wording and topic drift.
+
+## Practical advice
+
+1. Tune decoding per task, not globally.
+2. Keep extraction/JSON tasks conservative.
+3. For creative tasks, increase randomness gradually and evaluate with human review.

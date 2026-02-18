@@ -7,7 +7,7 @@
   "rules": [
     {
       "meter": "output_video_seconds",
-      "unit": null,
+      "unit": "second",
       "unit_size": 1,
       "price_per_unit": 0.35,
       "currency": "USD",

@@ -1,7 +1,7 @@
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/utils/supabase/client";
-import OrganisationEditDialog from "./OrganisationEditDialog";
+import { createClient } from "@/utils/supabase/server";
+import Link from "next/link";
 
 interface OrganisationEditButtonProps {
   organisationId: string;
@@ -28,5 +28,14 @@ export default async function OrganisationEditButton({
     return null;
   }
 
-  return <OrganisationEditDialog organisationId={organisationId} />;
+  return (
+    <Button variant="outline" size="sm" asChild>
+      <Link
+        href={`/internal/data/organisations/${organisationId}/edit`}
+        aria-label="Edit organisation"
+      >
+        <Pencil className="h-4 w-4" />
+      </Link>
+    </Button>
+  );
 }

@@ -19,18 +19,27 @@ ctx := context.Background()
 ## Chat completions
 
 ```go
-chatResp, err := client.GenerateText(ctx, gen.ChatCompletionsRequest{
+chatReq := gen.ChatCompletionsRequest{
   Model: "openai/gpt-5-nano",
-  Messages: []gen.ChatMessage{{Role: "user", Content: "Hello"}},
-})
+  Messages: []map[string]interface{}{
+    {"role": "user", "content": "Hello"},
+  },
+}
+chatResp, err := client.GenerateText(ctx, chatReq)
 ```
 
 ## Responses
 
 ```go
+input := map[string]interface{}{
+  "role": "user",
+  "content": []map[string]interface{}{
+    {"type": "input_text", "text": "Reply with: go sdk works"},
+  },
+}
 resp, err := client.GenerateResponse(ctx, gen.ResponsesRequest{
   Model: "openai/gpt-5-nano",
-  Input: "Reply with: go sdk works",
+  Input: &input,
 })
 ```
 

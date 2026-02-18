@@ -4,7 +4,7 @@ import { runTextGeneratePipeline } from "./surfaces/text-generate";
 import { runEmbeddingsPipeline } from "./surfaces/embeddings";
 import { runModerationsPipeline } from "./surfaces/moderations";
 import { runVideoGeneratePipeline } from "./surfaces/video-generate";
-import { runAdapterPipeline } from "./surfaces/adapter";
+import { runNotImplementedPipeline } from "./surfaces/not-implemented";
 import { runNonTextPipeline } from "./surfaces/non-text";
 
 describe("resolvePipeline", () => {
@@ -27,7 +27,10 @@ describe("resolvePipeline", () => {
 		expect(resolvePipeline("music.generate")).toBe(runNonTextPipeline);
 	});
 
-	it("keeps adapter surface for endpoints that are still adapter-first", () => {
-		expect(resolvePipeline("batch")).toBe(runAdapterPipeline);
+	it("routes deferred endpoints to not-implemented surface", () => {
+		expect(resolvePipeline("batch")).toBe(runNotImplementedPipeline);
+		expect(resolvePipeline("files.upload")).toBe(runNotImplementedPipeline);
+		expect(resolvePipeline("files.list")).toBe(runNotImplementedPipeline);
+		expect(resolvePipeline("files.retrieve")).toBe(runNotImplementedPipeline);
 	});
 });

@@ -1,64 +1,27 @@
 ---
 title: "Generation lookup"
-description: "Call /generation to retrieve a past generation."
+description: "Use the generated Go client for /generations."
 ---
 
-**Method**: `client.Generations.GenerationGet()`.
+The preview Go wrapper does not yet expose generation-lookup helpers. Use the
+generated client in `src/gen`.
 
-### Example
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
+  "fmt"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
+client := gen.NewClient("https://api.phaseo.app/v1")
+client.Headers["Authorization"] = "Bearer " + apiKey
 
-record, _, err := client.Generations.GenerationGet(ctx).Id("G-01ABC...").Execute()
+record, err := gen.GetGeneration(client, nil, map[string]string{
+  "id": "G-01ABC...",
+}, nil, nil)
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Generation record:", record)
+
+fmt.Println(record)
 ```
-
-### Parameters
-- `id` (string, required): Request id returned by a previous call.
-
-### Returns
-`GatewayGenerationRecord`
-
-```json
-{
-  "request_id": "G-01ABC123",
-  "team_id": "team-123",
-  "app_id": "app-123",
-  "endpoint": "chat/completions",
-  "model_id": "openai/gpt-4o-mini",
-  "provider": "openai",
-  "native_response_id": "chatcmpl-123",
-  "stream": false,
-  "byok": false,
-  "status_code": 200,
-  "success": true,
-  "error_code": null,
-  "error_message": null,
-  "latency_ms": 1500,
-  "generation_ms": 1400,
-  "usage": {
-    "prompt_tokens": 9,
-    "completion_tokens": 9,
-    "total_tokens": 18
-  },
-  "cost_nanos": 1000000,
-  "currency": "USD",
-  "pricing_lines": [],
-  "key_id": "key-123",
-  "throughput": null
-}
-```
-
 

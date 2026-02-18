@@ -1,43 +1,27 @@
 ---
 title: "Audio translations"
-description: "Call /audio/translations with the Go SDK."
+description: "Use the generated Go client for /audio/translations."
 ---
 
-**Method**: `client.Audio.AudioTranslationsPost()`.
+The preview Go wrapper does not yet expose an audio-translation helper. Use
+the generated client in `src/gen`.
 
-### Example
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
-    "packages/sdk-go/src/gen"
+  "fmt"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
+client := gen.NewClient("https://api.phaseo.app/v1")
+client.Headers["Authorization"] = "Bearer " + apiKey
 
-req := gen.AudioTranslationRequest{
-    Model: "openai/gpt-4o-translate",
-    AudioB64: &"data:audio/mp3;base64,...",
-}
-
-resp, _, err := client.Audio.AudioTranslationsPost(ctx).AudioTranslationRequest(req).Execute()
+resp, err := gen.CreateTranslation(client, nil, nil, nil, map[string]interface{}{
+  "model": "openai/whisper-1",
+  "audio_b64": "data:audio/wav;base64,...",
+})
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println(resp.Text)
+fmt.Println(resp)
 ```
-
-### Key parameters
-- `model` (required): Translation-capable model id.
-- `audio_url` or `audio_b64` (required): Audio data to translate.
-- `language`: Language of the input audio.
-- `prompt`: Optional context to guide translation.
-- `temperature` (0–2): Sampling randomness.
-
-### Returns
-`AudioTranscriptionResponse`
 

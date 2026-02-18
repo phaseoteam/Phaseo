@@ -20,7 +20,7 @@
     },
     {
       "meter": "input_video_seconds",
-      "unit": "video",
+      "unit": "second",
       "unit_size": 1,
       "price_per_unit": 0.01,
       "currency": "USD",
@@ -33,7 +33,7 @@
     },
     {
       "meter": "output_video_seconds",
-      "unit": "video",
+      "unit": "second",
       "unit_size": 1,
       "price_per_unit": 0.05,
       "currency": "USD",

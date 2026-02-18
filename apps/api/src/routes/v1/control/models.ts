@@ -81,6 +81,17 @@ type CatalogueModel = {
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
+const IN_FILTER_CHUNK_SIZE = 200;
+
+function chunkArray<T>(items: T[], size: number): T[][] {
+    if (items.length === 0) return [];
+    const chunkSize = Math.max(1, Math.floor(size));
+    const chunks: T[][] = [];
+    for (let i = 0; i < items.length; i += chunkSize) {
+        chunks.push(items.slice(i, i + chunkSize));
+    }
+    return chunks;
+}
 
 function parsePaginationParam(raw: string | null, fallback: number, max: number): number {
     if (!raw) return fallback;
@@ -235,27 +246,38 @@ async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[
         return [];
     }
 
-    const { data: providerRows, error: providerError } = await supabase
-        .from("data_api_provider_models")
-        .select(
-            "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
-        )
-        .in("internal_model_id", modelIds);
-
-    if (providerError) {
-        throw new Error(providerError.message || "Failed to load provider models");
+    const providerRows: ProviderModelRow[] = [];
+    for (const modelIdChunk of chunkArray(modelIds, IN_FILTER_CHUNK_SIZE)) {
+        const { data, error } = await supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_api_model_id, provider_id, api_model_id, internal_model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to"
+            )
+            .in("internal_model_id", modelIdChunk);
+        if (error) {
+            throw new Error(error.message || "Failed to load provider models");
+        }
+        if (data?.length) {
+            providerRows.push(...(data as ProviderModelRow[]));
+        }
     }
 
     const providerModelIds = (providerRows ?? [])
         .map((row) => row.provider_api_model_id)
         .filter((id): id is string => Boolean(id));
-    const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("data_api_provider_model_capabilities")
-        .select("provider_api_model_id, capability_id, params, effective_from, effective_to")
-        .eq("status", "active")
-        .in("provider_api_model_id", providerModelIds);
-    if (capabilityError) {
-        throw new Error(capabilityError.message || "Failed to load provider capabilities");
+    const capabilityRows: CapabilityRow[] = [];
+    for (const providerModelIdChunk of chunkArray(providerModelIds, IN_FILTER_CHUNK_SIZE)) {
+        const { data, error } = await supabase
+            .from("data_api_provider_model_capabilities")
+            .select("provider_api_model_id, capability_id, params")
+            .eq("status", "active")
+            .in("provider_api_model_id", providerModelIdChunk);
+        if (error) {
+            throw new Error(error.message || "Failed to load provider capabilities");
+        }
+        if (data?.length) {
+            capabilityRows.push(...(data as CapabilityRow[]));
+        }
     }
 
     const aliasMap = new Map<string, string[]>();
@@ -263,13 +285,19 @@ async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[
         new Set((providerRows ?? []).map((row) => row.api_model_id).filter(Boolean))
     );
     if (apiModelIds.length) {
-        const { data: aliases, error: aliasError } = await supabase
-            .from("data_api_model_aliases")
-            .select("alias_slug, api_model_id")
-            .eq("is_enabled", true)
-            .in("api_model_id", apiModelIds);
-        if (aliasError) {
-            throw new Error(aliasError.message || "Failed to load model aliases");
+        const aliases: Array<{ alias_slug?: string | null; api_model_id?: string | null }> = [];
+        for (const apiModelIdChunk of chunkArray(apiModelIds, IN_FILTER_CHUNK_SIZE)) {
+            const { data, error } = await supabase
+                .from("data_api_model_aliases")
+                .select("alias_slug, api_model_id")
+                .eq("is_enabled", true)
+                .in("api_model_id", apiModelIdChunk);
+            if (error) {
+                throw new Error(error.message || "Failed to load model aliases");
+            }
+            if (data?.length) {
+                aliases.push(...data);
+            }
         }
         const aliasByApiModel = new Map<string, string[]>();
         for (const alias of aliases ?? []) {
@@ -372,6 +400,9 @@ async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[
                 });
             }
         }
+
+        // API catalogue should only contain models that are currently servable on the gateway.
+        if (!providerEntries.length) continue;
 
         providerEntries.sort((a, b) => {
             const aName = (a.api_provider_name ?? a.api_provider_id).toLowerCase();

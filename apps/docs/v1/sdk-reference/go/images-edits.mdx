@@ -1,47 +1,29 @@
 ---
 title: "Image edits"
-description: "Call /images/edits with the Go SDK."
+description: "Use the generated Go client for /images/edits."
 ---
 
-**Method**: `client.Images.ImagesEditsPost()`.
+The preview Go wrapper does not yet expose image-edit helpers. Use the
+generated client in `src/gen`.
 
-### Example
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
-    "packages/sdk-go/src/gen"
+  "fmt"
+  gen "github.com/AI-Stats/ai-stats-go-sdk-wrapper/src/gen"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
+client := gen.NewClient("https://api.phaseo.app/v1")
+client.Headers["Authorization"] = "Bearer " + apiKey
 
-req := gen.ImagesEditRequest{
-    Model:  "openai/gpt-image-1",
-    Prompt: "Make it sunset",
-    Image:  "data:image/png;base64,...",
-    Mask:   &"data:image/png;base64,...",
-}
-
-edited, _, err := client.Images.ImagesEditsPost(ctx).ImagesEditRequest(req).Execute()
+resp, err := gen.CreateImageEdit(client, nil, nil, nil, map[string]interface{}{
+  "model": "openai/gpt-image-1",
+  "prompt": "Turn this into a watercolor style",
+  "image": "data:image/png;base64,...",
+})
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Edited image:", edited.Data[0].Url)
+
+fmt.Println(resp)
 ```
-
-### Key parameters
-- `model` (required): Image-edit capable model id.
-- `image` (required): Base64 data URL or URL to source image.
-- `prompt`: Optional new instruction for the edit.
-- `mask`: Optional mask (transparent regions edited).
-- `n` (1–10): Number of edited variants.
-- `size`: e.g., `1024x1024`, `1024x1792`, `1792x1024`.
-- `user`: Optional end-user tag.
-
-### Returns
-`ImageGenerationResponse`
 

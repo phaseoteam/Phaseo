@@ -1,0 +1,65 @@
+---
+title: "Choosing a Quantization Strategy"
+description: "A practical framework for selecting BF16/FP8/INT8/INT4 variants by workload."
+---
+
+Use this workflow to choose quantization variants safely.
+
+## Step 1: define your success criteria
+
+Before choosing a quant:
+
+- Set quality thresholds (task accuracy, pass rates, structured output validity).
+- Set latency and cost targets.
+- Define unacceptable failure modes.
+
+## Step 2: pick a high-quality baseline
+
+Start with a stronger baseline (often `BF16` or `FP16`) and measure:
+
+- Output quality
+- Median and tail latency
+- Token/cost profile
+
+This becomes your comparison anchor.
+
+## Step 3: step down gradually
+
+Evaluate progressively lower precision:
+
+1. `FP8` or `INT8`
+2. `FP4` or `INT4` only if needed for cost/throughput
+
+Do not skip directly to the smallest variant unless you already have strong evidence it works for your workload.
+
+## Step 4: evaluate real workloads
+
+Use production-like prompts:
+
+- Long prompts
+- Multi-step reasoning
+- Tool calling
+- Edge cases from support tickets
+
+## Step 5: decide per endpoint/use case
+
+One quantization does not need to fit everything.
+
+Examples:
+
+- Customer support and critical decisioning: higher precision.
+- Large-volume classification/summarization: lower precision can be acceptable.
+
+## Suggested starting points
+
+| Workload type | Good starting quant |
+| --- | --- |
+| Quality-critical reasoning | `BF16` / `FP16` |
+| Balanced cost + quality | `FP8` / `INT8` |
+| High-throughput, cost-sensitive | `INT4` / `FP4` (after validation) |
+
+## Deployment policy
+
+- Keep a fallback model/quantization configured.
+- Monitor quality drift after rollout.
+- Re-test when provider runtime or model revision changes.

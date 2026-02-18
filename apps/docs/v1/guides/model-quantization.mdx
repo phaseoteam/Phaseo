@@ -1,0 +1,37 @@
+---
+title: "Model Quantization"
+description: "Overview of quantization and where to go next in the quantization + parameters guide series."
+---
+
+This page is the entry point for a full guide series on quantization and inference parameters.
+
+If you are deciding model variants (for example `BF16` vs `FP8`) or tuning request settings (`temperature`, `top_p`, token budgets), start here and work through the linked guides.
+
+## What is quantization?
+
+Quantization is how model weights and activations are represented with lower precision numbers to reduce memory usage and speed up inference.
+
+In general:
+
+- Higher precision: better quality/stability, higher cost.
+- Lower precision: better throughput/cost, higher quality risk.
+
+## Guide series
+
+1. [Quantization Formats](./quantization-formats)
+2. [Quantization Methods](./quantization-methods)
+3. [Choosing a Quantization Strategy](./quantization-selection)
+4. [Inference Parameters](./inference-parameters)
+5. [Sampling and Decoding Parameters](./sampling-and-decoding)
+6. [Context and Token Budgeting](./context-and-token-budgeting)
+
+## Recommended order
+
+1. Read formats and methods first.
+2. Use the selection guide to pick an initial variant.
+3. Tune inference parameters on top of that baseline.
+4. Finalize token budgets with production prompt traces.
+
+## Practical reminder
+
+Quantization and parameter tuning should always be validated on your real prompts and acceptance criteria, not synthetic micro-benchmarks alone.

@@ -114,6 +114,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/v1",
         apiKeyEnv: "BASETEN_API_KEY",
         baseUrlEnv: "BASETEN_BASE_URL",
+        supportsResponses: false,
     },
     "bytedance-seed": {
         providerId: "bytedance-seed",
@@ -140,10 +141,11 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     },
     chutes: {
         providerId: "chutes",
-        baseUrl: "https://api.chutes.ai",
+        baseUrl: "https://llm.chutes.ai",
         pathPrefix: "/v1",
         apiKeyEnv: "CHUTES_API_KEY",
         baseUrlEnv: "CHUTES_BASE_URL",
+        supportsResponses: false,
     },
     cohere: {
         providerId: "cohere",
@@ -151,6 +153,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/compatibility/v1",
         apiKeyEnv: "COHERE_API_KEY",
         baseUrlEnv: "COHERE_BASE_URL",
+        supportsResponses: false,
     },
     deepinfra: {
         providerId: "deepinfra",
@@ -158,6 +161,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/v1/openai",
         apiKeyEnv: "DEEPINFRA_API_KEY",
         baseUrlEnv: "DEEPINFRA_BASE_URL",
+        supportsResponses: false,
     },
     deepseek: {
         providerId: "deepseek",
@@ -355,6 +359,7 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/v1",
         apiKeyEnv: "TOGETHER_API_KEY",
         baseUrlEnv: "TOGETHER_BASE_URL",
+        supportsResponses: false,
     },
     xiaomi: {
         providerId: "xiaomi",

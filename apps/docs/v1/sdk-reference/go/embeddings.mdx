@@ -1,70 +1,28 @@
 ---
 title: "Embeddings"
-description: "Call /embeddings with the Go SDK."
+description: "Call /embeddings with the Go wrapper."
 ---
 
-**Method**: Direct HTTP POST /embeddings (facade method not yet available).
+Use the wrapper method:
 
-### Example
+- `client.GenerateEmbedding(ctx, req)`
+
 ```go
 import (
-    "bytes"
-    "context"
-    "encoding/json"
-    "fmt"
-    "io"
-    "log"
-    "net/http"
-
-    aistats "packages/sdk-go"
+  "context"
+  "fmt"
+  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
-
-// Since no facade method, use direct HTTP
-cfg := client.Completions.ApiClient.GetConfig()
-url := cfg.Servers[0].URL + "/embeddings"
-
-requestBody := map[string]interface{}{
-    "model": "openai/text-embedding-3-large",
-    "input": "Sample text",
-}
-
-jsonData, err := json.Marshal(requestBody)
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "sample text",
+})
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
 
-req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
-if err != nil {
-    log.Fatal(err)
-}
-req.Header.Set("Content-Type", "application/json")
-req.Header.Set("Authorization", "Bearer your-api-key")
-
-httpClient := &http.Client{}
-resp, err := httpClient.Do(req)
-if err != nil {
-    log.Fatal(err)
-}
-defer resp.Body.Close()
-
-body, err := io.ReadAll(resp.Body)
-if err != nil {
-    log.Fatal(err)
-}
-
-fmt.Println(string(body))
+fmt.Println(resp)
 ```
-
-### Key parameters
-- `model` (required): Embedding model id (e.g., `openai/text-embedding-3-large`).
-- `input` (required): String or array of strings.
-- `encoding_format`: `float` (default) or `base64`.
-- `dimensions`: Optional integer to truncate embedding length (model-dependent).
-- `user`: Optional end-user tag.
-
-### Returns
-Embedding payload (JSON)
 

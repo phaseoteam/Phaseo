@@ -1,65 +1,28 @@
 ---
 title: "Models"
-description: "List models with the Go SDK."
+description: "List models with the Go wrapper."
 ---
 
-**Method**: `client.GetModels()`.
+Use the wrapper method:
 
-### Example
+- `client.GetModels(ctx, query)`
+
 ```go
 import (
-    "context"
-    "fmt"
-    "log"
-
-    aistats "packages/sdk-go"
-    "packages/sdk-go/src/gen"
+  "context"
+  "fmt"
+  aistats "github.com/AI-Stats/ai-stats-go-sdk-wrapper"
 )
 
-ctx := context.Background()
-client := aistats.New("your-api-key", "https://api.ai-stats.dev")
-
-params := &gen.ModelsGetRequest{
-    Provider: &"openai",
-}
-
-models, _, err := client.GetModels(ctx, params)
+client := aistats.New(apiKey, "https://api.phaseo.app/v1")
+models, err := client.GetModels(context.Background(), map[string]string{
+  "limit": "10",
+  "provider": "openai",
+})
 if err != nil {
-    log.Fatal(err)
+  panic(err)
 }
-fmt.Println("Models:", len(models.Data))
+
+fmt.Println(models)
 ```
 
-### Parameters
-- Optional filters: `provider`, `organisation`, `endpoints[]`, `limit`, `offset`.
-
-### Returns
-`ModelListResponse`
-
-```json
-{
-  "ok": true,
-  "limit": 50,
-  "offset": 0,
-  "total": 123,
-  "models": [
-    {
-      "model_id": "openai/gpt-4o-mini",
-      "name": "GPT-4o Mini",
-      "release_date": "2024-07-18",
-      "status": "active",
-      "organisation_id": "openai",
-      "aliases": ["gpt-4o-mini"],
-      "endpoints": ["chat/completions", "responses"],
-      "input_types": ["text"],
-      "output_types": ["text"],
-      "providers": [
-        {
-          "api_provider_id": "openai",
-          "params": ["temperature", "max_tokens"]
-        }
-      ]
-    }
-  ]
-}
-```

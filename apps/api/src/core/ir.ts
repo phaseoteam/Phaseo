@@ -380,6 +380,9 @@ export type IRAudioSpeechRequest = {
 	streamFormat?: "audio" | "sse";
 	speed?: number;
 	instructions?: string;
+	vendor?: {
+		elevenlabs?: Record<string, any>;
+	};
 	userId?: string;
 	rawRequest?: any;
 };

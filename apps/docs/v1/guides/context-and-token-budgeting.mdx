@@ -1,0 +1,46 @@
+---
+title: "Context and Token Budgeting"
+description: "How to allocate prompt and output tokens for quality, speed, and cost."
+---
+
+Token budgeting is a core production skill. It directly affects latency, spend, and reliability.
+
+## Token budget components
+
+Total request footprint usually includes:
+
+- System/developer instructions
+- User prompt/input
+- Retrieved context (RAG, docs, tools)
+- Tool schemas/function definitions
+- Model output tokens
+
+## Why budgets matter
+
+- Larger prompts increase latency and cost.
+- Overlong prompts can degrade relevance if context quality is low.
+- Tiny output budgets can cause truncation and invalid structured outputs.
+
+## Budgeting strategy
+
+1. Set max input target per route.
+2. Reserve output headroom for worst-case responses.
+3. Trim low-value context aggressively.
+4. Monitor real token usage distributions over time.
+
+## Practical guardrails
+
+- Enforce hard caps for input and output tokens.
+- Add preflight truncation/summarization rules for large context.
+- Use route-specific limits (search answer vs long-form generation).
+- Validate outputs for truncation markers or partial JSON.
+
+## Common mistakes
+
+- Copying one token limit across all endpoints.
+- Keeping verbose system prompts for every request class.
+- Ignoring tool schema token overhead.
+
+## Recommendation
+
+Treat token budgets as configuration with continuous monitoring, not one-time setup.

@@ -21,6 +21,11 @@ export type Protocol =
 	| "openai.moderations"
 	| "anthropic.messages";
 
+export type TextProtocol =
+	| "openai.chat.completions"
+	| "openai.responses"
+	| "anthropic.messages";
+
 /**
  * Detect which protocol the client is using based on endpoint and request path
  *
@@ -55,6 +60,28 @@ export function detectProtocol(endpoint: Endpoint, requestPath?: string): Protoc
 		// (embeddings, images, audio, etc. will use OpenAI-compatible format)
 		default:
 			return "openai.chat.completions";
+	}
+}
+
+export function detectTextProtocol(
+	endpoint: Endpoint,
+	requestPath?: string,
+): TextProtocol {
+	if (requestPath?.includes("/v1/messages") || requestPath?.includes("/messages")) {
+		return "anthropic.messages";
+	}
+
+	switch (endpoint) {
+		case "responses":
+			return "openai.responses";
+		case "chat.completions":
+			return "openai.chat.completions";
+		case "messages":
+			return "anthropic.messages";
+		default:
+			throw new Error(
+				`Text protocol detection received unsupported endpoint: ${endpoint}`,
+			);
 	}
 }
 

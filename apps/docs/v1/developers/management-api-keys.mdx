@@ -1,233 +1,113 @@
 ---
 title: Management API Keys
-description: Learn how to use management API keys for elevated API access and resource management
+description: Manage API keys programmatically with the management endpoints.
 ---
 
-Management API keys are special API keys that provide elevated privileges for managing your AI Stats resources. Unlike regular API keys used for making AI requests, management API keys are designed for administrative operations like creating other keys, monitoring credits, and viewing activity data.
+Use the Management API Keys endpoints to create, list, inspect, update, and delete
+keys for your team.
 
-## What Are Management API Keys?
+## Authentication
 
-Management API keys serve as "super keys" within your team, enabling programmatic access to management endpoints that regular API keys cannot access. They are particularly useful for:
+Authenticate with a standard AI Stats API key:
 
-- **CI/CD pipelines**: Automatically rotate and manage API keys in production
-- **Monitoring dashboards**: Build custom dashboards showing credit usage and team activity
-- **Team management**: Create and manage keys for different team members or services
-- **Audit trails**: Track all API key creation and usage activity
+```http
+Authorization: Bearer aistats_v1_sk_<kid>_<secret>
+```
 
-## Security Considerations
+Base URL:
 
-<Warning>
-Management API keys have elevated privileges and should be handled with extra care. Unlike regular API keys, a compromised management API key can create new keys and access sensitive team data.
-</Warning>
+```text
+https://api.phaseo.app/v1
+```
 
-### Best Practices
+## Endpoints
 
-1. **Store securely**: Use environment variables or a secrets manager
-2. **Limit scopes**: Only grant the scopes your application needs
-3. **Rotate regularly**: Periodically rotate management API keys
-4. **Use separate keys**: Create different keys for different use cases
-5. **Monitor usage**: Track activity to detect anomalies
+- `GET /management/keys`
+- `POST /management/keys`
+- `GET /management/keys/{id}`
+- `PATCH /management/keys/{id}`
+- `DELETE /management/keys/{id}`
 
-## Creating a Management API Key
+Legacy aliases also exist under `/provisioning/keys`.
 
-You can create a management API key through the dashboard.
-
-### Using the Dashboard
-
-1. Navigate to **Settings** > **Management API Keys**
-2. Click **Create New Key**
-3. Enter a descriptive name
-4. Select the required scopes (read, write, or both)
-5. Click **Create Key**
-6. **Copy and store the key immediately** - it won't be shown again
-
-### Using the API (Coming Soon)
-
-<Note>
-`POST /v1/management/keys` is planned but not generally available yet.
-</Note>
+## Create a key
 
 ```bash
 curl -X POST https://api.phaseo.app/v1/management/keys \
-  -H "Authorization: Bearer <existing-management-api-key>" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "team_id": "your-team-id",
-    "name": "CI/CD Pipeline Key",
-    "scopes": "read,write",
-    "created_by": "user-id"
-  }'
-```
-
-## Available Operations
-
-### View Remaining Credits
-
-Check your team's current credit balance and recent usage:
-
-```bash
-curl https://api.phaseo.app/v1/credits?team_id=your-team-id \
-  -H "Authorization: Bearer <management-api-key>"
-```
-
-Response:
-```json
-{
-  "ok": true,
-  "credits": {
-    "remaining": 15000000000,
-    "thirty_day_usage": 250000000,
-    "thirty_day_requests": 1250
-  }
-}
-```
-
-### View Activity
-
-Get a detailed breakdown of recent API activity:
-
-```bash
-curl "https://api.phaseo.app/v1/activity?team_id=your-team-id&days=30" \
-  -H "Authorization: Bearer <management-api-key>"
-```
-
-### List All Keys
-
-View all management API keys in your team:
-
-```bash
-curl "https://api.phaseo.app/v1/management/keys?team_id=your-team-id" \
-  -H "Authorization: Bearer <management-api-key>"
-```
-
-### Update a Key
-
-Modify key properties like name or status:
-
-```bash
-curl -X PATCH https://api.phaseo.app/v1/management/keys/key-id \
-  -H "Authorization: Bearer <management-api-key>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Updated Name",
+    "name": "CI pipeline key",
+    "scopes": ["read","write"],
     "status": "active"
   }'
 ```
 
-### Disable or Revoke a Key
+Example response:
 
-Temporarily disable a key:
 ```json
-{ "status": "disabled" }
+{
+  "ok": true,
+  "key": {
+    "id": "pk_...",
+    "name": "CI pipeline key",
+    "prefix": "abc123",
+    "status": "active",
+    "scopes": "[\"read\",\"write\"]",
+    "created_at": "2026-02-18T00:00:00.000Z",
+    "key": "aistats_v1_sk_<kid>_<secret>"
+  }
+}
 ```
 
-Permanently revoke a key:
-```json
-{ "status": "revoked" }
-```
-
-### Delete a Key
-
-Permanently remove a management API key:
+## List keys
 
 ```bash
-curl -X DELETE https://api.phaseo.app/v1/management/keys/key-id \
-  -H "Authorization: Bearer <management-api-key>"
+curl "https://api.phaseo.app/v1/management/keys?limit=50&offset=0" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY"
 ```
 
-## Scopes Explained
+Optional query params:
+- `team_id`
+- `limit` (max `250`)
+- `offset`
 
-Management API keys support granular permission levels:
-
-| Scope | Capabilities |
-|-------|-------------|
-| `read` | View credits, activity, and list keys |
-| `write` | Update and delete keys |
-
-You can combine scopes with a comma: `"read,write"` grants full access.
-
-## Managing Keys in Production
-
-### Environment Variables
-
-Always store management API keys in environment variables:
+## Get one key
 
 ```bash
-export MANAGEMENT_API_KEY="aistats_v1_sk_xx_xxx"
+curl https://api.phaseo.app/v1/management/keys/<key-id> \
+  -H "Authorization: Bearer $AI_STATS_API_KEY"
 ```
 
-In your application:
-```javascript
-const key = process.env.MANAGEMENT_API_KEY;
-```
-
-### CI/CD Integration Example
-
-Here's a complete example for a CI/CD pipeline:
+## Update a key
 
 ```bash
-#!/bin/bash
-# Management API key management script
-
-MANAGEMENT_API_KEY="$MANAGEMENT_API_KEY"
-TEAM_ID="$TEAM_ID"
-
-# Create support for automated key creation when the endpoint becomes available
-RESPONSE=$(curl -s -X POST https://api.phaseo.app/v1/management/keys \
-  -H "Authorization: Bearer $MANAGEMENT_API_KEY" \
+curl -X PATCH https://api.phaseo.app/v1/management/keys/<key-id> \
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "{\"team_id\":\"$TEAM_ID\",\"name\":\"Deploy-$(date +%Y%m%d)\",\"scopes\":\"read,write\"}")
-
-NEW_KEY=$(echo $RESPONSE | jq -r '.key.key')
-
-# Store the new key securely
-echo "$NEW_KEY" > deployment_key.txt
-
-# ... use the key for deployment operations ...
-
-# Clean up temporary file
-rm deployment_key.txt
+  -d '{
+    "name": "Updated key name",
+    "status": "disabled",
+    "soft_blocked": true
+  }'
 ```
 
-## Monitoring and Auditing
+Allowed status values:
+- `active`
+- `disabled`
+- `revoked`
 
-### Activity Tracking
+## Delete a key
 
-The activity endpoint provides detailed logs of API usage including:
-- Request IDs for tracking
-- Provider and model information
-- Token usage breakdown
-- Cost in cents
-- Latency measurements
-- Timestamps
+```bash
+curl -X DELETE https://api.phaseo.app/v1/management/keys/<key-id> \
+  -H "Authorization: Bearer $AI_STATS_API_KEY"
+```
 
-### Key Usage Patterns
+## Notes
 
-Monitor these patterns to detect potential issues:
-- Unusual request volumes
-- Keys used from unexpected locations
-- Rapid key creation or deletion
-- Keys that haven't been used in a long time
-
-## Troubleshooting
-
-### "Key not found" Error
-- Verify the key ID is correct
-- Check if the key was deleted
-- Ensure the key belongs to your team
-
-### "Failed to authenticate" Error
-- Verify the Authorization header format: `Bearer <key>`
-- Check if the key has expired
-- Confirm the key status is `active`
-
-### "team_id is required" Error
-- Add the `team_id` query parameter for GET requests
-- Include `team_id` in the request body for POST/PATCH requests
-
-## Related Resources
-
-- [API Reference: Management API Keys](../api-reference/endpoint/management/index.mdx)
-- [API Keys Management](./authentication.mdx)
-- [Authentication Guide](./authentication.mdx)
+- `scopes` can be sent as a string or a string array.
+- `team_id` is optional for standard team-scoped requests.
+- For strict request/response schemas, use the API reference pages under
+  `API Reference -> Control and Management -> Management API Keys`.
 

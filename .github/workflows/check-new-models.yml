@@ -5,6 +5,10 @@ on:
         - cron: "*/5 * * * *"
     workflow_dispatch:
 
+concurrency:
+    group: check-new-models
+    cancel-in-progress: false
+
 env:
     NODE_VERSION: 22
 
@@ -32,18 +36,20 @@ jobs:
                   node-version: ${{ env.NODE_VERSION }}
                   cache: pnpm
 
-            - name: Set up Python
-              uses: actions/setup-python@v6
-              with:
-                  python-version: "3.12"
-                  cache: "pip"
-                  cache-dependency-path: scripts/model-discovery/requirements.txt
-
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Install model discovery Python dependencies
-              run: python -m pip install -r scripts/model-discovery/requirements.txt
+            - name: Ensure state directory exists
+              run: mkdir -p scripts/model-discovery/state
+
+            - name: Restore model discovery state cache
+              id: model-state-cache
+              uses: actions/cache/restore@v4
+              with:
+                  path: scripts/model-discovery/state
+                  key: model-discovery-state-${{ github.run_id }}
+                  restore-keys: |
+                      model-discovery-state-
 
             - name: Check for new models
               env:
@@ -52,11 +58,21 @@ jobs:
                   GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
                   XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
                   DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+                  NOVITA_API_KEY: ${{ secrets.NOVITA_API_KEY }}
                   MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
                   ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
                   MOONSHOT_AI_API_KEY: ${{ secrets.MOONSHOT_AI_API_KEY }}
                   MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
                   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
               run: pnpm run data:check-new-models
+
+            - name: Save model discovery state cache
+              if: always()
+              uses: actions/cache/save@v4
+              with:
+                  path: scripts/model-discovery/state
+                  key: ${{ steps.model-state-cache.outputs.cache-primary-key }}
 
