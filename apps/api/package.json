@@ -31,7 +31,7 @@
 		"@supabase/supabase-js": "^2.56.1",
 		"@upstash/redis": "^1.35.3",
 		"@visulima/tabular": "^3.1.0",
-		"hono": "^4.6.8",
+		"hono": "^4.11.10",
 		"ink": "^6.7.0",
 		"react": "^19.1.0",
 		"stripe": "^20.3.0",
