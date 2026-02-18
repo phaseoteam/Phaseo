@@ -4,6 +4,7 @@ build
 .next
 .mint
 .out
+apps/desktop-studio/out/
 .env*
 pnpm-debug.log
 .turbo/
