@@ -41,17 +41,17 @@ function getIconForLink(
 	if (key === "announcement_link") {
 		const providerId = model.organisation_id;
 		if (providerId) {
-			return (
-				<Logo
-					id={providerId}
-					alt="Provider"
-					width={16}
-					height={16}
-					className="w-4 h-4 rounded inline-block"
-				/>
-			);
+				return (
+					<Logo
+						id={providerId}
+						alt="Provider"
+						width={16}
+						height={16}
+						className="w-4 h-4 rounded"
+					/>
+				);
+			}
 		}
-	}
 	// Weights: /social/hugging_face.svg
 	if (key === "weights_link") {
 		return (

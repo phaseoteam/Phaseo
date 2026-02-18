@@ -77,7 +77,7 @@ export function Logo({
 				<Image
 					src={light.src}
 					alt={label}
-					className={["block dark:hidden", className]
+					className={[className, "block dark:hidden"]
 						.filter(Boolean)
 						.join(" ")}
 					{...imageProps}
@@ -87,7 +87,7 @@ export function Logo({
 				<Image
 					src={dark.src}
 					alt={label}
-					className={["hidden dark:block", className]
+					className={[className, "hidden dark:block"]
 						.filter(Boolean)
 						.join(" ")}
 					{...imageProps}
