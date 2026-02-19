@@ -4,10 +4,94 @@ import { createClient } from "@/utils/supabase/server"
 import { revalidatePath } from "next/cache"
 import { revalidateModelDataTags } from "@/lib/cache/revalidateDataTags"
 
+const CORE_TYPE_OPTIONS = ["text", "image", "audio", "video"] as const
+const MODEL_DETAIL_NAME_OPTIONS = [
+  "input_context_length",
+  "output_context_length",
+  "knowledge_cutoff",
+  "parameter_count",
+  "training_tokens",
+] as const
+const MODEL_LINK_PLATFORM_OPTIONS = [
+  "announcement",
+  "api_reference",
+  "paper",
+  "playground",
+  "repository",
+  "weights",
+] as const
+const NUMERIC_ONLY_DETAIL_NAME_OPTIONS = ["parameter_count", "training_tokens"] as const
+
+function normalizeCoreTypes(
+  value: string | null | undefined
+): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+
+  const selected = new Set(
+    value
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter((item): item is (typeof CORE_TYPE_OPTIONS)[number] =>
+        CORE_TYPE_OPTIONS.includes(item as (typeof CORE_TYPE_OPTIONS)[number])
+      )
+  )
+  const normalized = CORE_TYPE_OPTIONS.filter((type) => selected.has(type))
+  return normalized.length ? normalized.join(",") : null
+}
+
+function normalizeModelDetailName(
+  value: string | null | undefined
+): (typeof MODEL_DETAIL_NAME_OPTIONS)[number] | null {
+  if (!value) return null
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) return null
+  return MODEL_DETAIL_NAME_OPTIONS.includes(
+    normalized as (typeof MODEL_DETAIL_NAME_OPTIONS)[number]
+  )
+    ? (normalized as (typeof MODEL_DETAIL_NAME_OPTIONS)[number])
+    : null
+}
+
+function normalizeModelLinkPlatform(
+  value: string | null | undefined
+): (typeof MODEL_LINK_PLATFORM_OPTIONS)[number] | null {
+  if (!value) return null
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) return null
+  return MODEL_LINK_PLATFORM_OPTIONS.includes(
+    normalized as (typeof MODEL_LINK_PLATFORM_OPTIONS)[number]
+  )
+    ? (normalized as (typeof MODEL_LINK_PLATFORM_OPTIONS)[number])
+    : null
+}
+
+function normalizeModelDetailValue(
+  detailName: (typeof MODEL_DETAIL_NAME_OPTIONS)[number],
+  rawValue: string | number | null | undefined
+): string | null {
+  const value =
+    rawValue === undefined || rawValue === null ? "" : rawValue.toString().trim()
+  if (!value) return null
+
+  if (
+    NUMERIC_ONLY_DETAIL_NAME_OPTIONS.includes(
+      detailName as (typeof NUMERIC_ONLY_DETAIL_NAME_OPTIONS)[number]
+    )
+  ) {
+    const digitsOnly = value.replace(/[^\d]/g, "")
+    if (!digitsOnly) return null
+    return digitsOnly.replace(/^0+(?=\d)/, "")
+  }
+
+  return value
+}
+
 export interface ModelUpdatePayload {
   modelId: string
   name?: string
   organisation_id?: string | null
+  license?: string | null
   hidden?: boolean
   status?: string | null
   announcement_date?: string | null
@@ -27,6 +111,7 @@ export interface ModelUpdatePayload {
     is_self_reported?: boolean
     other_info?: string | null
     source_link?: string | null
+    variant?: string | null
     rank?: number | null
   }>
   pricing_rules?: Array<{
@@ -40,7 +125,7 @@ export interface ModelUpdatePayload {
     unit_size?: number
     price_per_unit: string | number
     currency?: string
-    tiering_mode?: string
+    tiering_mode?: string | null
     note?: string | null
     priority?: number
     effective_from?: string | null
@@ -64,6 +149,16 @@ export interface ModelUpdatePayload {
     quantization_scheme?: string | null
     effective_from?: string | null
     effective_to?: string | null
+  }>
+  provider_capabilities?: Array<{
+    provider_id: string
+    api_model_id: string
+    capability_id: string
+    status?: "active" | "deranked" | "disabled" | null
+    max_input_tokens?: number | null
+    max_output_tokens?: number | null
+    notes?: string | null
+    params?: Record<string, unknown> | null
   }>
   aliases?: Array<{ alias_slug: string; is_enabled?: boolean; channel?: string | null; notes?: string | null }>
   family?: {
@@ -101,6 +196,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
     modelId,
     name,
     organisation_id,
+    license,
     hidden,
     status,
     announcement_date,
@@ -116,24 +212,32 @@ export async function updateModel(payload: ModelUpdatePayload) {
     benchmark_results,
     pricing_rules,
     provider_models,
+    provider_capabilities,
     aliases,
     family,
   } = payload
+
+  const normalizedInputTypes = normalizeCoreTypes(input_types)
+  const normalizedOutputTypes = normalizeCoreTypes(output_types)
 
   const modelUpdate: Record<string, any> = {
     updated_at: new Date().toISOString(),
   }
 
   if (name !== undefined) modelUpdate.name = name
+  if (organisation_id === null) {
+    throw new Error("organisation_id is required")
+  }
   if (organisation_id !== undefined) modelUpdate.organisation_id = organisation_id
+  if (license !== undefined) modelUpdate.license = license
   if (hidden !== undefined) modelUpdate.hidden = hidden
   if (status !== undefined) modelUpdate.status = status
   if (announcement_date !== undefined) modelUpdate.announcement_date = announcement_date
   if (release_date !== undefined) modelUpdate.release_date = release_date
   if (deprecation_date !== undefined) modelUpdate.deprecation_date = deprecation_date
   if (retirement_date !== undefined) modelUpdate.retirement_date = retirement_date
-  if (input_types !== undefined) modelUpdate.input_types = input_types
-  if (output_types !== undefined) modelUpdate.output_types = output_types
+  if (normalizedInputTypes !== undefined) modelUpdate.input_types = normalizedInputTypes
+  if (normalizedOutputTypes !== undefined) modelUpdate.output_types = normalizedOutputTypes
   if (previous_model_id !== undefined) modelUpdate.previous_model_id = previous_model_id
   if (family_id !== undefined) modelUpdate.family_id = family_id
 
@@ -166,14 +270,31 @@ export async function updateModel(payload: ModelUpdatePayload) {
 
     if (model_details.length > 0) {
       const detailsToInsert = model_details
-        .filter((d) => d.detail_name && d.detail_value !== undefined && d.detail_value !== null)
-        .map((detail) => ({
-          model_id: modelId,
-          detail_name: detail.detail_name,
-          detail_value: detail.detail_value?.toString() ?? "",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }))
+        .map((detail) => {
+          const detailName = normalizeModelDetailName(detail.detail_name)
+          const detailValue = detailName
+            ? normalizeModelDetailValue(detailName, detail.detail_value)
+            : null
+          if (!detailName || !detailValue) return null
+          return {
+            model_id: modelId,
+            detail_name: detailName,
+            detail_value: detailValue,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        })
+        .filter(
+          (
+            detail
+          ): detail is {
+            model_id: string
+            detail_name: (typeof MODEL_DETAIL_NAME_OPTIONS)[number]
+            detail_value: string
+            created_at: string
+            updated_at: string
+          } => Boolean(detail)
+        )
 
       if (detailsToInsert.length > 0) {
         const { error: insertDetailsError } = await supabase
@@ -201,14 +322,29 @@ export async function updateModel(payload: ModelUpdatePayload) {
 
     if (links.length > 0) {
       const linksToInsert = links
-        .filter((link) => link.platform && link.url && link.url.trim() !== "")
-        .map((link) => ({
-          model_id: modelId,
-          platform: link.platform,
-          url: link.url,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }))
+        .map((link) => {
+          const platform = normalizeModelLinkPlatform(link.platform)
+          const url = link.url?.trim() ?? ""
+          if (!platform || !url) return null
+          return {
+            model_id: modelId,
+            platform,
+            url,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        })
+        .filter(
+          (
+            link
+          ): link is {
+            model_id: string
+            platform: (typeof MODEL_LINK_PLATFORM_OPTIONS)[number]
+            url: string
+            created_at: string
+            updated_at: string
+          } => Boolean(link)
+        )
 
       if (linksToInsert.length > 0) {
         const { error: insertLinksError } = await supabase
@@ -259,7 +395,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
           is_self_reported: result.is_self_reported ?? false,
           other_info: result.other_info ?? null,
           source_link: result.source_link ?? null,
-          rank: result.rank ?? null,
+          variant: result.variant ?? null,
           updated_at: new Date().toISOString(),
         }
 
@@ -303,7 +439,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
 
     if (pricing_rules.length > 0) {
       const rulesToInsert = pricing_rules.map((rule) => {
-        const capabilityId = rule.capability_id?.trim() || "chat/completions"
+        const capabilityId = rule.capability_id?.trim() || "text.generate"
         return {
           model_key: `${rule.provider_id}:${rule.api_model_id}:${capabilityId}`,
           capability_id: capabilityId,
@@ -335,56 +471,119 @@ export async function updateModel(payload: ModelUpdatePayload) {
   }
 
   if (provider_models !== undefined) {
-    const existingIds = provider_models.filter((r) => r.id).map((r) => r.id)
-    if (existingIds.length > 0) {
-      const { error: deleteProvidersError } = await supabase
-        .from("data_api_provider_models")
-        .delete()
-        .in("provider_api_model_id", existingIds)
+    const nowIso = new Date().toISOString()
+    const { error: deleteProvidersError } = await supabase
+      .from("data_api_provider_models")
+      .delete()
+      .eq("internal_model_id", modelId)
 
-      if (deleteProvidersError) {
-        console.error("[updateModel] Error deleting old provider models:", deleteProvidersError)
-        throw new Error(deleteProvidersError.message)
+    if (deleteProvidersError) {
+      console.error("[updateModel] Error replacing provider models:", deleteProvidersError)
+      throw new Error(deleteProvidersError.message)
+    }
+
+    const providerRows = provider_models
+      .filter((pm) => pm.provider_id && pm.api_model_id)
+      .map((pm) => ({
+        provider_api_model_id:
+          pm.id && !pm.id.startsWith("new-")
+            ? pm.id
+            : buildProviderApiModelId(pm.provider_id, pm.api_model_id),
+        provider_id: pm.provider_id,
+        api_model_id: pm.api_model_id,
+        provider_model_slug: pm.provider_model_slug ?? null,
+        internal_model_id: modelId,
+        is_active_gateway: pm.is_active_gateway ?? false,
+        input_modalities: pm.input_modalities ?? null,
+        output_modalities: pm.output_modalities ?? null,
+        quantization_scheme: pm.quantization_scheme ?? null,
+        effective_from: pm.effective_from ?? null,
+        effective_to: pm.effective_to ?? null,
+        created_at: nowIso,
+        updated_at: nowIso,
+      }))
+
+    if (providerRows.length > 0) {
+      const { error: insertProvidersError } = await supabase
+        .from("data_api_provider_models")
+        .upsert(providerRows, { onConflict: "provider_api_model_id" })
+
+      if (insertProvidersError) {
+        console.error("[updateModel] Error inserting provider models:", insertProvidersError)
+        throw new Error(insertProvidersError.message)
+      }
+    }
+  }
+
+  if (provider_capabilities !== undefined) {
+    const nowIso = new Date().toISOString()
+    const { data: providerModelRows, error: providerModelsError } = await supabase
+      .from("data_api_provider_models")
+      .select("provider_api_model_id, provider_id, api_model_id")
+      .eq("internal_model_id", modelId)
+
+    if (providerModelsError) {
+      console.error("[updateModel] Error loading provider models for capabilities:", providerModelsError)
+      throw new Error(providerModelsError.message)
+    }
+
+    const providerApiModelIds = (providerModelRows ?? []).map((row) => row.provider_api_model_id)
+    if (providerApiModelIds.length > 0) {
+      const { error: deleteCapabilitiesError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .delete()
+        .in("provider_api_model_id", providerApiModelIds)
+
+      if (deleteCapabilitiesError) {
+        console.error("[updateModel] Error replacing provider capabilities:", deleteCapabilitiesError)
+        throw new Error(deleteCapabilitiesError.message)
       }
     }
 
-    if (provider_models.length > 0) {
-      for (const pm of provider_models) {
-        const pmData = {
-          provider_id: pm.provider_id,
-          api_model_id: pm.api_model_id,
-          provider_model_slug: pm.provider_model_slug ?? null,
-          internal_model_id: modelId,
-          is_active_gateway: pm.is_active_gateway ?? false,
-          input_modalities: pm.input_modalities ?? null,
-          output_modalities: pm.output_modalities ?? null,
-          quantization_scheme: pm.quantization_scheme ?? null,
-          effective_from: pm.effective_from ?? null,
-          effective_to: pm.effective_to ?? null,
-          updated_at: new Date().toISOString(),
+    const providerApiModelIdByPair = new Map<string, string>(
+      (providerModelRows ?? []).map((row) => [
+        `${row.provider_id}:${row.api_model_id}`,
+        row.provider_api_model_id,
+      ])
+    )
+
+    const capabilityRows = provider_capabilities
+      .filter((capability) => capability.provider_id && capability.api_model_id && capability.capability_id)
+      .map((capability) => {
+        const capabilityId = capability.capability_id.trim()
+        const providerApiModelId =
+          providerApiModelIdByPair.get(`${capability.provider_id}:${capability.api_model_id}`) ??
+          buildProviderApiModelId(capability.provider_id, capability.api_model_id)
+        const parsedStatus =
+          capability.status === "deranked" || capability.status === "disabled"
+            ? capability.status
+            : "active"
+
+        return {
+          provider_api_model_id: providerApiModelId,
+          capability_id: capabilityId || "text.generate",
+          status: parsedStatus,
+          max_input_tokens: capability.max_input_tokens ?? null,
+          max_output_tokens: capability.max_output_tokens ?? null,
+          notes: capability.notes ?? null,
+          params:
+            capability.params && typeof capability.params === "object"
+              ? capability.params
+              : {},
+          updated_at: nowIso,
         }
+      })
 
-        if (pm.id) {
-          const { error: updateError } = await supabase
-            .from("data_api_provider_models")
-            .update(pmData)
-            .eq("provider_api_model_id", pm.id)
+    if (capabilityRows.length > 0) {
+      const { error: capabilityUpsertError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .upsert(capabilityRows, {
+          onConflict: "provider_api_model_id,capability_id",
+        })
 
-          if (updateError) {
-            console.error("[updateModel] Error updating provider model:", updateError)
-            throw new Error(updateError.message)
-          }
-        } else {
-          const pmId = buildProviderApiModelId(pm.provider_id, pm.api_model_id)
-          const { error: insertError } = await supabase
-            .from("data_api_provider_models")
-            .insert({ ...pmData, provider_api_model_id: pmId, created_at: new Date().toISOString() })
-
-          if (insertError) {
-            console.error("[updateModel] Error inserting provider model:", insertError)
-            throw new Error(insertError.message)
-          }
-        }
+      if (capabilityUpsertError) {
+        console.error("[updateModel] Error upserting provider capabilities:", capabilityUpsertError)
+        throw new Error(capabilityUpsertError.message)
       }
     }
   }
@@ -465,7 +664,7 @@ export async function updateModel(payload: ModelUpdatePayload) {
           pricing_rules
             .filter((rule) => rule.provider_id && rule.api_model_id)
             .map((rule) => {
-              const capabilityId = rule.capability_id?.trim() || "chat/completions"
+              const capabilityId = rule.capability_id?.trim() || "text.generate"
               const providerApiModelId = providerApiModelIdByPairAfter.get(
                 `${rule.provider_id}:${rule.api_model_id}`
               )

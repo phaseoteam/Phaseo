@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createOrganisationAction } from "../../actions";
+import OrganisationLinksFieldset from "../OrganisationLinksFieldset";
 
 export default function NewOrganisationPage() {
 	return (
@@ -30,6 +31,7 @@ export default function NewOrganisationPage() {
 						<input name="colour" placeholder="#0EA5E9" className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 				</div>
+				<OrganisationLinksFieldset />
 				<div className="flex gap-2">
 					<button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
 						Create

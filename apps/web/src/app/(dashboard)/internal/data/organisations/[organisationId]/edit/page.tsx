@@ -5,6 +5,7 @@ import {
 	deleteOrganisationAction,
 	updateOrganisationAction,
 } from "../../../actions";
+import OrganisationLinksFieldset from "../../OrganisationLinksFieldset";
 
 export default async function EditOrganisationPage({
 	params,
@@ -19,6 +20,10 @@ export default async function EditOrganisationPage({
 		.eq("organisation_id", organisationId)
 		.maybeSingle();
 	if (!row) return notFound();
+	const { data: links } = await supabase
+		.from("data_organisation_links")
+		.select("platform, url")
+		.eq("organisation_id", organisationId);
 
 	const updateAction = updateOrganisationAction.bind(null, organisationId);
 	const deleteAction = deleteOrganisationAction.bind(null, organisationId);
@@ -48,6 +53,7 @@ export default async function EditOrganisationPage({
 						<input name="colour" defaultValue={row.colour ?? ""} className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 				</div>
+				<OrganisationLinksFieldset initialLinks={(links ?? []) as Array<{ platform: string; url: string }>} />
 				<div className="flex gap-2">
 					<button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
 						Save

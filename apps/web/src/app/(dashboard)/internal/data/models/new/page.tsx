@@ -1,82 +1,52 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { createModelAction } from "../../actions";
+import NewModelForm from "./NewModelForm";
 
 export default async function NewModelPage() {
 	const supabase = await createClient();
-	const { data: organisations } = await supabase
-		.from("data_organisations")
-		.select("organisation_id, name")
-		.order("name", { ascending: true });
+	const [{ data: organisations }, { data: providers }, { data: families }, { data: benchmarks }, { data: previousModels }] = await Promise.all([
+		supabase
+			.from("data_organisations")
+			.select("organisation_id, name")
+			.order("name", { ascending: true }),
+		supabase
+			.from("data_api_providers")
+			.select("api_provider_id, api_provider_name")
+			.order("api_provider_name", { ascending: true }),
+		supabase
+			.from("data_model_families")
+			.select("family_id, family_name")
+			.order("family_name", { ascending: true }),
+		supabase
+			.from("data_benchmarks")
+			.select("id, name")
+			.order("name", { ascending: true }),
+		supabase
+			.from("data_models")
+			.select("model_id, name")
+			.order("name", { ascending: true })
+			.limit(500),
+	]);
 
 	return (
 		<div className="container mx-auto space-y-8 py-8">
 			<div>
 				<h1 className="text-2xl font-semibold">Create model</h1>
 			</div>
-			<form action={createModelAction} className="space-y-4 rounded-lg border p-4">
-				<div className="grid gap-4 lg:grid-cols-2">
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Model ID</div>
-						<input name="model_id" required className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Name</div>
-						<input name="name" required className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-					<label className="text-sm lg:col-span-2">
-						<div className="mb-1 text-muted-foreground">Organisation</div>
-						<select name="organisation_id" className="w-full rounded-md border px-3 py-2 text-sm">
-							<option value="">None</option>
-							{(organisations ?? []).map((org: any) => (
-								<option key={org.organisation_id} value={org.organisation_id}>
-									{org.name ?? org.organisation_id}
-								</option>
-							))}
-						</select>
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Status</div>
-						<input name="status" defaultValue="active" className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-					<label className="text-sm flex items-center gap-2 self-end">
-						<input type="checkbox" name="hidden" />
-						<span>Hidden</span>
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Release date</div>
-						<input type="date" name="release_date" className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Announcement date</div>
-						<input type="date" name="announcement_date" className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Deprecation date</div>
-						<input type="date" name="deprecation_date" className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Retirement date</div>
-						<input type="date" name="retirement_date" className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Input types</div>
-						<input name="input_types" className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-					<label className="text-sm">
-						<div className="mb-1 text-muted-foreground">Output types</div>
-						<input name="output_types" className="w-full rounded-md border px-3 py-2 text-sm" />
-					</label>
-				</div>
-				<div className="flex flex-wrap gap-2">
-					<button type="submit" className="w-full rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground sm:w-auto">
-						Create
-					</button>
-					<Link href="/internal/data/models" className="w-full rounded-md border px-3 py-2 text-center text-sm sm:w-auto">
-						Cancel
-					</Link>
-				</div>
-			</form>
+			<NewModelForm
+				organisations={(organisations ?? []) as Array<{ organisation_id: string; name: string | null }>}
+				providers={(providers ?? []) as Array<{ api_provider_id: string; api_provider_name: string | null }>}
+				families={(families ?? []) as Array<{ family_id: string; family_name: string | null }>}
+				benchmarks={(benchmarks ?? []) as Array<{ id: string; name: string | null }>}
+				previousModels={(previousModels ?? []) as Array<{ model_id: string; name: string | null }>}
+				createAction={createModelAction}
+			/>
+			<div className="flex">
+				<Link href="/internal/data/models" className="rounded-md border px-3 py-2 text-sm">
+					Back to models
+				</Link>
+			</div>
 		</div>
 	);
 }

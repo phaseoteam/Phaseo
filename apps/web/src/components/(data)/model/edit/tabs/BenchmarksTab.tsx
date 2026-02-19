@@ -24,7 +24,7 @@ interface BenchmarkResult {
   is_self_reported: boolean
   other_info: string | null
   source_link: string | null
-  rank: number | null
+  variant: string | null
 }
 
 interface BenchmarksTabProps {
@@ -42,7 +42,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
 
       const { data: benchmarkData } = await supabase
         .from("data_benchmark_results")
-        .select("id, benchmark_id, score, is_self_reported, other_info, source_link, rank")
+        .select("id, benchmark_id, score, is_self_reported, other_info, source_link, variant")
         .eq("model_id", modelId)
 
       const { data: allBenchmarks } = await supabase
@@ -66,7 +66,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
             is_self_reported: b.is_self_reported ?? false,
             other_info: b.other_info,
             source_link: b.source_link,
-            rank: b.rank,
+            variant: b.variant,
           }))
         )
       }
@@ -104,7 +104,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
           onClick={() =>
             setBenchmarks([
               ...benchmarks,
-              { id: `new-${Date.now()}`, benchmark_id: "", score: "", is_self_reported: false, other_info: null, source_link: null, rank: null },
+              { id: `new-${Date.now()}`, benchmark_id: "", score: "", is_self_reported: false, other_info: null, source_link: null, variant: null },
             ])
           }
         >
@@ -114,52 +114,64 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange }: Benchmark
       <div className="space-y-3 max-h-96 overflow-y-auto">
         {benchmarks.map((benchmark) => (
           <div key={benchmark.id} className="border rounded-lg p-3 space-y-2">
-            <div className="flex gap-2">
-              <Select
-                value={benchmark.benchmark_id}
-                onValueChange={(value) => updateBenchmark(benchmark.id, "benchmark_id", value)}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select benchmark" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableBenchmarks.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                value={benchmark.score}
-                onChange={(e) => updateBenchmark(benchmark.id, "score", e.target.value)}
-                placeholder="Score"
-                className="w-24"
-              />
-              <Input
-                type="number"
-                value={benchmark.rank || ""}
-                onChange={(e) => updateBenchmark(benchmark.id, "rank", e.target.value ? Number(e.target.value) : null)}
-                placeholder="Rank"
-                className="w-16"
-              />
-              <Button variant="ghost" size="icon" onClick={() => removeBenchmark(benchmark.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={benchmark.source_link || ""}
-                onChange={(e) => updateBenchmark(benchmark.id, "source_link", e.target.value)}
-                placeholder="Source link"
-                className="flex-1"
-              />
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  checked={benchmark.is_self_reported}
-                  onCheckedChange={(checked) => updateBenchmark(benchmark.id, "is_self_reported", checked === true)}
+            <div className="grid gap-2 lg:grid-cols-12">
+              <label className="text-xs lg:col-span-5">
+                <div className="mb-1 text-muted-foreground">Benchmark</div>
+                <Select
+                  value={benchmark.benchmark_id}
+                  onValueChange={(value) => updateBenchmark(benchmark.id, "benchmark_id", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select benchmark" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableBenchmarks.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="text-xs lg:col-span-2">
+                <div className="mb-1 text-muted-foreground">Score</div>
+                <Input
+                  value={benchmark.score}
+                  onChange={(e) => updateBenchmark(benchmark.id, "score", e.target.value)}
+                  placeholder="Score"
                 />
-                <Label className="text-xs">Self-reported</Label>
+              </label>
+              <div className="flex items-end justify-end lg:col-span-3">
+                <Button variant="ghost" size="icon" onClick={() => removeBenchmark(benchmark.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-2 lg:grid-cols-12">
+              <label className="text-xs lg:col-span-6">
+                <div className="mb-1 text-muted-foreground">Source link</div>
+                <Input
+                  value={benchmark.source_link || ""}
+                  onChange={(e) => updateBenchmark(benchmark.id, "source_link", e.target.value)}
+                  placeholder="https://..."
+                />
+              </label>
+              <label className="text-xs lg:col-span-3">
+                <div className="mb-1 text-muted-foreground">Variant</div>
+                <Input
+                  value={benchmark.variant || ""}
+                  onChange={(e) => updateBenchmark(benchmark.id, "variant", e.target.value)}
+                  placeholder="e.g., Max"
+                />
+              </label>
+              <div className="flex items-end lg:col-span-3">
+                <label className="flex items-center gap-2 pb-2 text-xs">
+                  <Checkbox
+                    checked={benchmark.is_self_reported}
+                    onCheckedChange={(checked) => updateBenchmark(benchmark.id, "is_self_reported", checked === true)}
+                  />
+                  <Label className="text-xs">Self-reported</Label>
+                </label>
               </div>
             </div>
           </div>

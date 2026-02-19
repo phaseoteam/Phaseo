@@ -46,7 +46,7 @@ const ALIBABA_RESPONSES_MODELS = new Set<string>([
 
 const ALIBABA_RESPONSES_PATH_PREFIX = "/api/v2/apps/protocols/compatible-mode/v1";
 
-const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
+export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     openai: {
         providerId: "openai",
         baseUrl: "https://api.openai.com",
@@ -301,6 +301,27 @@ const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         apiKeyEnv: "NOVITA_API_KEY",
         baseUrlEnv: "NOVITA_BASE_URL",
         supportsResponses: false,
+    },
+    nvidia: {
+        providerId: "nvidia",
+        baseUrl: "https://integrate.api.nvidia.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "NVIDIA_API_KEY",
+        baseUrlEnv: "NVIDIA_BASE_URL",
+    },
+    stepfun: {
+        providerId: "stepfun",
+        baseUrl: "https://api.stepfun.com",
+        pathPrefix: "/v1",
+        apiKeyEnv: "STEPFUN_API_KEY",
+        baseUrlEnv: "STEPFUN_BASE_URL",
+    },
+    venice: {
+        providerId: "venice",
+        baseUrl: "https://api.venice.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "VENICE_API_KEY",
+        baseUrlEnv: "VENICE_BASE_URL",
     },
     crusoe: {
         providerId: "crusoe",

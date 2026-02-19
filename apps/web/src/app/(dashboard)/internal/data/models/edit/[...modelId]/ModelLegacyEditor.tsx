@@ -8,12 +8,15 @@ import BasicTab from "@/components/(data)/model/edit/tabs/BasicTab";
 import DetailsTab from "@/components/(data)/model/edit/tabs/DetailsTab";
 import BenchmarksTab from "@/components/(data)/model/edit/tabs/BenchmarksTab";
 import PricingTab from "@/components/(data)/model/edit/tabs/PricingTab";
-import ProvidersTab from "@/components/(data)/model/edit/tabs/ProvidersTab";
+import ProvidersTab, { type ProviderCapabilityRow } from "@/components/(data)/model/edit/tabs/ProvidersTab";
 import { updateModel } from "@/app/(dashboard)/models/actions";
 
 type ModelData = {
 	model_id: string;
 	name: string | null;
+	organisation_id: string | null;
+	hidden: boolean;
+	license: string | null;
 	status: string | null;
 	announcement_date: string | null;
 	release_date: string | null;
@@ -34,7 +37,7 @@ function parseModelKey(modelKey: string): {
 	return {
 		provider_id,
 		api_model_id,
-		capability_id: rest.join(":") || "chat/completions",
+		capability_id: rest.join(":") || "text.generate",
 	};
 }
 
@@ -50,6 +53,7 @@ export default function ModelLegacyEditor({
 	const [benchmarkRows, setBenchmarkRows] = useState<any[]>([]);
 	const [pricingRows, setPricingRows] = useState<any[]>([]);
 	const [providerRows, setProviderRows] = useState<any[]>([]);
+	const [providerCapabilityRows, setProviderCapabilityRows] = useState<ProviderCapabilityRow[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -60,7 +64,7 @@ export default function ModelLegacyEditor({
 		const { data: modelData } = await supabase
 			.from("data_models")
 			.select(
-				"model_id, name, status, announcement_date, release_date, deprecation_date, retirement_date, input_types, output_types, previous_model_id, family_id",
+				"model_id, name, organisation_id, hidden, license, status, announcement_date, release_date, deprecation_date, retirement_date, input_types, output_types, previous_model_id, family_id",
 			)
 			.eq("model_id", modelId)
 			.single();
@@ -94,6 +98,9 @@ export default function ModelLegacyEditor({
 			await updateModel({
 				modelId,
 				name: model.name ?? undefined,
+				organisation_id: model.organisation_id,
+				hidden: model.hidden,
+				license: model.license,
 				status: model.status,
 				announcement_date: model.announcement_date,
 				release_date: model.release_date,
@@ -126,7 +133,7 @@ export default function ModelLegacyEditor({
 						is_self_reported: Boolean(row.is_self_reported),
 						other_info: row.other_info ?? null,
 						source_link: row.source_link ?? null,
-						rank: row.rank ?? null,
+						variant: row.variant ?? null,
 					})),
 				provider_models: providerRows
 					.filter((row) => row.provider_id && row.api_model_id)
@@ -141,6 +148,18 @@ export default function ModelLegacyEditor({
 						quantization_scheme: row.quantization_scheme ?? null,
 						effective_from: row.effective_from ?? null,
 						effective_to: row.effective_to ?? null,
+					})),
+				provider_capabilities: providerCapabilityRows
+					.filter((row) => row.provider_id && row.api_model_id && row.capability_id)
+					.map((row) => ({
+						provider_id: row.provider_id,
+						api_model_id: row.api_model_id,
+						capability_id: row.capability_id,
+						status: row.status,
+						max_input_tokens: row.max_input_tokens ?? null,
+						max_output_tokens: row.max_output_tokens ?? null,
+						notes: row.notes ?? null,
+						params: row.params ?? {},
 					})),
 				pricing_rules: pricingRows
 					.map((row) => {
@@ -213,7 +232,7 @@ export default function ModelLegacyEditor({
 			<section className="space-y-3 rounded-lg border p-4">
 				<div>
 					<h2 className="text-base font-semibold">Benchmark Results</h2>
-					<p className="text-sm text-muted-foreground">Set benchmark scores, rank, and source metadata.</p>
+					<p className="text-sm text-muted-foreground">Set benchmark scores, variant, and source metadata.</p>
 				</div>
 				<BenchmarksTab modelId={modelId} onBenchmarksChange={(rows) => setBenchmarkRows(rows)} />
 			</section>
@@ -221,21 +240,21 @@ export default function ModelLegacyEditor({
 			<section className="space-y-3 rounded-lg border p-4">
 				<div>
 					<h2 className="text-base font-semibold">Provider Support</h2>
-					<p className="text-sm text-muted-foreground">Configure provider mappings, family, and modality support.</p>
+					<p className="text-sm text-muted-foreground">Attach providers, set model mapping, modalities, capabilities, and params.</p>
 				</div>
 				<ProvidersTab
 					modelId={modelId}
 					model={model as any}
-					onModelChange={(next) => setModel(next as ModelData)}
 					providers={providers}
 					onProviderModelsChange={(rows) => setProviderRows(rows)}
+					onProviderCapabilitiesChange={(rows) => setProviderCapabilityRows(rows)}
 				/>
 			</section>
 
 			<section className="space-y-3 rounded-lg border p-4">
 				<div>
 					<h2 className="text-base font-semibold">Pricing Rules</h2>
-					<p className="text-sm text-muted-foreground">Define provider/model capability pricing records.</p>
+					<p className="text-sm text-muted-foreground">Set plans, meters, condition logic, and review translated payloads.</p>
 				</div>
 				<PricingTab modelId={modelId} onPricingRulesChange={(rows) => setPricingRows(rows)} />
 			</section>

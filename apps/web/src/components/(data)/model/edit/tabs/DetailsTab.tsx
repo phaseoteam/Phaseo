@@ -1,17 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Plus, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useRef, useState } from "react"
+import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { createClient } from "@/utils/supabase/client"
 import type { ModelData } from "../ModelEditDialog"
 
@@ -35,224 +27,260 @@ interface ModelLink {
   url: string
 }
 
-const LINK_PLATFORMS = [
-  { value: "api_reference", label: "API Reference" },
-  { value: "paper", label: "Paper" },
-  { value: "announcement", label: "Announcement" },
-  { value: "repository", label: "Repository" },
-  { value: "weights", label: "Weights" },
-  { value: "playground", label: "Playground" },
-  { value: "docs", label: "Documentation" },
-  { value: "blog", label: "Blog" },
-  { value: "website", label: "Website" },
-  { value: "other", label: "Other" },
-]
+const DETAIL_FIELDS = [
+  {
+    key: "input_context_length",
+    label: "Input context length",
+    inputType: "number",
+    placeholder: "e.g., 128000",
+  },
+  {
+    key: "output_context_length",
+    label: "Output context length",
+    inputType: "number",
+    placeholder: "e.g., 8192",
+  },
+  {
+    key: "knowledge_cutoff",
+    label: "Knowledge cutoff",
+    inputType: "date",
+    placeholder: "Knowledge cutoff date",
+  },
+  {
+    key: "parameter_count",
+    label: "Parameter count",
+    inputType: "text",
+    placeholder: "e.g., 70000000000",
+  },
+  {
+    key: "training_tokens",
+    label: "Training tokens",
+    inputType: "text",
+    placeholder: "e.g., 13000000000000",
+  },
+] as const
 
-export default function DetailsTab({ modelId, model, onModelChange, onDetailsChange, onLinksChange }: DetailsTabProps) {
-  const [details, setDetails] = useState<ModelDetail[]>([
-    { id: "1", detail_name: "parameter_count", detail_value: "" },
-    { id: "2", detail_name: "input_context_length", detail_value: "" },
-    { id: "3", detail_name: "output_context_length", detail_value: "" },
-    { id: "4", detail_name: "knowledge_cutoff", detail_value: "" },
-    { id: "5", detail_name: "training_tokens", detail_value: "" },
-    { id: "6", detail_name: "license", detail_value: "" },
-  ])
-  const [links, setLinks] = useState<ModelLink[]>([
-    { id: "1", platform: "api_reference", url: "" },
-    { id: "2", platform: "paper", url: "" },
-    { id: "3", platform: "announcement", url: "" },
-    { id: "4", platform: "repository", url: "" },
-    { id: "5", platform: "weights", url: "" },
-  ])
+const LINK_FIELDS = [
+  { key: "announcement", label: "Announcement" },
+  { key: "api_reference", label: "API reference" },
+  { key: "paper", label: "Paper" },
+  { key: "playground", label: "Playground" },
+  { key: "repository", label: "Repository" },
+  { key: "weights", label: "Weights" },
+] as const
+
+type DetailFieldKey = (typeof DETAIL_FIELDS)[number]["key"]
+type LinkFieldKey = (typeof LINK_FIELDS)[number]["key"]
+
+const COMPACT_NUMBER_FORMATTER = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 2,
+})
+
+const COMPACT_DETAIL_FIELDS = new Set<DetailFieldKey>([
+  "parameter_count",
+  "training_tokens",
+])
+
+function sanitizeDigitInput(value: string): string {
+  return value.replace(/[^\d]/g, "")
+}
+
+function formatCompactNumberLabel(value: string): string {
+  if (!value) return ""
+  const normalized = value.replace(/^0+(?=\d)/, "")
+  const safe = normalized || "0"
+  const numeric = Number(safe)
+  if (!Number.isFinite(numeric)) return ""
+  return COMPACT_NUMBER_FORMATTER.format(numeric)
+}
+
+function createEmptyDetailValues(): Record<DetailFieldKey, string> {
+  return {
+    input_context_length: "",
+    output_context_length: "",
+    knowledge_cutoff: "",
+    parameter_count: "",
+    training_tokens: "",
+  }
+}
+
+function createEmptyLinkValues(): Record<LinkFieldKey, string> {
+  return {
+    announcement: "",
+    api_reference: "",
+    paper: "",
+    playground: "",
+    repository: "",
+    weights: "",
+  }
+}
+
+export default function DetailsTab({
+  modelId,
+  model,
+  onModelChange,
+  onDetailsChange,
+  onLinksChange,
+}: DetailsTabProps) {
+  void model
+  void onModelChange
+
+  const [detailValues, setDetailValues] = useState<Record<DetailFieldKey, string>>(createEmptyDetailValues())
+  const [linkValues, setLinkValues] = useState<Record<LinkFieldKey, string>>(createEmptyLinkValues())
+  const onDetailsChangeRef = useRef(onDetailsChange)
+  const onLinksChangeRef = useRef(onLinksChange)
+
+  useEffect(() => {
+    onDetailsChangeRef.current = onDetailsChange
+  }, [onDetailsChange])
+
+  useEffect(() => {
+    onLinksChangeRef.current = onLinksChange
+  }, [onLinksChange])
 
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient()
       const { data: detailsData } = await supabase
         .from("data_model_details")
-        .select("id, detail_name, detail_value")
+        .select("detail_name, detail_value")
         .eq("model_id", modelId)
 
       const { data: linksData } = await supabase
         .from("data_model_links")
-        .select("id, platform, url")
+        .select("platform, url")
         .eq("model_id", modelId)
 
-      if (detailsData?.length) {
-        setDetails(detailsData.map((d: any) => ({
-          id: d.id,
-          detail_name: d.detail_name,
-          detail_value: d.detail_value?.toString() ?? "",
-        })))
+      const nextDetails = createEmptyDetailValues()
+      for (const row of detailsData ?? []) {
+        const key = row.detail_name as DetailFieldKey
+        if (key in nextDetails) {
+          nextDetails[key] = row.detail_value?.toString() ?? ""
+        }
       }
+      setDetailValues(nextDetails)
 
-      if (linksData?.length) {
-        setLinks(linksData.map((l: any) => ({
-          id: l.id,
-          platform: l.platform,
-          url: l.url,
-        })))
+      const nextLinks = createEmptyLinkValues()
+      for (const row of linksData ?? []) {
+        const key = row.platform as LinkFieldKey
+        if (key in nextLinks) {
+          nextLinks[key] = row.url ?? ""
+        }
       }
+      setLinkValues(nextLinks)
     }
-    fetchData()
+
+    void fetchData()
   }, [modelId])
 
   useEffect(() => {
-    onDetailsChange?.(details)
-  }, [details, onDetailsChange])
+    const payload: ModelDetail[] = DETAIL_FIELDS
+      .map((field) => ({
+        id: field.key,
+        detail_name: field.key,
+        detail_value: detailValues[field.key].trim(),
+      }))
+      .filter((row) => row.detail_value.length > 0)
+
+    onDetailsChangeRef.current?.(payload)
+  }, [detailValues])
 
   useEffect(() => {
-    onLinksChange?.(links)
-  }, [links, onLinksChange])
+    const payload: ModelLink[] = LINK_FIELDS
+      .map((field) => ({
+        id: field.key,
+        platform: field.key,
+        url: linkValues[field.key].trim(),
+      }))
+      .filter((row) => row.url.length > 0)
 
-  const parseTypes = (types: string | null): string[] => {
-    if (!types) return []
-    if (types.startsWith("[")) {
-      try {
-        const parsed = JSON.parse(types)
-        return Array.isArray(parsed) ? parsed.map(String) : []
-      } catch {
-        return []
-      }
-    }
-    return types.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
-  }
-
-  const toggleModality = (type: "input" | "output", modality: string) => {
-    const currentTypes = type === "input" ? model.input_types : model.output_types
-    const current = parseTypes(currentTypes)
-    const updated = current.includes(modality)
-      ? current.filter((m) => m !== modality)
-      : [...current, modality]
-    const newTypes = updated.length > 0 ? JSON.stringify(updated) : null
-
-    if (type === "input") {
-      onModelChange({ ...model, input_types: newTypes })
-    } else {
-      onModelChange({ ...model, output_types: newTypes })
-    }
-  }
-
-  const updateDetail = (id: string, field: "detail_name" | "detail_value", value: string) => {
-    setDetails(details.map((d) => (d.id === id ? { ...d, [field]: value } : d)))
-  }
-
-  const updateLink = (id: string, field: "platform" | "url", value: string) => {
-    setLinks(links.map((l) => (l.id === id ? { ...l, [field]: value } : l)))
-  }
+    onLinksChangeRef.current?.(payload)
+  }, [linkValues])
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Label className="text-sm font-medium mb-2 block">Input Modalities</Label>
-        <div className="flex gap-2">
-          {["text", "image", "audio", "video"].map((modality) => {
-            const enabled = parseTypes(model.input_types).includes(modality)
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <Label className="text-sm font-medium">Model Details</Label>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {DETAIL_FIELDS.map((field) => {
+            const isCompactField = COMPACT_DETAIL_FIELDS.has(field.key)
+            const compactLabel = isCompactField
+              ? formatCompactNumberLabel(detailValues[field.key])
+              : ""
+
             return (
-              <Button
-                key={modality}
-                variant={enabled ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleModality("input", modality)}
-              >
-                {modality.charAt(0).toUpperCase() + modality.slice(1)}
-              </Button>
+              <label key={field.key} className="text-sm">
+                <div className="mb-1 text-muted-foreground">{field.label}</div>
+                {field.inputType === "date" ? (
+                  <DatePickerInput
+                    value={detailValues[field.key]}
+                    onChange={(value) =>
+                      setDetailValues((prev) => ({
+                        ...prev,
+                        [field.key]: value,
+                      }))
+                    }
+                    placeholder={field.placeholder}
+                  />
+                ) : isCompactField ? (
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      value={detailValues[field.key]}
+                      onChange={(event) =>
+                        setDetailValues((prev) => ({
+                          ...prev,
+                          [field.key]: sanitizeDigitInput(event.target.value),
+                        }))
+                      }
+                      placeholder={field.placeholder}
+                      className={compactLabel ? "pr-16" : undefined}
+                    />
+                    {compactLabel ? (
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        {compactLabel}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : (
+                  <Input
+                    type={field.inputType}
+                    value={detailValues[field.key]}
+                    onChange={(event) =>
+                      setDetailValues((prev) => ({
+                        ...prev,
+                        [field.key]: event.target.value,
+                      }))
+                    }
+                    placeholder={field.placeholder}
+                  />
+                )}
+              </label>
             )
           })}
         </div>
       </div>
 
-      <div>
-        <Label className="text-sm font-medium mb-2 block">Output Modalities</Label>
-        <div className="flex gap-2">
-          {["text", "image", "audio", "video"].map((modality) => {
-            const enabled = parseTypes(model.output_types).includes(modality)
-            return (
-              <Button
-                key={modality}
-                variant={enabled ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleModality("output", modality)}
-              >
-                {modality.charAt(0).toUpperCase() + modality.slice(1)}
-              </Button>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="border-t pt-4">
-        <div className="flex items-center justify-between mb-3">
-          <Label className="text-sm font-medium">Model Details</Label>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setDetails([...details, { id: `new-${Date.now()}`, detail_name: "", detail_value: "" }])
-            }
-          >
-            <Plus className="h-4 w-4 mr-1" /> Add
-          </Button>
-        </div>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {details.map((detail) => (
-            <div key={detail.id} className="flex gap-2">
+      <div className="space-y-3 border-t pt-4">
+        <Label className="text-sm font-medium">Model Links</Label>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {LINK_FIELDS.map((field) => (
+            <label key={field.key} className="text-sm">
+              <div className="mb-1 text-muted-foreground">{field.label}</div>
               <Input
-                value={detail.detail_name}
-                onChange={(e) => updateDetail(detail.id, "detail_name", e.target.value)}
-                placeholder="Name"
-                className="flex-1"
-              />
-              <Input
-                value={detail.detail_value}
-                onChange={(e) => updateDetail(detail.id, "detail_value", e.target.value)}
-                placeholder="Value"
-                className="flex-1"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDetails(details.filter((d) => d.id !== detail.id))}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="border-t pt-4">
-        <div className="flex items-center justify-between mb-3">
-          <Label className="text-sm font-medium">Links</Label>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLinks([...links, { id: `new-${Date.now()}`, platform: "other", url: "" }])}
-          >
-            <Plus className="h-4 w-4 mr-1" /> Add
-          </Button>
-        </div>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {links.map((link) => (
-            <div key={link.id} className="flex gap-2">
-              <Select value={link.platform} onValueChange={(value) => updateLink(link.id, "platform", value)}>
-                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {LINK_PLATFORMS.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                value={link.url}
-                onChange={(e) => updateLink(link.id, "url", e.target.value)}
+                type="url"
+                value={linkValues[field.key]}
+                onChange={(event) =>
+                  setLinkValues((prev) => ({
+                    ...prev,
+                    [field.key]: event.target.value,
+                  }))
+                }
                 placeholder="https://..."
-                className="flex-1"
               />
-              <Button variant="ghost" size="icon" onClick={() => setLinks(links.filter((l) => l.id !== link.id))}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+            </label>
           ))}
         </div>
       </div>

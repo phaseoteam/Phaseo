@@ -33,6 +33,9 @@ interface ModelEditDialogProps {
 export interface ModelData {
   model_id: string
   name: string | null
+  organisation_id: string | null
+  hidden: boolean
+  license: string | null
   status: string | null
   announcement_date: string | null
   release_date: string | null
@@ -57,13 +60,17 @@ const TAB_HELPERS = {
   details: "Edit modalities, details, and links",
   benchmarks: "Manage benchmark results",
   pricing: "Configure pricing rules",
-  providers: "Edit family and providers",
+  providers: "Configure provider mappings and capabilities",
 } as const
 
 export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) {
   const [open, setOpen] = useState(false)
   const [model, setModel] = useState<ModelData | null>(null)
   const [providers, setProviders] = useState<Array<{ id: string; name: string }>>([])
+  const [detailRows, setDetailRows] = useState<Array<{ id?: string; detail_name: string; detail_value: string }>>([])
+  const [linkRows, setLinkRows] = useState<Array<{ id?: string; platform: string; url: string }>>([])
+  const [detailsTouched, setDetailsTouched] = useState(false)
+  const [linksTouched, setLinksTouched] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +81,7 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
     const { data: modelData } = await supabase
       .from("data_models")
       .select(
-        "model_id, name, status, announcement_date, release_date, deprecation_date, retirement_date, input_types, output_types, previous_model_id, family_id"
+        "model_id, name, organisation_id, hidden, license, status, announcement_date, release_date, deprecation_date, retirement_date, input_types, output_types, previous_model_id, family_id"
       )
       .eq("model_id", modelId)
       .single()
@@ -111,11 +118,12 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
     setError(null)
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("data_models")
-        .update({
-          name: model.name,
+      await updateModel({
+        modelId,
+          name: model.name ?? undefined,
+          organisation_id: model.organisation_id,
+          hidden: Boolean(model.hidden),
+          license: model.license,
           status: model.status,
           announcement_date: model.announcement_date,
           release_date: model.release_date,
@@ -125,13 +133,19 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
           output_types: model.output_types,
           previous_model_id: model.previous_model_id,
           family_id: model.family_id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("model_id", modelId)
-
-      if (error) {
-        throw new Error(error.message)
-      }
+          model_details: detailsTouched
+            ? detailRows.map((row) => ({
+                detail_name: row.detail_name,
+                detail_value: row.detail_value,
+              }))
+            : undefined,
+          links: linksTouched
+            ? linkRows.map((row) => ({
+                platform: row.platform,
+                url: row.url,
+              }))
+            : undefined,
+      })
 
       setOpen(false)
     } catch (err) {
@@ -196,7 +210,19 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
                 <BasicTab model={model} onModelChange={(m) => setModel(m)} />
               )}
               {currentTab === "details" && (
-                <DetailsTab modelId={modelId} model={model} onModelChange={(m) => setModel(m)} />
+                <DetailsTab
+                  modelId={modelId}
+                  model={model}
+                  onModelChange={(m) => setModel(m)}
+                  onDetailsChange={(rows) => {
+                    setDetailsTouched(true)
+                    setDetailRows(rows)
+                  }}
+                  onLinksChange={(rows) => {
+                    setLinksTouched(true)
+                    setLinkRows(rows)
+                  }}
+                />
               )}
               {currentTab === "benchmarks" && <BenchmarksTab modelId={modelId} />}
               {currentTab === "pricing" && <PricingTab modelId={modelId} />}
@@ -204,7 +230,6 @@ export default function ModelEditDialog({ modelId, tab }: ModelEditDialogProps) 
                 <ProvidersTab
                   modelId={modelId}
                   model={model}
-                  onModelChange={(m) => setModel(m)}
                   providers={providers}
                 />
               )}

@@ -21,13 +21,39 @@ const PLATFORM_HOVER_CLASSES: Record<string, string> = {
 	linkedin: "hover:bg-blue-100 dark:hover:bg-blue-900/40",
 };
 
+const PLATFORM_RENDER_ORDER = [
+	"website",
+	"discord",
+	"github",
+	"hugging_face",
+	"instagram",
+	"linkedin",
+	"reddit",
+	"threads",
+	"tiktok",
+	"x",
+	"youtube",
+] as const;
+
+const PLATFORM_ALIASES: Record<string, string> = {
+	twitter: "x",
+	site: "website",
+	web: "website",
+	dicsord: "discord",
+};
+
+function normalizePlatform(rawPlatform: string) {
+	const base = rawPlatform.toLowerCase();
+	return PLATFORM_ALIASES[base] ?? base;
+}
+
 export interface OrganisationLinksProps {
 	organisation: OrganisationOverviewType;
 }
 
 // Helper to get SVG icon by platform name, with theme support for _light/_dark variants
 const getSocialIcon = (platform: string) => {
-	const name = platform.toLowerCase();
+	const name = normalizePlatform(platform);
 	if (["website", "site", "web"].includes(name)) {
 		return (
 			<Globe className="w-5 h-5 inline-block align-text-bottom transition-colors" />
@@ -80,20 +106,20 @@ export default function OrganisationLinks({
 		<div>
 			<div className="grid grid-cols-4 gap-2 md:flex md:flex-row md:flex-wrap md:gap-2">
 				{organisation.organisation_links
+					.slice()
 					.sort((a, b) => {
-						const websiteKeys = ["website", "site", "web"];
-						const aKey = (a.platform || "").toLowerCase();
-						const bKey = (b.platform || "").toLowerCase();
-						const aIsWebsite = websiteKeys.includes(aKey);
-						const bIsWebsite = websiteKeys.includes(bKey);
-						if (aIsWebsite && !bIsWebsite) return -1;
-						if (!aIsWebsite && bIsWebsite) return 1;
-						return a.platform.localeCompare(b.platform);
+						const aKey = normalizePlatform(a.platform || "");
+						const bKey = normalizePlatform(b.platform || "");
+						const aIdx = PLATFORM_RENDER_ORDER.indexOf(aKey as (typeof PLATFORM_RENDER_ORDER)[number]);
+						const bIdx = PLATFORM_RENDER_ORDER.indexOf(bKey as (typeof PLATFORM_RENDER_ORDER)[number]);
+						if (aIdx !== bIdx) return (aIdx < 0 ? 999 : aIdx) - (bIdx < 0 ? 999 : bIdx);
+						return aKey.localeCompare(bKey);
 					})
 					.map((link, idx) => {
+						const normalizedPlatform = normalizePlatform(link.platform);
 						const hoverClass =
 							PLATFORM_HOVER_CLASSES[
-								link.platform.toLowerCase()
+								normalizedPlatform
 							] ||
 							"hover:bg-neutral-100 dark:hover:bg-neutral-800";
 						return (
@@ -113,15 +139,15 @@ export default function OrganisationLinks({
 									target="_blank"
 									rel="noopener noreferrer"
 								>
-									{getSocialIcon(link.platform)}
+									{getSocialIcon(normalizedPlatform)}
 									<span className="text-sm hidden sm:inline">
-										{link.platform.toLowerCase() ===
+										{normalizedPlatform ===
 										"hugging_face"
 											? "Hugging Face"
-											: link.platform
+											: normalizedPlatform
 													.charAt(0)
 													.toUpperCase() +
-											  link.platform.slice(1)}
+											  normalizedPlatform.slice(1)}
 									</span>
 								</Link>
 							</Button>
