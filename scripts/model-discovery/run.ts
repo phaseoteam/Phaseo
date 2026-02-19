@@ -52,6 +52,16 @@ type ProviderRunResult =
           reason: string;
       };
 
+function isProviderDefinition(value: unknown): value is ProviderDefinition {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        typeof (value as ProviderDefinition).id === "string" &&
+        (typeof (value as ProviderDefinition).name === "string" || typeof (value as ProviderDefinition).name === "undefined") &&
+        typeof (value as ProviderDefinition).fetchModels === "function"
+    );
+}
+
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const PROVIDERS_DIR = path.join(SCRIPT_DIR, "providers");
 const STATE_DIR = path.join(SCRIPT_DIR, "state");
@@ -150,18 +160,26 @@ function parseEnvFileContents(raw: string): Record<string, string> {
 function loadLocalEnvFiles(): string[] {
     const root = process.cwd();
     const candidates = [
+        path.join(root, "dev.env"),
+        path.join(root, ".env"),
         path.join(root, "dev.vars"),
         path.join(root, ".env.locals"),
         path.join(root, ".env.local"),
+        path.join(root, "scripts", "model-discovery", "dev.env"),
+        path.join(root, "scripts", "model-discovery", ".env"),
         path.join(root, "apps", "api", "dev.vars"),
         path.join(root, "apps", "api", ".env.locals"),
         path.join(root, "apps", "api", ".env.local"),
+        path.join(root, "apps", "api", ".env"),
         path.join(root, "apps", "web", "dev.vars"),
         path.join(root, "apps", "web", ".env.locals"),
         path.join(root, "apps", "web", ".env.local"),
+        path.join(root, "apps", "web", ".env"),
         path.join(SCRIPT_DIR, "dev.vars"),
+        path.join(SCRIPT_DIR, "dev.env"),
         path.join(SCRIPT_DIR, ".env.locals"),
         path.join(SCRIPT_DIR, ".env.local"),
+        path.join(SCRIPT_DIR, ".env"),
     ];
 
     const loaded: string[] = [];
@@ -312,14 +330,35 @@ async function loadProviders(): Promise<ProviderDefinition[]> {
         .sort();
 
     const providers: ProviderDefinition[] = [];
+    const providerIds = new Set<string>();
+
+    const appendProvider = (provider: ProviderDefinition): void => {
+        if (providerIds.has(provider.id)) return;
+        providerIds.add(provider.id);
+        providers.push(provider);
+    };
+
     for (const file of files) {
         const moduleUrl = pathToFileURL(path.join(PROVIDERS_DIR, file)).href;
-        const imported = await import(moduleUrl);
-        const provider = imported.default as ProviderDefinition | undefined;
-        if (!provider || typeof provider.id !== "string" || typeof provider.fetchModels !== "function") {
+        const imported = (await import(moduleUrl)) as { default?: unknown };
+        const exported = imported.default;
+
+        if (!exported) {
             throw new Error(`Invalid provider module: ${file}`);
         }
-        providers.push(provider);
+
+        if (isProviderDefinition(exported)) {
+            appendProvider(exported);
+            continue;
+        }
+
+        if (!Array.isArray(exported) || !exported.every(isProviderDefinition)) {
+            throw new Error(`Invalid provider module: ${file}`);
+        }
+
+        for (const provider of exported) {
+            appendProvider(provider);
+        }
     }
 
     return providers;
@@ -386,11 +425,30 @@ async function main(): Promise<void> {
     };
 
     const providers = await loadProviders();
+    const providerReadiness = providers.map((provider) => {
+        const missingEnv = getMissingEnvVars(provider.requiredEnv);
+        return {
+            providerId: provider.id,
+            providerName: provider.name,
+            missingEnv,
+            isReady: missingEnv.length === 0,
+        };
+    });
+    const readyCount = providerReadiness.filter((provider) => provider.isReady).length;
+    const missingEnvProviders = providerReadiness.filter((provider) => !provider.isReady);
+    const missingKeyTotals = new Map<string, number>();
+    for (const provider of missingEnvProviders) {
+        for (const envVar of provider.missingEnv) {
+            missingKeyTotals.set(envVar, (missingKeyTotals.get(envVar) ?? 0) + 1);
+        }
+    }
+    const missingKeys = Array.from(missingKeyTotals.keys()).sort((a, b) => a.localeCompare(b));
     const results: ProviderRunResult[] = [];
     const changes: ProviderDiff[] = [];
+    const readinessById = new Map<string, string[]>(providerReadiness.map((provider) => [provider.providerId, provider.missingEnv]));
 
     for (const provider of providers) {
-        const missingEnv = getMissingEnvVars(provider.requiredEnv);
+        const missingEnv = readinessById.get(provider.id) ?? getMissingEnvVars(provider.requiredEnv);
         if (missingEnv.length > 0) {
             results.push({
                 providerId: provider.id,
@@ -449,6 +507,21 @@ async function main(): Promise<void> {
         changes,
     };
     writeJson(REPORT_PATH, report);
+
+    console.log(`[model-discovery] Provider env readiness: ${readyCount}/${providers.length} ready`);
+    if (missingEnvProviders.length > 0) {
+        const missingEnvSummary = missingEnvProviders
+            .slice(0, 12)
+            .map((provider) => `${provider.providerId} (${provider.missingEnv.join(", ")})`)
+            .join(", ");
+        console.log(
+            `[model-discovery] Missing env vars for ${missingEnvProviders.length} provider(s): ${missingEnvSummary}`
+        );
+        if (missingEnvProviders.length > 12) {
+            console.log(`[model-discovery] ...and ${missingEnvProviders.length - 12} more`);
+        }
+        console.log(`[model-discovery] Missing env keys (${missingKeys.length}): ${missingKeys.join(", ")}`);
+    }
 
     console.log(`[model-discovery] Providers loaded: ${providers.length}`);
     console.log(
