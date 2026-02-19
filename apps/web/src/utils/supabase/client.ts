@@ -11,12 +11,22 @@ function toErrorCode(err: unknown): string | null {
 	return null;
 }
 
+function toErrorName(err: unknown): string | null {
+	const value = err as { name?: unknown; cause?: { name?: unknown } };
+	if (typeof value?.name === "string") return value.name;
+	if (typeof value?.cause?.name === "string") return value.cause.name;
+	return null;
+}
+
 function isRetryableFetchError(err: unknown): boolean {
 	const message = err instanceof Error ? err.message.toLowerCase() : String(err ?? "").toLowerCase();
 	const code = (toErrorCode(err) ?? "").toUpperCase();
+	const name = (toErrorName(err) ?? "").toUpperCase();
 	if (message.includes("fetch failed")) return true;
 	if (message.includes("network") || message.includes("timeout") || message.includes("timed out")) return true;
+	if (message.includes("this operation was aborted") || message.includes("was aborted")) return true;
 	if (message.includes("aborterror")) return true;
+	if (name === "ABORTERROR" || code === "ABORT_ERR") return true;
 	if (["ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "EAI_AGAIN", "ECONNREFUSED"].includes(code)) return true;
 	return false;
 }
@@ -47,6 +57,10 @@ async function fetchWithRetry(input: RequestInfo | URL, init?: RequestInit): Pro
 		} catch (err) {
 			clearTimeout(timeout);
 			lastError = err;
+			// Respect caller-provided cancellation and avoid retries for explicit aborts.
+			if (init?.signal?.aborted) {
+				throw err;
+			}
 			if (!isRetryableFetchError(err) || attempt >= attempts) {
 				throw err;
 			}

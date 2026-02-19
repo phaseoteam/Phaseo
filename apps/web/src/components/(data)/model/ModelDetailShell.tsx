@@ -15,22 +15,35 @@ interface ModelDetailShellProps {
 	includeHidden?: boolean;
 }
 
+function toErrorCode(error: unknown): string | null {
+	const value = error as { code?: unknown; cause?: { code?: unknown } };
+	if (typeof value?.code === "string") return value.code;
+	if (typeof value?.cause?.code === "string") return value.cause.code;
+	return null;
+}
+
+function isModelNotFoundError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
+	const code = (toErrorCode(error) ?? "").toUpperCase();
+
+	if (code === "PGRST116") return true;
+	if (message.includes("model not found")) return true;
+	if (message.includes("multiple (or no) rows returned")) return true;
+	return false;
+}
+
 export default async function ModelDetailShell({
 	modelId,
 	children,
 	tab,
 	includeHidden = false,
 }: ModelDetailShellProps) {
-	let header: Awaited<ReturnType<typeof getModelOverviewHeader>> | null = null;
-
-	try {
-		header = await getModelOverviewHeader(modelId, includeHidden);
-	} catch (error) {
-		console.warn("[model-shell] failed to load model header", {
-			modelId,
-			error,
-		});
-	}
+	const header = await getModelOverviewHeader(modelId, includeHidden).catch((error) => {
+		if (isModelNotFoundError(error)) {
+			return null;
+		}
+		throw error;
+	});
 
 	if (!header) {
 		return <ModelNotFoundState modelId={modelId} />;
