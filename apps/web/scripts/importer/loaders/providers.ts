@@ -23,13 +23,16 @@ const toNullableInt = (value: unknown): number | null => {
     return Number.isFinite(parsed) ? parsed : null;
 };
 
-const toProviderStatus = (value: unknown): "Active" | "Beta" | "Alpha" | "NotReady" => {
-    const status = String(value ?? "").trim().toLowerCase();
+const toProviderStatus = (value: unknown): "Active" | "Beta" | "Alpha" | "NotReady" | undefined => {
+    const raw = value == null ? "" : String(value).trim();
+    if (!raw) return undefined;
+
+    const status = raw.toLowerCase();
     if (status === "beta") return "Beta";
     if (status === "alpha") return "Alpha";
     if (status === "notready" || status === "not_ready" || status === "not-ready") return "NotReady";
     if (status === "active") return "Active";
-    // Keep importer resilient when source omits status or uses legacy values.
+    // Keep importer resilient when source uses unknown values.
     return "Active";
 };
 
@@ -148,6 +151,7 @@ export async function loadProviders(
         const { data: j, hash } = await readJsonWithHash<any>(fp);
         const change = tracker.track(fp, hash, { api_provider_id: j.api_provider_id });
 
+        const status = toProviderStatus(j.status);
         const row = {
             api_provider_id: j.api_provider_id,
             api_provider_name: j.api_provider_name,
@@ -155,7 +159,7 @@ export async function loadProviders(
             link: j.link ?? null,
             country_code: j.country_code ?? null,
             colour: j.colour ?? j.color ?? null,
-            status: toProviderStatus(j.status),
+            ...(status ? { status } : {}),
         };
         providerIds.add(row.api_provider_id);
         if (change.status !== "unchanged") {

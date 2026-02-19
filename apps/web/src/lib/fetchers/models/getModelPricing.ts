@@ -59,6 +59,30 @@ type ProviderModelCapability = {
     status?: string | null;
 };
 
+function isMissingProviderModelLimitColumnError(error: unknown): boolean {
+    const value = error as {
+        message?: unknown;
+        details?: unknown;
+        hint?: unknown;
+        code?: unknown;
+    };
+    const message = String(value?.message ?? "").toLowerCase();
+    const details = String(value?.details ?? "").toLowerCase();
+    const hint = String(value?.hint ?? "").toLowerCase();
+    const code = String(value?.code ?? "").toUpperCase();
+    const text = `${message} ${details} ${hint}`;
+    const mentionsTargetColumn =
+        text.includes("context_length") || text.includes("max_output_tokens");
+
+    if (!mentionsTargetColumn) return false;
+    if (code === "PGRST204" || code === "42703") return true;
+    if (text.includes("does not exist")) return true;
+    if (text.includes("could not find") && text.includes("column")) return true;
+    if (text.includes("schema cache")) return true;
+
+    return false;
+}
+
 export default async function getModelPricing(
     modelId: string,
     includeHidden: boolean
@@ -149,12 +173,7 @@ export default async function getModelPricing(
         pmError = res.error;
     }
 
-    if (
-        pmError &&
-        /data_api_provider_models\.(context_length|max_output_tokens) does not exist/i.test(
-            String(pmError.message ?? "")
-        )
-    ) {
+    if (pmError && isMissingProviderModelLimitColumnError(pmError)) {
         const res = await supabase
             .from("data_api_provider_models")
             .select(providerModelSelectLegacy)

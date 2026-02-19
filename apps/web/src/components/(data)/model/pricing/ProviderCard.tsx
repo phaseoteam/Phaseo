@@ -149,7 +149,10 @@ export default function ProviderCard({
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
 	const videoInputs = sec.mediaInputs?.filter((r) => r.mod === "video") ?? [];
 	const textProviderModels = provider.provider_models.filter(
-		(pm) => pm.endpoint === "text.generate"
+		(pm) =>
+			pm.endpoint === "text.generate" &&
+			pm.is_active_gateway &&
+			planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
 	);
 	const maxFrom = (values: Array<number | null | undefined>) => {
 		const nums = values.filter(
