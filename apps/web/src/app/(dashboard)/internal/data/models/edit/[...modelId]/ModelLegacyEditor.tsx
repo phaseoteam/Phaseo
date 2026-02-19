@@ -158,6 +158,8 @@ export default function ModelLegacyEditor({
 						status: row.status,
 						max_input_tokens: row.max_input_tokens ?? null,
 						max_output_tokens: row.max_output_tokens ?? null,
+						effective_from: row.effective_from ?? null,
+						effective_to: row.effective_to ?? null,
 						notes: row.notes ?? null,
 						params: row.params ?? {},
 					})),

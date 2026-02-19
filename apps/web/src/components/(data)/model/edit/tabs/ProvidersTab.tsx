@@ -41,6 +41,8 @@ export interface ProviderCapabilityRow {
   status: "active" | "deranked" | "disabled"
   max_input_tokens: number | null
   max_output_tokens: number | null
+  effective_from: string | null
+  effective_to: string | null
   notes: string | null
   params: Record<string, boolean>
 }
@@ -163,6 +165,8 @@ function defaultCapability(providerRowId: string, providerId: string, apiModelId
     status: "active",
     max_input_tokens: null,
     max_output_tokens: null,
+    effective_from: null,
+    effective_to: null,
     notes: null,
     params: {},
   }
@@ -229,7 +233,7 @@ export default function ProvidersTab({
 
       const { data: capabilityRows } = await supabase
         .from("data_api_provider_model_capabilities")
-        .select("id, provider_api_model_id, capability_id, params, status, max_input_tokens, max_output_tokens, notes")
+        .select("id, provider_api_model_id, capability_id, params, status, max_input_tokens, max_output_tokens, effective_from, effective_to, notes")
         .in("provider_api_model_id", providerModelIds)
 
       const providerById = new Map(mappedProviderModels.map((row) => [row.id, row]))
@@ -249,6 +253,8 @@ export default function ProvidersTab({
               : "active",
           max_input_tokens: capability.max_input_tokens ?? null,
           max_output_tokens: capability.max_output_tokens ?? null,
+          effective_from: capability.effective_from ?? null,
+          effective_to: capability.effective_to ?? null,
           notes: capability.notes ?? null,
           params: Object.fromEntries(
             Object.entries(rawParams).map(([key, value]) => [key, Boolean(value)])

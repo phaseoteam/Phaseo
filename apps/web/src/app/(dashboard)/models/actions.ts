@@ -157,6 +157,8 @@ export interface ModelUpdatePayload {
     status?: "active" | "deranked" | "disabled" | null
     max_input_tokens?: number | null
     max_output_tokens?: number | null
+    effective_from?: string | null
+    effective_to?: string | null
     notes?: string | null
     params?: Record<string, unknown> | null
   }>
@@ -472,6 +474,31 @@ export async function updateModel(payload: ModelUpdatePayload) {
 
   if (provider_models !== undefined) {
     const nowIso = new Date().toISOString()
+    const { data: existingProviderModelRows, error: existingProviderModelRowsError } = await supabase
+      .from("data_api_provider_models")
+      .select("provider_api_model_id")
+      .eq("internal_model_id", modelId)
+
+    if (existingProviderModelRowsError) {
+      console.error("[updateModel] Error loading existing provider models:", existingProviderModelRowsError)
+      throw new Error(existingProviderModelRowsError.message)
+    }
+
+    const existingProviderApiModelIds = (existingProviderModelRows ?? []).map(
+      (row) => row.provider_api_model_id
+    )
+    if (existingProviderApiModelIds.length > 0) {
+      const { error: deleteChildCapabilitiesError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .delete()
+        .in("provider_api_model_id", existingProviderApiModelIds)
+
+      if (deleteChildCapabilitiesError) {
+        console.error("[updateModel] Error deleting provider capability children:", deleteChildCapabilitiesError)
+        throw new Error(deleteChildCapabilitiesError.message)
+      }
+    }
+
     const { error: deleteProvidersError } = await supabase
       .from("data_api_provider_models")
       .delete()
@@ -528,6 +555,33 @@ export async function updateModel(payload: ModelUpdatePayload) {
     }
 
     const providerApiModelIds = (providerModelRows ?? []).map((row) => row.provider_api_model_id)
+    const existingCapabilityWindowByKey = new Map<
+      string,
+      { effective_from: string | null; effective_to: string | null }
+    >()
+    if (providerApiModelIds.length > 0) {
+      const { data: existingCapabilityRows, error: existingCapabilitiesError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id, capability_id, effective_from, effective_to")
+        .in("provider_api_model_id", providerApiModelIds)
+
+      if (existingCapabilitiesError) {
+        console.error("[updateModel] Error loading existing provider capabilities:", existingCapabilitiesError)
+        throw new Error(existingCapabilitiesError.message)
+      }
+
+      for (const row of existingCapabilityRows ?? []) {
+        if (!row.capability_id) continue
+        existingCapabilityWindowByKey.set(
+          `${row.provider_api_model_id}:::${row.capability_id}`,
+          {
+            effective_from: row.effective_from ?? null,
+            effective_to: row.effective_to ?? null,
+          }
+        )
+      }
+    }
+
     if (providerApiModelIds.length > 0) {
       const { error: deleteCapabilitiesError } = await supabase
         .from("data_api_provider_model_capabilities")
@@ -558,6 +612,9 @@ export async function updateModel(payload: ModelUpdatePayload) {
           capability.status === "deranked" || capability.status === "disabled"
             ? capability.status
             : "active"
+        const existingWindow = existingCapabilityWindowByKey.get(
+          `${providerApiModelId}:::${capabilityId || "text.generate"}`
+        )
 
         return {
           provider_api_model_id: providerApiModelId,
@@ -565,6 +622,8 @@ export async function updateModel(payload: ModelUpdatePayload) {
           status: parsedStatus,
           max_input_tokens: capability.max_input_tokens ?? null,
           max_output_tokens: capability.max_output_tokens ?? null,
+          effective_from: capability.effective_from ?? existingWindow?.effective_from ?? null,
+          effective_to: capability.effective_to ?? existingWindow?.effective_to ?? null,
           notes: capability.notes ?? null,
           params:
             capability.params && typeof capability.params === "object"
