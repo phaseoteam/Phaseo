@@ -125,7 +125,6 @@ export interface ModelUpdatePayload {
     unit_size?: number
     price_per_unit: string | number
     currency?: string
-    tiering_mode?: string | null
     note?: string | null
     priority?: number
     effective_from?: string | null
@@ -451,7 +450,6 @@ export async function updateModel(payload: ModelUpdatePayload) {
           unit_size: rule.unit_size ?? 1,
           price_per_unit: Number(rule.price_per_unit) ?? 0,
           currency: rule.currency ?? "USD",
-          tiering_mode: rule.tiering_mode ?? null,
           note: rule.note ?? null,
           match: Array.isArray(rule.match) ? rule.match : [],
           priority: rule.priority ?? 100,

@@ -59,7 +59,6 @@ export type PriceRule = {
     unit_size: number;            // DB: unit_size
     price_per_unit: string;       // keep as string to preserve precision
     currency: string;             // USD
-    tiering_mode: "flat" | "cliff" | "marginal" | null; // DB enum
     match: Condition[];           // DB: match[]
     priority: number;             // higher wins
 

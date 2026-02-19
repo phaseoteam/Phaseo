@@ -41,6 +41,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("chutes", "Qwen/Qwen3-235B-A22B-Thinking-2507")).toBe("chat");
 		expect(resolveOpenAICompatRoute("cohere", "command-a-03-2025")).toBe("chat");
 		expect(resolveOpenAICompatRoute("deepinfra", "meta-llama/Meta-Llama-3.1-8B-Instruct")).toBe("chat");
+		expect(resolveOpenAICompatRoute("friendli", "meta-llama-3.1-8b-instruct")).toBe("chat");
 		expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");
 		expect(resolveOpenAICompatRoute("minimax", "minimax-m2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("alibaba", "qwen3.5-plus")).toBe("responses");
@@ -186,6 +187,41 @@ describe("openAICompatUrl", () => {
 
 		expect(openAICompatUrl("deepinfra", "/chat/completions")).toBe(
 			"https://api.deepinfra.com/v1/openai/chat/completions",
+		);
+	});
+
+	it("builds friendli chat-completions endpoint with default serverless path", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			FRIENDLI_TOKEN: "test-friendli-key",
+		} as any);
+
+		expect(openAICompatUrl("friendli", "/chat/completions")).toBe(
+			"https://api.friendli.ai/serverless/v1/chat/completions",
+		);
+	});
+
+	it("uses dedicated friendli endpoint when base URL already includes /dedicated/v1", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			FRIENDLI_TOKEN: "test-friendli-key",
+			FRIENDLI_BASE_URL: "https://api.friendli.ai/dedicated/v1",
+		} as any);
+
+		expect(openAICompatUrl("friendli", "/chat/completions")).toBe(
+			"https://api.friendli.ai/dedicated/v1/chat/completions",
+		);
+	});
+
+	it("adds /v1 when friendli base URL only specifies dedicated mode", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			FRIENDLI_TOKEN: "test-friendli-key",
+			FRIENDLI_BASE_URL: "https://api.friendli.ai/dedicated",
+		} as any);
+
+		expect(openAICompatUrl("friendli", "/chat/completions")).toBe(
+			"https://api.friendli.ai/dedicated/v1/chat/completions",
 		);
 	});
 

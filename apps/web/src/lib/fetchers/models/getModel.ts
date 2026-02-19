@@ -55,7 +55,6 @@ export interface PricingRule {
     unit_size: number;
     price_per_unit: string | number;
     currency: string;
-    tiering_mode: string;
     priority: number;
     effective_from: string;
     effective_to?: string | null;
@@ -193,7 +192,6 @@ export default async function getModel(
                     unit_size,
                     price_per_unit,
                     currency,
-                    tiering_mode,
                     priority,
                     effective_from,
                     effective_to,
@@ -228,7 +226,6 @@ export default async function getModel(
                 unit_size: Number(row.unit_size ?? 1),
                 price_per_unit: row.price_per_unit,
                 currency: row.currency ?? "USD",
-                tiering_mode: row.tiering_mode ?? "flat",
                 priority: Number(row.priority ?? 100),
                 effective_from: row.effective_from,
                 effective_to: row.effective_to ?? null,

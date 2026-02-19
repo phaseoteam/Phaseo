@@ -75,7 +75,6 @@ CREATE TABLE public.data_api_pricing_rules (
   unit_size numeric NOT NULL DEFAULT 1,
   price_per_unit numeric NOT NULL,
   currency text NOT NULL DEFAULT 'USD'::text,
-  tiering_mode text NOT NULL DEFAULT 'flat'::text,
   note text,
   match jsonb NOT NULL DEFAULT '[]'::jsonb,
   priority integer NOT NULL DEFAULT 100,

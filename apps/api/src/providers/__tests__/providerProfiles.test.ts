@@ -14,6 +14,8 @@ describe("providerProfiles", () => {
 		expect(getProviderProfile("xiaomi")?.textOnly).toBe(true);
 		expect(getProviderProfile("arcee-ai")?.textOnly).toBe(true);
 		expect(getProviderProfile("arcee")?.textOnly).toBe(true);
+		expect(getProviderProfile("friendli")?.textOnly).toBe(true);
+		expect(getProviderProfile("google-vertex")?.textOnly).toBe(true);
 	});
 
 	it("stores text normalize hints in one place", () => {

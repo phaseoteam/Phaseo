@@ -135,11 +135,6 @@ export default async function Pricing({ metadata, includeHidden }: PricingProps)
 																	<h5 className="font-medium">{rule.meter.replace(/_/g, ' ')}</h5>
 																	<p className="text-sm text-muted-foreground">{priceStr}</p>
 																</div>
-																{rule.tiering_mode && (
-																	<span className="text-xs bg-muted px-2 py-1 rounded">
-																		{rule.tiering_mode}
-																	</span>
-																)}
 															</div>
 															{note && (
 																<p className="text-xs text-muted-foreground mt-1">{note}</p>

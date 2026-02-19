@@ -11,7 +11,6 @@ export interface PricingRule {
     unit_size: number;
     price_per_unit: number;     // numeric -> number (cast below)
     currency: string;           // USD (for now)
-    tiering_mode: "flat" | "cliff" | "marginal" | null;
     note: string | null;
     match: any[];               // conditions
     priority: number;
@@ -197,7 +196,6 @@ export default async function getModelPricing(
         unit_size: Number(x.unit_size ?? 1),
         price_per_unit: Number(x.price_per_unit),
         currency: x.currency ?? "USD",
-        tiering_mode: x.tiering_mode ?? null,
         note: x.note ?? null,
         match: x.match ?? [],
         priority: Number(x.priority ?? 100),
@@ -209,7 +207,7 @@ export default async function getModelPricing(
         const { data: r, error: prErr } = await supabase
             .from("data_api_pricing_rules")
             .select(
-                "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, tiering_mode, note, priority, effective_from, effective_to, match"
+                "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match"
             )
             .in("model_key", modelKeys)
             .order("priority", { ascending: false })
@@ -239,7 +237,7 @@ export default async function getModelPricing(
             const { data: fallbackRows, error: fallbackError } = await supabase
                 .from("data_api_pricing_rules")
                 .select(
-                    "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, tiering_mode, note, priority, effective_from, effective_to, match"
+                    "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match"
                 )
                 .like("model_key", `${prefix}%`)
                 .order("priority", { ascending: false })

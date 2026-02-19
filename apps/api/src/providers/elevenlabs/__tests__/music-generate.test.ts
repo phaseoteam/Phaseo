@@ -26,7 +26,6 @@ const PRICING_CARD = {
 			unit_size: 1,
 			price_per_unit: 1,
 			currency: "USD",
-			tiering_mode: "flat",
 			pricing_plan: "standard",
 			note: null,
 			match: [],

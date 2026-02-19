@@ -109,6 +109,14 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 	},
 	{
+		id: "friendli",
+		textOnly: true,
+	},
+	{
+		id: "google-vertex",
+		textOnly: true,
+	},
+	{
 		id: "xiaomi",
 		textOnly: true,
 	},

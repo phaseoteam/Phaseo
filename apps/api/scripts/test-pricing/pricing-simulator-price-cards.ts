@@ -13,7 +13,6 @@ type RawPricingRow = {
     unit_size?: number | null;
     price_per_unit?: string | number | null;
     currency?: string | null;
-    tiering_mode?: string | null;
     priority?: number | null;
     effective_from: string;
     effective_to?: string | null;
@@ -46,7 +45,6 @@ function rowsToPriceCard(
         unit_size: Number(row.unit_size ?? 1),
         price_per_unit: row.price_per_unit === null || row.price_per_unit === undefined ? "0" : String(row.price_per_unit),
         currency: row.currency ?? "USD",
-        tiering_mode: row.tiering_mode ?? null,
         match: conditionMap.get(row.rule_id) ?? [],
         priority: Number(row.priority ?? 100),
     }));
@@ -86,7 +84,7 @@ export async function loadPriceCardsForCombos(combos: Combo[]): Promise<Map<stri
     const { data, error } = await supabase
         .from("data_api_pricing_rules")
         .select(
-            "rule_id, provider_id, api_model_id, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, tiering_mode, note, priority, effective_from, effective_to, updated_at",
+            "rule_id, provider_id, api_model_id, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, updated_at",
         )
         .in("provider_id", providers)
         .in("api_model_id", models)

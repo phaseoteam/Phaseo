@@ -45,7 +45,6 @@ export interface PricingRulePayload {
   unit_size: number
   price_per_unit: number
   currency: string
-  tiering_mode: string | null
   note: string | null
   priority: number
   effective_from: string | null
@@ -64,7 +63,6 @@ interface PricingRuleEditor {
   unit_size: string
   price_per_unit: string
   currency: string
-  tiering_mode: string
   note: string
   priority: string
   effective_from: string
@@ -217,7 +215,6 @@ function toPayload(rule: PricingRuleEditor): PricingRulePayload {
     unit_size: Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1,
     price_per_unit: Number.isFinite(price) ? price : 0,
     currency: rule.currency || "USD",
-    tiering_mode: rule.tiering_mode.trim() || null,
     note: rule.note.trim() || null,
     priority: Number.isFinite(priority) ? priority : 100,
     effective_from: rule.effective_from || null,
@@ -298,7 +295,6 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
           unit_size: String(row.unit_size ?? 1),
           price_per_unit: String(row.price_per_unit ?? 0),
           currency: row.currency ?? "USD",
-          tiering_mode: row.tiering_mode ?? "",
           note: row.note ?? "",
           priority: String(row.priority ?? 100),
           effective_from: toDateInput(row.effective_from),
@@ -337,7 +333,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
     const provider_id = firstPair?.provider_id ?? ""
     const api_model_id = firstPair?.api_model_id ?? modelId
     const capability_id = capabilityByPair[pairKey(provider_id, api_model_id)]?.[0] ?? CAPABILITY_OPTIONS[0]
-    setPricingRules((prev) => [...prev, { id: createId("new-rule"), provider_id, api_model_id, capability_id, pricing_plan: "standard", meter: PRICING_METER_OPTIONS[0]?.value ?? "", unit: "token", unit_size: "1", price_per_unit: "0", currency: "USD", tiering_mode: "", note: "", priority: "100", effective_from: "", effective_to: "", conditions: [] }])
+    setPricingRules((prev) => [...prev, { id: createId("new-rule"), provider_id, api_model_id, capability_id, pricing_plan: "standard", meter: PRICING_METER_OPTIONS[0]?.value ?? "", unit: "token", unit_size: "1", price_per_unit: "0", currency: "USD", note: "", priority: "100", effective_from: "", effective_to: "", conditions: [] }])
   }
 
   const cloneAsMeter = (id: string) => setPricingRules((prev) => {
@@ -384,8 +380,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                 <div className="space-y-1"><Label className="text-xs">Price per unit</Label><Input type="number" step="0.000001" value={rule.price_per_unit} onChange={(event) => setRuleField(rule.id, "price_per_unit", event.target.value)} /></div>
                 <div className="space-y-1"><Label className="text-xs">Currency</Label><Input value={rule.currency} onChange={(event) => setRuleField(rule.id, "currency", event.target.value)} /></div>
               </div>
-              <div className="grid grid-cols-1 gap-2 lg:grid-cols-4">
-                <div className="space-y-1"><Label className="text-xs">Tiering mode</Label><Input value={rule.tiering_mode} onChange={(event) => setRuleField(rule.id, "tiering_mode", event.target.value)} /></div>
+              <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
                 <div className="space-y-1"><Label className="text-xs">Priority</Label><Input type="number" value={rule.priority} onChange={(event) => setRuleField(rule.id, "priority", event.target.value)} /></div>
                 <div className="space-y-1"><Label className="text-xs">Effective from</Label><DatePickerInput value={rule.effective_from} onChange={(value) => setRuleField(rule.id, "effective_from", value)} placeholder="Effective from" /></div>
                 <div className="space-y-1"><Label className="text-xs">Effective to</Label><DatePickerInput value={rule.effective_to} onChange={(value) => setRuleField(rule.id, "effective_to", value)} placeholder="Effective to" /></div>

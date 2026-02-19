@@ -138,10 +138,10 @@ export function setupRuntimeFromEnv(env: Partial<GatewayBindings>) {
         SUPABASE_URL: env.SUPABASE_URL ?? "https://example.supabase.co",
         SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY ?? "test-service-role-key",
         GATEWAY_CACHE: env.GATEWAY_CACHE ?? createMemoryKv(),
-        OPENAI_API_KEY: env.OPENAI_API_KEY,
-        OPENAI_BASE_URL: env.OPENAI_BASE_URL,
         NODE_ENV: env.NODE_ENV ?? "test",
+        ...env,
     } as GatewayBindings);
+    configured = true;
 }
 
 export function teardownTestRuntime() {

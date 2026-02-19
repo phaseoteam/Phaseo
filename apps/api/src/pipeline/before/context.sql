@@ -406,7 +406,6 @@ begin
                   'unit_size', r.unit_size,
                   'price_per_unit', r.price_per_unit,
                   'currency', r.currency,
-                  'tiering_mode', r.tiering_mode,
                   'match', r.match,
                   'priority', r.priority
                 )

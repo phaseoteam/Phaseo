@@ -177,7 +177,6 @@ export default function ModelLegacyEditor({
 							unit_size: Number(row.unit_size ?? 1),
 							price_per_unit: Number(row.price_per_unit ?? 0),
 							currency: row.currency ?? "USD",
-							tiering_mode: row.tiering_mode ?? null,
 							note: row.note ?? null,
 							match: Array.isArray(row.match) ? row.match : [],
 							priority: Number(row.priority ?? 100),

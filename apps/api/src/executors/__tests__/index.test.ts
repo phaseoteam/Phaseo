@@ -193,6 +193,9 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("google-ai-studio", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("google-ai-studio", "images.edits")).toBeNull();
 		expect(resolveProviderExecutor("google-ai-studio", "audio.transcription")).toBeNull();
+		expect(resolveProviderExecutor("google-vertex", "images.generations")).toBeNull();
+		expect(resolveProviderExecutor("google-vertex", "audio.transcription")).toBeNull();
+		expect(resolveProviderExecutor("google-vertex", "video.generation")).toBeNull();
 		expect(resolveProviderExecutor("mistral", "ocr")).toBeTruthy();
 		expect(resolveProviderExecutor("suno", "music.generate")).toBeTruthy();
 		expect(resolveProviderExecutor("elevenlabs", "music.generate")).toBeTruthy();
@@ -242,6 +245,16 @@ describe("resolveProviderExecutor", () => {
 		expectEnabled("google", "audio.transcription");
 		expectEnabled("google", "audio.translations");
 		expectDisabled("google", "music.generate");
+
+		// Google Vertex: native text generation only.
+		expectEnabled("google-vertex", "text.generate");
+		expectDisabled("google-vertex", "images.generations");
+		expectDisabled("google-vertex", "images.edits");
+		expectDisabled("google-vertex", "audio.speech");
+		expectDisabled("google-vertex", "audio.transcription");
+		expectDisabled("google-vertex", "audio.translations");
+		expectDisabled("google-vertex", "video.generation");
+		expectDisabled("google-vertex", "music.generate");
 
 		// xAI: direct video + OpenAI-compatible image/audio.
 		expectEnabled("x-ai", "video.generation");

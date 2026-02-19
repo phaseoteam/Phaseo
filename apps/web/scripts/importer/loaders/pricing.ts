@@ -29,7 +29,6 @@ function digestRule(r: any) {
         unit_size: r.unit_size ?? 1,
         price: toFixed10((r.price_per_unit ?? r.price_usd_per_unit ?? 0) as number),
         pricing_plan: r.pricing_plan ?? r.pricingPlan ?? null,
-        tiering_mode: r.tiering_mode ?? r.tieringMode ?? null,
         note: r.note ?? null,
         effective_from: r.effective_from ?? null,
         effective_to: r.effective_to ?? null,
@@ -54,7 +53,6 @@ type PricingJSON = {
         price_per_unit?: number;
         price_usd_per_unit?: number;
         currency?: string;
-        tiering_mode?: string;
         pricing_plan: string;
         note?: string | null;
         match?: PricingMatch[];             // conditions
@@ -87,7 +85,6 @@ type PricingRuleRow = {
     unit_size: number;
     price_per_unit: string;
     currency: string;
-    tiering_mode: string | null;
     note: string | null;
     match: unknown[];
     priority: number;
@@ -173,7 +170,6 @@ export async function loadPricing(
                         unit_size: r.unit_size ?? 1,
                         price_per_unit: toFixed10(price_val),
                         currency: r.currency ?? "USD",
-                        tiering_mode: r.tiering_mode ?? null,
                         note: r.note ?? null,
                         match: r.match ?? [],
                         priority: prio,

@@ -184,6 +184,7 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/serverless/v1",
         apiKeyEnv: "FRIENDLI_TOKEN",
         baseUrlEnv: "FRIENDLI_BASE_URL",
+        supportsResponses: false,
     },
     gmicloud: {
         providerId: "gmicloud",
@@ -512,6 +513,38 @@ function normalizePathSegment(value: string | undefined) {
     return `/${value.replace(/^\/+|\/+$/g, "")}`;
 }
 
+function resolveFriendliPathPrefix(basePath: string, configuredPrefix: string): string {
+    const normalizedBasePath = basePath.replace(/\/+$/, "");
+    const serverlessPrefix = normalizePathSegment("/serverless");
+    const dedicatedPrefix = normalizePathSegment("/dedicated");
+    const serverlessV1Prefix = `${serverlessPrefix}/v1`;
+    const dedicatedV1Prefix = `${dedicatedPrefix}/v1`;
+
+    // Friendli serverless is the default when no path is configured.
+    if (!normalizedBasePath || normalizedBasePath === "/") {
+        return configuredPrefix;
+    }
+    // Full mode+version path already present.
+    if (
+        normalizedBasePath === serverlessV1Prefix ||
+        normalizedBasePath.endsWith(serverlessV1Prefix) ||
+        normalizedBasePath === dedicatedV1Prefix ||
+        normalizedBasePath.endsWith(dedicatedV1Prefix)
+    ) {
+        return "";
+    }
+    // Mode-only path configured; append /v1 once.
+    if (
+        normalizedBasePath === serverlessPrefix ||
+        normalizedBasePath.endsWith(serverlessPrefix) ||
+        normalizedBasePath === dedicatedPrefix ||
+        normalizedBasePath.endsWith(dedicatedPrefix)
+    ) {
+        return "/v1";
+    }
+    return configuredPrefix;
+}
+
 export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfig {
     const fallback: OpenAICompatConfig = { providerId };
     const config = OPENAI_COMPAT_CONFIG[providerId] ?? fallback;
@@ -549,7 +582,10 @@ export function openAICompatUrl(providerId: string, path: string): string {
         try {
             const parsed = new URL(base);
             const basePath = parsed.pathname.replace(/\/+$/, "");
-            if (basePath === configuredPrefix || basePath.endsWith(configuredPrefix)) {
+            if (providerId === "friendli") {
+                prefix = resolveFriendliPathPrefix(basePath, configuredPrefix);
+            }
+            if (prefix && (basePath === prefix || basePath.endsWith(prefix))) {
                 prefix = "";
             } else if (isAlibabaResponsesRoute) {
                 const chatPrefix = normalizePathSegment(config.pathPrefix ?? "");

@@ -430,7 +430,6 @@ export async function createModelAction(formData: FormData) {
 			unit_size?: number;
 			price_per_unit?: number | string;
 			currency?: string;
-			tiering_mode?: string | null;
 			note?: string | null;
 			priority?: number;
 			effective_from?: string | null;
@@ -565,7 +564,6 @@ export async function createModelAction(formData: FormData) {
 			unit_size: Number(row.unit_size ?? 1),
 			price_per_unit: Number(row.price_per_unit ?? 0),
 			currency: row.currency?.trim() || "USD",
-			tiering_mode: row.tiering_mode?.trim() || null,
 			note: row.note?.trim() || null,
 			priority: Number(row.priority ?? 100),
 			effective_from: row.effective_from || null,
