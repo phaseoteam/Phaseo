@@ -31,7 +31,7 @@ export async function fetchModelOverviewHeader(
 		),
 		includeHidden
 	);
-	const { data, error } = await query.eq("model_id", modelId).single();
+	const { data, error } = await query.eq("model_id", modelId).maybeSingle();
 
 	console.log("[fetch] HIT DB for model header", modelId);
 

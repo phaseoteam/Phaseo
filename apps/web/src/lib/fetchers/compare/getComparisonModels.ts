@@ -347,7 +347,13 @@ async function fetchComparisonModels(
 				const [model, providerPricing, subscriptionPlans] = await Promise.all([
 					getModelCached(id, includeHidden),
 					getModelPricingCached(id, includeHidden),
-					getModelSubscriptionPlansCached(id, includeHidden),
+					getModelSubscriptionPlansCached(id, includeHidden).catch((error) => {
+						console.warn("[compare] Failed to load subscription plans, continuing without them", {
+							modelId: id,
+							error,
+						});
+						return [];
+					}),
 				]);
 				return convertModelToExtended(model, providerPricing, subscriptionPlans);
 			} catch (error) {

@@ -9,7 +9,7 @@ import {
 } from "@/components/(data)/model/model-route-helpers";
 import ModelNotFoundState from "@/components/(data)/model/ModelNotFoundState";
 
-async function fetchModel(modelId: string, includeHidden: boolean) {
+async function fetchModelForMetadata(modelId: string, includeHidden: boolean) {
 	try {
 		return await getModelOverviewCached(modelId, includeHidden);
 	} catch (error) {
@@ -27,7 +27,7 @@ export async function generateMetadata(props: {
 	const params = await props.params;
 	const modelId = getModelIdFromParams(params);
 	const includeHidden = false;
-	const model = await fetchModel(modelId, includeHidden);
+	const model = await fetchModelForMetadata(modelId, includeHidden);
 	const path = `/models/${modelId}`;
 	const imagePath = `/og/models/${modelId}`;
 
@@ -106,7 +106,7 @@ export default async function Page({
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
 
-	const model = await fetchModel(modelId, includeHidden);
+	const model = await getModelOverviewCached(modelId, includeHidden);
 
 	if (!model) {
 		return <ModelNotFoundState modelId={modelId} />;

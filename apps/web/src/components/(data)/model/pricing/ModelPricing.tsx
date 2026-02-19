@@ -18,7 +18,13 @@ export default async function ModelPricing({
 	const [providers, header, subscriptionPlans] = await Promise.all([
 		getModelPricing(modelId, includeHidden),
 		getModelOverviewHeader(modelId, includeHidden),
-		getModelSubscriptionPlansCached(modelId, includeHidden),
+		getModelSubscriptionPlansCached(modelId, includeHidden).catch((error) => {
+			console.warn("[pricing] failed to fetch subscription plans; continuing without plans", {
+				modelId,
+				error,
+			});
+			return [];
+		}),
 	]);
 
 	// Only consider providers that actually have pricing rules

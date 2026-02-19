@@ -15,20 +15,9 @@ interface ModelDetailShellProps {
 	includeHidden?: boolean;
 }
 
-function toErrorCode(error: unknown): string | null {
-	const value = error as { code?: unknown; cause?: { code?: unknown } };
-	if (typeof value?.code === "string") return value.code;
-	if (typeof value?.cause?.code === "string") return value.cause.code;
-	return null;
-}
-
 function isModelNotFoundError(error: unknown): boolean {
 	const message = error instanceof Error ? error.message.toLowerCase() : String(error ?? "").toLowerCase();
-	const code = (toErrorCode(error) ?? "").toUpperCase();
-
-	if (code === "PGRST116") return true;
 	if (message.includes("model not found")) return true;
-	if (message.includes("multiple (or no) rows returned")) return true;
 	return false;
 }
 
