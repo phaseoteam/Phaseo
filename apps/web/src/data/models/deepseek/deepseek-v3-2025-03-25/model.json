@@ -8,7 +8,7 @@
   "release_date": "2025-03-25T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": "MIT + Model License (Commercial use allowed)",
+  "license": "MIT",
   "input_types": null,
   "output_types": null,
   "links": [
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250325",
-      "rank": 36
+      "rank": 37
     },
     {
       "benchmark_id": "lmarena-text",

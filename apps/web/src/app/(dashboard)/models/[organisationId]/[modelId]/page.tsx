@@ -1,14 +1,13 @@
 import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import ModelOverview from "@/components/(data)/model/overview/ModelOverview";
-import Image from "next/image";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { withUTM } from "@/lib/utm";
 import {
 	getModelIdFromParams,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import ModelNotFoundState from "@/components/(data)/model/ModelNotFoundState";
 
 async function fetchModel(modelId: string, includeHidden: boolean) {
 	try {
@@ -107,55 +106,10 @@ export default async function Page({
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
 
-	const model = await getModelOverviewCached(modelId, includeHidden);
+	const model = await fetchModel(modelId, includeHidden);
 
 	if (!model) {
-		return (
-			<main className="flex min-h-screen flex-col">
-				<div className="container mx-auto px-4 py-8">
-					<div className="rounded-lg border border-dashed p-6 md:p-8 text-center bg-muted/30">
-						<div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-							<span className="text-xl">M</span>
-						</div>
-						<p className="text-base font-medium">Model not found</p>
-						<p className="mt-1 text-sm text-muted-foreground">
-							We&apos;re continuously adding new models. Got one
-							to suggest?
-						</p>
-						<div className="mt-3">
-							<a
-								href={withUTM(
-									"https://github.com/AI-Stats/AI-Stats/issues/new",
-									{
-										campaign: "model-suggestion",
-										content: "model-detail-empty-state",
-									}
-								)}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-							>
-								Suggest a Model
-								<Image
-									src="/social/github_light.svg"
-									alt="GitHub Logo"
-									width={16}
-									height={16}
-									className="inline dark:hidden"
-								/>
-								<Image
-									src="/social/github_dark.svg"
-									alt="GitHub Logo"
-									width={16}
-									height={16}
-									className="hidden dark:inline"
-								/>
-							</a>
-						</div>
-					</div>
-				</div>
-			</main>
-		);
+		return <ModelNotFoundState modelId={modelId} />;
 	}
 
 	// console.log("ModelPage model:", model);

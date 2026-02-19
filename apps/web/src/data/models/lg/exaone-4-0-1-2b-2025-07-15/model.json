@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 47
+      "rank": 48
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": "Non Reasoning",
       "source_link": "https://huggingface.co/LGAI-EXAONE/EXAONE-4.0-1.2B",
-      "rank": 47
+      "rank": 48
     },
     {
       "benchmark_id": "hmmt-2025",

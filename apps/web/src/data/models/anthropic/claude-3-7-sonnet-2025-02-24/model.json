@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": "8k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -123,7 +123,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -131,7 +131,7 @@
       "is_self_reported": false,
       "other_info": "1k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -139,7 +139,7 @@
       "is_self_reported": false,
       "other_info": "8k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -147,7 +147,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -155,7 +155,7 @@
       "is_self_reported": false,
       "other_info": "1k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -163,7 +163,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "confabulations",
@@ -211,7 +211,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-3-7-sonnet",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -219,7 +219,7 @@
       "is_self_reported": true,
       "other_info": "Thinking",
       "source_link": null,
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "lisanbench",

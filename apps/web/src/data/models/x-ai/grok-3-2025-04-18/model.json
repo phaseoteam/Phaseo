@@ -66,7 +66,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 26
+      "rank": 27
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 24
+      "rank": 25
     },
     {
       "benchmark_id": "mmlu-pro",

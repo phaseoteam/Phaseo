@@ -237,7 +237,7 @@ export async function guardContext(args: {
         console.error("[guardContext] gateway_context_failed", e);
         return {
             ok: false,
-            response: err("upstream_error", {
+            response: err("gateway_error", {
                 reason: "gateway_context_failed",
                 request_id: args.requestId,
                 team_id: args.teamId,

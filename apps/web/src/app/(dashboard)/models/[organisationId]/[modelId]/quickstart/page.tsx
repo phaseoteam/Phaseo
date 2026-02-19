@@ -87,10 +87,41 @@ export default async function Page({
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
-	const metadata = (await getModelGatewayMetadataCached(
-		modelId,
-		includeHidden
-	)) as ModelGatewayMetadata;
+	const model = await fetchModel(modelId, includeHidden);
+
+	if (!model) {
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="quickstart"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
+
+	let metadata: ModelGatewayMetadata;
+	try {
+		metadata = (await getModelGatewayMetadataCached(
+			modelId,
+			includeHidden
+		)) as ModelGatewayMetadata;
+	} catch (error) {
+		console.warn("[quickstart] failed to load model gateway metadata", {
+			modelId,
+			error,
+		});
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="quickstart"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="quickstart" includeHidden={includeHidden}>

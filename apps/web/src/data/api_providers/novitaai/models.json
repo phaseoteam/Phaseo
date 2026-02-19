@@ -8,6 +8,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": 128000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -21,6 +23,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 163840,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -34,6 +38,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 202800,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -47,6 +53,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -60,6 +68,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": 8192,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -73,6 +83,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -86,6 +98,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 204800,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -99,6 +113,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 204800,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -112,6 +128,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 32000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -125,6 +143,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 204800,
+    "max_output_tokens": 131100,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -138,6 +158,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -151,6 +173,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 204800,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -164,6 +188,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 163840,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -177,6 +203,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -190,6 +218,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,video,image",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -203,6 +233,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 204800,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -216,6 +248,8 @@
     "quantization_scheme": "FP16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 128000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -229,6 +263,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -242,6 +278,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -255,6 +293,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -268,6 +308,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -281,6 +323,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -294,6 +338,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -307,6 +353,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -320,6 +368,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -333,6 +383,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 160000,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -346,6 +398,8 @@
     "quantization_scheme": "FP4",
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -359,6 +413,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -372,6 +428,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 163840,
+    "max_output_tokens": 163840,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -385,6 +443,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 98304,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -398,6 +458,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -411,6 +473,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 16384,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -424,6 +488,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 8192,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -437,6 +503,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text,video,image",
     "output_modalities": "text",
+    "context_length": 65536,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -450,6 +518,8 @@
     "quantization_scheme": "FP4",
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -463,6 +533,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -476,6 +548,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 120000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -489,6 +563,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 32000,
+    "max_output_tokens": 8192,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -502,6 +578,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 60288,
+    "max_output_tokens": 16000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -515,6 +593,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 40000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -528,6 +608,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 163840,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -541,6 +623,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": 8192,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -554,6 +638,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": 8000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -567,6 +653,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 40960,
+    "max_output_tokens": 20000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -580,6 +668,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 8192,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -593,6 +683,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 131072,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -606,6 +698,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -619,6 +713,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -632,6 +728,8 @@
     "quantization_scheme": "FP16",
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 123000,
+    "max_output_tokens": 16000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -645,6 +743,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 123000,
+    "max_output_tokens": 12000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -658,6 +758,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 160000,
+    "max_output_tokens": 160000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -671,6 +773,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 40960,
+    "max_output_tokens": 20000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -684,6 +788,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 40960,
+    "max_output_tokens": 20000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -697,6 +803,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 98304,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -710,6 +818,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 64000,
+    "max_output_tokens": 16000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -723,6 +833,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 64000,
+    "max_output_tokens": 16000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -736,6 +848,8 @@
     "quantization_scheme": "FP16",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -749,6 +863,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -762,6 +878,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 98304,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -775,6 +893,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,video,image",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -788,6 +908,8 @@
     "quantization_scheme": "FP16",
     "input_modalities": "text,image,video",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -801,6 +923,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text,audio,video,image",
     "output_modalities": "text",
+    "context_length": 65536,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -814,6 +938,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,video,audio,image",
     "output_modalities": "text,audio",
+    "context_length": 65536,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -827,6 +953,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 16384,
+    "max_output_tokens": 8192,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -840,6 +968,8 @@
     "quantization_scheme": "FP16",
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": 30000,
+    "max_output_tokens": 8000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -853,6 +983,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 120000,
+    "max_output_tokens": 8000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -866,6 +998,8 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 20000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -879,6 +1013,8 @@
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 32000,
+    "max_output_tokens": 32000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -892,6 +1028,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 64000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []

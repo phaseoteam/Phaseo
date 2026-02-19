@@ -2,6 +2,6 @@
   "api_provider_id": "inceptron",
   "api_provider_name": "Inceptron",
   "description": null,
-  "link": null,
-  "country_code": null
+  "link": "https://docs.inceptron.io/",
+  "country_code": "SE"
 }

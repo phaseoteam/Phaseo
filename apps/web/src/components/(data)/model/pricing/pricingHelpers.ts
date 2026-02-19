@@ -505,8 +505,8 @@ export function calculateCost(
     quantity: number,
     meter: Pick<PricingMeter, 'unit_size' | 'price_per_unit'>
 ): number {
-    const unitSize = meter.unit_size || 1;
-    const billableUnits = Math.ceil(quantity / unitSize);
+    const unitSize = Number(meter.unit_size) > 0 ? Number(meter.unit_size) : 1;
+    const billableUnits = Math.max(0, quantity) / unitSize;
     const pricePerUnit = parseFloat(meter.price_per_unit) || 0;
     return billableUnits * pricePerUnit;
 }

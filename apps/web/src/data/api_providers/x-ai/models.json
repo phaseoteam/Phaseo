@@ -8,6 +8,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2024-12-12T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -112,6 +114,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-04-18T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -223,6 +227,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-04-18T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -334,6 +340,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-07-10T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -438,6 +446,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-11-17T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -542,6 +552,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-11-17T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -646,6 +658,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text,image",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-09-20T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -750,6 +764,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text,image",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-09-20T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -854,6 +870,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-08-28T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -965,6 +983,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -978,6 +998,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2026-01-29T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1002,6 +1024,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2026-01-29T00:00:00",
     "effective_to": null,
     "capabilities": [

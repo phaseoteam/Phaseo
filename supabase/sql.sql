@@ -108,6 +108,8 @@ CREATE TABLE public.data_api_provider_models (
   input_modalities ARRAY,
   output_modalities ARRAY,
   quantization_scheme text,
+  context_length integer,
+  max_output_tokens integer,
   effective_from timestamp with time zone,
   effective_to timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),

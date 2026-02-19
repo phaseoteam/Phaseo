@@ -8,6 +8,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2026-01-27T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -140,6 +142,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-12-01T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -272,6 +276,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []

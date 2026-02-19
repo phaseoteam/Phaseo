@@ -139,7 +139,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -171,7 +171,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 14
+      "rank": 15
     },
     {
       "benchmark_id": "longfact-concepts-hallucination-rate",
@@ -203,7 +203,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "multi-challenge",
@@ -235,7 +235,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "tau-2-airline",
@@ -251,7 +251,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -259,7 +259,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "videomme",
@@ -283,7 +283,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -291,7 +291,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -299,7 +299,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -307,7 +307,7 @@
       "is_self_reported": false,
       "other_info": "Minimal",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -315,7 +315,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -323,7 +323,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -331,7 +331,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -339,7 +339,7 @@
       "is_self_reported": false,
       "other_info": "Minimal Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "matharena-apex",

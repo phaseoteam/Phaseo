@@ -75,12 +75,6 @@ export async function pruneRowsByColumn(
         return;
     }
 
-    if (keep.size === 0) {
-        const res = await supa.from(table).delete();
-        assertOk(res, `${ctx} (delete all)`);
-        return;
-    }
-
     const existing: string[] = [];
     const pageSize = 1000;
     for (let offset = 0; ; offset += pageSize) {
@@ -94,7 +88,10 @@ export async function pruneRowsByColumn(
         if (rows.length < pageSize) break;
     }
 
-    const toDelete = existing.filter((value) => !keep.has(value));
+    const toDelete =
+        keep.size === 0
+            ? existing
+            : existing.filter((value) => !keep.has(value));
     if (toDelete.length === 0) return;
 
     for (const group of chunk(toDelete, 500)) {

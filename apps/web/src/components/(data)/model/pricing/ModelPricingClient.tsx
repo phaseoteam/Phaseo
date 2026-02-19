@@ -70,12 +70,34 @@ export default function ModelPricingClient({
 
     const sortedProviders = useMemo(() => {
         const list = [...providers];
+        const isProviderActiveForPlan = (provider: ProviderPricing) => {
+            const planRules = provider.pricing_rules.filter(
+                (r) => (r.pricing_plan || "standard") === plan
+            );
+            const planModelKeys = new Set(planRules.map((r) => r.model_key));
+            const matchingProviderModels = provider.provider_models.filter((pm) =>
+                planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
+            );
+            const modelScope = matchingProviderModels.length
+                ? matchingProviderModels
+                : provider.provider_models;
+            return modelScope.some((pm) => pm.is_active_gateway);
+        };
+        const byActive = (a: ProviderPricing, b: ProviderPricing) => {
+            const aIsActive = isProviderActiveForPlan(a);
+            const bIsActive = isProviderActiveForPlan(b);
+            if (aIsActive && !bIsActive) return -1;
+            if (!aIsActive && bIsActive) return 1;
+            return 0;
+        };
         const byName = (a: ProviderPricing, b: ProviderPricing) => {
             const an = a.provider.api_provider_name || a.provider.api_provider_id;
             const bn = b.provider.api_provider_name || b.provider.api_provider_id;
             return an.localeCompare(bn);
         };
         const withCreatorBias = (a: ProviderPricing, b: ProviderPricing) => {
+            const activeCmp = byActive(a, b);
+            if (activeCmp !== 0) return activeCmp;
             if (creatorOrgId) {
                 const aIsCreator = a.provider.api_provider_id === creatorOrgId;
                 const bIsCreator = b.provider.api_provider_id === creatorOrgId;
@@ -91,6 +113,8 @@ export default function ModelPricingClient({
 
         if (sort === "throughput") {
             return list.sort((a, b) => {
+                const activeCmp = byActive(a, b);
+                if (activeCmp !== 0) return activeCmp;
                 const aTp = runtimeStats[a.provider.api_provider_id]?.throughput30m;
                 const bTp = runtimeStats[b.provider.api_provider_id]?.throughput30m;
                 if (aTp == null && bTp == null) return withCreatorBias(a, b);
@@ -103,6 +127,8 @@ export default function ModelPricingClient({
 
         if (sort === "latency") {
             return list.sort((a, b) => {
+                const activeCmp = byActive(a, b);
+                if (activeCmp !== 0) return activeCmp;
                 const aLat = runtimeStats[a.provider.api_provider_id]?.latencyMs30m;
                 const bLat = runtimeStats[b.provider.api_provider_id]?.latencyMs30m;
                 if (aLat == null && bLat == null) return withCreatorBias(a, b);
@@ -114,7 +140,7 @@ export default function ModelPricingClient({
         }
 
         return list.sort(withCreatorBias);
-    }, [providers, creatorOrgId, runtimeStats, sort]);
+    }, [providers, creatorOrgId, runtimeStats, sort, plan]);
 
 	return (
 		<div className="space-y-8">

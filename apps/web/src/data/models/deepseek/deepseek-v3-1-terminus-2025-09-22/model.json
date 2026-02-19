@@ -8,7 +8,7 @@
   "release_date": "2025-09-22T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
+  "license": "MIT",
   "input_types": null,
   "output_types": null,
   "links": [],

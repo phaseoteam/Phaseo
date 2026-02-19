@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/blog/gpt-4o-mini-announcement",
-      "rank": 62
+      "rank": 63
     },
     {
       "benchmark_id": "lmarena-text",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "thematic-generalisation",

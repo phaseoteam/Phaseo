@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/meta-llama/llama-models/blob/main/models/llama3_3/MODEL_CARD.md",
-      "rank": 50
+      "rank": 51
     },
     {
       "benchmark_id": "lmarena-text",

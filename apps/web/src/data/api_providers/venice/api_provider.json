@@ -2,6 +2,6 @@
   "api_provider_id": "venice",
   "api_provider_name": "Venice",
   "description": null,
-  "link": null,
-  "country_code": null
+  "link": "https://docs.venice.ai/",
+  "country_code": "US"
 }

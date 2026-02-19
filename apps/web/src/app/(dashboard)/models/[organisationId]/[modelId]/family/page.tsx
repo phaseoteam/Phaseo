@@ -152,9 +152,47 @@ export default async function Page({
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
+	const model = await fetchModel(modelId, includeHidden);
 
-	const header = await getModelOverviewHeader(modelId, includeHidden);
-	const familyId = header?.family_id ?? null;
+	if (!model) {
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="family"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
+
+	let header: Awaited<ReturnType<typeof getModelOverviewHeader>> | null = null;
+	try {
+		header = await getModelOverviewHeader(modelId, includeHidden);
+	} catch (error) {
+		console.warn("[family] failed to load model header", { modelId, error });
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="family"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
+	if (!header) {
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="family"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
+	const familyId = header.family_id ?? null;
 	const family = familyId ? await getFamilyModels(familyId, includeHidden) : null;
 
 	const members = family?.models ?? [];

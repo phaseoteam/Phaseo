@@ -77,11 +77,50 @@ export default async function Page({
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
+	const model = await fetchModel(modelId, includeHidden);
 
-	const highlightCards = await getModelBenchmarkHighlights(
-		modelId,
-		includeHidden
-	);
+	if (!model) {
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="benchmarks"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
+
+	let highlightCards: Awaited<ReturnType<typeof getModelBenchmarkHighlights>> | null =
+		null;
+	try {
+		highlightCards = await getModelBenchmarkHighlights(modelId, includeHidden);
+	} catch (error) {
+		console.warn("[benchmarks] failed to load benchmark highlights", {
+			modelId,
+			error,
+		});
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="benchmarks"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
+	if (!highlightCards) {
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="benchmarks"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="benchmarks" includeHidden={includeHidden}>

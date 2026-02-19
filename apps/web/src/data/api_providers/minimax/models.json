@@ -8,6 +8,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-10-27T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -84,6 +86,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-12-23T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -160,6 +164,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-06-18T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -173,6 +179,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-02-11T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -186,6 +194,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -199,6 +209,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-02-15T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -212,6 +224,8 @@
     "quantization_scheme": null,
     "input_modalities": "image,text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -225,6 +239,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -238,6 +254,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-06-20T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -251,6 +269,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -264,6 +284,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -277,6 +299,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -290,6 +314,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-04-02T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -303,6 +329,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-04-02T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -316,6 +344,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-08-06T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -329,6 +359,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-08-06T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -342,6 +374,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-02-11T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -355,6 +389,8 @@
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
     "capabilities": [
@@ -403,6 +439,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2026-02-12T00:00:00",
     "effective_to": null,
     "capabilities": [

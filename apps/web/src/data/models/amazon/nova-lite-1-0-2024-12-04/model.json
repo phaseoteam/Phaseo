@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.amazon.science/publications/the-amazon-nova-family-of-models-technical-report-and-model-card",
-      "rank": 57
+      "rank": 58
     },
     {
       "benchmark_id": "lmarena-text",

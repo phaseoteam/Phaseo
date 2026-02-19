@@ -1,0 +1,17 @@
+{
+  "model_id": "prime-intellect/intellect-3-1-2026-02-18",
+  "organisation_id": "prime-intellect",
+  "name": "Intellect 3.1",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-02-18T00:00:00",
+  "release_date": "2026-02-18T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "MIT",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

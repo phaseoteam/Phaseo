@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 26
+      "rank": 27
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 26
+      "rank": 27
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "lmarena-text",

@@ -8,7 +8,7 @@
   "release_date": "2026-02-12T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
+  "license": "Modified MIT",
   "input_types": "text",
   "output_types": "text",
   "links": [

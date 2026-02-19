@@ -11,7 +11,12 @@
   "license": "Proprietary",
   "input_types": "text",
   "output_types": "text",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://cursor.com/blog/composer-1-5"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }

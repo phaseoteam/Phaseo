@@ -75,7 +75,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -83,7 +83,7 @@
       "is_self_reported": false,
       "other_info": "8k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": "1k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -99,7 +99,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": "16k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": "8k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -123,7 +123,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -131,7 +131,7 @@
       "is_self_reported": false,
       "other_info": "1k Thinking",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "confabulations",
@@ -179,7 +179,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "lisanbench",

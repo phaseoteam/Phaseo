@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ai21labs/AI21-Jamba-1.5-Mini",
-      "rank": 71
+      "rank": 72
     },
     {
       "benchmark_id": "lmarena-text",

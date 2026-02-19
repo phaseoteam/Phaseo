@@ -100,6 +100,7 @@ function classifyErrorType(args: EventArgs): "system" | "user" | null {
         "missing_required",
     ];
     const systemHints = [
+        "gateway",
         "no_key",
         "missing_api_key",
         "provider_key",

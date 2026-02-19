@@ -8,6 +8,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-12-16T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -105,6 +107,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
     "effective_from": "2025-12-16T00:00:00",
     "effective_to": "2026-01-24T16:00:00",
     "capabilities": [

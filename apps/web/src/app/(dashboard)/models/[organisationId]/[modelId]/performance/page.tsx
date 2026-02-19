@@ -77,8 +77,19 @@ export default async function Page({
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
+	const model = await fetchModelOverview(modelId, includeHidden);
 
-	console.log(`[perf] modelId=${modelId}`);
+	if (!model) {
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="performance"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
 
 	const performanceMetricsPromise = getModelPerformanceMetricsCached(
 		modelId,

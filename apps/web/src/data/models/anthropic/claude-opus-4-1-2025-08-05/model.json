@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "mmmlu",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "mmmu",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "tau-bench-airline",

@@ -8,6 +8,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": 32768,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []

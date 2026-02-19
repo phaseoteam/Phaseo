@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "confabulations",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/openai-o3-mini/",
-      "rank": 27
+      "rank": 28
     },
     {
       "benchmark_id": "lisanbench",

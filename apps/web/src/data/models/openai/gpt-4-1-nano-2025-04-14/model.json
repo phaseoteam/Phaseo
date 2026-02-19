@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 28
+      "rank": 29
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "browsecomp-long-context-128k",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 52
+      "rank": 53
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",

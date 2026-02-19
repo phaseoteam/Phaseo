@@ -8,6 +8,7 @@ export type ErrorCode =
     | "invalid_json"
     | "validation_error"
     | "model_required"
+    | "gateway_error"
     | "upstream_error"
     | "not_supported"
     | "not_ready"
@@ -27,6 +28,7 @@ const STATUS: Record<ErrorCode, number> = {
     invalid_json: 400,
     validation_error: 400,
     model_required: 400,
+    gateway_error: 500,
     upstream_error: 502,
     not_supported: 400,
     not_ready: 409,

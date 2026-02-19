@@ -8,7 +8,7 @@
   "release_date": "2025-01-20T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": "MIT License",
+  "license": "MIT",
   "input_types": "text",
   "output_types": "text",
   "links": [
@@ -90,7 +90,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -98,7 +98,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "confabulations",
@@ -130,7 +130,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "livebench",

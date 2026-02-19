@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "lmarena-text",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-pro-preview.pdf",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "thematic-generalisation",

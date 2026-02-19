@@ -2,6 +2,6 @@
   "api_provider_id": "nextbit",
   "api_provider_name": "NextBit",
   "description": null,
-  "link": null,
-  "country_code": null
+  "link": "https://www.nextbit256.com/docs",
+  "country_code": "ES"
 }

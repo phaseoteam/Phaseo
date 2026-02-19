@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 61
+      "rank": 62
     },
     {
       "benchmark_id": "humaneval",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 19
+      "rank": 20
     }
   ]
 }

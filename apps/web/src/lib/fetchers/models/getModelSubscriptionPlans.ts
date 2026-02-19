@@ -29,6 +29,19 @@ export interface SubscriptionPlan {
     };
 }
 
+function isTransientSupabaseError(error: unknown): boolean {
+    const message = error instanceof Error
+        ? error.message.toLowerCase()
+        : String(error ?? "").toLowerCase();
+    return (
+        message.includes("fetch failed") ||
+        message.includes("network") ||
+        message.includes("timeout") ||
+        message.includes("timed out") ||
+        message.includes("aborterror")
+    );
+}
+
 export default async function getModelSubscriptionPlans(
     modelId: string,
     includeHidden: boolean
@@ -42,6 +55,13 @@ export default async function getModelSubscriptionPlans(
         .maybeSingle();
 
     if (modelError) {
+        if (isTransientSupabaseError(modelError.message)) {
+            console.warn("[pricing] model metadata fetch failed for subscription plans; continuing without plans", {
+                modelId,
+                error: modelError.message,
+            });
+            return [];
+        }
         throw new Error(modelError.message || "Failed to load model metadata");
     }
     if (!modelRow || (!includeHidden && modelRow.hidden)) {
@@ -55,6 +75,13 @@ export default async function getModelSubscriptionPlans(
         .eq("model_id", modelId);
 
     if (modelPlansError) {
+        if (isTransientSupabaseError(modelPlansError.message)) {
+            console.warn("[pricing] subscription plan-model fetch failed; continuing without plans", {
+                modelId,
+                error: modelPlansError.message,
+            });
+            return [];
+        }
         throw new Error(modelPlansError.message || "Failed to fetch model subscription plan models");
     }
 
@@ -91,6 +118,13 @@ export default async function getModelSubscriptionPlans(
         .order("frequency", { ascending: true });
 
     if (plansError) {
+        if (isTransientSupabaseError(plansError.message)) {
+            console.warn("[pricing] subscription plans fetch failed; continuing without plans", {
+                modelId,
+                error: plansError.message,
+            });
+            return [];
+        }
         throw new Error(plansError.message || "Failed to fetch subscription plans");
     }
 

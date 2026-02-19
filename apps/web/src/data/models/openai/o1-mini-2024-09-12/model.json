@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 24
+      "rank": 25
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 18
+      "rank": 19
     },
     {
       "benchmark_id": "confabulations",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/openai-o1-mini-advancing-cost-efficient-reasoning/",
-      "rank": 42
+      "rank": 43
     },
     {
       "benchmark_id": "lmarena-text",

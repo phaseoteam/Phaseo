@@ -28,6 +28,7 @@ export interface ProviderModel {
     input_modalities: string;   // CSV in your current schema
     output_modalities: string;  // CSV in your current schema
     quantization_scheme?: string | null;
+    context_length?: number | null;
     effective_from?: string | null;
     effective_to?: string | null;
     created_at?: string;
@@ -76,37 +77,91 @@ export default async function getModelPricing(
         throw new Error("Model not found");
     }
 
-    // Fetch provider models with capabilities and provider info in one query
-    const { data: pmRows, error: pmError } = await supabase
-        .from("data_api_provider_models")
-        .select(`
-            provider_api_model_id,
-            provider_id,
-            api_model_id,
-            provider_model_slug,
-            internal_model_id,
-            is_active_gateway,
-            input_modalities,
-            output_modalities,
-            quantization_scheme,
-            effective_from,
-            effective_to,
-            created_at,
-            updated_at,
-            data_api_provider_model_capabilities (
-                capability_id,
-                params,
-                max_input_tokens,
-                max_output_tokens,
-                status
-            ),
-            data_api_providers (
-                api_provider_name,
-                link,
-                country_code
-            )
-        `)
-        .eq("internal_model_id", modelId);
+    const providerModelSelect = `
+        provider_api_model_id,
+        provider_id,
+        api_model_id,
+        provider_model_slug,
+        internal_model_id,
+        is_active_gateway,
+        input_modalities,
+        output_modalities,
+        quantization_scheme,
+        context_length,
+        max_output_tokens,
+        effective_from,
+        effective_to,
+        created_at,
+        updated_at,
+        data_api_provider_model_capabilities (
+            capability_id,
+            params,
+            max_input_tokens,
+            max_output_tokens,
+            status
+        ),
+        data_api_providers (
+            api_provider_name,
+            link,
+            country_code
+        )
+    `;
+
+    const providerModelSelectLegacy = `
+        provider_api_model_id,
+        provider_id,
+        api_model_id,
+        provider_model_slug,
+        internal_model_id,
+        is_active_gateway,
+        input_modalities,
+        output_modalities,
+        quantization_scheme,
+        effective_from,
+        effective_to,
+        created_at,
+        updated_at,
+        data_api_provider_model_capabilities (
+            capability_id,
+            params,
+            max_input_tokens,
+            max_output_tokens,
+            status
+        ),
+        data_api_providers (
+            api_provider_name,
+            link,
+            country_code
+        )
+    `;
+
+    // Fetch provider models with capabilities and provider info in one query.
+    // Temporary compatibility: allow pre-migration DBs that don't yet have
+    // context_length / max_output_tokens columns on data_api_provider_models.
+    let pmRows: any[] | null = null;
+    let pmError: any = null;
+    {
+        const res = await supabase
+            .from("data_api_provider_models")
+            .select(providerModelSelect)
+            .eq("internal_model_id", modelId);
+        pmRows = res.data as any[] | null;
+        pmError = res.error;
+    }
+
+    if (
+        pmError &&
+        /data_api_provider_models\.(context_length|max_output_tokens) does not exist/i.test(
+            String(pmError.message ?? "")
+        )
+    ) {
+        const res = await supabase
+            .from("data_api_provider_models")
+            .select(providerModelSelectLegacy)
+            .eq("internal_model_id", modelId);
+        pmRows = res.data as any[] | null;
+        pmError = res.error;
+    }
 
     if (pmError) throw new Error(pmError.message || "Failed to fetch provider models");
 
@@ -165,8 +220,10 @@ export default async function getModelPricing(
                 updated_at: row.updated_at,
                 params: capability.params ?? null,
                 quantization_scheme: row.quantization_scheme ?? null,
+                context_length: row.context_length ?? null,
                 max_input_tokens: capability.max_input_tokens ?? null,
-                max_output_tokens: capability.max_output_tokens ?? null,
+                max_output_tokens:
+                    capability.max_output_tokens ?? row.max_output_tokens ?? null,
             };
 
             providerModels.push(providerModel);

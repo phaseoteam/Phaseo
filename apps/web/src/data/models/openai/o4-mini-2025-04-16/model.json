@@ -83,7 +83,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -99,7 +99,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 14
+      "rank": 15
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 14
+      "rank": 15
     },
     {
       "benchmark_id": "browsecomp-long-context-128k",
@@ -155,7 +155,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 18
+      "rank": 19
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -163,7 +163,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": null,
-      "rank": 18
+      "rank": 19
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -187,7 +187,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "lisanbench",

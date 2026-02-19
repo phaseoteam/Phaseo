@@ -74,7 +74,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 22
+      "rank": 23
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -82,7 +82,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -90,7 +90,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -98,7 +98,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "mmlu-pro",

@@ -28,23 +28,6 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ProviderRuntimeStats } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import { Logo } from "@/components/Logo";
-import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
-
-const ENDPOINT_LABELS: Record<string, string> = {
-	"/chat/completions": "Chat",
-	"/responses": "Responses",
-	"/messages": "Messages",
-	"/images/generations": "Image Gen",
-	"/images/edits": "Image Edit",
-	"/images/variations": "Image Variations",
-	"/video/generations": "Video Gen",
-	"/audio/transcriptions": "Transcription",
-	"/audio/speech": "Speech",
-	"/audio/translations": "Translation",
-	"/embeddings": "Embeddings",
-	"/moderations": "Moderations",
-	"/batches": "Batch",
-};
 
 function formatLatencyMs(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "--";
@@ -60,6 +43,14 @@ function formatThroughput(value: number | null | undefined): string {
 function formatPercent(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "--";
 	return `${value.toFixed(1)}%`;
+}
+
+function formatTokenLimit(value: number | null | undefined): string {
+	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
+	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+	if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
+	return `${Math.round(value)}`;
 }
 
 export default function ProviderCard({
@@ -154,29 +145,35 @@ export default function ProviderCard({
 		return `${hours}h`;
 	};
 
-	const activeProviderModels = provider.provider_models.filter(
-		(pm) => pm.is_active_gateway
-	);
-	const modelScope = activeProviderModels.length
-		? activeProviderModels
-		: provider.provider_models;
-
-	const supportedCapabilities = new Set(modelScope.map((pm) => pm.endpoint));
-	const supportedEndpoints = new Set<string>();
-	for (const cap of supportedCapabilities) {
-		const eps = capabilityToEndpoints[cap] || [];
-		eps.forEach((ep) => supportedEndpoints.add(ep));
-	}
-
-	const supportedEndpointLabels = Array.from(supportedEndpoints)
-		.map((ep) => ENDPOINT_LABELS[ep] ?? ep)
-		.sort((a, b) => a.localeCompare(b));
-	const endpointPreview = supportedEndpointLabels.slice(0, 6);
-	const endpointOverflow = Math.max(0, supportedEndpointLabels.length - 6);
-
 	const isFreePlan = plan === "free";
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
 	const videoInputs = sec.mediaInputs?.filter((r) => r.mod === "video") ?? [];
+	const textProviderModels = provider.provider_models.filter(
+		(pm) => pm.endpoint === "text.generate"
+	);
+	const maxFrom = (values: Array<number | null | undefined>) => {
+		const nums = values.filter(
+			(v): v is number => typeof v === "number" && Number.isFinite(v) && v > 0
+		);
+		return nums.length ? Math.max(...nums) : null;
+	};
+	const maxOutputTokens = maxFrom(
+		textProviderModels.map((pm) => pm.max_output_tokens)
+	);
+	const maxContextTokens = maxFrom(
+		textProviderModels.map((pm) => pm.context_length)
+	);
+	const showTextLimits =
+		textProviderModels.length > 0 &&
+		(maxOutputTokens !== null || maxContextTokens !== null);
+	const textLimitTiles = [
+		maxContextTokens !== null
+			? { label: "Context", value: formatTokenLimit(maxContextTokens) }
+			: null,
+		maxOutputTokens !== null
+			? { label: "Max output", value: formatTokenLimit(maxOutputTokens) }
+			: null,
+	].filter((tile): tile is { label: string; value: string } => Boolean(tile));
 	const allEmpty =
 		!sec.textTokens &&
 		!sec.imageTokens &&
@@ -195,12 +192,12 @@ export default function ProviderCard({
 
 	return (
 		<Card className="border-slate-200">
-			<CardHeader className="pb-2">
-				<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-					<div className="flex items-start gap-3">
+			<CardHeader className="p-2.5 pb-1">
+				<div className="flex flex-wrap items-center justify-between gap-2">
+					<div className="flex min-w-0 items-center gap-2">
 						<Link href={`/api-providers/${sec.providerId}`} className="group">
-							<div className="w-10 h-10 relative flex items-center justify-center rounded-xl border">
-								<div className="w-7 h-7 relative">
+							<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border">
+								<div className="relative h-5 w-5">
 									<Logo
 										id={sec.providerId}
 										alt={`${sec.providerName} logo`}
@@ -210,60 +207,58 @@ export default function ProviderCard({
 								</div>
 							</div>
 						</Link>
-						<div className="space-y-1">
+						<div className="flex min-w-0 flex-wrap items-center gap-2">
 							<Link href={`/api-providers/${sec.providerId}`} className="group">
-								<CardTitle className="text-lg group-hover:text-primary transition-colors">
+								<CardTitle className="truncate text-base group-hover:text-primary transition-colors">
 									{sec.providerName}
 								</CardTitle>
 							</Link>
-							<div className="flex items-center gap-2">
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<div className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-2 py-1">
-												{React.createElement(statusIcon, {
-													className: statusClass,
-												})}
-												<span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-													{status}
-												</span>
-											</div>
-										</TooltipTrigger>
-										<TooltipContent>
-											{countdownMs !== null && (
-												<p>
-													{status === "Coming Soon"
-														? "Pricing available in "
-														: "Expires in "}
-													{formatCountdown(countdownMs)}
-												</p>
-											)}
-											{status === "Inactive" && <p>{inactiveReason}</p>}
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-								{routingStatus?.deranked ? (
-									<Badge
-										variant="destructive"
-										className="text-[0.65rem] uppercase"
-										title="Provider is temporarily deranked by routing health breakers."
-									>
-										Deranked
-									</Badge>
-								) : routingStatus?.recovering ? (
-									<Badge
-										variant="secondary"
-										className="text-[0.65rem] uppercase"
-										title="Provider is in half-open breaker recovery."
-									>
-										Recovering
-									</Badge>
-								) : null}
-							</div>
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-2 py-1">
+											{React.createElement(statusIcon, {
+												className: statusClass,
+											})}
+											<span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
+												{status}
+											</span>
+										</div>
+									</TooltipTrigger>
+									<TooltipContent>
+										{countdownMs !== null && (
+											<p>
+												{status === "Coming Soon"
+													? "Pricing available in "
+													: "Expires in "}
+												{formatCountdown(countdownMs)}
+											</p>
+										)}
+										{status === "Inactive" && <p>{inactiveReason}</p>}
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+							{routingStatus?.deranked ? (
+								<Badge
+									variant="destructive"
+									className="text-[0.65rem] uppercase"
+									title="Provider is temporarily deranked by routing health breakers."
+								>
+									Deranked
+								</Badge>
+							) : routingStatus?.recovering ? (
+								<Badge
+									variant="secondary"
+									className="text-[0.65rem] uppercase"
+									title="Provider is in half-open breaker recovery."
+								>
+									Recovering
+								</Badge>
+							) : null}
 						</div>
 					</div>
 
-					<div className="flex flex-wrap items-center gap-1 md:justify-end">
+					<div className="flex flex-wrap items-center gap-1 justify-end">
 						<Badge variant="outline" className="text-[0.65rem]">
 							Latency {formatLatencyMs(runtimeStats?.latencyMs30m)}
 						</Badge>
@@ -276,61 +271,58 @@ export default function ProviderCard({
 					</div>
 				</div>
 			</CardHeader>
-			<CardContent className="space-y-3">
-				{supportedEndpointLabels.length > 0 ? (
-					<div className="flex flex-wrap items-center gap-1">
-						{endpointPreview.map((label) => (
-							<Badge key={label} variant="secondary" className="text-[0.65rem]">
-								{label}
-							</Badge>
-						))}
-						{endpointOverflow > 0 ? (
-							<Badge variant="secondary" className="text-[0.65rem]">
-								+{endpointOverflow}
-							</Badge>
-						) : null}
-					</div>
-				) : (
-					<div className="text-xs text-muted-foreground">No endpoint metadata.</div>
-				)}
+			<CardContent className="p-2.5 pt-1">
+				<div className="grid grid-cols-1 gap-1.5">
+					{isFreePlan && (
+						<div className="rounded-md border p-2">
+							<div className="mb-0.5 text-xs text-muted-foreground">
+								Per 1M tokens
+							</div>
+							<div className="text-lg font-semibold leading-tight">
+								{fmtUSD(0)}
+							</div>
+						</div>
+					)}
 
-				{isFreePlan && (
-					<div className="rounded-lg border p-3">
-						<div className="text-xs text-muted-foreground mb-1">Per 1M tokens</div>
-						<div className="text-xl font-semibold">{fmtUSD(0)}</div>
-					</div>
-				)}
-
-				{!isFreePlan && sec.textTokens && (
-					<TokenTripleSection title="Text Tokens" triple={sec.textTokens} />
-				)}
-				{!isFreePlan && sec.cacheWrites && sec.cacheWrites.length > 0 && (
-					<CacheWriteSection rows={sec.cacheWrites} />
-				)}
-				{!isFreePlan && sec.requests && sec.requests.length > 0 && (
-					<RequestsSection rows={sec.requests} />
-				)}
-				{!isFreePlan && imageInputs.length > 0 && (
-					<InputsSection title="Image inputs" rows={imageInputs} />
-				)}
-				{!isFreePlan && videoInputs.length > 0 && (
-					<InputsSection title="Video inputs" rows={videoInputs} />
-				)}
-				{!isFreePlan && sec.imageTokens && (
-					<TokenTripleSection title="Image Tokens" triple={sec.imageTokens} />
-				)}
-				{!isFreePlan && sec.imageGen && <ImageGenSection rows={sec.imageGen} />}
-				{!isFreePlan && sec.audioTokens && (
-					<TokenTripleSection title="Audio Tokens" triple={sec.audioTokens} />
-				)}
-				{!isFreePlan && sec.videoTokens && (
-					<TokenTripleSection title="Video Tokens" triple={sec.videoTokens} />
-				)}
-				{!isFreePlan && sec.videoGen && <VideoGenSection rows={sec.videoGen} />}
-				{!isFreePlan && sec.otherRules.length > 0 && (
-					<AdvancedTable rows={sec.otherRules} />
-				)}
+					{!isFreePlan && sec.textTokens && (
+						<TokenTripleSection
+							triple={sec.textTokens}
+							hideHeader
+							leadingTiles={showTextLimits ? textLimitTiles : []}
+						/>
+					)}
+					{!isFreePlan && sec.cacheWrites && sec.cacheWrites.length > 0 && (
+						<CacheWriteSection rows={sec.cacheWrites} />
+					)}
+					{!isFreePlan && sec.requests && sec.requests.length > 0 && (
+						<RequestsSection rows={sec.requests} />
+					)}
+					{!isFreePlan && imageInputs.length > 0 && (
+						<InputsSection title="Image inputs" rows={imageInputs} />
+					)}
+					{!isFreePlan && videoInputs.length > 0 && (
+						<InputsSection title="Video inputs" rows={videoInputs} />
+					)}
+					{!isFreePlan && sec.imageTokens && (
+						<TokenTripleSection title="Image Tokens" triple={sec.imageTokens} />
+					)}
+					{!isFreePlan && sec.imageGen && <ImageGenSection rows={sec.imageGen} />}
+					{!isFreePlan && sec.audioTokens && (
+						<TokenTripleSection title="Audio Tokens" triple={sec.audioTokens} />
+					)}
+					{!isFreePlan && sec.videoTokens && (
+						<TokenTripleSection title="Video Tokens" triple={sec.videoTokens} />
+					)}
+					{!isFreePlan && sec.videoGen && <VideoGenSection rows={sec.videoGen} />}
+					{!isFreePlan && sec.otherRules.length > 0 && (
+						<div>
+							<AdvancedTable rows={sec.otherRules} />
+						</div>
+					)}
+				</div>
 			</CardContent>
 		</Card>
 	);
 }
+
+

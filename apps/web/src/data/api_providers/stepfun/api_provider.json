@@ -2,6 +2,6 @@
   "api_provider_id": "stepfun",
   "api_provider_name": "StepFun",
   "description": null,
-  "link": null,
-  "country_code": null
+  "link": "https://platform.stepfun.com/",
+  "country_code": "CN"
 }

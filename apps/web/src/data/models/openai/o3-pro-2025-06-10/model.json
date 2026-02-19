@@ -63,7 +63,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -71,7 +71,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -79,7 +79,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -87,7 +87,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -95,7 +95,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -103,7 +103,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "codeforces",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "nyt-connections",

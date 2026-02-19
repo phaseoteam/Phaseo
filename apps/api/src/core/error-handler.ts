@@ -126,7 +126,23 @@ export function extractErrorDescription(body: any): string | null {
 
 // Classify error attribution for error header
 export function classifyAttribution({ stage, status, errorCode, body }: { stage: "before" | "execute"; status?: number | null; errorCode?: string | null; body?: any }): "user" | "upstream" {
-    if (stage === "before") return "user";
+    if (stage === "before") {
+        const s = Number(status ?? 0);
+        const code = (errorCode || "").toLowerCase();
+        if (
+            s >= 500 ||
+            code.includes("gateway") ||
+            code.includes("upstream") ||
+            code.includes("internal") ||
+            code.includes("timeout") ||
+            code.includes("routing") ||
+            code.includes("executor")
+        ) {
+            return "upstream";
+        }
+        if (s >= 400) return "user";
+        return "upstream";
+    }
     const s = Number(status ?? 0);
     if (Number.isFinite(s)) {
         if (s >= 500) return "upstream";
@@ -293,6 +309,7 @@ export function classifyErrorType(args: {
 
     // Treat auth/key/rate/upstream failures as system issues per gateway ops policy.
     const systemHints = [
+        "gateway",
         "no_key",
         "missing_api_key",
         "provider_key",

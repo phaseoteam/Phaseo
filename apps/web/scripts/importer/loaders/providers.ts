@@ -14,6 +14,25 @@ const toTextArray = (value?: string[] | string | null): string[] | null => {
     return null;
 };
 
+const toNullableInt = (value: unknown): number | null => {
+    if (value === null || value === undefined || value === "") return null;
+    const parsed =
+        typeof value === "number"
+            ? value
+            : Number.parseInt(String(value), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const toProviderStatus = (value: unknown): "Active" | "Beta" | "Alpha" | "NotReady" => {
+    const status = String(value ?? "").trim().toLowerCase();
+    if (status === "beta") return "Beta";
+    if (status === "alpha") return "Alpha";
+    if (status === "notready" || status === "not_ready" || status === "not-ready") return "NotReady";
+    if (status === "active") return "Active";
+    // Keep importer resilient when source omits status or uses legacy values.
+    return "Active";
+};
+
 const compactNullish = (value: unknown): unknown => {
     if (value === null || value === undefined) return undefined;
     if (Array.isArray(value)) {
@@ -109,6 +128,8 @@ export async function loadProviders(
         input_modalities: string[] | null;
         output_modalities: string[] | null;
         quantization_scheme: string | null;
+        context_length: number | null;
+        max_output_tokens: number | null;
         effective_from: string | null;
         effective_to: string | null;
     }> = [];
@@ -134,6 +155,7 @@ export async function loadProviders(
             link: j.link ?? null,
             country_code: j.country_code ?? null,
             colour: j.colour ?? j.color ?? null,
+            status: toProviderStatus(j.status),
         };
         providerIds.add(row.api_provider_id);
         if (change.status !== "unchanged") {
@@ -188,6 +210,8 @@ export async function loadProviders(
                     input_modalities: toTextArray(model.input_modalities),
                     output_modalities: toTextArray(model.output_modalities),
                     quantization_scheme: model.quantization_scheme ?? null,
+                    context_length: toNullableInt(model.context_length),
+                    max_output_tokens: toNullableInt(model.max_output_tokens),
                     effective_from: model.effective_from ?? null,
                     effective_to: model.effective_to ?? null,
                 });

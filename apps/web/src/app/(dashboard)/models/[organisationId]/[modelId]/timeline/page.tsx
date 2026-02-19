@@ -80,6 +80,18 @@ export default async function Page({
 	const includeHidden = false;
 	const model = await fetchModel(modelId, includeHidden);
 
+	if (!model) {
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="timeline"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
+
 	return (
 		<ModelDetailShell modelId={modelId} tab="timeline" includeHidden={includeHidden}>
 			<ModelReleaseTimeline modelId={modelId} includeHidden={includeHidden} />

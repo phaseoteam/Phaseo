@@ -42,6 +42,27 @@ declare
   -- Resolve model from alias if exists
   resolved_model      text := gateway_fetch_request_context.model;
   base_model          text;
+
+  team_enrichment     jsonb;
+  key_enrichment      jsonb;
+
+  -- Team aggregates
+  team_total_requests bigint;
+  team_total_spend_nanos bigint;
+  team_spend_24h_nanos bigint;
+  team_spend_7d_nanos bigint;
+  team_spend_30d_nanos bigint;
+  team_requests_1h bigint;
+  team_requests_24h bigint;
+  team_created_at timestamptz;
+  team_tier text;
+  team_balance_nanos bigint;
+
+  -- Key aggregates
+  key_name text;
+  key_created_at timestamptz;
+  key_total_requests bigint;
+  key_total_spend_nanos bigint;
 begin
   base_model := gateway_fetch_request_context.model;
   -- hard requirement: key must be provided
@@ -213,124 +234,101 @@ begin
   -- TEAM & KEY ENRICHMENT (Wide Event Context for Observability)
   -- Purpose: Gather user/team context for comprehensive logging (loggingsucks.com pattern)
   -- ============================================================================
-  declare
-    team_enrichment     jsonb;
-    key_enrichment      jsonb;
+  -- Team metadata & wallet
+  select
+    t.created_at,
+    coalesce(t.tier, 'basic'),
+    coalesce(w.balance_nanos, 0)
+  into
+    team_created_at,
+    team_tier,
+    team_balance_nanos
+  from public.teams t
+  left join public.wallets w on w.team_id = t.id
+  where t.id = gateway_fetch_request_context.team_id
+  limit 1;
 
-    -- Team aggregates
-    team_total_requests bigint;
-    team_total_spend_nanos bigint;
-    team_spend_24h_nanos bigint;
-    team_spend_7d_nanos bigint;
-    team_spend_30d_nanos bigint;
-    team_requests_1h bigint;
-    team_requests_24h bigint;
-    team_created_at timestamptz;
-    team_tier text;
-    team_balance_nanos bigint;
+  -- Team spend & request aggregates
+  select
+    count(*),
+    coalesce(sum(gr.cost_nanos), 0)::bigint,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '24 hours'), 0)::bigint,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '7 days'), 0)::bigint,
+    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '30 days'), 0)::bigint,
+    count(*) filter (where gr.created_at >= now_utc - interval '1 hour'),
+    count(*) filter (where gr.created_at >= now_utc - interval '24 hours')
+  into
+    team_total_requests,
+    team_total_spend_nanos,
+    team_spend_24h_nanos,
+    team_spend_7d_nanos,
+    team_spend_30d_nanos,
+    team_requests_1h,
+    team_requests_24h
+  from public.gateway_requests gr
+  where gr.team_id = gateway_fetch_request_context.team_id
+    and gr.success is true;
 
-    -- Key aggregates
-    key_name text;
-    key_created_at timestamptz;
-    key_total_requests bigint;
-    key_total_spend_nanos bigint;
-  begin
-    -- Team metadata & wallet
-    select
-      t.created_at,
-      coalesce(t.tier, 'basic'),
-      coalesce(w.balance_nanos, 0)
-    into
-      team_created_at,
-      team_tier,
-      team_balance_nanos
-    from public.teams t
-    left join public.wallets w on w.team_id = t.id
-    where t.id = gateway_fetch_request_context.team_id
-    limit 1;
+  -- Calculate tier dynamically based on rolling 30-day spend with grace period
+  -- This updates the team's tier in the database if it changed
+  team_tier := calculate_tier_with_grace(gateway_fetch_request_context.team_id, team_spend_30d_nanos);
 
-    -- Team spend & request aggregates
-    select
-      count(*),
-      coalesce(sum(gr.cost_nanos), 0)::bigint,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '24 hours'), 0)::bigint,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '7 days'), 0)::bigint,
-      coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '30 days'), 0)::bigint,
-      count(*) filter (where gr.created_at >= now_utc - interval '1 hour'),
-      count(*) filter (where gr.created_at >= now_utc - interval '24 hours')
-    into
-      team_total_requests,
-      team_total_spend_nanos,
-      team_spend_24h_nanos,
-      team_spend_7d_nanos,
-      team_spend_30d_nanos,
-      team_requests_1h,
-      team_requests_24h
-    from public.gateway_requests gr
-    where gr.team_id = gateway_fetch_request_context.team_id
-      and gr.success is true;
+  team_enrichment := jsonb_build_object(
+    'tier', team_tier,
+    'created_at', to_jsonb(team_created_at),
+    'account_age_days', extract(epoch from (now_utc - team_created_at)) / 86400,
+    'balance_nanos', team_balance_nanos,
+    'balance_usd', round((team_balance_nanos::numeric / 1000000000.0)::numeric, 2),
+    'balance_is_low', team_balance_nanos < min_balance_nanos,
+    'total_requests', team_total_requests,
+    'total_spend_nanos', team_total_spend_nanos,
+    'total_spend_usd', round((team_total_spend_nanos::numeric / 1000000000.0)::numeric, 2),
+    'spend_24h_nanos', team_spend_24h_nanos,
+    'spend_24h_usd', round((team_spend_24h_nanos::numeric / 1000000000.0)::numeric, 4),
+    'spend_7d_nanos', team_spend_7d_nanos,
+    'spend_7d_usd', round((team_spend_7d_nanos::numeric / 1000000000.0)::numeric, 2),
+    'spend_30d_nanos', team_spend_30d_nanos,
+    'spend_30d_usd', round((team_spend_30d_nanos::numeric / 1000000000.0)::numeric, 2),
+    'requests_1h', team_requests_1h,
+    'requests_24h', team_requests_24h
+  );
 
-    -- Calculate tier dynamically based on rolling 30-day spend with grace period
-    -- This updates the team's tier in the database if it changed
-    team_tier := calculate_tier_with_grace(gateway_fetch_request_context.team_id, team_spend_30d_nanos);
+  -- Key metadata & aggregates
+  select
+    k.name,
+    k.created_at
+  into
+    key_name,
+    key_created_at
+  from public.keys k
+  where k.id = gateway_fetch_request_context.api_key_id
+  limit 1;
 
-    team_enrichment := jsonb_build_object(
-      'tier', team_tier,
-      'created_at', to_jsonb(team_created_at),
-      'account_age_days', extract(epoch from (now_utc - team_created_at)) / 86400,
-      'balance_nanos', team_balance_nanos,
-      'balance_usd', round((team_balance_nanos::numeric / 1000000000.0)::numeric, 2),
-      'balance_is_low', team_balance_nanos < min_balance_nanos,
-      'total_requests', team_total_requests,
-      'total_spend_nanos', team_total_spend_nanos,
-      'total_spend_usd', round((team_total_spend_nanos::numeric / 1000000000.0)::numeric, 2),
-      'spend_24h_nanos', team_spend_24h_nanos,
-      'spend_24h_usd', round((team_spend_24h_nanos::numeric / 1000000000.0)::numeric, 4),
-      'spend_7d_nanos', team_spend_7d_nanos,
-      'spend_7d_usd', round((team_spend_7d_nanos::numeric / 1000000000.0)::numeric, 2),
-      'spend_30d_nanos', team_spend_30d_nanos,
-      'spend_30d_usd', round((team_spend_30d_nanos::numeric / 1000000000.0)::numeric, 2),
-      'requests_1h', team_requests_1h,
-      'requests_24h', team_requests_24h
-    );
+  select
+    count(*),
+    coalesce(sum(gr.cost_nanos), 0)::bigint
+  into
+    key_total_requests,
+    key_total_spend_nanos
+  from public.gateway_requests gr
+  where gr.key_id = gateway_fetch_request_context.api_key_id
+    and gr.success is true;
 
-    -- Key metadata & aggregates
-    select
-      k.name,
-      k.created_at
-    into
-      key_name,
-      key_created_at
-    from public.keys k
-    where k.id = gateway_fetch_request_context.api_key_id
-    limit 1;
-
-    select
-      count(*),
-      coalesce(sum(gr.cost_nanos), 0)::bigint
-    into
-      key_total_requests,
-      key_total_spend_nanos
-    from public.gateway_requests gr
-    where gr.key_id = gateway_fetch_request_context.api_key_id
-      and gr.success is true;
-
-    key_enrichment := jsonb_build_object(
-      'name', key_name,
-      'created_at', to_jsonb(key_created_at),
-      'key_age_days', extract(epoch from (now_utc - key_created_at)) / 86400,
-      'total_requests', key_total_requests,
-      'total_spend_nanos', key_total_spend_nanos,
-      'total_spend_usd', round((key_total_spend_nanos::numeric / 1000000000.0)::numeric, 2),
-      'requests_today', used_day_reqs,
-      'spend_today_nanos', used_day_cost,
-      'spend_today_usd', round((used_day_cost::numeric / 1000000000.0)::numeric, 4),
-      'daily_limit_pct', case
-        when v_day_req_limit > 0 then round((used_day_reqs::numeric / v_day_req_limit::numeric * 100)::numeric, 1)
-        else null
-      end
-    );
-  end;
+  key_enrichment := jsonb_build_object(
+    'name', key_name,
+    'created_at', to_jsonb(key_created_at),
+    'key_age_days', extract(epoch from (now_utc - key_created_at)) / 86400,
+    'total_requests', key_total_requests,
+    'total_spend_nanos', key_total_spend_nanos,
+    'total_spend_usd', round((key_total_spend_nanos::numeric / 1000000000.0)::numeric, 2),
+    'requests_today', used_day_reqs,
+    'spend_today_nanos', used_day_cost,
+    'spend_today_usd', round((used_day_cost::numeric / 1000000000.0)::numeric, 4),
+    'daily_limit_pct', case
+      when v_day_req_limit > 0 then round((used_day_reqs::numeric / v_day_req_limit::numeric * 100)::numeric, 1)
+      else null
+    end
+  );
 
   -- provider candidates (BYOK) + pricing, fully qualifying params
   with provider_rows as (

@@ -33,7 +33,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -49,7 +49,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "usamo-2025",

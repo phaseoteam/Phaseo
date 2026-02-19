@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_3",
-      "rank": 72
+      "rank": 73
     },
     {
       "benchmark_id": "lmarena-text",

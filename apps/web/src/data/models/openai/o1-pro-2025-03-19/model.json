@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "codeforces",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-chatgpt-pro/",
-      "rank": 25
+      "rank": 26
     },
     {
       "benchmark_id": "nyt-connections",

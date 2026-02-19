@@ -37,20 +37,20 @@ export function CostBreakdown({
 
 		const multipliedValue = inputValue * requestMultiplier;
 		const unitSize = meter.unit_size || 1;
-		const billableUnits = Math.ceil(multipliedValue / unitSize);
+		const billedUnits = multipliedValue / unitSize;
 		const unitPrice = parseFloat(meter.price_per_unit) || 0;
 
-		return billableUnits * unitPrice;
+		return billedUnits * unitPrice;
 	};
 
-	const calculateBillableUnits = (meter: PricingMeter): number => {
+	const calculateBilledUnits = (meter: PricingMeter): number => {
 		const inputValue = parseFloat(meterInputs[meter.meter] || "0");
 		if (inputValue === 0) return 0;
 
 		const multipliedValue = inputValue * requestMultiplier;
 		const unitSize = meter.unit_size || 1;
 
-		return Math.ceil(multipliedValue / unitSize);
+		return multipliedValue / unitSize;
 	};
 
 	const lines = uniqueMeters
@@ -59,12 +59,18 @@ export function CostBreakdown({
 			lineCost: calculateLineCost(meter),
 			inputValue: parseFloat(meterInputs[meter.meter] || "0"),
 			multipliedValue: parseFloat(meterInputs[meter.meter] || "0") * requestMultiplier,
-			billableUnits: calculateBillableUnits(meter),
+			billedUnits: calculateBilledUnits(meter),
 			unitPrice: parseFloat(meter.price_per_unit) || 0,
 		}))
 		.filter((line) => line.inputValue > 0);
 
 	const totalCost = lines.reduce((sum, line) => sum + line.lineCost, 0);
+
+	const formatUnits = (value: number): string => {
+		if (!Number.isFinite(value)) return "-";
+		if (Number.isInteger(value)) return value.toLocaleString();
+		return value.toLocaleString(undefined, { maximumFractionDigits: 6 });
+	};
 
 	if (lines.length === 0) {
 		return null;
@@ -107,12 +113,12 @@ export function CostBreakdown({
 									<span>{formatQuantity(line.inputValue)}</span>
 								</div>
 								<div className="flex justify-between">
-									<span>× {requestMultiplier} requests:</span>
+									<span>x {requestMultiplier} requests:</span>
 									<span>{formatQuantity(line.multipliedValue)}</span>
 								</div>
 								<div className="flex justify-between">
-									<span>Billable units:</span>
-									<span>{line.billableUnits.toLocaleString()}</span>
+									<span>Billed units:</span>
+									<span>{formatUnits(line.billedUnits)}</span>
 								</div>
 								<div className="flex justify-between">
 									<span>Unit price:</span>

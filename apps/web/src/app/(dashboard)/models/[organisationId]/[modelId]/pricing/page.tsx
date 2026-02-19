@@ -86,6 +86,19 @@ export default async function Page({
 	const routeParams = await params;
 	const modelId = getModelIdFromParams(routeParams);
 	const includeHidden = false;
+	const model = await fetchModel(modelId, includeHidden);
+
+	if (!model) {
+		return (
+			<ModelDetailShell
+				modelId={modelId}
+				tab="pricing"
+				includeHidden={includeHidden}
+			>
+				{null}
+			</ModelDetailShell>
+		);
+	}
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="pricing" includeHidden={includeHidden}>

@@ -26,7 +26,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -34,7 +34,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -42,7 +42,7 @@
       "is_self_reported": true,
       "other_info": "With Search + Python",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -66,7 +66,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": null,
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": null,
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -82,7 +82,7 @@
       "is_self_reported": true,
       "other_info": "Extra High Reasoning Effort",
       "source_link": null,
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "arc-agi-2",
