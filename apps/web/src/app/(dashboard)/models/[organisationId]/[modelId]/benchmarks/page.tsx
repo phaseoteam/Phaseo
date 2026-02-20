@@ -91,36 +91,7 @@ export default async function Page({
 		);
 	}
 
-	let highlightCards: Awaited<ReturnType<typeof getModelBenchmarkHighlights>> | null =
-		null;
-	try {
-		highlightCards = await getModelBenchmarkHighlights(modelId, includeHidden);
-	} catch (error) {
-		console.warn("[benchmarks] failed to load benchmark highlights", {
-			modelId,
-			error,
-		});
-		return (
-			<ModelDetailShell
-				modelId={modelId}
-				tab="benchmarks"
-				includeHidden={includeHidden}
-			>
-				{null}
-			</ModelDetailShell>
-		);
-	}
-	if (!highlightCards) {
-		return (
-			<ModelDetailShell
-				modelId={modelId}
-				tab="benchmarks"
-				includeHidden={includeHidden}
-			>
-				{null}
-			</ModelDetailShell>
-		);
-	}
+	const highlightCards = await getModelBenchmarkHighlights(modelId, includeHidden);
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="benchmarks" includeHidden={includeHidden}>
