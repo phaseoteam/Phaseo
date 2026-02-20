@@ -20,6 +20,14 @@ type UnifiedPlaygroundRequest = {
 	};
 };
 
+const GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+const ALLOWED_APP_HEADERS = new Set([
+	"x-title",
+	"http-referer",
+	"x-app-id",
+	"x-app-name",
+]);
+
 type UpstreamCause = {
 	code?: string;
 	errno?: number;
@@ -36,7 +44,25 @@ const ENDPOINT_PATHS: Record<SupportedEndpoint, string> = {
 	"audio.speech": "/audio/speech",
 };
 
-const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, "");
+function trimTrailingSlashes(value: string): string {
+	let out = value.trim();
+	while (out.endsWith("/")) out = out.slice(0, -1);
+	return out;
+}
+
+function sanitizeAppHeaders(input: unknown): Record<string, string> {
+	if (!input || typeof input !== "object" || Array.isArray(input)) {
+		return {};
+	}
+	const out: Record<string, string> = {};
+	for (const [rawKey, rawValue] of Object.entries(input)) {
+		const key = rawKey.trim().toLowerCase();
+		if (!ALLOWED_APP_HEADERS.has(key)) continue;
+		if (typeof rawValue !== "string") continue;
+		out[key] = rawValue;
+	}
+	return out;
+}
 
 const getUpstreamCause = (error: unknown): UpstreamCause | null => {
 	if (!error || typeof error !== "object" || !("cause" in error)) {
@@ -131,17 +157,33 @@ export async function POST(request: NextRequest) {
 		payload = {};
 	}
 
-	const baseUrl = payload.baseUrl ? normalizeBaseUrl(payload.baseUrl) : "";
+	const gatewayBaseUrl = trimTrailingSlashes(GATEWAY_BASE_URL);
+	const requestedBaseUrl =
+		typeof payload.baseUrl === "string"
+			? trimTrailingSlashes(payload.baseUrl)
+			: "";
 	const apiKey = payload.apiKey?.trim() ?? "";
 	const endpoint = payload.endpoint;
 	const requestBody = payload.requestBody ?? {};
-	const appHeaders = payload.appHeaders ?? {};
+	const appHeaders = sanitizeAppHeaders(payload.appHeaders);
 	const debug = Boolean(payload.debug);
 	const poll = payload.poll ?? null;
 
-	if (!baseUrl || !apiKey) {
+	if (requestedBaseUrl && requestedBaseUrl !== gatewayBaseUrl) {
 		return new Response(
-			JSON.stringify({ error: "Missing baseUrl or apiKey." }),
+			JSON.stringify({
+				error: "Custom baseUrl is not supported for this route.",
+			}),
+			{
+				status: 400,
+				headers: { "Content-Type": "application/json" },
+			},
+		);
+	}
+
+	if (!apiKey) {
+		return new Response(
+			JSON.stringify({ error: "Missing apiKey." }),
 			{
 				status: 400,
 				headers: { "Content-Type": "application/json" },
@@ -187,13 +229,13 @@ export async function POST(request: NextRequest) {
 
 			const suffix = poll.content ? "/content" : "";
 			upstream = await fetch(
-				`${baseUrl}/videos/${encodeURIComponent(resourceId)}${suffix}`,
+				`${gatewayBaseUrl}/videos/${encodeURIComponent(resourceId)}${suffix}`,
 				{
 					method: "GET",
 					headers: {
+						...appHeaders,
 						Authorization: `Bearer ${apiKey}`,
 						...(debug ? { "x-gateway-debug": "true" } : {}),
-						...appHeaders,
 					},
 				},
 			);
@@ -202,13 +244,13 @@ export async function POST(request: NextRequest) {
 				endpoint === "responses" &&
 				(requestBody as { stream?: unknown }).stream === true;
 
-			upstream = await fetch(`${baseUrl}${ENDPOINT_PATHS[endpoint]}`, {
+			upstream = await fetch(`${gatewayBaseUrl}${ENDPOINT_PATHS[endpoint]}`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
+					...appHeaders,
 					Authorization: `Bearer ${apiKey}`,
 					...(debug ? { "x-gateway-debug": "true" } : {}),
-					...appHeaders,
 					...(streamRequested ? { Accept: "text/event-stream" } : {}),
 				},
 				body: JSON.stringify(requestBody),
@@ -239,7 +281,7 @@ export async function POST(request: NextRequest) {
 					: "The gateway is temporarily unavailable. Please try again.",
 				...(isDevelopment
 					? {
-						base_url: baseUrl,
+						base_url: gatewayBaseUrl,
 						cause: cause ?? undefined,
 					}
 					: {}),

@@ -616,6 +616,10 @@ export async function refreshBroadcastDestinationStatusAction(id: string) {
 	if (!url) {
 		return { ok: false, status: "Missing webhook URL" };
 	}
+	const validatedEndpoint = validateOutboundEndpoint(url);
+	if (!validatedEndpoint.ok) {
+		return { ok: false, status: validatedEndpoint.reason };
+	}
 
 	const headers: Record<string, string> = {
 		...parseHeaders(config.headers_json),
@@ -629,14 +633,14 @@ export async function refreshBroadcastDestinationStatusAction(id: string) {
 	const timeout = setTimeout(() => controller.abort(), 10_000);
 
 	try {
-		let response = await fetch(url, {
+		let response = await fetch(validatedEndpoint.value, {
 			method: "HEAD",
 			headers,
 			signal: controller.signal,
 		});
 
 		if (response.status === 405) {
-			response = await fetch(url, {
+			response = await fetch(validatedEndpoint.value, {
 				method: "GET",
 				headers,
 				signal: controller.signal,
@@ -668,6 +672,10 @@ export async function sendBroadcastSampleTraceAction(id: string) {
 	const config = isObject(row.destination_config) ? row.destination_config : {};
 	const url = String(config.url ?? "").trim();
 	if (!url) throw new Error("Webhook URL is missing");
+	const validatedEndpoint = validateOutboundEndpoint(url);
+	if (!validatedEndpoint.ok) {
+		throw new Error(validatedEndpoint.reason);
+	}
 
 	const method = normalizeTraceMethod(config.method);
 	const payload = makeTracePayload({
@@ -692,7 +700,7 @@ export async function sendBroadcastSampleTraceAction(id: string) {
 	const timeout = setTimeout(() => controller.abort(), 10_000);
 
 	try {
-		const response = await fetch(url, {
+		const response = await fetch(validatedEndpoint.value, {
 			method,
 			headers,
 			body: JSON.stringify(payload),
@@ -742,37 +750,13 @@ export async function testBroadcastConnectionFromConfigAction(args: {
 	const method = normalizeTraceMethod(getConfigValue(config, "method"));
 	const headers = buildConnectionTestHeaders(destinationId, config);
 
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), 10_000);
-
-	try {
-		// lgtm[js/request-forgery]
-		// Endpoint is intentionally user-configurable for destination connectivity checks,
-		// and is constrained by validateOutboundEndpoint to public http(s) targets only.
-		const response = await fetch(validatedEndpoint.value, {
-			method,
-			headers,
-			body: JSON.stringify({ resourceSpans: [] }),
-			signal: controller.signal,
-		});
-		const body = await response.text();
-		if (!response.ok) {
-			return {
-				ok: false,
-				status: `Failed (${response.status})${body ? `: ${body.slice(0, 180)}` : ""}`,
-				httpStatus: response.status,
-			};
-		}
-		return {
-			ok: true,
-			status: `Connected (${response.status})`,
-			httpStatus: response.status,
-		};
-	} catch (error) {
-		const message =
-			error instanceof Error ? error.message : "Connection check failed";
-		return { ok: false, status: message };
-	} finally {
-		clearTimeout(timeout);
-	}
+	// Security hardening: only perform local validation during setup.
+	// This avoids server-side fetches to user-configured destinations.
+	return {
+		ok: true,
+		status: `Endpoint validated (${method})`,
+		httpStatus: null as number | null,
+		endpoint: validatedEndpoint.value,
+		headerCount: Object.keys(headers).length,
+	};
 }

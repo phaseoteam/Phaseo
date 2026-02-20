@@ -46,7 +46,16 @@ function isPlaceholderValue(value: string): boolean {
     if (exactPlaceholders.has(normalized)) return true;
     if (normalized.startsWith("your-")) return true;
     if (normalized.startsWith("example-")) return true;
-    if (normalized.includes("your-resource.openai.azure.com")) return true;
+    if (normalized === "your-resource.openai.azure.com") return true;
+
+    try {
+        const parsed = new URL(normalized.includes("://") ? normalized : `https://${normalized}`);
+        if (parsed.hostname.toLowerCase() === "your-resource.openai.azure.com") {
+            return true;
+        }
+    } catch {
+        // Not a URL-like value; continue with non-URL placeholder checks.
+    }
 
     return false;
 }

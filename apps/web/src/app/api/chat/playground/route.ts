@@ -8,7 +8,33 @@ type PlaygroundRequest = {
     debug?: boolean;
 };
 
-const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, "");
+const GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
+const ALLOWED_APP_HEADERS = new Set([
+    "x-title",
+    "http-referer",
+    "x-app-id",
+    "x-app-name",
+]);
+
+function trimTrailingSlashes(value: string): string {
+    let out = value.trim();
+    while (out.endsWith("/")) out = out.slice(0, -1);
+    return out;
+}
+
+function sanitizeAppHeaders(input: unknown): Record<string, string> {
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+        return {};
+    }
+    const out: Record<string, string> = {};
+    for (const [rawKey, rawValue] of Object.entries(input)) {
+        const key = rawKey.trim().toLowerCase();
+        if (!ALLOWED_APP_HEADERS.has(key)) continue;
+        if (typeof rawValue !== "string") continue;
+        out[key] = rawValue;
+    }
+    return out;
+}
 
 type UpstreamCause = {
     code?: string;
@@ -56,17 +82,33 @@ export async function POST(request: NextRequest) {
         payload = {};
     }
 
-    const baseUrl = payload.baseUrl ? normalizeBaseUrl(payload.baseUrl) : "";
+    const gatewayBaseUrl = trimTrailingSlashes(GATEWAY_BASE_URL);
+    const requestedBaseUrl =
+        typeof payload.baseUrl === "string"
+            ? trimTrailingSlashes(payload.baseUrl)
+            : "";
     const apiKey = payload.apiKey?.trim() ?? "";
     const requestBody = payload.requestBody ?? {};
-    const appHeaders = payload.appHeaders ?? {};
+    const appHeaders = sanitizeAppHeaders(payload.appHeaders);
     const debug = Boolean(payload.debug);
     const streamRequested =
         (requestBody as { stream?: unknown }).stream === true;
 
-    if (!baseUrl || !apiKey) {
+    if (requestedBaseUrl && requestedBaseUrl !== gatewayBaseUrl) {
         return new Response(
-            JSON.stringify({ error: "Missing baseUrl or apiKey." }),
+            JSON.stringify({
+                error: "Custom baseUrl is not supported for this route.",
+            }),
+            {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            },
+        );
+    }
+
+    if (!apiKey) {
+        return new Response(
+            JSON.stringify({ error: "Missing apiKey." }),
             {
                 status: 400,
                 headers: { "Content-Type": "application/json" },
@@ -76,13 +118,13 @@ export async function POST(request: NextRequest) {
 
     let upstream: Response;
     try {
-        upstream = await fetch(`${baseUrl}/responses`, {
+        upstream = await fetch(`${gatewayBaseUrl}/responses`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                ...appHeaders,
                 Authorization: `Bearer ${apiKey}`,
                 ...(debug ? { "x-gateway-debug": "true" } : {}),
-                ...appHeaders,
                 ...(streamRequested ? { Accept: "text/event-stream" } : {}),
             },
             body: JSON.stringify(requestBody),
@@ -112,7 +154,7 @@ export async function POST(request: NextRequest) {
                 message,
                 ...(isDevelopment
                     ? {
-                          base_url: baseUrl,
+                          base_url: gatewayBaseUrl,
                           cause: cause ?? undefined,
                       }
                     : {}),
