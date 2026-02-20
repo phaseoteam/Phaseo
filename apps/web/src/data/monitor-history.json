@@ -5502,19 +5502,19 @@
       "file": "apps/web/src/data/organisations/cursor/organisation.json"
     },
     {
-      "id": "39d40aff07fe7babb68507ba85b8c9bad57fc19b:apps/web/src/data/models/google/gemini-3-1-pro-preview/model.json:family_id",
+      "id": "39d40aff07fe7babb68507ba85b8c9bad57fc19b:apps/web/src/data/models/google/gemini-3-1-pro-preview-2026-02-19/model.json:family_id",
       "timestamp": "2026-02-17 17:22:38 +0000",
       "provider": "model",
-      "model": "google/gemini-3-1-pro-preview",
+      "model": "google/gemini-3-1-pro-preview-2026-02-19",
       "endpoint": null,
       "field": "family_id",
       "newValue": "google/gemini-3-0",
       "action": "changed",
       "entityType": "model",
-      "entityId": "google/gemini-3-1-pro-preview",
+      "entityId": "google/gemini-3-1-pro-preview-2026-02-19",
       "orgId": "google",
       "commit": "39d40aff07fe7babb68507ba85b8c9bad57fc19b",
-      "file": "apps/web/src/data/models/google/gemini-3-1-pro-preview/model.json"
+      "file": "apps/web/src/data/models/google/gemini-3-1-pro-preview-2026-02-19/model.json"
     },
     {
       "id": "39d40aff07fe7babb68507ba85b8c9bad57fc19b:apps/web/src/data/api_providers/minimax/models.json:value",
