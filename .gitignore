@@ -22,3 +22,4 @@ guides/private/
 /apps/api/reports
 /reports
 /scripts/model-discovery/state/
+.tmp/

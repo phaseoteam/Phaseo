@@ -30,6 +30,10 @@
     {
       "name": "output_context_length",
       "value": 65536
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-01-01T00:00:00"
     }
   ],
   "benchmarks": [
