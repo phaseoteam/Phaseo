@@ -1,0 +1,17 @@
+[
+  {
+    "api_model_id": null,
+    "provider_api_model_id": "venice",
+    "provider_model_slug": "qwen3-vl-235b-a22b",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": "fp8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  }
+]
