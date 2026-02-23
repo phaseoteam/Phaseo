@@ -44,7 +44,7 @@ jobs:
 
             - name: Restore model discovery state cache
               id: model-state-cache
-              uses: actions/cache/restore@v4
+              uses: actions/cache/restore@v5
               with:
                   path: scripts/model-discovery/state
                   key: model-discovery-state-${{ github.run_id }}
@@ -71,7 +71,7 @@ jobs:
 
             - name: Save model discovery state cache
               if: always()
-              uses: actions/cache/save@v4
+              uses: actions/cache/save@v5
               with:
                   path: scripts/model-discovery/state
                   key: ${{ steps.model-state-cache.outputs.cache-primary-key }}
