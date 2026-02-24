@@ -10,6 +10,12 @@ permissions:
   issues: write
 
 jobs:
+  label-by-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Path-based labeling disabled
+        run: echo "Skipping path-based labels. Labels are managed from PR template checkboxes."
+
   label-by-template:
     runs-on: ubuntu-latest
     steps:
