@@ -41,6 +41,14 @@ jobs:
                 label: "Impact: Breaking",
               },
               {
+                matcher: /-\s*\[[xX]\]\s*Requires DB migration/m,
+                label: "Impact: High Impact",
+              },
+              {
+                matcher: /-\s*\[[xX]\]\s*Changes CI\/CD/m,
+                label: "Impact: High Impact",
+              },
+              {
                 matcher: /-\s*\[[xX]\]\s*User-facing behaviour change/m,
                 label: "Impact: High Impact",
               },
