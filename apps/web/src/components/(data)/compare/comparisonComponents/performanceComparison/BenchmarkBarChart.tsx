@@ -121,11 +121,17 @@ export default function BenchmarkBarChart({
 						<LabelList
 							dataKey={model.name}
 							position="top"
-							formatter={(value: number) =>
-								value != null && !isNaN(value)
-									? value.toFixed(1)
-									: ""
-							}
+							formatter={(value: unknown) => {
+								const numericValue =
+									typeof value === "number"
+										? value
+										: typeof value === "string"
+											? Number(value)
+											: NaN;
+								return Number.isFinite(numericValue)
+									? numericValue.toFixed(1)
+									: "";
+							}}
 							fontSize={12}
 						/>
 					</Bar>
