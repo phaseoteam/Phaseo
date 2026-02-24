@@ -1,0 +1,81 @@
+name: PR Labeler
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+
+jobs:
+  label-by-template:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync impact labels from PR template checkboxes
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const body = context.payload.pull_request.body || "";
+            const pull_number = context.payload.pull_request.number;
+
+            const managedImpactLabels = [
+              "Impact: Breaking",
+              "Impact: High Impact",
+              "Impact: Low Risk",
+            ];
+
+            const impactCheckboxMap = [
+              {
+                matcher: /-\s*\[[xX]\]\s*Breaking change/m,
+                label: "Impact: Breaking",
+              },
+              {
+                matcher: /-\s*\[[xX]\]\s*Requires DB migration/m,
+                label: "Impact: High Impact",
+              },
+              {
+                matcher: /-\s*\[[xX]\]\s*Changes CI\/CD/m,
+                label: "Impact: High Impact",
+              },
+              {
+                matcher: /-\s*\[[xX]\]\s*User-facing behaviour change/m,
+                label: "Impact: High Impact",
+              },
+              {
+                matcher: /-\s*\[[xX]\]\s*No migration \/ no special steps/m,
+                label: "Impact: Low Risk",
+              },
+            ];
+
+            const selectedImpactLabels = impactCheckboxMap
+              .filter(({ matcher }) => matcher.test(body))
+              .map(({ label }) => label);
+
+            const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
+              ...context.repo,
+              issue_number: pull_number,
+            });
+            const currentLabelNames = new Set(currentLabels.map((label) => label.name));
+
+            const labelsToAdd = selectedImpactLabels.filter((label) => !currentLabelNames.has(label));
+            const labelsToRemove = managedImpactLabels.filter(
+              (label) => currentLabelNames.has(label) && !selectedImpactLabels.includes(label)
+            );
+
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                ...context.repo,
+                issue_number: pull_number,
+                labels: labelsToAdd,
+              });
+            }
+
+            for (const label of labelsToRemove) {
+              await github.rest.issues.removeLabel({
+                ...context.repo,
+                issue_number: pull_number,
+                name: label,
+              });
+            }
