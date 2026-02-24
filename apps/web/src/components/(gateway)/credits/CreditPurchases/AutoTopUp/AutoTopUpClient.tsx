@@ -234,7 +234,7 @@ export default function AutoTopUpClient({ wallet, stripeInfo }: Props) {
 
 						<div className="leading-tight">
 							<div className="text-sm text-zinc-800 font-medium capitalize">
-								••••{pm.card?.last4 ?? ""}
+								<span data-pii="true">****{pm.card?.last4 ?? ""}</span>
 							</div>
 							<div className="text-xs text-zinc-500 capitalize">
 								{pm.card?.brand ?? "Card"}
@@ -420,13 +420,8 @@ export default function AutoTopUpClient({ wallet, stripeInfo }: Props) {
 																			>
 																				<div className="leading-tight">
 																					<div className="text-sm font-medium">
-																						<span className="text-zinc-700">
-																							••••
-																							{
-																								pm
-																									.card
-																									?.last4
-																							}
+																						<span className="text-zinc-700" data-pii="true">
+																							****{pm.card?.last4}
 																						</span>
 																						<div className="text-xs text-zinc-500 capitalize">
 																							{pm

@@ -30,7 +30,55 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> CreateBatchAsync(
+	public static Task<object?> CreateAudioRealtimeCallPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/audio/realtime/calls";
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> CreateAudioRealtimeClientSecretsPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/audio/realtime/client_secrets";
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> CreateAudioRealtimeSessionPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/audio/realtime";
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> CreateAudioRealtimeSessionsPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/audio/realtime/sessions";
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> CreateBatchAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -39,10 +87,10 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/batches";
-		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> CreateBatchAliasAsync(
+	public static Task<object?> CreateBatchAliasAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -51,7 +99,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/batch";
-		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> CreateChatCompletionAsync(
@@ -172,6 +220,54 @@ public static class Operations
 	{
 		var resolvedPath = "/keys";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> CreateRealtimeCallPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/realtime/calls";
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> CreateRealtimeClientSecretsPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/realtime/client_secrets";
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> CreateRealtimeSessionPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/realtime";
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> CreateRealtimeSessionsPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/realtime/sessions";
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> CreateResponseAsync(
@@ -354,6 +450,18 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Task<object?> GetAudioRealtimeCallPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/audio/realtime/calls/" + (path != null && path.ContainsKey("call_id") ? path["call_id"] : "");
+		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> GetCreditsAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -462,6 +570,18 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Task<object?> GetRealtimeCallPlaceholderAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/realtime/calls/" + (path != null && path.ContainsKey("call_id") ? path["call_id"] : "");
+		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> GetVideoAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -546,7 +666,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> ListFilesAsync(
+	public static Task<object?> ListFilesAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -555,7 +675,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/files";
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> ListModelsAsync(
@@ -567,6 +687,30 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/models";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> ListModelsAliasApiAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/api/models";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> ListModelsAliasDataAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/data/models";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -666,7 +810,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> RetrieveBatchAsync(
+	public static Task<object?> RetrieveBatchAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -675,10 +819,10 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/batches/" + (path != null && path.ContainsKey("batch_id") ? path["batch_id"] : "");
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> RetrieveBatchAliasAsync(
+	public static Task<object?> RetrieveBatchAliasAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -687,10 +831,10 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/batch/" + (path != null && path.ContainsKey("id") ? path["id"] : "");
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> RetrieveFileAsync(
+	public static Task<object?> RetrieveFileAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -699,7 +843,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/files/" + (path != null && path.ContainsKey("file_id") ? path["file_id"] : "");
-		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> UpdateOAuthClientAsync(
@@ -738,7 +882,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> UploadFileAsync(
+	public static Task<object?> UploadFileAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -747,7 +891,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/files";
-		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
 	}
 
 }

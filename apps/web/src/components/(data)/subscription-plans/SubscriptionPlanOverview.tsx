@@ -31,7 +31,7 @@ export default function SubscriptionPlanOverview({
 							{plan.features && plan.features.length > 5 && (
 								<Link
 									href={`/subscription-plans/${plan.plan_id}/features`}
-									className="text-sm text-primary relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+									className="text-sm text-primary relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									View all {plan.features.length} features →
 								</Link>
@@ -61,7 +61,7 @@ export default function SubscriptionPlanOverview({
 									<div className="flex-1">
 										<Link
 											href={`/models/${modelInfo.model_id}`}
-											className="font-medium hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+											className="font-medium hover:text-primary transition-colors relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 										>
 											{modelInfo.model.name}
 										</Link>
@@ -76,7 +76,7 @@ export default function SubscriptionPlanOverview({
 							{plan.models && plan.models.length > 5 && (
 								<Link
 									href={`/subscription-plans/${plan.plan_id}/models`}
-									className="text-sm text-primary relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+									className="text-sm text-primary relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									View all {plan.models.length} models →
 								</Link>

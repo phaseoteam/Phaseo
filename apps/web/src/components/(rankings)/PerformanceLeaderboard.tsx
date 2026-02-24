@@ -84,7 +84,7 @@ export function PerformanceLeaderboard({
 					{modelHref ? (
 						<Link
 							href={modelHref}
-							className="font-medium truncate block"
+							className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 						>
 							{entry.model_name}
 						</Link>
@@ -95,7 +95,7 @@ export function PerformanceLeaderboard({
 						providerId ? (
 							<Link
 								href={`/api-providers/${encodeURIComponent(providerId)}`}
-								className="text-xs text-muted-foreground truncate block"
+								className="text-xs text-muted-foreground truncate block underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 							>
 								{entry.provider_name}
 							</Link>

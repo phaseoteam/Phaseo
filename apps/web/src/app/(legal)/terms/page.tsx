@@ -16,7 +16,7 @@ export default async function TermsPage() {
 					Last updated: 15 November 2025
 				</p>
 				<h1 className="text-3xl font-semibold text-foreground">
-					AI Stats Terms of Service
+					Terms of Service
 				</h1>
 				<p className="text-sm text-foreground/80">
 					These Terms of Service (&quot;Terms&quot;) govern your use

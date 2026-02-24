@@ -254,9 +254,9 @@ export default function Footer() {
 									variant="ghost"
 									className="h-8 w-full justify-start px-2"
 								>
-									<Link href="/contribute" aria-label="Contribute">
+									<Link href="/contribute" aria-label="Contributors">
 										<FilePlus className="h-4 w-4" />
-										<span className="text-xs">Contribute</span>
+										<span className="text-xs">Contributors</span>
 									</Link>
 								</Button>
 								<Button
@@ -564,10 +564,10 @@ export default function Footer() {
 								<Link
 									href="/contribute"
 									rel="noopener noreferrer"
-									aria-label="Contribute"
+									aria-label="Contributors"
 								>
 									<FilePlus className="h-4 w-4" />
-									<span className="text-xs">Contribute</span>
+									<span className="text-xs">Contributors</span>
 								</Link>
 							</Button>
 

@@ -116,6 +116,7 @@ export type AuthSuccess = {
     apiKeyId: string;
     apiKeyRef: string;
     apiKeyKid: string;
+    userId?: string | null;
     internal?: boolean;
 };
 
@@ -238,6 +239,7 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
             apiKeyRef: `kid_${parsed.kid}`,
             apiKeyKid: parsed.kid,
             teamId,
+            userId: null,
             internal,
         } as AuthSuccess;
     };
@@ -373,6 +375,7 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
             apiKeyId: claims.client_id, // Use client_id as key reference for OAuth
             apiKeyRef: `oauth_${claims.client_id}`,
             apiKeyKid: claims.client_id,
+            userId: claims.user_id,
             internal: false,
         } as AuthSuccess;
     } catch (error: any) {

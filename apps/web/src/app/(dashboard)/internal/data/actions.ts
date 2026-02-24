@@ -42,6 +42,7 @@ const MODEL_DETAIL_NAME_OPTIONS = [
 const MODEL_LINK_PLATFORM_OPTIONS = [
 	"announcement",
 	"api_reference",
+	"model_card",
 	"paper",
 	"playground",
 	"repository",

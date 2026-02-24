@@ -65,7 +65,7 @@ export default function ModelFamily({ modelId, header, familyMembers }: Props) {
 							</div>
 							<Link
 								href={memberPath}
-								className="mt-3 inline-flex text-sm font-medium text-primary hover:underline"
+								className="mt-3 inline-flex text-sm font-medium text-primary underline decoration-transparent hover:decoration-current transition-colors duration-200"
 							>
 								View model
 							</Link>
@@ -76,3 +76,4 @@ export default function ModelFamily({ modelId, header, familyMembers }: Props) {
 		</section>
 	);
 }
+

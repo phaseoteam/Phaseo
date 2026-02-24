@@ -96,6 +96,7 @@ function getWeekdayIndex(date: Date) {
 type ModelCalendarProps = {
 	events: ModelEvent[];
 	monthsWindow?: number;
+	headerActions?: React.ReactNode;
 };
 
 type OrganisationWithColour = ModelEvent["model"]["organisation"] & {
@@ -105,6 +106,7 @@ type OrganisationWithColour = ModelEvent["model"]["organisation"] & {
 export default function ModelCalendar({
 	events,
 	monthsWindow = 13,
+	headerActions,
 }: ModelCalendarProps) {
 	const now = useMemo(() => new Date(), []);
 	const currentYear = new Date().getFullYear();
@@ -143,15 +145,6 @@ export default function ModelCalendar({
 
 		return buckets;
 	}, [events]);
-
-	const monthLabel = useMemo(
-		() =>
-			currentMonth.toLocaleString("en-US", {
-				month: "long",
-				year: "numeric",
-			}),
-		[currentMonth]
-	);
 
 	const days = useMemo(() => {
 		const startOfMonth = new Date(
@@ -357,7 +350,7 @@ export default function ModelCalendar({
 																/>
 															</div>
 														</div>
-														<span className="font-semibold text-sm relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+														<span className="font-semibold text-sm relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 															{org.name ??
 																org.organisation_id}
 														</span>
@@ -395,7 +388,7 @@ export default function ModelCalendar({
 																				>
 																					<Link
 																						href={`/models/${event.model.model_id}`}
-																						className="font-semibold relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+																						className="font-semibold relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 																					>
 																						{
 																							event
@@ -440,63 +433,61 @@ export default function ModelCalendar({
 
 	return (
 		<section className="space-y-0 text-sm">
-			<div className="flex flex-wrap items-center gap-3 mb-4">
-				<button
-					type="button"
-					onClick={() => adjustMonth(-1)}
-					className="rounded-full border border-zinc-200 p-1 text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
-				>
-					<ChevronLeft className="h-3.5 w-3.5" />
-				</button>
+			<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+				<div className="flex items-center gap-2">
+					<button
+						type="button"
+						onClick={() => adjustMonth(-1)}
+						className="rounded-full border border-zinc-200 p-1 text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+					>
+						<ChevronLeft className="h-3.5 w-3.5" />
+					</button>
 
-				<DropdownMenu>
-					<DropdownMenuTrigger className="flex min-w-[140px] items-center justify-between gap-2 rounded border border-zinc-200 px-3 py-1 text-sm font-semibold transition hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50">
-						<span>{MONTH_NAMES[currentMonth.getMonth()]}</span>
-						<ChevronDown className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start" className="w-32">
-						{MONTH_NAMES.map((month, index) => (
-							<DropdownMenuItem
-								key={month}
-								onSelect={() =>
-									setCurrentMonth(
-										new Date(
-											currentMonth.getFullYear(),
-											index,
-											1
+					<DropdownMenu>
+						<DropdownMenuTrigger className="inline-flex items-center gap-1 text-base font-semibold text-zinc-900 transition hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300">
+							<span>{MONTH_NAMES[currentMonth.getMonth()]}</span>
+							<ChevronDown className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="start" className="w-40">
+							{MONTH_NAMES.map((month, index) => (
+								<DropdownMenuItem
+									key={month}
+									onSelect={() =>
+										setCurrentMonth(
+											new Date(
+												currentMonth.getFullYear(),
+												index,
+												1
+											)
 										)
-									)
-								}
-								className="flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900"
-							>
-								<span>{month}</span>
-								{currentMonth.getMonth() === index ? (
-									<Check className="h-4 w-4 text-sky-500" />
-								) : null}
-							</DropdownMenuItem>
-						))}
-					</DropdownMenuContent>
-				</DropdownMenu>
+									}
+									className="flex items-center justify-between"
+								>
+									<span>{month}</span>
+									{currentMonth.getMonth() === index ? (
+										<Check className="h-4 w-4 text-sky-500" />
+									) : null}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
 
-				<DropdownMenu>
-					<DropdownMenuTrigger className="flex min-w-[120px] items-center justify-between gap-2 rounded border border-zinc-200 px-3 py-1 text-sm font-semibold transition hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50">
-						<span>{currentMonth.getFullYear()}</span>
-						<ChevronDown className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start" className="w-32">
-						<ScrollArea className="h-48">
-							{Array.from(
-								{ length: endYear - startYear + 1 },
-								(_, index) => endYear - index
-							).map((year) => {
-								const isCurrent =
-									currentMonth.getFullYear() === year;
-								return (
-									<React.Fragment key={year}>
-										{isCurrent && (
-											<div className="border-t border-zinc-200 dark:border-zinc-700" />
-										)}
+					<DropdownMenu>
+						<DropdownMenuTrigger className="inline-flex items-center gap-1 text-base font-semibold text-zinc-900 transition hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300">
+							<span>{currentMonth.getFullYear()}</span>
+							<ChevronDown className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="start" className="w-32">
+							<ScrollArea className="h-48">
+								{Array.from(
+									{ length: endYear - startYear + 1 },
+									(_, index) => endYear - index
+								).map((year) => {
+									const isCurrent =
+										currentMonth.getFullYear() === year;
+									return (
 										<DropdownMenuItem
+											key={year}
 											onSelect={() =>
 												setCurrentMonth(
 													new Date(
@@ -507,9 +498,8 @@ export default function ModelCalendar({
 												)
 											}
 											className={cn(
-												"flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-zinc-900 pr-2",
-												isCurrent &&
-													"font-bold bg-zinc-50 dark:bg-zinc-800"
+												"flex items-center justify-between",
+												isCurrent && "font-semibold"
 											)}
 										>
 											<span>{year}</span>
@@ -517,44 +507,41 @@ export default function ModelCalendar({
 												<Check className="h-4 w-4 text-sky-500" />
 											) : null}
 										</DropdownMenuItem>
-										{isCurrent && (
-											<div className="border-b border-zinc-200 dark:border-zinc-700" />
-										)}
-									</React.Fragment>
-								);
-							})}
-						</ScrollArea>
-					</DropdownMenuContent>
-				</DropdownMenu>
+									);
+								})}
+							</ScrollArea>
+						</DropdownMenuContent>
+					</DropdownMenu>
 
-				<button
-					type="button"
-					onClick={() => adjustMonth(1)}
-					className="rounded-full border border-zinc-200 p-1 text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
-				>
-					<ChevronRight className="h-3.5 w-3.5" />
-				</button>
-
-				{!(
-					currentMonth.getFullYear() === now.getFullYear() &&
-					currentMonth.getMonth() === now.getMonth()
-				) && (
 					<button
 						type="button"
-						onClick={() =>
-							setCurrentMonth(
-								new Date(now.getFullYear(), now.getMonth(), 1)
-							)
-						}
-						className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-50"
+						onClick={() => adjustMonth(1)}
+						className="rounded-full border border-zinc-200 p-1 text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
 					>
-						Today
+						<ChevronRight className="h-3.5 w-3.5" />
 					</button>
-				)}
 
-				<div className="ml-auto text-base font-semibold text-zinc-900 dark:text-zinc-50">
-					{monthLabel}
+					{!(
+						currentMonth.getFullYear() === now.getFullYear() &&
+						currentMonth.getMonth() === now.getMonth()
+					) && (
+						<button
+							type="button"
+							onClick={() =>
+								setCurrentMonth(
+									new Date(now.getFullYear(), now.getMonth(), 1)
+								)
+							}
+							className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-50"
+						>
+							Today
+						</button>
+					)}
 				</div>
+
+				{headerActions ? (
+					<div className="flex items-center gap-2">{headerActions}</div>
+				) : null}
 			</div>
 
 			<div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white/70 shadow-lg shadow-zinc-200/40 dark:border-zinc-800 dark:bg-zinc-950/70">

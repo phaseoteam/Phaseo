@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,17 +28,20 @@ import {
 	fmtUSD,
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
+import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { Logo } from "@/components/Logo";
 import { CircleDollarSign, Gift, Layers, Sparkles, Zap } from "lucide-react";
 
 const BLENDED_USAGE_EXAMPLES = [100_000, 1_000_000, 100_000_000];
 const BLENDED_BUDGET_EXAMPLES = [1, 10, 100];
+const PRICING_PLAN_ORDER = ["batch", "flex", "standard", "priority"] as const;
 
 type ComparisonPricingModel = {
 	key: string;
 	label: string;
 	modelId?: string;
 	provider: string;
+	availableProviders?: string[];
 	pricingPlan: string;
 	availablePricingPlans?: string[];
 	meters: PricingMeter[];
@@ -53,14 +57,15 @@ type BlendedRate = {
 interface PricingReferenceProps {
 	meters: PricingMeter[];
 	pricingPlan?: string | null;
+	selectedModelId?: string;
+	selectedModelLabel?: string;
 	availableProviders: Array<{ provider: string; displayName: string }>;
-	availablePricingPlans: string[];
 	selectedProvider: string;
-	selectedPricingPlan: string;
 	onProviderSelect: (provider: string) => void;
 	onPricingPlanSelect: (plan: string) => void;
 	comparisonModels?: ComparisonPricingModel[];
 	onComparisonModelPricingPlanSelect?: (modelKey: string, plan: string) => void;
+	onComparisonModelProviderSelect?: (modelKey: string, provider: string) => void;
 }
 
 function calculateBlendedRate(meters: PricingMeter[]): BlendedRate | null {
@@ -146,38 +151,122 @@ function formatProviderLabel(providerId: string): string {
 		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function sortPricingPlans(plans: string[]) {
+	const priorityByPlan = new Map<string, number>(
+		PRICING_PLAN_ORDER.map((plan, index) => [plan, index])
+	);
+
+	return [...plans].sort((a, b) => {
+		const aPriority = priorityByPlan.get(a.toLowerCase());
+		const bPriority = priorityByPlan.get(b.toLowerCase());
+		if (aPriority !== undefined && bPriority !== undefined) {
+			return aPriority - bPriority;
+		}
+		if (aPriority !== undefined) return -1;
+		if (bPriority !== undefined) return 1;
+		return a.localeCompare(b);
+	});
+}
+
+function formatUsageUnit(quantity: number, unitLabel: string) {
+	const normalized = unitLabel.trim().toLowerCase();
+	if (normalized === "token" || normalized === "tokens") {
+		return quantity === 1 ? "token" : "tokens";
+	}
+	return unitLabel;
+}
+
 export function PricingReference({
 	meters,
 	pricingPlan,
+	selectedModelId,
+	selectedModelLabel,
 	availableProviders,
-	availablePricingPlans,
 	selectedProvider,
-	selectedPricingPlan,
 	onProviderSelect,
 	onPricingPlanSelect,
 	comparisonModels,
 	onComparisonModelPricingPlanSelect,
+	onComparisonModelProviderSelect,
 }: PricingReferenceProps) {
 	if (meters.length === 0) {
 		return null;
 	}
 
 	const displayPlan = pricingPlan || "standard";
-	const showProviderSelect = availableProviders.length > 1;
-	const showPricingPlanSelect = availablePricingPlans.length > 1;
+	const hasComparisonModels = Boolean(comparisonModels && comparisonModels.length > 0);
 	const activeModels =
 		comparisonModels && comparisonModels.length > 0
 			? comparisonModels
 			: [
 					{
 						key: "primary",
-						label: "Selected Model",
-						provider: selectedProvider || "selected",
+						label: selectedModelLabel || selectedModelId || "Selected Model",
+						modelId: selectedModelId,
+						provider: selectedProvider || availableProviders[0]?.provider || "selected",
+						availableProviders: availableProviders.map((item) => item.provider),
 						pricingPlan: displayPlan,
 						availablePricingPlans: [displayPlan],
 						meters,
 					},
 			  ];
+
+	const getProviderHref = (providerId: string) =>
+		`/api-providers/${encodeURIComponent(providerId)}`;
+
+	const getPricingModelHref = (model: ComparisonPricingModel) => {
+		if (!model.modelId) return null;
+		const [orgFromModelId] = model.modelId.split("/");
+		const organisationId = orgFromModelId || model.provider;
+		return getModelDetailsHref(organisationId, model.modelId);
+	};
+
+	const renderModelName = (model: ComparisonPricingModel, className: string) => {
+		const href = getPricingModelHref(model);
+		if (!href) {
+			return <p className={className}>{model.label}</p>;
+		}
+		return (
+			<p className={className}>
+				<Link href={href} className="underline decoration-transparent hover:decoration-current transition-colors duration-200">
+					{model.label}
+				</Link>
+			</p>
+		);
+	};
+
+	const renderProviderName = (providerId: string, className: string) => (
+		<p className={className}>
+			<Link
+				href={getProviderHref(providerId)}
+				className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
+			>
+				{formatProviderLabel(providerId)}
+			</Link>
+		</p>
+	);
+
+	const handleModelProviderSelect = (
+		model: ComparisonPricingModel,
+		provider: string
+	) => {
+		if (model.key === "primary") {
+			onProviderSelect(provider);
+			return;
+		}
+		onComparisonModelProviderSelect?.(model.key, provider);
+	};
+
+	const handleModelPricingPlanSelect = (
+		model: ComparisonPricingModel,
+		plan: string
+	) => {
+		if (model.key === "primary") {
+			onPricingPlanSelect(plan);
+			return;
+		}
+		onComparisonModelPricingPlanSelect?.(model.key, plan);
+	};
 
 	const getPricingPlanIcon = (plan: string) => {
 		switch (plan.toLowerCase()) {
@@ -219,104 +308,95 @@ export function PricingReference({
 							{activeModels.length} model{activeModels.length === 1 ? "" : "s"}
 						</Badge>
 					</div>
-					<div className="flex items-center gap-2">
-						{showProviderSelect && (
-							<Select
-								value={selectedProvider}
-								onValueChange={onProviderSelect}
-							>
-								<SelectTrigger className="h-8 w-[160px] text-xs">
-									<SelectValue placeholder="Provider" />
-								</SelectTrigger>
-								<SelectContent>
-									{availableProviders.map((provider) => (
-										<SelectItem key={provider.provider} value={provider.provider}>
-											<div className="flex items-center gap-2">
-												<Logo
-													id={provider.provider}
-													width={16}
-													height={16}
-													className="w-4 h-4"
-													fallback={<div className="w-4 h-4 bg-muted rounded" />}
-												/>
-												{provider.displayName}
-											</div>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						)}
-						{showPricingPlanSelect && (
-							<Select
-								value={selectedPricingPlan}
-								onValueChange={onPricingPlanSelect}
-							>
-								<SelectTrigger className="h-8 w-[120px] text-xs">
-									<SelectValue placeholder="Plan" />
-								</SelectTrigger>
-								<SelectContent>
-									{availablePricingPlans.map((plan) => (
-										<SelectItem key={plan} value={plan}>
-											<div className="flex items-center gap-2">
-												{getPricingPlanIcon(plan)}
-												{plan.charAt(0).toUpperCase() + plan.slice(1)}
-											</div>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						)}
-						{displayPlan && !showPricingPlanSelect && (
-							<Badge variant="secondary" className="text-xs h-8 flex items-center gap-1">
-								{getPricingPlanIcon(displayPlan)}
-								{displayPlan.charAt(0).toUpperCase() + displayPlan.slice(1)}
-							</Badge>
-						)}
-					</div>
+					<div className="flex items-center gap-2" />
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-7">
 				<div className="rounded-xl border bg-muted/20 p-4">
 					<div className="mb-3 flex items-center justify-between gap-2">
 						<h4 className="text-sm font-semibold">Selected Models</h4>
-						<span className="text-xs text-muted-foreground">
-							{activeModels.length} selected
-						</span>
 					</div>
 					<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-						{activeModels.map((model) => (
-							<div
-								key={`${model.key}-selected`}
-								className="rounded-lg border bg-background p-3"
-							>
+						{activeModels.map((model) => {
+							const modelProviderOptions = Array.from(
+								new Set(model.availableProviders ?? [model.provider])
+							).sort((a, b) =>
+								formatProviderLabel(a).localeCompare(formatProviderLabel(b))
+							);
+							const modelPlanOptions = sortPricingPlans(
+								model.availablePricingPlans ?? []
+							);
+
+							return (
+								<div
+									key={`${model.key}-selected`}
+									className="rounded-lg border bg-background p-3"
+								>
 								<div className="flex items-start justify-between gap-2">
 									<div className="min-w-0 space-y-1">
-										<p className="truncate text-sm font-medium">{model.label}</p>
-										<p className="text-xs text-muted-foreground">
-											{formatProviderLabel(model.provider)}
-										</p>
+										{renderModelName(model, "truncate text-sm font-medium")}
+										{renderProviderName(
+											model.provider,
+											"text-xs text-muted-foreground"
+										)}
 									</div>
-									<Logo
-										id={model.provider}
-										width={18}
-										height={18}
-										className="h-[18px] w-[18px] shrink-0"
-										fallback={<div className="h-[18px] w-[18px] rounded bg-muted" />}
-									/>
+									<Link
+										href={getProviderHref(model.provider)}
+										className="shrink-0"
+										aria-label={`View ${formatProviderLabel(model.provider)} provider`}
+									>
+										<Logo
+											id={model.provider}
+											width={18}
+											height={18}
+											className="h-[18px] w-[18px] shrink-0"
+											fallback={<div className="h-[18px] w-[18px] rounded bg-muted" />}
+										/>
+									</Link>
 								</div>
+								<Select
+									value={model.provider}
+									onValueChange={(provider) =>
+										handleModelProviderSelect(model, provider)
+									}
+									disabled={modelProviderOptions.length <= 1}
+								>
+									<SelectTrigger className="mt-2 h-8 w-full text-xs">
+										<SelectValue placeholder="Provider" />
+									</SelectTrigger>
+									<SelectContent>
+										{modelProviderOptions.map((providerId) => (
+											<SelectItem
+												key={`${model.key}-provider-${providerId}`}
+												value={providerId}
+											>
+												<div className="flex items-center gap-2">
+													<Logo
+														id={providerId}
+														width={14}
+														height={14}
+														className="h-3.5 w-3.5"
+														fallback={
+															<div className="h-3.5 w-3.5 rounded bg-muted" />
+														}
+													/>
+													{formatProviderLabel(providerId)}
+												</div>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 								{model.availablePricingPlans && model.availablePricingPlans.length > 0 ? (
 									<Select
 										value={model.pricingPlan}
-										onValueChange={(plan) =>
-											onComparisonModelPricingPlanSelect?.(model.key, plan)
-										}
-										disabled={model.availablePricingPlans.length <= 1}
+										onValueChange={(plan) => handleModelPricingPlanSelect(model, plan)}
+										disabled={modelPlanOptions.length <= 1}
 									>
 										<SelectTrigger className="mt-2 h-8 w-full text-xs">
 											<SelectValue placeholder="Tier" />
 										</SelectTrigger>
 										<SelectContent>
-											{model.availablePricingPlans.map((plan) => (
+											{modelPlanOptions.map((plan) => (
 												<SelectItem key={`${model.key}-${plan}`} value={plan}>
 													<div className="flex items-center gap-2">
 														{getPricingPlanIcon(plan)}
@@ -327,8 +407,9 @@ export function PricingReference({
 										</SelectContent>
 									</Select>
 								) : null}
-							</div>
-						))}
+								</div>
+							);
+						})}
 					</div>
 				</div>
 
@@ -353,18 +434,25 @@ export function PricingReference({
 									>
 										<div className="flex items-start justify-between gap-2">
 											<div className="min-w-0">
-												<p className="truncate text-sm font-medium">{model.label}</p>
-												<p className="text-xs text-muted-foreground">
-													{formatProviderLabel(model.provider)}
-												</p>
+												{renderModelName(model, "truncate text-sm font-medium")}
+												{renderProviderName(
+													model.provider,
+													"text-xs text-muted-foreground"
+												)}
 											</div>
-											<Logo
-												id={model.provider}
-												width={16}
-												height={16}
-												className="h-4 w-4 shrink-0"
-												fallback={<div className="h-4 w-4 rounded bg-muted" />}
-											/>
+											<Link
+												href={getProviderHref(model.provider)}
+												className="shrink-0"
+												aria-label={`View ${formatProviderLabel(model.provider)} provider`}
+											>
+												<Logo
+													id={model.provider}
+													width={16}
+													height={16}
+													className="h-4 w-4 shrink-0"
+													fallback={<div className="h-4 w-4 rounded bg-muted" />}
+												/>
+											</Link>
 										</div>
 										<div className="space-y-2 text-sm">
 											<div className="flex items-center justify-between gap-2">
@@ -423,22 +511,30 @@ export function PricingReference({
 													<TableRow key={`blended-usage-row-${model.key}`}>
 														<TableCell>
 															<div className="flex items-center gap-2">
-																<Logo
-																	id={model.provider}
-																	width={14}
-																	height={14}
-																	className="h-3.5 w-3.5"
-																	fallback={
-																		<div className="h-3.5 w-3.5 rounded bg-muted" />
-																	}
-																/>
+																<Link
+																	href={getProviderHref(model.provider)}
+																	className="shrink-0"
+																	aria-label={`View ${formatProviderLabel(model.provider)} provider`}
+																>
+																	<Logo
+																		id={model.provider}
+																		width={14}
+																		height={14}
+																		className="h-3.5 w-3.5"
+																		fallback={
+																			<div className="h-3.5 w-3.5 rounded bg-muted" />
+																		}
+																	/>
+																</Link>
 																<div className="min-w-0">
-																	<p className="truncate text-sm font-medium">
-																		{model.label}
-																	</p>
-																	<p className="text-[11px] text-muted-foreground">
-																		{formatProviderLabel(model.provider)}
-																	</p>
+																	{renderModelName(
+																		model,
+																		"truncate text-sm font-medium"
+																	)}
+																	{renderProviderName(
+																		model.provider,
+																		"text-[11px] text-muted-foreground"
+																	)}
 																</div>
 															</div>
 														</TableCell>
@@ -489,36 +585,45 @@ export function PricingReference({
 													<TableRow key={`blended-budget-row-${model.key}`}>
 														<TableCell>
 															<div className="flex items-center gap-2">
-																<Logo
-																	id={model.provider}
-																	width={14}
-																	height={14}
-																	className="h-3.5 w-3.5"
-																	fallback={
-																		<div className="h-3.5 w-3.5 rounded bg-muted" />
-																	}
-																/>
+																<Link
+																	href={getProviderHref(model.provider)}
+																	className="shrink-0"
+																	aria-label={`View ${formatProviderLabel(model.provider)} provider`}
+																>
+																	<Logo
+																		id={model.provider}
+																		width={14}
+																		height={14}
+																		className="h-3.5 w-3.5"
+																		fallback={
+																			<div className="h-3.5 w-3.5 rounded bg-muted" />
+																		}
+																	/>
+																</Link>
 																<div className="min-w-0">
-																	<p className="truncate text-sm font-medium">
-																		{model.label}
-																	</p>
-																	<p className="text-[11px] text-muted-foreground">
-																		{formatProviderLabel(model.provider)}
-																	</p>
+																	{renderModelName(
+																		model,
+																		"truncate text-sm font-medium"
+																	)}
+																	{renderProviderName(
+																		model.provider,
+																		"text-[11px] text-muted-foreground"
+																	)}
 																</div>
 															</div>
 														</TableCell>
 														{BLENDED_BUDGET_EXAMPLES.map((budget) => (
 															<TableCell key={`blend-${model.key}-budget-${budget}`}>
 																{blendedModel?.blended
-																	? `${formatQuantity(
-																			calculateUnits(budget, {
+																	? (() => {
+																			const units = calculateUnits(budget, {
 																				unit_size: 1,
 																				price_per_unit: String(
 																					blendedModel.blended.blendedPricePerToken
 																				),
-																			})
-																	  )} tokens`
+																			});
+																			return `${formatQuantity(units)} ${formatUsageUnit(units, "tokens")}`;
+																	  })()
 																	: "-"}
 															</TableCell>
 														))}
@@ -553,9 +658,6 @@ export function PricingReference({
 						<div key={meterName} className="space-y-4 rounded-xl border p-5">
 							<div className="flex items-center justify-between gap-2 flex-wrap">
 								<h4 className="text-base font-semibold">{formatMeterName(meterName)}</h4>
-								<span className="text-xs text-muted-foreground">
-									Comparing {activeModels.length} model{activeModels.length === 1 ? "" : "s"}
-								</span>
 							</div>
 
 							<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -568,23 +670,27 @@ export function PricingReference({
 										>
 											<div className="flex items-start justify-between gap-2">
 												<div className="min-w-0">
-													<p className="truncate text-sm font-medium">{model.label}</p>
-													<p className="text-xs text-muted-foreground">
-														{formatProviderLabel(model.provider)}
-													</p>
+													{renderModelName(model, "truncate text-sm font-medium")}
+													{renderProviderName(
+														model.provider,
+														"text-xs text-muted-foreground"
+													)}
 												</div>
-												<Logo
-													id={model.provider}
-													width={16}
-													height={16}
-													className="h-4 w-4 shrink-0"
-													fallback={<div className="h-4 w-4 rounded bg-muted" />}
-												/>
+												<Link
+													href={getProviderHref(model.provider)}
+													className="shrink-0"
+													aria-label={`View ${formatProviderLabel(model.provider)} provider`}
+												>
+													<Logo
+														id={model.provider}
+														width={16}
+														height={16}
+														className="h-4 w-4 shrink-0"
+														fallback={<div className="h-4 w-4 rounded bg-muted" />}
+													/>
+												</Link>
 											</div>
-											<p className="mt-3 text-[11px] text-muted-foreground">
-												Published rate
-											</p>
-											<p className="mt-1 text-sm font-medium leading-5">
+											<p className="mt-3 text-sm font-medium leading-5">
 												{entry?.meter ? formatUnitPrice(entry.meter, unitLabel) : "-"}
 											</p>
 										</div>
@@ -616,22 +722,30 @@ export function PricingReference({
 													<TableRow key={`${meterName}-usage-row-${model.key}`}>
 														<TableCell>
 															<div className="flex items-center gap-2">
-																<Logo
-																	id={model.provider}
-																	width={14}
-																	height={14}
-																	className="h-3.5 w-3.5"
-																	fallback={
-																		<div className="h-3.5 w-3.5 rounded bg-muted" />
-																	}
-																/>
+																<Link
+																	href={getProviderHref(model.provider)}
+																	className="shrink-0"
+																	aria-label={`View ${formatProviderLabel(model.provider)} provider`}
+																>
+																	<Logo
+																		id={model.provider}
+																		width={14}
+																		height={14}
+																		className="h-3.5 w-3.5"
+																		fallback={
+																			<div className="h-3.5 w-3.5 rounded bg-muted" />
+																		}
+																	/>
+																</Link>
 																<div className="min-w-0">
-																	<p className="truncate text-sm font-medium">
-																		{model.label}
-																	</p>
-																	<p className="text-[11px] text-muted-foreground">
-																		{formatProviderLabel(model.provider)}
-																	</p>
+																	{renderModelName(
+																		model,
+																		"truncate text-sm font-medium"
+																	)}
+																	{renderProviderName(
+																		model.provider,
+																		"text-[11px] text-muted-foreground"
+																	)}
 																</div>
 															</div>
 														</TableCell>
@@ -673,31 +787,40 @@ export function PricingReference({
 													<TableRow key={`${meterName}-budget-row-${model.key}`}>
 														<TableCell>
 															<div className="flex items-center gap-2">
-																<Logo
-																	id={model.provider}
-																	width={14}
-																	height={14}
-																	className="h-3.5 w-3.5"
-																	fallback={
-																		<div className="h-3.5 w-3.5 rounded bg-muted" />
-																	}
-																/>
+																<Link
+																	href={getProviderHref(model.provider)}
+																	className="shrink-0"
+																	aria-label={`View ${formatProviderLabel(model.provider)} provider`}
+																>
+																	<Logo
+																		id={model.provider}
+																		width={14}
+																		height={14}
+																		className="h-3.5 w-3.5"
+																		fallback={
+																			<div className="h-3.5 w-3.5 rounded bg-muted" />
+																		}
+																	/>
+																</Link>
 																<div className="min-w-0">
-																	<p className="truncate text-sm font-medium">
-																		{model.label}
-																	</p>
-																	<p className="text-[11px] text-muted-foreground">
-																		{formatProviderLabel(model.provider)}
-																	</p>
+																	{renderModelName(
+																		model,
+																		"truncate text-sm font-medium"
+																	)}
+																	{renderProviderName(
+																		model.provider,
+																		"text-[11px] text-muted-foreground"
+																	)}
 																</div>
 															</div>
 														</TableCell>
 														{budgets.map((budget) => (
 															<TableCell key={`${meterName}-${model.key}-b-${budget}`}>
 																{entry?.meter
-																	? `${formatQuantity(
-																			calculateUnits(budget, entry.meter)
-																	  )} ${unitLabel}`
+																	? (() => {
+																			const units = calculateUnits(budget, entry.meter);
+																			return `${formatQuantity(units)} ${formatUsageUnit(units, unitLabel)}`;
+																	  })()
 																	: "-"}
 															</TableCell>
 														))}
@@ -716,3 +839,4 @@ export function PricingReference({
 		</Card>
 	);
 }
+

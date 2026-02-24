@@ -216,7 +216,17 @@ struct Embedding {
 	std::string object;
 };
 
-using EmbeddingsRequest = std::any;
+struct EmbeddingsRequest {
+	std::map<std::string, std::any> debug;
+	std::optional<int> dimensions;
+	std::map<std::string, std::any> embedding_options;
+	std::string encoding_format;
+	std::any input;
+	std::any inputs;
+	std::string model;
+	std::map<std::string, std::any> provider;
+	std::string user;
+};
 
 struct EmbeddingsResponse {
 	std::vector<std::map<std::string, std::any>> data;
@@ -407,6 +417,12 @@ struct MusicGenerateRequest {
 struct MusicGenerateResponse {
 };
 
+struct NotImplementedResponse {
+	std::string description;
+	std::string error;
+	std::optional<int> status_code;
+};
+
 struct OcrRequest {
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
@@ -469,6 +485,10 @@ struct ProvisioningKeyWithValue {
 	std::string prefix;
 	std::string scopes;
 	std::any status;
+};
+
+struct RealtimeNotImplementedResponse {
+	std::map<std::string, std::any> error;
 };
 
 struct ReasoningConfig {
@@ -567,15 +587,25 @@ struct VideoGenerationRequest {
 	std::string aspect_ratio;
 	std::optional<int> duration;
 	std::optional<int> duration_seconds;
+	std::optional<bool> enhance_prompt;
+	std::optional<bool> generate_audio;
+	std::map<std::string, std::any> input;
+	std::any input_image;
+	std::any input_last_frame;
 	std::string input_reference;
 	std::string input_reference_mime_type;
+	std::any input_video;
+	std::any last_frame;
 	std::string model;
 	std::string negative_prompt;
+	std::optional<int> number_of_videos;
 	std::string output_storage_uri;
 	std::string person_generation;
 	std::string prompt;
 	std::map<std::string, std::any> provider;
+	std::string quality;
 	std::string ratio;
+	std::vector<std::map<std::string, std::any>> reference_images;
 	std::string resolution;
 	std::optional<int> sample_count;
 	std::any seconds;

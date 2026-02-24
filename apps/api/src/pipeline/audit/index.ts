@@ -1,12 +1,10 @@
 // src/lib/gateway/audit/index.ts
 // Purpose: Persist audits and send analytics events.
 // Why: Ensures observability for every request.
-// How: Builds audit rows and ships them to Supabase/Axiom with retries.
+// How: Builds audit rows and ships them to Supabase with retries.
 
-import { getBindings, getSupabaseAdmin, ensureRuntimeForBackground } from "@/runtime/env";
-import { sendAxiomEvent } from "./axiom";
+import { getSupabaseAdmin, ensureRuntimeForBackground } from "@/runtime/env";
 import { ensureAppId } from "../after/apps";
-import { normalizeFinishReason } from "./normalize-finish-reason";
 import type { Endpoint } from "@core/types";
 
 function supaAdmin() {
@@ -15,10 +13,6 @@ function supaAdmin() {
 
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 250;
-const AXIOM_RETRY_ATTEMPTS = 1;
-const AXIOM_RETRY_DELAY_MS = 0;
-const AXIOM_LOG_THROTTLE_MS = 60_000;
-const axiomLogThrottle = new Map<string, number>();
 
 async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -104,57 +98,6 @@ function stripPricingFromUsage(usage: any): any {
     return rest;
 }
 
-function formatAxiomError(err: unknown): string {
-    if (err instanceof Error) return err.message;
-    if (typeof err === "string") return err;
-    return "unknown_error";
-}
-
-function logAxiomNonBlocking(label: string, err: unknown) {
-    const message = formatAxiomError(err);
-    // Remove volatile requestId suffixes to keep throttling effective.
-    const normalized = message.replace(/requestId\s+[A-Za-z0-9_\-]+/g, "requestId <redacted>");
-    const key = `${label}:${normalized}`;
-    const now = Date.now();
-    const last = axiomLogThrottle.get(key) ?? 0;
-    if (now - last < AXIOM_LOG_THROTTLE_MS) return;
-    axiomLogThrottle.set(key, now);
-    console.warn(`[audit] Axiom ingest failed (non-blocking): ${normalized}`);
-}
-
-function classifyAuditErrorType(errorCode: string | null | undefined, statusCode: number | null | undefined): "system" | "user" {
-    const code = String(errorCode ?? "").toLowerCase();
-    const raw = code.includes(":") ? code.split(":").slice(1).join(":") : code;
-    const status = Number(statusCode ?? 0);
-
-    const userHints = ["validation", "invalid_json", "unsupported_param", "unsupported_model_or_endpoint", "unsupported_modalities"];
-    const systemHints = [
-        "no_key",
-        "missing_api_key",
-        "provider_key",
-        "unauthorized",
-        "forbidden",
-        "timeout",
-        "overload",
-        "rate_limit",
-        "upstream",
-        "internal",
-        "executor",
-        "routing",
-        "breaker",
-    ];
-    if (systemHints.some((hint) => raw.includes(hint))) return "system";
-    if (userHints.some((hint) => raw.includes(hint))) return "user";
-
-    if (code.startsWith("user:")) return "user";
-    if (code.startsWith("upstream:")) return "system";
-
-    if (status >= 500) return "system";
-    if (status === 429 || status === 408 || status === 401 || status === 403) return "system";
-    if (status >= 400) return "user";
-    return "system";
-}
-
 export async function auditSuccess(args: {
     requestId: string; teamId: string;
     provider: string; model: string; endpoint: Endpoint;
@@ -186,7 +129,6 @@ export async function auditSuccess(args: {
 }) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
-        const bindings = getBindings();
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
         const appId = await ensureAppId({ teamId: args.teamId, appTitle: args.appTitle ?? null, referer: args.referer ?? null });
@@ -225,63 +167,6 @@ export async function auditSuccess(args: {
             await retryWithBackoff(() => insertGatewayRequest(row), "supabase_audit_success_insert");
         } catch (err) {
             supabaseError = err instanceof Error ? err : new Error(String(err));
-        }
-
-        try {
-            await retryWithBackoff(() => sendAxiomEvent({
-                requestId: args.requestId,
-                teamId: args.teamId,
-                keyId: args.keyId ?? null,
-                provider: args.provider,
-                model: args.model,
-                endpoint: args.endpoint,
-                stream: args.stream,
-                isByok: args.byok,
-                stage: "execute",
-                appTitle: args.appTitle ?? null,
-                referer: args.referer ?? null,
-                requestMethod: args.requestMethod ?? null,
-                requestPath: args.requestPath ?? null,
-                requestUrl: args.requestUrl ?? null,
-                userAgent: args.userAgent ?? null,
-                clientIp: args.clientIp ?? null,
-                cfRay: args.cfRay ?? null,
-                edgeColo: args.edgeColo ?? null,
-                edgeCity: args.edgeCity ?? null,
-                edgeCountry: args.edgeCountry ?? null,
-                edgeContinent: args.edgeContinent ?? null,
-                edgeAsn: args.edgeAsn ?? null,
-                nativeResponseId: args.nativeResponseId ?? null,
-                statusCode: args.statusCode,
-                success: true,
-                errorCode: null,
-                errorMessage: null,
-                errorType: null,
-                generationMs: args.generationMs ?? null,
-                latencyMs: args.latencyMs ?? null,
-                internalLatencyMs: args.internalLatencyMs ?? null,
-                throughput: args.throughput ?? null,
-                usage: strippedUsage ?? null,
-                pricing: {
-                    total_cents: args.totalCents,
-                    total_nanos: args.usagePriced?.pricing?.total_nanos ?? null,
-                    total_usd_str: args.usagePriced?.pricing?.total_usd_str ?? null,
-                    currency: args.currency,
-                    lines_json: JSON.stringify(pricingLines),
-                    lines: pricingLines,
-                },
-                finishReason: args.finishReason ?? null,
-                env: bindings.NODE_ENV ?? null,
-                apiVersion: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,
-                extraJson: args.extraJson ?? null,
-                // Wide event enrichment (loggingsucks.com pattern)
-                teamEnrichment: args.teamEnrichment ?? null,
-                keyEnrichment: args.keyEnrichment ?? null,
-                requestEnrichment: args.requestEnrichment ?? null,
-                routingContext: args.routingContext ?? null,
-            }), "axiom_audit_success_ingest", AXIOM_RETRY_ATTEMPTS, AXIOM_RETRY_DELAY_MS);
-        } catch (err) {
-            logAxiomNonBlocking("axiom_audit_success_ingest", err);
         }
 
         if (supabaseError) throw supabaseError;
@@ -353,16 +238,8 @@ type AuditFailureExecute = {
 export async function auditFailure(args: AuditFailureBefore | AuditFailureExecute) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
-        const bindings = getBindings();
         const runSupabase = async (row: any, label: string) => {
             await retryWithBackoff(() => insertGatewayRequest(row), label);
-        };
-        const runAxiom = async (payload: Parameters<typeof sendAxiomEvent>[0], label: string) => {
-            try {
-                await retryWithBackoff(() => sendAxiomEvent(payload), label, AXIOM_RETRY_ATTEMPTS, AXIOM_RETRY_DELAY_MS);
-            } catch (err) {
-                logAxiomNonBlocking(label, err);
-            }
         };
 
         if (args.stage === "before") {
@@ -400,46 +277,6 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                     supabaseError = err instanceof Error ? err : new Error(String(err));
                 }
             }
-
-            await runAxiom({
-                requestId: args.requestId,
-                teamId: args.teamId ?? 'unknown',
-                provider: "unknown",
-                model: args.model ?? "unknown",
-                endpoint: args.endpoint,
-                stream: false,
-                isByok: false,
-                stage: "before",
-                appTitle: args.appTitle ?? null,
-                referer: args.referer ?? null,
-                requestMethod: args.requestMethod ?? null,
-                requestPath: args.requestPath ?? null,
-                requestUrl: args.requestUrl ?? null,
-                userAgent: args.userAgent ?? null,
-                clientIp: args.clientIp ?? null,
-                cfRay: args.cfRay ?? null,
-                edgeColo: args.edgeColo ?? null,
-                edgeCity: args.edgeCity ?? null,
-                edgeCountry: args.edgeCountry ?? null,
-                edgeContinent: args.edgeContinent ?? null,
-                edgeAsn: args.edgeAsn ?? null,
-                nativeResponseId: null,
-                statusCode: args.statusCode,
-                success: false,
-                errorCode: args.errorCode,
-                errorMessage: args.errorMessage ?? null,
-                errorType: classifyAuditErrorType(args.errorCode, args.statusCode),
-                generationMs: null,
-                latencyMs: args.latencyMs ?? null,
-                internalLatencyMs: args.internalLatencyMs ?? null,
-                throughput: null,
-                usage: null,
-                pricing: null,
-                finishReason: null,
-                env: bindings.NODE_ENV ?? null,
-                apiVersion: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,
-                extraJson: args.extraJson ?? null,
-            }, "axiom_audit_failure_before_ingest");
 
             if (supabaseError) throw supabaseError;
             return;
@@ -480,46 +317,6 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 supabaseError = err instanceof Error ? err : new Error(String(err));
             }
         }
-
-        await runAxiom({
-            requestId: args.requestId,
-            teamId: args.teamId,
-            provider: args.provider ?? "unknown",
-            model: args.model,
-            endpoint: args.endpoint,
-            stream: !!args.stream,
-            isByok: !!args.byok,
-            stage: "execute",
-            appTitle: args.appTitle ?? null,
-            referer: args.referer ?? null,
-            requestMethod: args.requestMethod ?? null,
-            requestPath: args.requestPath ?? null,
-            requestUrl: args.requestUrl ?? null,
-            userAgent: args.userAgent ?? null,
-            clientIp: args.clientIp ?? null,
-            cfRay: args.cfRay ?? null,
-            edgeColo: args.edgeColo ?? null,
-            edgeCity: args.edgeCity ?? null,
-            edgeCountry: args.edgeCountry ?? null,
-            edgeContinent: args.edgeContinent ?? null,
-            edgeAsn: args.edgeAsn ?? null,
-            nativeResponseId: null,
-            statusCode: args.statusCode,
-            success: false,
-            errorCode: args.errorCode,
-            errorMessage: args.errorMessage ?? null,
-            errorType: classifyAuditErrorType(args.errorCode, args.statusCode),
-            generationMs: args.generationMs ?? null,
-            latencyMs: args.latencyMs ?? null,
-            internalLatencyMs: args.internalLatencyMs ?? null,
-            throughput: null,
-            usage: null,
-            pricing: null,
-            finishReason: null,
-            env: bindings.NODE_ENV ?? null,
-            apiVersion: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,
-            extraJson: args.extraJson ?? null,
-        }, "axiom_audit_failure_execute_ingest");
 
         if (supabaseError) throw supabaseError;
     } finally {

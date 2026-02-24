@@ -152,7 +152,7 @@ export default function OAuthAppDetailPanel({
 									href={oauthApp.homepage_url}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+									className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									<ExternalLink className="size-4" />
 									<span>Visit website</span>
@@ -305,4 +305,5 @@ export default function OAuthAppDetailPanel({
 		</div>
 	);
 }
+
 

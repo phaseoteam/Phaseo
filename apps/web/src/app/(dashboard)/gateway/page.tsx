@@ -30,9 +30,9 @@ export default async function GatewayMarketingPage() {
 		getModelCardsByIdsCached(
 			[
 				"openai/gpt-5-2-2025-12-11",
-				"anthropic/claude-opus-4-5-2025-11-24",
-				"google/gemini-3-pro-preview-2025-11-18",
-				"minimax/minimax-m2-1-2025-12-23",
+				"anthropic/claude-opus-4-6-2026-02-05",
+				"google/gemini-3-1-pro-preview-2026-02-19",
+				"minimax/minimax-m2-5-2026-02-12",
 			],
 			false
 		),
@@ -45,7 +45,6 @@ export default async function GatewayMarketingPage() {
 			stats={{
 				...gatewayMetrics.summary,
 			}}
-			statsWindowHours={monthlyWindowHours}
 			tokensWindowHours={monthlyWindowHours}
 			popularModels={popularModels}
 		/>

@@ -202,7 +202,10 @@ export function PaymentMethodsManager({
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-foreground">
-                                            {formatCardBrand(pm.brand)} ending {pm.last4 ?? "****"}
+                                            {formatCardBrand(pm.brand)} ending{" "}
+                                            <span data-pii="true">
+                                                {pm.last4 ?? "****"}
+                                            </span>
                                         </span>
                                         {isDefault ? (
                                             <Badge variant="secondary" className="text-[11px]">
@@ -211,7 +214,10 @@ export function PaymentMethodsManager({
                                         ) : null}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                        Expires {formatExpiry(pm.expMonth, pm.expYear)}
+                                        Expires{" "}
+                                        <span data-pii="true">
+                                            {formatExpiry(pm.expMonth, pm.expYear)}
+                                        </span>
                                     </div>
                                     {pm.funding ? (
                                         <div className="text-xs text-muted-foreground uppercase">{pm.funding}</div>
@@ -283,7 +289,15 @@ export function PaymentMethodsManager({
                             {(() => {
                                 const selected = paymentMethods.find((pm) => pm.id === confirmRemoveId);
                                 if (!selected) return "This payment method will no longer be available for credits and auto top-ups.";
-                                return `${formatCardBrand(selected.brand)} ending ${selected.last4 ?? "****"} will no longer be available for credits and auto top-ups.`;
+                                return (
+                                    <>
+                                        {formatCardBrand(selected.brand)} ending{" "}
+                                        <span data-pii="true">
+                                            {selected.last4 ?? "****"}
+                                        </span>{" "}
+                                        will no longer be available for credits and auto top-ups.
+                                    </>
+                                );
                             })()}
                         </DialogDescription>
                     </DialogHeader>

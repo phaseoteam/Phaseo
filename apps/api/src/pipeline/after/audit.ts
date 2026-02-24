@@ -132,7 +132,30 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
     }
 }
 
-function buildTransformSnapshot(ctx: PipelineContext, result?: RequestResult) {
+type BuildTransformSnapshotOptions = {
+	gatewayResponse?: unknown;
+	providerResponse?: unknown;
+	errorDetails?: unknown;
+};
+
+function headersToRecord(headers: Headers | null | undefined): Record<string, string> | null {
+	if (!headers) return null;
+	const out: Record<string, string> = {};
+	let count = 0;
+	for (const [key, value] of headers.entries()) {
+		if (!key) continue;
+		out[key] = value;
+		count += 1;
+		if (count >= 128) break;
+	}
+	return Object.keys(out).length > 0 ? out : null;
+}
+
+function buildTransformSnapshot(
+	ctx: PipelineContext,
+	result?: RequestResult,
+	options?: BuildTransformSnapshotOptions,
+) {
 	const attemptErrors = Array.isArray((ctx as any).attemptErrors) ? (ctx as any).attemptErrors : null;
 	const routingSnapshot = Array.isArray((ctx as any).routingSnapshot) ? (ctx as any).routingSnapshot : null;
 	const routingDiagnostics = (ctx as any).routingDiagnostics ?? null;
@@ -146,6 +169,10 @@ function buildTransformSnapshot(ctx: PipelineContext, result?: RequestResult) {
 		: null;
 	const sanitizedGatewayRequest = sanitizeForAxiom(ctx.rawBody ?? ctx.body ?? null);
 	const sanitizedUpstreamRequest = sanitizeJsonStringForAxiom(result?.mappedRequest ?? null);
+	const sanitizedGatewayResponse = sanitizeForAxiom(options?.gatewayResponse ?? null);
+	const sanitizedProviderResponse = sanitizeForAxiom(options?.providerResponse ?? result?.rawResponse ?? null);
+	const sanitizedProviderHeaders = sanitizeForAxiom(headersToRecord(result?.upstream?.headers));
+	const sanitizedErrorDetails = sanitizeForAxiom(options?.errorDetails ?? null);
 
 	return {
 		protocol: ctx.protocol ?? null,
@@ -156,6 +183,14 @@ function buildTransformSnapshot(ctx: PipelineContext, result?: RequestResult) {
 		request_surface_sanitized: sanitizedGatewayRequest,
 		upstream_request_sanitized: sanitizedUpstreamRequest,
 		upstream_request_present: Boolean(result?.mappedRequest),
+		gateway_response_sanitized: sanitizedGatewayResponse,
+		gateway_response_present: options?.gatewayResponse != null,
+		upstream_response_sanitized: sanitizedProviderResponse,
+		upstream_response_present: (options?.providerResponse ?? result?.rawResponse) != null,
+		upstream_response_headers: sanitizedProviderHeaders,
+		upstream_status_code: result?.upstream?.status ?? null,
+		upstream_status_text: result?.upstream?.statusText ?? null,
+		upstream_url: result?.upstream?.url ?? null,
 		requested_params: requestedParams,
 		param_routing_diagnostics: paramRoutingDiagnostics,
 		provider_enablement_diagnostics: providerEnablementDiagnostics,
@@ -163,6 +198,7 @@ function buildTransformSnapshot(ctx: PipelineContext, result?: RequestResult) {
 		attempt_errors: sanitizeForAxiom(attemptErrors),
 		routing_snapshot: sanitizeForAxiom(routingSnapshot),
 		routing_diagnostics: sanitizeForAxiom(routingDiagnostics),
+		error_details: sanitizedErrorDetails,
 	};
 }
 
@@ -183,6 +219,12 @@ export async function handleFailureAudit(
     // Use meta values if available, otherwise fall back to timing calculations
     const generationMs = ctx.meta.generation_ms ?? (genMs ? Math.round(genMs) : null);
     const latencyMs = ctx.meta.latency_ms ?? Math.round(beforeMs + execMs);
+    const gatewayFailurePayload = {
+        generation_id: ctx.requestId,
+        status_code: upstreamStatus,
+        error: errorCode,
+        description: errorMessage,
+    };
 
     const extraJson = (() => {
         try {
@@ -210,8 +252,13 @@ export async function handleFailureAudit(
                     byok_keys: p.byokMeta?.length ?? 0,
                     has_pricing: Boolean(p.pricingCard),
                 })),
-                transform: buildTransformSnapshot(ctx, result),
+                transform: buildTransformSnapshot(ctx, result, {
+                    gatewayResponse: gatewayFailurePayload,
+                    providerResponse: errorDetails ?? result.rawResponse ?? null,
+                    errorDetails,
+                }),
                 error_details: sanitizeForAxiom(errorDetails ?? null),
+                gateway_response_sanitized: sanitizeForAxiom(gatewayFailurePayload),
             });
         } catch {
             return null;
@@ -261,6 +308,8 @@ export async function handleFailureAudit(
             internalReason: errorCode,
             mappedRequest: result.mappedRequest ?? null,
             errorDetails,
+            providerResponse: errorDetails ?? result.rawResponse ?? null,
+            gatewayResponse: gatewayFailurePayload,
         });
     } catch (auditErr) {
         console.error("auditFailure failed", auditErr);
@@ -277,7 +326,8 @@ export async function handleSuccessAudit(
     currency: string,
     finishReason: string | null,
     statusCode: number,
-    nativeResponseId?: string | null
+    nativeResponseId?: string | null,
+    gatewayResponse?: unknown,
 ) {
     const byok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const execTiming = (ctx as any)?.timing?.execute ?? {};
@@ -336,7 +386,12 @@ export async function handleSuccessAudit(
                     has_pricing: Boolean(p.pricingCard),
                 })),
                 gating: ctx.gating ?? null,
-                transform: buildTransformSnapshot(ctx, result),
+                usage: sanitizeForAxiom(usageWithMultimodal ?? null),
+                pricing: sanitizeForAxiom((usageWithMultimodal as any)?.pricing ?? null),
+                transform: buildTransformSnapshot(ctx, result, {
+                    gatewayResponse: gatewayResponse ?? null,
+                    providerResponse: result.rawResponse ?? null,
+                }),
             });
         } catch {
             return null;
@@ -402,6 +457,8 @@ export async function handleSuccessAudit(
                 currency,
             },
             mappedRequest: result.mappedRequest ?? null,
+            providerResponse: result.rawResponse ?? null,
+            gatewayResponse: gatewayResponse ?? null,
         });
     } catch (auditErr) {
         console.error("auditSuccess failed", auditErr);

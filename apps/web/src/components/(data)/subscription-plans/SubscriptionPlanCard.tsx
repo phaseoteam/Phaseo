@@ -50,7 +50,7 @@ export default function SubscriptionPlanCard({ plan }: Props) {
 						href={`/subscription-plans/${id}`}
 						className="font-semibold truncate leading-tight"
 					>
-						<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+						<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 							{name}
 						</span>
 					</Link>
@@ -58,7 +58,7 @@ export default function SubscriptionPlanCard({ plan }: Props) {
 						href={`/organisations/${providerId}`}
 						className="text-xs text-muted-foreground truncate flex items-center gap-1"
 					>
-						<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+						<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 							{providerName}
 						</span>
 						{plan.description && (

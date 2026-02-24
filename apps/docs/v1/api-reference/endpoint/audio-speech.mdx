@@ -5,3 +5,28 @@ openapi: "POST /audio/speech"
 description: "Generate audio from text using the specified voice and format."
 ---
 
+## Voice Mapping
+
+`voice` is normalized by provider with an internal alias map:
+
+- `openai`: common voices (for example `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `cedar`, `marin`).
+- `google` (AI Studio / Gemini TTS): canonical prebuilt voices:
+  `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
+- `elevenlabs`: common public starter voices are mapped (for example `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
+
+If a provided `voice` is not valid for the routed provider/model mapping, the request returns `400 invalid_request_error` with `param: "voice"`.
+
+## Provider Overrides
+
+You can still pass provider-native voice settings:
+
+- ElevenLabs: `config.elevenlabs.voice_id` / `config.elevenlabs.voice` / `config.elevenlabs.voiceName`
+- Google: `config.google.voice_name` / `config.google.voiceName`
+
+Top-level `voice` should be your default for portability.
+
+## Voice Samples
+
+- OpenAI: [openai.fm](https://www.openai.fm/)
+- Google TTS voice examples: [Gemini text-to-speech docs](https://ai.google.dev/gemini-api/docs/speech-generation#voices)
+- ElevenLabs voice library: [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)

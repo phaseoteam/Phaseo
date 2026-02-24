@@ -51,6 +51,7 @@ describe("google video executor", () => {
 			durationSeconds: 8,
 			aspectRatio: "16:9",
 			resolution: "1080p",
+			compressionQuality: 80,
 			negativePrompt: "blurry, noisy",
 			numberOfVideos: 2,
 			seed: 42,
@@ -72,7 +73,7 @@ describe("google video executor", () => {
 		mock.restore();
 
 		expect(result.upstream?.status).toBe(200);
-		expect(capturedUrl).toContain("/v1beta/models/google%2Fveo-3.1-generate-preview:predictLongRunning?key=");
+		expect(capturedUrl).toContain("/v1beta/models/veo-3.1-generate-preview:predictLongRunning?key=");
 		expect(capturedBody?.instances?.[0]?.prompt).toBe("A cinematic waterfall in Iceland");
 		expect(capturedBody?.instances?.[0]?.image?.gcsUri).toBe("gs://bucket/reference-image.png");
 		expect(capturedBody?.instances?.[0]?.video?.gcsUri).toBe("gs://bucket/input-video.mp4");
@@ -84,6 +85,7 @@ describe("google video executor", () => {
 			durationSeconds: 8,
 			aspectRatio: "16:9",
 			resolution: "1080p",
+			compressionQuality: 80,
 			negativePrompt: "blurry, noisy",
 			numberOfVideos: 2,
 			seed: 42,
@@ -96,12 +98,14 @@ describe("google video executor", () => {
 
 	it("uses input_reference and sample_count aliases for Veo", async () => {
 		let capturedBody: any = null;
+		let capturedUrl = "";
 		const mock = installFetchMock([
 			{
 				match: (url) => url.includes(":predictLongRunning"),
 				response: jsonResponse({ name: "operations/veo-456", done: false }),
 				onRequest: (call) => {
 					capturedBody = call.bodyJson;
+					capturedUrl = call.url;
 				},
 			},
 		]);
@@ -116,6 +120,7 @@ describe("google video executor", () => {
 		mock.restore();
 
 		expect(result.upstream?.status).toBe(200);
+		expect(capturedUrl).toContain("/v1beta/models/veo-3.1-fast-generate-preview:predictLongRunning?key=");
 		expect(capturedBody?.instances?.[0]?.image?.uri).toBe("https://example.com/ref.png");
 		expect(capturedBody?.parameters?.numberOfVideos).toBe(1);
 	});

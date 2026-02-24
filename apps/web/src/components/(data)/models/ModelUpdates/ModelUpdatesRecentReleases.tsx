@@ -18,6 +18,7 @@ interface ModelUpdatesRecentReleasesProps {
 	title: string;
 	getRelativeLabel: (dateStr: string) => string | null;
 	emptyMessage?: string;
+	headerActions?: React.ReactNode;
 }
 
 export default function ModelUpdatesRecentReleases({
@@ -26,6 +27,7 @@ export default function ModelUpdatesRecentReleases({
 	title,
 	getRelativeLabel,
 	emptyMessage,
+	headerActions,
 }: ModelUpdatesRecentReleasesProps) {
 	const isUtcToday = (iso: string) => {
 		const now = new Date();
@@ -40,7 +42,10 @@ export default function ModelUpdatesRecentReleases({
 	if (events.length === 0) {
 		return (
 			<div className="mb-6">
-				<h1 className="mb-2 text-xl font-bold">{title}</h1>
+				<div className="mb-2 flex items-center justify-between gap-3">
+					<h1 className="text-xl font-bold">{title}</h1>
+					{headerActions ? <div className="shrink-0">{headerActions}</div> : null}
+				</div>
 				<p className="text-sm text-zinc-500 dark:text-zinc-400">
 					{emptyMessage ?? "No updates available right now."}
 				</p>
@@ -50,7 +55,10 @@ export default function ModelUpdatesRecentReleases({
 
 	return (
 		<div className="mb-6">
-			<h1 className="mb-2 text-xl font-bold">{title}</h1>
+			<div className="mb-2 flex items-center justify-between gap-3">
+				<h1 className="text-xl font-bold">{title}</h1>
+				{headerActions ? <div className="shrink-0">{headerActions}</div> : null}
+			</div>
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{events.map((event) => {
 					const { model } = event;

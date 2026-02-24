@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import LatestUpdatesCards, {
 	LatestUpdatesCardsFallback,
 } from "@/components/landingPage/LatestUpdatesCards";
+import { Button } from "@/components/ui/button";
 
 export default function LatestUpdates() {
 	return (
@@ -17,13 +18,12 @@ export default function LatestUpdates() {
 						</span>
 					</h2>
 				</div>
-				<Link
-					href="/updates"
-					className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 transition hover:text-zinc-600 dark:text-zinc-50 dark:hover:text-zinc-200"
-				>
-					View all updates
-					<ArrowUpRight className="h-4 w-4" />
-				</Link>
+				<Button asChild variant="ghost" className="h-9 px-3">
+					<Link href="/updates">
+						View All Updates
+						<ArrowUpRight className="h-4 w-4" />
+					</Link>
+				</Button>
 			</div>
 
 			<Suspense fallback={<LatestUpdatesCardsFallback />}>

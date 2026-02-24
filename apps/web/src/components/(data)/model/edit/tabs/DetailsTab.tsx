@@ -63,6 +63,7 @@ const DETAIL_FIELDS = [
 const LINK_FIELDS = [
   { key: "announcement", label: "Announcement" },
   { key: "api_reference", label: "API reference" },
+  { key: "model_card", label: "Model card" },
   { key: "paper", label: "Paper" },
   { key: "playground", label: "Playground" },
   { key: "repository", label: "Repository" },
@@ -109,6 +110,7 @@ function createEmptyLinkValues(): Record<LinkFieldKey, string> {
   return {
     announcement: "",
     api_reference: "",
+    model_card: "",
     paper: "",
     playground: "",
     repository: "",

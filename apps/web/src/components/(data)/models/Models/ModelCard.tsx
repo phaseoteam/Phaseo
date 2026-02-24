@@ -6,7 +6,6 @@ import {
 	Tooltip,
 	TooltipTrigger,
 	TooltipContent,
-	TooltipProvider,
 } from "@/components/ui/tooltip";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,11 +49,9 @@ export function ModelCard({ model }: { model: ModelCardType }) {
 								<Link
 									href={`/models/${modelSlug}`}
 									prefetch={false}
-									className="font-semibold truncate leading-tight text-left"
+									className="font-semibold truncate leading-tight text-left underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
-										{model.name}
-									</span>
+									{model.name}
 								</Link>
 							</TooltipTrigger>
 							<TooltipContent align="center">
@@ -70,11 +67,9 @@ export function ModelCard({ model }: { model: ModelCardType }) {
 					<Link
 						href={`/organisations/${model.organisation_id}`}
 						prefetch={false}
-						className="text-xs text-muted-foreground truncate flex items-center gap-1 text-left"
+						className="text-xs text-muted-foreground truncate flex items-center gap-1 text-left underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
-						<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
-							{model.organisation_name}
-						</span>
+						{model.organisation_name}
 					</Link>
 				</div>
 				<div className="ml-auto flex items-center gap-1">

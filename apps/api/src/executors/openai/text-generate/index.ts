@@ -18,7 +18,7 @@ import {
 	resolveOpenAICompatRoute,
 } from "@providers/openai-compatible/config";
 
-type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
 const REASONING_EFFORT_ORDER: ReasoningEffort[] = [
 	"none",
@@ -27,6 +27,7 @@ const REASONING_EFFORT_ORDER: ReasoningEffort[] = [
 	"medium",
 	"high",
 	"xhigh",
+	"max",
 ];
 
 const REASONING_EFFORT_TO_PERCENT: Record<ReasoningEffort, number> = {
@@ -36,6 +37,7 @@ const REASONING_EFFORT_TO_PERCENT: Record<ReasoningEffort, number> = {
 	medium: 0.50,
 	high: 0.75,
 	xhigh: 0.90,
+	max: 1.0,
 };
 
 const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
@@ -312,7 +314,12 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		request: requestPayload,
 	});
 	const requestBody = JSON.stringify(sanitized.request);
-	const captureRequest = Boolean(args.meta.debug?.return_upstream_request || args.meta.debug?.trace);
+	const captureRequest = Boolean(
+		args.meta.returnUpstreamRequest ||
+		args.meta.echoUpstreamRequest ||
+		args.meta.debug?.return_upstream_request ||
+		args.meta.debug?.trace,
+	);
 	const mappedRequest = captureRequest ? requestBody : undefined;
 	try {
 		(args.ir as any).rawRequest = sanitized.request;

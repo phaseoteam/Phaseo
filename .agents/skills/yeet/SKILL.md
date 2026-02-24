@@ -11,7 +11,9 @@ description: "Use only when the user explicitly asks to stage, commit, push, and
 ## Naming conventions
 
 - Branch: `{description}` when starting from `main` or the repo default branch.
-- Commit: `{description}` (terse).
+- Commit: Prefer Conventional Commits (`type(scope): summary`) when possible.
+  - Examples: `fix(data): restore venice provider model export`, `chore(data): refresh generated provider model mappings`
+  - If scope is unclear, use `type: summary` (e.g. `chore: refresh provider model data`)
 - PR title: `{description}` summarizing the full diff.
 
 ## Workflow
@@ -19,7 +21,9 @@ description: "Use only when the user explicitly asks to stage, commit, push, and
 - If on `main` (or the detected default branch), create a branch: `git checkout -b "{description}"`
 - Otherwise stay on the current branch.
 - Confirm status, then stage everything: `git status -sb` then `git add -A`.
-- Commit tersely with the description: `git commit -m "{description}"`
+- Commit using a Conventional Commit message when possible; if not possible, use a terse descriptive message:
+  - Preferred: `git commit -m "fix(scope): short summary"`
+  - Fallback: `git commit -m "{description}"`
 - Run checks if not already. If checks fail due to missing deps/tools, install dependencies and rerun once.
 - Push with tracking: `git push -u origin $(git branch --show-current)`
 - If git push fails due to auth errors, fix authentication/credentials first, then retry the push.

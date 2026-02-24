@@ -673,7 +673,7 @@ export function AuditDataTable({
 												<Link
 													href={`/models/${item.modelId}`}
 												>
-													<span className="text-sm font-medium cursor-pointer hover:underline">
+													<span className="text-sm font-medium cursor-pointer underline decoration-transparent hover:decoration-current transition-colors duration-200">
 														{item.modelName}
 													</span>
 												</Link>
@@ -683,7 +683,7 @@ export function AuditDataTable({
 											{item.organisationId ? (
 												<Link
 													href={`/organisations/${item.organisationId}`}
-													className="text-sm hover:underline"
+													className="text-sm underline decoration-transparent hover:decoration-current transition-colors duration-200"
 												>
 													{item.organisationName}
 												</Link>
@@ -788,7 +788,7 @@ export function AuditDataTable({
 											{item.benchmarkCount > 0 ? (
 												<Link
 													href={`/models/${item.modelId}/benchmarks`}
-													className="text-blue-600 hover:underline"
+													className="text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 												>
 													{item.benchmarkCount}
 												</Link>
@@ -903,3 +903,4 @@ export function AuditDataTable({
 		</TooltipProvider>
 	);
 }
+

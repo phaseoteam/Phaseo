@@ -128,6 +128,14 @@ export type TopAppData = {
     image_url?: string | null;
 };
 
+export type TopModelWithMetadata = {
+    model_id: string;
+    model_name: string;
+    organisation_id: string | null;
+    organisation_name: string | null;
+    total_tokens: number;
+};
+
 /**
  * Get main rankings data with trending and summary stats
  */
@@ -572,6 +580,42 @@ export async function getTopApps(
     });
 
     return { data: (data ?? []) as TopAppData[] };
+}
+
+/**
+ * Get top models with resolved organisation metadata.
+ * Uses DB-side resolution logic for internal/api/provider model identifiers.
+ */
+export async function getTopModelsWithMetadata(
+    timeRange: string = "week",
+    limit: number = 6
+): Promise<{ data: TopModelWithMetadata[] }> {
+    cacheLife(RANKINGS_CACHE);
+    cacheTag("public-rankings");
+
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc(
+        "get_public_top_models_with_metadata",
+        {
+            p_time_range: timeRange,
+            p_limit: limit,
+        }
+    );
+
+    if (error) {
+        const err = error as any;
+        console.error("[getTopModelsWithMetadata] RPC error", {
+            message: err?.message ?? null,
+            code: err?.code ?? null,
+            details: err?.details ?? null,
+            hint: err?.hint ?? null,
+        });
+        throw new Error(
+            "Missing or failing RPC get_public_top_models_with_metadata. Apply migration 20260223010000_add_public_top_models_with_metadata.sql to the active database."
+        );
+    }
+
+    return { data: (data ?? []) as TopModelWithMetadata[] };
 }
 
 /**

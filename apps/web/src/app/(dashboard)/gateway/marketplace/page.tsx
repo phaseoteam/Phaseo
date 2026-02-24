@@ -221,7 +221,7 @@ function MarketplaceCard({
 					<CardTitle className="text-base">
 						<Link
 							href={`/gateway/marketplace/${preset.id}`}
-							className="hover:underline"
+							className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 						>
 							{preset.name}
 						</Link>
@@ -252,7 +252,7 @@ function CompactPresetRow({
 				<div className="font-medium text-sm">
 					<Link
 						href={`/gateway/marketplace/${preset.id}`}
-						className="hover:underline"
+						className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
 						{preset.name}
 					</Link>
@@ -276,3 +276,4 @@ function EmptyState() {
 		</div>
 	);
 }
+

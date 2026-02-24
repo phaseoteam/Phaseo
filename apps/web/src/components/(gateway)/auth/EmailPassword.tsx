@@ -39,7 +39,7 @@ export default function EmailPassword() {
 						<button
 							type="button"
 							onClick={() => setForgotPasswordOpen(true)}
-							className="ml-auto text-sm underline-offset-4 hover:underline"
+							className="ml-auto text-sm underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 						>
 							Forgot your password?
 						</button>
@@ -72,3 +72,4 @@ export default function EmailPassword() {
 		</div>
 	);
 }
+

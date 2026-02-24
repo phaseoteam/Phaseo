@@ -146,7 +146,7 @@ export function TokenTripleSection({
 		<div className="space-y-1">
 			{!hideHeader ? (
 				<div className="flex items-center justify-between">
-					<h4 className="text-xs font-semibold uppercase tracking-wide">{title}</h4>
+					<h4 className="text-xs font-semibold">{title}</h4>
 					<span className="text-[11px] text-muted-foreground">{headerRight ?? "Per 1M tokens"}</span>
 				</div>
 			) : null}

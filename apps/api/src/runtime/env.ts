@@ -109,6 +109,14 @@ export type GatewayBindings = {
     MORPHEUS_BASE_URL?: string;
     NEBIUS_API_KEY?: string;
     NEBIUS_BASE_URL?: string;
+    BLACK_FOREST_LABS_API_KEY?: string;
+    BFL_API_KEY?: string;
+    BLACK_FOREST_LABS_BASE_URL?: string;
+    BFL_BASE_URL?: string;
+    BLACK_FOREST_LABS_POLL_INTERVAL_MS?: string;
+    BFL_POLL_INTERVAL_MS?: string;
+    BLACK_FOREST_LABS_POLL_TIMEOUT_MS?: string;
+    BFL_POLL_TIMEOUT_MS?: string;
     XIAOMI_MIMO_API_KEY?: string;
     XIAOMI_MIMO_BASE_URL?: string;
     NOVITA_API_KEY?: string;
@@ -145,6 +153,7 @@ export type GatewayBindings = {
     RESEND_TEMPLATE_WELCOME_ID?: string;
     RESEND_TEMPLATE_LOW_BALANCE_ID?: string;
     KEY_PEPPER?: string;
+    GATEWAY_LOCAL_TESTING_MODE?: string;
     NODE_ENV?: string;
     BYOK_KMS_KEY_V1_B64?: string;
     BYOK_ACTIVE_KEY_VERSION?: string;
@@ -178,6 +187,7 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "GOOGLE_BASE_URL",
     "ANTHROPIC_API_KEY",
     "KEY_PEPPER",
+    "GATEWAY_LOCAL_TESTING_MODE",
     "X_AI_API_KEY",
     "XAI_API_KEY",
     "XAI_BASE_URL",
@@ -263,6 +273,14 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "MORPHEUS_BASE_URL",
     "NEBIUS_API_KEY",
     "NEBIUS_BASE_URL",
+    "BLACK_FOREST_LABS_API_KEY",
+    "BFL_API_KEY",
+    "BLACK_FOREST_LABS_BASE_URL",
+    "BFL_BASE_URL",
+    "BLACK_FOREST_LABS_POLL_INTERVAL_MS",
+    "BFL_POLL_INTERVAL_MS",
+    "BLACK_FOREST_LABS_POLL_TIMEOUT_MS",
+    "BFL_POLL_TIMEOUT_MS",
     "XIAOMI_MIMO_API_KEY",
     "XIAOMI_MIMO_BASE_URL",
     "NOVITA_API_KEY",

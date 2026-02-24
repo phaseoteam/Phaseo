@@ -4,7 +4,8 @@
 import { Buffer } from "node:buffer";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { encryptSecret, sha256Hex } from "@/lib/byok/crypto";
+import { encryptSecret } from "@/lib/byok/crypto";
+import { validateProviderKeyFormat } from "@/lib/byok/providerKeyValidation";
 import { cookies } from "next/headers";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import {
@@ -28,6 +29,10 @@ export async function createByokKeyAction(
     if (!name) throw new Error("Missing name");
     if (!providerId) throw new Error("Missing providerId");
     if (!value) throw new Error("Missing key value");
+    const formatCheck = validateProviderKeyFormat(providerId, value);
+    if (!formatCheck.ok) {
+        throw new Error(formatCheck.message);
+    }
 
     const { supabase, user } = await requireAuthenticatedUser();
 
@@ -40,7 +45,7 @@ export async function createByokKeyAction(
     if (!activeTeamId) throw new Error("No active team selected");
     await requireTeamMembership(supabase, user.id, activeTeamId, ["owner", "admin"]);
 
-    const insertObj = {
+    const basePayload = {
         team_id: activeTeamId,
         provider_id: providerId,
         name,
@@ -54,26 +59,106 @@ export async function createByokKeyAction(
         fingerprint_sha256: enc.fingerprintHex,
         prefix: enc.prefix,
         suffix: enc.suffix,
+        verification_status: formatCheck.strict ? "format_valid_strict" : "format_valid",
+        error_message: null,
+        last_verified_at: new Date().toISOString(),
         created_by: user.id,
     };
 
+    const { data: existingRows, error: existingError } = await supabase
+        .from("byok_keys")
+        .select("id, created_at")
+        .eq("team_id", activeTeamId)
+        .eq("provider_id", providerId)
+        .order("created_at", { ascending: false });
+    if (existingError) throw existingError;
+
+    const existing = (existingRows ?? []) as Array<{ id: string; created_at: string }>;
+    if (existing.length > 0) {
+        const primary = existing[0];
+        const duplicateIds = existing.slice(1).map((row) => row.id);
+        if (duplicateIds.length > 0) {
+            const { error: cleanupError } = await supabase
+                .from("byok_keys")
+                .delete()
+                .in("id", duplicateIds)
+                .eq("team_id", activeTeamId);
+            if (cleanupError) throw cleanupError;
+        }
+
+        const { error: updateError } = await supabase
+            .from("byok_keys")
+            .update({
+                team_id: activeTeamId,
+                provider_id: providerId,
+                name,
+                enabled,
+                always_use,
+                enc_value: basePayload.enc_value,
+                enc_iv: basePayload.enc_iv,
+                enc_tag: basePayload.enc_tag,
+                key_version: basePayload.key_version,
+                fingerprint_sha256: basePayload.fingerprint_sha256,
+                prefix: basePayload.prefix,
+                suffix: basePayload.suffix,
+            })
+            .eq("id", primary.id)
+            .eq("team_id", activeTeamId);
+        if (updateError) throw updateError;
+
+        revalidatePath("/settings/byok");
+        return { id: primary.id, mode: "updated" as const };
+    }
+
     const { data, error } = await supabase
         .from("byok_keys")
-        .insert(insertObj)
+        .insert(basePayload)
         .select("id")
         .maybeSingle();
-
     if (error) {
-        // Normalize duplicate key / unique constraint errors into a friendly message
-        const msg = (error.message || "").toString().toLowerCase();
-        if (msg.includes("duplicate") || msg.includes("unique") || msg.includes("fingerprint")) {
-            throw new Error("Duplicate key");
+        const msg = String(error.message ?? "").toLowerCase();
+        const isTeamProviderConflict =
+            msg.includes("duplicate") || msg.includes("unique") || msg.includes("byok_keys_team_provider_unique");
+        if (!isTeamProviderConflict) throw error;
+
+        const { data: row, error: fetchConflictError } = await supabase
+            .from("byok_keys")
+            .select("id")
+            .eq("team_id", activeTeamId)
+            .eq("provider_id", providerId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (fetchConflictError || !row?.id) {
+            throw fetchConflictError ?? error;
         }
-        throw error;
+
+        const { error: conflictUpdateError } = await supabase
+            .from("byok_keys")
+            .update({
+                team_id: activeTeamId,
+                provider_id: providerId,
+                name,
+                enabled,
+                always_use,
+                enc_value: basePayload.enc_value,
+                enc_iv: basePayload.enc_iv,
+                enc_tag: basePayload.enc_tag,
+                key_version: basePayload.key_version,
+                fingerprint_sha256: basePayload.fingerprint_sha256,
+                prefix: basePayload.prefix,
+                suffix: basePayload.suffix,
+            })
+            .eq("id", row.id)
+            .eq("team_id", activeTeamId);
+        if (conflictUpdateError) throw conflictUpdateError;
+
+        revalidatePath("/settings/byok");
+        return { id: row.id, mode: "updated" as const };
     }
 
     revalidatePath("/settings/byok");
-    return { id: data?.id };
+    return { id: data?.id, mode: "created" as const };
 }
 
 export async function updateByokKeyAction(
@@ -84,7 +169,7 @@ export async function updateByokKeyAction(
     const { supabase, user } = await requireAuthenticatedUser();
     const { data: row, error: rowError } = await supabase
         .from("byok_keys")
-        .select("team_id")
+        .select("team_id,provider_id")
         .eq("id", id)
         .maybeSingle();
     if (rowError) throw rowError;
@@ -97,7 +182,16 @@ export async function updateByokKeyAction(
     if (typeof updates.always_use === "boolean") patch.always_use = updates.always_use;
 
     if (typeof updates.value === "string") {
-        const enc = encryptSecret(updates.value);
+        const nextValue = updates.value.trim();
+        if (!nextValue) {
+            throw new Error("Key value cannot be empty");
+        }
+        const formatCheck = validateProviderKeyFormat(row.provider_id, nextValue);
+        if (!formatCheck.ok) {
+            throw new Error(formatCheck.message);
+        }
+
+        const enc = encryptSecret(nextValue);
         // bytea columns expect hex-prefixed strings (`\x...`)
         patch.enc_value = base64ToPgBytea(enc.ciphertextB64);
         patch.enc_iv = base64ToPgBytea(enc.ivB64);
@@ -106,8 +200,9 @@ export async function updateByokKeyAction(
         patch.fingerprint_sha256 = enc.fingerprintHex;
         patch.prefix = enc.prefix;
         patch.suffix = enc.suffix;
-        patch.verification_status = "unknown";
+        patch.verification_status = formatCheck.strict ? "format_valid_strict" : "format_valid";
         patch.error_message = null;
+        patch.last_verified_at = new Date().toISOString();
     }
 
     const { error } = await supabase

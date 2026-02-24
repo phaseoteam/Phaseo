@@ -201,6 +201,28 @@ function parseMetaOutput(meta: MusicJobMeta | null): {
 	return { output, totalDurationSeconds };
 }
 
+export const __musicGenerateTestUtils = {
+	mapSunoTaskStatus,
+	mapMiniMaxTaskStatus,
+	parseSunoOutput,
+	parseMiniMaxOutput,
+};
+
+async function requireOwnedMusicJob(
+	requestId: string,
+	teamId: string,
+	musicId: string,
+): Promise<{ meta: MusicJobMeta } | Response> {
+	const meta = await getMusicJobMeta(teamId, musicId);
+	if (meta) return { meta };
+	return err("not_found", {
+		reason: "music_not_found_or_not_owned",
+		request_id: requestId,
+		team_id: teamId,
+		music_id: musicId,
+	});
+}
+
 musicGenerateRoutes.get("/:musicId", withRuntime(async (req) => {
 	const auth = await guardAuth(req);
 	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
@@ -213,7 +235,9 @@ musicGenerateRoutes.get("/:musicId", withRuntime(async (req) => {
 		});
 	}
 
-	const meta = await getMusicJobMeta(auth.value.teamId, id);
+	const ownedMusic = await requireOwnedMusicJob(auth.value.requestId, auth.value.teamId, id);
+	if (ownedMusic instanceof Response) return ownedMusic;
+	const meta = ownedMusic.meta;
 	const provider = meta?.provider ?? SUNO_PROVIDER_ID;
 	const minimaxTaskId = decodeMiniMaxMusicId(id);
 	if (

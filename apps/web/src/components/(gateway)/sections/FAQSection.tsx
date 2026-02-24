@@ -18,8 +18,8 @@ function FAQItem({ question, answer, isOpen, onToggle }: FAQItemProps) {
 			className={cn(
 				"group overflow-hidden rounded-xl border transition-all duration-300",
 				isOpen
-					? "border-slate-300 bg-white shadow-sm"
-					: "border-slate-200/60 bg-white/80 hover:border-slate-300/80 hover:bg-white",
+					? "border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+					: "border-zinc-200/60 bg-white/80 hover:border-zinc-300/80 hover:bg-white dark:border-zinc-800/70 dark:bg-zinc-950/60 dark:hover:border-zinc-700 dark:hover:bg-zinc-900/70",
 			)}
 		>
 			<button
@@ -30,15 +30,17 @@ function FAQItem({ question, answer, isOpen, onToggle }: FAQItemProps) {
 				<span
 					className={cn(
 						"text-base font-medium transition-colors",
-						isOpen ? "text-slate-900" : "text-slate-700",
+						isOpen
+							? "text-zinc-900 dark:text-zinc-100"
+							: "text-zinc-700 dark:text-zinc-200",
 					)}
 				>
 					{question}
 				</span>
 				<ChevronDown
 					className={cn(
-						"mt-0.5 h-5 w-5 shrink-0 text-slate-400 transition-transform duration-300",
-						isOpen && "rotate-180 text-slate-600",
+						"mt-0.5 h-5 w-5 shrink-0 text-zinc-400 transition-transform duration-300",
+						isOpen && "rotate-180 text-zinc-600 dark:text-zinc-300",
 					)}
 				/>
 			</button>
@@ -49,8 +51,8 @@ function FAQItem({ question, answer, isOpen, onToggle }: FAQItemProps) {
 				)}
 			>
 				<div className="overflow-hidden">
-					<div className="border-t border-slate-100 px-5 pb-5 pt-4">
-						<p className="text-sm leading-relaxed text-slate-600">
+					<div className="border-t border-zinc-100 px-5 pb-5 pt-4 dark:border-zinc-800">
+						<p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
 							{answer}
 						</p>
 					</div>
@@ -63,15 +65,15 @@ function FAQItem({ question, answer, isOpen, onToggle }: FAQItemProps) {
 const FAQ_ITEMS = [
 	{
 		question: "Can I use my own provider API keys?",
-		answer: "Yes — bring your own keys (BYOK) for any provider and enforce limits per key. Your keys are encrypted at rest and never logged. Managed keys are also available if you prefer not to handle credentials yourself.",
+		answer: "Yes - bring your own keys (BYOK) for any provider and enforce limits per key. Your keys are encrypted at rest and never logged. Managed keys are also available if you prefer not to handle credentials yourself.",
 	},
 	{
 		question: "What model modalities does the Gateway support?",
-		answer: "We support chat completions, embeddings, moderations, image generation, audio generation, and video generation — each with consistent schemas across all providers. All modalities are first-class citizens with full routing and observability support.",
+		answer: "We support chat completions, embeddings, moderations, image generation, audio generation, and video generation - each with consistent schemas across all providers. All modalities are first-class citizens with full routing and observability support.",
 	},
 	{
 		question: "How quickly are new models added?",
-		answer: "New provider models and community submissions are reviewed and added on a rolling basis — typically within 24-48 hours of release. Once approved, they're available instantly in the Gateway and the SDKs with no code changes required.",
+		answer: "New provider models and community submissions are reviewed and added on a rolling basis - typically within 24-48 hours of release. Once approved, they are available instantly in the Gateway and the SDKs with no code changes required.",
 	},
 	{
 		question: "Where do latency and reliability metrics come from?",
@@ -79,7 +81,7 @@ const FAQ_ITEMS = [
 	},
 	{
 		question: "Can I mix different providers in one application?",
-		answer: "Absolutely — choose the provider or model per request while keeping a single unified API. Switching providers requires only changing the model name. You can even set up automatic fallbacks between providers.",
+		answer: "Absolutely - choose the provider or model per request while keeping a single unified API. Switching providers requires only changing the model name. You can even set up automatic fallbacks between providers.",
 	},
 	{
 		question: "How does intelligent routing work?",
@@ -87,7 +89,7 @@ const FAQ_ITEMS = [
 	},
 	{
 		question: "Does AI Stats apply any rate limits?",
-		answer: "No — we don't impose rate limits. Upstream providers may have their own limits, but we work with providers to optimize your allocation. You can optionally set spend limits per API key to control costs.",
+		answer: "No - we do not impose rate limits. Upstream providers may have their own limits, but we work with providers to optimize your allocation. You can optionally set spend limits per API key to control costs.",
 	},
 	{
 		question: "What security certifications do you have?",
@@ -109,24 +111,23 @@ export function FAQSection() {
 	return (
 		<section className="relative overflow-hidden py-20 sm:py-28">
 			<div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-				{/* Section header */}
 				<div className="mx-auto max-w-3xl text-center">
 					<Badge
 						variant="secondary"
-						className="mb-4 border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600"
+						className="mb-4 border border-zinc-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 					>
 						<HelpCircle className="mr-1.5 h-3.5 w-3.5" />
 						FAQ
 					</Badge>
-					<h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+					<h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
 						Frequently asked questions
 					</h2>
-					<p className="mt-4 text-lg leading-relaxed text-slate-600">
+					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
 						Everything you need to know about the AI Stats Gateway.
-						Can't find an answer?{" "}
+						Cannot find an answer?{" "}
 						<a
 							href="mailto:support@ai-stats.phaseo.app"
-							className="font-medium text-slate-900 underline underline-offset-4 hover:text-slate-700"
+							className="font-medium text-zinc-900 underline underline-offset-4 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
 						>
 							Reach out to our team
 						</a>
@@ -134,7 +135,6 @@ export function FAQSection() {
 					</p>
 				</div>
 
-				{/* FAQ grid */}
 				<div className="mt-16 grid gap-4 lg:grid-cols-2">
 					<div className="space-y-4">
 						{leftColumn.map((item, index) => (
@@ -166,3 +166,4 @@ export function FAQSection() {
 		</section>
 	);
 }
+

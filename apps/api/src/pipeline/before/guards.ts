@@ -96,6 +96,7 @@ export async function guardAuth(req: Request): Promise<GuardResult<{
     apiKeyId: string;
     apiKeyRef: string | null;
     apiKeyKid: string | null;
+    userId?: string | null;
     internal?: boolean;
 }>> {
     const requestId = generatePublicId();
@@ -112,6 +113,7 @@ export async function guardAuth(req: Request): Promise<GuardResult<{
             apiKeyId: auth.apiKeyId,
             apiKeyRef: auth.apiKeyRef,
             apiKeyKid: auth.apiKeyKid,
+            userId: auth.userId ?? null,
             internal: auth.internal,
         },
     };
@@ -164,6 +166,7 @@ export async function guardContext(args: {
     model: string;
     requestId: string;
     internal?: boolean;
+    testingMode?: boolean;
     disableCache?: boolean;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
     try {
@@ -172,6 +175,7 @@ export async function guardContext(args: {
             model: args.model,
             endpoint: args.capability,
             apiKeyId: args.apiKeyId,
+            includeTestingMode: args.testingMode,
             disableCache: args.disableCache,
         });
 

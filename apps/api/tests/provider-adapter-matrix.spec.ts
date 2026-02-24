@@ -132,6 +132,26 @@ const SCENARIOS: Partial<Record<Endpoint, Scenario>> = {
             }
         },
     },
+    "music.generate": {
+        requestBody: { model: "elevenlabs/music_v1", prompt: "Short lo-fi loop", format: "wav" },
+        responseBody: {
+            id: "music_1",
+            status: "completed",
+            audio_url: "https://example.com/track.wav",
+            duration_seconds: 4,
+        },
+        urlMatch: (url) => url.includes("/v1/music/detailed"),
+        expectNormalized: (normalized, providerId) => {
+            expect(providerId).toBe("elevenlabs");
+            expect(normalized.object).toBe("music");
+            expect(normalized.id).toBe("music_1");
+            expect(normalized.output?.[0]?.audio_url).toBe("https://example.com/track.wav");
+        },
+        expectRequest: (body) => {
+            expect(body.model_id).toBe("music_v1");
+            expect(body.prompt).toBe("Short lo-fi loop");
+        },
+    },
     batch: {
         requestBody: { input_file_id: "file_123", endpoint: "/v1/chat/completions" },
         responseBody: { id: "batch_1", status: "completed" },
@@ -159,7 +179,15 @@ const PROVIDER_SCENARIO_OVERRIDES: Record<string, Partial<Record<Endpoint, Scena
         },
         "audio.transcription": {
             ...SCENARIOS["audio.transcription"]!,
+            requestBody: {
+                model: "eleven-labs/scribe-v2-2026-01-09",
+                file: new Blob(["RIFF"], { type: "audio/wav" }),
+            },
             urlMatch: (url) => url.includes("/v1/speech-to-text"),
+        },
+        "music.generate": {
+            ...SCENARIOS["music.generate"]!,
+            urlMatch: (url) => url.includes("/v1/music/detailed"),
         },
     },
 };
@@ -178,7 +206,7 @@ function supportedEndpointsFor(providerId: string): Set<Endpoint> {
         case "azure":
             return AZURE_ENDPOINTS;
         case "elevenlabs":
-            return new Set<Endpoint>(["audio.speech", "audio.transcription"]);
+            return new Set<Endpoint>(["audio.speech", "audio.transcription", "music.generate"]);
         case "anthropic":
         case "x-ai":
         case "xiaomi":

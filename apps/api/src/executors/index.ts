@@ -24,6 +24,7 @@ import { executor as anthropicText } from "./anthropic/text-generate";
 import { executor as azureText } from "./azure/text-generate";
 import { executor as googleText } from "./google/text-generate";
 import { executor as googleAiStudioText } from "./google-ai-studio/text-generate";
+import { executor as googleAudioSpeech } from "./google/audio-speech";
 import { executor as xAiText } from "./x-ai/text-generate";
 import { executor as deepseekText } from "./deepseek/text-generate";
 import { executor as minimaxText } from "./minimax/text-generate";
@@ -79,6 +80,7 @@ const ADAPTER_BACKED_ENDPOINTS: Record<AdapterBackedCapability, Endpoint> = {
 	"audio.speech": "audio.speech",
 	"audio.transcription": "audio.transcription",
 	"audio.translations": "audio.translations",
+	"video.generate": "video.generation",
 	ocr: "ocr",
 	"music.generate": "music.generate",
 };
@@ -131,11 +133,13 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	google: {
 		"text.generate": googleText,
 		embeddings: googleEmbeddings,
+		"audio.speech": googleAudioSpeech,
 		"video.generate": googleVideo,
 	},
 	"google-ai-studio": {
 		"text.generate": googleAiStudioText,
 		embeddings: googleAiStudioEmbeddings,
+		"audio.speech": googleAudioSpeech,
 		"video.generate": googleVideo,
 	},
 	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo },

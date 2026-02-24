@@ -21,6 +21,7 @@ import { ocrRoutes } from "./ocr";
 import { musicGenerateRoutes } from "./music-generate";
 import { batchRoutes } from "./batches";
 import { filesRoutes } from "./files";
+import { realtimeRoutes } from "./realtime";
 
 export const dataRouter = new Hono<Env>();
 
@@ -42,6 +43,8 @@ dataRouter.route("/music/generations", musicGenerateRoutes);
 dataRouter.route("/batch", batchRoutes);
 dataRouter.route("/batches", batchRoutes);
 dataRouter.route("/files", filesRoutes);
+dataRouter.route("/realtime", realtimeRoutes);
+dataRouter.route("/audio/realtime", realtimeRoutes);
 
 
 

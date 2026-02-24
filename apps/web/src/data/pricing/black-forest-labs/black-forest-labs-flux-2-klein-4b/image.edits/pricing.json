@@ -1,0 +1,21 @@
+{
+  "key": "black-forest-labs:black-forest-labs/flux-2-klein-4b:image.edits",
+  "api_provider_id": "black-forest-labs",
+  "provider_slug": "black-forest-labs",
+  "api_model_id": "black-forest-labs/flux-2-klein-4b",
+  "capability_id": "image.edits",
+  "rules": [
+    {
+      "meter": "bfl_credits",
+      "unit": "credit",
+      "unit_size": 1,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "tiering_mode": null,
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

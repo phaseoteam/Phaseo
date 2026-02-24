@@ -1,22 +1,18 @@
 import { MetadataRoute } from "next";
-import manifestData from "@/data/manifest.json";
 import {
 	getHelpArticleParams,
 	getHelpCategoryParams,
 } from "@/lib/content/helpCenter";
 import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
+import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
+import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
+import { getAllOrganisationsCached } from "@/lib/fetchers/organisations/getAllOrganisations";
+import { getAllBenchmarksCached } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
+import { getAllSubscriptionPlansCached } from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
 
 // Cache sitemap output at the edge to avoid repeated compute (and Fast Origin Transfer)
 // from crawlers hitting `/sitemap.xml` frequently.
 export const revalidate = 86400; // 1 day (must be a literal for static analysis)
-
-type ManifestFile = {
-    organisations?: string[];
-    models?: Record<string, string[]>;
-    benchmarks?: string[];
-    api_providers?: string[];
-    subscription_plans?: string[];
-};
 
 type SitemapEntry = MetadataRoute.Sitemap[number];
 type ChangeFrequency = NonNullable<SitemapEntry["changeFrequency"]>;
@@ -34,7 +30,10 @@ type RouteSuffix = {
     priority: number;
 };
 
-const manifest = manifestData as ManifestFile;
+type ModelSitemapSource = {
+	model_id?: string | null;
+};
+
 const baseUrl = (
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??
@@ -134,37 +133,76 @@ function createItem(
     };
 }
 
-function normalizeSlugs(list?: string[]): string[] {
-    const normalized = new Set<string>();
-    (list ?? []).forEach((slug) => {
-        if (!slug) {
-            return;
-        }
-        const cleaned = slug.trim();
-        if (cleaned) {
-            normalized.add(cleaned);
-        }
-    });
-    return [...normalized].sort();
+function normalizeSingleSegmentSlugs(list?: string[], label?: string): string[] {
+	const normalized = new Set<string>();
+	let dropped = 0;
+
+	(list ?? []).forEach((slug) => {
+		if (!slug) {
+			return;
+		}
+		const cleaned = slug.trim().replace(/^\/+|\/+$/g, "");
+		if (!cleaned) {
+			return;
+		}
+		if (cleaned.includes("/")) {
+			dropped += 1;
+			return;
+		}
+		normalized.add(cleaned);
+	});
+
+	if (dropped > 0) {
+		console.warn(
+			`[sitemap] dropped ${dropped} malformed ${
+				label ?? "single segment"
+			} slug(s)`,
+		);
+	}
+
+	return [...normalized].sort();
 }
 
-function getModelSlugs(map?: ManifestFile["models"]): string[] {
-    const normalized = new Set<string>();
-    if (!map) {
-        return [];
-    }
-    Object.entries(map).forEach(([, list]) => {
-        (list ?? []).forEach((slug) => {
-            if (!slug) {
-                return;
-            }
-            const cleaned = slug.trim();
-            if (cleaned) {
-                normalized.add(`${cleaned}`);
-            }
-        });
-    });
-    return [...normalized].sort();
+function normalizeModelRouteSlugs(models?: ModelSitemapSource[]): string[] {
+	const normalized = new Set<string>();
+	let dropped = 0;
+
+	(models ?? []).forEach((model) => {
+		const rawModelId = String(model?.model_id ?? "")
+			.trim()
+			.replace(/^\/+|\/+$/g, "");
+		if (!rawModelId) {
+			return;
+		}
+
+		const parts = rawModelId.split("/").filter(Boolean);
+		if (parts.length !== 2) {
+			dropped += 1;
+			return;
+		}
+
+		normalized.add(rawModelId);
+	});
+
+	if (dropped > 0) {
+		console.warn(
+			`[sitemap] dropped ${dropped} malformed model slug(s) that do not match /models/{organisationId}/{modelId}`,
+		);
+	}
+
+	return [...normalized].sort();
+}
+
+function fromSettled<T>(
+	result: PromiseSettledResult<T>,
+	label: string,
+	fallback: T
+): T {
+	if (result.status === "fulfilled") {
+		return result.value;
+	}
+	console.warn(`[sitemap] failed to load ${label}`, result.reason);
+	return fallback;
 }
 
 function applySuffixes(
@@ -190,16 +228,6 @@ function applySuffixes(
     return items;
 }
 
-function generateItems(
-    getSlugs: () => string[],
-    prefix: string,
-    suffixes: RouteSuffix[],
-    lastModified: string,
-): SitemapItem[] {
-    const slugs = getSlugs();
-    return applySuffixes(prefix, slugs, suffixes, lastModified);
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const lastModified =
 		process.env.NEXT_PUBLIC_DEPLOY_TIME ?? new Date().toISOString();
@@ -207,46 +235,98 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		createItem(route.path, route.changeFrequency, route.priority, lastModified),
 	);
 
-	const dynamicItems = [
-		...generateItems(
-			() => getModelSlugs(manifest.models),
-			"/models",
-			MODEL_SUFFIXES,
-			lastModified,
-		),
-		...generateItems(
-			() => normalizeSlugs(manifest.api_providers),
-			"/api-providers",
-			PROVIDER_SUFFIXES,
-			lastModified,
-		),
-		...generateItems(
-			() => normalizeSlugs(manifest.organisations),
-			"/organisations",
-			ORGANISATION_SUFFIXES,
-			lastModified,
-		),
-		...generateItems(
-			() => normalizeSlugs(manifest.benchmarks),
-			"/benchmarks",
-			BENCHMARK_SUFFIXES,
-			lastModified,
-		),
-		...generateItems(
-			() => normalizeSlugs(manifest.subscription_plans),
-			"/subscription-plans",
-			PLAN_SUFFIXES,
-			lastModified,
-		),
-	];
-
-	const publicAppIds = await getPublicAppIdsCached();
-	const appItems = applySuffixes("/apps", publicAppIds, APP_SUFFIXES, lastModified);
-
-	const [helpCategoryParams, helpArticleParams] = await Promise.all([
+	const [
+		modelsResult,
+		apiProvidersResult,
+		organisationsResult,
+		benchmarksResult,
+		plansResult,
+		publicAppsResult,
+		helpCategoryResult,
+		helpArticleResult,
+	] = await Promise.allSettled([
+		getAllModelsCached(false),
+		getAllAPIProvidersCached(),
+		getAllOrganisationsCached(),
+		getAllBenchmarksCached(false),
+		getAllSubscriptionPlansCached(),
+		getPublicAppIdsCached(),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 	]);
+
+	const modelSlugs = normalizeModelRouteSlugs(
+		fromSettled(modelsResult, "models for sitemap", [])
+	);
+	const providerSlugs = normalizeSingleSegmentSlugs(
+		fromSettled(apiProvidersResult, "api providers for sitemap", []).map(
+			(provider) => String(provider.api_provider_id ?? "").trim()
+		),
+		"api provider",
+	);
+	const organisationSlugs = normalizeSingleSegmentSlugs(
+		fromSettled(organisationsResult, "organisations for sitemap", []).map(
+			(organisation) => String(organisation.organisation_id ?? "").trim()
+		),
+		"organisation",
+	);
+	const benchmarkSlugs = normalizeSingleSegmentSlugs(
+		fromSettled(benchmarksResult, "benchmarks for sitemap", []).map(
+			(benchmark) => String(benchmark.benchmark_id ?? "").trim()
+		),
+		"benchmark",
+	);
+	const planSlugs = normalizeSingleSegmentSlugs(
+		fromSettled(plansResult, "subscription plans for sitemap", []).map(
+			(plan) => String(plan.plan_id ?? "").trim()
+		),
+		"subscription plan",
+	);
+	const publicAppIds = normalizeSingleSegmentSlugs(
+		fromSettled(publicAppsResult, "public apps for sitemap", []),
+		"public app",
+	);
+
+	const dynamicItems = [
+		...applySuffixes("/models", modelSlugs, MODEL_SUFFIXES, lastModified),
+		...applySuffixes(
+			"/api-providers",
+			providerSlugs,
+			PROVIDER_SUFFIXES,
+			lastModified
+		),
+		...applySuffixes(
+			"/organisations",
+			organisationSlugs,
+			ORGANISATION_SUFFIXES,
+			lastModified
+		),
+		...applySuffixes(
+			"/benchmarks",
+			benchmarkSlugs,
+			BENCHMARK_SUFFIXES,
+			lastModified
+		),
+		...applySuffixes(
+			"/subscription-plans",
+			planSlugs,
+			PLAN_SUFFIXES,
+			lastModified
+		),
+	];
+
+	const appItems = applySuffixes("/apps", publicAppIds, APP_SUFFIXES, lastModified);
+
+	const helpCategoryParams = fromSettled(
+		helpCategoryResult,
+		"help categories for sitemap",
+		[]
+	);
+	const helpArticleParams = fromSettled(
+		helpArticleResult,
+		"help articles for sitemap",
+		[]
+	);
 	const helpCategoryItems = helpCategoryParams
 		.filter(
 			(entry) =>

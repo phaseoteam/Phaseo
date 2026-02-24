@@ -5,6 +5,11 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createHash, randomBytes } from 'crypto'
+import { cookies } from 'next/headers'
+import {
+    OBFUSCATE_INFO_COOKIE,
+    serializeObfuscateInfo,
+} from '@/lib/obfuscation'
 
 export async function updateAccount(payload: {
     display_name?: string | null
@@ -28,6 +33,15 @@ export async function updateAccount(payload: {
 
     const { error } = await supabase.from('users').upsert(toUpsert, { onConflict: 'user_id' })
     if (error) throw new Error(error.message)
+    if (payload.obfuscate_info !== undefined) {
+        const cookieStore = await cookies()
+        cookieStore.set(OBFUSCATE_INFO_COOKIE, serializeObfuscateInfo(payload.obfuscate_info), {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 365,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+        })
+    }
 
     revalidatePath('/settings/account')
 

@@ -3,6 +3,7 @@
 import * as React from "react";
 import ModelUpdatesOnThisDay from "./ModelUpdatesOnThisDay";
 import ModelUpdatesRecentReleases from "./ModelUpdatesRecentReleases";
+import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
 import { Megaphone, Rocket, Ban, Archive } from "lucide-react";
 import type {
 	ModelEvent,
@@ -159,6 +160,7 @@ export default function ModelUpdatesPage({
 				eventTypeOptions={eventTypeOptions}
 				getRelativeLabel={getTimeUntil}
 				emptyMessage="No upcoming updates scheduled."
+				headerActions={<ModelCalendarRouteSwitch active="models" />}
 			/>
 			<ModelUpdatesOnThisDay
 				todayEvents={todayEvents}

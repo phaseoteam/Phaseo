@@ -35,6 +35,9 @@ type EventArgs = {
     model?: string | null;
     endpoint?: string | null;
     mappedRequest?: string | null;
+    gatewayResponse?: unknown;
+    providerResponse?: unknown;
+    providerResponseHeaders?: Record<string, string> | null;
 };
 
 function toNum(value: any) {
@@ -166,6 +169,18 @@ function countMediaFromContext(ctx?: PipelineContext): {
     };
 }
 
+function headersToRecord(headers: Headers | null | undefined): Record<string, string> | null {
+    if (!headers) return null;
+    const out: Record<string, string> = {};
+    let count = 0;
+    for (const [key, value] of headers.entries()) {
+        out[key] = value;
+        count += 1;
+        if (count >= 128) break;
+    }
+    return Object.keys(out).length > 0 ? out : null;
+}
+
 export async function emitGatewayRequestEvent(args: EventArgs) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -188,6 +203,13 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             args.mappedRequest ?? args.result?.mappedRequest ?? null
         );
         const sanitizedErrorDetails = sanitizeForAxiom(args.errorDetails ?? null);
+        const sanitizedProviderResponse = sanitizeForAxiom(
+            args.providerResponse ?? args.result?.rawResponse ?? null
+        );
+        const sanitizedProviderResponseHeaders = sanitizeForAxiom(
+            args.providerResponseHeaders ?? headersToRecord(args.result?.upstream?.headers)
+        );
+        const sanitizedGatewayResponse = sanitizeForAxiom(args.gatewayResponse ?? null);
         const sanitizedParamRoutingDiagnostics = sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null);
         const sanitizedRoutingSnapshot = sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null);
         const sanitizedRoutingDiagnostics = sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null);
@@ -254,6 +276,12 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             cost_currency: args.pricing?.currency ?? null,
             request_payload_redacted_json: stringifyForAxiom(sanitizedGatewayRequest),
             upstream_request_redacted_json: stringifyForAxiom(sanitizedUpstreamRequest),
+            provider_response_redacted_json: stringifyForAxiom(sanitizedProviderResponse),
+            provider_response_headers_json: stringifyForAxiom(sanitizedProviderResponseHeaders),
+            provider_status_code: args.result?.upstream?.status ?? args.statusCode ?? null,
+            provider_status_text: args.result?.upstream?.statusText ?? null,
+            provider_url: args.result?.upstream?.url ?? null,
+            gateway_response_redacted_json: stringifyForAxiom(sanitizedGatewayResponse),
             transform_has_upstream_request: Boolean(args.mappedRequest ?? args.result?.mappedRequest),
             env: bindings.NODE_ENV ?? null,
             gateway_version: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,

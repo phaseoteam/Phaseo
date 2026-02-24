@@ -66,7 +66,7 @@ export default async function SubscriptionPlanDetailShell({
 							<Link
 								href={`/organisations/${plan.organisation?.organisation_id}`}
 							>
-								<h2 className="mb-1 text-center text-md font-semibold md:text-left md:text-xl relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+								<h2 className="mb-1 text-center text-md font-semibold md:text-left md:text-xl relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 									{plan.organisation?.name ??
 										"Unknown Provider"}
 								</h2>

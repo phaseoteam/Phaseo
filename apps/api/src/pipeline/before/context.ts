@@ -6,7 +6,7 @@
 import { getSupabaseAdmin, getCache } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
 import { contextSchema } from "./schemas";
-import type { GatewayContextData } from "./types";
+import type { ByokKeyMeta, GatewayContextData, GatewayProviderSnapshot } from "./types";
 
 const CONTEXT_CACHE_PREFIX = "gateway:context";
 
@@ -137,11 +137,270 @@ function normalizeProviderStatus(
     return "active";
 }
 
+function parseModalities(value: unknown): Set<string> {
+    if (Array.isArray(value)) {
+        return new Set(
+            value
+                .map((entry) => String(entry ?? "").trim().toLowerCase())
+                .filter(Boolean)
+        );
+    }
+    if (typeof value === "string") {
+        return new Set(
+            value
+                .split(",")
+                .map((entry) => entry.trim().toLowerCase())
+                .filter(Boolean)
+        );
+    }
+    return new Set<string>();
+}
+
+function supportsEndpointViaModalities(args: {
+    endpoint: string;
+    inputModalities: Set<string>;
+    outputModalities: Set<string>;
+}): boolean {
+    const endpoint = String(args.endpoint ?? "").trim().toLowerCase();
+    const input = args.inputModalities;
+    const output = args.outputModalities;
+
+    const hasInput = (...values: string[]) => values.some((value) => input.has(value));
+    const hasOutput = (...values: string[]) => values.some((value) => output.has(value));
+
+    switch (endpoint) {
+        case "audio.speech":
+            return hasInput("text") && hasOutput("audio");
+        case "audio.transcription":
+        case "audio.translations":
+            return hasInput("audio") && hasOutput("text");
+        case "images.generations":
+            return hasInput("text", "image") && hasOutput("image");
+        case "images.edits":
+            return hasInput("image", "text") && hasOutput("image");
+        case "video.generation":
+        case "video.generate":
+            return hasInput("text", "image", "video") && hasOutput("video");
+        case "music.generate":
+            return hasInput("text") && hasOutput("audio");
+        case "ocr":
+            return hasInput("image") && hasOutput("text");
+        default:
+            return false;
+    }
+}
+
+function toMillis(value: string | null | undefined): number {
+    if (!value) return 0;
+    const ts = Date.parse(value);
+    return Number.isFinite(ts) ? ts : 0;
+}
+
+function isWithinEffectiveWindow(
+    effectiveFrom: string | null | undefined,
+    effectiveTo: string | null | undefined,
+    nowMs: number
+): boolean {
+    const startMs = effectiveFrom ? Date.parse(effectiveFrom) : null;
+    const endMs = effectiveTo ? Date.parse(effectiveTo) : null;
+    if (startMs !== null && Number.isFinite(startMs) && startMs > nowMs) return false;
+    if (endMs !== null && Number.isFinite(endMs) && nowMs >= endMs) return false;
+    return true;
+}
+
+async function fetchTestingProviderSnapshots(args: {
+    teamId: string;
+    model: string;
+    requestedModel: string;
+    endpoint: string;
+    existingProviders: GatewayProviderSnapshot[];
+}): Promise<GatewayProviderSnapshot[]> {
+    const supabase = getSupabaseAdmin();
+    const nowMs = Date.now();
+    const existingSupportByKey = new Map<string, boolean>();
+    for (const provider of args.existingProviders) {
+        const key = `${provider.providerId}::${provider.providerModelSlug ?? ""}`;
+        const previous = existingSupportByKey.get(key) ?? false;
+        existingSupportByKey.set(key, previous || Boolean(provider.supportsEndpoint));
+    }
+
+    const modelCandidates = Array.from(
+        new Set(
+            [args.model, args.requestedModel]
+                .map((value) => String(value ?? "").trim())
+                .filter(Boolean)
+        )
+    );
+    if (!modelCandidates.length) return [];
+
+    const [byApiModelResult, byInternalModelResult] = await Promise.all([
+        supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,effective_from,effective_to,input_modalities,output_modalities"
+            )
+            .in("api_model_id", modelCandidates)
+            .eq("is_active_gateway", false),
+        supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,effective_from,effective_to,input_modalities,output_modalities"
+            )
+            .in("internal_model_id", modelCandidates)
+            .eq("is_active_gateway", false),
+    ]);
+
+    if (byApiModelResult.error && byInternalModelResult.error) return [];
+
+    const providerRowById = new Map<string, any>();
+    for (const row of byApiModelResult.data ?? []) {
+        const key = typeof row?.provider_api_model_id === "string" ? row.provider_api_model_id : null;
+        if (!key) continue;
+        providerRowById.set(key, row);
+    }
+    for (const row of byInternalModelResult.data ?? []) {
+        const key = typeof row?.provider_api_model_id === "string" ? row.provider_api_model_id : null;
+        if (!key) continue;
+        providerRowById.set(key, row);
+    }
+    const providerRows = Array.from(providerRowById.values());
+    if (!providerRows.length) return [];
+
+    const inWindowRows = providerRows.filter((row: any) =>
+        isWithinEffectiveWindow(row?.effective_from, row?.effective_to, nowMs)
+    );
+    if (!inWindowRows.length) return [];
+
+    const providerModelIds = Array.from(
+        new Set(
+            inWindowRows
+                .map((row: any) => row?.provider_api_model_id)
+                .filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
+        )
+    );
+    if (!providerModelIds.length) return [];
+
+    const { data: capabilityRows, error: capabilityError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select(
+            "provider_api_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at"
+        )
+        .eq("capability_id", args.endpoint)
+        .eq("status", "active")
+        .in("provider_api_model_id", providerModelIds);
+    if (capabilityError) return [];
+
+    const latestCapabilityByProviderModel = new Map<
+        string,
+        {
+            params: Record<string, any>;
+            maxInputTokens: number | null;
+            maxOutputTokens: number | null;
+            sortTs: number;
+        }
+    >();
+    for (const row of (capabilityRows ?? []) as any[]) {
+        const providerApiModelId = row?.provider_api_model_id;
+        if (typeof providerApiModelId !== "string" || !providerApiModelId.length) continue;
+        const ts = Math.max(toMillis(row?.updated_at), toMillis(row?.created_at));
+        const prev = latestCapabilityByProviderModel.get(providerApiModelId);
+        if (prev && prev.sortTs > ts) continue;
+        latestCapabilityByProviderModel.set(providerApiModelId, {
+            params: (row?.params && typeof row.params === "object" ? row.params : {}) as Record<string, any>,
+            maxInputTokens:
+                row?.max_input_tokens === null || row?.max_input_tokens === undefined
+                    ? null
+                    : Number(row.max_input_tokens),
+            maxOutputTokens:
+                row?.max_output_tokens === null || row?.max_output_tokens === undefined
+                    ? null
+                    : Number(row.max_output_tokens),
+            sortTs: ts,
+        });
+    }
+
+    const providerIds = Array.from(
+        new Set(
+            inWindowRows
+                .map((row: any) => row?.provider_id)
+                .filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
+        )
+    );
+    const byokByProvider = new Map<string, ByokKeyMeta[]>();
+    if (providerIds.length) {
+        const { data: byokRows, error: byokError } = await supabase
+            .from("byok_keys")
+            .select("id,provider_id,fingerprint_sha256,key_version,always_use")
+            .eq("team_id", args.teamId)
+            .eq("enabled", true)
+            .in("provider_id", providerIds);
+        if (!byokError && byokRows?.length) {
+            for (const row of byokRows as any[]) {
+                if (!row?.id || !row?.provider_id || !row?.fingerprint_sha256) continue;
+                const entry: ByokKeyMeta = {
+                    id: String(row.id),
+                    providerId: String(row.provider_id),
+                    fingerprintSha256: String(row.fingerprint_sha256),
+                    keyVersion:
+                        row.key_version === undefined || row.key_version === null
+                            ? null
+                            : String(row.key_version),
+                    alwaysUse: Boolean(row.always_use),
+                };
+                const list = byokByProvider.get(entry.providerId) ?? [];
+                list.push(entry);
+                byokByProvider.set(entry.providerId, list);
+            }
+        }
+    }
+
+    const testingProviders: GatewayProviderSnapshot[] = [];
+    for (const row of inWindowRows as any[]) {
+        const providerApiModelId = row?.provider_api_model_id;
+        const providerId = row?.provider_id;
+        if (typeof providerApiModelId !== "string" || typeof providerId !== "string") continue;
+        const cap = latestCapabilityByProviderModel.get(providerApiModelId);
+        const inferredSupport = supportsEndpointViaModalities({
+            endpoint: args.endpoint,
+            inputModalities: parseModalities(row?.input_modalities),
+            outputModalities: parseModalities(row?.output_modalities),
+        });
+        if (!cap && !inferredSupport) continue;
+        const providerModelSlug =
+            row?.provider_model_slug === null || row?.provider_model_slug === undefined
+                ? null
+                : String(row.provider_model_slug);
+        const providerKey = `${providerId}::${providerModelSlug ?? ""}`;
+        const alreadySupported = existingSupportByKey.get(providerKey) ?? false;
+        if (alreadySupported) continue;
+        testingProviders.push({
+            providerId,
+            providerStatus: "active",
+            supportsEndpoint: true,
+            baseWeight: 1,
+            byokMeta: byokByProvider.get(providerId) ?? [],
+            providerModelSlug,
+            capabilityParams: cap?.params ?? {},
+            maxInputTokens:
+                cap?.maxInputTokens !== null && Number.isFinite(cap?.maxInputTokens)
+                    ? cap.maxInputTokens
+                    : null,
+            maxOutputTokens:
+                cap?.maxOutputTokens !== null && Number.isFinite(cap?.maxOutputTokens)
+                    ? cap.maxOutputTokens
+                    : null,
+        });
+    }
+
+    return testingProviders;
+}
+
 export async function fetchGatewayContext(args: {
     teamId: string;
     model: string;
     endpoint: string;
     apiKeyId: string;
+    includeTestingMode?: boolean;
     disableCache?: boolean;
 }): Promise<GatewayContextData> {
     const supabase = getSupabaseAdmin();
@@ -150,9 +409,10 @@ export async function fetchGatewayContext(args: {
 
     // Check if model is a preset
     const isPreset = args.model.startsWith("@");
+    const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";
     const cacheKey = isPreset
-        ? `${PRESET_CACHE_PREFIX}:${args.teamId}:${args.model}:${args.endpoint}`
-        : `${CONTEXT_CACHE_PREFIX}:${args.teamId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
+        ? `${PRESET_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.model}:${args.endpoint}`
+        : `${CONTEXT_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
 
     // Try cache first
     if (!args.disableCache) {
@@ -189,6 +449,23 @@ export async function fetchGatewayContext(args: {
         console.error("[context.ts] Zod parsing error:", e);
         console.error("[context.ts] Payload that failed:", payload);
         throw e;
+    }
+
+    if (args.includeTestingMode) {
+        try {
+            const testingProviders = await fetchTestingProviderSnapshots({
+                teamId: args.teamId,
+                model: parsed.resolvedModel ?? args.model,
+                requestedModel: args.model,
+                endpoint: args.endpoint,
+                existingProviders: parsed.providers ?? [],
+            });
+            if (testingProviders.length) {
+                parsed.providers = [...(parsed.providers ?? []), ...testingProviders];
+            }
+        } catch {
+            // Keep public provider list if testing-mode enrichment fails.
+        }
     }
 
     // Enrich with team settings + provider rollout statuses.
@@ -258,6 +535,7 @@ export async function fetchGatewayContext(args: {
     } catch {
         // Keep defaults if enrichment fails, never block request path.
     }
+    parsed.testingMode = Boolean(args.includeTestingMode);
 
     // Compute adaptive TTL based on data characteristics
     if (!args.disableCache) {

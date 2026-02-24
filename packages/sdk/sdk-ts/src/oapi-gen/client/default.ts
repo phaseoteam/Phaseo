@@ -169,6 +169,106 @@ export async function createAnthropicMessage(
   });
 }
 
+export type CreateAudioRealtimeCallPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /realtime/calls. Currently returns not implemented.
+ */
+export async function createAudioRealtimeCallPlaceholder(
+  client: Client,
+  args: CreateAudioRealtimeCallPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/audio/realtime/calls";
+  return client.request<unknown>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateAudioRealtimeClientSecretsPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /realtime/client_secrets. Currently returns not implemented.
+ */
+export async function createAudioRealtimeClientSecretsPlaceholder(
+  client: Client,
+  args: CreateAudioRealtimeClientSecretsPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/audio/realtime/client_secrets";
+  return client.request<unknown>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateAudioRealtimeSessionPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /realtime. Currently returns not implemented.
+ */
+export async function createAudioRealtimeSessionPlaceholder(
+  client: Client,
+  args: CreateAudioRealtimeSessionPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/audio/realtime";
+  return client.request<unknown>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateAudioRealtimeSessionsPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /realtime/sessions. Currently returns not implemented.
+ */
+export async function createAudioRealtimeSessionsPlaceholder(
+  client: Client,
+  args: CreateAudioRealtimeSessionsPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/audio/realtime/sessions";
+  return client.request<unknown>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateBatchParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -195,65 +295,15 @@ export type CreateBatchParams = {
 };
 
 /**
- * Creates a batch of API requests.
+ * Placeholder endpoint. Batch creation is not implemented yet.
  */
 export async function createBatch(
   client: Client,
   args: CreateBatchParams = {},
-): Promise<{
-  cancelled_at?: number;
-  cancelling_at?: number;
-  completed_at?: number;
-  completion_window?: string;
-  created_at?: number;
-  endpoint?: string;
-  error_file_id?: string;
-  errors?: {};
-  expired_at?: number;
-  expires_at?: number;
-  failed_at?: number;
-  finalizing_at?: number;
-  id?: string;
-  in_progress_at?: number;
-  input_file_id?: string;
-  metadata?: {};
-  object?: string;
-  output_file_id?: string;
-  request_counts?: {
-    completed?: number;
-    failed?: number;
-    total?: number;
-  };
-  status?: string;
-}> {
+): Promise<unknown> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/batches";
-  return client.request<{
-    cancelled_at?: number;
-    cancelling_at?: number;
-    completed_at?: number;
-    completion_window?: string;
-    created_at?: number;
-    endpoint?: string;
-    error_file_id?: string;
-    errors?: {};
-    expired_at?: number;
-    expires_at?: number;
-    failed_at?: number;
-    finalizing_at?: number;
-    id?: string;
-    in_progress_at?: number;
-    input_file_id?: string;
-    metadata?: {};
-    object?: string;
-    output_file_id?: string;
-    request_counts?: {
-      completed?: number;
-      failed?: number;
-      total?: number;
-    };
-    status?: string;
-  }>({
+  return client.request<unknown>({
     method: "POST",
     path: resolvedPath,
     query,
@@ -288,65 +338,15 @@ export type CreateBatchAliasParams = {
 };
 
 /**
- * Alias of /batches.
+ * Alias of /batches. Currently not implemented.
  */
 export async function createBatchAlias(
   client: Client,
   args: CreateBatchAliasParams = {},
-): Promise<{
-  cancelled_at?: number;
-  cancelling_at?: number;
-  completed_at?: number;
-  completion_window?: string;
-  created_at?: number;
-  endpoint?: string;
-  error_file_id?: string;
-  errors?: {};
-  expired_at?: number;
-  expires_at?: number;
-  failed_at?: number;
-  finalizing_at?: number;
-  id?: string;
-  in_progress_at?: number;
-  input_file_id?: string;
-  metadata?: {};
-  object?: string;
-  output_file_id?: string;
-  request_counts?: {
-    completed?: number;
-    failed?: number;
-    total?: number;
-  };
-  status?: string;
-}> {
+): Promise<unknown> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/batch";
-  return client.request<{
-    cancelled_at?: number;
-    cancelling_at?: number;
-    completed_at?: number;
-    completion_window?: string;
-    created_at?: number;
-    endpoint?: string;
-    error_file_id?: string;
-    errors?: {};
-    expired_at?: number;
-    expires_at?: number;
-    failed_at?: number;
-    finalizing_at?: number;
-    id?: string;
-    in_progress_at?: number;
-    input_file_id?: string;
-    metadata?: {};
-    object?: string;
-    output_file_id?: string;
-    request_counts?: {
-      completed?: number;
-      failed?: number;
-      total?: number;
-    };
-    status?: string;
-  }>({
+  return client.request<unknown>({
     method: "POST",
     path: resolvedPath,
     query,
@@ -1167,6 +1167,106 @@ export async function createProvisioningKeyLegacy(
     };
     ok?: boolean;
   }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateRealtimeCallPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Reserved endpoint for realtime calls. Currently returns not implemented.
+ */
+export async function createRealtimeCallPlaceholder(
+  client: Client,
+  args: CreateRealtimeCallPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/realtime/calls";
+  return client.request<unknown>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateRealtimeClientSecretsPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Reserved endpoint for realtime client secrets. Currently returns not implemented.
+ */
+export async function createRealtimeClientSecretsPlaceholder(
+  client: Client,
+  args: CreateRealtimeClientSecretsPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/realtime/client_secrets";
+  return client.request<unknown>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateRealtimeSessionPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Reserved endpoint for realtime API. Currently returns not implemented.
+ */
+export async function createRealtimeSessionPlaceholder(
+  client: Client,
+  args: CreateRealtimeSessionPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/realtime";
+  return client.request<unknown>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateRealtimeSessionsPlaceholderParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Reserved endpoint for realtime sessions. Currently returns not implemented.
+ */
+export async function createRealtimeSessionsPlaceholder(
+  client: Client,
+  args: CreateRealtimeSessionsPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/realtime/sessions";
+  return client.request<unknown>({
     method: "POST",
     path: resolvedPath,
     query,
@@ -2137,6 +2237,33 @@ export async function getAnalytics(
   });
 }
 
+export type GetAudioRealtimeCallPlaceholderParams = {
+  path?: {
+    call_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /realtime/calls/{call_id}. Currently returns not implemented.
+ */
+export async function getAudioRealtimeCallPlaceholder(
+  client: Client,
+  args: GetAudioRealtimeCallPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/audio/realtime/calls/${encodeURIComponent(String(path?.call_id))}`;
+  return client.request<unknown>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetCreditsParams = {
   path?: Record<string, never>;
   query?: {
@@ -2518,6 +2645,33 @@ export async function getProvisioningKeyLegacy(
     };
     ok?: boolean;
   }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetRealtimeCallPlaceholderParams = {
+  path?: {
+    call_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Reserved endpoint for realtime call retrieval. Currently returns not implemented.
+ */
+export async function getRealtimeCallPlaceholder(
+  client: Client,
+  args: GetRealtimeCallPlaceholderParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/realtime/calls/${encodeURIComponent(String(path?.call_id))}`;
+  return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -3959,39 +4113,15 @@ export type ListFilesParams = {
 };
 
 /**
- * Returns a list of files that belong to the user's organization.
+ * Placeholder endpoint. File listing is not implemented yet.
  */
 export async function listFiles(
   client: Client,
   args: ListFilesParams = {},
-): Promise<{
-  data?: {
-    bytes?: number;
-    created_at?: number;
-    filename?: string;
-    id?: string;
-    object?: string;
-    purpose?: string;
-    status?: string;
-    status_details?: {};
-  }[];
-  object?: string;
-}> {
+): Promise<unknown> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/files";
-  return client.request<{
-    data?: {
-      bytes?: number;
-      created_at?: number;
-      filename?: string;
-      id?: string;
-      object?: string;
-      purpose?: string;
-      status?: string;
-      status_details?: {};
-    }[];
-    object?: string;
-  }>({
+  return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -4098,6 +4228,136 @@ export async function listModels(
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/models";
+  return client.request<{
+    limit?: number;
+    models?: {
+      aliases?: string[];
+      endpoints?: string[];
+      input_types?: string[];
+      model_id?: string;
+      name?: string;
+      organisation_id?: string;
+      output_types?: string[];
+      providers?: {
+        api_provider_id?: string;
+        params?: string[];
+      }[];
+      release_date?: string;
+      status?: string;
+    }[];
+    offset?: number;
+    ok?: boolean;
+    total?: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListModelsAliasApiParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /models.
+ */
+export async function listModelsAliasApi(
+  client: Client,
+  args: ListModelsAliasApiParams = {},
+): Promise<{
+  limit?: number;
+  models?: {
+    aliases?: string[];
+    endpoints?: string[];
+    input_types?: string[];
+    model_id?: string;
+    name?: string;
+    organisation_id?: string;
+    output_types?: string[];
+    providers?: {
+      api_provider_id?: string;
+      params?: string[];
+    }[];
+    release_date?: string;
+    status?: string;
+  }[];
+  offset?: number;
+  ok?: boolean;
+  total?: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/api/models";
+  return client.request<{
+    limit?: number;
+    models?: {
+      aliases?: string[];
+      endpoints?: string[];
+      input_types?: string[];
+      model_id?: string;
+      name?: string;
+      organisation_id?: string;
+      output_types?: string[];
+      providers?: {
+        api_provider_id?: string;
+        params?: string[];
+      }[];
+      release_date?: string;
+      status?: string;
+    }[];
+    offset?: number;
+    ok?: boolean;
+    total?: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListModelsAliasDataParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /models.
+ */
+export async function listModelsAliasData(
+  client: Client,
+  args: ListModelsAliasDataParams = {},
+): Promise<{
+  limit?: number;
+  models?: {
+    aliases?: string[];
+    endpoints?: string[];
+    input_types?: string[];
+    model_id?: string;
+    name?: string;
+    organisation_id?: string;
+    output_types?: string[];
+    providers?: {
+      api_provider_id?: string;
+      params?: string[];
+    }[];
+    release_date?: string;
+    status?: string;
+  }[];
+  offset?: number;
+  ok?: boolean;
+  total?: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/data/models";
   return client.request<{
     limit?: number;
     models?: {
@@ -4501,65 +4761,15 @@ export type RetrieveBatchParams = {
 };
 
 /**
- * Retrieves a batch.
+ * Placeholder endpoint. Batch retrieval is not implemented yet.
  */
 export async function retrieveBatch(
   client: Client,
   args: RetrieveBatchParams = {},
-): Promise<{
-  cancelled_at?: number;
-  cancelling_at?: number;
-  completed_at?: number;
-  completion_window?: string;
-  created_at?: number;
-  endpoint?: string;
-  error_file_id?: string;
-  errors?: {};
-  expired_at?: number;
-  expires_at?: number;
-  failed_at?: number;
-  finalizing_at?: number;
-  id?: string;
-  in_progress_at?: number;
-  input_file_id?: string;
-  metadata?: {};
-  object?: string;
-  output_file_id?: string;
-  request_counts?: {
-    completed?: number;
-    failed?: number;
-    total?: number;
-  };
-  status?: string;
-}> {
+): Promise<unknown> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}`;
-  return client.request<{
-    cancelled_at?: number;
-    cancelling_at?: number;
-    completed_at?: number;
-    completion_window?: string;
-    created_at?: number;
-    endpoint?: string;
-    error_file_id?: string;
-    errors?: {};
-    expired_at?: number;
-    expires_at?: number;
-    failed_at?: number;
-    finalizing_at?: number;
-    id?: string;
-    in_progress_at?: number;
-    input_file_id?: string;
-    metadata?: {};
-    object?: string;
-    output_file_id?: string;
-    request_counts?: {
-      completed?: number;
-      failed?: number;
-      total?: number;
-    };
-    status?: string;
-  }>({
+  return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -4578,65 +4788,15 @@ export type RetrieveBatchAliasParams = {
 };
 
 /**
- * Alias of /batches/{batch_id}.
+ * Alias of /batches/{batch_id}. Currently not implemented.
  */
 export async function retrieveBatchAlias(
   client: Client,
   args: RetrieveBatchAliasParams = {},
-): Promise<{
-  cancelled_at?: number;
-  cancelling_at?: number;
-  completed_at?: number;
-  completion_window?: string;
-  created_at?: number;
-  endpoint?: string;
-  error_file_id?: string;
-  errors?: {};
-  expired_at?: number;
-  expires_at?: number;
-  failed_at?: number;
-  finalizing_at?: number;
-  id?: string;
-  in_progress_at?: number;
-  input_file_id?: string;
-  metadata?: {};
-  object?: string;
-  output_file_id?: string;
-  request_counts?: {
-    completed?: number;
-    failed?: number;
-    total?: number;
-  };
-  status?: string;
-}> {
+): Promise<unknown> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}`;
-  return client.request<{
-    cancelled_at?: number;
-    cancelling_at?: number;
-    completed_at?: number;
-    completion_window?: string;
-    created_at?: number;
-    endpoint?: string;
-    error_file_id?: string;
-    errors?: {};
-    expired_at?: number;
-    expires_at?: number;
-    failed_at?: number;
-    finalizing_at?: number;
-    id?: string;
-    in_progress_at?: number;
-    input_file_id?: string;
-    metadata?: {};
-    object?: string;
-    output_file_id?: string;
-    request_counts?: {
-      completed?: number;
-      failed?: number;
-      total?: number;
-    };
-    status?: string;
-  }>({
+  return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -4655,33 +4815,15 @@ export type RetrieveFileParams = {
 };
 
 /**
- * Returns information about a specific file.
+ * Placeholder endpoint. File retrieval is not implemented yet.
  */
 export async function retrieveFile(
   client: Client,
   args: RetrieveFileParams = {},
-): Promise<{
-  bytes?: number;
-  created_at?: number;
-  filename?: string;
-  id?: string;
-  object?: string;
-  purpose?: string;
-  status?: string;
-  status_details?: {};
-}> {
+): Promise<unknown> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/files/${encodeURIComponent(String(path?.file_id))}`;
-  return client.request<{
-    bytes?: number;
-    created_at?: number;
-    filename?: string;
-    id?: string;
-    object?: string;
-    purpose?: string;
-    status?: string;
-    status_details?: {};
-  }>({
+  return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -4804,33 +4946,15 @@ export type UploadFileParams = {
 };
 
 /**
- * Upload a file that can be used across various endpoints.
+ * Placeholder endpoint. File upload is not implemented yet.
  */
 export async function uploadFile(
   client: Client,
   args: UploadFileParams = {},
-): Promise<{
-  bytes?: number;
-  created_at?: number;
-  filename?: string;
-  id?: string;
-  object?: string;
-  purpose?: string;
-  status?: string;
-  status_details?: {};
-}> {
+): Promise<unknown> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/files";
-  return client.request<{
-    bytes?: number;
-    created_at?: number;
-    filename?: string;
-    id?: string;
-    object?: string;
-    purpose?: string;
-    status?: string;
-    status_details?: {};
-  }>({
+  return client.request<unknown>({
     method: "POST",
     path: resolvedPath,
     query,

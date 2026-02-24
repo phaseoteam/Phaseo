@@ -36,6 +36,13 @@ interface PricingRuleRow {
     match: any[] | null;
 }
 
+function getNormalizedMeterPrice(meter: Pick<PricingMeter, "price_per_unit" | "unit_size">) {
+    const rawPrice = Number(meter.price_per_unit ?? 0);
+    const unitSize = Number(meter.unit_size ?? 1) || 1;
+    if (!Number.isFinite(rawPrice) || rawPrice < 0) return Number.POSITIVE_INFINITY;
+    return rawPrice / unitSize;
+}
+
 const parseModelKey = (modelKey: string) => {
     const first = modelKey.indexOf(":");
     const last = modelKey.lastIndexOf(":");
@@ -163,14 +170,34 @@ export default async function getPricingModels(
 
         const model = modelMap.get(key)!;
 
-        model.meters.push({
+        const nextMeter: PricingMeter = {
             meter: rule.meter,
             unit: rule.unit,
             unit_size: Number(rule.unit_size ?? 1),
             price_per_unit: String(rule.price_per_unit ?? "0"),
             currency: rule.currency ?? "USD",
             conditions: rule.match ?? [],
-        });
+        };
+
+        const existingIndex = model.meters.findIndex(
+            (m) =>
+                m.meter === nextMeter.meter &&
+                m.unit === nextMeter.unit &&
+                m.currency === nextMeter.currency
+        );
+
+        if (existingIndex === -1) {
+            model.meters.push(nextMeter);
+            continue;
+        }
+
+        const existingMeter = model.meters[existingIndex];
+        const existingNormalizedPrice = getNormalizedMeterPrice(existingMeter);
+        const nextNormalizedPrice = getNormalizedMeterPrice(nextMeter);
+
+        if (nextNormalizedPrice < existingNormalizedPrice) {
+            model.meters[existingIndex] = nextMeter;
+        }
     }
 
     const pricingModels = Array.from(modelMap.values());

@@ -616,7 +616,7 @@ paths:
                 - Gateway
             operationId: uploadFile
             summary: Upload file
-            description: Upload a file that can be used across various endpoints.
+            description: Placeholder endpoint. File upload is not implemented yet.
             requestBody:
                 required: true
                 content:
@@ -624,26 +624,26 @@ paths:
                         schema:
                             $ref: "#/components/schemas/FileUploadRequest"
             responses:
-                "200":
-                    description: File upload response
+                "501":
+                    description: Files endpoint is not implemented yet
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/FileResponse"
+                                $ref: "#/components/schemas/NotImplementedResponse"
         get:
             x-beta: true
             tags:
                 - Gateway
             operationId: listFiles
             summary: List files
-            description: Returns a list of files that belong to the user's organization.
+            description: Placeholder endpoint. File listing is not implemented yet.
             responses:
-                "200":
-                    description: List of files
+                "501":
+                    description: Files endpoint is not implemented yet
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/ListFilesResponse"
+                                $ref: "#/components/schemas/NotImplementedResponse"
     /files/{file_id}:
         get:
             x-beta: true
@@ -651,7 +651,7 @@ paths:
                 - Gateway
             operationId: retrieveFile
             summary: Retrieve file
-            description: Returns information about a specific file.
+            description: Placeholder endpoint. File retrieval is not implemented yet.
             parameters:
                 -
                     name: file_id
@@ -661,12 +661,12 @@ paths:
                     schema:
                         type: string
             responses:
-                "200":
-                    description: File information
+                "501":
+                    description: Files endpoint is not implemented yet
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/FileResponse"
+                                $ref: "#/components/schemas/NotImplementedResponse"
     /batches:
         post:
             x-beta: true
@@ -674,7 +674,7 @@ paths:
                 - Gateway
             operationId: createBatch
             summary: Create batch
-            description: Creates a batch of API requests.
+            description: Placeholder endpoint. Batch creation is not implemented yet.
             requestBody:
                 required: true
                 content:
@@ -682,12 +682,12 @@ paths:
                         schema:
                             $ref: "#/components/schemas/BatchRequest"
             responses:
-                "200":
-                    description: Batch response
+                "501":
+                    description: Batch endpoint is not implemented yet
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/BatchResponse"
+                                $ref: "#/components/schemas/NotImplementedResponse"
     /batches/{batch_id}:
         get:
             x-beta: true
@@ -695,7 +695,7 @@ paths:
                 - Gateway
             operationId: retrieveBatch
             summary: Retrieve batch
-            description: Retrieves a batch.
+            description: Placeholder endpoint. Batch retrieval is not implemented yet.
             parameters:
                 -
                     name: batch_id
@@ -705,12 +705,12 @@ paths:
                     schema:
                         type: string
             responses:
-                "200":
-                    description: Batch information
+                "501":
+                    description: Batch endpoint is not implemented yet
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/BatchResponse"
+                                $ref: "#/components/schemas/NotImplementedResponse"
     /analytics:
         post:
             x-beta: true
@@ -1983,7 +1983,7 @@ paths:
                 - Gateway
             operationId: createBatchAlias
             summary: Create batch (alias)
-            description: Alias of /batches.
+            description: Alias of /batches. Currently not implemented.
             requestBody:
                 required: true
                 content:
@@ -1991,12 +1991,12 @@ paths:
                         schema:
                             $ref: "#/components/schemas/BatchRequest"
             responses:
-                "200":
-                    description: Batch response
+                "501":
+                    description: Batch endpoint is not implemented yet
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/BatchResponse"
+                                $ref: "#/components/schemas/NotImplementedResponse"
     /batch/{id}:
         get:
             x-beta: true
@@ -2004,7 +2004,7 @@ paths:
                 - Gateway
             operationId: retrieveBatchAlias
             summary: Retrieve batch (alias)
-            description: Alias of /batches/{batch_id}.
+            description: Alias of /batches/{batch_id}. Currently not implemented.
             parameters:
                 -
                     name: id
@@ -2013,12 +2013,232 @@ paths:
                     schema:
                         type: string
             responses:
-                "200":
-                    description: Batch information
+                "501":
+                    description: Batch endpoint is not implemented yet
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/BatchResponse"
+                                $ref: "#/components/schemas/NotImplementedResponse"
+    /api/models:
+        get:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: listModelsAliasApi
+            summary: List models (alias)
+            description: Alias of /models.
+            responses:
+                "200":
+                    description: List of models
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    limit:
+                                        type: integer
+                                    offset:
+                                        type: integer
+                                    total:
+                                        type: integer
+                                    models:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Model"
+    /data/models:
+        get:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: listModelsAliasData
+            summary: List models (data alias)
+            description: Alias of /models.
+            responses:
+                "200":
+                    description: List of models
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    limit:
+                                        type: integer
+                                    offset:
+                                        type: integer
+                                    total:
+                                        type: integer
+                                    models:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Model"
+    /realtime:
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createRealtimeSessionPlaceholder
+            summary: Realtime placeholder
+            description: Reserved endpoint for realtime API. Currently returns not implemented.
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /realtime/sessions:
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createRealtimeSessionsPlaceholder
+            summary: Realtime sessions placeholder
+            description: Reserved endpoint for realtime sessions. Currently returns not implemented.
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /realtime/client_secrets:
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createRealtimeClientSecretsPlaceholder
+            summary: Realtime client secrets placeholder
+            description: Reserved endpoint for realtime client secrets. Currently returns not implemented.
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /realtime/calls:
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createRealtimeCallPlaceholder
+            summary: Realtime calls placeholder
+            description: Reserved endpoint for realtime calls. Currently returns not implemented.
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /realtime/calls/{call_id}:
+        get:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: getRealtimeCallPlaceholder
+            summary: Realtime call retrieval placeholder
+            description: Reserved endpoint for realtime call retrieval. Currently returns not implemented.
+            parameters:
+                -
+                    name: call_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /audio/realtime:
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createAudioRealtimeSessionPlaceholder
+            summary: Audio realtime placeholder
+            description: Alias of /realtime. Currently returns not implemented.
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /audio/realtime/sessions:
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createAudioRealtimeSessionsPlaceholder
+            summary: Audio realtime sessions placeholder
+            description: Alias of /realtime/sessions. Currently returns not implemented.
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /audio/realtime/client_secrets:
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createAudioRealtimeClientSecretsPlaceholder
+            summary: Audio realtime client secrets placeholder
+            description: Alias of /realtime/client_secrets. Currently returns not implemented.
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /audio/realtime/calls:
+        post:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: createAudioRealtimeCallPlaceholder
+            summary: Audio realtime calls placeholder
+            description: Alias of /realtime/calls. Currently returns not implemented.
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
+    /audio/realtime/calls/{call_id}:
+        get:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: getAudioRealtimeCallPlaceholder
+            summary: Audio realtime call retrieval placeholder
+            description: Alias of /realtime/calls/{call_id}. Currently returns not implemented.
+            parameters:
+                -
+                    name: call_id
+                    in: path
+                    required: true
+                    schema:
+                        type: string
+            responses:
+                "501":
+                    description: Realtime is not implemented yet
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeNotImplementedResponse"
     /endpoints:
         get:
             x-beta: true
@@ -4443,6 +4663,32 @@ components:
                 message:
                     type: string
                     example: Human-readable error message
+        RealtimeNotImplementedResponse:
+            type: object
+            properties:
+                error:
+                    type: object
+                    properties:
+                        type:
+                            type: string
+                            example: not_implemented
+                        message:
+                            type: string
+                            example: realtime is not implemented yet
+        NotImplementedResponse:
+            type: object
+            description: Placeholder response for endpoints that are routed but not implemented yet.
+            properties:
+                status_code:
+                    type: integer
+                    example: 501
+                error:
+                    type: string
+                    example: not_implemented
+                description:
+                    type: string
+                    example: Endpoint is not implemented yet.
+            additionalProperties: true
         ActivityEntry:
             type: object
             properties:

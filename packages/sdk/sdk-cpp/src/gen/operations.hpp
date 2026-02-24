@@ -14,6 +14,26 @@ inline Response CreateAnthropicMessage(Client& client, const std::map<std::strin
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateAudioRealtimeCallPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/audio/realtime/calls";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateAudioRealtimeClientSecretsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/audio/realtime/client_secrets";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateAudioRealtimeSessionPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/audio/realtime";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateAudioRealtimeSessionsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/audio/realtime/sessions";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateBatch(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/batches";
 	return client.request("POST", resolved_path, body);
@@ -44,11 +64,6 @@ inline Response CreateImageEdit(Client& client, const std::map<std::string, std:
 	return client.request("POST", resolved_path, body);
 }
 
-inline Response CreateKeyPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/keys";
-	return client.request("POST", resolved_path, body);
-}
-
 inline Response CreateModeration(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/moderations";
 	return client.request("POST", resolved_path, body);
@@ -61,6 +76,41 @@ inline Response CreateOAuthClient(Client& client, const std::map<std::string, st
 
 inline Response CreateOcr(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/ocr";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateProvisioningKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/management/keys";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateProvisioningKeyAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/provisioning/keys";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateProvisioningKeyLegacy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/keys";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateRealtimeCallPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/realtime/calls";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateRealtimeClientSecretsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/realtime/client_secrets";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateRealtimeSessionPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/realtime";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateRealtimeSessionsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/realtime/sessions";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -139,6 +189,11 @@ inline Response GetAnalytics(Client& client, const std::map<std::string, std::st
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response GetAudioRealtimeCallPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/audio/realtime/calls/" + (path.count("call_id") ? path.at("call_id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response GetCredits(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/credits";
 	return client.request("GET", resolved_path, body);
@@ -146,11 +201,6 @@ inline Response GetCredits(Client& client, const std::map<std::string, std::stri
 
 inline Response GetGeneration(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/generations";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response GetKeyPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/key";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -184,6 +234,16 @@ inline Response GetProvisioningKeyAlias(Client& client, const std::map<std::stri
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response GetProvisioningKeyLegacy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/key";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetRealtimeCallPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/realtime/calls/" + (path.count("call_id") ? path.at("call_id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response GetVideo(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/videos/" + (path.count("video_id") ? path.at("video_id") : std::string{});
 	return client.request("GET", resolved_path, body);
@@ -214,7 +274,7 @@ inline Response InvalidateGatewayKeyCache(Client& client, const std::map<std::st
 	return client.request("POST", resolved_path, body);
 }
 
-inline Response ListEndpointsPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+inline Response ListEndpoints(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/endpoints";
 	return client.request("GET", resolved_path, body);
 }
@@ -224,13 +284,18 @@ inline Response ListFiles(Client& client, const std::map<std::string, std::strin
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response ListKeysPlaceholder(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/keys";
+inline Response ListModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/models";
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response ListModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/models";
+inline Response ListModelsAliasApi(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/api/models";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListModelsAliasData(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/data/models";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -264,6 +329,11 @@ inline Response ListProvisioningKeysAlias(Client& client, const std::map<std::st
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListProvisioningKeysLegacy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/keys";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response RegenerateOAuthClientSecret(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{}) + "/regenerate-secret";
 	return client.request("POST", resolved_path, body);
@@ -281,11 +351,6 @@ inline Response RetrieveBatchAlias(Client& client, const std::map<std::string, s
 
 inline Response RetrieveFile(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/files/" + (path.count("file_id") ? path.at("file_id") : std::string{});
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response Root(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/";
 	return client.request("GET", resolved_path, body);
 }
 

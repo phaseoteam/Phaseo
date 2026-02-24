@@ -125,7 +125,7 @@ export default function ModelAvailability({
 														href={`/api-providers/${group.providerId}`}
 														className="group"
 													>
-														<CardTitle className="text-base inline-block group-hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+														<CardTitle className="text-base inline-block group-hover:text-primary transition-colors relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 															{group.providerName}
 														</CardTitle>
 													</Link>
@@ -179,7 +179,7 @@ export default function ModelAvailability({
 										href={`/subscription-plans/${plan.plan_id}`}
 										className="text-sm font-semibold hover:text-primary transition-colors mb-3"
 									>
-										<span className="relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+										<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 											{plan.name}
 										</span>
 									</Link>

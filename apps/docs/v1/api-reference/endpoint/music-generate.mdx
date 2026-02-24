@@ -7,3 +7,61 @@ openapi: "POST /music/generate"
 Creates an asynchronous music generation job.
 
 Poll completion with `GET /music/generate/{music_id}`.
+
+## Request Shape
+
+```json
+{
+  "model": "suno/v4.5plus",
+  "prompt": "Warm jazz trio with brushed drums",
+  "duration": 8,
+  "provider": { "only": ["suno"] },
+  "suno": {
+    "customMode": false,
+    "instrumental": false
+  }
+}
+```
+
+## Suno Options
+
+- `suno.customMode` (boolean, default `false`)
+- `suno.instrumental` (boolean, default `false`)
+- `suno.prompt` (optional override for top-level `prompt`)
+- `suno.style`, `suno.title` (required when `customMode = true`)
+- `suno.personaId`, `suno.personaModel`
+- `suno.negativeTags`, `suno.vocalGender`
+- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
+
+## Validation Rules
+
+- When `customMode = false`, `prompt` is required.
+- When `customMode = true`, both `style` and `title` are required.
+- When `customMode = true` and `instrumental = false`, `prompt` is required.
+
+Validation errors return `400` with:
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```
+
+## Response
+
+```json
+{
+  "id": "task_123",
+  "object": "music",
+  "status": "in_progress",
+  "provider": "suno",
+  "model": "V4_5PLUS",
+  "nativeResponseId": "task_123",
+  "usage": {
+    "requests": 1
+  }
+}
+```
+
+`usage` can include `output_audio_seconds` when `duration` is provided and pricing is computed against seconds.

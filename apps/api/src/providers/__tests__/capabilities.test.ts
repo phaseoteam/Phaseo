@@ -17,13 +17,13 @@ const NON_TEXT_CAPABILITIES: AdapterBackedCapability[] = [
 ];
 
 describe("provider capability profiles", () => {
-	it("marks AI21, Arcee, Friendli, Google Vertex, and Xiaomi as text-only", () => {
+	it("marks AI21, Arcee, and Friendli as text-only", () => {
 		expect(getProviderCapabilityProfile("ai21").textOnly).toBe(true);
 		expect(getProviderCapabilityProfile("arcee").textOnly).toBe(true);
 		expect(getProviderCapabilityProfile("arcee-ai").textOnly).toBe(true);
 		expect(getProviderCapabilityProfile("friendli").textOnly).toBe(true);
-		expect(getProviderCapabilityProfile("google-vertex").textOnly).toBe(true);
-		expect(getProviderCapabilityProfile("xiaomi").textOnly).toBe(true);
+		expect(getProviderCapabilityProfile("google-vertex").textOnly).not.toBe(true);
+		expect(getProviderCapabilityProfile("xiaomi").textOnly).not.toBe(true);
 	});
 
 	it("keeps text-only providers disabled for all adapter-backed non-text capabilities", () => {
@@ -44,14 +44,38 @@ describe("provider capability profiles", () => {
 				supportsAdapterBackedCapability("friendli", capability),
 				`friendli should not support ${capability}`,
 			).toBe(false);
-			expect(
-				supportsAdapterBackedCapability("google-vertex", capability),
-				`google-vertex should not support ${capability}`,
-			).toBe(false);
-			expect(
-				supportsAdapterBackedCapability("xiaomi", capability),
-				`xiaomi should not support ${capability}`,
-			).toBe(false);
+		}
+	});
+
+	it("enables full multimodal adapter capabilities for priority providers", () => {
+		const providers = [
+			"openai",
+			"google",
+			"google-ai-studio",
+			"google-vertex",
+			"amazon-bedrock",
+			"x-ai",
+			"xai",
+			"deepseek",
+			"minimax",
+			"cerebras",
+			"mistral",
+			"moonshot-ai",
+			"novitaai",
+			"alibaba",
+			"qwen",
+			"xiaomi",
+			"z-ai",
+			"zai",
+		];
+
+		for (const provider of providers) {
+			expect(supportsAdapterBackedCapability(provider, "image.generate")).toBe(true);
+			expect(supportsAdapterBackedCapability(provider, "image.edit")).toBe(true);
+			expect(supportsAdapterBackedCapability(provider, "audio.speech")).toBe(true);
+			expect(supportsAdapterBackedCapability(provider, "audio.transcription")).toBe(true);
+			expect(supportsAdapterBackedCapability(provider, "audio.translations")).toBe(true);
+			expect(supportsAdapterBackedCapability(provider, "video.generate")).toBe(true);
 		}
 	});
 

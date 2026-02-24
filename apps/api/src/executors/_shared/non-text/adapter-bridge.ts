@@ -15,6 +15,8 @@ import type {
 	IRMusicGenerateResponse,
 	IROcrRequest,
 	IROcrResponse,
+	IRVideoGenerationRequest,
+	IRVideoGenerationResponse,
 	IRUsage,
 } from "@core/ir";
 import type { Endpoint } from "@core/types";
@@ -27,6 +29,7 @@ import * as openaiImagesEdits from "@providers/openai/endpoints/images-edits";
 import * as openaiAudioSpeech from "@providers/openai/endpoints/audio-speech";
 import * as openaiAudioTranscription from "@providers/openai/endpoints/audio-transcription";
 import * as openaiAudioTranslation from "@providers/openai/endpoints/audio-translation";
+import * as openaiVideo from "@providers/openai/endpoints/video";
 import * as mistralOcr from "@providers/mistral/endpoints/ocr";
 import * as elevenLabsAudioSpeech from "@providers/elevenlabs/endpoints/audio-speech";
 import * as elevenLabsAudioTranscription from "@providers/elevenlabs/endpoints/audio-transcription";
@@ -39,6 +42,7 @@ type NonTextEndpoint =
 	| "audio.speech"
 	| "audio.transcription"
 	| "audio.translations"
+	| "video.generation"
 	| "ocr"
 	| "music.generate";
 
@@ -47,6 +51,7 @@ type NonTextIRResponse =
 	| IRAudioSpeechResponse
 	| IRAudioTranscriptionResponse
 	| IRAudioTranslationResponse
+	| IRVideoGenerationResponse
 	| IROcrResponse
 	| IRMusicGenerateResponse;
 
@@ -56,6 +61,7 @@ function isNonTextEndpoint(endpoint: Endpoint): endpoint is NonTextEndpoint {
 		endpoint === "audio.speech" ||
 		endpoint === "audio.transcription" ||
 		endpoint === "audio.translations" ||
+		endpoint === "video.generation" ||
 		endpoint === "ocr" ||
 		endpoint === "music.generate";
 }
@@ -193,6 +199,40 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 			};
 		}
 
+		case "video.generation": {
+			const request = ir as IRVideoGenerationRequest;
+			const raw = (request.rawRequest ?? {}) as Record<string, any>;
+			return {
+				...raw,
+				model: providerModel,
+				prompt: request.prompt,
+				seconds: request.seconds ?? request.durationSeconds ?? request.duration,
+				size: request.size ?? request.resolution,
+				quality: request.quality,
+				input_reference: request.inputReference,
+				input_reference_mime_type: request.inputReferenceMimeType,
+				input: request.input,
+				input_image: request.inputImage,
+				input_video: request.inputVideo,
+				last_frame: request.lastFrame,
+				reference_images: request.referenceImages,
+				duration: request.duration,
+				duration_seconds: request.durationSeconds,
+				ratio: request.ratio,
+				aspect_ratio: request.aspectRatio,
+				resolution: request.resolution,
+				compression_quality: request.compressionQuality,
+				negative_prompt: request.negativePrompt,
+				sample_count: request.sampleCount,
+				number_of_videos: request.numberOfVideos,
+				seed: request.seed,
+				person_generation: request.personGeneration,
+				generate_audio: request.generateAudio,
+				enhance_prompt: request.enhancePrompt,
+				output_storage_uri: request.outputStorageUri,
+			};
+		}
+
 		case "ocr": {
 			const request = ir as IROcrRequest;
 			return {
@@ -260,6 +300,17 @@ async function adapterResultToIR(
 				audioBase64 = base64FromBuffer(buffer);
 				mimeType = payload?.upstream?.headers?.get("content-type") ?? mimeType;
 			}
+			const speechInput =
+				typeof (args.ir as IRAudioSpeechRequest)?.input === "string"
+					? (args.ir as IRAudioSpeechRequest).input
+					: "";
+			const speechUsage: (IRUsage & Record<string, any>) =
+				usage && typeof usage === "object"
+					? { ...(usage as any) }
+					: ({ inputTokens: 0, outputTokens: 0, totalTokens: 0, requests: 1 } as any);
+			if (speechInput.length > 0 && typeof speechUsage.input_characters !== "number") {
+				speechUsage.input_characters = speechInput.length;
+			}
 			return {
 				id: requestId,
 				nativeId: payload?.id ?? payload?.nativeResponseId ?? undefined,
@@ -270,7 +321,7 @@ async function adapterResultToIR(
 					url: payload?.audio_url ?? payload?.audio?.url,
 					mimeType: mimeType ?? "application/octet-stream",
 				},
-				usage,
+				usage: speechUsage,
 				rawResponse: payload,
 			};
 		}
@@ -298,6 +349,33 @@ async function adapterResultToIR(
 				provider,
 				text: String(payload?.text ?? ""),
 				segments: Array.isArray(payload?.segments) ? payload.segments : undefined,
+				usage,
+				rawResponse: payload,
+			};
+		}
+
+		case "video.generation": {
+			const payload = normalized ?? {};
+			const statusRaw = String(payload?.status ?? "").toLowerCase();
+			const status: IRVideoGenerationResponse["status"] = statusRaw === "completed" || statusRaw === "succeeded"
+				? "completed"
+				: statusRaw === "failed" || statusRaw === "error" || statusRaw === "cancelled" || statusRaw === "canceled"
+					? "failed"
+					: statusRaw === "processing" || statusRaw === "in_progress" || statusRaw === "running"
+						? "in_progress"
+						: "queued";
+			return {
+				id: requestId,
+				nativeId: payload?.id ?? payload?.nativeResponseId ?? undefined,
+				model,
+				provider,
+				status,
+				output: Array.isArray(payload?.output)
+					? payload.output
+					: Array.isArray(payload?.data)
+						? payload.data
+						: undefined,
+				result: payload?.result ?? payload,
 				usage,
 				rawResponse: payload,
 			};
@@ -378,6 +456,11 @@ async function executeProviderEndpoint(
 				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
 			}
 			return openaiAudioTranslation.exec(providerArgs);
+		case "video.generation":
+			if (!isOpenAICompatProvider(providerId)) {
+				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);
+			}
+			return openaiVideo.exec(providerArgs);
 		case "ocr":
 			if (providerId !== "mistral") {
 				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);

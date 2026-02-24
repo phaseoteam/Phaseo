@@ -34,7 +34,7 @@ export default function EmailPassword() {
 						<Label htmlFor="password">Password</Label>
 						<Link
 							href="#"
-							className="ml-auto text-sm underline-offset-4 hover:underline"
+							className="ml-auto text-sm underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 						>
 							Forgot your password?
 						</Link>
@@ -61,3 +61,4 @@ export default function EmailPassword() {
 		</div>
 	);
 }
+

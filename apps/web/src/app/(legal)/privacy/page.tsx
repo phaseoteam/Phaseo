@@ -16,7 +16,7 @@ export default async function PrivacyPage() {
 					Last updated: 15 November 2025
 				</p>
 				<h1 className="text-3xl font-semibold text-foreground">
-					AI Stats Privacy Policy
+					Privacy Policy
 				</h1>
 				<p className="text-foreground/80">
 					This Privacy Policy explains how{" "}

@@ -2,25 +2,8 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQueryState } from "nuqs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	CheckCircle2,
-	Calculator,
-	DollarSign,
-	Globe,
-	Layers,
-	Lock,
-	RefreshCw,
-	Shield,
-	TrendingUp,
-	Zap,
-} from "lucide-react";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2 } from "lucide-react";
 import {
 	ModelSelector,
 	UsageInputs,
@@ -409,6 +392,103 @@ export default function PricingCalculator({
 		[]
 	);
 
+	const setComparisonModelProvider = useCallback(
+		(modelKey: string, provider: string) => {
+			const currentModel = comparisonModelMap.get(modelKey);
+			if (!currentModel) {
+				return;
+			}
+
+			const nextKey = `${currentModel.modelId}::${provider}`;
+			if (!comparisonModelMap.has(nextKey) || nextKey === modelKey) {
+				return;
+			}
+
+			setComparisonModelKeys((prev) => {
+				const currentIndex = prev.indexOf(modelKey);
+				if (currentIndex === -1) {
+					return prev;
+				}
+
+				if (prev.includes(nextKey)) {
+					return prev.filter((key) => key !== modelKey);
+				}
+
+				const next = [...prev];
+				next[currentIndex] = nextKey;
+				return next;
+			});
+		},
+		[comparisonModelMap]
+	);
+
+	const removeSelectedModelByKey = useCallback(
+		(modelKey: string) => {
+			if (comparisonModelKeys.includes(modelKey)) {
+				setComparisonModelKeys((prev) =>
+					prev.filter((key) => key !== modelKey)
+				);
+				setComparisonModelPlans((prev) => {
+					if (!(modelKey in prev)) return prev;
+					const next = { ...prev };
+					delete next[modelKey];
+					return next;
+				});
+				return;
+			}
+
+			const nextComparisonKey = comparisonModelKeys[0];
+			if (nextComparisonKey) {
+				const nextModel = comparisonModelMap.get(nextComparisonKey);
+				if (nextModel) {
+					const nextModelMeta = availableModels.find(
+						(model) => model.modelId === nextModel.modelId
+					);
+					const nextEndpoints = nextModelMeta
+						? Array.from(nextModelMeta.endpoints.keys()).sort()
+						: [];
+					const nextEndpoint = nextEndpoints.includes(selectedEndpoint)
+						? selectedEndpoint
+						: nextEndpoints[0] || "";
+
+					setSelectedModelId(nextModel.modelId);
+					setSelectedEndpoint(nextEndpoint);
+					setSelectedProvider(nextModel.provider);
+					setSelectedPricingPlan(comparisonModelPlans[nextComparisonKey] || "");
+					setMeterInputs({});
+
+					setComparisonModelKeys((prev) =>
+						prev.filter((key) => key !== nextComparisonKey)
+					);
+					setComparisonModelPlans((prev) => {
+						if (!(nextComparisonKey in prev)) return prev;
+						const next = { ...prev };
+						delete next[nextComparisonKey];
+						return next;
+					});
+					return;
+				}
+			}
+
+			setSelectedModelId("");
+			setSelectedEndpoint("");
+			setSelectedProvider("");
+			setSelectedPricingPlan("");
+			setMeterInputs({});
+			setComparisonModelKeys([]);
+			setComparisonModelPlans({});
+		},
+		[
+			availableModels,
+			comparisonModelKeys,
+			comparisonModelMap,
+			comparisonModelPlans,
+			selectedEndpoint,
+			setSelectedProvider,
+			setSelectedPricingPlan,
+		]
+	);
+
 	const selectedComparisonModels = useMemo(() => {
 		return comparisonModelKeys
 			.map((modelKey) => comparisonModelMap.get(modelKey))
@@ -425,6 +505,10 @@ export default function PricingCalculator({
 							? "standard"
 							: model.availablePricingPlans[0] || "standard",
 				availablePricingPlans: model.availablePricingPlans,
+				availableProviders: comparisonCandidates
+					.filter((candidate) => candidate.modelId === model.modelId)
+					.map((candidate) => candidate.provider)
+					.sort(),
 				meters:
 					model.metersByPlan[
 						comparisonModelPlans[model.key] && model.availablePricingPlans.includes(comparisonModelPlans[model.key])
@@ -434,7 +518,52 @@ export default function PricingCalculator({
 								: model.availablePricingPlans[0] || "standard"
 					] || [],
 			}));
-	}, [comparisonModelKeys, comparisonModelMap, comparisonModelPlans]);
+	}, [comparisonCandidates, comparisonModelKeys, comparisonModelMap, comparisonModelPlans]);
+
+	const selectedModelsForReference = useMemo(() => {
+		if (!selectedModelData || !selectedModelId || !effectiveProvider) {
+			return selectedComparisonModels;
+		}
+
+		const primaryModel = {
+			key: "primary",
+			label:
+				selectedModel?.displayName ||
+				selectedModelData.display_name ||
+				selectedModelId,
+			modelId: selectedModelId,
+			provider: effectiveProvider,
+			pricingPlan: effectivePricingPlan,
+			availablePricingPlans,
+			availableProviders: Array.from(
+				new Set(
+					comparisonCandidates
+						.filter((candidate) => candidate.modelId === selectedModelId)
+						.map((candidate) => candidate.provider)
+				)
+			).sort(),
+			meters: selectedModelData.meters,
+		};
+
+		const comparisonsWithoutPrimary = selectedComparisonModels.filter(
+			(model) =>
+				!(
+					model.modelId === primaryModel.modelId &&
+					model.provider === primaryModel.provider
+				)
+		);
+
+		return [primaryModel, ...comparisonsWithoutPrimary];
+	}, [
+		availablePricingPlans,
+		comparisonCandidates,
+		effectivePricingPlan,
+		effectiveProvider,
+		selectedComparisonModels,
+		selectedModel,
+		selectedModelData,
+		selectedModelId,
+	]);
 
 	return (
 		<div className="mx-auto w-full max-w-[1500px] px-4 py-8">
@@ -445,8 +574,7 @@ export default function PricingCalculator({
 							AI Pricing Calculator
 						</h1>
 						<p className="text-sm md:text-base text-muted-foreground">
-							Compare {roundedTotalModelsCount}+ models across {providersCount}+ providers, estimate cost by usage,
-							and compare multiple model options side by side with the same inputs.
+							Compare {roundedTotalModelsCount}+ models across {providersCount}+ providers and estimate costs with shared usage inputs.
 						</p>
 					</div>
 					<div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -472,10 +600,12 @@ export default function PricingCalculator({
 						<ModelSelector
 							models={models}
 							selectedModelId={selectedModelId || ""}
+							selectedProvider={effectiveProvider || ""}
 							selectedEndpoint={selectedEndpoint || ""}
 							availableEndpoints={availableEndpoints}
 							comparisonCandidates={comparisonCandidates.map((candidate) => ({
 								key: candidate.key,
+								modelId: candidate.modelId,
 								displayName: candidate.displayName,
 								provider: candidate.provider,
 							}))}
@@ -488,6 +618,7 @@ export default function PricingCalculator({
 								setSelectedPricingPlan("");
 							}}
 							onToggleComparisonModel={toggleComparisonModel}
+							onRemoveModelSelection={removeSelectedModelByKey}
 						/>
 					</div>
 					<div className="xl:col-span-5 [&>*]:h-full">
@@ -519,16 +650,21 @@ export default function PricingCalculator({
 						<PricingReference
 							meters={selectedModelData.meters}
 							pricingPlan={selectedModelData.pricing_plan}
+							selectedModelId={selectedModelId}
+							selectedModelLabel={
+								selectedModel?.displayName ||
+								selectedModelData.display_name ||
+								selectedModelId
+							}
 							availableProviders={availableProviders.map(
 								(p) => ({ provider: p, displayName: p })
 							)}
-							availablePricingPlans={availablePricingPlans}
 							selectedProvider={effectiveProvider}
-							selectedPricingPlan={effectivePricingPlan}
 							onProviderSelect={setSelectedProvider}
 							onPricingPlanSelect={setSelectedPricingPlan}
-							comparisonModels={selectedComparisonModels}
+							comparisonModels={selectedModelsForReference}
 							onComparisonModelPricingPlanSelect={setComparisonModelPlan}
+							onComparisonModelProviderSelect={setComparisonModelProvider}
 						/>
 						<CostBreakdown
 							meters={selectedModelData.meters}
@@ -538,175 +674,6 @@ export default function PricingCalculator({
 					</>
 				) : null}
 			</div>
-
-			{/* SEO Content Section */}
-			<section className="mt-16 max-w-4xl mx-auto space-y-8">
-				{/* About Section */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-2xl flex items-center gap-2">
-							<Calculator className="w-6 h-6" />
-							About This Calculator
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<p className="text-muted-foreground">
-							Estimate costs for {roundedTotalModelsCount}+ AI models from OpenAI, Anthropic, Google, Meta, and more. 
-							Real-time pricing data updated daily from official provider sources.
-						</p>
-						<div>
-							<h3 className="text-sm font-semibold mb-3">Supported Providers</h3>
-							<div className="flex flex-wrap gap-2">
-								{["OpenAI", "Anthropic", "Google AI", "AWS Bedrock", "Azure OpenAI", "Vertex AI", "Together AI", "Perplexity", "Groq"].map((provider) => (
-									<span key={provider} className="px-3 py-1 bg-muted rounded-full text-sm">
-										{provider}
-									</span>
-								))}
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-
-				{/* FAQ Section */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-2xl flex items-center gap-2">
-							<Globe className="w-6 h-6" />
-							Frequently Asked Questions
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<Accordion type="single" collapsible className="w-full">
-							<AccordionItem value="item-1">
-								<AccordionTrigger>How do I calculate AI model costs?</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground">
-									Select your model, choose the endpoint/provider, enter expected token usage for input and output, 
-									add a request multiplier if needed, and view the calculated cost breakdown. The calculator handles 
-									different pricing for input, output, and cached tokens automatically.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="item-2">
-								<AccordionTrigger>What is token-based pricing?</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground">
-									Token-based pricing means you pay per token processed by the AI model. A token is roughly 4 characters 
-									or 0.75 words in English. Most models charge different rates for input tokens (your prompt) and output 
-									tokens (the AI&apos;s response). Prompt caching can reduce costs for repeated inputs by up to 90%.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="item-3">
-								<AccordionTrigger>Which model is cheapest?</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground">
-									Pricing varies by model tier and use case. Claude 3 Haiku and GPT-3.5-turbo are most cost-effective for 
-									simple tasks. Gemini Pro offers competitive mid-tier pricing. For advanced reasoning, GPT-4o and Claude 3.5 
-									Sonnet provide excellent value. Use our calculator to compare specific models based on your expected usage.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="item-4">
-								<AccordionTrigger>How accurate is the pricing data?</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground">
-									Pricing data is updated daily from official provider sources. The calculator provides accurate estimates 
-									based on current published rates. Actual costs may vary due to volume discounts, enterprise agreements, 
-									or price changes between updates.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="item-5">
-								<AccordionTrigger>What are batch APIs?</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground">
-									Batch APIs process requests asynchronously with 24-hour turnaround, offering 50% cost savings. Ideal for 
-									non-urgent evaluations, data processing pipelines, and large-scale content generation. The calculator shows 
-									pricing for both batch and real-time endpoints.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="item-6">
-								<AccordionTrigger>Does the calculator support cached tokens?</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground">
-									Yes! The calculator fully supports prompt caching offered by providers like Anthropic and OpenAI. Cached 
-									tokens cost 90% less than regular input tokens, valuable for RAG systems and agents with consistent system prompts.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="item-7">
-								<AccordionTrigger>How to estimate enterprise costs?</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground">
-									Calculate average tokens per request using sample prompts, estimate monthly request volume, consider batch APIs 
-									for async workloads, account for prompt caching opportunities, add 20-30% buffer for peak usage, and contact 
-									providers directly for volume discounts on $10k+ monthly spend.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem value="item-8">
-								<AccordionTrigger>Can I compare AWS Bedrock vs Azure pricing?</AccordionTrigger>
-								<AccordionContent className="text-muted-foreground">
-									Yes! Compare pricing for the same models across different platforms. For example, compare Claude pricing on AWS 
-									Bedrock vs direct Anthropic API, or GPT-4 pricing on Azure OpenAI vs OpenAI direct. Platform-specific pricing 
-									can vary significantly.
-								</AccordionContent>
-							</AccordionItem>
-						</Accordion>
-					</CardContent>
-				</Card>
-
-				{/* Why Use Section */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-2xl flex items-center gap-2">
-							<TrendingUp className="w-6 h-6" />
-							Why Use This Calculator?
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="flex items-start gap-3">
-								<Layers className="w-5 h-5 text-green-500 mt-0.5" />
-								<div>
-									<p className="font-medium">Comprehensive</p>
-									<p className="text-sm text-muted-foreground">{roundedTotalModelsCount}+ models, {providersCount}+ providers</p>
-								</div>
-							</div>
-							<div className="flex items-start gap-3">
-								<RefreshCw className="w-5 h-5 text-green-500 mt-0.5" />
-								<div>
-									<p className="font-medium">Real-time Data</p>
-									<p className="text-sm text-muted-foreground">Updated daily from official sources</p>
-								</div>
-							</div>
-							<div className="flex items-start gap-3">
-								<Zap className="w-5 h-5 text-green-500 mt-0.5" />
-								<div>
-									<p className="font-medium">Advanced Features</p>
-									<p className="text-sm text-muted-foreground">Cached tokens, batch APIs, multiple tiers</p>
-								</div>
-							</div>
-							<div className="flex items-start gap-3">
-								<Shield className="w-5 h-5 text-green-500 mt-0.5" />
-								<div>
-									<p className="font-medium">Easy Comparison</p>
-									<p className="text-sm text-muted-foreground">Compare across all providers in one place</p>
-								</div>
-							</div>
-							<div className="flex items-start gap-3">
-								<DollarSign className="w-5 h-5 text-green-500 mt-0.5" />
-								<div>
-									<p className="font-medium">Budget Planning</p>
-									<p className="text-sm text-muted-foreground">Estimate costs for different scenarios</p>
-								</div>
-							</div>
-							<div className="flex items-start gap-3">
-								<Lock className="w-5 h-5 text-green-500 mt-0.5" />
-								<div>
-									<p className="font-medium">Free Forever</p>
-									<p className="text-sm text-muted-foreground">No signup required, unlimited use</p>
-								</div>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-			</section>
 		</div>
 	);
 }

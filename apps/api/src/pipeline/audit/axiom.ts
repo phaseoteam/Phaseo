@@ -171,6 +171,40 @@ export type AxiomArgs = {
     extraJson?: string | null;
 };
 
+function parseObject(value: unknown): Record<string, any> | null {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    return value as Record<string, any>;
+}
+
+function parseJsonObject(raw: string | null | undefined): Record<string, any> | null {
+    if (typeof raw !== "string" || !raw.trim()) return null;
+    try {
+        return parseObject(JSON.parse(raw));
+    } catch {
+        return null;
+    }
+}
+
+function stringifyCompact(value: unknown, maxChars = 24_000): string | null {
+    if (value == null) return null;
+    try {
+        const raw = JSON.stringify(value);
+        if (raw.length <= maxChars) return raw;
+        return `${raw.slice(0, maxChars)}...[truncated ${raw.length - maxChars} chars]`;
+    } catch {
+        return null;
+    }
+}
+
+function numberOrNull(value: unknown): number | null {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return null;
+}
+
 /** Build the final event shape Axiom will receive.
  *  Keep fields FLAT to avoid exceeding plan limits.
  */
@@ -225,6 +259,53 @@ export function buildAxiomEvent(a: AxiomArgs) {
         : (typeof a.pricing?.total_nanos === "number"
             ? a.pricing.total_nanos / 1_000_000_000
             : (totalCents / 100));
+    const extra = parseJsonObject(a.extraJson ?? null);
+    const extraTransform = parseObject(extra?.transform);
+    const extraRequest = parseObject(extra?.request);
+    const extraTiming = extra?.timing ?? null;
+    const extraProviders = extra?.providers ?? null;
+    const extraGating = extra?.gating ?? null;
+    const extraUsage = extra?.usage ?? null;
+    const extraPricing = extra?.pricing ?? null;
+    const extraErrorDetails = extra?.error_details ?? extraTransform?.error_details ?? null;
+    const extraInternalReporting = extra?.internal_reporting ?? null;
+    const gatewayRequestSanitized =
+        extraTransform?.request_surface_sanitized ??
+        extraTransform?.gateway_request_sanitized ??
+        null;
+    const providerRequestSanitized =
+        extraTransform?.upstream_request_sanitized ??
+        extraTransform?.provider_request_sanitized ??
+        null;
+    const gatewayResponseSanitized = extraTransform?.gateway_response_sanitized ?? null;
+    const providerResponseSanitized =
+        extraTransform?.upstream_response_sanitized ??
+        extraTransform?.provider_response_sanitized ??
+        null;
+    const providerResponseHeaders =
+        extraTransform?.upstream_response_headers ??
+        extraTransform?.provider_response_headers ??
+        null;
+    const providerStatusCode = numberOrNull(extraTransform?.upstream_status_code);
+    const providerStatusText =
+        typeof extraTransform?.upstream_status_text === "string"
+            ? extraTransform.upstream_status_text
+            : null;
+    const providerUrl =
+        typeof extraTransform?.upstream_url === "string"
+            ? extraTransform.upstream_url
+            : null;
+    const attemptErrorsJson = stringifyCompact(extraTransform?.attempt_errors ?? null);
+    const requestedParamsJson = stringifyCompact(extraTransform?.requested_params ?? null);
+    const paramRoutingDiagnosticsJson = stringifyCompact(extraTransform?.param_routing_diagnostics ?? null);
+    const providerEnablementDiagnosticsJson = stringifyCompact(
+        extraTransform?.provider_enablement_diagnostics ?? null
+    );
+    const providerCandidateBuildDiagnosticsJson = stringifyCompact(
+        extraTransform?.provider_candidate_build_diagnostics ?? null
+    );
+    const routingSnapshotJson = stringifyCompact(extraTransform?.routing_snapshot ?? null);
+    const routingDiagnosticsJson = stringifyCompact(extraTransform?.routing_diagnostics ?? null);
 
     // A single flat object (Axiom-friendly) following loggingsucks.com wide event pattern
     return {
@@ -266,6 +347,38 @@ export function buildAxiomEvent(a: AxiomArgs) {
         edge_country: a.edgeCountry ?? null,
         edge_continent: a.edgeContinent ?? null,
         edge_asn: a.edgeAsn ?? null,
+        provider_status_code: providerStatusCode ?? a.statusCode ?? null,
+        provider_status_text: providerStatusText,
+        provider_url: providerUrl,
+
+        // ====================================================================
+        // TRANSFORM ENVELOPES (SANITIZED REQUEST/RESPONSE SHAPES)
+        // ====================================================================
+        request_meta_json: stringifyCompact(extraRequest),
+        timing_json: stringifyCompact(extraTiming),
+        providers_json: stringifyCompact(extraProviders),
+        gating_json: stringifyCompact(extraGating),
+        transform_json: stringifyCompact(extraTransform),
+        gateway_request_redacted_json: stringifyCompact(gatewayRequestSanitized),
+        gateway_request_present: gatewayRequestSanitized != null,
+        provider_request_redacted_json: stringifyCompact(providerRequestSanitized),
+        provider_request_present: providerRequestSanitized != null,
+        gateway_response_redacted_json: stringifyCompact(gatewayResponseSanitized),
+        gateway_response_present: gatewayResponseSanitized != null,
+        provider_response_redacted_json: stringifyCompact(providerResponseSanitized),
+        provider_response_present: providerResponseSanitized != null,
+        provider_response_headers_json: stringifyCompact(providerResponseHeaders),
+        error_details_json: stringifyCompact(extraErrorDetails),
+        internal_reporting_json: stringifyCompact(extraInternalReporting),
+        usage_redacted_json: stringifyCompact(extraUsage),
+        pricing_redacted_json: stringifyCompact(extraPricing),
+        attempt_errors_json: attemptErrorsJson,
+        requested_params_json: requestedParamsJson,
+        param_routing_diagnostics_json: paramRoutingDiagnosticsJson,
+        provider_enablement_diagnostics_json: providerEnablementDiagnosticsJson,
+        provider_candidate_build_diagnostics_json: providerCandidateBuildDiagnosticsJson,
+        routing_snapshot_json: routingSnapshotJson,
+        routing_diagnostics_json: routingDiagnosticsJson,
 
         // ====================================================================
         // TIMING

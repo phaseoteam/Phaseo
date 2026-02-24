@@ -16,11 +16,9 @@ export default function BenchmarkCard({
 				<div className="flex flex-col min-w-0 flex-1">
 					<Link
 						href={`benchmarks/${benchmark_id}`}
-						className="font-semibold truncate leading-tight"
+						className="font-semibold truncate leading-tight text-left underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
-						<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
-							{benchmark_name}
-						</span>
+						{benchmark_name}
 					</Link>
 
 					<div className="mt-2">

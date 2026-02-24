@@ -159,7 +159,7 @@ export default async function CountryDetailPage({
 											href={`/models/${latestModel.model_id}`}
 											className="text-lg font-semibold leading-tight text-[inherit]"
 										>
-											<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+											<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 												{latestModel.name}
 											</span>
 										</Link>
@@ -168,7 +168,7 @@ export default async function CountryDetailPage({
 												href={`/organisations/${latestModel.organisation_id}`}
 												className="text-sm font-medium text-muted-foreground hover:text-foreground"
 											>
-												<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+												<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 													{latestModel.organisation_name ??
 														"Unknown organisation"}
 												</span>

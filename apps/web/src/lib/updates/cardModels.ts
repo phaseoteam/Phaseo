@@ -34,7 +34,7 @@ export type UpdateCardModel = {
     dateIso: string;
     relative: string;
     accentClass?: string | null;
-    category?: Exclude<UpdateCategoryId, "overview">;
+    category?: UpdateCategoryId;
 };
 
 function normalizeBadgeClass(badgeClass?: string) {

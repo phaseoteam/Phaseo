@@ -16,6 +16,7 @@ import { isDebugAllowed } from "../debug";
 import { isProviderCapabilityEnabled, normalizeCapability } from "@/executors";
 import { adapterFor } from "@/providers/index";
 import type { ProviderEnablementDiagnostics } from "./types";
+import { isTestingModeRequested, resolveTestingMode } from "./testingMode";
 
 /**
  * BEFORE STAGE
@@ -34,7 +35,7 @@ export async function beforeRequest(
     // 1) Auth
     const a = await timer.span("guardAuth", () => guardAuth(req));
     if (!a.ok) return a as { ok: false; response: Response };
-    const { requestId, teamId, apiKeyId, apiKeyRef, apiKeyKid, internal } = a.value;
+    const { requestId, teamId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
 
     // 2) JSON (raw body for tracing + schema guard)
     const j = await timer.span("guardJson", () => guardJson(req, teamId, requestId));
@@ -51,6 +52,7 @@ export async function beforeRequest(
     ) && isDebugAllowed();
     const debugBodyRaw = rawBody?.debug ?? null;
     const debugEnabled = debugHeaderEnabled || normalizeReturnFlag(debugBodyRaw?.enabled);
+    const testingModeRequested = isTestingModeRequested(req, rawBody);
 
     // 3) Zod (route schema: shape depends on request path)
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, teamId, requestId));
@@ -62,8 +64,28 @@ export async function beforeRequest(
     if (!m.ok) return m as { ok: false; response: Response };
     const { model, stream } = m.value;
 
+    const testingMode = await timer.span("resolveTestingMode", () =>
+        resolveTestingMode({
+            requested: testingModeRequested,
+            teamId,
+            userId,
+            internal,
+        })
+    );
+    if (testingModeRequested && !testingMode.enabled) {
+        return {
+            ok: false,
+            response: err("unauthorised", {
+                reason: testingMode.reason,
+                request_id: requestId,
+                team_id: teamId,
+            }),
+        };
+    }
+    const testingModeEnabled = testingMode.enabled;
+
     // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
-    const capability = resolveCapabilityFromEndpoint(endpoint);
+    const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
     const c = await timer.span("guardContext", () =>
         guardContext({
             teamId,
@@ -73,6 +95,7 @@ export async function beforeRequest(
             model,
             requestId,
             internal,
+            testingMode: testingModeEnabled,
             disableCache: debugEnabled,
         })
     );
@@ -135,7 +158,7 @@ export async function beforeRequest(
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
     mergedBody = capabilityValidation.body;
     const filteredProviders = capabilityValidation.providers;
-    const normalizedCapability = normalizeCapability(capability);
+    const normalizedCapability = capability;
     const executorManagedCapabilities = new Set<string>([
         "text.generate",
         "embeddings",
@@ -152,6 +175,16 @@ export async function beforeRequest(
     const providerEnablementDropped: ProviderEnablementDiagnostics["dropped"] = [];
     const enabledProviders = filteredProviders.filter((provider) => {
         if (executorManagedCapabilities.has(normalizedCapability)) {
+            if (testingModeEnabled) {
+                const hasAdapter = Boolean(adapterFor(provider.providerId, endpoint));
+                if (!hasAdapter) {
+                    providerEnablementDropped.push({
+                        providerId: provider.providerId,
+                        reason: "adapter_missing",
+                    });
+                }
+                return hasAdapter;
+            }
             const enabled = isProviderCapabilityEnabled(provider.providerId, normalizedCapability);
             if (!enabled) {
                 providerEnablementDropped.push({
@@ -277,6 +310,7 @@ export async function beforeRequest(
         teamSettings: context.teamSettings ?? null,
         routingMode: context.teamSettings?.routingMode ?? null,
         keyId: apiKeyId ?? null,
+        testingMode: testingModeEnabled,
     };
 
     // console.log(`[DEBUG] beforeRequest: final ctx.model: ${ctx.model}`);

@@ -639,23 +639,41 @@ export const ModerationsSchema = z.object({
 export type ModerationsRequest = z.infer<typeof ModerationsSchema>;
 
 // Audio Speech schema
+const ElevenLabsSpeechConfigSchema = z.object({
+    output_format: z.string().optional(),
+    language_code: z.string().optional(),
+    voice_settings: z.record(z.any()).optional(),
+    seed: z.number().int().optional(),
+    pronunciation_dictionary_locators: z.array(z.any()).optional(),
+    enable_logging: z.boolean().optional(),
+    voice: z.string().optional(),
+    voice_id: z.string().optional(),
+    voiceId: z.string().optional(),
+    voice_name: z.string().optional(),
+    voiceName: z.string().optional(),
+}).passthrough();
+
 export const AudioSpeechSchema = z.object({
     model: z.string().min(1),
     input: z.string().min(1),
-    voice: z.string().optional(),
+    voice: z.union([
+        z.string(),
+        z.object({
+            id: z.string().optional(),
+            name: z.string().optional(),
+            voiceName: z.string().optional(),
+        }).passthrough(),
+    ]).optional(),
     format: z.enum(["mp3", "wav", "ogg", "aac", "flac", "opus", "pcm"]).optional(),
     response_format: z.enum(["mp3", "wav", "aac", "flac", "opus", "pcm"]).optional(),
     stream_format: z.enum(["audio", "sse"]).optional(),
     speed: z.number().positive().optional(),
     instructions: z.string().optional(),
     config: z.object({
-        elevenlabs: z.object({
-            output_format: z.string().optional(),
-            language_code: z.string().optional(),
-            voice_settings: z.record(z.any()).optional(),
-            seed: z.number().int().optional(),
-            pronunciation_dictionary_locators: z.array(z.any()).optional(),
-            enable_logging: z.boolean().optional(),
+        elevenlabs: ElevenLabsSpeechConfigSchema.optional(),
+        google: z.object({
+            voice_name: z.string().optional(),
+            voiceName: z.string().optional(),
         }).passthrough().optional(),
     }).passthrough().optional(),
     echo_upstream_request: z.boolean().optional(),
@@ -709,6 +727,31 @@ const VideoReferenceImageSchema = z.object({
     mimeType: z.string().optional(),
 }).passthrough();
 
+const VideoGoogleConfigSchema = z.object({
+	aspect_ratio: z.string().optional(),
+	aspectRatio: z.string().optional(),
+	compression_quality: z.number().int().min(0).max(100).optional(),
+	compressionQuality: z.number().int().min(0).max(100).optional(),
+	duration_seconds: z.number().int().positive().optional(),
+	durationSeconds: z.number().int().positive().optional(),
+	generate_audio: z.boolean().optional(),
+	generateAudio: z.boolean().optional(),
+	negative_prompt: z.string().optional(),
+	negativePrompt: z.string().optional(),
+	resolution: z.string().optional(),
+	person_generation: z.string().optional(),
+	personGeneration: z.string().optional(),
+	number_of_videos: z.number().int().positive().optional(),
+	numberOfVideos: z.number().int().positive().optional(),
+	sample_count: z.number().int().positive().optional(),
+	sampleCount: z.number().int().positive().optional(),
+	seed: z.number().int().optional(),
+	enhance_prompt: z.boolean().optional(),
+	enhancePrompt: z.boolean().optional(),
+	output_storage_uri: z.string().optional(),
+	outputStorageUri: z.string().optional(),
+}).passthrough();
+
 // Video Generation schema
 export const VideoGenerationSchema = z.object({
     model: z.string().min(1),
@@ -739,6 +782,7 @@ export const VideoGenerationSchema = z.object({
 
     // Veo/Gemini options
     resolution: z.string().optional(),
+    compression_quality: z.number().int().min(0).max(100).optional(),
     negative_prompt: z.string().optional(),
     sample_count: z.number().int().positive().optional(),
     number_of_videos: z.number().int().positive().optional(),
@@ -747,6 +791,9 @@ export const VideoGenerationSchema = z.object({
     generate_audio: z.boolean().optional(),
     enhance_prompt: z.boolean().optional(),
     output_storage_uri: z.string().optional(),
+    config: z.object({
+        google: VideoGoogleConfigSchema.optional(),
+    }).passthrough().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     provider: ProviderRoutingSchema,

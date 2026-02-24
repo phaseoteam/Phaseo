@@ -1,8 +1,10 @@
 "use client";
+
 import Link from "next/link";
-import { UPDATE_TAB_ORDER, type UpdateTabId } from "@/lib/content/updates";
+import React from "react";
 import { ChevronDown } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { UPDATE_TAB_ORDER, type UpdateTabId } from "@/lib/content/updates";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -10,72 +12,130 @@ import {
 	DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const TAB_LABELS: Record<UpdateTabId, string> = {
-	overview: "Overview",
-	models: "Model Updates",
+	models: "Models",
 	web: "Web",
 	youtube: "YouTube",
-	calendar: "Model Calendar",
 };
 
 export default function UpdateTabs() {
-	const pathname = usePathname() || "/updates";
+	const pathname = usePathname() || "/updates/models";
+	const tabs = React.useMemo(
+		() =>
+			UPDATE_TAB_ORDER.map((category) => ({
+				category,
+				href: `/updates/${category}`,
+				label: TAB_LABELS[category],
+			})),
+		[]
+	);
 
 	const activeCategory =
-		UPDATE_TAB_ORDER.find(
+		((
+			pathname === "/updates/calendar" ||
+			pathname.startsWith("/updates/calendar/")
+		)
+			? "models"
+			: UPDATE_TAB_ORDER.find(
 			(cat) =>
 				pathname === `/updates/${cat}` ||
-				(cat === "overview" && pathname === "/updates")
-		) || "overview";
+				pathname.startsWith(`/updates/${cat}/`)
+		)) ?? "models";
+
+	const activeTab = tabs.find((t) => t.category === activeCategory) ?? tabs[0];
+
+	const desktopContainerRef = React.useRef<HTMLDivElement | null>(null);
+	const tabRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
+	const [indicator, setIndicator] = React.useState<{
+		left: number;
+		width: number;
+		opacity: number;
+	}>({ left: 0, width: 0, opacity: 0 });
+
+	const setIndicatorToHref = React.useCallback((href: string) => {
+		const container = desktopContainerRef.current;
+		const el = tabRefs.current[href];
+		if (!container || !el) return;
+
+		const containerRect = container.getBoundingClientRect();
+		const rect = el.getBoundingClientRect();
+		setIndicator({
+			left: rect.left - containerRect.left,
+			width: rect.width,
+			opacity: 1,
+		});
+	}, []);
+
+	React.useEffect(() => {
+		const raf = requestAnimationFrame(() => {
+			setIndicatorToHref(activeTab.href);
+		});
+		return () => cancelAnimationFrame(raf);
+	}, [activeTab.href, setIndicatorToHref]);
 
 	return (
 		<>
 			{/* Desktop */}
-			<div className="hidden md:flex gap-4 border-b mb-4 mt-6">
-				{UPDATE_TAB_ORDER.map((category) => {
-					const isActive = activeCategory === category;
+			<div
+				ref={desktopContainerRef}
+				className="relative mb-4 mt-6 hidden gap-4 border-b md:flex"
+				onMouseLeave={() => setIndicatorToHref(activeTab.href)}
+			>
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute bottom-0 h-0.5 rounded bg-muted-foreground transition-[left,width,opacity] duration-200 ease-out"
+					style={{
+						left: indicator.left,
+						width: indicator.width,
+						opacity: indicator.opacity,
+					}}
+				/>
+
+				{tabs.map((tab) => {
+					const isActive = tab.category === activeCategory;
 					return (
 						<Link
-							key={category}
-							href={
-								category === "overview"
-									? "/updates"
-									: `/updates/${category}`
-							}
+							key={tab.category}
+							href={tab.href}
 							prefetch={false}
-							className={`pb-2 px-2 font-medium transition-colors duration-150 ${
+							aria-current={isActive ? "page" : undefined}
+							ref={(el) => {
+								tabRefs.current[tab.href] = el;
+							}}
+							onMouseEnter={() => setIndicatorToHref(tab.href)}
+							onFocus={() => setIndicatorToHref(tab.href)}
+							className={cn(
+								"px-2 pb-2 text-sm font-medium transition-colors duration-150",
 								isActive
-									? "border-b-2 border-muted-foreground text-primary"
-									: "border-b-2 border-transparent text-foreground hover:text-primary"
-							}`}
+									? "text-primary"
+									: "text-foreground hover:text-primary"
+							)}
 						>
-							{TAB_LABELS[category]}
+							{tab.label}
 						</Link>
 					);
 				})}
 			</div>
 
 			{/* Mobile */}
-			<div className="md:hidden mb-4 mt-6">
+			<div className="mb-4 mt-6 md:hidden">
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
-						<Button className="w-full p-2 border rounded text-base bg-background text-foreground flex justify-between items-center">
-							{TAB_LABELS[activeCategory]}
-							<ChevronDown className="ml-2 h-4 w-4" />
+						<Button className="group flex w-full items-center justify-between rounded border bg-background p-2 text-base text-foreground">
+							{activeTab.label}
+							<ChevronDown className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="start" className="w-full">
-						{UPDATE_TAB_ORDER.map((category) => (
-							<DropdownMenuItem key={category} asChild>
-								<Link
-									href={
-										category === "overview"
-											? "/updates"
-											: `/updates/${category}`
-									}
-								>
-									{TAB_LABELS[category]}
+					<DropdownMenuContent
+						align="start"
+						className="w-(--radix-popper-anchor-width)"
+					>
+						{tabs.map((tab) => (
+							<DropdownMenuItem key={tab.category} asChild>
+								<Link href={tab.href} prefetch={false}>
+									{tab.label}
 								</Link>
 							</DropdownMenuItem>
 						))}

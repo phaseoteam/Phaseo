@@ -87,7 +87,7 @@ export default function OverviewCard({
 							<div className="min-w-0">
 								<Link
 									href={`/models/${encodeURIComponent(m.id)}`}
-									className="block truncate font-semibold hover:underline"
+									className="block truncate font-semibold underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									{m.name}
 								</Link>
@@ -173,3 +173,4 @@ export default function OverviewCard({
 		</section>
 	);
 }
+

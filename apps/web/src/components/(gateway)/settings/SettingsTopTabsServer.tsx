@@ -139,23 +139,6 @@ function resolveTabs(pathname: string): Tab[] | null {
 	return null;
 }
 
-function isActive(pathname: string, tab: Tab) {
-	// Treat the account index route as details, since `/settings/account` redirects.
-	if (pathname === "/settings/account" && tab.href === "/settings/account/details")
-		return true;
-
-	// Treat the team index route as members, since `/settings/teams` will redirect.
-	if (pathname === "/settings/teams" && tab.href === "/settings/teams/members")
-		return true;
-
-	if (pathname === tab.href) return true;
-	if (pathname.startsWith(tab.href + "/")) return true;
-
-	return Boolean(
-		tab.match?.some((m) => pathname === m || pathname.startsWith(m + "/")),
-	);
-}
-
 export default function SettingsTopTabsServer() {
 	const pathname = usePathname() ?? "";
 	const { toggleSidebar } = useSidebar();
@@ -258,7 +241,7 @@ export default function SettingsTopTabsServer() {
 							className="w-[min(20rem,calc(100vw-1rem))]"
 						>
 							{tabs.map((tab) => {
-								const active = isActive(pathname, tab);
+								const active = tab.href === activeTab?.href;
 								return (
 									<DropdownMenuItem key={tab.href} asChild>
 										<Link
@@ -304,7 +287,7 @@ export default function SettingsTopTabsServer() {
 				/>
 
 				{tabs.map((tab) => {
-					const active = isActive(pathname, tab);
+					const active = tab.href === activeTab?.href;
 					return (
 						<Link
 							key={tab.href}

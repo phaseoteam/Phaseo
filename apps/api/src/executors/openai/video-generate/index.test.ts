@@ -57,7 +57,7 @@ describe("openai video executor", () => {
 		expect(capturedBody).toMatchObject({
 			model: "openai/sora-2",
 			prompt: "A storm over the ocean",
-			seconds: 8,
+			seconds: "8",
 			size: "1280x720",
 		});
 		expect(capturedBody?.quality).toBeUndefined();

@@ -42,7 +42,7 @@ const markdownComponents: Components = {
 		return (
 			<a
 				{...props}
-				className="text-blue-600 underline-offset-4 hover:underline dark:text-blue-400"
+				className="text-blue-600 underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200 dark:text-blue-400"
 				target={isExternal ? "_blank" : undefined}
 				rel={isExternal ? "noreferrer noopener" : undefined}
 			/>

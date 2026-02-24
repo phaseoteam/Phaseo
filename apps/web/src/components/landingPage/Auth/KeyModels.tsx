@@ -56,7 +56,7 @@ export default async function KeyModels() {
 											href={`/models/${m.model_id}`}
 											className="inline-flex min-w-0 text-current"
 										>
-											<span className="relative inline-flex max-w-full truncate font-semibold leading-tight text-current after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+											<span className="relative inline-flex max-w-full truncate font-semibold leading-tight text-current underline decoration-transparent hover:decoration-current transition-colors duration-200">
 												{m.name}
 											</span>
 										</Link>
@@ -66,7 +66,7 @@ export default async function KeyModels() {
 											href={`/organisations/${m.data_organisations.organisation_id}`}
 											className="text-xs text-muted-foreground truncate flex items-center gap-1"
 										>
-											<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+											<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 												{m.data_organisations.name}
 											</span>
 										</Link>

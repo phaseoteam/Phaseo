@@ -1,16 +1,15 @@
 import type { LucideIcon } from "lucide-react";
-import { Cpu, Globe, MonitorPlay, Package } from "lucide-react";
+import { Cpu, Globe, MonitorPlay } from "lucide-react";
 
 export type UpdateCategoryId =
-    | "overview"
     | "models"
     | "web"
     | "youtube";
 
-export type UpdateTabId = UpdateCategoryId | "calendar";
+export type UpdateTabId = UpdateCategoryId;
 export type UpdateEntry = {
     id: string | number;
-    category: Exclude<UpdateCategoryId, "overview">;
+    category: UpdateCategoryId;
     title: string;
     description?: string | null;
     href: string;
@@ -50,22 +49,19 @@ function parseUtc(value: string | undefined | null): Date {
 }
 
 export const UPDATE_CATEGORY_ORDER: UpdateCategoryId[] = [
-    "overview",
     "models",
     "web",
     "youtube",
 ];
 
 export const UPDATE_TAB_ORDER: UpdateTabId[] = [
-    "overview",
     "models",
     "web",
     "youtube",
-    "calendar",
 ];
 
 export const UPDATE_ENTRY_META: Record<
-    Exclude<UpdateCategoryId, "overview">,
+    UpdateCategoryId,
     {
         label: string;
         icon: LucideIcon;

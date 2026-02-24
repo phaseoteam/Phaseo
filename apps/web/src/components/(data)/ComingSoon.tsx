@@ -123,7 +123,7 @@ export default function ComingSoon({
 								{c.href ? (
 									<a
 										href={c.href}
-										className="hover:text-zinc-900 dark:hover:text-zinc-100 underline-offset-4 hover:underline"
+										className="hover:text-zinc-900 dark:hover:text-zinc-100 underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 									>
 										{c.label}
 									</a>
@@ -363,3 +363,4 @@ export default function ComingSoon({
 		</Section>
 	);
 }
+

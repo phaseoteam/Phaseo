@@ -29,7 +29,7 @@ export const CurrentUserAvatar = () => {
 		return (
 			<div
 				className={cn(
-					"h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse"
+					"h-8 w-8 rounded-lg border border-zinc-200/70 bg-zinc-100 dark:border-zinc-800/70 dark:bg-zinc-800 animate-pulse"
 				)}
 			/>
 		);
@@ -46,9 +46,17 @@ export const CurrentUserAvatar = () => {
 		?.toUpperCase();
 
 	return (
-		<Avatar className="h-8 w-8 rounded-full">
-			{profileImage && <AvatarImage src={profileImage} alt={initials} />}
-			<AvatarFallback className="rounded-full">{initials}</AvatarFallback>
+		<Avatar className="h-8 w-8 rounded-lg border border-zinc-200/70 dark:border-zinc-800/70">
+			{profileImage && (
+				<AvatarImage
+					src={profileImage}
+					alt={initials}
+					className="object-cover"
+				/>
+			)}
+			<AvatarFallback className="rounded-lg text-[11px] font-semibold">
+				{initials}
+			</AvatarFallback>
 		</Avatar>
 	);
 };

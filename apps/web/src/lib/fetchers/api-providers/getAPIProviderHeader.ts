@@ -1,6 +1,7 @@
 // lib/fetchers/api-providers/getAPIProviderHeader.ts
 import { createClient } from "@/utils/supabase/client";
 import { cacheLife, cacheTag } from "next/cache";
+import { isAPIProviderHidden } from "./visibility";
 
 export interface APIProviderHeader {
     api_provider_id: string;
@@ -10,7 +11,11 @@ export interface APIProviderHeader {
 
 export async function fetchAPIProviderHeader(
     apiProviderId: string
-): Promise<APIProviderHeader> {
+): Promise<APIProviderHeader | null> {
+    if (isAPIProviderHidden(apiProviderId)) {
+        return null;
+    }
+
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -42,7 +47,7 @@ export async function fetchAPIProviderHeader(
 // capture organisationId in both key and tags to retain the per-ID tag
 export default async function getAPIProviderHeader(
     apiProviderId: string
-): Promise<APIProviderHeader> {
+): Promise<APIProviderHeader | null> {
     "use cache";
 
     cacheLife("days");

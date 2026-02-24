@@ -21,7 +21,7 @@ export type RoadmapMilestone = {
     href?: string;
 
     // Planning & shipping metadata
-    due?: string;              // e.g. "Oct 2025 → Nov 2025" (for non-shipped)
+    due?: string;              // e.g. "Oct 2025 to Nov 2025" (for non-shipped)
     shippedAt?: string;        // ISO date "YYYY-MM-DD" (for shipped)
     continuous?: boolean;      // true for ongoing items like the Gateway
 
@@ -31,165 +31,182 @@ export type RoadmapMilestone = {
 };
 
 export const MILESTONES: RoadmapMilestone[] = [
-    {
-        key: "gateway",
-        title: "Expanded Gateway",
-        status: "Ongoing",
-        description:
-            "Continuous expansion of supported models, modalities and providers with smarter and faster routing.",
-        icon: "Infinity",
-        continuous: true,
-        href: "/gateway",
-    },
-    {
-        key: "expanded-database",
-        title: "Expanded Database",
-        status: "Ongoing",
-        description:
-            "Continuous expansion of database capabilities with improved data management and performance.",
-        icon: "BookOpen",
-        continuous: true,
-    },
-    {
-        key: "organisation-page",
-        title: "Organisation Pages",
-        status: "Shipped",
-        shippedAt: "2025-11-26",
-        description: "See all organisation information, on one page.",
-        icon: "Bot",
-        href: "/organisations",
-    },
-    {
-        key: "model-page",
-        title: "Model Pages",
-        status: "Shipped",
-        shippedAt: "2025-11-26",
-        description: "See all model information, on one page.",
-        icon: "Bot",
-        href: "/models/gpt-5-2025-08-07",
-    },
-    {
-        key: "benchmarks",
-        title: "Benchmark Pages",
-        status: "Shipped",
-        shippedAt: "2025-11-26",
-        description:
-            "Interactive charts and rank deltas to see how models stack up across benchmarks.",
-        icon: "BarChart3",
-        href: "/benchmarks",
-    },
-    {
-        key: "api-providers",
-        title: "API Providers",
-        status: "Shipped",
-        shippedAt: "2025-11-26",
-        description:
-            "Unified pages to see what models a provider supports as well as other useful information.",
-        icon: "BadgeDollarSign",
-        href: "/api-providers",
-    },
-    {
-        key: "latest-updates",
-        title: "Latest Updates",
-        status: "Shipped",
-        shippedAt: "2025-11-26",
-        description:
-            "A page consolidating all the latest information about AI - from model releases, to new web pages, or new YouTube videos - your one stop shop for the latest in AI.",
-        icon: "BookOpen",
-        href: "/updates",
-    },
-    {
-        key: "countries-pages",
-        title: "Countries Pages",
-        status: "Shipped",
-        shippedAt: "2025-12-03",
-        description: "See all country-specific AI information on one page.",
-        icon: "Users",
-        href: "/countries",
-    },
-    {
-        key: "sources",
-        title: "Sources",
-        status: "Shipped",
-        shippedAt: "2025-12-29",
-        description:
-            "Sources now live directly within each page, displayed alongside the relevant content.",
-        icon: "BookOpen",
-    },
-    {
-        key: "database-updates",
-        title: "Database Updates",
-        status: "Shipped",
-        shippedAt: "2025-12-19",
-        description:
-            "An expansion of Latest Updates - this will show all changes made to the database allowing you to see what's changing in the database.",
-        icon: "BookOpen",
-    },
-    {
-        key: "compare",
-        title: "Model Comparisons",
-        status: "Beta",
-        due: "Nov 2025",
-        description:
-            "Line up models side-by-side across benchmarks, providers, and pricing with ease.",
-        icon: "GitCompare",
-        href: "/compare",
-    },
-    {
-        key: "playground",
-        title: "Playground",
-        status: "Planned",
-        due: "Dec 2025",
-        description:
-            "Interactive playground for testing and experimenting with AI models.",
-        icon: "Sparkles",
-    },
-    {
-        key: "usage-limits",
-        title: "Usage Limits for API Keys",
-        status: "Beta",
-        due: "Nov 2025",
-        description:
-            "Implement usage limits and monitoring for API keys to manage consumption.",
-        icon: "BadgeDollarSign",
-        href: "/settings/keys",
-    },
-    {
-        key: "revamped-pricing-page",
-        title: "Revamped Model Pricing Page",
-        status: "Shipped",
-        shippedAt: "2025-12-12",
-        description: "A revamped page for model pricing information.",
-        icon: "BadgeDollarSign",
-    },
-    {
-        key: "provisioning-keys",
-        title: "Management API Keys",
-        status: "Planned",
-        due: "Jan 2026",
-        description:
-            "Automated creation and management of elevated management API keys.",
-        icon: "BadgeDollarSign",
-    },
-    {
-        key: "presets",
-        title: "Presets",
-        status: "Planned",
-        due: "Jan 2026",
-        description:
-            "Predefined configurations and presets for common AI use cases.",
-        icon: "Sparkles",
-    },
-    {
-        key: "anthropic-compatibility",
-        title: "Anthropic Compatibility",
-        status: "Planned",
-        due: "Feb 2026",
-        description:
-            "Integrate Anthropic models into the platform for enhanced compatibility and support.",
-        icon: "Bot",
-    },
-
+	{
+		key: "gateway",
+		title: "Gateway Coverage Expansion",
+		status: "Ongoing",
+		description:
+			"Continuous expansion of supported providers, models, and modalities with smarter routing defaults.",
+		icon: "Infinity",
+		continuous: true,
+		href: "/gateway",
+	},
+	{
+		key: "expanded-database",
+		title: "Database Coverage",
+		status: "Ongoing",
+		description:
+			"Continuous ingestion and validation of model, provider, pricing, and release data across the catalog.",
+		icon: "BookOpen",
+		continuous: true,
+		href: "/models",
+	},
+	{
+		key: "usage-limits",
+		title: "Usage Limits",
+		status: "In Progress",
+		due: "Apr 2026",
+		description:
+			"Per-key spend and usage controls to reduce accidental overspend and enforce team budgets.",
+		icon: "BadgeDollarSign",
+		href: "/settings/keys",
+	},
+	{
+		key: "guardrails",
+		title: "Guardrails",
+		status: "In Progress",
+		due: "Apr 2026",
+		description:
+			"Expanded safety, policy, and moderation controls across gateway traffic.",
+		icon: "Sparkles",
+		href: "/settings/guardrails",
+	},
+	{
+		key: "privacy-settings",
+		title: "Privacy Settings",
+		status: "In Progress",
+		due: "Apr 2026",
+		description:
+			"More granular privacy and retention controls for teams using AI Stats Gateway.",
+		icon: "BookOpen",
+		href: "/settings/privacy",
+	},
+	{
+		key: "provisioning-keys",
+		title: "Management API Keys",
+		status: "Planned",
+		due: "May 2026",
+		description:
+			"Automated creation and lifecycle management for elevated management credentials.",
+		icon: "BadgeDollarSign",
+		href: "/settings/keys",
+	},
+	{
+		key: "presets",
+		title: "Preset Marketplace",
+		status: "Planned",
+		due: "May 2026",
+		description:
+			"Improved sharing, discovery, and one-click adoption of production-ready preset configurations.",
+		icon: "Sparkles",
+		href: "/gateway/marketplace",
+	},
+	{
+		key: "anthropic-compatibility",
+		title: "Anthropic Compatibility",
+		status: "Shipped",
+		shippedAt: "2026-01-30",
+		description:
+			"Anthropic Messages API compatibility shipped via the gateway /messages endpoint.",
+		icon: "Bot",
+		href: "/gateway",
+	},
+	{
+		key: "organisation-page",
+		title: "Organisation Pages",
+		status: "Shipped",
+		shippedAt: "2025-11-26",
+		description: "Dedicated organisation pages with linked models and metadata.",
+		icon: "Users",
+		href: "/organisations",
+	},
+	{
+		key: "model-page",
+		title: "Model Pages",
+		status: "Shipped",
+		shippedAt: "2025-11-26",
+		description: "Dedicated model pages with pricing, availability, and quickstart details.",
+		icon: "Bot",
+		href: "/models",
+	},
+	{
+		key: "benchmarks",
+		title: "Benchmark Pages",
+		status: "Shipped",
+		shippedAt: "2025-11-26",
+		description:
+			"Benchmark pages with rank deltas and per-model performance comparisons.",
+		icon: "BarChart3",
+		href: "/benchmarks",
+	},
+	{
+		key: "api-providers",
+		title: "API Provider Pages",
+		status: "Shipped",
+		shippedAt: "2025-11-26",
+		description:
+			"Provider pages with supported models, pricing references, and capability coverage.",
+		icon: "BadgeDollarSign",
+		href: "/api-providers",
+	},
+	{
+		key: "latest-updates",
+		title: "Latest Updates",
+		status: "Shipped",
+		shippedAt: "2025-11-26",
+		description:
+			"A single stream for releases, announcements, and database updates.",
+		icon: "BookOpen",
+		href: "/updates",
+	},
+	{
+		key: "countries-pages",
+		title: "Countries Pages",
+		status: "Shipped",
+		shippedAt: "2025-12-03",
+		description: "Country-level views that connect organisations and model activity.",
+		icon: "Users",
+		href: "/countries",
+	},
+	{
+		key: "revamped-pricing-page",
+		title: "Pricing Reference Refresh",
+		status: "Shipped",
+		shippedAt: "2025-12-12",
+		description:
+			"A cleaner pricing reference experience with model and provider-focused navigation.",
+		icon: "BadgeDollarSign",
+		href: "/tools/pricing-calculator",
+	},
+	{
+		key: "database-updates",
+		title: "Database Update Feed",
+		status: "Shipped",
+		shippedAt: "2025-12-19",
+		description:
+			"Expanded update feed that surfaces ongoing database-level changes.",
+		icon: "BookOpen",
+		href: "/updates",
+	},
+	{
+		key: "sources",
+		title: "Inline Sources",
+		status: "Shipped",
+		shippedAt: "2025-12-29",
+		description:
+			"Source attribution surfaced directly alongside relevant model and provider data.",
+		icon: "BookOpen",
+	},
+	{
+		key: "compare",
+		title: "Model Comparisons",
+		status: "Shipped",
+		shippedAt: "2026-01-18",
+		description:
+			"Side-by-side model comparison across pricing, capabilities, and key metadata.",
+		icon: "GitCompare",
+		href: "/compare",
+	},
 ];
 
 // ------- helpers you already use on the page -------

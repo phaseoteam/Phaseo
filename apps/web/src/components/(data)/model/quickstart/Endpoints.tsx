@@ -26,7 +26,7 @@ export default async function Endpoints() {
 					Our main gateway endpoints. See more on the{" "}
 					<Link
 						href="https://docs.ai-stats.phaseo.app/"
-						className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+						className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
 						documentation
 					</Link>

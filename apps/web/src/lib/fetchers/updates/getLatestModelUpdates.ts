@@ -99,6 +99,12 @@ const ACCENT_BY_PRIMARY: Partial<Record<EventType, string>> = {
     Retired: "bg-zinc-500",
 };
 
+function pickSingleBadgeType(types: EventType[]): EventType {
+	if (types.includes("Released")) return "Released";
+	if (types.includes("Announced")) return "Announced";
+	return types[0] ?? "Announced";
+}
+
 function toIsoOrNull(v: string | null | undefined): string | null {
     if (!v) return null;
     const s = String(v).trim();
@@ -245,17 +251,19 @@ export async function getLatestModelUpdateCards(
     const nowMs = Date.parse(generatedAt);
 
     return events.slice(0, limit).map((e) => {
-        // Badges for each event type on this date/model
-        const badges = e.types.map((t) => {
-            const meta = EVENT_BADGE_META[t];
-            return {
-                label: meta.label,
-                icon: meta.icon,
-                className: meta.className,
-            };
-        });
+        // Landing requirement: show one badge only.
+        // Prefer Release, otherwise Announcement, then fall back to primary type.
+        const badgeType = pickSingleBadgeType(e.types);
+        const badgeMeta = EVENT_BADGE_META[badgeType];
+        const badges = [
+            {
+                label: badgeMeta.label,
+                icon: badgeMeta.icon,
+                className: badgeMeta.className,
+            },
+        ];
 
-        const primary = e.types[0];
+        const primary = badgeType;
         const accentClass = (primary && ACCENT_BY_PRIMARY[primary]) || null;
 
         const orgId = (e.model.organisation.organisation_id || "").toLowerCase();

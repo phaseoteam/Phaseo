@@ -212,7 +212,17 @@ pub struct Embedding {
 	pub object: Option<String>,
 }
 
-pub type EmbeddingsRequest = JsonValue;
+pub struct EmbeddingsRequest {
+	pub debug: Option<HashMap<String, String>>,
+	pub dimensions: Option<i64>,
+	pub embedding_options: Option<HashMap<String, String>>,
+	pub encoding_format: Option<String>,
+	pub input: Option<String>,
+	pub inputs: Option<String>,
+	pub model: Option<String>,
+	pub provider: Option<HashMap<String, String>>,
+	pub user: Option<String>,
+}
 
 pub struct EmbeddingsResponse {
 	pub data: Option<Vec<HashMap<String, String>>>,
@@ -403,6 +413,12 @@ pub struct MusicGenerateRequest {
 pub struct MusicGenerateResponse {
 }
 
+pub struct NotImplementedResponse {
+	pub description: Option<String>,
+	pub error: Option<String>,
+	pub status_code: Option<i64>,
+}
+
 pub struct OcrRequest {
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
@@ -465,6 +481,10 @@ pub struct ProvisioningKeyWithValue {
 	pub prefix: Option<String>,
 	pub scopes: Option<String>,
 	pub status: Option<String>,
+}
+
+pub struct RealtimeNotImplementedResponse {
+	pub error: Option<HashMap<String, String>>,
 }
 
 pub struct ReasoningConfig {
@@ -563,15 +583,25 @@ pub struct VideoGenerationRequest {
 	pub aspect_ratio: Option<String>,
 	pub duration: Option<i64>,
 	pub duration_seconds: Option<i64>,
+	pub enhance_prompt: Option<bool>,
+	pub generate_audio: Option<bool>,
+	pub input: Option<HashMap<String, String>>,
+	pub input_image: Option<String>,
+	pub input_last_frame: Option<String>,
 	pub input_reference: Option<String>,
 	pub input_reference_mime_type: Option<String>,
+	pub input_video: Option<String>,
+	pub last_frame: Option<String>,
 	pub model: String,
 	pub negative_prompt: Option<String>,
+	pub number_of_videos: Option<i64>,
 	pub output_storage_uri: Option<String>,
 	pub person_generation: Option<String>,
 	pub prompt: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub quality: Option<String>,
 	pub ratio: Option<String>,
+	pub reference_images: Option<Vec<HashMap<String, String>>>,
 	pub resolution: Option<String>,
 	pub sample_count: Option<i64>,
 	pub seconds: Option<String>,

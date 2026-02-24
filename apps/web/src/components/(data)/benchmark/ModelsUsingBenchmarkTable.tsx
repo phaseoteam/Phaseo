@@ -129,7 +129,7 @@ export default function ModelsUsingBenchmarkClient({
 									: undefined;
 								const organisationNameElement = (
 									<span
-										className="relative inline-block align-middle truncate text-sm font-normal after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full"
+										className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200"
 										title={organisationTitle}
 									>
 										{organisationLabel}
@@ -193,7 +193,7 @@ export default function ModelsUsingBenchmarkClient({
 												{hasMultiple && (
 													<button
 														type="button"
-														className="mr-2 inline-flex h-5 w-5 items-center justify-center text-indigo-600 hover:underline focus:outline-hidden align-middle"
+														className="mr-2 inline-flex h-5 w-5 items-center justify-center text-indigo-600 underline decoration-transparent hover:decoration-current transition-colors duration-200 focus:outline-hidden align-middle"
 														onClick={() =>
 															setOpenRows(
 																(prev) => ({
@@ -220,7 +220,7 @@ export default function ModelsUsingBenchmarkClient({
 													href={`/models/${model.id}`}
 												>
 													<span
-														className="relative inline-block align-middle truncate font-semibold after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full"
+														className="relative inline-block align-middle truncate font-semibold underline decoration-transparent hover:decoration-current transition-colors duration-200"
 														title={model.name}
 													>
 														{model.name}
@@ -259,7 +259,7 @@ export default function ModelsUsingBenchmarkClient({
 														rel="noopener noreferrer"
 														className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 													>
-														<span className="relative inline-block align-middle truncate text-sm font-normal after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+														<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 															Source
 														</span>
 														<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
@@ -325,7 +325,7 @@ export default function ModelsUsingBenchmarkClient({
 																	rel="noopener noreferrer"
 																	className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 																>
-																	<span className="relative inline-block align-middle truncate text-sm font-normal after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+																	<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 																		Source
 																	</span>
 																	<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
@@ -351,3 +351,4 @@ export default function ModelsUsingBenchmarkClient({
 		</div>
 	);
 }
+

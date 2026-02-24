@@ -256,6 +256,7 @@ export type RoutingDiagnostics = {
     priority: Priority;
     routingMode: RoutingMode;
     strictPriority: boolean;
+    testingMode: boolean;
     includeAlpha: boolean;
     betaChannelEnabled: boolean;
     providerCapabilitiesBeta: boolean;
@@ -319,6 +320,7 @@ export async function routeProviders(
         routingMode?: string | null;
         betaChannelEnabled?: boolean;
         providerCapabilitiesBeta?: boolean;
+        testingMode?: boolean;
         requestId?: string | null;
     }
 ): Promise<{ ranked: RoutedCandidate[]; diagnostics: RoutingDiagnostics }> {
@@ -338,6 +340,7 @@ export async function routeProviders(
     const orderedHints = normalizeProviderList(hints.order ?? []);
     const betaChannelEnabled = Boolean(ctx.betaChannelEnabled);
     const providerCapabilitiesBeta = Boolean(ctx.providerCapabilitiesBeta);
+    const testingMode = Boolean(ctx.testingMode);
     const allowBetaProviders = betaChannelEnabled || providerCapabilitiesBeta;
     const requestedMaxTokens = getRequestedMaxTokens(ctx.body);
     const filterStages: RoutingFilterStageDiagnostics[] = [];
@@ -381,6 +384,7 @@ export async function routeProviders(
     // Channel/status gating before health scoring.
     const beforeStatusGate = poolCandidates;
     poolCandidates = poolCandidates.filter((candidate) => {
+        if (testingMode) return true;
         const status = normalizeProviderStatus(candidate.providerStatus);
         if (status === "active") return true;
         if (status === "beta") return allowBetaProviders;
@@ -402,6 +406,7 @@ export async function routeProviders(
             priority,
             routingMode: mode,
             strictPriority: strict,
+            testingMode,
             includeAlpha,
             betaChannelEnabled,
             providerCapabilitiesBeta,
@@ -527,6 +532,7 @@ export async function routeProviders(
                     priority,
                     routingMode: mode,
                     strictPriority: strict,
+                    testingMode,
                     includeAlpha,
                     betaChannelEnabled,
                     providerCapabilitiesBeta,
@@ -544,6 +550,7 @@ export async function routeProviders(
                 priority,
                 routingMode: mode,
                 strictPriority: strict,
+                testingMode,
                 includeAlpha,
                 betaChannelEnabled,
                 providerCapabilitiesBeta,
@@ -563,6 +570,7 @@ export async function routeProviders(
                 priority,
                 routingMode: mode,
                 strictPriority: strict,
+                testingMode,
                 includeAlpha,
                 betaChannelEnabled,
                 providerCapabilitiesBeta,
@@ -581,6 +589,7 @@ export async function routeProviders(
             priority,
             routingMode: mode,
             strictPriority: strict,
+            testingMode,
             includeAlpha,
             betaChannelEnabled,
             providerCapabilitiesBeta,

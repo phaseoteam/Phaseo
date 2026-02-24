@@ -1,6 +1,6 @@
 {
 	"name": "@ai-stats/gateway-api",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -13,6 +13,7 @@
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
 		"test": "pnpm exec vitest run",
 		"test:live": "pnpm exec vitest run tests/integration/openai-gpt5-nano.live.spec.ts",
+		"test:live:media": "pnpm exec vitest run tests/integration/multimodal-media.live.spec.ts",
 		"test:live:active": "pnpm exec vitest run tests/integration/active-providers.live.spec.ts",
 		"test:live:provider": "tsx scripts/run-live-provider-tests.ts",
 		"test:live:provider:arcee": "tsx scripts/run-live-provider-tests.ts --provider arcee",
@@ -25,7 +26,8 @@
 		"test:live:provider:together:chat": "tsx scripts/run-live-provider-tests.ts --provider together --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured",
 		"test:live:all-providers": "tsx scripts/run-live-provider-tests.ts --all-providers",
 		"test:live:all-api-providers": "tsx scripts/run-live-provider-tests.ts --all-api-providers",
-		"test:live:nano-banana": "pnpm exec vitest run tests/integration/nano-banana-image.live.spec.ts"
+		"test:live:nano-banana": "pnpm exec vitest run tests/integration/nano-banana-image.live.spec.ts",
+		"test:live:video:sora": "tsx scripts/sora-video-live.ts"
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.56.1",

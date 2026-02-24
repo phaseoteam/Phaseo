@@ -24,7 +24,10 @@ function getIconForLink(
 ) {
 	// Paper: /social/arxiv.svg
 	const key =
-		link.key ?? (link.platform ? `${link.platform}_link` : undefined);
+		link.key ??
+		(link.platform
+			? `${link.platform.toLowerCase().replace(/[\s-]+/g, "_")}_link`
+			: undefined);
 	if (key === "paper_link") {
 		return (
 			<img
@@ -37,8 +40,8 @@ function getIconForLink(
 			/>
 		);
 	}
-	// Announcement: /providers/{providerid}.svg
-	if (key === "announcement_link") {
+	// Announcement / Model Card: /providers/{providerid}.svg
+	if (key === "announcement_link" || key === "model_card_link") {
 		const providerId = model.organisation_id;
 		if (providerId) {
 				return (
@@ -179,6 +182,8 @@ function prettyLabelForPlatform(platform: string) {
 		p.includes("blog")
 	)
 		return "Announcement";
+	if (p.includes("model_card") || p.includes("model card") || p.includes("model-card"))
+		return "Model Card";
 	if (p.includes("repo") || p.includes("github")) return "Repository";
 	if (p.includes("weight") || p.includes("hugging")) return "Weights";
 	return platform;

@@ -15,6 +15,26 @@ pub fn createAnthropicMessage<T: Transport>(client: &Client<T>, path: &HashMap<S
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createAudioRealtimeCallPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/audio/realtime/calls");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createAudioRealtimeClientSecretsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/audio/realtime/client_secrets");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createAudioRealtimeSessionPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/audio/realtime");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createAudioRealtimeSessionsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/audio/realtime/sessions");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createBatch<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/batches");
 	client.request("POST", &resolved_path, body)
@@ -45,11 +65,6 @@ pub fn createImageEdit<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 	client.request("POST", &resolved_path, body)
 }
 
-pub fn createKeyPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/keys");
-	client.request("POST", &resolved_path, body)
-}
-
 pub fn createModeration<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/moderations");
 	client.request("POST", &resolved_path, body)
@@ -62,6 +77,41 @@ pub fn createOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String
 
 pub fn createOcr<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/ocr");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createProvisioningKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/management/keys");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createProvisioningKeyAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/provisioning/keys");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createProvisioningKeyLegacy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/keys");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createRealtimeCallPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/realtime/calls");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createRealtimeClientSecretsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/realtime/client_secrets");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createRealtimeSessionPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/realtime");
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createRealtimeSessionsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/realtime/sessions");
 	client.request("POST", &resolved_path, body)
 }
 
@@ -140,6 +190,11 @@ pub fn getAnalytics<T: Transport>(client: &Client<T>, path: &HashMap<String, Str
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn getAudioRealtimeCallPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/audio/realtime/calls/{}", path.get("call_id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn getCredits<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/credits");
 	client.request("GET", &resolved_path, body)
@@ -147,11 +202,6 @@ pub fn getCredits<T: Transport>(client: &Client<T>, path: &HashMap<String, Strin
 
 pub fn getGeneration<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/generations");
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn getKeyPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/key");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -185,6 +235,16 @@ pub fn getProvisioningKeyAlias<T: Transport>(client: &Client<T>, path: &HashMap<
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn getProvisioningKeyLegacy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/key");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getRealtimeCallPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/realtime/calls/{}", path.get("call_id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn getVideo<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/videos/{}", path.get("video_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
@@ -215,7 +275,7 @@ pub fn invalidateGatewayKeyCache<T: Transport>(client: &Client<T>, path: &HashMa
 	client.request("POST", &resolved_path, body)
 }
 
-pub fn listEndpointsPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+pub fn listEndpoints<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/endpoints");
 	client.request("GET", &resolved_path, body)
 }
@@ -225,13 +285,18 @@ pub fn listFiles<T: Transport>(client: &Client<T>, path: &HashMap<String, String
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn listKeysPlaceholder<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/keys");
+pub fn listModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/models");
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn listModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/models");
+pub fn listModelsAliasApi<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/api/models");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listModelsAliasData<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/data/models");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -265,6 +330,11 @@ pub fn listProvisioningKeysAlias<T: Transport>(client: &Client<T>, path: &HashMa
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn listProvisioningKeysLegacy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/keys");
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn regenerateOAuthClientSecret<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/oauth-clients/{}/regenerate-secret", path.get("client_id").cloned().unwrap_or_default());
 	client.request("POST", &resolved_path, body)
@@ -282,11 +352,6 @@ pub fn retrieveBatchAlias<T: Transport>(client: &Client<T>, path: &HashMap<Strin
 
 pub fn retrieveFile<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/files/{}", path.get("file_id").cloned().unwrap_or_default());
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn root<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/");
 	client.request("GET", &resolved_path, body)
 }
 

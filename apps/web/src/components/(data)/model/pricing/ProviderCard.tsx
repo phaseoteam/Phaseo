@@ -177,6 +177,13 @@ export default function ProviderCard({
 			? { label: "Max output", value: formatTokenLimit(maxOutputTokens) }
 			: null,
 	].filter((tile): tile is { label: string; value: string } => Boolean(tile));
+	const tokenTypeCount = [
+		Boolean(sec.textTokens),
+		Boolean(sec.imageTokens),
+		Boolean(sec.audioTokens),
+		Boolean(sec.videoTokens),
+	].filter(Boolean).length;
+	const showTextTokenHeader = tokenTypeCount > 1;
 	const allEmpty =
 		!sec.textTokens &&
 		!sec.imageTokens &&
@@ -289,8 +296,9 @@ export default function ProviderCard({
 
 					{!isFreePlan && sec.textTokens && (
 						<TokenTripleSection
+							title={showTextTokenHeader ? "Text Tokens" : undefined}
 							triple={sec.textTokens}
-							hideHeader
+							hideHeader={!showTextTokenHeader}
 							leadingTiles={showTextLimits ? textLimitTiles : []}
 						/>
 					)}

@@ -112,7 +112,7 @@ export default function UpdateCard({
 						<CardTitle className="text-base sm:text-lg leading-tight">
 							<Link
 								href={link.href}
-								className="inline-flex items-start gap-1 text-zinc-900 transition hover:text-zinc-600 dark:text-zinc-50 dark:hover:text-zinc-200"
+								className="inline-flex items-start gap-1 text-zinc-900 dark:text-zinc-50"
 								target={link.external ? "_blank" : undefined}
 								rel={
 									link.external
@@ -120,7 +120,7 @@ export default function UpdateCard({
 										: undefined
 								}
 							>
-								<span className="wrap-break-word line-clamp-2 relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+								<span className="wrap-break-word line-clamp-2 underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200">
 									{title}
 								</span>
 							</Link>
@@ -132,9 +132,9 @@ export default function UpdateCard({
 									href={`/organisations/${encodeURIComponent(
 										avatar.organisationId
 									)}`}
-									className="inline-flex items-center gap-1 text-zinc-500 hover:text-zinc-600 dark:text-zinc-400"
+									className="inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-400"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+									<span className="underline decoration-transparent hover:decoration-current transition-colors duration-200">
 										{avatar.name}
 									</span>
 								</Link>

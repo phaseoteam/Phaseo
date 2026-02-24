@@ -16,6 +16,22 @@ function encodeGoogleOperationId(operationName: string): string {
 	return `gaiop_${b64}`;
 }
 
+function normalizeGoogleModelName(value: string): string {
+	const trimmed = value.trim();
+	if (!trimmed) return trimmed;
+	const withoutModelsPrefix = trimmed.replace(/^models\//i, "");
+	const slashIndex = withoutModelsPrefix.indexOf("/");
+	const canonical = slashIndex < 0 ? withoutModelsPrefix : withoutModelsPrefix.slice(slashIndex + 1);
+	const aliasMap: Record<string, string> = {
+		"veo-3.1-fast-preview": "veo-3.1-fast-generate-preview",
+		"veo-3.1-preview": "veo-3.1-generate-preview",
+		"veo-3-fast-preview": "veo-3.0-fast-generate-001",
+		"veo-3-preview": "veo-3.0-generate-001",
+		"veo-2": "veo-2.0-generate-001",
+	};
+	return aliasMap[canonical] ?? canonical;
+}
+
 function toDurationSeconds(ir: IRVideoGenerationRequest): number | undefined {
 	if (typeof ir.durationSeconds === "number" && Number.isFinite(ir.durationSeconds) && ir.durationSeconds > 0) {
 		return ir.durationSeconds;
@@ -113,6 +129,7 @@ function irToGoogleVideoRequest(ir: IRVideoGenerationRequest): any {
 		...(typeof durationSeconds === "number" ? { durationSeconds } : {}),
 		...(aspectRatio ? { aspectRatio } : {}),
 		...(ir.resolution ? { resolution: ir.resolution } : {}),
+		...(typeof ir.compressionQuality === "number" ? { compressionQuality: ir.compressionQuality } : {}),
 		...(ir.negativePrompt ? { negativePrompt: ir.negativePrompt } : {}),
 		...(typeof numberOfVideos === "number" ? { numberOfVideos } : {}),
 		...(typeof ir.seed === "number" ? { seed: ir.seed } : {}),
@@ -178,7 +195,9 @@ function googleVideoToIR(
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRVideoGenerationRequest;
-	const model = args.providerModelSlug || ir.model || "veo-3.1-generate-preview";
+	const rawModel = args.providerModelSlug || ir.model || "veo-3.1-generate-preview";
+	const model = normalizeGoogleModelName(rawModel);
+	const modelForMeta = typeof rawModel === "string" && rawModel.trim().length > 0 ? rawModel.trim() : model;
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
@@ -232,7 +251,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		try {
 			await saveVideoJobMeta(args.teamId, String(irResponse.nativeId), {
 				provider: args.providerId,
-				model,
+				model: modelForMeta,
 				seconds: toDurationSeconds(ir) ?? null,
 				size: ir.size ?? ir.resolution ?? ir.aspectRatio ?? ir.ratio ?? null,
 				quality: ir.quality ?? null,

@@ -17,6 +17,34 @@ function createAnthropicMessage(Client $client, ?array $path = null, ?array $que
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createAudioRealtimeCallPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/audio/realtime/calls";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createAudioRealtimeClientSecretsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/audio/realtime/client_secrets";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createAudioRealtimeSessionPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/audio/realtime";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createAudioRealtimeSessionsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/audio/realtime/sessions";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createBatch(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -98,6 +126,34 @@ function createProvisioningKeyLegacy(Client $client, ?array $path = null, ?array
 {
 	$path = $path ?? [];
 	$resolvedPath = "/keys";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createRealtimeCallPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/realtime/calls";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createRealtimeClientSecretsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/realtime/client_secrets";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createRealtimeSessionPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/realtime";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createRealtimeSessionsPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/realtime/sessions";
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
@@ -206,6 +262,13 @@ function getAnalytics(Client $client, ?array $path = null, ?array $query = null,
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function getAudioRealtimeCallPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/audio/realtime/calls/{$path["call_id"]}";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function getCredits(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -269,6 +332,13 @@ function getProvisioningKeyLegacy(Client $client, ?array $path = null, ?array $q
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function getRealtimeCallPlaceholder(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/realtime/calls/{$path["call_id"]}";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function getVideo(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -329,6 +399,20 @@ function listModels(Client $client, ?array $path = null, ?array $query = null, ?
 {
 	$path = $path ?? [];
 	$resolvedPath = "/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listModelsAliasApi(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/api/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listModelsAliasData(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/data/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

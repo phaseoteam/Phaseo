@@ -50,6 +50,7 @@ describe("black-forest-labs image executor", () => {
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				id: "job_1",
 				status: "Ready",
+				cost: 1.25,
 				result: { sample: "https://cdn.bfl.ai/results/job_1.png" },
 			}), { status: 200, headers: { "Content-Type": "application/json" } }))
 			.mockResolvedValueOnce(new Response(Uint8Array.from([1, 2, 3]), {
@@ -76,6 +77,8 @@ describe("black-forest-labs image executor", () => {
 		expect(result.ir?.data?.[0]?.b64Json).toBe("AQID");
 		expect(result.ir?.data?.[0]?.url).toBeNull();
 		expect((result.ir as any)?.usage?.requests).toBe(1);
+		expect((result.ir as any)?.usage?.bfl_credits).toBe(1.25);
+		expect(result.bill.cost_cents).toBe(1.25);
 	});
 
 	it("returns a gateway error when BFL polling reaches terminal moderation status", async () => {

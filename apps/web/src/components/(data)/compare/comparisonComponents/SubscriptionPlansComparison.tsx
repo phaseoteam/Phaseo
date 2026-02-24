@@ -157,7 +157,7 @@ export default function SubscriptionPlansComparison({
 									href={`/models/${model.id}`}
 									className="font-semibold"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+									<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 										{model.name}
 									</span>
 								</Link>
@@ -238,7 +238,7 @@ export default function SubscriptionPlansComparison({
 															: undefined
 													}
 												>
-													<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+													<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 														{plan.name}
 													</span>
 												</Link>
@@ -246,7 +246,7 @@ export default function SubscriptionPlansComparison({
 													href={`/organisations/${plan.organisation.organisation_id}`}
 													className="text-xs text-muted-foreground"
 												>
-													<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+													<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 														{plan.organisation.name}
 													</span>
 												</Link>

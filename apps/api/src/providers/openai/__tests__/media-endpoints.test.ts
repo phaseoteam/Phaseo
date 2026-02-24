@@ -199,6 +199,108 @@ describe("OpenAI media endpoints", () => {
 		expect(capturedBody.format).toBeUndefined();
 	});
 
+	it("forwards custom voice objects for speech when provided", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/audio/speech"),
+				response: new Response("AUDIO", {
+					status: 200,
+					headers: { "Content-Type": "audio/wav" },
+				}),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "openai/gpt-4o-mini-tts",
+			body: {
+				model: "openai/gpt-4o-mini-tts",
+				input: "Hello custom voice alias",
+				voice: { id: "alloy" },
+				response_format: "wav",
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.speech" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedBody.voice).toBe("alloy");
+	});
+
+	it("normalizes OpenAI voice aliases before forwarding speech requests", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/audio/speech"),
+				response: new Response("AUDIO", {
+					status: 200,
+					headers: { "Content-Type": "audio/mpeg" },
+				}),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "openai/gpt-4o-mini-tts",
+			body: {
+				model: "openai/gpt-4o-mini-tts",
+				input: "Normalize OpenAI voice aliases.",
+				voice: "  ALLOY  ",
+				response_format: "mp3",
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.speech" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedBody.voice).toBe("alloy");
+	});
+
+	it("returns 400 for unsupported OpenAI speech voice", async () => {
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "openai/gpt-4o-mini-tts",
+			body: {
+				model: "openai/gpt-4o-mini-tts",
+				input: "Invalid voice test.",
+				voice: "unknown_voice_name",
+				response_format: "mp3",
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.speech" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		expect(result.upstream.status).toBe(400);
+		const payload = await result.upstream.clone().json();
+		expect(payload?.error?.param).toBe("voice");
+	});
+
 	it("rejects legacy format alias for OpenAI speech", async () => {
 		const result = await execSpeech({
 			endpoint: "audio.speech",

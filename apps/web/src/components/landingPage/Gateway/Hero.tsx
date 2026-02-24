@@ -2,13 +2,10 @@
 
 import Link from "next/link";
 import {
-	Activity,
 	BarChart3,
 	Boxes,
 	Network,
 	ArrowRight,
-	Shield,
-	Zap,
 	Globe2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,7 +45,6 @@ const TRUSTED_PROVIDERS = [
 ];
 
 type GatewayHeroStats = {
-	uptimePct: number | null;
 	tokens24h: number;
 	supportedModels: number | null;
 	supportedProviders: number | null;
@@ -66,14 +62,14 @@ function StatCard({
 	accent: string;
 }) {
 	return (
-		<div className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-slate-300/80 hover:-translate-y-0.5">
-			<div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+		<div className="group relative overflow-hidden rounded-2xl border border-zinc-200/60 bg-white/80 p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-zinc-300/80 hover:shadow-md dark:border-zinc-800/70 dark:bg-zinc-950/70 dark:hover:border-zinc-700">
+			<div className="absolute inset-0 bg-gradient-to-br from-zinc-50/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100 dark:from-zinc-900/40" />
 			<div className="relative flex items-center justify-between">
 				<div className="space-y-1">
-					<p className="text-3xl font-bold tracking-tight text-slate-900">
+					<p className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
 						{value}
 					</p>
-					<p className="text-sm font-medium text-slate-500">
+					<p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
 						{label}
 					</p>
 				</div>
@@ -90,12 +86,10 @@ function StatCard({
 
 export function Hero({
 	stats,
-	statsWindowHours = 24,
 	tokensWindowHours = 24,
 	popularModels,
 }: {
 	stats?: GatewayHeroStats;
-	statsWindowHours?: number;
 	tokensWindowHours?: number;
 	popularModels?: ModelCardType[];
 }) {
@@ -103,7 +97,7 @@ export function Hero({
 		if (value == null) return null;
 		return Math.max(0, Math.round(value / step) * step);
 	};
-	const formatWithPlus = (value: number | null, fallback = "—") => {
+	const formatWithPlus = (value: number | null, fallback = "--") => {
 		if (value == null) return fallback;
 		return `${new Intl.NumberFormat().format(value)}+`;
 	};
@@ -121,39 +115,23 @@ export function Hero({
 		const scaled = Math.floor(value / unit.threshold);
 		return `${scaled}${unit.suffix}+`;
 	};
-	const formatPercent = (value: number | null, fallback = "—") => {
-		if (value == null) return fallback;
-		return `${value.toFixed(2)}%`;
+	const formatWindow = (hours: number) => {
+		if (!Number.isFinite(hours) || hours <= 0) return "24h";
+		if (hours % (24 * 30) === 0) return `${Math.round(hours / (24 * 30))}mo`;
+		if (hours % 24 === 0) return `${Math.round(hours / 24)}d`;
+		return `${Math.round(hours)}h`;
 	};
+	const tokensWindowLabel =
+		tokensWindowHours >= 24 * 28
+			? "Monthly tokens"
+			: `${formatWindow(tokensWindowHours)} tokens`;
 
-		const formatWindow = (hours: number) => {
-			if (!Number.isFinite(hours) || hours <= 0) return "24h";
-			if (hours % (24 * 30) === 0)
-				return `${Math.round(hours / (24 * 30))}mo`;
-			if (hours % 24 === 0) return `${Math.round(hours / 24)}d`;
-			return `${Math.round(hours)}h`;
-		};
-		const statsWindowLabel =
-			statsWindowHours >= 24 * 28
-				? "Monthly uptime"
-				: `${formatWindow(statsWindowHours)} uptime`;
-		const tokensWindowLabel =
-			tokensWindowHours >= 24 * 28
-				? "monthly tokens"
-				: `${formatWindow(tokensWindowHours)} tokens`;
-
-		const heroStats = [
-			{
-				label: statsWindowLabel,
-				value: formatPercent(stats?.uptimePct ?? null),
-				icon: Activity,
-				accent: "#0ea5e9",
-			},
-			{
-				label: tokensWindowLabel,
-				value: formatTokens(stats?.tokens24h ?? null),
-				icon: BarChart3,
-				accent: "#10b981",
+	const heroStats = [
+		{
+			label: tokensWindowLabel,
+			value: formatTokens(stats?.tokens24h ?? null),
+			icon: BarChart3,
+			accent: "#10b981",
 		},
 		{
 			label: "Models",
@@ -163,9 +141,7 @@ export function Hero({
 		},
 		{
 			label: "Providers",
-			value: formatWithPlus(
-				roundTo(stats?.supportedProviders ?? null, 5),
-			),
+			value: formatWithPlus(roundTo(stats?.supportedProviders ?? null, 5)),
 			icon: Network,
 			accent: "#8b5cf6",
 		},
@@ -176,12 +152,9 @@ export function Hero({
 
 	return (
 		<section className="w-full">
-			{/* Content */}
-			{/* Hero content */}
 			<div className="mx-auto px-6 pb-16 lg:px-8">
 				<div className="mx-auto max-w-4xl text-center">
-					{/* Headline */}
-					<h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+					<h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
 						The Single API For{" "}
 						<span className="relative">
 							<WordRotate
@@ -198,19 +171,17 @@ export function Hero({
 						</span>
 					</h1>
 
-					{/* Subheadline */}
-					<p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
-						Unify 50+ AI providers behind one API. Route
-						intelligently by latency, cost, and availability. Ship
-						production workloads with confidence.
+					<p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+						Unify 50+ AI providers behind one API. Route intelligently by
+						latency, cost, and availability. Ship production workloads with
+						confidence.
 					</p>
 
-					{/* CTA buttons */}
 					<div className="mt-10 flex flex-wrap items-center justify-center gap-4">
 						<Button
 							asChild
 							size="lg"
-							className="h-12 gap-2 bg-slate-900 px-6 text-base font-medium text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800"
+							className="h-12 gap-2 bg-zinc-900 px-6 text-base font-medium text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800"
 						>
 							<Link href={SALES_HREF}>
 								Start free
@@ -221,7 +192,7 @@ export function Hero({
 							asChild
 							size="lg"
 							variant="outline"
-							className="h-12 gap-2 border-slate-200 px-6 text-base font-medium"
+							className="h-12 gap-2 border-zinc-200 px-6 text-base font-medium dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
 						>
 							<Link href={DOCS_HREF}>
 								<Globe2 className="h-4 w-4" />
@@ -231,9 +202,8 @@ export function Hero({
 					</div>
 				</div>
 
-				{/* Stats grid */}
 				<div className="mx-auto mt-16 max-w-5xl">
-					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 						{heroStats.map((s) => (
 							<StatCard
 								key={s.label}
@@ -246,10 +216,9 @@ export function Hero({
 					</div>
 				</div>
 
-				{/* Provider marquee */}
-				<div className="border-y border-slate-200/60 bg-slate-50/50 py-8 my-8">
+				<div className="my-8 border-y border-zinc-200/60 bg-zinc-50/50 py-8 dark:border-zinc-800/70 dark:bg-zinc-950/40">
 					<div className="mx-auto max-w-7xl px-6 lg:px-8">
-						<p className="mb-6 text-center text-sm font-medium uppercase tracking-wider text-slate-500">
+						<p className="mb-6 text-center text-sm font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
 							Trusted by teams using
 						</p>
 						<Marquee className="[--duration:40s]">
@@ -258,7 +227,7 @@ export function Hero({
 							<MarqueeContent>
 								{TRUSTED_PROVIDERS.map((provider) => (
 									<MarqueeItem key={provider.id}>
-										<div className="flex items-center gap-3 rounded-full border border-slate-200/80 bg-white px-5 py-2.5 shadow-sm">
+										<div className="flex items-center gap-3 rounded-full border border-zinc-200/80 bg-white px-5 py-2.5 shadow-sm dark:border-zinc-700/80 dark:bg-zinc-900">
 											<Logo
 												id={provider.id}
 												alt={provider.label}
@@ -266,7 +235,7 @@ export function Hero({
 												height={20}
 												className="h-5 w-5 object-contain"
 											/>
-											<span className="text-sm font-medium text-slate-700">
+											<span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
 												{provider.label}
 											</span>
 										</div>
@@ -277,27 +246,25 @@ export function Hero({
 					</div>
 				</div>
 
-				{/* Popular models */}
 				{featuredModels.length > 0 && (
 					<div className="mx-auto px-6 py-16 lg:px-8">
-						<Card className="border-slate-200/60 bg-white/80 shadow-sm backdrop-blur-sm">
-							<CardHeader className="border-b border-slate-100 pb-4">
+						<Card className="border-zinc-200/60 bg-white/80 shadow-sm backdrop-blur-sm dark:border-zinc-800/70 dark:bg-zinc-950/70">
+							<CardHeader className="border-b border-zinc-100 pb-4 dark:border-zinc-800">
 								<div className="flex items-center justify-between">
 									<div>
-										<CardTitle className="text-lg font-semibold text-slate-900">
+										<CardTitle className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
 											Popular models
 										</CardTitle>
-										<CardDescription className="mt-1 text-slate-500">
-											Access the models your team already
-											trusts — same integration, any
-											provider.
+										<CardDescription className="mt-1 text-zinc-500 dark:text-zinc-400">
+											Access the models your team already trusts - same
+											integration, any provider.
 										</CardDescription>
 									</div>
 									<Button
 										asChild
 										variant="ghost"
 										size="sm"
-										className="text-slate-600 hover:text-slate-900"
+										className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
 									>
 										<Link href="/models">
 											View all
@@ -309,10 +276,7 @@ export function Hero({
 							<CardContent className="pt-6">
 								<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 									{featuredModels.map((model) => (
-										<ModelCard
-											key={model.model_id}
-											model={model}
-										/>
+										<ModelCard key={model.model_id} model={model} />
 									))}
 								</div>
 							</CardContent>
@@ -323,3 +287,4 @@ export function Hero({
 		</section>
 	);
 }
+

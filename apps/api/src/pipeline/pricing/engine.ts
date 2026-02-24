@@ -181,10 +181,12 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
 
 /** price qty at rule's price/unit_size using nanos math */
 function priceWithRule(qty: number, rule: PriceRule) {
-    const unitSize = rule.unit_size;
-    const billableUnits = Math.ceil(qty / unitSize);
+    const unitSize = rule.unit_size > 0 ? rule.unit_size : 1;
+    // Pro-rate by unit size (e.g. 8 tokens at a per-1M-token rate).
+    const billableUnits = qty / unitSize;
     const unitPriceNanos = parseUsdToNanos(rule.price_per_unit);
-    const lineNanos = billableUnits * unitPriceNanos;
+    // Keep nanos integral to avoid floating precision drift downstream.
+    const lineNanos = Math.round(billableUnits * unitPriceNanos);
 
     logPricingDebug("priceWithRule", {
         quantity: qty,
@@ -353,10 +355,9 @@ export function computeBill(
         pricingPlan ?? (requestOptions as any)?.pricing_plan ?? "standard"
     );
 
-    // reconstruct exact nanos from lines, using the same arithmetic we used to compute each line
+    // Use precomputed line_nanos to preserve exact totals when billable_units is fractional.
     const totalNanos = summary.lines.reduce((sum, line) => {
-        const unitNanos = parseUsdToNanos(line.unit_price_usd);
-        return sum + line.billable_units * unitNanos;
+        return sum + (line.line_nanos ?? parseUsdToNanos(line.line_cost_usd));
     }, 0);
 
     logPricingDebug("summary_lines", {
