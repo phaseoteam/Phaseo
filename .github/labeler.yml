@@ -1,0 +1,36 @@
+"Area: API":
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/api/**
+
+"Area: Data":
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/web/src/data/**
+          - apps/web/src/lib/data/**
+          - scripts/**
+
+"Area: Docs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/docs/**
+          - "**/*.md"
+          - ".github/ISSUE_TEMPLATE/**"
+
+"Area: SDKs":
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/sdk/**
+
+"Area: Web":
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/web/**
+
+"Type: Chore":
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**
+          - turbo.json
+          - pnpm-workspace.yaml
+          - package.json
