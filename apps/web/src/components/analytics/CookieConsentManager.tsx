@@ -142,22 +142,27 @@ export function CookieConsentManager({
       ) : null}
 
       {consent === null ? (
-        <div className="fixed bottom-4 left-4 right-4 z-[100] sm:left-auto sm:right-4 sm:w-[360px] sm:max-w-[calc(100vw-2rem)] rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-xs text-zinc-700 dark:text-zinc-300">
-            We use analytics cookies to improve AI Stats. You can accept or
-            deny analytics tracking.
+        <div className="fixed bottom-4 left-4 right-4 z-[100] sm:left-auto sm:right-4 sm:w-[396px] sm:max-w-[calc(100vw-2rem)] rounded-lg border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
+          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            Cookie Preferences
+          </p>
+          <p className="mt-1.5 text-xs text-zinc-700 dark:text-zinc-300">
+            We collect anonymous analytics to improve AI Stats. Accept for
+            enhanced features like session replay.
           </p>
           <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Learn more in our{" "}
+            Basic anonymous pageviews are always collected. Learn more in our{" "}
             <Link className="underline" href="/privacy">
               Privacy Policy
             </Link>
             .
           </p>
           <div className="mt-3 flex items-center gap-2">
-            <Button className="h-8 px-3 text-xs" onClick={() => updateConsent("accepted")}>Accept</Button>
+            <Button className="h-9 flex-1 px-3 text-xs" onClick={() => updateConsent("accepted")}>
+              Accept
+            </Button>
             <Button
-              className="h-8 px-3 text-xs"
+              className="h-9 flex-1 px-3 text-xs"
               onClick={() => updateConsent("denied")}
               variant="outline"
             >

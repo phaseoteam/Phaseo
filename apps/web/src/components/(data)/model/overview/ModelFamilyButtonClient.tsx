@@ -130,7 +130,7 @@ export default function ModelFamilyButtonClient({
 						href={`/families/${encodeURIComponent(
 							familyName.toLowerCase()
 						)}`}
-						className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+						className="inline-flex items-center gap-1 text-xs font-medium underline decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
 						View family overview
 						<ExternalLink className="h-3.5 w-3.5" />
@@ -140,3 +140,4 @@ export default function ModelFamilyButtonClient({
 		</Popover>
 	);
 }
+

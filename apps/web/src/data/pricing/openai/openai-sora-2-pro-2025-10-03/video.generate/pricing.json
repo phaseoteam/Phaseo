@@ -1,0 +1,57 @@
+{
+  "key": "openai:openai/sora-2-pro-2025-10-03:video.generate",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/sora-2-pro-2025-10-03",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.3,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "720x1280",
+            "1280x720"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-10-03T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "tiering_mode": "flat",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1024x1792",
+            "1792x1024"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2025-10-03T00:00:00"
+    }
+  ]
+}

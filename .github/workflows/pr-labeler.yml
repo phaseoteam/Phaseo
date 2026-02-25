@@ -10,15 +10,6 @@ permissions:
   issues: write
 
 jobs:
-  label-by-files:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Label PR by changed files
-        uses: actions/labeler@v5
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          sync-labels: true
-
   label-by-template:
     runs-on: ubuntu-latest
     steps:

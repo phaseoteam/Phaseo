@@ -46,6 +46,7 @@ import ExportDropdown from "./ExportDropdown";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { formatRelativeToNow } from "@/lib/formatRelative";
+import { buildUsageDisplay, extractUsageMeters, formatUsageNumber } from "./usageMeters";
 
 interface UnifiedRequestsTableProps {
 	timeRange: { from: string; to: string };
@@ -58,19 +59,6 @@ interface UnifiedRequestsTableProps {
 	onExportRef?: React.MutableRefObject<
 		((format: "csv" | "pdf") => void) | null
 	>;
-}
-
-function getTokens(usage: any): {
-	input: number;
-	output: number;
-	total: number;
-} {
-	const input =
-		Number(usage?.input_text_tokens ?? usage?.input_tokens ?? 0) || 0;
-	const output =
-		Number(usage?.output_text_tokens ?? usage?.output_tokens ?? 0) || 0;
-	const total = Number(usage?.total_tokens ?? 0) || input + output;
-	return { input, output, total };
 }
 
 function formatCost(nanos: number | null | undefined): string {
@@ -287,7 +275,12 @@ export default function UnifiedRequestsTable({
 	const handleExport = React.useCallback(
 		(format: "csv" | "pdf") => {
 			const exportData = data.map((row) => {
-				const tokens = getTokens(row.usage);
+				const usageMeters = extractUsageMeters(row.usage);
+				const inputTokens = usageMeters.find((m) => m.key === "input_text_tokens")?.value ?? 0;
+				const outputTokens = usageMeters.find((m) => m.key === "output_text_tokens")?.value ?? 0;
+				const usageSummary = usageMeters.length
+					? usageMeters.map((m) => `${m.label}: ${formatUsageNumber(m.value)}`).join(" | ")
+					: "-";
 				const providerLabel = row.provider
 					? providerNames.get(row.provider) || row.provider
 					: "-";
@@ -296,8 +289,9 @@ export default function UnifiedRequestsTable({
 					Model: row.model_id || "-",
 					Provider: providerLabel,
 					App: appNames.get(row.app_id || "") || "-",
-					"Input Tokens": tokens.input,
-					"Output Tokens": tokens.output,
+					Usage: usageSummary,
+					"Input Tokens": formatUsageNumber(inputTokens),
+					"Output Tokens": formatUsageNumber(outputTokens),
 					Cost: formatCost(row.cost_nanos),
 					"Speed (ms)": row.generation_ms || row.latency_ms || "-",
 					"Finish Reason": row.finish_reason || "-",
@@ -467,7 +461,7 @@ export default function UnifiedRequestsTable({
 
 								{/* Show cached data with optional loading overlay */}
 								{data.map((row, index) => {
-									const tokens = getTokens(row.usage);
+									const usageDisplay = buildUsageDisplay(row.usage);
 									const rowKey = `${row.request_id}-${row.created_at}-${row.model_id ?? "no-model"}-${row.provider ?? "no-provider"}-${index}`;
 									const modelHref = getModelDetailsHref(row.model_id);
 									const modelMeta = row.model_id
@@ -572,7 +566,7 @@ export default function UnifiedRequestsTable({
 														{modelHref ? (
 															<Link
 																href={modelHref}
-																className="hover:underline hover:text-primary truncate"
+																className="underline decoration-transparent hover:decoration-current transition-colors duration-200 hover:text-primary truncate"
 															>
 																{row.model_id}
 															</Link>
@@ -590,7 +584,7 @@ export default function UnifiedRequestsTable({
 												{row.provider ? (
 													<Link
 														href={`/api-providers/${encodeURIComponent(row.provider)}`}
-														className="hover:underline hover:text-primary"
+														className="underline decoration-transparent hover:decoration-current transition-colors duration-200 hover:text-primary"
 													>
 														<Badge
 															variant="outline"
@@ -614,37 +608,16 @@ export default function UnifiedRequestsTable({
 											<TableCell className="py-2 text-right">
 												<Tooltip>
 													<TooltipTrigger asChild>
-														<div className="cursor-help inline-flex items-center justify-end font-mono text-xs tabular-nums">
-															<span
-																className="inline-block text-right"
-																style={{
-																	minWidth:
-																		"5ch",
-																}}
-															>
-																{tokens.input.toLocaleString()}
-															</span>
-															<span className="text-muted-foreground mx-1">
-																|
-															</span>
-															<span
-																className="inline-block text-left"
-																style={{
-																	minWidth:
-																		"5ch",
-																}}
-															>
-																{tokens.output.toLocaleString()}
-															</span>
+														<div className="cursor-help inline-flex max-w-[180px] items-center justify-end truncate font-mono text-xs tabular-nums">
+															{usageDisplay.primary}
 														</div>
 													</TooltipTrigger>
 													<TooltipContent>
-														<p className="font-mono tabular-nums">
-															{tokens.input.toLocaleString()}{" "}
-															input |{" "}
-															{tokens.output.toLocaleString()}{" "}
-															output
-														</p>
+														<div className="space-y-1 font-mono tabular-nums">
+															{usageDisplay.tooltipLines.map((line, idx) => (
+																<p key={`${row.request_id}-usage-${idx}`}>{line}</p>
+															))}
+														</div>
 													</TooltipContent>
 												</Tooltip>
 											</TableCell>
@@ -764,3 +737,4 @@ export default function UnifiedRequestsTable({
 		</div>
 	);
 }
+

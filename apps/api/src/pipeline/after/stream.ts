@@ -18,6 +18,7 @@ import { getBaseModel } from "../execute/utils";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
+import { applyByokServiceFee } from "../pricing/byok-fee";
 import {
     attachToolUsageMetrics,
     countOutputToolCallsFromPayload,
@@ -42,6 +43,7 @@ export async function handleStreamResponse(
     // Cache native ID from first chunk to avoid checking every frame
     let cachedNativeId: string | undefined;
     let cachedFinishReason: string | null = null;
+    let latestGatewaySnapshot: any = null;
     const streamedToolCallKeys = new Set<string>();
     const requestedToolCount = countRequestedTools(ctx.body);
     const requestedToolResultCount = countRequestedToolResults(ctx.body);
@@ -233,6 +235,7 @@ export async function handleStreamResponse(
         onStreamEvent,
         onFinalSnapshot: (snapshot: any) => {
             const payload = snapshot?.response ?? snapshot;
+            latestGatewaySnapshot = payload;
             const finishReason = normalizeFinishReason(
                 extractFinishReason(payload),
                 result.provider
@@ -249,6 +252,7 @@ export async function handleStreamResponse(
         onFinalUsage: async (usageRaw: any, info) => {
             const releaseRuntime = ensureRuntimeForBackground();
             try {
+            const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final usage raw", {
                     requestId: ctx.requestId,
@@ -299,9 +303,7 @@ export async function handleStreamResponse(
 
             const finalizeFromBill = async (bill: Bill | null | undefined) => {
                 if (!bill) return false;
-                result.bill.cost_cents = bill.cost_cents;
-                result.bill.currency = bill.currency;
-                result.bill.usage = attachToolUsageMetrics(
+                const usageWithToolMetrics = attachToolUsageMetrics(
                     bill.usage ?? shapedUsage ?? result.bill.usage,
                     {
                         request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
@@ -309,6 +311,19 @@ export async function handleStreamResponse(
                         output_tool_call_count: cachedOutputToolCallCount,
                     }
                 );
+                const totalNanosOverride =
+                    bill.usage?.pricing?.total_nanos ??
+                    Math.round(bill.cost_cents * 1e7);
+                const pricedWithByok = await applyByokServiceFee({
+                    teamId: ctx.teamId,
+                    isByok,
+                    baseCostNanos: totalNanosOverride,
+                    pricedUsage: usageWithToolMetrics,
+                    currencyHint: bill.currency ?? card?.currency ?? "USD",
+                });
+                result.bill.cost_cents = pricedWithByok.totalCents;
+                result.bill.currency = pricedWithByok.currency;
+                result.bill.usage = pricedWithByok.pricedUsage;
                 result.bill.finish_reason = bill.finish_reason ?? result.bill.finish_reason;
 
                 // Normalize finish reason for consistent storage
@@ -317,50 +332,61 @@ export async function handleStreamResponse(
                     result.provider
                 );
 
-                const totalNanosOverride =
-                    bill.usage?.pricing?.total_nanos ??
-                    Math.round(bill.cost_cents * 1e7);
-
                 await handleSuccessAudit(
                     ctx,
                     result,
                     true,
                     result.bill.usage ?? null,
-                    bill.cost_cents,
-                    totalNanosOverride,
-                    bill.currency,
+                    pricedWithByok.totalCents,
+                    pricedWithByok.totalNanos,
+                    pricedWithByok.currency,
                     normalizedFinishReason,
                     upstreamStatus,
-                    result.bill.upstream_id ?? null
+                    result.bill.upstream_id ?? null,
+                    latestGatewaySnapshot,
                 );
 
                 await recordUsageAndChargeOnce({
                     ctx,
-                    costNanos: totalNanosOverride,
+                    costNanos: pricedWithByok.totalNanos,
                     endpoint: ctx.endpoint,
                 });
                 return true;
             };
 
             if (!usageRaw) {
+                const usageWithToolMetrics = attachToolUsageMetrics(null, {
+                    request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
+                    request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
+                    output_tool_call_count: cachedOutputToolCallCount,
+                });
                 const finalized = result.usageFinalizer ? await result.usageFinalizer() : null;
                 if (await finalizeFromBill(finalized)) return;
+                const pricedWithByok = await applyByokServiceFee({
+                    teamId: ctx.teamId,
+                    isByok,
+                    baseCostNanos: 0,
+                    pricedUsage: usageWithToolMetrics,
+                    currencyHint: result.bill.currency ?? card?.currency ?? "USD",
+                });
                 await handleSuccessAudit(
                     ctx,
                     result,
                     true,
-                    attachToolUsageMetrics(null, {
-                        request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
-                        request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
-                        output_tool_call_count: cachedOutputToolCallCount,
-                    }),
-                    0,
-                    0,
-                    result.bill.currency ?? card?.currency ?? "USD",
+                    pricedWithByok.pricedUsage,
+                    pricedWithByok.totalCents,
+                    pricedWithByok.totalNanos,
+                    pricedWithByok.currency,
                     cachedFinishReason,
                     upstreamStatus,
-                    result.bill.upstream_id ?? null
+                    result.bill.upstream_id ?? null,
+                    latestGatewaySnapshot,
                 );
+                await recordUsageAndChargeOnce({
+                    ctx,
+                    costNanos: pricedWithByok.totalNanos,
+                    endpoint: ctx.endpoint,
+                });
                 return;
             }
 
@@ -383,13 +409,22 @@ export async function handleStreamResponse(
                 });
             }
 
-            result.bill.cost_cents = totalCents;
-            result.bill.currency = currency;
-            result.bill.usage = attachToolUsageMetrics(pricedUsage, {
+            const usageWithToolMetrics = attachToolUsageMetrics(pricedUsage, {
                 request_tool_count: requestedToolCount > 0 ? requestedToolCount : null,
                 request_tool_result_count: requestedToolResultCount > 0 ? requestedToolResultCount : null,
                 output_tool_call_count: cachedOutputToolCallCount,
             });
+            const pricedWithByok = await applyByokServiceFee({
+                teamId: ctx.teamId,
+                isByok,
+                baseCostNanos: totalNanos,
+                pricedUsage: usageWithToolMetrics,
+                currencyHint: currency,
+            });
+
+            result.bill.cost_cents = pricedWithByok.totalCents;
+            result.bill.currency = pricedWithByok.currency;
+            result.bill.usage = pricedWithByok.pricedUsage;
             result.bill.finish_reason = cachedFinishReason ?? result.bill.finish_reason;
 
             await handleSuccessAudit(
@@ -397,17 +432,18 @@ export async function handleStreamResponse(
                 result,
                 true,
                 result.bill.usage,
-                totalCents,
-                totalNanos,
-                currency,
+                pricedWithByok.totalCents,
+                pricedWithByok.totalNanos,
+                pricedWithByok.currency,
                 cachedFinishReason,
                 upstreamStatus,
-                result.bill.upstream_id ?? null
+                result.bill.upstream_id ?? null,
+                latestGatewaySnapshot,
             );
 
             await recordUsageAndChargeOnce({
                 ctx,
-                costNanos: totalNanos,
+                costNanos: pricedWithByok.totalNanos,
                 endpoint: ctx.endpoint,
             });
             } finally {

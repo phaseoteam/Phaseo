@@ -28,5 +28,6 @@ begin
       check (kind in (''video'', ''batch'', ''music''))
   ';
 end $$;
+
 comment on table public.gateway_async_operations is
   'Team-scoped registry for long-running operations (video, batch, music) with ownership and billing markers.';

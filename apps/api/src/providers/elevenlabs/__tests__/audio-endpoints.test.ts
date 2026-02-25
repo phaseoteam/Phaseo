@@ -53,7 +53,7 @@ describe("ElevenLabs audio endpoints", () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([
 			{
-				match: (url) => url.includes("/v1/text-to-speech/voice_abc"),
+				match: (url) => url.includes("/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM"),
 				response: new Response("AUDIO", {
 					status: 200,
 					headers: {
@@ -73,7 +73,7 @@ describe("ElevenLabs audio endpoints", () => {
 			body: {
 				model: "eleven-labs/eleven-turbo-v2-5",
 				input: "Hello world",
-				voice: "voice_abc",
+				voice: "21m00Tcm4TlvDq8ikWAM",
 				format: "mp3",
 			},
 			meta: REQUEST_META,
@@ -98,7 +98,7 @@ describe("ElevenLabs audio endpoints", () => {
 		let capturedUrl = "";
 		const mock = installFetchMock([
 			{
-				match: (url) => url.includes("/v1/text-to-speech/voice_abc"),
+				match: (url) => url.includes("/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM"),
 				response: new Response("AUDIO", {
 					status: 200,
 					headers: {
@@ -117,7 +117,7 @@ describe("ElevenLabs audio endpoints", () => {
 			body: {
 				model: "eleven-labs/eleven-v3",
 				input: "Hello world",
-				voice: "voice_abc",
+				voice: "21m00Tcm4TlvDq8ikWAM",
 				format: "mp3",
 				response_format: "wav",
 			},
@@ -141,7 +141,7 @@ describe("ElevenLabs audio endpoints", () => {
 		let capturedUrl = "";
 		const mock = installFetchMock([
 			{
-				match: (url) => url.includes("/v1/text-to-speech/voice_abc"),
+				match: (url) => url.includes("/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM"),
 				response: new Response("AUDIO", {
 					status: 200,
 					headers: {
@@ -161,7 +161,7 @@ describe("ElevenLabs audio endpoints", () => {
 			body: {
 				model: "eleven-labs/eleven-v3",
 				input: "Hello world",
-				voice: "voice_abc",
+				voice: "21m00Tcm4TlvDq8ikWAM",
 				response_format: "mp3",
 				speed: 1.15,
 				config: {
@@ -220,6 +220,155 @@ describe("ElevenLabs audio endpoints", () => {
 		} as any);
 
 		expect(result.upstream.status).toBe(400);
+	});
+
+	it("accepts object voice payloads (voice.id) for ElevenLabs audio.speech", async () => {
+		let capturedUrl = "";
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM"),
+				response: new Response("AUDIO", {
+					status: 200,
+					headers: {
+						"Content-Type": "audio/mpeg",
+					},
+				}),
+				onRequest: (call) => {
+					capturedUrl = call.url;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "eleven-labs/eleven-v3",
+			body: {
+				model: "eleven-labs/eleven-v3",
+				input: "Hello object voice",
+				voice: {
+					id: "21m00Tcm4TlvDq8ikWAM",
+				},
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "elevenlabs",
+			byokMeta: [],
+			pricingCard: PRICING_CARD,
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedUrl).toContain("/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM");
+	});
+
+	it("accepts config.elevenlabs.voice_id fallback when top-level voice is omitted", async () => {
+		let capturedUrl = "";
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/v1/text-to-speech/AZnzlk1XvdvUeBnXmlld"),
+				response: new Response("AUDIO", {
+					status: 200,
+					headers: {
+						"Content-Type": "audio/mpeg",
+					},
+				}),
+				onRequest: (call) => {
+					capturedUrl = call.url;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "eleven-labs/eleven-v3",
+			body: {
+				model: "eleven-labs/eleven-v3",
+				input: "Hello config voice",
+				config: {
+					elevenlabs: {
+						voice_id: "AZnzlk1XvdvUeBnXmlld",
+					},
+				},
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "elevenlabs",
+			byokMeta: [],
+			pricingCard: PRICING_CARD,
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedUrl).toContain("/v1/text-to-speech/AZnzlk1XvdvUeBnXmlld");
+	});
+
+	it("maps common ElevenLabs voice aliases to canonical voice IDs", async () => {
+		let capturedUrl = "";
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM"),
+				response: new Response("AUDIO", {
+					status: 200,
+					headers: {
+						"Content-Type": "audio/mpeg",
+					},
+				}),
+				onRequest: (call) => {
+					capturedUrl = call.url;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "eleven-labs/eleven-v3",
+			body: {
+				model: "eleven-labs/eleven-v3",
+				input: "Hello mapped ElevenLabs alias",
+				voice: "rachel",
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "elevenlabs",
+			byokMeta: [],
+			pricingCard: PRICING_CARD,
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(capturedUrl).toContain("/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM");
+	});
+
+	it("returns 400 for unsupported ElevenLabs speech voice", async () => {
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "eleven-labs/eleven-v3",
+			body: {
+				model: "eleven-labs/eleven-v3",
+				input: "Unsupported voice",
+				voice: "voice_that_is_not_in_registry",
+			},
+			meta: REQUEST_META,
+			teamId: "team_test",
+			providerId: "elevenlabs",
+			byokMeta: [],
+			pricingCard: PRICING_CARD,
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		expect(result.upstream.status).toBe(400);
+		const payload = await result.upstream.clone().json();
+		expect(payload?.error?.param).toBe("voice");
 	});
 
 	it("maps audio.transcription to speech-to-text with multipart file upload", async () => {

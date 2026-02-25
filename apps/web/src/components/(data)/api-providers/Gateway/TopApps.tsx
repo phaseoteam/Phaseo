@@ -82,7 +82,7 @@ export default async function TopApps({
 										href={`/apps/${app.app_id}`}
 										className="font-semibold text-sm truncate pr-8 leading-tight"
 									>
-										<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+										<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 											{app.title}
 										</span>
 									</Link>
@@ -116,7 +116,7 @@ export default async function TopApps({
 												rel="noopener noreferrer"
 												className="text-xs font-medium text-foreground transition-colors truncate max-w-24"
 											>
-												<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+												<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 													Visit
 												</span>
 											</a>
@@ -128,7 +128,7 @@ export default async function TopApps({
 					})}
 				</div>
 			) : (
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<Users />

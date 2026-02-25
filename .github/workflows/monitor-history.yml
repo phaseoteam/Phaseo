@@ -152,4 +152,14 @@ jobs:
               if: steps.cpr.outputs.pull-request-number != ''
               env:
                   GH_TOKEN: ${{ steps.app-token.outputs.token }}
-              run: gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --squash --delete-branch
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  pr="${{ steps.cpr.outputs.pull-request-number }}"
+
+                  if gh pr merge "$pr" --squash --delete-branch; then
+                    exit 0
+                  fi
+
+                  echo "Direct merge blocked by branch policy; enabling auto-merge."
+                  gh pr merge "$pr" --auto --squash --delete-branch

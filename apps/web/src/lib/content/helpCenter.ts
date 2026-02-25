@@ -10,6 +10,7 @@ const MARKDOWN_EXTENSION = ".md";
 const DEFAULT_ORDER = Number.MAX_SAFE_INTEGER;
 const FALLBACK_CATEGORY_PARAM = "__placeholder__";
 const FALLBACK_ARTICLE_PARAM = "__placeholder__";
+const HELP_CONTENT_ROOT = path.join(process.cwd(), "src", "content", "help");
 
 type MarkdownFrontmatter = {
 	title?: unknown;
@@ -121,20 +122,11 @@ function parseMarkdownDocument(raw: string): {
 }
 
 async function resolveHelpContentRoot(): Promise<string | null> {
-	const candidates = [
-		path.join(process.cwd(), "src", "content", "help"),
-		path.join(process.cwd(), "apps", "web", "src", "content", "help"),
-	];
-
-	for (const candidate of candidates) {
-		try {
-			const stat = await fs.stat(candidate);
-			if (stat.isDirectory()) {
-				return candidate;
-			}
-		} catch {
-			// Try the next candidate.
-		}
+	try {
+		const stat = await fs.stat(HELP_CONTENT_ROOT);
+		if (stat.isDirectory()) return HELP_CONTENT_ROOT;
+	} catch {
+		// no-op: caller handles missing content dir
 	}
 	return null;
 }

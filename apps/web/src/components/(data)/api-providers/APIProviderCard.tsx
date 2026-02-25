@@ -1,7 +1,6 @@
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/getAllAPIProviders";
@@ -15,7 +14,6 @@ export default function APIProviderCard({ api_provider }: Props) {
 	// normalize field names we'll use in the component
 	const id = api_provider.api_provider_id;
 	const name = api_provider.api_provider_name;
-	const country = api_provider.country_code ?? "xx";
 
 	return (
 		<Card
@@ -37,33 +35,13 @@ export default function APIProviderCard({ api_provider }: Props) {
 					</div>
 				</Link>
 				<div className="flex flex-col flex-1 min-w-0">
-					<CardTitle className="truncate flex flex-col items-start gap-1">
-						<Link
-							href={`/api-providers/${id}`}
-							prefetch={false}
-							className="font-semibold"
-						>
-							<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
-								{name}
-							</span>
-						</Link>
-						{country && (
-							<span className="mt-1 text-xs text-muted-foreground truncate flex items-center gap-1">
-								<Link
-									href={`/countries/${country.toLowerCase()}`}
-									prefetch={false}
-								>
-									<Image
-										src={`/flags/${country.toLowerCase()}.svg`}
-										alt={`${country} flag`}
-										width={20}
-										height={14}
-										className="inline-block rounded-sm border"
-									/>
-								</Link>
-							</span>
-						)}
-					</CardTitle>
+					<Link
+						href={`/api-providers/${id}`}
+						prefetch={false}
+						className="font-semibold truncate leading-tight text-left underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+					>
+						{name}
+					</Link>
 				</div>
 				<Button asChild size="icon" variant="ghost" tabIndex={-1}>
 					<Link

@@ -213,7 +213,7 @@ export default async function Updates({
 					</div>
 				) : (
 					<div className="py-8">
-						<Empty size="compact">
+						<Empty>
 							<EmptyHeader>
 								<EmptyMedia variant="icon">
 									<Sparkles className="h-5 w-5" />
@@ -276,7 +276,7 @@ export default async function Updates({
 												href={`/models/${recentModels[0].model_id}`}
 												className="hover:text-primary transition-colors"
 											>
-												<span className="relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+												<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 													{latestModelDisplay?.name ??
 														recentModels[0]
 															.model_id}
@@ -290,14 +290,14 @@ export default async function Updates({
 														href={`/organisations/${latestModelDisplay.organisationId}`}
 														className="text-xs hover:text-primary transition-colors"
 													>
-														<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+														<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 															{
 																latestModelDisplay.organisationName
 															}
 														</span>
 													</Link>
 												) : (
-													<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+													<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 														{
 															latestModelDisplay.organisationName
 														}

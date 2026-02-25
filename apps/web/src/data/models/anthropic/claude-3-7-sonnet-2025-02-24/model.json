@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
   "organisation_id": "anthropic",
   "name": "Claude 3.7 Sonnet",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "anthropic/claude-3-5-sonnet-2024-10-22",
   "announced_date": "2025-02-24T00:00:00",
   "release_date": "2025-02-24T00:00:00",

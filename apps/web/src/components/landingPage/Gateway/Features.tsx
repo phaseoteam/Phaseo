@@ -27,7 +27,7 @@ const FEATURE_CARDS = [
 		],
 		tag: "Unified API",
 		icon: Globe,
-		accent: "#0ea5e9",
+		accent: "#f59e0b",
 	},
 	{
 		title: "Reliability by design",
@@ -63,7 +63,7 @@ const FEATURE_CARDS = [
 		],
 		tag: "Always current",
 		icon: Timer,
-		accent: "#6366f1",
+		accent: "#e11d48",
 	},
 	{
 		title: "Built for multimodal",
@@ -98,15 +98,15 @@ export function Features() {
 				{/* Section header */}
 				<div className="mx-auto max-w-3xl text-center">
 					<Badge
-						variant="secondary"
-						className="mb-4 border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600"
+						variant="outline"
+						className="mb-4 border-zinc-200 bg-transparent px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:bg-transparent dark:border-zinc-700 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-transparent"
 					>
 						Why teams choose us
 					</Badge>
-					<h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+					<h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
 						Reliability, routing, and control in one gateway
 					</h2>
-					<p className="mt-4 text-lg leading-relaxed text-slate-600">
+					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
 						Standardise providers behind a single API, then enforce
 						global policies across latency, cost, capability, and
 						compliance requirements.
@@ -117,69 +117,119 @@ export function Features() {
 				<div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
 					{FEATURE_CARDS.map((f) => {
 						const Icon = f.icon;
+						const isSecurity = f.tag === "Security";
+						const hoverAccent = isSecurity ? "#52525b" : f.accent;
 						return (
 							<Card
 								key={f.title}
-								className="group relative overflow-hidden border border-slate-200/60 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:border-slate-300/80 hover:-translate-y-1"
+								className="group relative overflow-hidden border border-zinc-200/60 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:border-zinc-300/80 hover:-translate-y-1 dark:border-zinc-800/70 dark:bg-zinc-950/70 dark:hover:border-zinc-700"
 							>
 								{/* Hover gradient */}
 								<div
 									className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
 									style={{
-										background: `linear-gradient(135deg, ${f.accent}20 0%, transparent 70%)`,
+										background: `linear-gradient(135deg, ${hoverAccent}20 0%, transparent 70%)`,
 									}}
 								/>
 								{/* Hover border */}
 								<div
-									className="absolute inset-0 border border-transparent rounded-xl transition-colors duration-300 group-hover:border-current"
-									style={{ color: f.accent }}
+									className="absolute inset-0 rounded-xl border border-transparent transition-colors duration-300 group-hover:border-current"
+									style={{ color: hoverAccent }}
 								/>
 
 								<CardHeader className="relative pb-3">
 									<div className="flex items-start justify-between gap-4">
 										<div className="space-y-3">
 											<Badge
-												variant="secondary"
-												className="border bg-slate-50/80 text-xs font-semibold uppercase tracking-wide"
-												style={{
-													borderColor: f.accent,
-													color: f.accent,
-												}}
+												variant="outline"
+												className={`border bg-transparent text-xs font-semibold uppercase tracking-wide ${
+													isSecurity
+														? "border-zinc-900 text-zinc-900 dark:border-zinc-400 dark:text-zinc-100"
+														: ""
+												} hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent`}
+												style={
+													isSecurity
+														? undefined
+														: {
+															borderColor: f.accent,
+															color: f.accent,
+														}
+												}
 											>
 												{f.tag}
 											</Badge>
-											<h3 className="text-xl font-semibold text-slate-900">
+											<h3
+												className={`text-xl font-semibold ${
+													isSecurity
+														? "text-zinc-900 dark:text-zinc-100"
+														: "text-zinc-900 dark:text-zinc-100"
+												}`}
+											>
 												{f.title}
 											</h3>
 										</div>
 										<div
-											className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-transform duration-300 group-hover:scale-110"
-											style={{
-												borderColor: `${f.accent}30`,
-												backgroundColor: `${f.accent}08`,
-											}}
+											className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-transform duration-300 group-hover:scale-110 ${
+												isSecurity
+													? "border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900"
+													: ""
+											}`}
+											style={
+												isSecurity
+													? undefined
+													: {
+														borderColor: `${f.accent}30`,
+														backgroundColor: `${f.accent}08`,
+													}
+											}
 										>
 											<Icon
-												className="h-6 w-6"
-												style={{ color: f.accent }}
+												className={`h-6 w-6 ${
+													isSecurity
+														? "text-zinc-900 dark:text-zinc-100"
+														: ""
+												}`}
+												style={
+													isSecurity
+														? undefined
+														: { color: f.accent }
+												}
 											/>
 										</div>
 									</div>
 								</CardHeader>
 
 								<CardContent className="relative space-y-4">
-									<p className="text-sm leading-relaxed text-slate-600">
+									<p
+										className={`text-sm leading-relaxed ${
+											isSecurity
+												? "text-zinc-600 dark:text-zinc-200"
+												: "text-zinc-600 dark:text-zinc-300"
+										}`}
+									>
 										{f.body}
 									</p>
 									<ul className="space-y-2">
 										{f.highlights.map((highlight) => (
 											<li
 												key={highlight}
-												className="flex items-center gap-2 text-sm text-slate-600"
+												className={`flex items-center gap-2 text-sm ${
+													isSecurity
+														? "text-zinc-600 dark:text-zinc-200"
+														: "text-zinc-600 dark:text-zinc-300"
+												}`}
 											>
 												<CheckCircle2
-													className="h-4 w-4 shrink-0"
-													style={{ color: f.accent }}
+													className={`h-4 w-4 shrink-0 ${
+														isSecurity
+															? "text-zinc-900 dark:text-zinc-100"
+															: ""
+													}`}
+													style={
+														isSecurity
+															? undefined
+															: { color: f.accent }
+													}
 												/>
 												<span>{highlight}</span>
 											</li>
@@ -196,7 +246,7 @@ export function Features() {
 					<Button
 						asChild
 						size="lg"
-						className="h-12 gap-2 bg-slate-900 px-6 text-base font-medium text-white shadow-lg shadow-slate-900/20 hover:bg-slate-800"
+						className="h-12 gap-2 bg-zinc-900 px-6 text-base font-medium text-white shadow-lg shadow-zinc-900/20 hover:bg-zinc-800"
 					>
 						<Link href={SALES_HREF}>
 							Start free
@@ -207,7 +257,7 @@ export function Features() {
 						asChild
 						size="lg"
 						variant="outline"
-						className="h-12 border-slate-200 px-6 text-base font-medium"
+						className="h-12 border-zinc-200 px-6 text-base font-medium dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
 					>
 						<Link href={DOCS_HREF}>View documentation</Link>
 					</Button>
@@ -216,3 +266,4 @@ export function Features() {
 		</section>
 	);
 }
+

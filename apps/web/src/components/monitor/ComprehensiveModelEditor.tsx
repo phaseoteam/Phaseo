@@ -1241,7 +1241,7 @@ export function ComprehensiveModelEditor({
 																			</Button>
 																			<Link
 																				href={`/api-providers/${pm.provider_id}`}
-																				className="text-blue-600 hover:underline text-xs flex items-center gap-1 px-2"
+																				className="text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200 text-xs flex items-center gap-1 px-2"
 																			>
 																				<ExternalLink className="h-3 w-3" />
 																			</Link>
@@ -1520,7 +1520,7 @@ export function ComprehensiveModelEditor({
 																				href={benchmark.source_link}
 																				target="_blank"
 																				rel="noopener noreferrer"
-																				className="text-blue-600 hover:underline text-xs flex items-center gap-1"
+																				className="text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200 text-xs flex items-center gap-1"
 																			>
 																				Link <ExternalLink className="h-3 w-3" />
 																			</a>
@@ -1572,7 +1572,7 @@ export function ComprehensiveModelEditor({
 											View full details on the{" "}
 											<Link
 												href={`/models/${model.modelId}/benchmarks`}
-												className="text-blue-600 hover:underline"
+												className="text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 											>
 												model benchmarks page
 											</Link>
@@ -1726,3 +1726,4 @@ export function ComprehensiveModelEditor({
 		</>
 	);
 }
+

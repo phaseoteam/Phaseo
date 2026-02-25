@@ -32,6 +32,10 @@ export async function handleAnthropic(supabase: any): Promise<Array<{ type: "web
     const newUrls = urls.filter(u => !existingLinks.has(u));
     const filteredUrls = newUrls.filter(u => {
         const url = new URL(u);
+        const pathname = url.pathname.toLowerCase();
+        if (pathname === "/learn" || pathname.startsWith("/learn/")) {
+            return false;
+        }
         const segments = url.pathname.split('/').filter(Boolean);
         return segments.length > 1;
     });

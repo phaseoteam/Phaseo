@@ -30,6 +30,58 @@ def createAnthropicMessage(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
+def createAudioRealtimeCallPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/audio/realtime/calls"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createAudioRealtimeClientSecretsPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/audio/realtime/client_secrets"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createAudioRealtimeSessionPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/audio/realtime"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createAudioRealtimeSessionsPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/audio/realtime/sessions"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
 def createBatch(
 	client: Client,
 	*,
@@ -37,7 +89,7 @@ def createBatch(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> Any:
 	path = path or {}
 	resolved_path = "/batches"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -50,7 +102,7 @@ def createBatchAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> Any:
 	path = path or {}
 	resolved_path = "/batch"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -183,6 +235,58 @@ def createProvisioningKeyLegacy(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/keys"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createRealtimeCallPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/realtime/calls"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createRealtimeClientSecretsPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/realtime/client_secrets"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createRealtimeSessionPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/realtime"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
+def createRealtimeSessionsPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/realtime/sessions"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -381,6 +485,19 @@ def getAnalytics(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
+def getAudioRealtimeCallPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = f"/audio/realtime/calls/{path.get("call_id", "")}"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def getCredits(
 	client: Client,
 	*,
@@ -498,6 +615,19 @@ def getProvisioningKeyLegacy(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def getRealtimeCallPlaceholder(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = f"/realtime/calls/{path.get("call_id", "")}"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def getVideo(
 	client: Client,
 	*,
@@ -596,7 +726,7 @@ def listFiles(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> Any:
 	path = path or {}
 	resolved_path = "/files"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -612,6 +742,32 @@ def listModels(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listModelsAliasApi(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/api/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listModelsAliasData(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/data/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -726,7 +882,7 @@ def retrieveBatch(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> Any:
 	path = path or {}
 	resolved_path = f"/batches/{path.get("batch_id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -739,7 +895,7 @@ def retrieveBatchAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> Any:
 	path = path or {}
 	resolved_path = f"/batch/{path.get("id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -752,7 +908,7 @@ def retrieveFile(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> Any:
 	path = path or {}
 	resolved_path = f"/files/{path.get("file_id", "")}"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
@@ -804,10 +960,10 @@ def uploadFile(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> Any:
 	path = path or {}
 	resolved_path = "/files"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "createAnthropicMessage", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOAuthClient", "createOcr", "createProvisioningKey", "createProvisioningKeyAlias", "createProvisioningKeyLegacy", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteOAuthClient", "deleteProvisioningKey", "deleteProvisioningKeyAlias", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getCredits", "getGeneration", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getProvisioningKey", "getProvisioningKeyAlias", "getProvisioningKeyLegacy", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listEndpoints", "listFiles", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listProvisioningKeys", "listProvisioningKeysAlias", "listProvisioningKeysLegacy", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateOAuthClient", "updateProvisioningKey", "updateProvisioningKeyAlias", "uploadFile"]
+operations___all__ = ["calculatePricing", "createAnthropicMessage", "createAudioRealtimeCallPlaceholder", "createAudioRealtimeClientSecretsPlaceholder", "createAudioRealtimeSessionPlaceholder", "createAudioRealtimeSessionsPlaceholder", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOAuthClient", "createOcr", "createProvisioningKey", "createProvisioningKeyAlias", "createProvisioningKeyLegacy", "createRealtimeCallPlaceholder", "createRealtimeClientSecretsPlaceholder", "createRealtimeSessionPlaceholder", "createRealtimeSessionsPlaceholder", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteOAuthClient", "deleteProvisioningKey", "deleteProvisioningKeyAlias", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getAudioRealtimeCallPlaceholder", "getCredits", "getGeneration", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getProvisioningKey", "getProvisioningKeyAlias", "getProvisioningKeyLegacy", "getRealtimeCallPlaceholder", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listEndpoints", "listFiles", "listModels", "listModelsAliasApi", "listModelsAliasData", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listProvisioningKeys", "listProvisioningKeysAlias", "listProvisioningKeysLegacy", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateOAuthClient", "updateProvisioningKey", "updateProvisioningKeyAlias", "uploadFile"]

@@ -528,7 +528,12 @@ export default function CreditsPurchaseDialog({
 											sel?.card?.brand ?? "Card";
 										const last4 =
 											sel?.card?.last4 ?? "****";
-										return `Pay with ${brand} ****${last4}`;
+										return (
+											<>
+												Pay with {brand}{" "}
+												<span data-pii="true">****{last4}</span>
+											</>
+										);
 									})()
 								) : mode === "oneoff" ? (
 									"Continue to checkout"

@@ -656,8 +656,16 @@ function writeHistory(
   meta: HistoryMeta
 ) {
   fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
-  const seen = new Set(existingEntries.map((entry) => entry.id));
-  const merged = [...entries, ...existingEntries.filter((entry) => !seen.has(entry.id))];
+  const seen = new Set<string>();
+  const merged: HistoryEntry[] = [];
+
+  // Keep new entries first, then preserve older unique entries.
+  for (const entry of [...entries, ...existingEntries]) {
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    merged.push(entry);
+  }
+
   const payload = { meta, entries: merged };
   fs.writeFileSync(HISTORY_FILE, JSON.stringify(payload, null, 2) + "\n", "utf8");
 }

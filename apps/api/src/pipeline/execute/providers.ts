@@ -19,6 +19,7 @@ export async function rankProviders(
         routingMode: ctx.routingMode ?? ctx.teamSettings?.routingMode ?? null,
         betaChannelEnabled: ctx.teamSettings?.betaChannelEnabled ?? false,
         providerCapabilitiesBeta: ctx.providerCapabilitiesBeta ?? false,
+        testingMode: ctx.testingMode ?? false,
         requestId: ctx.requestId ?? null,
     });
     const ranked = routed.ranked;

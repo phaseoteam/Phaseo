@@ -234,6 +234,17 @@ export async function getModelsFiltered(
     return models;
 }
 
+export async function getModelsFilteredCached(
+	filters: GetModelsFilter & { includeHidden: boolean }
+): Promise<ModelCard[]> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("data:models");
+
+	return getModelsFiltered(filters);
+}
+
 export async function getAllModelsCached(includeHidden: boolean): Promise<ModelCard[]> {
     "use cache";
 

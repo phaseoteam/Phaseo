@@ -330,7 +330,7 @@ export default async function Page({
 										href="https://github.com/AI-Stats/AI-Stats/discussions/new"
 										target="_blank"
 										rel="noreferrer"
-										className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+										className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary underline decoration-transparent hover:decoration-current transition-colors duration-200"
 									>
 										Suggest an update
 										<ArrowUpRight className="h-3.5 w-3.5" />
@@ -420,7 +420,7 @@ export default async function Page({
 																href={`/models/${member.model_id}`}
 																className="font-semibold leading-tight block"
 															>
-																<span className="relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+																<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 																	{
 																		member.name
 																	}
@@ -431,7 +431,7 @@ export default async function Page({
 																	href={`/organisations/${member.organisation_id}`}
 																	className="text-sm text-muted-foreground hover:text-foreground"
 																>
-																	<span className="relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+																	<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 																		{member
 																			.organisation
 																			?.name ??

@@ -25,7 +25,7 @@ type StaticSponsor = {
 };
 
 export const metadata: Metadata = {
-	title: "Contribute To The AI Stats Database",
+	title: "Contributors & Sponsors | AI Stats",
 	description: "See which contributors and sponsors are supporting AI Stats.",
 };
 
@@ -55,6 +55,15 @@ function getContributorProfileUrl(contributor: StaticContributor) {
 		return `https://github.com/${contributor.login}`;
 	}
 	return null;
+}
+
+function isBotIdentity(value?: string | null) {
+	return Boolean(value && value.toLowerCase().includes("[bot]"));
+}
+
+function formatDisplayName(value: string) {
+	const cleaned = value.replace(/\[bot\]/gi, "").trim();
+	return cleaned.length ? cleaned : value;
 }
 
 export default async function Page() {
@@ -118,12 +127,17 @@ export default async function Page() {
 								export workflow or check back soon.
 							</p>
 						) : (
-							<div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+							<div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
 								{sortedContributors.map((contributor) => {
 									const profileUrl =
 										getContributorProfileUrl(contributor);
 									const displayName =
 										getDisplayName(contributor);
+									const isBot =
+										isBotIdentity(displayName) ||
+										isBotIdentity(contributor.login);
+									const readableName =
+										formatDisplayName(displayName);
 									const hasGithubHandle = Boolean(
 										contributor.login
 									);
@@ -134,48 +148,48 @@ export default async function Page() {
 												contributor.login ??
 												`${displayName}-${contributor.contributions}`
 											}
+											className={
+												isBot
+													? "border-dashed border-zinc-300/80 bg-zinc-50/70 dark:border-zinc-700/80 dark:bg-zinc-900/40"
+													: undefined
+											}
 										>
-											<CardContent className="flex flex-col items-center gap-4 p-4">
-												<Avatar className="w-16 h-16">
+											<CardContent className="flex flex-col items-center gap-2 p-2.5">
+												<Avatar className="h-10 w-10">
 													{contributor.avatarUrl ? (
 														<AvatarImage
 															src={
 																contributor.avatarUrl
 															}
-															alt={displayName}
+															alt={readableName}
 														/>
 													) : (
 														<AvatarFallback>
 															{getInitials(
-																displayName
+																readableName
 															)}
 														</AvatarFallback>
 													)}
 												</Avatar>
 												<div className="text-center">
-													<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-														{displayName}
-													</p>
-													{hasGithubHandle &&
-													profileUrl ? (
+													{hasGithubHandle && profileUrl ? (
 														<a
 															href={profileUrl}
 															target="_blank"
 															rel="noreferrer"
-															className="text-xs text-zinc-500 transition-colors hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400"
+															className="text-xs font-semibold text-zinc-950 transition-colors hover:text-blue-600 dark:text-zinc-50 dark:hover:text-blue-400"
 														>
-															@{contributor.login}
+															{readableName}
 														</a>
 													) : (
-														<p className="text-xs text-zinc-500 dark:text-zinc-400">
-															GitHub handle not
-															published
+														<p className="text-xs font-semibold text-zinc-950 dark:text-zinc-50">
+															{readableName}
 														</p>
 													)}
 												</div>
 												<Badge
 													variant="outline"
-													className="shrink-0"
+													className="h-5 shrink-0 px-2 text-[10px]"
 												>
 													{(
 														contributor.contributions ??
@@ -210,53 +224,67 @@ export default async function Page() {
 								your name will appear here soon!
 							</p>
 						) : (
-							<div className="grid gap-4 grid-cols-1">
-								{sponsors.map((sponsor) => (
-									<Card key={sponsor.login}>
-										<CardContent className="flex flex-col items-center gap-4 p-4">
-											<Avatar className="w-16 h-16">
-												{sponsor.avatarUrl ? (
-													<AvatarImage
-														src={sponsor.avatarUrl}
-														alt={
-															sponsor.name ??
-															sponsor.login
-														}
-													/>
+							<div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+								{sponsors.map((sponsor) => {
+									const displayName = sponsor.name ?? sponsor.login;
+									const isBot =
+										isBotIdentity(displayName) ||
+										isBotIdentity(sponsor.login);
+									const readableName =
+										formatDisplayName(displayName);
+
+									return (
+										<Card
+											key={sponsor.login}
+											className={
+												isBot
+													? "border-dashed border-zinc-300/80 bg-zinc-50/70 dark:border-zinc-700/80 dark:bg-zinc-900/40"
+													: undefined
+											}
+										>
+											<CardContent className="flex flex-col items-center gap-2 p-2.5">
+												<Avatar className="h-10 w-10">
+													{sponsor.avatarUrl ? (
+														<AvatarImage
+															src={sponsor.avatarUrl}
+															alt={readableName}
+														/>
+													) : (
+														<AvatarFallback>
+															{getInitials(
+																readableName
+															)}
+														</AvatarFallback>
+													)}
+												</Avatar>
+												<div className="text-center">
+													<p className="text-xs font-semibold text-zinc-950 dark:text-zinc-50">
+														{readableName}
+													</p>
+													<p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+														{isBot
+															? "GitHub Sponsors bot"
+															: "GitHub Sponsors"}
+													</p>
+												</div>
+												{sponsor.url ? (
+													<a
+														href={sponsor.url}
+														target="_blank"
+														rel="noreferrer"
+														className="text-[10px] font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400"
+													>
+														View profile
+													</a>
 												) : (
-													<AvatarFallback>
-														{getInitials(
-															sponsor.login
-														)}
-													</AvatarFallback>
+													<span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+														Link unavailable
+													</span>
 												)}
-											</Avatar>
-											<div className="text-center">
-												<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-													{sponsor.name ??
-														sponsor.login}
-												</p>
-												<p className="text-xs text-zinc-500 dark:text-zinc-400">
-													GitHub Sponsors
-												</p>
-											</div>
-											{sponsor.url ? (
-												<a
-													href={sponsor.url}
-													target="_blank"
-													rel="noreferrer"
-													className="text-xs font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400"
-												>
-													View profile
-												</a>
-											) : (
-												<span className="text-xs text-zinc-500 dark:text-zinc-400">
-													Link unavailable
-												</span>
-											)}
-										</CardContent>
-									</Card>
-								))}
+											</CardContent>
+										</Card>
+									);
+								})}
 							</div>
 						)}
 					</CardContent>

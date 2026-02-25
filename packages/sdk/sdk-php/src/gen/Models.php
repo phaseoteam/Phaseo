@@ -458,6 +458,13 @@ class MusicGenerateResponse
 {
 }
 
+class NotImplementedResponse
+{
+	public $description;
+	public $error;
+	public $status_code;
+}
+
 class OcrRequest
 {
 	public $debug;
@@ -527,6 +534,11 @@ class ProvisioningKeyWithValue
 	public $prefix;
 	public $scopes;
 	public $status;
+}
+
+class RealtimeNotImplementedResponse
+{
+	public $error;
 }
 
 class ReasoningConfig

@@ -23,3 +23,4 @@ guides/private/
 /reports
 /scripts/model-discovery/state/
 .tmp/
+/tmp

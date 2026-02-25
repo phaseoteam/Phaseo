@@ -1,13 +1,11 @@
 import { Suspense } from "react";
 import ModelsDisplay from "@/components/(data)/models/Models/ModelsDisplay";
 import {
-	getModelsFiltered,
-	ModelCard,
+	getModelsFilteredCached,
 } from "@/lib/fetchers/models/getAllModels";
 import { loadModelsSearchParams } from "./search-params";
 import type { Metadata } from "next";
 import type { SearchParams } from "nuqs/server";
-import { UPCOMING_TAB_VALUE, UNKNOWN_TAB_VALUE } from "@/lib/models/modelTabs";
 
 export const metadata: Metadata = {
 	title: "AI models - Compare Benchmarks, Pricing & Providers",
@@ -32,21 +30,16 @@ type ModelsPageProps = {
 	searchParams: Promise<SearchParams>;
 };
 
-function getModelYear(model: ModelCard): number | null {
-	const groupKey = model.primary_group_key;
-	if (!groupKey) return null;
-	const [yearStr] = groupKey.split("-");
-	const year = Number(yearStr);
-	return Number.isNaN(year) ? null : year;
-}
-
-function filterAndSortModels(models: ModelCard[], query: string): ModelCard[] {
+function filterAndSortModels(
+	models: Awaited<ReturnType<typeof getModelsFilteredCached>>,
+	query: string
+) {
 	let filtered = models;
 
 	const trimmedQuery = query.trim();
 	if (trimmedQuery) {
 		const q = trimmedQuery.toLowerCase();
-		filtered = filtered.filter((m: ModelCard) => {
+		filtered = filtered.filter((m) => {
 			const name = m.name.toLowerCase();
 			const organisation = m.organisation_name
 				? m.organisation_name.toLowerCase()
@@ -56,9 +49,10 @@ function filterAndSortModels(models: ModelCard[], query: string): ModelCard[] {
 		});
 	}
 
-	const compareByTimestamp = (m: ModelCard) => m.primary_timestamp ?? 0;
+	const compareByTimestamp = (m: (typeof filtered)[number]) =>
+		m.primary_timestamp ?? 0;
 
-	return [...filtered].sort((a: ModelCard, b: ModelCard) => {
+	return [...filtered].sort((a, b) => {
 		const orgA = a.organisation_name ?? "";
 		const orgB = b.organisation_name ?? "";
 		const organisationCompare = orgA.localeCompare(orgB);
@@ -67,86 +61,16 @@ function filterAndSortModels(models: ModelCard[], query: string): ModelCard[] {
 	});
 }
 
-function isRumoured(status?: string | null): boolean {
-	return status?.toLowerCase() === "rumoured";
-}
-
-function getYearPagination(
-	models: ModelCard[],
-	yearParam: number,
-): {
-	years: number[];
-	activeYear: number | null;
-	paginatedModels: ModelCard[];
-	hasUpcoming: boolean;
-	hasUnknown: boolean;
-} {
-	const yearSet = new Set<number>();
-	for (const model of models) {
-		const year = getModelYear(model);
-		if (year !== null) {
-			yearSet.add(year);
-		}
-	}
-
-	const upcomingModels = models.filter((model) => isRumoured(model.status));
-	const unknownModels = models.filter(
-		(model) => !model.release_date && !isRumoured(model.status),
-	);
-	const hasUpcoming = upcomingModels.length > 0;
-	const hasUnknown = unknownModels.length > 0;
-
-	const years = Array.from(yearSet).sort((a, b) => b - a);
-	const defaultYear: number | null = years.length > 0 ? years[0] : null;
-
-	let activeYear: number | null = defaultYear;
-	if (yearParam === UPCOMING_TAB_VALUE && hasUpcoming) {
-		activeYear = UPCOMING_TAB_VALUE;
-	} else if (yearParam === UNKNOWN_TAB_VALUE && hasUnknown) {
-		activeYear = UNKNOWN_TAB_VALUE;
-	} else if (yearParam && years.includes(yearParam)) {
-		activeYear = yearParam;
-	}
-
-	const paginatedModels =
-		activeYear === UPCOMING_TAB_VALUE
-			? upcomingModels
-			: activeYear === UNKNOWN_TAB_VALUE
-				? unknownModels
-				: activeYear === null
-					? models
-					: models.filter(
-							(model) => getModelYear(model) === activeYear,
-						);
-
-	return {
-		years,
-		activeYear,
-		paginatedModels,
-		hasUpcoming,
-		hasUnknown,
-	};
-}
-
 async function ModelsPageContent({ searchParams }: ModelsPageProps) {
-	const { q, year } = await loadModelsSearchParams(searchParams);
+	const { q } = await loadModelsSearchParams(searchParams);
 	const includeHidden = false;
-	const filteredModelsFromDb = await getModelsFiltered({ search: q, includeHidden });
+	const filteredModelsFromDb = await getModelsFilteredCached({
+		search: q,
+		includeHidden,
+	});
 	const filteredModels = filterAndSortModels(filteredModelsFromDb, q);
-	const { years, activeYear, paginatedModels, hasUpcoming, hasUnknown } = getYearPagination(
-		filteredModels,
-		year ?? 0,
-	);
 
-	return (
-		<ModelsDisplay
-			models={paginatedModels}
-			years={years}
-			activeYear={activeYear}
-			hasUpcoming={hasUpcoming}
-			hasUnknown={hasUnknown}
-		/>
-	);
+	return <ModelsDisplay models={filteredModels} />;
 }
 
 function ModelsGridSkeleton() {

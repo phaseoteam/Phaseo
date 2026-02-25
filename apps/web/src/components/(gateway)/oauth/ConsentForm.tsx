@@ -164,7 +164,7 @@ export default function ConsentForm({
 								href={oauthApp.homepage_url}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline mt-2"
+								className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 underline decoration-transparent hover:decoration-current transition-colors duration-200 mt-2"
 							>
 								<ExternalLink className="size-3" />
 								<span>{new URL(oauthApp.homepage_url).hostname}</span>
@@ -284,3 +284,4 @@ export default function ConsentForm({
 		</Card>
 	);
 }
+

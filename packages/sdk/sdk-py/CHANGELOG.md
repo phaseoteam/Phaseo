@@ -1,5 +1,11 @@
 # @ai-stats/py-sdk
 
+## 1.0.2
+
+### Patch Changes
+
+- Regenerate SDK artifacts from the latest OpenAPI spec and publish a patch version update for the refreshed clients.
+
 ## 1.0.1
 
 ### Patch Changes

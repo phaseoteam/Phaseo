@@ -195,7 +195,10 @@ export function PerformanceScatter({
                                         )}
                                         <div className="min-w-0">
                                             {modelHref ? (
-                                                <Link href={modelHref} className="truncate text-sm font-medium block">
+                                                <Link
+                                                    href={modelHref}
+                                                    className="truncate text-sm font-medium block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+                                                >
                                                     {point.modelName}
                                                 </Link>
                                             ) : (
@@ -204,7 +207,10 @@ export function PerformanceScatter({
                                                 </p>
                                             )}
                                             {providerHref ? (
-                                                <Link href={providerHref} className="truncate text-xs text-muted-foreground block">
+                                                <Link
+                                                    href={providerHref}
+                                                    className="truncate text-xs text-muted-foreground block underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+                                                >
                                                     {point.providerName}
                                                 </Link>
                                             ) : (

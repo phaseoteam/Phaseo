@@ -1,5 +1,11 @@
 # @ai-stats/gateway-api
 
+## 1.0.1
+
+### Patch Changes
+
+- Bump gateway API package version for the current backend/runtime updates.
+
 ## 1.0.0
 
 ### Major Changes

@@ -321,7 +321,7 @@ export default function ModelInProducts({
 											href={plan.link}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="mt-1 inline-block text-xs text-blue-600 hover:underline"
+											className="mt-1 inline-block text-xs text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 										>
 											Learn more
 										</a>
@@ -335,3 +335,4 @@ export default function ModelInProducts({
 		</>
 	);
 }
+

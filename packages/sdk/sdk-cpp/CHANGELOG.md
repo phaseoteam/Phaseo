@@ -1,5 +1,11 @@
 # @ai-stats/cpp-sdk
 
+## 1.0.1
+
+### Patch Changes
+
+- Add Java, C++, and Rust SDKs to the OpenAPI generation pipeline and refresh their generated client artifacts.
+
 ## 1.0.0
 
 ### Major Changes

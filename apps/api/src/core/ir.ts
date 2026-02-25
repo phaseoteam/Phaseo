@@ -140,7 +140,7 @@ export type IRToolChoice =
  * Reasoning configuration (for o1-style and MiniMax-style reasoning)
  */
 export type IRReasoning = {
-	effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+	effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 	summary?: "auto" | "concise" | "detailed";
 	enabled?: boolean;
 	maxTokens?: number;
@@ -374,7 +374,7 @@ export type IRImageGenerationResponse = {
 export type IRAudioSpeechRequest = {
 	model: string;
 	input: string;
-	voice?: string;
+	voice?: string | { id?: string; name?: string; voiceName?: string;[key: string]: any };
 	format?: "mp3" | "wav" | "ogg" | "aac";
 	responseFormat?: "mp3" | "wav" | "aac" | "flac" | "opus" | "pcm";
 	streamFormat?: "audio" | "sse";
@@ -472,6 +472,7 @@ export type IRVideoGenerationRequest = {
 	ratio?: string;
 	aspectRatio?: string;
 	resolution?: string;
+	compressionQuality?: number;
 	negativePrompt?: string;
 	sampleCount?: number;
 	numberOfVideos?: number;

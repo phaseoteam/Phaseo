@@ -104,7 +104,7 @@ export default function ReleaseTimeline({
 									)}`}
 									className="group"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full font-semibold">
+									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
 										{oldest.name}
 									</span>
 								</Link>{" "}
@@ -120,7 +120,7 @@ export default function ReleaseTimeline({
 									)}`}
 									className="group"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full font-semibold">
+									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
 										{newest.name}
 									</span>
 								</Link>{" "}
@@ -131,7 +131,7 @@ export default function ReleaseTimeline({
 									)}`}
 									className="group"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full font-semibold">
+									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
 										{oldest.name}
 									</span>
 								</Link>{" "}
@@ -144,7 +144,7 @@ export default function ReleaseTimeline({
 									)}`}
 									className="group"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full font-semibold">
+									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
 										{newest.name}
 									</span>
 								</Link>{" "}
@@ -157,7 +157,7 @@ export default function ReleaseTimeline({
 									)}`}
 									className="group"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full font-semibold">
+									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
 										{oldest.name}
 									</span>
 								</Link>
@@ -219,7 +219,7 @@ export default function ReleaseTimeline({
 												)}`}
 												className="group"
 											>
-												<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+												<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 													{formatDate(model.release_date)}
 												</span>
 											</Link>
@@ -284,7 +284,7 @@ export default function ReleaseTimeline({
 												)}`}
 												className="group"
 											>
-												<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+												<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 													{model.name}
 												</span>
 											</Link>

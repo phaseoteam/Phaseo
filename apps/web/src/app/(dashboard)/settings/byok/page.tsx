@@ -1,28 +1,38 @@
 import { Suspense } from "react";
-import { Plus, Pencil, AlertCircleIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TriangleAlert } from "lucide-react";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent } from "@/components/ui/card";
-import BYOKInputDialog from "@/components/(gateway)/settings/byok/BYOKInputDialog";
-import DeleteKeyButton from "@/components/(gateway)/settings/byok/DeleteKeyButton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ByokProviderRow from "@/components/(gateway)/settings/byok/ByokProviderRow";
+import ResetWindowHover from "@/components/(gateway)/settings/byok/ResetWindowHover";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import { Logo } from "@/components/Logo";
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 
 export const metadata = { title: "BYOK - Settings" };
 
+const BYOK_MONTHLY_FREE_REQUESTS = 100_000;
+const BYOK_FEE_PERCENT = 3.5;
+
 type KeyEntry = {
 	id: string;
 	providerId: string;
 	name: string;
-	value?: string;
 	prefix?: string;
 	suffix?: string;
 	createdAt: string;
+	enabled: boolean;
+	alwaysUse: boolean;
 };
 
-const PROVIDERS = [
+type ProviderItem = {
+	id: string;
+	name: string;
+	logoId: string;
+};
+
+const FALLBACK_PROVIDERS: ProviderItem[] = [
 	{ id: "ai21", name: "AI21", logoId: "ai21" },
 	{ id: "alibaba", name: "Alibaba", logoId: "alibaba" },
 	{ id: "amazon-bedrock", name: "Amazon Bedrock", logoId: "amazon-bedrock" },
@@ -32,13 +42,14 @@ const PROVIDERS = [
 	{ id: "baseten", name: "Baseten", logoId: "baseten" },
 	{ id: "cerebras", name: "Cerebras", logoId: "cerebras" },
 	{ id: "chutes", name: "Chutes", logoId: "chutes" },
+	{ id: "cloudflare", name: "Cloudflare", logoId: "cloudflare" },
 	{ id: "cohere", name: "Cohere", logoId: "cohere" },
 	{ id: "deepinfra", name: "DeepInfra", logoId: "deepinfra" },
-	{ id: "deepseek", name: "Deepseek", logoId: "deepseek" },
+	{ id: "deepseek", name: "DeepSeek", logoId: "deepseek" },
 	{ id: "google-ai-studio", name: "Google AI Studio", logoId: "google-ai-studio" },
 	{ id: "google-vertex", name: "Google Vertex", logoId: "google-vertex" },
 	{ id: "groq", name: "Groq", logoId: "groq" },
-	{ id: "minimax", name: "Minimax", logoId: "minimax" },
+	{ id: "minimax", name: "MiniMax", logoId: "minimax" },
 	{ id: "mistral", name: "Mistral", logoId: "mistral" },
 	{ id: "moonshotai", name: "MoonshotAI", logoId: "moonshotai" },
 	{ id: "novitaai", name: "NovitaAI", logoId: "novitaai" },
@@ -46,66 +57,42 @@ const PROVIDERS = [
 	{ id: "parasail", name: "Parasail", logoId: "parasail" },
 	{ id: "suno", name: "Suno", logoId: "suno" },
 	{ id: "together", name: "Together", logoId: "together" },
-	{ id: "x-ai", name: "X.ai", logoId: "x-ai" },
+	{ id: "x-ai", name: "xAI", logoId: "x-ai" },
 ];
 
-function maskKey(value?: string, prefix?: string, suffix?: string, start = 6, end = 4) {
-	if (prefix || suffix) {
-		const p = prefix ?? "";
-		const s = suffix ?? "";
-		const middleMask = "*".repeat(6);
-		return `${p}${middleMask}${s}`;
-	}
-	if (!value) return "(value not available)";
-	if (value.length <= start + end) return "*".repeat(Math.max(6, value.length));
-	return `${value.slice(0, start)}${"*".repeat(Math.max(6, value.length - start - end))}${value.slice(-end)}`;
+function fmtCompactInt(value: number) {
+	return new Intl.NumberFormat("en-US", { notation: "compact" }).format(value);
 }
 
-function KeyCard({ entry }: { entry: KeyEntry }) {
-	return (
-		<div className="group rounded-xl border border-zinc-200/80 dark:border-zinc-800 p-3">
-			<div className="flex items-start justify-between gap-3">
-				<div className="min-w-0">
-					<div className="truncate font-medium">{entry.name || "Untitled key"}</div>
-					<div className="text-xs font-mono text-zinc-600 dark:text-zinc-300 break-all">
-						{maskKey(entry.value, entry.prefix, entry.suffix)}
-					</div>
-				</div>
-				<div className="shrink-0 flex items-center gap-1">
-					<BYOKInputDialog
-						initial={entry}
-						trigger={
-							<Button variant="ghost" size="sm" className="rounded-full p-1">
-								<Pencil className="h-4 w-4" />
-							</Button>
-						}
-					/>
-					<DeleteKeyButton id={entry.id} />
-				</div>
-			</div>
-		</div>
-	);
+function toTitleCaseFromId(providerId: string) {
+	return providerId
+		.split("-")
+		.filter(Boolean)
+		.map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+		.join(" ");
+}
+
+function formatUtcDateTime(iso: string) {
+	const date = new Date(iso);
+	if (Number.isNaN(date.getTime())) return "Unknown";
+	return new Intl.DateTimeFormat("en-US", {
+		timeZone: "UTC",
+		year: "numeric",
+		month: "short",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).format(date);
 }
 
 export default function BYOKPage() {
 	return (
-		<div className="mx-auto">
-			<h1 className="text-2xl font-semibold">Bring Your Own Key (BYOK)</h1>
-
-			<Alert className="mt-4 w-full">
-				<AlertCircleIcon className="h-4 w-4 mr-2 shrink-0 text-primary" />
-				<AlertTitle>AI Stats - BYOK Important Information</AlertTitle>
-				<AlertDescription>
-					<p>AI Stats always prioritises using your provider keys when set.</p>{" "}
-					<p>
-						By default, if a key hits a rate limit or fails, the platform falls back to shared AI Stats credits.
-					</p>{" "}
-					<p>
-						You can mark a key as "Always use this key" to disable any fallback - this becomes your default key.
-						You can only set <strong>one</strong> key with this setting.
-					</p>
-				</AlertDescription>
-			</Alert>
+		<div className="mx-auto space-y-6">
+			<SettingsPageHeader
+				title="Bring Your Own Key (BYOK)"
+				description="Manage provider credentials and BYOK billing usage."
+			/>
 
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<ByokProvidersSection />
@@ -117,71 +104,170 @@ export default function BYOKPage() {
 async function ByokProvidersSection() {
 	const supabase = await createClient();
 	const currentTeam = await getTeamIdFromCookie();
-	const { data: byokRows } = await supabase.from("byok_keys").select("*").eq("team_id", currentTeam);
+	if (!currentTeam) {
+		return (
+			<div className="rounded-xl border border-dashed border-zinc-300/70 p-6 text-sm text-muted-foreground">
+				Select a team to manage BYOK settings.
+			</div>
+		);
+	}
+
+	const now = new Date();
+	const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
+	const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0));
+	const monthStartIso = monthStart.toISOString();
+	const nextMonthStartIso = nextMonthStart.toISOString();
+
+	const [
+		{ data: byokRows, error: byokError },
+		{ data: monthlyUsageRows },
+		{ data: providerRowsData, error: providerRowsError },
+	] = await Promise.all([
+		supabase
+			.from("byok_keys")
+			.select("id,provider_id,name,prefix,suffix,created_at,enabled,always_use")
+			.eq("team_id", currentTeam)
+			.order("created_at", { ascending: false }),
+		supabase
+			.from("team_byok_monthly_usage")
+			.select("month_start,request_count")
+			.eq("team_id", currentTeam)
+			.gte("month_start", monthStartIso)
+			.lt("month_start", nextMonthStartIso)
+			.order("month_start", { ascending: false })
+			.limit(1),
+		supabase
+			.from("data_api_providers")
+			.select("api_provider_id,api_provider_name")
+			.order("api_provider_name", { ascending: true }),
+	]);
+
+	if (byokError) {
+		console.error("[settings/byok] failed to load keys", byokError);
+	}
+	if (providerRowsError) {
+		console.error("[settings/byok] failed to load providers", providerRowsError);
+	}
+
+	const keyRows = (byokRows ?? []) as Array<{
+		id: string;
+		provider_id: string;
+		name: string;
+		prefix: string | null;
+		suffix: string | null;
+		created_at: string;
+		enabled: boolean;
+		always_use: boolean;
+	}>;
+
+	const keyByProvider = new Map<string, KeyEntry>();
+	const hiddenLegacyCountByProvider = new Map<string, number>();
+	for (const row of keyRows) {
+		if (!keyByProvider.has(row.provider_id)) {
+			keyByProvider.set(row.provider_id, {
+				id: row.id,
+				providerId: row.provider_id,
+				name: row.name,
+				prefix: row.prefix ?? undefined,
+				suffix: row.suffix ?? undefined,
+				createdAt: row.created_at,
+				enabled: row.enabled,
+				alwaysUse: row.always_use,
+			});
+			continue;
+		}
+		hiddenLegacyCountByProvider.set(
+			row.provider_id,
+			(hiddenLegacyCountByProvider.get(row.provider_id) ?? 0) + 1,
+		);
+	}
+
+	const providerCatalog: ProviderItem[] = (providerRowsData ?? [])
+		.map((row: any) => ({
+			id: String(row?.api_provider_id ?? "").trim(),
+			name: String(row?.api_provider_name ?? "").trim() || String(row?.api_provider_id ?? "").trim(),
+			logoId: String(row?.api_provider_id ?? "").trim(),
+		}))
+		.filter((provider: ProviderItem) => provider.id.length > 0);
+	const baseProviders = providerCatalog.length > 0 ? providerCatalog : FALLBACK_PROVIDERS;
+
+	const knownProviderIds = new Set(baseProviders.map((provider) => provider.id));
+	const unknownProviders: ProviderItem[] = Array.from(keyByProvider.keys())
+		.filter((providerId) => !knownProviderIds.has(providerId))
+		.sort((a, b) => a.localeCompare(b))
+		.map((providerId) => ({
+			id: providerId,
+			name: toTitleCaseFromId(providerId),
+			logoId: providerId,
+		}));
+	const providerRows = [...baseProviders, ...unknownProviders];
+
+	const legacyHiddenTotal = Array.from(hiddenLegacyCountByProvider.values()).reduce((sum, count) => sum + count, 0);
+	const monthlyRequestCount = Number(monthlyUsageRows?.[0]?.request_count ?? 0);
+	const freeRemaining = Math.max(0, BYOK_MONTHLY_FREE_REQUESTS - monthlyRequestCount);
+	const paidTierRequests = Math.max(0, monthlyRequestCount - BYOK_MONTHLY_FREE_REQUESTS);
 
 	return (
-		<div className="mt-6 grid grid-cols-1 gap-6">
-			{PROVIDERS.map((provider) => {
-				const providerKeys: KeyEntry[] = (byokRows ?? [])
-					.filter((row: any) => row.provider_id === provider.id)
-					.map((row: any) => ({
-						id: row.id,
-						providerId: row.provider_id,
-						name: row.name,
-						value: row.value,
-						prefix: row.prefix,
-						suffix: row.suffix,
-						createdAt: row.created_at,
-					}));
+		<div className="space-y-4">
+			<Card className="rounded-2xl">
+				<CardHeader className="pb-2">
+					<CardTitle className="text-base">BYOK monthly usage</CardTitle>
+					<p className="text-xs text-muted-foreground">
+						{fmtCompactInt(BYOK_MONTHLY_FREE_REQUESTS)} free requests per month, then {BYOK_FEE_PERCENT}% service fee on provider-equivalent cost.
+					</p>
+				</CardHeader>
+				<CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+					<div>
+						<div className="text-xs uppercase tracking-wide text-muted-foreground">Used requests</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(monthlyRequestCount)}</div>
+					</div>
+					<div>
+						<div className="text-xs uppercase tracking-wide text-muted-foreground">Free remaining</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(freeRemaining)}</div>
+					</div>
+					<div>
+						<div className="text-xs uppercase tracking-wide text-muted-foreground">Paid-tier requests</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(paidTierRequests)}</div>
+					</div>
+					<div className="sm:col-span-3 text-xs text-muted-foreground">
+						Usage resets at{" "}
+						<ResetWindowHover
+							iso={nextMonthStartIso}
+							triggerText={`${formatUtcDateTime(nextMonthStartIso)} UTC`}
+						/>
+						.
+					</div>
+				</CardContent>
+			</Card>
 
-				return (
-					<Card key={provider.id} className="rounded-2xl">
-						<CardContent className="p-4 md:p-6">
-							<div className="grid grid-cols-1 gap-4 md:grid-cols-4 md:gap-6">
-								<div className="md:pr-6 md:border-r md:border-zinc-200 dark:md:border-zinc-800 md:h-full md:flex md:items-center">
-									<div className="flex items-center justify-between w-full">
-										<div className="flex items-center gap-3">
-											<Logo
-												id={provider.logoId ?? provider.id}
-												alt={provider.name}
-												width={40}
-												height={40}
-												className="h-10 w-10 object-contain"
-											/>
-											<div className="font-medium">{provider.name}</div>
-										</div>
+			<section className="space-y-2">
+				<div className="px-1">
+					<h2 className="text-base font-semibold">Provider keys</h2>
+				</div>
 
-										{providerKeys.length === 0 ? (
-											<BYOKInputDialog
-												providerId={provider.id}
-												trigger={
-													<Button variant="outline" size="sm" className="rounded-full">
-														<Plus className="h-2 w-2" />
-													</Button>
-												}
-											/>
-										) : null}
-									</div>
-								</div>
+				{legacyHiddenTotal > 0 ? (
+					<Alert>
+						<TriangleAlert className="h-4 w-4" />
+						<AlertTitle>Legacy duplicate keys detected</AlertTitle>
+						<AlertDescription>
+							{fmtCompactInt(legacyHiddenTotal)} legacy key entries are hidden. Only the newest key per provider is editable.
+						</AlertDescription>
+					</Alert>
+				) : null}
 
-								<div className="md:col-span-3">
-									{providerKeys.length === 0 ? (
-										<div className="flex min-h-[64px] items-center justify-between rounded-xl border border-dashed border-zinc-300/70 p-4 text-sm text-muted-foreground">
-											<span>No keys configured for this provider.</span>
-										</div>
-									) : (
-										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-											{providerKeys.map((key) => (
-												<KeyCard key={key.id} entry={key} />
-											))}
-										</div>
-									)}
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				);
-			})}
+				<div className="rounded-md border divide-y">
+					{providerRows.map((provider) => {
+						const entry = keyByProvider.get(provider.id) ?? null;
+						return (
+							<ByokProviderRow
+								key={provider.id}
+								provider={provider}
+								entry={entry}
+							/>
+						);
+					})}
+				</div>
+			</section>
 		</div>
 	);
 }

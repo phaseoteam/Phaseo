@@ -1145,6 +1145,12 @@ type MusicGenerateRequest struct {
 type MusicGenerateResponse struct {
 }
 
+type NotImplementedResponse struct {
+	Description *string `json:"description,omitempty"`
+	Error *string `json:"error,omitempty"`
+	StatusCode *int `json:"status_code,omitempty"`
+}
+
 type OcrRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
@@ -1238,6 +1244,10 @@ type ProvisioningKeyWithValue struct {
 	Prefix *string `json:"prefix,omitempty"`
 	Scopes *string `json:"scopes,omitempty"`
 	Status *string `json:"status,omitempty"`
+}
+
+type RealtimeNotImplementedResponse struct {
+	Error *map[string]interface{} `json:"error,omitempty"`
 }
 
 type ReasoningConfig struct {

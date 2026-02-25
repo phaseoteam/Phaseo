@@ -1,5 +1,5 @@
 // src/lib/byok/crypto.ts
-import { randomBytes, createCipheriv, createDecipheriv, createHash } from "crypto";
+import { randomBytes, createCipheriv, createDecipheriv, pbkdf2Sync } from "crypto";
 
 type Encrypted = {
     ciphertextB64: string;
@@ -11,19 +11,37 @@ type Encrypted = {
     suffix: string;
 };
 
+function decodeEnvKeyMaterial(value: string): Buffer {
+    const raw = value.startsWith("base64:") ? value.slice(7) : value;
+    return value.startsWith("base64:")
+        ? Buffer.from(raw, "base64")
+        : Buffer.from(raw, "utf8");
+}
+
 function getKey(version: number): Buffer {
     const active = Number(process.env.BYOK_ACTIVE_KEY_VERSION || "1");
     const v = version ?? active;
     const envVar = v === 1 ? process.env.BYOK_KMS_KEY_V1 : undefined;
     if (!envVar) throw new Error(`Missing BYOK_KMS_KEY_V${v}`);
-    const b64 = envVar.startsWith("base64:") ? envVar.slice(7) : envVar;
-    const key = Buffer.from(b64, "base64");
+    const key = Buffer.from(envVar.startsWith("base64:") ? envVar.slice(7) : envVar, "base64");
     if (key.length !== 32) throw new Error("BYOK key must be 32 bytes (AES-256)");
     return key;
 }
 
-export function sha256Hex(s: string): string {
-    return createHash("sha256").update(s, "utf8").digest("hex");
+function getFingerprintSalt(): Buffer {
+    // Dedicated pepper is preferred; otherwise reuse existing BYOK key material.
+    const explicitPepper = process.env.BYOK_FINGERPRINT_PEPPER;
+    if (explicitPepper) return decodeEnvKeyMaterial(explicitPepper);
+
+    const v1 = process.env.BYOK_KMS_KEY_V1;
+    if (v1) return Buffer.from(v1.startsWith("base64:") ? v1.slice(7) : v1, "base64");
+
+    return getKey(Number(process.env.BYOK_ACTIVE_KEY_VERSION || "1"));
+}
+
+export function fingerprintSecretHex(secret: string): string {
+    // PBKDF2 makes offline cracking far more expensive than raw SHA-256.
+    return pbkdf2Sync(secret, getFingerprintSalt(), 210_000, 32, "sha256").toString("hex");
 }
 
 export function encryptSecret(plaintext: string, keyVersion = Number(process.env.BYOK_ACTIVE_KEY_VERSION || "1")): Encrypted {
@@ -42,7 +60,7 @@ export function encryptSecret(plaintext: string, keyVersion = Number(process.env
         ivB64: iv.toString("base64"),
         tagB64: tag.toString("base64"),
         keyVersion,
-        fingerprintHex: sha256Hex(plaintext),
+        fingerprintHex: fingerprintSecretHex(plaintext),
         prefix,
         suffix,
     };

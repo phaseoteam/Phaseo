@@ -92,7 +92,7 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 											{hasMultiple && (
 												<button
 													type="button"
-													className="mr-2 inline-flex h-5 w-5 items-center justify-center text-indigo-600 hover:underline focus:outline-hidden align-middle"
+													className="mr-2 inline-flex h-5 w-5 items-center justify-center text-indigo-600 underline decoration-transparent hover:decoration-current transition-colors duration-200 focus:outline-hidden align-middle"
 													onClick={toggleRow}
 													aria-label={
 														isOpen
@@ -110,7 +110,7 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 											<Link
 												href={`/benchmarks/${top.benchmark_id}`}
 											>
-												<span className="relative inline-block align-middle truncate font-semibold after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+												<span className="relative inline-block align-middle truncate font-semibold underline decoration-transparent hover:decoration-current transition-colors duration-200">
 													{name}
 												</span>
 											</Link>
@@ -143,7 +143,7 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 													rel="noopener noreferrer"
 													className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 												>
-													<span className="relative inline-block align-middle truncate text-sm font-normal after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+													<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 														Source
 													</span>
 													<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
@@ -203,7 +203,7 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 															rel="noopener noreferrer"
 															className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 														>
-															<span className="relative inline-block align-middle truncate text-sm font-normal after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+															<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 																Source
 															</span>
 															<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
@@ -222,3 +222,4 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 		</div>
 	);
 }
+

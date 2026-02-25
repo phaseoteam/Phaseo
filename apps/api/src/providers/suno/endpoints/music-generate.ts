@@ -8,6 +8,7 @@ import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
 import { saveMusicJobMeta } from "@core/music-jobs";
+import { computeBill } from "@pipeline/pricing/engine";
 
 function toSunoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
 	const status = String(value ?? "").trim().toUpperCase();
@@ -40,7 +41,7 @@ function extractTaskId(payload: any): string | undefined {
 	return asString.length > 0 ? asString : undefined;
 }
 
-function normalizeCreateResponse(payload: any, model: string): Record<string, any> {
+function normalizeCreateResponse(payload: any, model: string, usage?: Record<string, any>): Record<string, any> {
 	const taskId = extractTaskId(payload);
 	const status = toSunoStatus(payload?.data?.status ?? payload?.status);
 	return {
@@ -51,6 +52,7 @@ function normalizeCreateResponse(payload: any, model: string): Record<string, an
 		model,
 		nativeResponseId: taskId ?? null,
 		result: payload,
+		...(usage ? { usage } : {}),
 	};
 }
 
@@ -166,8 +168,32 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		finish_reason: null,
 	};
 
+	const requestedDurationSeconds =
+		typeof typedPayload.duration === "number" && Number.isFinite(typedPayload.duration) && typedPayload.duration > 0
+			? typedPayload.duration
+			: undefined;
+
+	const usageMeters = {
+		requests: 1,
+		...(requestedDurationSeconds != null ? { output_audio_seconds: requestedDurationSeconds } : {}),
+	};
+	if (args.pricingCard) {
+		const pricedUsage = computeBill(usageMeters, args.pricingCard, {
+			model: String(model ?? typedPayload.model ?? ""),
+		});
+		bill.cost_cents = pricedUsage.pricing.total_cents;
+		bill.currency = pricedUsage.pricing.currency;
+		bill.usage = pricedUsage;
+	}
+
 	const json = await res.clone().json().catch(() => null);
-	const normalized = json ? normalizeCreateResponse(json, String(model ?? typedPayload.model ?? "")) : undefined;
+	const normalized = json
+		? normalizeCreateResponse(
+			json,
+			String(model ?? typedPayload.model ?? ""),
+			(bill.usage ?? usageMeters) as Record<string, any>,
+		)
+		: undefined;
 
 	if (res.ok && normalized?.id) {
 		try {
@@ -176,6 +202,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 				model: String(model ?? typedPayload.model ?? ""),
 				duration: typeof typedPayload.duration === "number" ? typedPayload.duration : null,
 				format: typedPayload.format ?? null,
+				status: normalized.status ?? null,
+				nativeResponseId: normalized.nativeResponseId ?? null,
 				createdAt: Date.now(),
 			});
 		} catch (err) {

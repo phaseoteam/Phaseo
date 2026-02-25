@@ -12,7 +12,18 @@
     "max_output_tokens": null,
     "effective_from": "2025-11-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "black-forest-labs/flux-2-klein-4b",
@@ -27,7 +38,18 @@
     "max_output_tokens": null,
     "effective_from": "2026-01-15T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "black-forest-labs/flux-2-klein-9b",
@@ -42,7 +64,18 @@
     "max_output_tokens": null,
     "effective_from": "2026-01-15T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "black-forest-labs/flux-2-max",
@@ -57,7 +90,18 @@
     "max_output_tokens": null,
     "effective_from": "2025-12-16T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "black-forest-labs/flux-2-pro",
@@ -72,7 +116,18 @@
     "max_output_tokens": null,
     "effective_from": "2025-11-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "black-forest-labs/flux-1-kontext-pro",

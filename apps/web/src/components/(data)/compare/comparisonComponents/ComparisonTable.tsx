@@ -204,7 +204,7 @@ export default function ComparisonTable({
 														href={`/models/${model.id}`}
 														className="group"
 													>
-														<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full font-medium">
+														<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-medium">
 															{model.name}
 														</span>
 													</Link>
@@ -212,7 +212,7 @@ export default function ComparisonTable({
 														href={`/organisations/${model.provider.provider_id}`}
 														className="group text-xs text-muted-foreground"
 													>
-														<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+														<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 															{
 																model.provider
 																	.name
@@ -445,7 +445,7 @@ export default function ComparisonTable({
 														href={model.api_reference_link}
 														target="_blank"
 														rel="noopener noreferrer"
-														className="hover:underline"
+														className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 													>
 														Docs
 													</Link>
@@ -455,7 +455,7 @@ export default function ComparisonTable({
 														href={model.repository_link}
 														target="_blank"
 														rel="noopener noreferrer"
-														className="hover:underline"
+														className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 													>
 														Repo
 													</Link>
@@ -465,7 +465,7 @@ export default function ComparisonTable({
 														href={model.paper_link}
 														target="_blank"
 														rel="noopener noreferrer"
-														className="hover:underline"
+														className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 													>
 														Paper
 													</Link>
@@ -475,7 +475,7 @@ export default function ComparisonTable({
 														href={model.announcement_link}
 														target="_blank"
 														rel="noopener noreferrer"
-														className="hover:underline"
+														className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 													>
 														Announcement
 													</Link>
@@ -485,7 +485,7 @@ export default function ComparisonTable({
 														href={model.weights_link}
 														target="_blank"
 														rel="noopener noreferrer"
-														className="hover:underline"
+														className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 													>
 														Weights
 													</Link>
@@ -703,7 +703,7 @@ export default function ComparisonTable({
 														)}`}
 														className="group"
 													>
-														<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+														<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 															{benchmarkName}
 														</span>
 													</Link>
@@ -819,13 +819,13 @@ export default function ComparisonTable({
 									<div className="flex flex-col">
 										<Link
 											href={`/models/${model.id}`}
-											className="font-medium hover:underline focus:outline-none"
+											className="font-medium underline decoration-transparent hover:decoration-current transition-colors duration-200 focus:outline-none"
 										>
 											{model.name}
 										</Link>
 										<Link
 											href={`/organisations/${model.provider.provider_id}`}
-											className="text-xs text-muted-foreground hover:underline focus:outline-none"
+											className="text-xs text-muted-foreground underline decoration-transparent hover:decoration-current transition-colors duration-200 focus:outline-none"
 										>
 											{model.provider.name}
 										</Link>
@@ -1083,7 +1083,7 @@ export default function ComparisonTable({
 																	)}`}
 																	className="group"
 																>
-																	<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full font-semibold">
+																	<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
 																		{
 																			benchmarkName
 																		}
@@ -1116,3 +1116,4 @@ export default function ComparisonTable({
 		</section>
 	);
 }
+

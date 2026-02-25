@@ -1,13 +1,13 @@
-// Purpose: Track async video jobs for completion-time billing.
-// Why: /videos create is async; billing should happen when job completes.
-// How: Store lightweight metadata and a billed marker in KV.
+// Purpose: Track async video jobs for ownership + completion-time billing.
+// Why: /videos create is async; follow-up status/content calls must be team-scoped.
+// How: Persist metadata and billed markers in the async-operations DB table.
 
-import { getCache } from "@/runtime/env";
-
-const VIDEO_JOB_META_PREFIX = "gateway:video:meta";
-const VIDEO_JOB_BILLED_PREFIX = "gateway:video:billed";
-const VIDEO_JOB_META_TTL_SECONDS = 60 * 60 * 24 * 14; // 14 days
-const VIDEO_JOB_BILLED_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+import {
+	getAsyncOperation,
+	isAsyncOperationBilled as isAsyncOperationBilledInDb,
+	markAsyncOperationBilled as markAsyncOperationBilledInDb,
+	upsertAsyncOperation,
+} from "@core/async-operations";
 
 export type VideoJobMeta = {
 	provider: string;
@@ -15,60 +15,72 @@ export type VideoJobMeta = {
 	seconds?: number | null;
 	size?: string | null;
 	quality?: string | null;
+	keySource?: "gateway" | "byok" | null;
+	byokKeyId?: string | null;
 	createdAt?: number;
 };
 
-function keyPart(value: string): string {
-	return encodeURIComponent(String(value ?? "").trim());
+function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	const source = value as Record<string, unknown>;
+	const provider = typeof source.provider === "string" ? source.provider.trim() : "";
+	if (!provider) return null;
+	const out: VideoJobMeta = { provider };
+	if (typeof source.model === "string") out.model = source.model;
+	if (typeof source.seconds === "number") out.seconds = source.seconds;
+	if (typeof source.size === "string") out.size = source.size;
+	if (typeof source.quality === "string") out.quality = source.quality;
+	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
+	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
+	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
+	return out;
 }
 
-function metaKey(teamId: string, videoId: string): string {
-	return `${VIDEO_JOB_META_PREFIX}:${keyPart(teamId)}:${keyPart(videoId)}`;
-}
-
-function billedKey(teamId: string, videoId: string): string {
-	return `${VIDEO_JOB_BILLED_PREFIX}:${keyPart(teamId)}:${keyPart(videoId)}`;
+function mergeDbVideoMeta(record: Awaited<ReturnType<typeof getAsyncOperation>>): VideoJobMeta | null {
+	if (!record) return null;
+	const meta = {
+		...(record.meta ?? {}),
+		...(record.provider ? { provider: record.provider } : {}),
+		...(record.model ? { model: record.model } : {}),
+	};
+	return parseVideoJobMeta(meta);
 }
 
 export async function saveVideoJobMeta(
 	teamId: string,
 	videoId: string,
 	meta: VideoJobMeta,
-	ttlSeconds: number = VIDEO_JOB_META_TTL_SECONDS,
+	_ttlSeconds?: number,
 ): Promise<void> {
 	if (!teamId || !videoId) return;
-	const cache = getCache();
-	await cache.put(metaKey(teamId, videoId), JSON.stringify(meta), {
-		expirationTtl: ttlSeconds,
+	const payload = { ...meta, createdAt: meta.createdAt ?? Date.now() };
+	await upsertAsyncOperation({
+		teamId,
+		kind: "video",
+		internalId: videoId,
+		nativeId: videoId,
+		provider: payload.provider,
+		model: payload.model ?? null,
+		meta: payload as unknown as Record<string, unknown>,
 	});
 }
 
 export async function getVideoJobMeta(teamId: string, videoId: string): Promise<VideoJobMeta | null> {
 	if (!teamId || !videoId) return null;
-	const raw = await getCache().get(metaKey(teamId, videoId), "text");
-	if (!raw) return null;
-	try {
-		const parsed = JSON.parse(raw);
-		if (!parsed || typeof parsed !== "object") return null;
-		return parsed as VideoJobMeta;
-	} catch {
-		return null;
-	}
+	const dbRecord = await getAsyncOperation(teamId, "video", videoId);
+	return mergeDbVideoMeta(dbRecord);
 }
 
 export async function isVideoJobBilled(teamId: string, videoId: string): Promise<boolean> {
 	if (!teamId || !videoId) return false;
-	const value = await getCache().get(billedKey(teamId, videoId), "text");
-	return value === "1";
+	return isAsyncOperationBilledInDb(teamId, "video", videoId);
 }
 
 export async function markVideoJobBilled(
 	teamId: string,
 	videoId: string,
-	ttlSeconds: number = VIDEO_JOB_BILLED_TTL_SECONDS,
+	_ttlSeconds?: number,
 ): Promise<void> {
 	if (!teamId || !videoId) return;
-	await getCache().put(billedKey(teamId, videoId), "1", {
-		expirationTtl: ttlSeconds,
-	});
+	await markAsyncOperationBilledInDb(teamId, "video", videoId);
 }

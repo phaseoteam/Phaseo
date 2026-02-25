@@ -250,7 +250,7 @@ export function ModelLeaderboard({
 								{modelHref ? (
 									<Link
 										href={modelHref}
-										className="font-medium truncate block"
+										className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 									>
 										{entry.model_name}
 									</Link>
@@ -261,7 +261,7 @@ export function ModelLeaderboard({
 									organisationHref ? (
 										<Link
 											href={organisationHref}
-											className="text-xs text-muted-foreground truncate block"
+											className="text-xs text-muted-foreground truncate block underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 										>
 											{entry.organisation_name}
 										</Link>
@@ -352,7 +352,7 @@ export function ModelLeaderboard({
 										{modelHref ? (
 											<Link
 												href={modelHref}
-												className="font-medium truncate block"
+												className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 											>
 												{entry.model_name}
 											</Link>
@@ -363,7 +363,7 @@ export function ModelLeaderboard({
 											organisationHref ? (
 												<Link
 													href={organisationHref}
-													className="text-xs text-muted-foreground truncate block"
+													className="text-xs text-muted-foreground truncate block underline underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 												>
 													{entry.organisation_name}
 												</Link>

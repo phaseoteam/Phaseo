@@ -181,6 +181,7 @@ export type GatewayContextData = {
     teamEnrichment?: TeamEnrichment | null;
     keyEnrichment?: KeyEnrichment | null;
     teamSettings?: TeamSettings | null;
+    testingMode?: boolean;
 };
 
 /**
@@ -295,5 +296,6 @@ export type PipelineContext = {
     teamSettings?: TeamSettings | null;
     routingMode?: string | null;
     keyId?: string | null;
+    testingMode?: boolean;
 };
 

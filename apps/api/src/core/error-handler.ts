@@ -45,6 +45,18 @@ function redactErrorValue(value: unknown, depth = 0): unknown {
     return value;
 }
 
+function headersToRecord(headers: Headers | null | undefined): Record<string, string> | null {
+    if (!headers) return null;
+    const out: Record<string, string> = {};
+    let count = 0;
+    for (const [key, value] of headers.entries()) {
+        out[key] = value;
+        count += 1;
+        if (count >= 128) break;
+    }
+    return Object.keys(out).length > 0 ? out : null;
+}
+
 function buildErrorDetails(body: unknown, ctx?: PipelineContext) {
     const attemptErrors = ctx ? (ctx as any).attemptErrors ?? null : null;
     const safeAttemptErrors = Array.isArray(attemptErrors)
@@ -496,6 +508,8 @@ export async function handleError({
             routing: routingDebug,
         };
     }
+    const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
+    const providerResponseHeaders = sanitizeForAxiom(headersToRecord(res.headers));
 
     // Audit failure
     const auditExtraJson = (() => {
@@ -515,9 +529,28 @@ export async function handleError({
                     endpoint,
                     model: ctx?.model ?? body?.model ?? null,
                     request_surface_sanitized: sanitizeForAxiom(ctx?.rawBody ?? ctx?.body ?? null),
+                    gateway_response_sanitized: gatewayErrorPayload,
+                    gateway_response_present: true,
+                    upstream_request_sanitized: null,
+                    upstream_response_sanitized: sanitizeForAxiom(body ?? null),
+                    upstream_response_present: body != null,
+                    upstream_response_headers: providerResponseHeaders,
+                    upstream_status_code: statusCode,
+                    upstream_status_text: res.statusText ?? null,
+                    upstream_url: res.url ?? null,
                     requested_params: sanitizeForAxiom(ctx?.requestedParams ?? null),
                     param_routing_diagnostics: sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null),
+                    provider_enablement_diagnostics: sanitizeForAxiom(ctx?.providerEnablementDiagnostics ?? null),
+                    provider_candidate_build_diagnostics: sanitizeForAxiom(
+                        ctx?.providerCandidateBuildDiagnostics ?? null,
+                    ),
+                    attempt_errors: sanitizeForAxiom((ctx as any)?.attemptErrors ?? null),
+                    routing_snapshot: sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null),
+                    routing_diagnostics: sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null),
+                    error_details: sanitizeForAxiom(body ?? null),
                 },
+                gateway_response_sanitized: gatewayErrorPayload,
+                provider_response_sanitized: sanitizeForAxiom(body ?? null),
                 internal_reporting: sanitizeForAxiom(upstreamUnsupportedParamSignal ?? null),
             });
         } catch {
@@ -592,6 +625,9 @@ export async function handleError({
         unsupportedParam: upstreamUnsupportedParamSignal?.param ?? null,
         unsupportedParamPath: upstreamUnsupportedParamSignal?.path ?? null,
         errorDetails: body,
+        providerResponse: body,
+        providerResponseHeaders: headersToRecord(res.headers),
+        gatewayResponse: errorPayload,
     });
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }

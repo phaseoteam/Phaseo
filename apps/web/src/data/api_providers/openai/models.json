@@ -9,7 +9,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 16384,
     "effective_from": "2023-08-22T00:00:00",
     "effective_to": "2026-09-28T00:00:00",
     "capabilities": [
@@ -72,8 +72,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2024-05-13T00:00:00",
     "effective_to": "2026-02-17T00:00:00",
     "capabilities": [
@@ -179,7 +179,7 @@
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
-    "max_output_tokens": null,
+    "max_output_tokens": 16384,
     "effective_from": "2023-08-22T00:00:00",
     "effective_to": "2026-09-28T00:00:00",
     "capabilities": [
@@ -242,8 +242,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 16385,
+    "max_output_tokens": 4096,
     "effective_from": "2023-11-06T00:00:00",
     "effective_to": "2026-09-28T00:00:00",
     "capabilities": [
@@ -482,8 +482,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 1047576,
+    "max_output_tokens": 32768,
     "effective_from": "2025-04-14T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -560,8 +560,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 1047576,
+    "max_output_tokens": 32768,
     "effective_from": "2025-04-14T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -638,8 +638,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 1047576,
+    "max_output_tokens": 32768,
     "effective_from": "2025-04-14T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -716,8 +716,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 8192,
+    "max_output_tokens": 8192,
     "effective_from": "2023-03-14T00:00:00",
     "effective_to": "2026-03-26T00:00:00",
     "capabilities": [
@@ -836,8 +836,8 @@
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 8192,
+    "max_output_tokens": 8192,
     "effective_from": "2023-06-13T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -956,8 +956,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 4096,
     "effective_from": "2024-05-13T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1083,8 +1083,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2024-08-06T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1210,8 +1210,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2024-11-20T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1337,8 +1337,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2024-07-18T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1464,8 +1464,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-08-07T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1542,8 +1542,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-11-12T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1620,8 +1620,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2025-11-13T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1684,8 +1684,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-11-13T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1762,8 +1762,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-11-19T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1840,8 +1840,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-11-13T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1918,8 +1918,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-12-11T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -1996,8 +1996,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2025-12-11T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2060,8 +2060,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2026-01-14T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2180,8 +2180,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-12-11T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2258,8 +2258,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2025-08-07T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2308,8 +2308,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-09-15T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2386,8 +2386,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-08-07T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2464,8 +2464,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
     "effective_from": "2025-08-07T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2542,8 +2542,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 400000,
+    "max_output_tokens": 272000,
     "effective_from": "2025-08-07T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2620,8 +2620,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2024-12-17T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2684,8 +2684,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2025-03-19T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2748,8 +2748,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2025-04-16T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2826,8 +2826,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2025-06-26T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -2960,8 +2960,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2025-01-30T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -3024,8 +3024,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2025-06-10T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -3102,8 +3102,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2025-04-16T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -3180,8 +3180,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2025-06-26T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -3437,14 +3437,14 @@
   {
     "api_model_id": "openai/codex-mini",
     "provider_api_model_id": "openai:openai/codex-mini",
-    "provider_model_slug": null,
+    "provider_model_slug": "codex-mini-latest",
     "internal_model_id": "openai/codex-mini-2025-05-16",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 200000,
+    "max_output_tokens": 100000,
     "effective_from": "2025-05-16T00:00:00",
     "effective_to": "2026-01-16T00:00:00",
     "capabilities": []
@@ -3458,8 +3458,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 8192,
+    "max_output_tokens": 1024,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -3563,8 +3563,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2024-10-01T00:00:00",
     "effective_to": "2025-10-10T00:00:00",
     "capabilities": []
@@ -3578,8 +3578,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2024-12-17T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -3593,8 +3593,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2025-06-03T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -3608,8 +3608,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -3623,8 +3623,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 16000,
+    "max_output_tokens": 4096,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -3653,8 +3653,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 16000,
+    "max_output_tokens": 2000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -3698,8 +3698,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 16000,
+    "max_output_tokens": 2000,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -3758,8 +3758,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -3773,8 +3773,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 128000,
+    "max_output_tokens": 16384,
     "effective_from": "2025-10-06T00:00:00",
     "effective_to": null,
     "capabilities": []
@@ -3821,8 +3821,8 @@
     ]
   },
   {
-    "api_model_id": "openai/gpt-image-1-mini-2025-10-06",
-    "provider_api_model_id": "openai:openai/gpt-image-1-mini-2025-10-06",
+    "api_model_id": "openai/gpt-image-1-mini",
+    "provider_api_model_id": "openai:openai/gpt-image-1-mini",
     "provider_model_slug": "gpt-image-1-mini",
     "internal_model_id": "openai/gpt-image-1-mini-2025-10-06",
     "is_active_gateway": false,
@@ -3833,7 +3833,18 @@
     "max_output_tokens": null,
     "effective_from": "2025-10-06T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-realtime",
@@ -3844,8 +3855,8 @@
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 32000,
+    "max_output_tokens": 4096,
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
@@ -3859,26 +3870,32 @@
     "quantization_scheme": null,
     "input_modalities": "text,image,audio",
     "output_modalities": "text,audio",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 32000,
+    "max_output_tokens": 4096,
     "effective_from": "2025-10-06T00:00:00",
     "effective_to": null,
     "capabilities": []
   },
   {
-    "api_model_id": "openai/sora-2-2025-09-30",
-    "provider_api_model_id": "openai:openai/sora-2-2025-09-30",
-    "provider_model_slug": "sora-2",
-    "internal_model_id": "openai/sora-2-2025-09-30",
+    "api_model_id": "openai/sora-2",
+    "provider_api_model_id": "openai:openai/sora-2",
+    "provider_model_slug": "sora-2-2025-12-08",
+    "internal_model_id": "openai/sora-2-2025-12-08",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video,audio",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-09-30T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/sora-2-pro-2025-10-03",
@@ -3887,8 +3904,8 @@
     "internal_model_id": "openai/sora-2-pro-2025-10-03",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video,audio",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-10-03T00:00:00",
@@ -3902,8 +3919,8 @@
     "internal_model_id": "openai/tts-1-2023-11-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -3917,8 +3934,8 @@
     "internal_model_id": "openai/tts-1-hd-2023-11-06",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "text",
+    "output_modalities": "audio",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -3932,8 +3949,8 @@
     "internal_model_id": "openai/whisper-1-2023-03-01",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
+    "input_modalities": "audio",
+    "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": null,
@@ -3943,14 +3960,14 @@
   {
     "api_model_id": "openai/o1-mini",
     "provider_api_model_id": "openai:openai/o1-mini",
-    "provider_model_slug": null,
+    "provider_model_slug": "o1-mini-2024-09-12",
     "internal_model_id": "openai/o1-mini-2024-09-12",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "context_length": null,
-    "max_output_tokens": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 65536,
     "effective_from": null,
     "effective_to": null,
     "capabilities": [
@@ -3995,19 +4012,62 @@
     "provider_api_model_id": "openai:openai/gpt-5.3-codex",
     "provider_model_slug": "gpt-5.3-codex",
     "internal_model_id": "openai/gpt-5-3-codex-2026-02-05",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": null,
+    "context_length": 400000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-02-24T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
@@ -4025,5 +4085,62 @@
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "openai/sora-2-2025-10-06",
+    "provider_api_model_id": "openai:openai/sora-2-2025-10-06",
+    "provider_model_slug": "sora-2-2025-10-06",
+    "internal_model_id": "openai/sora-2-2025-09-30",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "video,audio",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-realtime-1.5",
+    "provider_api_model_id": "openai:openai/gpt-realtime-1.5",
+    "provider_model_slug": "gpt-realtime-1.5",
+    "internal_model_id": "openai/gpt-realtime-1-5-2026-02-23",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text,audio",
+    "context_length": 32000,
+    "max_output_tokens": 4096,
+    "effective_from": "2026-02-23T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "realtime",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-audio-1.5",
+    "provider_api_model_id": "openai:openai/gpt-audio-1.5",
+    "provider_model_slug": "gpt-audio-1.5",
+    "internal_model_id": "openai/gpt-audio-1-5-2026-02-23",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text,audio",
+    "context_length": 128000,
+    "max_output_tokens": 16384,
+    "effective_from": "2026-02-23T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

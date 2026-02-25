@@ -1494,12 +1494,6 @@
         "kind": "provider_models"
       }
     },
-    "src/data/api_providers/alibaba/api_provider.json": {
-      "hash": "d27fb68b239a323af61a37da1b4dea42",
-      "meta": {
-        "api_provider_id": "alibaba"
-      }
-    },
     "src/data/api_providers/amazon-bedrock/api_provider.json": {
       "hash": "5f60575f4cb6b6c5410d4dfa807eb25a",
       "meta": {
@@ -1551,7 +1545,7 @@
       }
     },
     "src/data/api_providers/black-forest-labs/models.json": {
-      "hash": "b538d8e17f92d1b070ccbc54c14fe720",
+      "hash": "3078f39adb16e2aa5bd821353179b167",
       "meta": {
         "api_provider_id": "black-forest-labs",
         "kind": "provider_models"
@@ -1768,7 +1762,7 @@
       }
     },
     "src/data/api_providers/openai/models.json": {
-      "hash": "e0cb162f364a12217c453802fc3731f3",
+      "hash": "492e099d15f4f502bd446e7489ce77d6",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -1848,7 +1842,7 @@
       }
     },
     "src/data/api_providers/x-ai/models.json": {
-      "hash": "b0e6557ddf2d4c68ad9ff8a5fc61aa0d",
+      "hash": "b09fafb721ad6d70fb19ece431daeba7",
       "meta": {
         "api_provider_id": "x-ai",
         "kind": "provider_models"
@@ -1923,24 +1917,6 @@
         "capability_id": "audio.realtime",
         "model_id": "openai/gpt-realtime",
         "model_key": "openai:openai/gpt-realtime:audio.realtime"
-      }
-    },
-    "src/data/pricing/openai/openai-sora-2-2025-09-30/video.generations/pricing.json": {
-      "hash": "69e77939af0e497dc440d7862a73c7c8",
-      "meta": {
-        "api_provider_id": "openai",
-        "capability_id": "video.generations",
-        "model_id": "openai/sora-2-2025-09-30",
-        "model_key": "openai:openai/sora-2-2025-09-30:video.generations"
-      }
-    },
-    "src/data/pricing/openai/openai-sora-2-pro-2025-10-03/video.generations/pricing.json": {
-      "hash": "93406489e2c32cf55d6a9c008e512e89",
-      "meta": {
-        "api_provider_id": "openai",
-        "capability_id": "video.generations",
-        "model_id": "openai/sora-2-pro-2025-10-03",
-        "model_key": "openai:openai/sora-2-pro-2025-10-03:video.generations"
       }
     },
     "src/data/subscription_plans/chatgpt-free/plan.json": {
@@ -2202,24 +2178,6 @@
         "capability_id": "text.generate",
         "model_id": "google/gemini-3-pro-preview",
         "model_key": "google-ai-studio:google/gemini-3-pro-preview:text.generate"
-      }
-    },
-    "src/data/pricing/google-ai-studio/google-veo-3.1-fast-preview/video.generations/pricing.json": {
-      "hash": "2f92a0e9a1cddf7f3017152178152a48",
-      "meta": {
-        "api_provider_id": "google-ai-studio",
-        "capability_id": "video.generations",
-        "model_id": "google/veo-3.1-fast-preview",
-        "model_key": "google-ai-studio:google/veo-3.1-fast-preview:video.generations"
-      }
-    },
-    "src/data/pricing/google-ai-studio/google-veo-3.1-preview/video.generations/pricing.json": {
-      "hash": "28ccbda3007664c31d7071f527ba5699",
-      "meta": {
-        "api_provider_id": "google-ai-studio",
-        "capability_id": "video.generations",
-        "model_id": "google/veo-3.1-preview",
-        "model_key": "google-ai-studio:google/veo-3.1-preview:video.generations"
       }
     },
     "src/data/pricing/novitaai/xiaomi-mimo-v2-flash/text.generate/pricing.json": {
@@ -3565,7 +3523,7 @@
       }
     },
     "src/data/pricing/anthropic/anthropic-claude-opus-4.6/text.generate/pricing.json": {
-      "hash": "8b6b8b53c080c18c74d32e89f6f1370f",
+      "hash": "f2ac4bf268d9b000d5f1437faf9b5633",
       "meta": {
         "api_provider_id": "anthropic",
         "capability_id": "text.generate",
@@ -3606,7 +3564,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5.3-codex/text.generate/pricing.json": {
-      "hash": "d5e42bf1ac5c77638376a22e28dde286",
+      "hash": "e85bbcb27da502cffae55bce4ebc6cd1",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -3642,7 +3600,7 @@
       }
     },
     "src/data/models/z-ai/glm-5-2026-02-11/model.json": {
-      "hash": "e7b6ed08ca213cb9d46fef9014c0823c",
+      "hash": "58e90cf2077083f51967efd06b8bcf70",
       "meta": {
         "model_id": "z-ai/glm-5-2026-02-11",
         "organisation_id": "z-ai",
@@ -4243,14 +4201,14 @@
       }
     },
     "src/data/api_providers/baseten/models.json": {
-      "hash": "6e8c8460d854ac0ef713ec0cc1dcd615",
+      "hash": "f39112e3ecbf7b6e08f29a0e4c221dd9",
       "meta": {
         "api_provider_id": "baseten",
         "kind": "provider_models"
       }
     },
     "src/data/api_providers/cohere/models.json": {
-      "hash": "3ef45dc5ea01445847cab39f0d941bc0",
+      "hash": "cf55ba4beb02d81fe7b8c316d4babcf5",
       "meta": {
         "api_provider_id": "cohere",
         "kind": "provider_models"
@@ -4295,7 +4253,7 @@
       }
     },
     "src/data/api_providers/together/models.json": {
-      "hash": "c6d7a2befd0c305cf6e21a5a7148726e",
+      "hash": "c5f7dc5fcec578f49ab4e046b2f97b30",
       "meta": {
         "api_provider_id": "together",
         "kind": "provider_models"
@@ -5167,7 +5125,7 @@
       }
     },
     "src/data/models/prime-intellect/intellect-3-1-2026-02-18/model.json": {
-      "hash": "5fba6ee42c0281d4dc2c0c9e06ca6c1a",
+      "hash": "4b195e703eea32dc1b4fdc91e1861681",
       "meta": {
         "model_id": "prime-intellect/intellect-3-1-2026-02-18",
         "organisation_id": "prime-intellect",
@@ -5695,7 +5653,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-5-397b-a17b-2026-02-16/model.json": {
-      "hash": "e0e436982779f5c0077ea4055edea684",
+      "hash": "79ae6fce2e696f82bf9d9651972726a5",
       "meta": {
         "model_id": "qwen/qwen-3-5-397b-a17b-2026-02-16",
         "organisation_id": "qwen",
@@ -5703,7 +5661,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-5-plus-2026-02-16/model.json": {
-      "hash": "b6e2fecead9bcaa872278ed1684e9fec",
+      "hash": "8e156995066be30c000cf61cabf8cd4a",
       "meta": {
         "model_id": "qwen/qwen-3-5-plus-2026-02-16",
         "organisation_id": "qwen",
@@ -6319,7 +6277,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-5-haiku-2024-11-04/model.json": {
-      "hash": "4ff064ae8e443b125060693e3039724d",
+      "hash": "09d56fcb448b55ac1ceb04ffbbc30f16",
       "meta": {
         "model_id": "anthropic/claude-3-5-haiku-2024-11-04",
         "organisation_id": "anthropic",
@@ -6343,7 +6301,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-7-sonnet-2025-02-24/model.json": {
-      "hash": "66c01508405102720afe0d7989ea6cbf",
+      "hash": "c8af2e03c983069687a9028c9119afd4",
       "meta": {
         "model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
         "organisation_id": "anthropic",
@@ -6351,7 +6309,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-haiku-2024-03-13/model.json": {
-      "hash": "929b3eee2a1a43422c8e6bdff4b7e2fb",
+      "hash": "ef96340bd62aeb008a57d0cb8bbbd39f",
       "meta": {
         "model_id": "anthropic/claude-3-haiku-2024-03-13",
         "organisation_id": "anthropic",
@@ -6455,7 +6413,7 @@
       }
     },
     "src/data/models/anthropic/claude-sonnet-4-6-2026-02-17/model.json": {
-      "hash": "62267f4fe4703cba632a2333997920fd",
+      "hash": "2335d218a9d315b5eab6588d400fdf07",
       "meta": {
         "model_id": "anthropic/claude-sonnet-4-6-2026-02-17",
         "organisation_id": "anthropic",
@@ -7599,7 +7557,7 @@
       }
     },
     "src/data/models/google/gemini-3-1-pro-preview-2026-02-19/model.json": {
-      "hash": "307d21357588e569b703d3922aca5ae3",
+      "hash": "1f5dfc8e136f5bbe9b87a487d5a218db",
       "meta": {
         "model_id": "google/gemini-3-1-pro-preview-2026-02-19",
         "organisation_id": "google",
@@ -8471,7 +8429,7 @@
       }
     },
     "src/data/models/inclusionai/ring-1t-2-5-2026-02-12/model.json": {
-      "hash": "e12192c006869c5b65acf219bd8ffd4a",
+      "hash": "d6221e8c232413302dc4268ada8d598e",
       "meta": {
         "model_id": "inclusionai/ring-1t-2-5-2026-02-12",
         "organisation_id": "inclusionai",
@@ -8991,7 +8949,7 @@
       }
     },
     "src/data/models/minimax/minimax-m2-5-2026-02-12/model.json": {
-      "hash": "dc4ea31112552ee5544a987fb0a79f31",
+      "hash": "f30f23fd3c2d0c867321bb44ba915220",
       "meta": {
         "model_id": "minimax/minimax-m2-5-2026-02-12",
         "organisation_id": "minimax",
@@ -10833,47 +10791,6 @@
         "model_key": "google-ai-studio:google/veo-3.1-preview:video.generate"
       }
     },
-    "src/data/pricing/openai/openai-gpt-4o-mini-tts/audio.generate/pricing.json": {
-      "hash": "59bf8541bb836916eaae94731a8ba578",
-      "meta": {
-        "api_provider_id": "openai",
-        "capability_id": "audio.generate",
-        "model_id": "openai/gpt-4o-mini-tts",
-        "model_key": "openai:openai/gpt-4o-mini-tts:audio.generate"
-      }
-    },
-    "src/data/models/qwen/qwen-3-2-27b-2026-02-24/model.json": {
-      "hash": "9b075bae28bf3d8913d1eb4b65a102ff",
-      "meta": {
-        "model_id": "qwen/qwen-3-2-27b-2026-02-24",
-        "organisation_id": "qwen",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/qwen/qwen-3-5-122b-a10b-2026-02-24/model.json": {
-      "hash": "c5bcfcf3904f5e6855374774848575c7",
-      "meta": {
-        "model_id": "qwen/qwen-3-5-122b-a10b-2026-02-24",
-        "organisation_id": "qwen",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/qwen/qwen-3-5-35b-a3b-2026-02-24/model.json": {
-      "hash": "461c650c8f0eb290da5f2e108ac75482",
-      "meta": {
-        "model_id": "qwen/qwen-3-5-35b-a3b-2026-02-24",
-        "organisation_id": "qwen",
-        "previous_model_id": null
-      }
-    },
-    "src/data/models/qwen/qwen-3-5-flash-2026-02-23/model.json": {
-      "hash": "c80b17fe503e67e07f4f443d2362a23b",
-      "meta": {
-        "model_id": "qwen/qwen-3-5-flash-2026-02-23",
-        "organisation_id": "qwen",
-        "previous_model_id": null
-      }
-    },
     "src/data/models/openai/gpt-audio-1-5-2026-02-23/model.json": {
       "hash": "205c2f50ae49ccf9daa8082b4a952870",
       "meta": {
@@ -10888,6 +10805,15 @@
         "model_id": "openai/gpt-realtime-1-5-2026-02-23",
         "organisation_id": "openai",
         "previous_model_id": "openai/gpt-realtime-2025-08-28"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-4o-mini-tts/audio.generate/pricing.json": {
+      "hash": "59bf8541bb836916eaae94731a8ba578",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "audio.generate",
+        "model_id": "openai/gpt-4o-mini-tts",
+        "model_key": "openai:openai/gpt-4o-mini-tts:audio.generate"
       }
     },
     "src/data/pricing/openai/openai-gpt-audio-1.5/audio/pricing.json": {

@@ -40,4 +40,20 @@ describe("observability privacy sanitization", () => {
 		expect(raw!.length).toBeGreaterThan(0);
 		expect(raw).toContain("[truncated");
 	});
+
+	it("keeps non-prompt telemetry fields such as urls and binary metadata", () => {
+		const sanitized = sanitizeForAxiom({
+			output: {
+				url: "https://example.com/file.png",
+				bytes: "ZmFrZQ==",
+				data: { size: 128, mime: "image/png" },
+			},
+			prompt: "draw a cat",
+		}) as any;
+
+		expect(sanitized.output.url).toBe("https://example.com/file.png");
+		expect(sanitized.output.bytes).toBe("ZmFrZQ==");
+		expect(sanitized.output.data.size).toBe(128);
+		expect(String(sanitized.prompt)).toContain("[redacted");
+	});
 });

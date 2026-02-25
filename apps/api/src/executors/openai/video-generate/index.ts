@@ -10,21 +10,23 @@ import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatib
 import { saveVideoJobMeta } from "@core/video-jobs";
 import type { ProviderExecutor } from "../../types";
 
-function parseDurationSeconds(ir: IRVideoGenerationRequest): number | undefined {
-	if (typeof ir.durationSeconds === "number" && Number.isFinite(ir.durationSeconds) && ir.durationSeconds > 0) {
-		return ir.durationSeconds;
+function normalizePositiveSeconds(value: unknown): string | undefined {
+	if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+		return String(Math.trunc(value));
 	}
-	if (typeof ir.duration === "number" && Number.isFinite(ir.duration) && ir.duration > 0) {
-		return ir.duration;
-	}
-	if (typeof ir.seconds === "number" && Number.isFinite(ir.seconds) && ir.seconds > 0) {
-		return ir.seconds;
-	}
-	if (typeof ir.seconds === "string" && ir.seconds.trim().length > 0) {
-		const parsed = Number(ir.seconds.trim());
-		if (Number.isFinite(parsed) && parsed > 0) return parsed;
+	if (typeof value === "string" && value.trim().length > 0) {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed) && parsed > 0) return String(Math.trunc(parsed));
 	}
 	return undefined;
+}
+
+function parseDurationSeconds(ir: IRVideoGenerationRequest): string | undefined {
+	return (
+		normalizePositiveSeconds(ir.durationSeconds) ??
+		normalizePositiveSeconds(ir.duration) ??
+		normalizePositiveSeconds(ir.seconds)
+	);
 }
 
 function mapOpenAiVideoStatus(value: unknown): IRVideoGenerationResponse["status"] {
@@ -118,7 +120,7 @@ function openAiVideoToIR(
 	requestId: string,
 	model: string,
 	provider: string,
-	requestedSeconds?: number,
+	requestedSeconds?: string,
 ): IRVideoGenerationResponse {
 	const status = mapOpenAiVideoStatus(json?.status);
 	const seconds =
@@ -161,6 +163,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const seconds = parseDurationSeconds(ir);
 	const inputReference = resolveInputReferenceValue(ir);
 	const mappedRequestEnabled = Boolean(args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest);
+	const secondsForMeta = seconds != null ? Number(seconds) : null;
 
 	let headers = openAICompatHeaders("openai", keyInfo.key);
 	let requestBody: BodyInit;
@@ -232,9 +235,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			await saveVideoJobMeta(args.teamId, String(nativeVideoId), {
 				provider: args.providerId,
 				model,
-				seconds: seconds ?? null,
+				seconds: Number.isFinite(secondsForMeta) ? secondsForMeta : null,
 				size: ir.size ?? null,
 				quality: ir.quality ?? (ir.rawRequest as any)?.quality ?? null,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
 				createdAt: Date.now(),
 			});
 		} catch (err) {

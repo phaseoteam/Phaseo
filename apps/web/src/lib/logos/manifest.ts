@@ -3,6 +3,10 @@ export const logoManifest = {
 		light: "/logos/ai21_light.svg",
 		dark: "/logos/ai21_dark.svg",
 	},
+	"ai-stats": {
+		light: "/logo_light.svg",
+		dark: "/logo_dark.svg",
+	},
 	aionlabs: {
 		color: "/logos/aionlabs.svg",
 	},
@@ -199,6 +203,10 @@ export const logoManifest = {
 		light: "/logos/openai_light.svg",
 		dark: "/logos/openai_dark.svg",
 	},
+	openrouter: {
+		light: "/logos/openrouter_light.svg",
+		dark: "/logos/openrouter_dark.svg",
+	},
 	parasail: {
 		light: "/logos/parasail_light.svg",
 		dark: "/logos/parasail_dark.svg",
@@ -241,7 +249,11 @@ export const logoManifest = {
 		dark: "/logos/suno_dark.svg",
 	},
 	together: {
-		color: "/logos/together.svg",
+		light: "/logos/together_light.svg",
+		dark: "/logos/together_dark.svg",
+	},
+	venice: {
+		color: "/logos/venice.svg",
 	},
 	vercel: {
 		light: "/logos/vercel_light.svg",

@@ -8,6 +8,7 @@ import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
 import { computeBill } from "@pipeline/pricing/engine";
+import { resolveElevenLabsVoiceId, validateElevenLabsVoiceForModel } from "../voices";
 
 function resolveElevenLabsModelSlug(requestedModel: string, providerModelSlug?: string | null): string {
 	if (providerModelSlug && providerModelSlug.trim().length > 0) {
@@ -31,6 +32,13 @@ function resolveOutputFormat(
 	return undefined;
 }
 
+function asRecord(value: unknown): Record<string, any> {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		return {};
+	}
+	return value as Record<string, any>;
+}
+
 function missingVoiceResponse(): Response {
 	return new Response(
 		JSON.stringify({
@@ -46,6 +54,48 @@ function missingVoiceResponse(): Response {
 	);
 }
 
+function invalidVoiceResponse(voice: string, model: string, supported: string[]): Response {
+	return new Response(
+		JSON.stringify({
+			error: {
+				type: "invalid_request_error",
+				message:
+					`Invalid voice "${voice}" for ElevenLabs model "${model}". ` +
+					`Supported voices: ${supported.join(", ")}`,
+				param: "voice",
+			},
+		}),
+		{
+			status: 400,
+			headers: { "Content-Type": "application/json" },
+		},
+	);
+}
+
+function resolveVoiceId(
+	voice: AudioSpeechRequest["voice"],
+	elevenlabsParams: Record<string, any>,
+): string {
+	if (typeof voice === "string") return resolveElevenLabsVoiceId(voice);
+	if (voice && typeof voice === "object") {
+		const candidateKeys = ["id", "voice_id", "voiceId", "name", "voiceName"];
+		for (const key of candidateKeys) {
+			const candidate = (voice as Record<string, unknown>)[key];
+			if (typeof candidate === "string" && candidate.trim()) {
+				return resolveElevenLabsVoiceId(candidate);
+			}
+		}
+	}
+	const configCandidateKeys = ["voice_id", "voiceId", "voice", "voice_name", "voiceName"];
+	for (const key of configCandidateKeys) {
+		const candidate = elevenlabsParams[key];
+		if (typeof candidate === "string" && candidate.trim()) {
+			return resolveElevenLabsVoiceId(candidate);
+		}
+	}
+	return "";
+}
+
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	const keyInfo = resolveProviderKey(args, () => {
 		const bindings = getBindings() as any;
@@ -56,13 +106,29 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	const typedPayload = adapterPayload as AudioSpeechRequest;
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = String(bindings.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");
-	const elevenlabsParams = (typedPayload.config?.elevenlabs ?? {}) as Record<string, any>;
+	const elevenlabsParams = asRecord(typedPayload.config?.elevenlabs);
 
-	const voiceId = (typedPayload.voice ?? "").trim();
+	const voiceId = resolveVoiceId(typedPayload.voice, elevenlabsParams);
 	if (!voiceId) {
 		return {
 			kind: "completed",
 			upstream: missingVoiceResponse(),
+			bill: {
+				cost_cents: 0,
+				currency: "USD",
+				usage: undefined,
+				upstream_id: null,
+				finish_reason: null,
+			},
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+		};
+	}
+	const voiceValidation = validateElevenLabsVoiceForModel(typedPayload.model, voiceId);
+	if (!voiceValidation.ok) {
+		return {
+			kind: "completed",
+			upstream: invalidVoiceResponse(voiceId, typedPayload.model, voiceValidation.supported),
 			bill: {
 				cost_cents: 0,
 				currency: "USD",

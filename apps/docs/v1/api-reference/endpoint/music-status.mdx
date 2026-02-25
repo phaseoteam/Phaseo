@@ -6,3 +6,38 @@ description: "Check the status of an asynchronous music generation job."
 ---
 
 Use this endpoint to poll a music job created by `POST /music/generate`.
+
+## Response Shape
+
+```json
+{
+  "id": "task_123",
+  "object": "music",
+  "status": "completed",
+  "provider": "suno",
+  "model": "V4_5PLUS",
+  "nativeResponseId": "task_123",
+  "output": [
+    {
+      "index": 0,
+      "id": "clip_1",
+      "audio_url": "https://...",
+      "stream_audio_url": "https://...",
+      "image_url": "https://...",
+      "title": "Midnight Blue",
+      "tags": "jazz, piano",
+      "duration": 8
+    }
+  ],
+  "usage": {
+    "output_audio_count": 1,
+    "output_audio_seconds": 8
+  }
+}
+```
+
+## Notes
+
+- `status` can be: `queued`, `in_progress`, `completed`, `failed`.
+- `usage` is included when generation is complete.
+- Status polling supports provider-specific backends (Suno, ElevenLabs, MiniMax) behind one endpoint.

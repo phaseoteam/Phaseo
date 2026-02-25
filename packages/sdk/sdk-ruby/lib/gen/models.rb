@@ -47,6 +47,7 @@ module AiStats
     ModerationsResponse = Struct.new(:id, :model, :results, keyword_init: true)
     MusicGenerateRequest = Struct.new(:debug, :duration, :echo_upstream_request, :elevenlabs, :format, :model, :prompt, :provider, :suno, keyword_init: true)
     MusicGenerateResponse = Struct.new(:_unused, keyword_init: true)
+    NotImplementedResponse = Struct.new(:description, :error, :status_code, keyword_init: true)
     OcrRequest = Struct.new(:debug, :echo_upstream_request, :image, :language, :model, :provider, keyword_init: true)
     OcrResponse = Struct.new(:_unused, keyword_init: true)
     OrganisationId = Object
@@ -56,6 +57,7 @@ module AiStats
     ProvisioningKey = Struct.new(:created_at, :id, :last_used_at, :name, :prefix, :scopes, :status, keyword_init: true)
     ProvisioningKeyDetail = Struct.new(:created_at, :created_by, :id, :last_used_at, :name, :prefix, :scopes, :soft_blocked, :status, :team_id, keyword_init: true)
     ProvisioningKeyWithValue = Struct.new(:created_at, :id, :key, :name, :prefix, :scopes, :status, keyword_init: true)
+    RealtimeNotImplementedResponse = Struct.new(:error, keyword_init: true)
     ReasoningConfig = Struct.new(:effort, :summary, keyword_init: true)
     ResponsesRequest = Struct.new(:background, :conversation, :debug, :include, :input, :input_items, :instructions, :max_output_tokens, :max_tool_calls, :meta, :metadata, :model, :parallel_tool_calls, :previous_response_id, :prompt, :prompt_cache_key, :prompt_cache_retention, :provider, :reasoning, :safety_identifier, :service_tier, :store, :stream, :stream_options, :temperature, :text, :tool_choice, :tools, :top_logprobs, :top_p, :truncation, :usage, :user, keyword_init: true)
     ResponsesResponse = Struct.new(:content, :created, :id, :model, :object, :role, :stop_reason, :type, :usage, keyword_init: true)

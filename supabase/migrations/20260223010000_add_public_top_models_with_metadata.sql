@@ -2,6 +2,7 @@
 -- Resolves internal model IDs via provider mappings and falls back to org prefix hints.
 
 DROP FUNCTION IF EXISTS public.get_public_top_models_with_metadata(text, integer);
+
 CREATE OR REPLACE FUNCTION public.get_public_top_models_with_metadata(
   p_time_range text DEFAULT 'week',
   p_limit integer DEFAULT 6
@@ -131,5 +132,6 @@ BEGIN
   LIMIT GREATEST(1, p_limit);
 END;
 $$ LANGUAGE plpgsql STABLE;
+
 COMMENT ON FUNCTION public.get_public_top_models_with_metadata(text, integer)
   IS 'Public top models by token usage with internal model + organisation metadata resolution.';

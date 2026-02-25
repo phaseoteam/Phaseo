@@ -1426,6 +1426,7 @@ export function ChatConversation({
 	);
 
 	const handleSubmit = () => {
+		if (isSending) return;
 		const text = composer.trim();
 		if (!text && attachments.length === 0) return;
 		if (!isAuthenticated) {

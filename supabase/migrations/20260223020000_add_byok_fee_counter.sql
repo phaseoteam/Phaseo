@@ -8,8 +8,10 @@ create table if not exists public.team_byok_monthly_usage (
   updated_at timestamptz not null default now(),
   primary key (team_id, month_start)
 );
+
 create index if not exists team_byok_monthly_usage_month_start_idx
   on public.team_byok_monthly_usage (month_start);
+
 create or replace function public.increment_team_byok_monthly_request_count(
   p_team_id uuid,
   p_now timestamptz default now()
@@ -57,5 +59,6 @@ begin
     and u.month_start = v_month_start;
 end;
 $$;
+
 comment on function public.increment_team_byok_monthly_request_count(uuid, timestamptz) is
   'Atomically increments BYOK request count for team/month (UTC month boundary) and returns updated count.';

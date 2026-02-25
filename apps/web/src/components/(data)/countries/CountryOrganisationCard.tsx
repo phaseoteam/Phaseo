@@ -47,7 +47,7 @@ export default function CountryOrganisationCard({
 								href={organisationPath}
 								className="font-semibold leading-tight text-zinc-950 hover:text-primary dark:text-zinc-50"
 							>
-								<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+								<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 									{organisation.organisation_name ??
 										organisation.organisation_id}
 								</span>
@@ -72,7 +72,7 @@ export default function CountryOrganisationCard({
 										href={`/models/${model.model_id}`}
 										className="font-semibold leading-tight text-zinc-950 hover:text-primary dark:text-zinc-50"
 									>
-										<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+										<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 											{model.name}
 										</span>
 									</Link>

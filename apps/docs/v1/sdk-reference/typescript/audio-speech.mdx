@@ -11,16 +11,46 @@ const audio = await client.generateSpeech({
   model: "openai/gpt-4o-mini-tts",
   input: "Hello world",
   voice: "alloy",
-  format: "mp3",
+  response_format: "mp3",
 });
 ```
 
 ### Key parameters
 - `model` (required): TTS-capable model id.
 - `input` (required): Text to synthesize.
-- `voice`: Voice preset (model-dependent, e.g., `alloy`).
-- `format`: `mp3`, `wav`, `flac`, etc.
-- `speed`: Playback speed multiplier (typically 0.25–4).
+- `voice`: Provider-normalized voice alias (recommended) or provider-native voice value.
+- `response_format`: `mp3`, `wav`, `flac`, etc.
+- `speed`: Playback speed multiplier (typically 0.25-4).
+
+If `voice` is not valid for the routed provider/model mapping, the API returns `400` with `param: "voice"`.
+
+### Provider config examples
+
+```typescript
+// ElevenLabs explicit override
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM"
+    }
+  }
+});
+
+// Google explicit override
+await client.generateSpeech({
+  model: "google/gemini-2.5-flash-preview-tts",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore"
+    }
+  }
+});
+```
 
 ### Returns
 Audio binary (Blob)

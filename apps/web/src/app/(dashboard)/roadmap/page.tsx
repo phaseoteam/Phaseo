@@ -1,4 +1,4 @@
-﻿// app/roadmap/page.tsx
+// app/roadmap/page.tsx
 import { Metadata } from "next";
 import {
 	GitCompare,
@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
-	MILESTONES,
 	splitUpcomingAndShipped,
 	monthLabelFromKey,
 	formatShortDate,
@@ -114,12 +113,7 @@ function FeedbackCTA() {
 
 export default async function RoadmapPage() {
 	const { upcoming, shippedGroups } = splitUpcomingAndShipped();
-	// Avoid reading the current time during prerender.
-	const thisMonthKey = new Date(
-		process.env.NEXT_PUBLIC_DEPLOY_TIME ?? "1970-01-01T00:00:00.000Z"
-	)
-		.toISOString()
-		.slice(0, 7);
+	const latestShippedMonthKey = shippedGroups[0]?.[0] ?? null;
 
 	return (
 		<main className="min-h-screen">
@@ -148,12 +142,14 @@ export default async function RoadmapPage() {
 						>
 							Shipped
 						</a>
-						<a
-							href={`#shipped-${thisMonthKey}`}
-							className="rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
-						>
-							This month
-						</a>
+						{latestShippedMonthKey ? (
+							<a
+								href={`#shipped-${latestShippedMonthKey}`}
+								className="rounded-full border border-zinc-300 px-3 py-1 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900"
+							>
+								Latest shipped
+							</a>
+						) : null}
 					</div>
 				</div>
 
@@ -204,7 +200,7 @@ export default async function RoadmapPage() {
 							{m.href && (
 								<a
 									href={m.href}
-									className="mt-4 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+									className="mt-4 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									Learn more{" "}
 									<ArrowRight className="h-4 w-4" />
@@ -284,7 +280,7 @@ export default async function RoadmapPage() {
 											{m.href && (
 												<a
 													href={m.href}
-													className="mt-4 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
+													className="mt-4 inline-flex items-center gap-1 text-sm font-medium underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 												>
 													View{" "}
 													<ArrowRight className="h-4 w-4" />
@@ -302,3 +298,4 @@ export default async function RoadmapPage() {
 		</main>
 	);
 }
+

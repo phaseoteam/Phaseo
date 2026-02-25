@@ -4,7 +4,6 @@
 // How: Loads pricing cards and applies the cost model with tier-based markup.
 
 import { loadPriceCard, computeBill } from "../pricing";
-import { applyTierMarkupToUsage } from "../pricing/tier-markup";
 import type { PriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
@@ -53,7 +52,7 @@ export function calculatePricing(
     usage: any,
     card: PriceCard | null,
     body: any,
-    tier?: string | null
+    _tier?: string | null
 ): {
     pricedUsage: any;
     totalCents: number;
@@ -75,10 +74,6 @@ export function calculatePricing(
 
             // Step 1: Calculate base pricing (provider costs)
             pricedUsage = computeBill(usage ?? {}, card, requestOptions, pricingPlan);
-
-            // Step 2: Apply tier-based markup (Basic 7%, Enterprise 5%)
-            // This applies the markup to all pricing calculations
-            pricedUsage = applyTierMarkupToUsage(pricedUsage, tier);
 
             const pricingInfo = (pricedUsage as any)?.pricing ?? {};
             totalCents = pricingInfo.total_cents ?? 0;

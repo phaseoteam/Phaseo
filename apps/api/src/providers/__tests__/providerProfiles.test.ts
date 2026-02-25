@@ -11,11 +11,11 @@ describe("providerProfiles", () => {
 
 	it("contains text-only policy for known providers", () => {
 		expect(getProviderProfile("ai21")?.textOnly).toBe(true);
-		expect(getProviderProfile("xiaomi")?.textOnly).toBe(true);
 		expect(getProviderProfile("arcee-ai")?.textOnly).toBe(true);
 		expect(getProviderProfile("arcee")?.textOnly).toBe(true);
 		expect(getProviderProfile("friendli")?.textOnly).toBe(true);
-		expect(getProviderProfile("google-vertex")?.textOnly).toBe(true);
+		expect(getProviderProfile("xiaomi")?.textOnly).not.toBe(true);
+		expect(getProviderProfile("google-vertex")?.textOnly).not.toBe(true);
 	});
 
 	it("stores text normalize hints in one place", () => {

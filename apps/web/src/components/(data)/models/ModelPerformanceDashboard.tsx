@@ -50,7 +50,7 @@ export default function ModelPerformanceDashboard({
 				</>
 			) : (
 				<Card className="p-6">
-					<Empty size="compact">
+					<Empty>
 						<EmptyHeader>
 							<EmptyMedia variant="icon">
 								<Activity />

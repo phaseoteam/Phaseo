@@ -1005,6 +1005,19 @@ public sealed class MusicGenerateResponse
 {
 }
 
+public sealed class NotImplementedResponse
+{
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("error")]
+	public string? Error { get; set; }
+
+	[JsonPropertyName("status_code")]
+	public int? StatusCode { get; set; }
+
+}
+
 public sealed class OcrRequest
 {
 	[JsonPropertyName("debug")]
@@ -1151,6 +1164,13 @@ public sealed class ProvisioningKeyWithValue
 
 	[JsonPropertyName("status")]
 	public string? Status { get; set; }
+
+}
+
+public sealed class RealtimeNotImplementedResponse
+{
+	[JsonPropertyName("error")]
+	public Dictionary<string, object>? Error { get; set; }
 
 }
 

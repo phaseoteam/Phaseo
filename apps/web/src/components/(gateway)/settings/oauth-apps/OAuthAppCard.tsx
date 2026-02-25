@@ -74,7 +74,7 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 						href={app.homepage_url}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+						className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
 						<ExternalLink className="size-3" />
 						<span>Visit website</span>
@@ -96,3 +96,4 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 		</Card>
 	);
 }
+

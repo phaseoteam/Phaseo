@@ -270,10 +270,37 @@
 	}
 }
 
+@supports (view-transition-name: none) {
+	::view-transition-old(site-header-shell),
+	::view-transition-new(site-header-shell) {
+		animation-duration: 280ms;
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	@supports (view-transition-name: none) {
+		::view-transition-old(site-header-shell),
+		::view-transition-new(site-header-shell) {
+			animation-duration: 1ms;
+		}
+	}
+}
+
 @layer base {
 	button:not(:disabled),
 	[role="button"]:not(:disabled) {
 		cursor: pointer;
+	}
+}
+
+@layer utilities {
+	[data-obfuscate-pii="true"] [data-pii="true"] {
+		filter: blur(0.34rem);
+		-webkit-filter: blur(0.34rem);
+		user-select: none;
+		-webkit-user-select: none;
+		transition: filter 160ms ease;
 	}
 }
 

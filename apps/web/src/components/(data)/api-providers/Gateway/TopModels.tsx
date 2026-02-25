@@ -74,7 +74,7 @@ export default async function TopModels({
 											prefetch={false}
 											className="inline-block text-foreground hover:text-primary"
 										>
-											<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+											<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 												{model.model_name ||
 													model.model_id}
 											</span>
@@ -129,7 +129,7 @@ export default async function TopModels({
 					})}
 				</div>
 			) : (
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<Trophy />

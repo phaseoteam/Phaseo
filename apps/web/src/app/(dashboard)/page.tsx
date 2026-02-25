@@ -2,13 +2,14 @@
 import Image from "next/image";
 import { Suspense } from "react";
 import { Pill, ThemedGitHubIcon, LiveDot } from "@/components/landingPage/Pill";
-import GatewayTeaser from "@/components/landingPage/GatewayTeaser";
+import GatewayShowcase, {
+	GatewayShowcaseFallback,
+} from "@/components/landingPage/GatewayShowcase";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
 import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
 import LatestUpdates from "@/components/landingPage/LatestUpdates";
 import type { Metadata } from "next";
 import { withUTM } from "@/lib/utm";
-import { getGatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 
 export const metadata: Metadata = {
 	title: "Home",
@@ -29,23 +30,6 @@ function DatabaseStatsFallback() {
 				/>
 			))}
 		</div>
-	);
-}
-
-function LatestUpdatesFallback() {
-	// Keep a minimal fallback here; the LatestUpdates component now handles its own
-	// Suspense boundary so that headings/links render immediately.
-	return <div className="h-[520px] animate-pulse rounded-xl bg-muted" />;
-}
-
-async function GatewayTeaserServer() {
-	const gatewayMetrics = await getGatewayMarketingMetrics();
-
-	return (
-		<GatewayTeaser
-			providers={gatewayMetrics.summary.supportedProviders ?? 20}
-			models={gatewayMetrics.summary.supportedModels ?? 500}
-		/>
 	);
 }
 
@@ -106,11 +90,11 @@ export default function Page() {
 				<LatestUpdates />
 			</div>
 
-			<div className="mt-4 space-y-4 px-4 sm:px-6 lg:px-8">
-				<Suspense fallback={<GatewayTeaser providers={20} models={500} />}>
-					<GatewayTeaserServer />
-				</Suspense>
+			<div className="mt-6 space-y-8">
 				<PartnerLogos />
+				<Suspense fallback={<GatewayShowcaseFallback />}>
+					<GatewayShowcase />
+				</Suspense>
 			</div>
 		</div>
 	);

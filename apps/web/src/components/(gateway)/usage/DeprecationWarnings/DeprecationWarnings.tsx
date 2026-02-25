@@ -60,7 +60,7 @@ function ModelLink({
 	if (!href) return <span className={className}>{label}</span>;
 
 	return (
-		<Link href={href} className={cn("hover:underline", className)}>
+		<Link href={href} className={cn("underline decoration-transparent hover:decoration-current transition-colors duration-200", className)}>
 			{label}
 		</Link>
 	);
@@ -366,3 +366,4 @@ export default async function DeprecationWarnings({
 		</div>
 	);
 }
+

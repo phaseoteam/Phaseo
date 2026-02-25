@@ -154,7 +154,7 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 													href={app.url ?? "#"}
 													target="_blank"
 													rel="noreferrer"
-													className="hover:underline"
+													className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 												>
 													{app.title}
 												</Link>
@@ -335,3 +335,4 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 		</div>
 	);
 }
+

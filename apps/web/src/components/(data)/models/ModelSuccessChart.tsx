@@ -65,7 +65,7 @@ export default function ModelSuccessChart({
 	if (!chartData.length) {
 		return (
 			<div className="rounded-lg border border-dashed border-gray-300 bg-muted/20 p-6 text-center">
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<Activity />

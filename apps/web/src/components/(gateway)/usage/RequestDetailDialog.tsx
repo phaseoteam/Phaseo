@@ -20,6 +20,7 @@ import {
 	Server,
 } from "lucide-react";
 import { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
+import { extractUsageMeters, formatUsageNumber } from "./usageMeters";
 
 interface RequestDetailDialogProps {
 	open: boolean;
@@ -69,13 +70,6 @@ function Section({
 	);
 }
 
-function getTokens(usage: any): { input: number; output: number; total: number } {
-	const input = Number(usage?.input_text_tokens ?? usage?.input_tokens ?? 0) || 0;
-	const output = Number(usage?.output_text_tokens ?? usage?.output_tokens ?? 0) || 0;
-	const total = Number(usage?.total_tokens ?? 0) || input + output;
-	return { input, output, total };
-}
-
 function formatCost(nanos: number | null | undefined): string {
 	const dollars = Number(nanos ?? 0) / 1e9;
 	return `$${dollars.toFixed(5)}`;
@@ -97,7 +91,7 @@ export default function RequestDetailDialog({
 }: RequestDetailDialogProps) {
 	if (!request) return null;
 
-	const tokens = getTokens(request.usage);
+	const usageMeters = extractUsageMeters(request.usage);
 	const timestampLocal = new Date(request.created_at).toLocaleString();
 	const requestStatusLabel = request.success ? "Success" : "Error";
 	const showApp = Boolean(appName) || Boolean(request.app_id);
@@ -191,21 +185,22 @@ export default function RequestDetailDialog({
 						</Section>
 
 						<Section title="Usage">
-							<Field
-								icon={Coins}
-								label="Input tokens"
-								value={tokens.input.toLocaleString()}
-							/>
-							<Field
-								icon={Coins}
-								label="Output tokens"
-								value={tokens.output.toLocaleString()}
-							/>
-							<Field
-								icon={Coins}
-								label="Total tokens"
-								value={tokens.total.toLocaleString()}
-							/>
+							{usageMeters.length > 0 ? (
+								usageMeters.map((meter) => (
+									<Field
+										key={meter.key}
+										icon={Coins}
+										label={meter.label}
+										value={formatUsageNumber(meter.value)}
+									/>
+								))
+							) : (
+								<Field
+									icon={Coins}
+									label="Usage"
+									value="-"
+								/>
+							)}
 							<Field
 								icon={Coins}
 								label="Cost"

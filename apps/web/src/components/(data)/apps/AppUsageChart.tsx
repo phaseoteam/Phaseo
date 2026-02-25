@@ -234,7 +234,6 @@ export default function AppUsageChart({
 								<div className="grid min-w-32 items-start gap-1.5 rounded-lg border border-zinc-200/50 bg-white px-2.5 py-1.5 text-xs shadow-xl dark:border-zinc-800/50 dark:bg-zinc-950">
 									<ChartTooltipContent
 										active={props.active}
-										label={props.label}
 										payload={filteredPayload}
 										className="min-w-0 border-0 bg-transparent p-0 shadow-none"
 										labelFormatter={(lbl) => String(lbl)}

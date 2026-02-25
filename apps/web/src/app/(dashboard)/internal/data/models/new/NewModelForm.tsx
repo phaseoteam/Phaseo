@@ -158,6 +158,7 @@ const MODEL_DETAIL_FIELDS = [
 const MODEL_LINK_FIELDS = [
 	{ key: "announcement", label: "Announcement" },
 	{ key: "api_reference", label: "API reference" },
+	{ key: "model_card", label: "Model card" },
 	{ key: "paper", label: "Paper" },
 	{ key: "playground", label: "Playground" },
 	{ key: "repository", label: "Repository" },
@@ -255,6 +256,7 @@ export default function NewModelForm({
 	const [linkValues, setLinkValues] = useState<Record<LinkFieldKey, string>>({
 		announcement: "",
 		api_reference: "",
+		model_card: "",
 		paper: "",
 		playground: "",
 		repository: "",

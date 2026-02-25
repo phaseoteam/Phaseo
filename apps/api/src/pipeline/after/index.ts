@@ -18,10 +18,73 @@ import { shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
+import { applyByokServiceFee } from "../pricing/byok-fee";
 
 function decodeBase64ToBytes(value: string): Uint8Array {
 	const binary = atob(value);
 	return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function normalizeWavChunkSizesIfNeeded(bytes: Uint8Array): Uint8Array {
+	if (bytes.length < 44) return bytes;
+	const isRiff =
+		bytes[0] === 0x52 && // R
+		bytes[1] === 0x49 && // I
+		bytes[2] === 0x46 && // F
+		bytes[3] === 0x46; // F
+	const isWave =
+		bytes[8] === 0x57 && // W
+		bytes[9] === 0x41 && // A
+		bytes[10] === 0x56 && // V
+		bytes[11] === 0x45; // E
+	if (!isRiff || !isWave) return bytes;
+
+	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+	const riffSize = view.getUint32(4, true);
+	const needsRiffPatch = riffSize === 0xffffffff;
+	let needsPatch = needsRiffPatch;
+
+	let dataChunkOffset = -1;
+	let offset = 12;
+	while (offset + 8 <= bytes.length) {
+		const chunkId =
+			String.fromCharCode(bytes[offset]) +
+			String.fromCharCode(bytes[offset + 1]) +
+			String.fromCharCode(bytes[offset + 2]) +
+			String.fromCharCode(bytes[offset + 3]);
+		const chunkSize = view.getUint32(offset + 4, true);
+		if (chunkId === "data") {
+			dataChunkOffset = offset;
+			if (chunkSize === 0xffffffff) needsPatch = true;
+			break;
+		}
+		const next = offset + 8 + chunkSize + (chunkSize % 2);
+		if (next <= offset || next > bytes.length) break;
+		offset = next;
+	}
+
+	if (dataChunkOffset < 0 && bytes.length >= 44) {
+		const hasCanonicalDataChunk =
+			bytes[36] === 0x64 && // d
+			bytes[37] === 0x61 && // a
+			bytes[38] === 0x74 && // t
+			bytes[39] === 0x61; // a
+		if (hasCanonicalDataChunk) {
+			dataChunkOffset = 36;
+			const dataSize = view.getUint32(40, true);
+			if (dataSize === 0xffffffff) needsPatch = true;
+		}
+	}
+
+	if (!needsPatch || dataChunkOffset < 0) return bytes;
+
+	const patched = bytes.slice();
+	const patchedView = new DataView(patched.buffer, patched.byteOffset, patched.byteLength);
+	patchedView.setUint32(4, Math.max(0, patched.length - 8), true);
+	const dataSizeOffset = dataChunkOffset + 4;
+	const dataPayloadStart = dataChunkOffset + 8;
+	patchedView.setUint32(dataSizeOffset, Math.max(0, patched.length - dataPayloadStart), true);
+	return patched;
 }
 
 export async function finalizeRequest(args: {
@@ -112,21 +175,33 @@ async function handleNonStreamResponse(
         ctx.body,
         tier
     ));
+    const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
+    const pricedWithByok = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
+        teamId: ctx.teamId,
+        isByok,
+        baseCostNanos: totalNanos,
+        pricedUsage,
+        currencyHint: currency,
+    }));
+    const pricedUsageFinalRaw = pricedWithByok.pricedUsage;
+    const totalCentsFinal = pricedWithByok.totalCents;
+    const totalNanosFinal = pricedWithByok.totalNanos;
+    const currencyFinal = pricedWithByok.currency;
     if (ctx.meta?.debug?.enabled) {
         console.log("[gateway][pricing] non-stream priced usage", {
             requestId: ctx.requestId,
             endpoint: ctx.endpoint,
             provider: result.provider,
-            pricing: (pricedUsage as any)?.pricing ?? null,
-            totalCents,
-            totalNanos,
-            currency,
+            pricing: (pricedUsageFinalRaw as any)?.pricing ?? null,
+            totalCents: totalCentsFinal,
+            totalNanos: totalNanosFinal,
+            currency: currencyFinal,
         });
     }
 
     // console.log("[DEBUG handleNonStreamResponse] pricedUsage:", pricedUsage, "totalCents:", totalCents, "totalNanos:", totalNanos, "currency:", currency);
 
-    const shapedUsageFinal = shapeUsageForClient(pricedUsage, { endpoint: ctx.endpoint, body: ctx.body });
+    const shapedUsageFinal = shapeUsageForClient(pricedUsageFinalRaw, { endpoint: ctx.endpoint, body: ctx.body });
 
     // Update payload with normalized usage
     payload.usage = shapedUsageFinal;
@@ -159,8 +234,8 @@ async function handleNonStreamResponse(
     }
 
     // Update result billing
-    result.bill.cost_cents = totalCents;
-    result.bill.currency = currency;
+    result.bill.cost_cents = totalCentsFinal;
+    result.bill.currency = currencyFinal;
     result.bill.usage = shapedUsageFinal;
 
     // Extract finish reason and normalize it for consistent storage
@@ -178,19 +253,20 @@ async function handleNonStreamResponse(
             result,
             false, // isStream
             payload.usage,
-            totalCents,
-            totalNanos,
-            currency,
+            totalCentsFinal,
+            totalNanosFinal,
+            currencyFinal,
             finishReason,
             result.upstream.status,
-            nativeResponseId ?? null
+            nativeResponseId ?? null,
+            payload,
         )
     );
     // Record usage and charge wallet
     await ctx.timer.span("after_record_usage_charge", async () => {
         await recordUsageAndChargeOnce({
             ctx,
-            costNanos: totalNanos,
+            costNanos: totalNanosFinal,
             endpoint: ctx.endpoint,
         });
     });
@@ -212,8 +288,12 @@ async function handleNonStreamResponse(
             const mimeType = payload?.mime_type ?? payload?.audio?.mime_type ?? payload?.audio?.mimeType ?? "audio/mpeg";
             const headers = makeHeaders(timingHeader);
             headers.set("Content-Type", mimeType);
-            const bytes = Uint8Array.from(decodeBase64ToBytes(audioBase64));
-            return new Response(bytes.buffer, {
+            let bytes = decodeBase64ToBytes(audioBase64);
+            if (mimeType.toLowerCase().includes("wav") || mimeType.toLowerCase().includes("wave")) {
+                bytes = normalizeWavChunkSizesIfNeeded(bytes);
+            }
+            const responseBytes = Uint8Array.from(bytes);
+            return new Response(responseBytes, {
                 status: result.upstream.status,
                 headers,
             });

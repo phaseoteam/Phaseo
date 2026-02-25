@@ -108,13 +108,20 @@ export default function PaymentMethodStrip({
                                     </div>
 
                                     <div className="leading-tight">
-                                        <div className="text-sm text-zinc-800 font-medium capitalize">****{last4}</div>
+                                        <div className="text-sm text-zinc-800 font-medium capitalize">
+                                            <span data-pii="true">****{last4}</span>
+                                        </div>
                                         <div className="text-xs text-zinc-500 capitalize">
                                             {brand}
                                             {pm.card?.exp_month && pm.card?.exp_year
-                                                ? ` - Expires ${String(pm.card.exp_month).padStart(2, "0")}/${String(
-                                                      pm.card.exp_year
-                                                  ).slice(-2)}`
+                                                ? (
+                                                    <span data-pii="true">
+                                                        {" "}
+                                                        - Expires{" "}
+                                                        {String(pm.card.exp_month).padStart(2, "0")}/
+                                                        {String(pm.card.exp_year).slice(-2)}
+                                                    </span>
+                                                )
                                                 : null}
                                         </div>
                                     </div>

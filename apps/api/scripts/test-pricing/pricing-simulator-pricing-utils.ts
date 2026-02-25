@@ -1,9 +1,51 @@
 import type { RuleSummary, EstimationResult, EstimationLine, Condition } from "./pricing-simulator-types";
-import type { PriceCard } from "../../src/pipeline/pricing/types";
+import type { PriceCard, PriceRule } from "../../src/pipeline/pricing/types";
 import { parseUsdToNanos, formatUsdFromNanosExact } from "../../src/pipeline/pricing/money";
-import { matchesConditions } from "../../src/pipeline/pricing/conditions";
+import { evaluateConditions, matchesConditions } from "../../src/pipeline/pricing/conditions";
 import type { RandomSource } from "./pricing-simulator-random";
 import type { CLIOptions } from "./pricing-simulator-types";
+
+type RuleScore = {
+    rule: PriceRule;
+    index: number;
+    priority: number;
+    matchedConditions: number;
+    totalConditions: number;
+    fullySatisfiedGroups: number;
+    partiallySatisfiedGroups: number;
+    hasConditions: boolean;
+};
+
+function compareRuleScores(a: RuleScore, b: RuleScore): number {
+    if (b.priority !== a.priority) return b.priority - a.priority;
+    if (b.fullySatisfiedGroups !== a.fullySatisfiedGroups) return b.fullySatisfiedGroups - a.fullySatisfiedGroups;
+    if (b.matchedConditions !== a.matchedConditions) return b.matchedConditions - a.matchedConditions;
+    if (b.totalConditions !== a.totalConditions) return b.totalConditions - a.totalConditions;
+    if (a.partiallySatisfiedGroups !== b.partiallySatisfiedGroups) return a.partiallySatisfiedGroups - b.partiallySatisfiedGroups;
+    if (a.hasConditions !== b.hasConditions) return b.hasConditions ? 1 : -1;
+    return a.index - b.index;
+}
+
+function selectBestRule(candidates: PriceRule[], ctx: Record<string, any>): PriceRule | undefined {
+    if (!candidates.length) return undefined;
+    const scores: RuleScore[] = candidates.map((rule, index) => {
+        const summary = evaluateConditions(rule.match, ctx);
+        const fullySatisfiedGroups = summary.groupSummaries.filter((group) => group.total > 0 && group.matched === group.total).length;
+        const partiallySatisfiedGroups = summary.groupSummaries.filter((group) => group.matched > 0 && group.matched < group.total).length;
+        return {
+            rule,
+            index,
+            priority: rule.priority ?? 0,
+            matchedConditions: summary.matchedConditions,
+            totalConditions: summary.totalConditions,
+            fullySatisfiedGroups,
+            partiallySatisfiedGroups,
+            hasConditions: summary.totalConditions > 0,
+        };
+    });
+    const ranked = [...scores].sort(compareRuleScores);
+    return ranked[0]?.rule;
+}
 
 export function ensureNumber(value: unknown, fallback = 0): number {
     if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -280,8 +322,10 @@ export function estimateCostFromRules(
     for (const meter of Object.keys(usage)) {
         const meterRules = rules.filter((r) => r.meter === meter);
         if (!meterRules.length) continue;
-        const matchingRules = meterRules.filter((rule) => matchesConditions(rule.match, subject));
-        const selected = matchingRules[0] ?? meterRules[0];
+        const matchingRules = meterRules
+            .filter((rule) => matchesConditions(rule.match, subject))
+            .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+        const selected = selectBestRule(matchingRules, subject) ?? matchingRules[0] ?? meterRules[0];
         if (!selected) continue;
         summaries.push({
             meter: selected.meter,
@@ -298,9 +342,10 @@ export function estimateCostFromRules(
         const quantity = ensureNumber(usage[summary.meter], 0);
         const unitSize = Math.max(1, ensureNumber(summary.unitSize, 1));
         if (quantity <= 0) continue;
-        const billableUnits = Math.ceil(quantity / unitSize);
+        // Mirror pricing engine behavior: pro-rate by unit size and round nanos.
+        const billableUnits = quantity / unitSize;
         const priceNanos = parseUsdToNanos(summary.pricePerUnit);
-        const lineNanos = billableUnits * priceNanos;
+        const lineNanos = Math.round(billableUnits * priceNanos);
         totalNanos += lineNanos;
         lines.push({
             meter: summary.meter,

@@ -96,13 +96,13 @@ export default function ComparisonHeader({
 										<div className="min-w-0">
 											<Link
 												href={`/models/${encodeURIComponent(m.id)}`}
-												className="block truncate font-semibold text-foreground hover:underline"
+												className="block truncate font-semibold text-foreground underline decoration-transparent hover:decoration-current transition-colors duration-200"
 											>
 												{m.name}
 											</Link>
 											<Link
 												href={`/organisations/${m.provider.provider_id}`}
-												className="block truncate text-xs text-muted-foreground hover:underline"
+												className="block truncate text-xs text-muted-foreground underline decoration-transparent hover:decoration-current transition-colors duration-200"
 											>
 												{m.provider.name}
 											</Link>
@@ -164,7 +164,7 @@ export default function ComparisonHeader({
 										href={m.api_reference_link}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+										className="text-xs font-medium text-muted-foreground hover:text-foreground underline decoration-transparent hover:decoration-current transition-colors duration-200"
 									>
 										Docs
 									</Link>
@@ -174,7 +174,7 @@ export default function ComparisonHeader({
 										href={m.repository_link}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+										className="text-xs font-medium text-muted-foreground hover:text-foreground underline decoration-transparent hover:decoration-current transition-colors duration-200"
 									>
 										Repo
 									</Link>
@@ -184,7 +184,7 @@ export default function ComparisonHeader({
 										href={m.paper_link}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+										className="text-xs font-medium text-muted-foreground hover:text-foreground underline decoration-transparent hover:decoration-current transition-colors duration-200"
 									>
 										Paper
 									</Link>
@@ -194,7 +194,7 @@ export default function ComparisonHeader({
 										href={m.announcement_link}
 										target="_blank"
 										rel="noopener noreferrer"
-										className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+										className="text-xs font-medium text-muted-foreground hover:text-foreground underline decoration-transparent hover:decoration-current transition-colors duration-200"
 									>
 										Announcement
 									</Link>
@@ -207,3 +207,4 @@ export default function ComparisonHeader({
 		</Card>
 	);
 }
+

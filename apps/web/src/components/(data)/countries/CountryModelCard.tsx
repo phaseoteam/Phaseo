@@ -45,7 +45,7 @@ export function CountryModelCard({
                             href={`/models/${modelSlug}`}
                             className="block truncate text-sm font-semibold leading-tight text-zinc-950 hover:text-primary dark:text-zinc-50"
                         >
-                            <span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+                            <span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
                                 {model.name}
                             </span>
                         </Link>
@@ -57,7 +57,7 @@ export function CountryModelCard({
                                     href={`/organisations/${model.organisation_id}`}
                                     className="hover:text-primary"
                                 >
-                                    <span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+                                    <span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
                                         {model.organisation_name ??
                                             "Unknown organisation"}
                                     </span>
@@ -115,7 +115,7 @@ export function CountryModelCard({
                             href={`/models/${modelSlug}`}
                             className="block truncate font-semibold leading-tight text-zinc-950 hover:text-primary dark:text-zinc-50"
                         >
-                            <span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+                            <span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
                                 {model.name}
                             </span>
                         </Link>
@@ -124,7 +124,7 @@ export function CountryModelCard({
                                 href={`/organisations/${model.organisation_id}`}
                                 className="hover:text-primary"
                             >
-                                <span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+                                <span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
                                     {model.organisation_name ??
                                         "Unknown organisation"}
                                 </span>

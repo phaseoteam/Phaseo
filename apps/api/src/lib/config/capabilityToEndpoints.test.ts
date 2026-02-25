@@ -18,5 +18,6 @@ describe("resolveCapabilityFromEndpoint", () => {
 		expect(resolveCapabilityFromEndpoint("/music/generate")).toBe("music.generate");
 		expect(resolveCapabilityFromEndpoint("/music/generations")).toBe("music.generate");
 		expect(resolveCapabilityFromEndpoint("/audio/transcriptions")).toBe("audio.transcription");
+		expect(resolveCapabilityFromEndpoint("/realtime")).toBe("audio.realtime");
 	});
 });

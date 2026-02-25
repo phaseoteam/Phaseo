@@ -106,60 +106,53 @@ export function CompareSection() {
 	return (
 		<section className="relative overflow-hidden py-20 sm:py-28">
 			<div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-				{/* Section header */}
 				<div className="mx-auto max-w-3xl text-center">
 					<Badge
 						variant="secondary"
-						className="mb-4 border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600"
+						className="mb-4 border border-zinc-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
 					>
 						Comparison
 					</Badge>
-					<h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+					<h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
 						How we compare
 					</h2>
-					<p className="mt-4 text-lg leading-relaxed text-slate-600">
-						Optimised routing and observability built in — no
-						homegrown adapters, no hidden markups.
+					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
+						Optimised routing and observability built in - no homegrown
+						adapters, no hidden markups.
 					</p>
 				</div>
 
-				{/* Comparison table */}
-				<Card className="mt-16 overflow-hidden border-slate-200/60 shadow-sm">
+				<Card className="mt-16 overflow-hidden border-zinc-200/60 shadow-sm dark:border-zinc-800/70 dark:bg-zinc-950/70">
 					<div className="overflow-x-auto">
 						<table className="w-full text-left">
 							<thead>
-								<tr className="border-b border-slate-200 bg-slate-50/80">
-									<th className="px-6 py-4 text-sm font-semibold text-slate-900">
+								<tr className="border-b border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/70">
+									<th className="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
 										Capability
 									</th>
-									<th className="px-6 py-4 text-sm font-semibold text-slate-900">
-										<div className="flex items-center gap-2">
-											<span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
-												AI
-											</span>
-											AI Stats Gateway
-										</div>
+									<th className="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+										AI Stats Gateway
 									</th>
-									<th className="px-6 py-4 text-sm font-semibold text-slate-600">
+									<th className="px-6 py-4 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
 										OpenRouter
 									</th>
-									<th className="px-6 py-4 text-sm font-semibold text-slate-600">
+									<th className="px-6 py-4 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
 										Vercel AI SDK
 									</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-slate-100">
+							<tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
 								{COMPARISON_DATA.map((row) => (
 									<tr
 										key={row.capability}
-										className="transition-colors hover:bg-slate-50/50"
+										className="transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50"
 									>
 										<td className="px-6 py-4">
 											<div className="space-y-1">
-												<p className="font-medium text-slate-900">
+												<p className="font-medium text-zinc-900 dark:text-zinc-100">
 													{row.capability}
 												</p>
-												<p className="text-xs text-slate-500">
+												<p className="text-xs text-zinc-500 dark:text-zinc-400">
 													{row.description}
 												</p>
 											</div>
@@ -172,16 +165,15 @@ export function CompareSection() {
 													)}
 													<span
 														className={
-															row.gateway
-																.highlight
-																? "font-semibold text-slate-900"
-																: "text-slate-600"
+															row.gateway.highlight
+																? "font-semibold text-zinc-900 dark:text-zinc-100"
+																: "text-zinc-600 dark:text-zinc-300"
 														}
 													>
 														{row.gateway.value}
 													</span>
 												</div>
-												<p className="text-xs text-slate-500">
+												<p className="text-xs text-zinc-500 dark:text-zinc-400">
 													{row.gateway.details}
 												</p>
 											</div>
@@ -189,12 +181,12 @@ export function CompareSection() {
 										<td className="px-6 py-4">
 											<div className="space-y-1">
 												<div className="flex items-center gap-2">
-													<Minus className="h-4 w-4 shrink-0 text-slate-400" />
-													<span className="text-slate-600">
+													<Minus className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
+													<span className="text-zinc-600 dark:text-zinc-300">
 														{row.openRouter.value}
 													</span>
 												</div>
-												<p className="text-xs text-slate-500">
+												<p className="text-xs text-zinc-500 dark:text-zinc-400">
 													{row.openRouter.details}
 												</p>
 											</div>
@@ -202,12 +194,12 @@ export function CompareSection() {
 										<td className="px-6 py-4">
 											<div className="space-y-1">
 												<div className="flex items-center gap-2">
-													<Minus className="h-4 w-4 shrink-0 text-slate-400" />
-													<span className="text-slate-600">
+													<Minus className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
+													<span className="text-zinc-600 dark:text-zinc-300">
 														{row.vercel.value}
 													</span>
 												</div>
-												<p className="text-xs text-slate-500">
+												<p className="text-xs text-zinc-500 dark:text-zinc-400">
 													{row.vercel.details}
 												</p>
 											</div>
@@ -222,3 +214,4 @@ export function CompareSection() {
 		</section>
 	);
 }
+

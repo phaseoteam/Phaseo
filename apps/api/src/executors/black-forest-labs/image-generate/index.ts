@@ -8,7 +8,7 @@ import type { ProviderExecutor } from "../../types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 
-const DEFAULT_BASE_URL = "https://api.us1.bfl.ai";
+const DEFAULT_BASE_URL = "https://api.us.bfl.ai";
 const DEFAULT_POLL_INTERVAL_MS = 1200;
 const DEFAULT_POLL_TIMEOUT_MS = 120000;
 const TERMINAL_FAILURE_STATUSES = new Set([
@@ -89,6 +89,23 @@ function bytesToBase64(bytes: Uint8Array): string {
 
 function normalizeStatus(value: unknown): string {
 	return String(value ?? "").trim().toLowerCase();
+}
+
+function extractCreditsCost(value: any): number | undefined {
+	const candidates = [
+		value?.cost,
+		value?.credits,
+		value?.result?.cost,
+		value?.result?.credits,
+		value?.usage?.cost,
+		value?.usage?.credits,
+	];
+	for (const candidate of candidates) {
+		if (candidate == null) continue;
+		const num = Number(candidate);
+		if (Number.isFinite(num) && num >= 0) return num;
+	}
+	return undefined;
 }
 
 function buildBflPayload(ir: IRImageGenerationRequest): Record<string, unknown> {
@@ -279,11 +296,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const taskIds: string[] = [];
 	let lastUpstream: Response | null = null;
 	const rawResponses: any[] = [];
+	let totalCredits = 0;
 
 	for (let index = 0; index < requestedCount; index++) {
 		const submitted = await submitBflJob({ submitUrl, payload, key: keyInfo.key });
 		lastUpstream = submitted.response;
 		rawResponses.push({ submit: submitted.json });
+		const submitCredits = extractCreditsCost(submitted.json);
 		if (!submitted.response.ok) {
 			return {
 				kind: "completed",
@@ -337,6 +356,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 		lastUpstream = polled.response;
 		rawResponses[rawResponses.length - 1].poll = polled.json;
+		const credits = extractCreditsCost(polled.json) ?? submitCredits;
+		if (typeof credits === "number") {
+			totalCredits += credits;
+		}
 		const sampleUrl = String(polled.json?.result?.sample ?? "").trim();
 		if (!sampleUrl) {
 			return {
@@ -378,7 +401,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		outputTokens: 0,
 		totalTokens: 0,
 		requests: data.length || 1,
+		output_image: data.length || 1,
 	};
+	if (totalCredits > 0) {
+		usage.bfl_credits = Number(totalCredits.toFixed(6));
+	}
 
 	const irResponse: IRImageGenerationResponse = {
 		id: args.requestId,
@@ -396,7 +423,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		ir: irResponse,
 		upstream: lastUpstream ?? new Response(null, { status: 200 }),
 		bill: {
-			cost_cents: 0,
+			cost_cents: totalCredits > 0 ? Number(totalCredits.toFixed(6)) : 0,
 			currency: "USD",
 			usage,
 			upstream_id:

@@ -128,7 +128,7 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 										href={`prices/${apiProviderId}`}
 										className="group/provider flex items-center gap-1 truncate font-semibold capitalize focus:outline-hidden"
 									>
-										<span className="truncate font-semibold relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full">
+										<span className="truncate font-semibold relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 											{apiProviderName}
 										</span>
 										<ArrowUpRight

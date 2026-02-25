@@ -14,6 +14,29 @@ export type ProviderCapabilityProfile = {
 	adapterBackedOverrides?: Partial<Record<AdapterBackedCapability, boolean>>;
 };
 
+const FULL_MULTIMODAL_VIDEO_PROVIDERS = new Set<string>([
+	"openai",
+	"google",
+	"google-ai-studio",
+	"google-vertex",
+	"amazon-bedrock",
+	"x-ai",
+	"xai",
+	"deepseek",
+	"minimax",
+	"minimax-lightning",
+	"cerebras",
+	"mistral",
+	"moonshot-ai",
+	"moonshot-ai-turbo",
+	"novitaai",
+	"alibaba",
+	"qwen",
+	"xiaomi",
+	"z-ai",
+	"zai",
+]);
+
 export function getProviderCapabilityProfile(providerId: string): ProviderCapabilityProfile {
 	const profile = getProviderProfile(providerId);
 	if (!profile) return {};
@@ -31,12 +54,14 @@ function defaultAdapterBackedSupport(providerId: string, capability: AdapterBack
 		case "image.generate":
 			return compatNonTextSupported;
 		case "image.edit":
-			return compatNonTextSupported && providerId !== "google-ai-studio";
+			return compatNonTextSupported;
 		case "audio.translations":
-			return compatNonTextSupported && providerId !== "google-ai-studio";
+			return compatNonTextSupported;
+		case "video.generate":
+			return compatNonTextSupported && FULL_MULTIMODAL_VIDEO_PROVIDERS.has(providerId);
 		case "audio.speech":
 		case "audio.transcription":
-			return (compatNonTextSupported && providerId !== "google-ai-studio") || providerId === "elevenlabs";
+			return compatNonTextSupported || providerId === "elevenlabs";
 		case "ocr":
 			return providerId === "mistral";
 		case "music.generate":

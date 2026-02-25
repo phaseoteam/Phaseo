@@ -62,6 +62,7 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { normalizeIRForProvider } from "./normalize";
 import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities } from "./modalities";
+import { loadPriceCard } from "../pricing";
 
 function shouldFallbackFromByok(status: number | null | undefined): boolean {
 	const code = Number(status ?? 0);
@@ -250,7 +251,7 @@ export async function doRequestWithIR(
 
 	// 1.6) Guard: Ensure at least one provider has pricing configured
 	const anyPricingAvailable = candidates.some((entry) => Boolean(entry.pricingCard));
-	if (!anyPricingAvailable) {
+	if (!anyPricingAvailable && !ctx.testingMode) {
 		const pricingGuard = await guardPricingFound(false, ctx, timing);
 		if (!pricingGuard.ok) return (pricingGuard as { ok: false; response: Response }).response;
 	}
@@ -335,16 +336,22 @@ async function attemptProviderWithIR(
 		return { ok: false, skip: "blocked" };
 	}
 	const isProbe = admission === "probe";
-	const allowByokFallback = ctx.teamSettings?.byokFallbackEnabled !== false;
 	const byokAlwaysUse = Array.isArray(candidate.byokMeta)
 		? candidate.byokMeta.some((meta) => meta?.alwaysUse === true)
 		: false;
+	const allowByokFallback = !byokAlwaysUse;
 	const providerModelSlug = typeof candidate.providerModelSlug === "string"
 		? candidate.providerModelSlug.trim()
 		: candidate.providerModelSlug;
 
-	// Get pricing card
-	const pricingCard = candidate.pricingCard;
+	// Get pricing card (testing mode candidates may not have context-preloaded pricing).
+	let pricingCard = candidate.pricingCard ?? null;
+	if (!pricingCard) {
+		pricingCard = await loadPriceCard(candidate.providerId, baseModel, ctx.capability);
+		if (pricingCard) {
+			candidate.pricingCard = pricingCard;
+		}
+	}
 	if (!pricingCard) {
 		attemptErrors.push({
 			provider: candidate.providerId,
@@ -410,8 +417,9 @@ async function attemptProviderWithIR(
 					debug: ctx.meta.debug,
 					returnMeta: ctx.meta.returnMeta,
 					echoUpstreamRequest: Boolean(ctx.meta.debug?.return_upstream_request),
-					returnUpstreamRequest: Boolean(ctx.meta.debug?.return_upstream_request),
-					returnUpstreamResponse: Boolean(ctx.meta.debug?.return_upstream_response),
+					// Always capture upstream request/response for audit logging.
+					returnUpstreamRequest: true,
+					returnUpstreamResponse: true,
 					upstreamStartMs: ctx.meta.upstreamStartMs, // Pass timing to executor
 					forceGatewayKey,
 				},
@@ -421,7 +429,6 @@ async function attemptProviderWithIR(
 
 		if (
 			allowByokFallback &&
-			!byokAlwaysUse &&
 			executorResult.keySource === "byok" &&
 			!executorResult.upstream.ok &&
 			shouldFallbackFromByok(executorResult.upstream.status)

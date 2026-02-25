@@ -16,6 +16,10 @@ import {
 	PERSONALIZATION_ACCENT_COLORS,
 	STORAGE_KEYS,
 } from "@/components/(chat)/playground/chat-playground-core";
+import {
+	OBFUSCATE_INFO_COOKIE,
+	serializeObfuscateInfo,
+} from "@/lib/obfuscation";
 import { z } from "zod";
 import { PasswordStrengthIndicator } from "./PasswordStrengthIndicator";
 
@@ -129,9 +133,24 @@ export default function AccountSettingsClient({
 	);
 	const [chatNotifyOnComplete, setChatNotifyOnComplete] =
 		React.useState<boolean>(false);
+	const applyObfuscationMode = React.useCallback((next: boolean) => {
+		if (typeof document === "undefined") return;
+		const serialized = serializeObfuscateInfo(next);
+		document.documentElement.setAttribute(
+			"data-obfuscate-pii",
+			next ? "true" : "false"
+		);
+		document
+			.getElementById("dashboard-shell")
+			?.setAttribute("data-obfuscate-pii", next ? "true" : "false");
+		document.cookie = `${OBFUSCATE_INFO_COOKIE}=${serialized}; path=/; max-age=${
+			60 * 60 * 24 * 365
+		}; samesite=lax`;
+	}, []);
 
 	React.useEffect(() => {
 		setAnalyticsConsent(readAnalyticsConsent());
+		applyObfuscationMode(Boolean(user.obfuscateInfo));
 
 		try {
 			const storedAccent =
@@ -148,7 +167,7 @@ export default function AccountSettingsClient({
 		} catch {
 			// Ignore storage access errors.
 		}
-	}, []);
+	}, [applyObfuscationMode, user.obfuscateInfo]);
 
 	const analyticsEnabled = analyticsConsent === "accepted";
 
@@ -185,6 +204,7 @@ export default function AccountSettingsClient({
 				success: "Saved [PASS]",
 				error: (err: any) => err?.message || "Could not save settings",
 			});
+			applyObfuscationMode(Boolean(parsed.data.obfuscate_info));
 		} catch (e) {
 			void e;
 		} finally {
@@ -385,7 +405,7 @@ export default function AccountSettingsClient({
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label className="sm:pt-2">Email</Label>
 								<div className="grid gap-1 max-w-lg">
-									<Input value={user.email} readOnly />
+									<Input value={user.email} readOnly data-pii="true" />
 									<p className="text-xs text-muted-foreground">
 										Contact support to change your sign-in email.
 									</p>
@@ -510,12 +530,12 @@ export default function AccountSettingsClient({
 							</div>
 						</div>
 
-						{/*
-						<div className="grid gap-2 sm:grid-cols-[180px_1fr] sm:items-start">
+						<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 							<Label className="sm:pt-2">Obfuscate info</Label>
-							<div className="flex items-center justify-between rounded-md border px-3 py-2">
+							<div className="flex items-center justify-between rounded-md border px-3 py-2 max-w-lg">
 								<p className="text-xs text-muted-foreground">
-									Hide sensitive information across the UI (IDs, tokens, etc.).
+									Blur sensitive information across the website (emails, card
+									details, and payment info).
 								</p>
 								<Switch
 									checked={obfuscateInfo}
@@ -524,7 +544,6 @@ export default function AccountSettingsClient({
 								/>
 							</div>
 						</div>
-						*/}
 					</div>
 
 					<div className="flex items-center justify-end gap-2 mt-3">
@@ -672,7 +691,7 @@ export default function AccountSettingsClient({
 							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
 								<Label className="sm:pt-2">Current email</Label>
 								<div className="max-w-lg">
-									<Input value={user.email ?? ""} readOnly />
+									<Input value={user.email ?? ""} readOnly data-pii="true" />
 								</div>
 							</div>
 
@@ -685,6 +704,7 @@ export default function AccountSettingsClient({
 										id="newEmail"
 										type="email"
 										value={newEmail}
+										data-pii="true"
 										onChange={(e) => setNewEmail(e.target.value)}
 										placeholder="Enter your new email address"
 									/>

@@ -32,6 +32,13 @@ interface HeroSectionProps {
 	metrics: GatewayMarketingMetrics;
 }
 
+const blockedMarqueeProviderIds = new Set([
+	"openrouter",
+	"huggingface",
+	"hugging-face",
+	"ai-stats",
+]);
+
 export function HeroSection({ metrics }: HeroSectionProps) {
 	const statCards = [
 		{
@@ -53,7 +60,11 @@ export function HeroSection({ metrics }: HeroSectionProps) {
 	];
 
 	const heroProviderLogos = (() => {
-		const providerIds = metrics.supported.providerIds ?? [];
+		const providerIds = (metrics.supported.providerIds ?? []).filter(
+			(id) =>
+				!id.startsWith("observability-") &&
+				!blockedMarqueeProviderIds.has(id.toLowerCase())
+		);
 		if (!providerIds.length) return [];
 		const seen = new Set<string>();
 		const deduped: string[] = [];

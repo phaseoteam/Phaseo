@@ -42,7 +42,7 @@ export default function Unavailable({ modelId }: UnavailableProps) {
 				</Alert>
 				<Link
 					href="https://github.com/AI-Stats/AI-Stats/issues/new/choose"
-					className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+					className="inline-flex items-center gap-2 text-sm font-medium text-primary underline decoration-transparent hover:decoration-current transition-colors duration-200"
 				>
 					Request provider support on Github
 					<ArrowRight className="h-4 w-4" />
@@ -51,3 +51,4 @@ export default function Unavailable({ modelId }: UnavailableProps) {
 		</Card>
 	);
 }
+

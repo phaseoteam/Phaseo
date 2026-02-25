@@ -161,7 +161,7 @@ export default async function Page({
 													<div>
 														<Link
 															href={`/models/${member.model_id}`}
-															className="font-semibold hover:underline"
+															className="font-semibold underline decoration-transparent hover:decoration-current transition-colors duration-200"
 														>
 															{member.name}
 														</Link>
@@ -196,7 +196,7 @@ export default async function Page({
 															</div>
 															<Link
 																href={`/organisations/${organisationId}`}
-																className="hover:underline"
+																className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
 															>
 																{organisationName}
 															</Link>

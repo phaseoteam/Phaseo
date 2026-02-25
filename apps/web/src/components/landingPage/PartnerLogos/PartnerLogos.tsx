@@ -1,7 +1,12 @@
 import PartnerLogosClient from "./PartnerLogosClient";
 import { listKnownLogos, resolveLogo } from "@/lib/logos";
 
-const customProviderLogos: string[] = ["/social/hugging_face.svg"];
+const blockedProviderIds = new Set([
+	"openrouter",
+	"huggingface",
+	"hugging-face",
+	"ai-stats",
+]);
 
 export const excludedProviderLogos: string[] = [
 	"scira",
@@ -13,6 +18,9 @@ export const excludedProviderLogos: string[] = [
 	"instagram",
 	"reddit",
 	"grok",
+	"openrouter",
+	"ai-stats",
+	"/social/hugging_face.svg",
 ];
 
 function normaliseDescriptor(value: string): string {
@@ -28,10 +36,18 @@ function getProviderLogos(): string[] {
 	const allLogos = [
 		...listKnownLogos()
 			.filter(({ id, assets }) => {
+				const normalizedId = String(id).toLowerCase();
+				if (blockedProviderIds.has(normalizedId)) return false;
+
 				const hasLanguageAsset = Object.values(assets).some((asset) =>
 					asset?.startsWith("/languages/")
 				);
 				if (hasLanguageAsset) return false;
+				const hasObservabilityAsset = Object.values(assets).some((asset) =>
+					asset?.startsWith("/observability/")
+				);
+				if (hasObservabilityAsset) return false;
+				if (id.startsWith("observability-")) return false;
 
 				const normalisedId = normaliseDescriptor(id);
 				if (exclusionSet.has(normalisedId)) return false;
@@ -39,9 +55,6 @@ function getProviderLogos(): string[] {
 				return !exclusionSet.has(pathCandidate);
 			})
 			.map(({ id }) => id),
-		...customProviderLogos.filter(
-			(src) => !exclusionSet.has(normaliseDescriptor(src))
-		),
 	];
 
 	const seen = new Set<string>();

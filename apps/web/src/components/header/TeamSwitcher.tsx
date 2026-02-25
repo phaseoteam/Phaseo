@@ -14,6 +14,7 @@ import {
 	LifeBuoy,
 	Users,
 	Lock,
+	ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +46,24 @@ export default function TeamSwitcher({
 }: TeamSwitcherProps) {
 	const router = useRouter();
 
+	const navigateWithViewTransition = React.useCallback(
+		(href: string) => {
+			const doc = document as Document & {
+				startViewTransition?: (
+					updateCallback: () => void | Promise<void>,
+				) => unknown;
+			};
+			if (typeof doc.startViewTransition === "function") {
+				doc.startViewTransition(() => {
+					router.push(href);
+				});
+				return;
+			}
+			router.push(href);
+		},
+		[router],
+	);
+
 	const getInitialTeamId = (initial?: string) => {
 		if (initial) return initial;
 		return teams.length ? teams[0].id : undefined;
@@ -53,8 +72,10 @@ export default function TeamSwitcher({
 	const [activeTeamId, setActiveTeamId] = useState<string | undefined>(() =>
 		getInitialTeamId(initialActiveTeamId)
 	);
+	const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
 
 	const activeTeam = teams.find((t) => t.id === activeTeamId) ?? teams[0];
+	const hasMultipleTeams = teams.length > 1;
 	const { isOpen: supportIsOpen, minutesUntilNextWindow } =
 		getSupportAvailability();
 	const supportDotClasses = supportIsOpen
@@ -76,35 +97,44 @@ export default function TeamSwitcher({
 	return (
 		<div className="flex items-center gap-2">
 			{/* Team Dropdown */}
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
-						variant="ghost"
-						aria-label="Open team switcher"
+			{hasMultipleTeams ? (
+				<DropdownMenu
+					open={isTeamMenuOpen}
+					onOpenChange={setIsTeamMenuOpen}
+				>
+					<DropdownMenuTrigger asChild>
+						<Button
+							variant="ghost"
+							aria-label="Open team switcher"
+							className={cn(
+								"inline-flex items-center gap-2 rounded-lg px-3 h-10 leading-none cursor-pointer",
+								"border border-transparent text-sm font-medium text-foreground",
+								"transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
+								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50"
+							)}
+						>
+							<span
+								className="max-w-32 truncate text-sm font-medium select-none"
+								title={activeTeam ? activeTeam.name : undefined}
+							>
+								{activeTeam ? activeTeam.name : "Unknown Team"}
+							</span>
+							<ChevronDown
+								className={cn(
+									"h-4 w-4 text-zinc-500 transition-transform",
+									isTeamMenuOpen && "rotate-180"
+								)}
+							/>
+						</Button>
+					</DropdownMenuTrigger>
+
+					<DropdownMenuContent
+						align="end"
 						className={cn(
-							"inline-flex items-center gap-2 rounded-lg px-3 h-10 leading-none cursor-pointer",
-							"border border-transparent text-sm font-medium text-foreground",
-							"transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50"
+							"w-56 rounded-xl p-1",
+							"border border-zinc-200/70 dark:border-zinc-800"
 						)}
 					>
-						<span
-							className="text-sm font-medium select-none"
-							title={activeTeam ? activeTeam.name : undefined}
-						>
-							{activeTeam ? activeTeam.name : "Unknown Team"}
-						</span>
-					</Button>
-				</DropdownMenuTrigger>
-
-				<DropdownMenuContent
-					align="end"
-					className={cn(
-						"w-56 rounded-xl p-1",
-						"border border-zinc-200/70 dark:border-zinc-800"
-					)}
-				>
-					{teams.length > 0 && (
 						<div>
 							{teams.slice(0, 5).map((t) => {
 								const isActive = t.id === activeTeamId;
@@ -157,22 +187,29 @@ export default function TeamSwitcher({
 								);
 							})}
 							<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
-							<DropdownMenuItem className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
+							<DropdownMenuItem
+								asChild
+								className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+							>
 								<Link
 									href="/settings/teams"
 									className="flex w-full items-center"
+									onClick={(e) => {
+										e.preventDefault();
+										navigateWithViewTransition("/settings/teams");
+									}}
 								>
 									<Users className="mr-2 h-4 w-4" />
 									<span>Manage Teams</span>
 								</Link>
 							</DropdownMenuItem>
 						</div>
-					)}
-				</DropdownMenuContent>
-			</DropdownMenu>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			) : null}
 
 			{/* Profile Dropdown */}
-<DropdownMenu>
+			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<button
 						aria-label="Open profile menu"
@@ -211,48 +248,74 @@ export default function TeamSwitcher({
 						</>
 					)}
 
-					
-
-					<DropdownMenuItem className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
+					<DropdownMenuItem
+						asChild
+						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+					>
 						<Link
 							href="/settings/account"
-							className="flex w-full items-center"
+							onClick={(e) => {
+								e.preventDefault();
+								navigateWithViewTransition("/settings/account");
+							}}
 						>
-							<Settings className="mr-2 h-4 w-4" />
+							<Settings className="h-4 w-4" />
 							<span>Settings</span>
 						</Link>
 					</DropdownMenuItem>
 
 					<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
 
-					<DropdownMenuItem className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
+					<DropdownMenuItem
+						asChild
+						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+					>
 						<Link
 							href={`/settings/usage?team_id=${encodeURIComponent(
-								activeTeamId ?? ""
+								activeTeamId ?? "",
 							)}`}
-							className="flex w-full items-center"
+							onClick={(e) => {
+								e.preventDefault();
+								navigateWithViewTransition(
+									`/settings/usage?team_id=${encodeURIComponent(
+										activeTeamId ?? "",
+									)}`,
+								);
+							}}
 						>
-							<BarChart2 className="mr-2 h-4 w-4" />
+							<BarChart2 className="h-4 w-4" />
 							<span>Usage</span>
 						</Link>
 					</DropdownMenuItem>
 
-					<DropdownMenuItem className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
+					<DropdownMenuItem
+						asChild
+						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+					>
 						<Link
 							href="/settings/credits"
-							className="flex w-full items-center"
+							onClick={(e) => {
+								e.preventDefault();
+								navigateWithViewTransition("/settings/credits");
+							}}
 						>
-							<CreditCard className="mr-2 h-4 w-4" />
+							<CreditCard className="h-4 w-4" />
 							<span>Credits</span>
 						</Link>
 					</DropdownMenuItem>
 
-					<DropdownMenuItem className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground">
+					<DropdownMenuItem
+						asChild
+						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+					>
 						<Link
 							href="/settings/keys"
-							className="flex w-full items-center"
+							onClick={(e) => {
+								e.preventDefault();
+								navigateWithViewTransition("/settings/keys");
+							}}
 						>
-							<KeyIcon className="mr-2 h-4 w-4" />
+							<KeyIcon className="h-4 w-4" />
 							<span>Keys</span>
 						</Link>
 					</DropdownMenuItem>

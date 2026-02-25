@@ -1,4 +1,4 @@
-﻿import { getRecentModelUpdatesSplit } from "@/lib/fetchers/updates/getModelUpdates";
+import { getRecentModelUpdatesSplit } from "@/lib/fetchers/updates/getModelUpdates";
 import ModelUpdatesPage from "@/components/(data)/models/ModelUpdates/ModelUpdates";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
@@ -24,7 +24,6 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function Page() {
-	// Fetch recent model update events (same source as landing page)
 	const { past: pastEvents, future: upcomingEvents } =
 		await getRecentModelUpdatesSplit({
 			limit: 250,

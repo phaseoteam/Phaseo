@@ -188,7 +188,7 @@ export function AppsUsageList({
 							{entry.app_id ? (
 								<Link
 									href={`/apps/${encodeURIComponent(entry.app_id)}`}
-									className="font-medium truncate block"
+									className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									{entry.app_name}
 								</Link>
@@ -253,7 +253,7 @@ export function AppsUsageList({
 									{entry.app_id ? (
 										<Link
 											href={`/apps/${encodeURIComponent(entry.app_id)}`}
-											className="font-medium truncate block"
+											className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
 										>
 											{entry.app_name}
 										</Link>

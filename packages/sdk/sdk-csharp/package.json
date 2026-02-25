@@ -1,6 +1,6 @@
 {
 	"name": "@ai-stats/csharp-sdk",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"private": true,
 	"description": "AI Stats C# SDK (preview) - generated client with models wrapper",
 	"license": "MIT",

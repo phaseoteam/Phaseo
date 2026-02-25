@@ -8,6 +8,10 @@ export interface APIProvider {
 
 import { createClient } from '@/utils/supabase/client';
 import { applyHiddenFilter } from '@/lib/fetchers/models/visibility';
+import {
+    filterVisibleAPIProviders,
+    isAPIProviderHidden,
+} from './visibility';
 
 export async function getAPIProvider(): Promise<APIProvider[]> {
     const supabase = await createClient();
@@ -23,13 +27,15 @@ export async function getAPIProvider(): Promise<APIProvider[]> {
 
     if (!data || !Array.isArray(data)) return [];
 
-    return data
-        .map((r: any) => ({
-            api_provider_id: r.api_provider_id,
-            api_provider_name: r.api_provider_name ?? r.name ?? '',
-            country_code: r.country_code ?? null,
-        }))
-        .filter((p) => p.api_provider_id);
+    return filterVisibleAPIProviders(
+        data
+            .map((r: any) => ({
+                api_provider_id: r.api_provider_id,
+                api_provider_name: r.api_provider_name ?? r.name ?? '',
+                country_code: r.country_code ?? null,
+            }))
+            .filter((p) => p.api_provider_id)
+    );
 }
 
 export async function getAPIProviderPricesCached(): Promise<APIProvider[]> {
@@ -65,6 +71,10 @@ export async function getAPIProviderModels(
     outputType: ModelOutputType,
     includeHidden: boolean
 ): Promise<APIProviderModels[]> {
+    if (isAPIProviderHidden(apiProviderId)) {
+        return [];
+    }
+
     const modalityLookup: Record<ModelOutputType, string> = {
         text: 'text',
         image: 'image',

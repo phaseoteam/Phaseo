@@ -8,6 +8,7 @@ export type AdapterBackedCapability =
 	| "audio.speech"
 	| "audio.transcription"
 	| "audio.translations"
+	| "video.generate"
 	| "ocr"
 	| "music.generate";
 
@@ -110,14 +111,6 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "friendli",
-		textOnly: true,
-	},
-	{
-		id: "google-vertex",
-		textOnly: true,
-	},
-	{
-		id: "xiaomi",
 		textOnly: true,
 	},
 ];

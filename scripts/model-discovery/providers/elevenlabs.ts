@@ -3,11 +3,11 @@ import { asArray, asRecord, defineProvider, fetchJson, normalizeModelEntries } f
 export default defineProvider({
 	id: "elevenlabs",
 	name: "ElevenLabs",
-	requiredEnv: ["ELEVEN_LABS_API_KEY"],
+	requiredEnv: ["ELEVENLABS_API_KEY"],
 	async fetchModels() {
-		const apiKey = process.env.ELEVEN_LABS_API_KEY;
+		const apiKey = process.env.ELEVENLABS_API_KEY;
 		if (!apiKey) {
-			throw new Error("Missing API key: ELEVEN_LABS_API_KEY");
+			throw new Error("Missing API key: ELEVENLABS_API_KEY");
 		}
 
 		const baseUrl = String(process.env.ELEVENLABS_BASE_URL || "https://api.elevenlabs.io").replace(/\/+$/, "");

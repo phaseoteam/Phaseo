@@ -19,13 +19,7 @@ const CONTENT_KEYS = new Set([
 	"summary",
 	"summary_text",
 	"transcript",
-	"audio",
-	"image",
-	"video",
-	"b64_json",
-	"url",
-	"data",
-	"bytes",
+	"response_text",
 ]);
 
 const SECRET_KEY_PATTERNS = [

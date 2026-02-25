@@ -1,0 +1,225 @@
+name: IndexNow Submission
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - "apps/web/**"
+            - ".github/workflows/indexnow.yml"
+    pull_request:
+        branches:
+            - main
+        types:
+            - opened
+            - synchronize
+            - reopened
+        paths:
+            - "apps/web/**"
+            - ".github/workflows/indexnow.yml"
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: indexnow-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    submit:
+        runs-on: ubuntu-latest
+        env:
+            INDEXNOW_BASE_URL: https://aistats.org
+            INDEXNOW_KEY: 5947cb50c7234706a412486c15cb2398
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Build URL submission list
+              id: urls
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  BASE_URL="${INDEXNOW_BASE_URL%/}"
+                  HOST="${BASE_URL#https://}"
+                  HOST="${HOST#http://}"
+                  HOST="${HOST%%/*}"
+                  KEY_LOCATION="${BASE_URL}/${INDEXNOW_KEY}.txt"
+
+                  if [ "${{ github.event_name }}" = "pull_request" ]; then
+                    BASE_SHA="${{ github.event.pull_request.base.sha }}"
+                    HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+                  else
+                    BASE_SHA="${{ github.event.before }}"
+                    HEAD_SHA="${{ github.sha }}"
+                  fi
+
+                  if [ -z "${BASE_SHA}" ] || [ "${BASE_SHA}" = "0000000000000000000000000000000000000000" ]; then
+                    BASE_SHA="$(git rev-parse "${HEAD_SHA}~1")"
+                  fi
+                  export BASE_SHA HEAD_SHA
+
+                  echo "Diff range: ${BASE_SHA}..${HEAD_SHA}"
+
+                  git diff --name-status "${BASE_SHA}" "${HEAD_SHA}" > changed_files_status.txt
+
+                  python3 - <<'PY'
+                  import os
+                  import json
+                  import subprocess
+
+                  base_url = os.environ["INDEXNOW_BASE_URL"].rstrip("/")
+                  base_sha = os.environ.get("BASE_SHA", "").strip()
+                  head_sha = os.environ.get("HEAD_SHA", "").strip()
+                  urls: set[str] = set()
+
+                  model_suffixes = ["", "/quickstart", "/benchmarks", "/pricing", "/family", "/timeline", "/performance"]
+                  provider_suffixes = ["", "/text-models", "/image-models", "/video-models", "/audio-models", "/embeddings-models", "/moderations-models"]
+                  organisation_suffixes = ["", "/models"]
+                  plan_suffixes = ["", "/features", "/models"]
+                  benchmark_suffixes = [""]
+
+                  def build_route(path: str) -> str | None:
+                      if not path.startswith("apps/web/src/app/") or not path.endswith("/page.tsx"):
+                          return None
+                      route = path[len("apps/web/src/app") : -len("/page.tsx")]
+                      parts = [p for p in route.split("/") if p]
+                      filtered = []
+                      for part in parts:
+                          if part.startswith("(") and part.endswith(")"):
+                              continue
+                          if "[" in part or "]" in part:
+                              return None
+                          filtered.append(part)
+                      return "/" + "/".join(filtered) if filtered else "/"
+
+                  with open("changed_files_status.txt", "r", encoding="utf-8") as f:
+                      for raw_line in f:
+                          line = raw_line.strip()
+                          if not line:
+                              continue
+                          cols = line.split("\t")
+                          status = cols[0]
+                          path = cols[-1]
+                          if not (status.startswith("A") or status.startswith("R")):
+                              continue
+                          route = build_route(path)
+                          if route:
+                              urls.add(base_url + route)
+
+                  def ensure_list(value):
+                      if isinstance(value, list):
+                          return [str(item).strip() for item in value if str(item).strip()]
+                      return []
+
+                  def load_manifest(rev: str):
+                      if not rev:
+                          return {}
+                      try:
+                          output = subprocess.check_output(
+                              ["git", "show", f"{rev}:apps/web/src/data/manifest.json"],
+                              text=True,
+                          )
+                      except Exception:
+                          return {}
+                      try:
+                          data = json.loads(output)
+                      except Exception:
+                          return {}
+                      return data if isinstance(data, dict) else {}
+
+                  def model_ids(manifest: dict) -> set[str]:
+                      result: set[str] = set()
+                      models = manifest.get("models")
+                      if not isinstance(models, dict):
+                          return result
+                      for org_key, entries in models.items():
+                          org = str(org_key).strip().strip("/")
+                          for value in ensure_list(entries):
+                              cleaned = value.strip().strip("/")
+                              if not cleaned:
+                                  continue
+                              if "/" in cleaned:
+                                  result.add(cleaned)
+                              elif org:
+                                  result.add(f"{org}/{cleaned}")
+                      return result
+
+                  def add_with_suffixes(prefix: str, slug: str, suffixes: list[str]) -> None:
+                      clean_slug = str(slug).strip().strip("/")
+                      if not clean_slug:
+                          return
+                      for suffix in suffixes:
+                          urls.add(f"{base_url}{prefix}/{clean_slug}{suffix}")
+
+                  base_manifest = load_manifest(base_sha)
+                  head_manifest = load_manifest(head_sha)
+
+                  added_models = sorted(model_ids(head_manifest) - model_ids(base_manifest))
+                  for slug in added_models:
+                      add_with_suffixes("/models", slug, model_suffixes)
+
+                  for slug in sorted(set(ensure_list(head_manifest.get("api_providers"))) - set(ensure_list(base_manifest.get("api_providers")))):
+                      add_with_suffixes("/api-providers", slug, provider_suffixes)
+
+                  for slug in sorted(set(ensure_list(head_manifest.get("organisations"))) - set(ensure_list(base_manifest.get("organisations")))):
+                      add_with_suffixes("/organisations", slug, organisation_suffixes)
+
+                  for slug in sorted(set(ensure_list(head_manifest.get("benchmarks"))) - set(ensure_list(base_manifest.get("benchmarks")))):
+                      add_with_suffixes("/benchmarks", slug, benchmark_suffixes)
+
+                  for slug in sorted(set(ensure_list(head_manifest.get("subscription_plans"))) - set(ensure_list(base_manifest.get("subscription_plans")))):
+                      add_with_suffixes("/subscription-plans", slug, plan_suffixes)
+
+                  all_urls = sorted(urls)
+
+                  with open("indexnow_urls.txt", "w", encoding="utf-8") as f:
+                      for url in all_urls:
+                          f.write(url + "\n")
+                  PY
+
+                  URL_COUNT="$(wc -l < indexnow_urls.txt | tr -d ' ')"
+
+                  echo "host=${HOST}" >> "$GITHUB_OUTPUT"
+                  echo "key_location=${KEY_LOCATION}" >> "$GITHUB_OUTPUT"
+                  echo "url_count=${URL_COUNT}" >> "$GITHUB_OUTPUT"
+
+                  echo "URLs to submit (${URL_COUNT}):"
+                  cat indexnow_urls.txt
+
+            - name: Submit to IndexNow
+              if: steps.urls.outputs.url_count != '0'
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  URL_LIST_JSON="$(jq -R -s -c 'split("\n") | map(select(length > 0))' indexnow_urls.txt)"
+                  PAYLOAD="$(jq -n \
+                    --arg host "${{ steps.urls.outputs.host }}" \
+                    --arg key "${INDEXNOW_KEY}" \
+                    --arg keyLocation "${{ steps.urls.outputs.key_location }}" \
+                    --argjson urlList "${URL_LIST_JSON}" \
+                    '{host: $host, key: $key, keyLocation: $keyLocation, urlList: $urlList}')"
+
+                  HTTP_CODE="$(curl -sS -o indexnow_response.txt -w "%{http_code}" \
+                    -H "Content-Type: application/json; charset=utf-8" \
+                    -d "${PAYLOAD}" \
+                    https://api.indexnow.org/indexnow || true)"
+
+                  echo "IndexNow HTTP code: ${HTTP_CODE}"
+                  if [ -s indexnow_response.txt ]; then
+                    echo "IndexNow response:"
+                    cat indexnow_response.txt
+                  fi
+
+                  if [ "${HTTP_CODE}" != "200" ]; then
+                    echo "::warning::IndexNow submission returned HTTP ${HTTP_CODE}. This can happen if the key file is not yet reachable on ${INDEXNOW_BASE_URL}."
+                  fi
+
+            - name: No new URLs to submit
+              if: steps.urls.outputs.url_count == '0'
+              run: echo "No newly added URLs detected in this diff range."

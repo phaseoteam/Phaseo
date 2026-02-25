@@ -98,7 +98,10 @@ export function MarketShareLeaderboard({
 						) : null}
 						<div className="min-w-0 flex-1">
 							{entry.href ? (
-								<Link href={entry.href} className="font-medium truncate block">
+								<Link
+									href={entry.href}
+									className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+								>
 									{entry.name}
 								</Link>
 							) : (
@@ -158,7 +161,10 @@ export function MarketShareLeaderboard({
 								) : null}
 								<div className="min-w-0 flex-1">
 									{entry.href ? (
-										<Link href={entry.href} className="font-medium truncate block">
+										<Link
+											href={entry.href}
+											className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+										>
 											{entry.name}
 										</Link>
 									) : (

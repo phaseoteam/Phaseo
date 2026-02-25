@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
 import { Input } from "@/components/ui/input";
@@ -18,29 +18,34 @@ import {
 	TooltipContent,
 } from "@/components/ui/tooltip";
 import { ModelCard } from "@/lib/fetchers/models/getAllModels";
-import { qParser, yearParser } from "@/app/(dashboard)/models/search-params";
-import { UPCOMING_TAB_VALUE, UNKNOWN_TAB_VALUE } from "@/lib/models/modelTabs";
+import { qParser } from "@/app/(dashboard)/models/search-params";
 
 interface ModelsDisplayProps {
 	models: ModelCard[];
-	years: number[];
-	activeYear: number | null;
-	hasUpcoming: boolean;
-	hasUnknown: boolean;
 }
 
 export default function ModelsDisplay({
 	models,
-	years,
-	activeYear,
-	hasUpcoming,
-	hasUnknown,
 }: ModelsDisplayProps) {
 	const [search, setSearch] = useQueryState("q", qParser);
-	const [, setYear] = useQueryState("year", yearParser);
 	const pathname = usePathname();
+	const searchParams = useSearchParams();
 	const isTable = pathname?.includes("/models/table");
 	const isCollections = pathname?.includes("/models/collections");
+
+	const buildHref = (path: string, options?: { toTable?: boolean }) => {
+		const params = new URLSearchParams(searchParams?.toString() ?? "");
+		if (options?.toTable) {
+			const qValue = params.get("q") ?? search ?? "";
+			if (qValue.trim()) {
+				params.set("search", qValue);
+			} else {
+				params.delete("search");
+			}
+		}
+		const qs = params.toString();
+		return qs ? `${path}?${qs}` : path;
+	};
 
 	return (
 		<>
@@ -62,7 +67,7 @@ export default function ModelsDisplay({
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 									>
 										<Link
-											href="/models"
+											href={buildHref("/models")}
 											prefetch={false}
 											aria-label="Card view"
 										>
@@ -86,7 +91,9 @@ export default function ModelsDisplay({
 										asChild
 									>
 										<Link
-											href="/models/table"
+											href={buildHref("/models/table", {
+												toTable: true,
+											})}
 											prefetch={false}
 											aria-label="Table view"
 										>
@@ -112,7 +119,7 @@ export default function ModelsDisplay({
 										asChild
 									>
 										<Link
-											href="/models/collections"
+											href={buildHref("/models/collections")}
 											prefetch={false}
 											aria-label="Collections view"
 										>
@@ -142,137 +149,70 @@ export default function ModelsDisplay({
 						style={{ minWidth: 0 }}
 					/>
 				</div>
-			</div>
-
-			{/* Years row with desktop-only tabs right-aligned */}
-			<div className="mb-4 -mx-1 overflow-x-auto">
-				<div className="flex items-center justify-between px-1 pb-1 gap-2">
-					<div className="flex gap-2">
-						{hasUpcoming ? (
-							<Button
-								key="upcoming"
-								size="sm"
-								variant={
-									activeYear === UPCOMING_TAB_VALUE
-										? "default"
-										: "outline"
-								}
-								onClick={() => setYear(UPCOMING_TAB_VALUE)}
-								className="px-3 py-1 text-xs whitespace-nowrap rounded-full"
-							>
-								Upcoming
-							</Button>
-						) : null}
-						{years.length > 0 &&
-							years.map((year) => (
+				{/* Desktop tabs next to search */}
+				<div className="hidden md:flex items-center">
+					<div className="inline-flex rounded-md overflow-hidden border bg-background">
+						<Tooltip>
+							<TooltipTrigger asChild>
 								<Button
-									key={year}
 									size="sm"
-									variant={
-										activeYear === year
-											? "default"
-											: "outline"
-									}
-									onClick={() => setYear(year)}
-									className="px-3 py-1 text-xs whitespace-nowrap rounded-full"
+									asChild
+									variant={!isTable ? "default" : "outline"}
+									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 								>
-									{year}
+									<Link
+										href={buildHref("/models")}
+										prefetch={false}
+										aria-label="Card view"
+									>
+										<GridIcon className="h-4 w-4" />
+									</Link>
 								</Button>
-							))}
-						{hasUnknown ? (
-							<Button
-								key="unknown"
-								size="sm"
-								variant={
-									activeYear === UNKNOWN_TAB_VALUE
-										? "default"
-										: "outline"
-								}
-								onClick={() => setYear(UNKNOWN_TAB_VALUE)}
-								className="px-3 py-1 text-xs whitespace-nowrap rounded-full"
-							>
-								Unknown
-							</Button>
-						) : null}
-					</div>
+							</TooltipTrigger>
+							<TooltipContent side="top">Card view</TooltipContent>
+						</Tooltip>
 
-					{/* Desktop tabs aligned to the right of the years row */}
-					<div className="hidden md:flex items-center">
-						<div className="inline-flex rounded-md overflow-hidden border bg-background">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="sm"
-										asChild
-										variant={
-											!isTable ? "default" : "outline"
-										}
-										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="sm"
+									variant={isTable ? "default" : "outline"}
+									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+									asChild
+								>
+									<Link
+										href={buildHref("/models/table", {
+											toTable: true,
+										})}
+										prefetch={false}
+										aria-label="Table view"
 									>
-										<Link
-											href="/models"
-											prefetch={false}
-											aria-label="Card view"
-										>
-											<GridIcon className="h-4 w-4" />
-										</Link>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									Card view
-								</TooltipContent>
-							</Tooltip>
+										<TableIcon className="h-4 w-4" />
+									</Link>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="top">Table view</TooltipContent>
+						</Tooltip>
 
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="sm"
-										variant={
-											isTable ? "default" : "outline"
-										}
-										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-										asChild
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									size="sm"
+									variant={isCollections ? "default" : "outline"}
+									className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+									asChild
+								>
+									<Link
+										href={buildHref("/models/collections")}
+										prefetch={false}
+										aria-label="Collections view"
 									>
-										<Link
-											href="/models/table"
-											prefetch={false}
-											aria-label="Table view"
-										>
-											<TableIcon className="h-4 w-4" />
-										</Link>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									Table view
-								</TooltipContent>
-							</Tooltip>
-
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="sm"
-										variant={
-											isCollections
-												? "default"
-												: "outline"
-										}
-										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-										asChild
-									>
-										<Link
-											href="/models/collections"
-											prefetch={false}
-											aria-label="Collections view"
-										>
-											<LayersIcon className="h-4 w-4" />
-										</Link>
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									Collections
-								</TooltipContent>
-							</Tooltip>
-						</div>
+										<LayersIcon className="h-4 w-4" />
+									</Link>
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent side="top">Collections</TooltipContent>
+						</Tooltip>
 					</div>
 				</div>
 			</div>

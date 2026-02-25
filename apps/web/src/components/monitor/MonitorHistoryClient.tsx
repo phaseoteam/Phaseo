@@ -160,7 +160,7 @@ const renderChangeRow = (change: ChangeHistory) => {
 		: null;
 
 	const modelNode = href ? (
-		<Link href={href} className="hover:underline font-medium">
+		<Link href={href} className="underline decoration-transparent hover:decoration-current transition-colors duration-200 font-medium">
 			{change.model}
 		</Link>
 	) : (
@@ -372,3 +372,4 @@ export function MonitorHistoryClient({
 		</div>
 	);
 }
+

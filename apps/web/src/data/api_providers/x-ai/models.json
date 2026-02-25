@@ -1040,5 +1040,20 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "x-ai/grok-imagine-image-pro",
+    "provider_api_model_id": "x-ai:x-ai/grok-imagine-image-pro",
+    "provider_model_slug": "grok-imagine-image-pro",
+    "internal_model_id": "x-ai/grok-imagine-image-pro-2026-01-29",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-01-29T00:00:00",
+    "effective_to": null,
+    "capabilities": []
   }
 ]

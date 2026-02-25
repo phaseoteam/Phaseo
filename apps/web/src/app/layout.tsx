@@ -73,8 +73,8 @@ export default function RootLayout({
 				<CookieConsentManager gaMeasurementId={GA_MEASUREMENT_ID} />
 				<ThemeProvider
 					attribute="class"
-					defaultTheme="light"
-					enableSystem={false}
+					defaultTheme="system"
+					enableSystem
 					disableTransitionOnChange
 				>
 					<TooltipProvider>

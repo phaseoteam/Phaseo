@@ -8,6 +8,7 @@ export async function revalidateUsage() {
 	await requireAuthenticatedUser();
 	revalidatePath("/gateway/usage");
 	revalidatePath("/settings/usage");
+	revalidatePath("/settings/usage/logs");
     return { ok: true } as const;
   } catch (e: any) {
     return { ok: false, message: String(e?.message ?? e) } as const;

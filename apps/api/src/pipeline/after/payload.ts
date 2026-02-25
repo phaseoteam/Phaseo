@@ -43,6 +43,9 @@ export async function enrichSuccessPayload(ctx: PipelineContext, result: Request
         if (ctx.meta?.echoUpstreamRequest && result.mappedRequest) {
             fullPayload.upstream_request = result.mappedRequest;
         }
+        if (ctx.meta?.debug?.return_upstream_response && result.rawResponse) {
+            fullPayload.upstream_response = result.rawResponse;
+        }
         return fullPayload;
     }
 
@@ -63,6 +66,9 @@ export async function enrichSuccessPayload(ctx: PipelineContext, result: Request
     };
     if (ctx.meta?.echoUpstreamRequest && result.mappedRequest) {
         payload.upstream_request = result.mappedRequest;
+    }
+    if (ctx.meta?.debug?.return_upstream_response && result.rawResponse) {
+        payload.upstream_response = result.rawResponse;
     }
 
     return payload;

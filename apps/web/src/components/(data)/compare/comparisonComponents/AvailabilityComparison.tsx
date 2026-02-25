@@ -110,13 +110,13 @@ export default function AvailabilityComparison({
 									)}`}
 									className="group text-sm font-semibold"
 								>
-									<span className="relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
 										{summary.modelName}
 									</span>
 								</Link>
 								<Link
 									href={`/organisations/${summary.providerId}`}
-									className="text-xs text-muted-foreground hover:underline"
+									className="text-xs text-muted-foreground underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									{summary.providerName}
 								</Link>
@@ -154,3 +154,4 @@ export default function AvailabilityComparison({
 		</section>
 	);
 }
+

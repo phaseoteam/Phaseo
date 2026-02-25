@@ -18,24 +18,30 @@ create table if not exists public.gateway_async_operations (
   constraint gateway_async_operations_team_kind_internal_unique
     unique (team_id, kind, internal_id)
 );
+
 create index if not exists gateway_async_operations_team_kind_created_idx
   on public.gateway_async_operations (team_id, kind, created_at desc);
+
 create index if not exists gateway_async_operations_team_kind_native_idx
   on public.gateway_async_operations (team_id, kind, native_id)
   where native_id is not null;
+
 alter table public.gateway_async_operations enable row level security;
+
 drop policy if exists gateway_async_operations_select_own_team on public.gateway_async_operations;
 create policy gateway_async_operations_select_own_team
   on public.gateway_async_operations
   for select
   to authenticated
   using (public.is_team_member(team_id));
+
 drop policy if exists gateway_async_operations_insert_service on public.gateway_async_operations;
 create policy gateway_async_operations_insert_service
   on public.gateway_async_operations
   for insert
   to service_role
   with check (true);
+
 drop policy if exists gateway_async_operations_update_service on public.gateway_async_operations;
 create policy gateway_async_operations_update_service
   on public.gateway_async_operations
@@ -43,8 +49,10 @@ create policy gateway_async_operations_update_service
   to service_role
   using (true)
   with check (true);
+
 grant select on public.gateway_async_operations to authenticated;
 grant select, insert, update on public.gateway_async_operations to service_role;
+
 comment on table public.gateway_async_operations is
   'Team-scoped registry for long-running operations (video/batch) with ownership and billing markers.';
 comment on column public.gateway_async_operations.internal_id is

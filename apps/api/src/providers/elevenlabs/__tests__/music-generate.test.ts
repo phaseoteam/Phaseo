@@ -1,8 +1,13 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { exec } from "../endpoints/music-generate";
-import { getMusicJobMeta } from "@core/music-jobs";
+
+const saveMusicJobMetaMock = vi.fn();
+
+vi.mock("@core/music-jobs", () => ({
+	saveMusicJobMeta: (...args: unknown[]) => saveMusicJobMetaMock(...args),
+}));
 
 const REQUEST_META = {
 	requestId: "req_test_music_el_1",
@@ -45,6 +50,10 @@ afterAll(() => {
 });
 
 describe("ElevenLabs music.generate endpoint", () => {
+	beforeEach(() => {
+		saveMusicJobMetaMock.mockReset();
+	});
+
 	it("maps request fields and stores metadata for status lookups", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([
@@ -94,12 +103,20 @@ describe("ElevenLabs music.generate endpoint", () => {
 		expect(result.normalized?.id).toBe("el_job_123");
 		expect(result.normalized?.status).toBe("queued");
 		expect(result.normalized?.output?.[0]?.audio_url).toBe("https://cdn.example.com/track.mp3");
-
-		const meta = await getMusicJobMeta("team_test", "el_job_123");
-		expect(meta?.provider).toBe("elevenlabs");
-		expect(meta?.model).toBe("music_v2");
-		expect(meta?.status).toBe("queued");
-		expect(meta?.output?.[0]?.audio_url).toBe("https://cdn.example.com/track.mp3");
+		expect(saveMusicJobMetaMock).toHaveBeenCalledWith(
+			"team_test",
+			"el_job_123",
+			expect.objectContaining({
+				provider: "elevenlabs",
+				model: "music_v2",
+				status: "queued",
+				output: expect.arrayContaining([
+					expect.objectContaining({
+						audio_url: "https://cdn.example.com/track.mp3",
+					}),
+				]),
+			}),
+		);
 	});
 
 	it("handles binary responses and still stores completed metadata", async () => {
@@ -138,9 +155,13 @@ describe("ElevenLabs music.generate endpoint", () => {
 		expect(result.upstream.status).toBe(200);
 		expect(result.normalized?.status).toBe("completed");
 		expect(typeof result.normalized?.audio_base64).toBe("string");
-
-		const meta = await getMusicJobMeta("team_test", "el_binary_1");
-		expect(meta?.provider).toBe("elevenlabs");
-		expect(meta?.status).toBe("completed");
+		expect(saveMusicJobMetaMock).toHaveBeenCalledWith(
+			"team_test",
+			"el_binary_1",
+			expect.objectContaining({
+				provider: "elevenlabs",
+				status: "completed",
+			}),
+		);
 	});
 });

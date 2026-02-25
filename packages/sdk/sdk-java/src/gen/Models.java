@@ -215,6 +215,15 @@ public final class Models {
 	}
 
 	public static class EmbeddingsRequest {
+		public Object debug;
+		public Integer dimensions;
+		public Object embedding_options;
+		public String encoding_format;
+		public Object input;
+		public Object inputs;
+		public String model;
+		public Object provider;
+		public String user;
 	}
 
 	public static class EmbeddingsResponse {
@@ -408,6 +417,12 @@ public final class Models {
 	public static class MusicGenerateResponse {
 	}
 
+	public static class NotImplementedResponse {
+		public String description;
+		public String error;
+		public Integer status_code;
+	}
+
 	public static class OcrRequest {
 		public Object debug;
 		public Boolean echo_upstream_request;
@@ -472,6 +487,10 @@ public final class Models {
 		public String prefix;
 		public String scopes;
 		public Object status;
+	}
+
+	public static class RealtimeNotImplementedResponse {
+		public Object error;
 	}
 
 	public static class ReasoningConfig {
@@ -570,15 +589,25 @@ public final class Models {
 		public String aspect_ratio;
 		public Integer duration;
 		public Integer duration_seconds;
+		public Boolean enhance_prompt;
+		public Boolean generate_audio;
+		public Object input;
+		public Object input_image;
+		public Object input_last_frame;
 		public String input_reference;
 		public String input_reference_mime_type;
+		public Object input_video;
+		public Object last_frame;
 		public String model;
 		public String negative_prompt;
+		public Integer number_of_videos;
 		public String output_storage_uri;
 		public String person_generation;
 		public String prompt;
 		public Object provider;
+		public String quality;
 		public String ratio;
+		public java.util.List<Object> reference_images;
 		public String resolution;
 		public Integer sample_count;
 		public Object seconds;

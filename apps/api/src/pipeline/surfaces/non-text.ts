@@ -93,6 +93,10 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 
 	const passthroughNumericKeys = [
 		"requests",
+		"input_characters",
+		"output_image",
+		"output_audio_count",
+		"output_audio_seconds",
 		"output_video_seconds",
 		"input_image_tokens",
 		"input_audio_tokens",
@@ -101,6 +105,7 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 		"output_audio_tokens",
 		"output_video_tokens",
 		"embedding_tokens",
+		"bfl_credits",
 	];
 
 	for (const key of passthroughNumericKeys) {
@@ -140,7 +145,7 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 				userId: body?.user,
 				rawRequest: body,
 			};
-		case "audio.speech":
+		case "audio.speech": {
 			return {
 				model: body?.model,
 				input: body?.input,
@@ -156,6 +161,7 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 				userId: body?.user,
 				rawRequest: body,
 			};
+		}
 		case "audio.transcription":
 			return {
 				model: body?.model,
