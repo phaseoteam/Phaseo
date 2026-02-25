@@ -6,6 +6,6 @@ export default defineOpenAICompatibleProvider({
     apiKeyEnv: "PERPLEXITY_API_KEY",
     baseUrl: "https://api.perplexity.ai",
     baseUrlEnv: "PERPLEXITY_BASE_URL",
-    pathPrefix: "",
+    pathPrefix: "/v1",
 });
 

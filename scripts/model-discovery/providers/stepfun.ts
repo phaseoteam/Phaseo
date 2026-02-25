@@ -4,7 +4,7 @@ export default defineOpenAICompatibleProvider({
     providerId: "stepfun",
     name: "Stepfun",
     apiKeyEnv: "STEPFUN_API_KEY",
-    baseUrl: "https://api.stepfun.com",
+    baseUrl: "https://api.stepfun.ai",
     baseUrlEnv: "STEPFUN_BASE_URL",
     pathPrefix: "/v1",
 });

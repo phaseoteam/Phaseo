@@ -457,5 +457,4 @@ begin
   );
 end;
 $function$;
-
 grant execute on function public.gateway_fetch_request_context(uuid, text, text, uuid) to authenticated;

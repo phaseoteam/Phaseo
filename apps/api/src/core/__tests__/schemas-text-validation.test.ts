@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ChatCompletionsSchema, ResponsesSchema } from "../schemas";
 
 describe("text request schema validation", () => {
-	it("rejects chat streaming when tools are present", () => {
+	it("accepts chat streaming when tools are present", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			stream: true,
@@ -16,10 +16,7 @@ describe("text request schema validation", () => {
 			}],
 		});
 
-		expect(parsed.success).toBe(false);
-		if (!parsed.success) {
-			expect(parsed.error.issues.some((issue) => issue.path.join(".") === "stream")).toBe(true);
-		}
+		expect(parsed.success).toBe(true);
 	});
 
 	it("rejects chat n", () => {
@@ -32,7 +29,7 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(false);
 	});
 
-	it("rejects responses streaming when tools are present", () => {
+	it("accepts responses streaming when tools are present", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",
 			stream: true,
@@ -44,10 +41,7 @@ describe("text request schema validation", () => {
 			}],
 		});
 
-		expect(parsed.success).toBe(false);
-		if (!parsed.success) {
-			expect(parsed.error.issues.some((issue) => issue.path.join(".") === "stream")).toBe(true);
-		}
+		expect(parsed.success).toBe(true);
 	});
 
 	it("accepts responses response_format json_schema and json_object", () => {
@@ -71,6 +65,22 @@ describe("text request schema validation", () => {
 			response_format: { type: "json_object" },
 		});
 		expect(jsonObjectParsed.success).toBe(true);
+	});
+
+	it("accepts global beta flags", () => {
+		const chatParsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "hello" }],
+			beta: { openai_websocket_mode: true },
+		});
+		expect(chatParsed.success).toBe(true);
+
+		const responsesParsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			input: "hello",
+			beta: { openai: { websocket_mode: true } },
+		});
+		expect(responsesParsed.success).toBe(true);
 	});
 
 	it("rejects responses n", () => {

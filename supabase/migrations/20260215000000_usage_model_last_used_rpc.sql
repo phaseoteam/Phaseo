@@ -24,6 +24,4 @@ as $$
   group by gr.model_id
   order by last_used_at desc;
 $$;
-
 grant execute on function public.get_team_model_last_used(uuid, timestamptz) to authenticated;
-

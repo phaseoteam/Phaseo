@@ -6,6 +6,6 @@ export default defineOpenAICompatibleProvider({
     apiKeyEnv: "VENICE_API_KEY",
     baseUrl: "https://api.venice.ai",
     baseUrlEnv: "VENICE_BASE_URL",
-    pathPrefix: "/v1",
+    pathPrefix: "/api/v1",
 });
 

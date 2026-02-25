@@ -6,7 +6,7 @@ export default defineProvider({
     requiredEnv: ["NOVITA_API_KEY"],
     async fetchModels() {
         const payload = await fetchJson({
-            url: "https://api.novita.ai/v3/openai/v1/models",
+            url: "https://api.novita.ai/openai/v1/models",
             init: {
                 headers: {
                     Authorization: `Bearer ${process.env.NOVITA_API_KEY}`,

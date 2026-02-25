@@ -6,6 +6,6 @@ export default defineOpenAICompatibleProvider({
     apiKeyEnv: "ATLAS_CLOUD_API_KEY",
     baseUrl: "https://api.atlascloud.ai",
     baseUrlEnv: "ATLAS_CLOUD_BASE_URL",
-    pathPrefix: "/v1",
+    pathPrefix: "/api/v1",
 });
 

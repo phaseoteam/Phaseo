@@ -25,5 +25,4 @@ as $$
     and public.is_team_member(p_team_id)
   group by gr.key_id;
 $$;
-
 grant execute on function public.get_team_key_usage(uuid, timestamptz) to authenticated;

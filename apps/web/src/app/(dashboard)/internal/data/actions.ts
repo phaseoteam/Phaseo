@@ -266,6 +266,7 @@ export async function createAPIProviderAction(formData: FormData) {
 		description: optionalString(formData.get("description")),
 		link: optionalString(formData.get("link")),
 		country_code: optionalString(formData.get("country_code")),
+		status: "Active",
 	});
 	if (error) throw new Error(error.message);
 

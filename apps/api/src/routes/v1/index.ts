@@ -5,7 +5,6 @@
 
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
-import { cors } from "hono/cors";
 
 import { dataRouter } from "./data";
 import { controlRouter } from "./control";
@@ -13,21 +12,28 @@ import { controlRouter } from "./control";
 export const v1Router = new Hono<Env>();
 
 // CORS for everything under /v1
+const CORS_HEADERS: Record<string, string> = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers":
+        "Authorization, Content-Type, x-title, http-referer, x-gateway-debug, X-AIStats-Strictness",
+    "Access-Control-Max-Age": "86400",
+};
+
 v1Router.use(
     "*",
-    cors({
-        origin: "*",
-        allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowHeaders: [
-            "Authorization",
-            "Content-Type",
-            "x-title",
-            "http-referer",
-            "x-gateway-debug",
-            "X-AIStats-Strictness",
-        ],
-        maxAge: 86400,
-    })
+    async (c, next) => {
+        if (c.req.method === "OPTIONS") {
+            return new Response(null, {
+                status: 204,
+                headers: CORS_HEADERS,
+            });
+        }
+        await next();
+        for (const [key, value] of Object.entries(CORS_HEADERS)) {
+            c.res.headers.set(key, value);
+        }
+    },
 );
 
 v1Router.route("/", dataRouter);

@@ -3,13 +3,13 @@ import { asArray, asRecord, defineProvider, fetchJson, normalizeModelEntries } f
 export default defineProvider({
     id: "mistral",
     name: "Mistral",
-    requiredEnv: ["MISTRAL_API_KEY"],
+    requiredEnv: ["MISTRAL_AI_API_KEY"],
     async fetchModels() {
         const payload = await fetchJson({
             url: "https://api.mistral.ai/v1/models",
             init: {
                 headers: {
-                    Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`,
+                    Authorization: `Bearer ${process.env.MISTRAL_AI_API_KEY}`,
                 },
             },
         });

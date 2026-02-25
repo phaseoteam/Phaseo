@@ -6,7 +6,7 @@ export default defineProvider({
     requiredEnv: ["ZAI_API_KEY"],
     async fetchModels() {
         const payload = await fetchJson({
-            url: "https://open.bigmodel.cn/api/paas/v4/models",
+            url: "https://api.z.ai/api/paas/v4/models",
             init: {
                 headers: {
                     Authorization: `Bearer ${process.env.ZAI_API_KEY}`,

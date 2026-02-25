@@ -30,6 +30,8 @@ import {
 	shouldFallbackToChatFromError,
 } from "./retry-policy";
 
+const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba", "qwen"]);
+
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	// Use upstream start time from pipeline (set before executor is called)
 	// Falls back to current time if not provided (backward compatibility)
@@ -55,13 +57,9 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 				? irToOpenAICompletions(args.ir, args.providerModelSlug)
 				: irToOpenAIChat(args.ir, args.providerModelSlug, args.providerId, args.capabilityParams));
 
-		// Keep upstream streaming enabled by default for first-byte latency. Tool requests are
-		// forced non-stream upstream due provider compatibility constraints.
-		const hasTools = Array.isArray(requestPayload.tools) && requestPayload.tools.length > 0;
-		const shouldStream = !hasTools;
 		const payload: Record<string, any> = {
 			...requestPayload,
-			stream: Boolean(shouldStream),
+			stream: Boolean(args.ir.stream),
 		};
 		if (targetRoute === "chat" && payload.stream === true) {
 			payload.stream_options = {
@@ -120,7 +118,11 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 
 		// Some providers advertise OpenAI compatibility but don't implement /responses yet.
 		// Fallback once to /chat/completions when /responses endpoint is unavailable.
-		if (shouldFallbackToChatFromError({ route, status: res.status, errorText }) && route === "responses") {
+		if (
+			shouldFallbackToChatFromError({ route, status: res.status, errorText }) &&
+			route === "responses" &&
+			!RESPONSES_CHAT_FALLBACK_BLOCKLIST.has(args.providerId)
+		) {
 			route = "chat";
 			attempt = await sendPayload(route, buildPayloadForRoute(route));
 			res = attempt.response;

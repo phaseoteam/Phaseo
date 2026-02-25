@@ -6,7 +6,7 @@ export default defineProvider({
     requiredEnv: ["MOONSHOT_AI_API_KEY"],
     async fetchModels() {
         const payload = await fetchJson({
-            url: "https://api.moonshot.cn/v1/models",
+            url: "https://api.moonshot.ai/v1/models",
             init: {
                 headers: {
                     Authorization: `Bearer ${process.env.MOONSHOT_AI_API_KEY}`,

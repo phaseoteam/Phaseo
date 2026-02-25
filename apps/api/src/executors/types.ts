@@ -27,7 +27,7 @@ import type {
 } from "@core/ir";
 import type { ByokKeyMeta } from "@pipeline/before/types";
 import type { Endpoint } from "@core/types";
-import type { DebugOptions } from "@core/types";
+import type { DebugOptions, RequestBetaOptions } from "@core/types";
 import type { Protocol } from "@protocols/detect";
 
 export type ExecutorExecuteArgs = {
@@ -57,6 +57,7 @@ export type ExecutorExecuteArgs = {
 		returnUpstreamResponse?: boolean;
 		upstreamStartMs?: number; // Timestamp when upstream request started
 		forceGatewayKey?: boolean;
+		beta?: RequestBetaOptions;
 	};
 };
 

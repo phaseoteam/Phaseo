@@ -19,16 +19,6 @@ describe("validateTextIRContract", () => {
 		expect(validateTextIRContract(baseIR())).toEqual([]);
 	});
 
-	it("rejects stream=true when tools are present", () => {
-		const issues = validateTextIRContract(
-			baseIR({
-				stream: true,
-				tools: [{ name: "get_weather", parameters: { type: "object" } }],
-			}),
-		);
-		expect(issues[0]?.code).toBe("stream_with_tools_not_supported");
-	});
-
 	it("rejects json_schema response_format without schema object", () => {
 		const issues = validateTextIRContract(
 			baseIR({
@@ -57,9 +47,9 @@ describe("buildTextIRContractErrorResponse", () => {
 	it("returns 400 with request_id and debug issues when enabled", async () => {
 		const response = buildTextIRContractErrorResponse(
 			[{
-				code: "stream_with_tools_not_supported",
-				message: "Streaming with tools is not supported.",
-				path: "stream",
+				code: "response_format_type_invalid",
+				message: "response_format.type must be one of: text, json_object, json_schema.",
+				path: "response_format.type",
 			}],
 			{
 				requestId: "req_abc",

@@ -23,9 +23,9 @@ const toNullableInt = (value: unknown): number | null => {
     return Number.isFinite(parsed) ? parsed : null;
 };
 
-const toProviderStatus = (value: unknown): "Active" | "Beta" | "Alpha" | "NotReady" | undefined => {
+const toProviderStatus = (value: unknown): "Active" | "Beta" | "Alpha" | "NotReady" => {
     const raw = value == null ? "" : String(value).trim();
-    if (!raw) return undefined;
+    if (!raw) return "Active";
 
     const status = raw.toLowerCase();
     if (status === "beta") return "Beta";
@@ -159,7 +159,7 @@ export async function loadProviders(
             link: j.link ?? null,
             country_code: j.country_code ?? null,
             colour: j.colour ?? j.color ?? null,
-            ...(status ? { status } : {}),
+            status,
         };
         providerIds.add(row.api_provider_id);
         if (change.status !== "unchanged") {

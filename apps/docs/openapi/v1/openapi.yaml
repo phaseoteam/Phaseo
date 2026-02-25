@@ -283,6 +283,51 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/ResponsesResponse"
+    /responses/ws:
+        get:
+            x-beta: true
+            tags:
+                - Gateway
+            operationId: openResponsesWebSocket
+            summary: Open Responses websocket session
+            description: |
+                Opens a persistent websocket session for OpenAI Responses WebSocket mode.
+
+                This endpoint is OpenAI-only and accepts `response.create` websocket messages.
+                The gateway enforces `store=false`, allows one in-flight response per connection,
+                and forwards OpenAI Responses streaming events back to the client.
+            responses:
+                "101":
+                    description: WebSocket upgrade accepted.
+                    x-websocket:
+                        clientEvent:
+                            $ref: "#/components/schemas/ResponsesWebSocketCreateEvent"
+                        serverEvent:
+                            $ref: "#/components/schemas/ResponsesWebSocketServerEvent"
+                "400":
+                    description: Bad request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "401":
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "426":
+                    description: WebSocket upgrade required
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "503":
+                    description: Upstream websocket unavailable
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
     /messages:
         post:
             tags:
@@ -2856,6 +2901,63 @@ components:
                     type: string
                 usage:
                     $ref: "#/components/schemas/Usage"
+        ResponsesWebSocketCreateEvent:
+            type: object
+            required:
+                - type
+                - model
+            properties:
+                type:
+                    type: string
+                    enum:
+                        - response.create
+                model:
+                    type: string
+                    description: >
+                        OpenAI model id. Gateway accepts `openai/<model>` or plain OpenAI model slug.
+                previous_response_id:
+                    type: string
+                    nullable: true
+                input:
+                    description: New input items for this turn.
+                    oneOf:
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                type: object
+                        -
+                            type: object
+                tools:
+                    type: array
+                    items:
+                        type: object
+                tool_choice:
+                    oneOf:
+                        -
+                            type: string
+                        -
+                            type: object
+                store:
+                    type: boolean
+                    description: Ignored by gateway. Always forced to false on this endpoint.
+            additionalProperties: true
+        ResponsesWebSocketServerEvent:
+            type: object
+            description: >
+                Streamed websocket event. Mirrors OpenAI Responses event payloads (for example
+                `response.created`, `response.output_text.delta`, `response.completed`, or `error`).
+            properties:
+                type:
+                    type: string
+                response:
+                    type: object
+                error:
+                    type: object
+                status:
+                    type: integer
+            additionalProperties: true
         EmbeddingsRequest:
             type: object
             properties:

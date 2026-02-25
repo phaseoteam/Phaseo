@@ -51,7 +51,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("alibaba", "qwen-plus")).toBe("responses");
 		expect(resolveOpenAICompatRoute("qwen", "qwen-max-latest")).toBe("responses");
 		expect(resolveOpenAICompatRoute("alibaba", "qwen3-max-preview")).toBe("responses");
-		expect(resolveOpenAICompatRoute("alibaba", "qwen2.5-72b-instruct")).toBe("chat");
+		expect(resolveOpenAICompatRoute("alibaba", "qwen2.5-72b-instruct")).toBe("responses");
 		expect(resolveOpenAICompatRoute("z-ai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("zai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("xiaomi", "MiMo-7B-RL")).toBe("chat");

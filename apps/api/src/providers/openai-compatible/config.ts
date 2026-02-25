@@ -31,19 +31,6 @@ const OPENAI_LEGACY_COMPLETIONS_MODELS = new Set<string>([
     "openai/davinci-002",
 ]);
 
-const ALIBABA_RESPONSES_MODELS = new Set<string>([
-    "qwen3.5-plus",
-    "qwen3.5-plus-2026-02-15",
-    "qwen3.5-397b-a17b",
-    "qwen3-max",
-    "qwen3-max-2026-01-23",
-    "qwen3-max-preview",
-    "qwen-plus",
-    "qwen-plus-latest",
-    "qwen-max",
-    "qwen-max-latest",
-]);
-
 const ALIBABA_RESPONSES_PATH_PREFIX = "/api/v2/apps/protocols/compatible-mode/v1";
 
 export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
@@ -635,19 +622,6 @@ function normalizeOpenAIModelName(model?: string | null): string {
     return parts[parts.length - 1] || value;
 }
 
-function supportsAlibabaResponsesModel(model?: string | null): boolean {
-    const normalized = normalizeOpenAIModelName(model).toLowerCase();
-    if (!normalized) return false;
-    if (ALIBABA_RESPONSES_MODELS.has(normalized)) return true;
-    // Allow pinned release tags in supported model families.
-    return normalized.startsWith("qwen3.5-plus-")
-        || normalized.startsWith("qwen3.5-397b-a17b-")
-        || normalized.startsWith("qwen3-max-")
-        || normalized.startsWith("qwen3-max-preview-")
-        || normalized.startsWith("qwen-plus-")
-        || normalized.startsWith("qwen-max-");
-}
-
 export function resolveOpenAICompatRoute(providerId: string, model?: string | null): OpenAICompatRoute {
     const config = resolveOpenAICompatConfig(providerId);
     const normalized = normalizeOpenAIModelName(model);
@@ -663,7 +637,7 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
     }
 
     if (providerId === "alibaba" || providerId === "qwen") {
-        return supportsAlibabaResponsesModel(normalized) ? "responses" : "chat";
+        return "responses";
     }
 
     if (typeof config.supportsResponses === "boolean") {

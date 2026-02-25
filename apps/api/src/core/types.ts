@@ -21,6 +21,10 @@ export type Endpoint =
     | "files.list"
     | "files.retrieve";
 
+export type RequestBetaOptions = {
+    openai_websocket_mode?: boolean;
+};
+
 export type RequestMeta = {
     apiKeyId: string;             // Internal UUID for the gateway key
     apiKeyRef: string;            // Human-readable reference, e.g. kid_xxx
@@ -54,6 +58,7 @@ export type RequestMeta = {
     latency_ms?: number;          // End-to-end request time
     returnMeta?: boolean;         // Should meta block be returned to caller
     providerCapabilitiesBeta?: boolean;
+    beta?: RequestBetaOptions;
 };
 
 export type DebugOptions = {
@@ -305,6 +310,3 @@ export type GatewayReasoningDetail = {
 //             name: string;
 //         };
 //     };
-
-
-

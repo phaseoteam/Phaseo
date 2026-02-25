@@ -42,6 +42,5 @@ as $$
     limit least(greatest(p_limit, 0), 200)
     offset greatest(p_offset, 0);
 $$;
-
 revoke all on function public.get_my_auth_activity(timestamptz, int, int) from public;
 grant execute on function public.get_my_auth_activity(timestamptz, int, int) to authenticated;

@@ -20,10 +20,8 @@ create table if not exists public.team_broadcast_destinations (
   created_at timestamptz not null default (now() at time zone 'utc'),
   updated_at timestamptz not null default (now() at time zone 'utc')
 );
-
 alter table public.team_broadcast_destinations
   drop constraint if exists team_broadcast_destinations_destination_id_check;
-
 alter table public.team_broadcast_destinations
   add constraint team_broadcast_destinations_destination_id_check
   check (
@@ -46,27 +44,20 @@ alter table public.team_broadcast_destinations
       'webhook'
     )
   );
-
 alter table public.team_broadcast_destinations
   drop constraint if exists team_broadcast_destinations_sampling_rate_check;
-
 alter table public.team_broadcast_destinations
   add constraint team_broadcast_destinations_sampling_rate_check
   check (sampling_rate >= 0 and sampling_rate <= 1);
-
 alter table public.team_broadcast_destinations
   drop constraint if exists team_broadcast_destinations_group_join_operator_check;
-
 alter table public.team_broadcast_destinations
   add constraint team_broadcast_destinations_group_join_operator_check
   check (group_join_operator in ('and', 'or'));
-
 create index if not exists team_broadcast_destinations_team_id_idx
   on public.team_broadcast_destinations (team_id);
-
 create index if not exists team_broadcast_destinations_team_enabled_idx
   on public.team_broadcast_destinations (team_id, enabled);
-
 -- -------------------------
 -- broadcast_destination_keys
 -- -------------------------
@@ -76,10 +67,8 @@ create table if not exists public.broadcast_destination_keys (
   created_at timestamptz not null default (now() at time zone 'utc'),
   primary key (destination_id, key_id)
 );
-
 create index if not exists broadcast_destination_keys_key_id_idx
   on public.broadcast_destination_keys (key_id);
-
 -- -------------------------
 -- broadcast_destination_rule_groups
 -- -------------------------
@@ -92,17 +81,13 @@ create table if not exists public.broadcast_destination_rule_groups (
   created_at timestamptz not null default (now() at time zone 'utc'),
   updated_at timestamptz not null default (now() at time zone 'utc')
 );
-
 alter table public.broadcast_destination_rule_groups
   drop constraint if exists broadcast_destination_rule_groups_match_operator_check;
-
 alter table public.broadcast_destination_rule_groups
   add constraint broadcast_destination_rule_groups_match_operator_check
   check (match_operator in ('and', 'or'));
-
 create index if not exists broadcast_destination_rule_groups_destination_id_idx
   on public.broadcast_destination_rule_groups (destination_id, position);
-
 -- -------------------------
 -- broadcast_destination_rules
 -- -------------------------
@@ -116,10 +101,8 @@ create table if not exists public.broadcast_destination_rules (
   created_at timestamptz not null default (now() at time zone 'utc'),
   updated_at timestamptz not null default (now() at time zone 'utc')
 );
-
 alter table public.broadcast_destination_rules
   drop constraint if exists broadcast_destination_rules_field_check;
-
 alter table public.broadcast_destination_rules
   add constraint broadcast_destination_rules_field_check
   check (
@@ -138,10 +121,8 @@ alter table public.broadcast_destination_rules
       'completion_tokens'
     )
   );
-
 alter table public.broadcast_destination_rules
   drop constraint if exists broadcast_destination_rules_condition_check;
-
 alter table public.broadcast_destination_rules
   add constraint broadcast_destination_rules_condition_check
   check (
@@ -157,10 +138,8 @@ alter table public.broadcast_destination_rules
       'matches_regex'
     )
   );
-
 create index if not exists broadcast_destination_rules_group_id_idx
   on public.broadcast_destination_rules (rule_group_id, position);
-
 -- -------------------------
 -- RLS
 -- -------------------------
@@ -169,38 +148,32 @@ drop policy if exists team_broadcast_destinations_select_own_team on public.team
 drop policy if exists team_broadcast_destinations_insert_own_team on public.team_broadcast_destinations;
 drop policy if exists team_broadcast_destinations_update_own_team on public.team_broadcast_destinations;
 drop policy if exists team_broadcast_destinations_delete_own_team on public.team_broadcast_destinations;
-
 create policy team_broadcast_destinations_select_own_team
   on public.team_broadcast_destinations
   for select
   to authenticated
   using (public.is_team_member(team_id));
-
 create policy team_broadcast_destinations_insert_own_team
   on public.team_broadcast_destinations
   for insert
   to authenticated
   with check (public.is_team_admin(team_id));
-
 create policy team_broadcast_destinations_update_own_team
   on public.team_broadcast_destinations
   for update
   to authenticated
   using (public.is_team_admin(team_id))
   with check (public.is_team_admin(team_id));
-
 create policy team_broadcast_destinations_delete_own_team
   on public.team_broadcast_destinations
   for delete
   to authenticated
   using (public.is_team_admin(team_id));
-
 alter table public.broadcast_destination_keys enable row level security;
 drop policy if exists broadcast_destination_keys_select_own_team on public.broadcast_destination_keys;
 drop policy if exists broadcast_destination_keys_insert_own_team on public.broadcast_destination_keys;
 drop policy if exists broadcast_destination_keys_update_own_team on public.broadcast_destination_keys;
 drop policy if exists broadcast_destination_keys_delete_own_team on public.broadcast_destination_keys;
-
 create policy broadcast_destination_keys_select_own_team
   on public.broadcast_destination_keys
   for select
@@ -213,7 +186,6 @@ create policy broadcast_destination_keys_select_own_team
         and public.is_team_member(d.team_id)
     )
   );
-
 create policy broadcast_destination_keys_insert_own_team
   on public.broadcast_destination_keys
   for insert
@@ -228,7 +200,6 @@ create policy broadcast_destination_keys_insert_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-
 create policy broadcast_destination_keys_update_own_team
   on public.broadcast_destination_keys
   for update
@@ -249,7 +220,6 @@ create policy broadcast_destination_keys_update_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-
 create policy broadcast_destination_keys_delete_own_team
   on public.broadcast_destination_keys
   for delete
@@ -262,13 +232,11 @@ create policy broadcast_destination_keys_delete_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-
 alter table public.broadcast_destination_rule_groups enable row level security;
 drop policy if exists broadcast_destination_rule_groups_select_own_team on public.broadcast_destination_rule_groups;
 drop policy if exists broadcast_destination_rule_groups_insert_own_team on public.broadcast_destination_rule_groups;
 drop policy if exists broadcast_destination_rule_groups_update_own_team on public.broadcast_destination_rule_groups;
 drop policy if exists broadcast_destination_rule_groups_delete_own_team on public.broadcast_destination_rule_groups;
-
 create policy broadcast_destination_rule_groups_select_own_team
   on public.broadcast_destination_rule_groups
   for select
@@ -281,7 +249,6 @@ create policy broadcast_destination_rule_groups_select_own_team
         and public.is_team_member(d.team_id)
     )
   );
-
 create policy broadcast_destination_rule_groups_insert_own_team
   on public.broadcast_destination_rule_groups
   for insert
@@ -294,7 +261,6 @@ create policy broadcast_destination_rule_groups_insert_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-
 create policy broadcast_destination_rule_groups_update_own_team
   on public.broadcast_destination_rule_groups
   for update
@@ -315,7 +281,6 @@ create policy broadcast_destination_rule_groups_update_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-
 create policy broadcast_destination_rule_groups_delete_own_team
   on public.broadcast_destination_rule_groups
   for delete
@@ -328,13 +293,11 @@ create policy broadcast_destination_rule_groups_delete_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-
 alter table public.broadcast_destination_rules enable row level security;
 drop policy if exists broadcast_destination_rules_select_own_team on public.broadcast_destination_rules;
 drop policy if exists broadcast_destination_rules_insert_own_team on public.broadcast_destination_rules;
 drop policy if exists broadcast_destination_rules_update_own_team on public.broadcast_destination_rules;
 drop policy if exists broadcast_destination_rules_delete_own_team on public.broadcast_destination_rules;
-
 create policy broadcast_destination_rules_select_own_team
   on public.broadcast_destination_rules
   for select
@@ -348,7 +311,6 @@ create policy broadcast_destination_rules_select_own_team
         and public.is_team_member(d.team_id)
     )
   );
-
 create policy broadcast_destination_rules_insert_own_team
   on public.broadcast_destination_rules
   for insert
@@ -362,7 +324,6 @@ create policy broadcast_destination_rules_insert_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-
 create policy broadcast_destination_rules_update_own_team
   on public.broadcast_destination_rules
   for update
@@ -385,7 +346,6 @@ create policy broadcast_destination_rules_update_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-
 create policy broadcast_destination_rules_delete_own_team
   on public.broadcast_destination_rules
   for delete
@@ -399,4 +359,3 @@ create policy broadcast_destination_rules_delete_own_team
         and public.is_team_admin(d.team_id)
     )
   );
-

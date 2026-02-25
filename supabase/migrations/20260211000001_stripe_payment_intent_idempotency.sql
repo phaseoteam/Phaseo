@@ -113,6 +113,5 @@ begin
     select true, v_before, v_after, 'Paid';
 end;
 $$;
-
 revoke all on function public.stripe_apply_payment_intent_credit(uuid, text, text, bigint, timestamptz) from public;
 grant execute on function public.stripe_apply_payment_intent_credit(uuid, text, text, bigint, timestamptz) to service_role;

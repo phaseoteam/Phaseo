@@ -3,7 +3,7 @@ import { readSseFrames, parseSseJson } from "../helpers/sse";
 import { imageToBase64 } from "../helpers/image";
 import { resolveGatewayApiKeyFromEnv } from "../helpers/gatewayKey";
 
-const MODEL = "openai/gpt-5-nano-2025-08-07";
+const MODEL = "openai/gpt-5-nano";
 const GATEWAY_URL = process.env.GATEWAY_URL ?? "http://127.0.0.1:8787/v1";
 const GATEWAY_API_KEY = resolveGatewayApiKeyFromEnv(process.env);
 const IMAGE_URL = "https://th.bing.com/th/id/R.b72dfea01bd45b862fa3c43228acc6ec?rik=KPkihyX9%2bIBwtA&riu=http%3a%2f%2ffoundtheworld.com%2fwp-content%2fuploads%2f2015%2f12%2fGolden-Gate-Bridge-4.jpg&ehk=mtwSRtfSVm9rpOZrEwBTNC%2fySKmIQekLMD2opw%2b71zs%3d&risl=&pid=ImgRaw&r=0";
@@ -263,6 +263,18 @@ describe("Live OpenAI gpt-5-nano protocols", () => {
 
             expectStreamFrames(streamResult.frames ?? []);
         });
+
+        it("streaming with tools", async () => {
+            const streamResult: any = await runProtocol("/chat/completions", {
+                model: MODEL,
+                messages: [{ role: "user", content: "Call get_weather for SF." }],
+                tools: [TOOL_DEF],
+                tool_choice: "required",
+                stream: true,
+            }, { stream: true });
+
+            expectStreamFrames(streamResult.frames ?? []);
+        });
     });
 
     describe("responses", () => {
@@ -347,6 +359,18 @@ describe("Live OpenAI gpt-5-nano protocols", () => {
             const streamResult: any = await runProtocol("/responses", {
                 model: MODEL,
                 input: "Stream a short greeting.",
+                stream: true,
+            }, { stream: true });
+
+            expectStreamFrames(streamResult.frames ?? []);
+        });
+
+        it("streaming with tools", async () => {
+            const streamResult: any = await runProtocol("/responses", {
+                model: MODEL,
+                input: "Call get_weather for SF.",
+                tools: [TOOL_DEF],
+                tool_choice: "required",
                 stream: true,
             }, { stream: true });
 

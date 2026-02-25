@@ -9,7 +9,7 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAICompletions, openAICompletionsToIR } from "@executors/_shared/text-generate/openai-compat/transform-legacy";
-import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { sanitizeOpenAICompatRequest } from "@executors/_shared/text-generate/openai-compat/provider-policy";
 import {
 	openAICompatHeaders,
@@ -53,6 +53,344 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"o1-mini": new Set(["low", "medium", "high"]),
 	"o3-mini": new Set(["low", "medium", "high"]),
 };
+
+const OPENAI_WEBSOCKET_RECOVERABLE_ERRORS = new Set([
+	"session_timeout",
+	"concurrency_limit_exceeded",
+	"websocket_connection_limit_reached",
+]);
+const OPENAI_WEBSOCKET_MAX_RECONNECTS = 1;
+const OPENAI_WEBSOCKET_HANDSHAKE_MAX_RETRIES = 1;
+
+function buildOpenAIResponsesWebSocketUrl(providerId: string): string {
+	// Cloudflare Workers WebSocket fetch upgrade expects https:// URL.
+	return openAICompatUrl(providerId, "/responses");
+}
+
+function normalizeResponsesRequestForWebSocket(request: Record<string, any>): Record<string, any> {
+	const next: Record<string, any> = { ...request };
+	// WebSocket mode is realtime by default and rejects these HTTP-oriented flags.
+	delete next.stream;
+	delete next.stream_options;
+	delete next.background;
+	// Enforce non-store for ZDR-style behavior in gateway-managed mode.
+	next.store = false;
+	return next;
+}
+
+async function decodeWebSocketMessageData(data: unknown): Promise<string | null> {
+	if (typeof data === "string") return data;
+	if (data instanceof ArrayBuffer) {
+		return new TextDecoder().decode(new Uint8Array(data));
+	}
+	if (ArrayBuffer.isView(data)) {
+		return new TextDecoder().decode(
+			new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+		);
+	}
+	if (typeof Blob !== "undefined" && data instanceof Blob) {
+		return await data.text();
+	}
+	return null;
+}
+
+function resolveWebSocketErrorCode(payload: any): string | null {
+	if (!payload || typeof payload !== "object") return null;
+	if (typeof payload.code === "string") return payload.code;
+	if (typeof payload.error?.code === "string") return payload.error.code;
+	return null;
+}
+
+async function createOpenAIResponsesWebSocketStream(args: {
+	executorArgs: ExecutorExecuteArgs;
+	providerId: string;
+	key: string;
+	request: Record<string, any>;
+	initialBill: Bill;
+}): Promise<{
+	ok: true;
+	upstream: Response;
+	usageFinalizer: () => Promise<Bill | null>;
+	mappedRequestBody: string;
+} | {
+	ok: false;
+	upstream: Response;
+	mappedRequestBody: string;
+}> {
+	const wsRequest = normalizeResponsesRequestForWebSocket(args.request);
+	const wsEnvelope = {
+		type: "response.create",
+		...wsRequest,
+	};
+	const mappedRequestBody = JSON.stringify(wsEnvelope);
+
+	const connectWebSocket = async (): Promise<{
+		handshake: Response;
+		upstreamId?: string;
+		ws?: WebSocket;
+	}> => {
+		const baseUrl = buildOpenAIResponsesWebSocketUrl(args.providerId);
+		for (let attempt = 0; attempt <= OPENAI_WEBSOCKET_HANDSHAKE_MAX_RETRIES; attempt += 1) {
+			const handshake = await fetch(baseUrl, {
+				headers: {
+					Authorization: `Bearer ${args.key}`,
+					Upgrade: "websocket",
+				},
+			});
+			const ws = (handshake as Response & { webSocket?: WebSocket }).webSocket;
+			if (handshake.status === 101 && ws) {
+				ws.accept();
+				return {
+					handshake,
+					upstreamId: handshake.headers.get("x-request-id") || undefined,
+					ws,
+				};
+			}
+
+			const retryable = handshake.status >= 500;
+			const hasAttemptsLeft = attempt < OPENAI_WEBSOCKET_HANDSHAKE_MAX_RETRIES;
+			if (!retryable || !hasAttemptsLeft) {
+				return { handshake };
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, 50));
+		}
+
+		// Unreachable; loop always returns.
+		return { handshake: new Response(null, { status: 500 }) };
+	};
+
+	const initialConnection = await connectWebSocket();
+	if (!initialConnection.ws) {
+		return {
+			ok: false,
+			upstream: initialConnection.handshake,
+			mappedRequestBody,
+		};
+	}
+	let upstreamId = initialConnection.upstreamId;
+
+	let settled = false;
+	let finalResponsePayload: any = null;
+	let finishReason: string | null = null;
+	let reconnectAttempts = 0;
+	let activeWs: WebSocket | null = initialConnection.ws;
+
+	let resolveBillPromise: (value: Bill | null) => void = () => { };
+	const billPromise = new Promise<Bill | null>((resolve) => {
+		resolveBillPromise = resolve;
+	});
+
+	const settle = () => {
+		if (settled) return;
+		settled = true;
+
+		const bill: Bill = {
+			...args.initialBill,
+			upstream_id:
+				(typeof finalResponsePayload?.id === "string" && finalResponsePayload.id) ||
+				upstreamId ||
+				args.initialBill.upstream_id ||
+				null,
+			finish_reason: finishReason ?? args.initialBill.finish_reason ?? null,
+		};
+
+		const usageMeters = normalizeTextUsageForPricing(finalResponsePayload?.usage);
+		if (usageMeters) {
+			const priced = computeBill(usageMeters, args.executorArgs.pricingCard);
+			bill.cost_cents = priced.pricing.total_cents;
+			bill.currency = priced.pricing.currency;
+			bill.usage = priced;
+		}
+
+		resolveBillPromise(bill);
+	};
+
+	const encoder = new TextEncoder();
+	const stream = new ReadableStream<Uint8Array>({
+		start(controller) {
+			const emitFrame = (payload: any) => {
+				if (!payload) return;
+				const eventName = typeof payload?.type === "string" ? payload.type : null;
+				const encoded = JSON.stringify(payload);
+				const frame = eventName
+					? `event: ${eventName}\ndata: ${encoded}\n\n`
+					: `data: ${encoded}\n\n`;
+				try {
+					controller.enqueue(encoder.encode(frame));
+				} catch {
+					// Downstream closed; ignore.
+				}
+			};
+
+			const closeStream = () => {
+				if (!settled) {
+					try {
+						controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+					} catch {
+						// Ignore if downstream is already closed.
+					}
+				}
+				try {
+					controller.close();
+				} catch {
+					// Ignore duplicate closes.
+				}
+				settle();
+			};
+
+			const attachSocket = (socket: WebSocket) => {
+				socket.addEventListener("message", (event: MessageEvent) => {
+					void (async () => {
+						if (socket !== activeWs) return;
+						const text = await decodeWebSocketMessageData((event as MessageEvent).data);
+						if (!text) return;
+
+						let payload: any;
+						try {
+							payload = JSON.parse(text);
+						} catch {
+							return;
+						}
+
+						emitFrame(payload);
+
+						const type = typeof payload?.type === "string" ? payload.type : "";
+						if (type === "response.completed" && payload?.response) {
+							finalResponsePayload = payload.response;
+							try {
+								const ir = openAIResponsesToIR(
+									payload.response,
+									args.executorArgs.requestId,
+									(args.executorArgs.ir as IRChatRequest).model,
+									args.executorArgs.providerId,
+								);
+								finishReason = ir?.choices?.[0]?.finishReason ?? null;
+							} catch {
+								finishReason = null;
+							}
+							closeStream();
+							try {
+								socket.close(1000, "response_completed");
+							} catch {
+								// no-op
+							}
+							return;
+						}
+
+						if (type === "response.failed") {
+							finishReason = "error";
+							closeStream();
+							try {
+								socket.close(1011, "response_failed");
+							} catch {
+								// no-op
+							}
+							return;
+						}
+
+						if (type === "error") {
+							const errorCode = resolveWebSocketErrorCode(payload);
+							const canReconnect =
+								typeof errorCode === "string" &&
+								OPENAI_WEBSOCKET_RECOVERABLE_ERRORS.has(errorCode) &&
+								reconnectAttempts < OPENAI_WEBSOCKET_MAX_RECONNECTS;
+
+							if (canReconnect) {
+								reconnectAttempts += 1;
+								const reconnect = await connectWebSocket();
+								if (reconnect.ws) {
+									const previous = activeWs;
+									activeWs = reconnect.ws;
+									if (reconnect.upstreamId) {
+										upstreamId = reconnect.upstreamId;
+									}
+									attachSocket(reconnect.ws);
+									try {
+										reconnect.ws.send(mappedRequestBody);
+									} catch {
+										finishReason = "error";
+										closeStream();
+										try {
+											reconnect.ws.close(1011, "reconnect_send_failed");
+										} catch {
+											// no-op
+										}
+									}
+									try {
+										previous?.close(1000, "reconnecting");
+									} catch {
+										// no-op
+									}
+									return;
+								}
+							}
+
+							finishReason = "error";
+							closeStream();
+							try {
+								socket.close(1011, "response_error");
+							} catch {
+								// no-op
+							}
+						}
+					})();
+				});
+
+				socket.addEventListener("close", () => {
+					if (socket !== activeWs) return;
+					closeStream();
+				});
+
+				socket.addEventListener("error", () => {
+					if (socket !== activeWs) return;
+					finishReason = "error";
+					closeStream();
+				});
+			};
+
+			if (!activeWs) {
+				finishReason = "error";
+				closeStream();
+				return;
+			}
+
+			attachSocket(activeWs);
+			try {
+				activeWs.send(mappedRequestBody);
+			} catch {
+				finishReason = "error";
+				closeStream();
+				try {
+					activeWs.close(1011, "send_failed");
+				} catch {
+					// no-op
+				}
+			}
+		},
+		cancel() {
+			settle();
+			try {
+				activeWs?.close(1000, "client_cancelled");
+			} catch {
+				// no-op
+			}
+		},
+	});
+
+	return {
+		ok: true,
+		upstream: new Response(stream, {
+			status: 200,
+			headers: {
+				"Content-Type": "text/event-stream",
+				"Cache-Control": "no-store",
+			},
+		}),
+		usageFinalizer: () => billPromise,
+		mappedRequestBody,
+	};
+}
 
 function normalizeModelName(model?: string | null): string {
 	if (!model) return "";
@@ -287,7 +625,9 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	} as any);
 
 	const modelForRouting = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
-	const route = resolveOpenAICompatRoute(args.providerId, modelForRouting);
+	const route = args.providerId === "openai"
+		? "responses"
+		: resolveOpenAICompatRoute(args.providerId, modelForRouting);
 	const endpoint = route === "responses" ? "/responses" : (route === "legacy_completions" ? "/completions" : "/chat/completions");
 
 	const requestPayload = route === "responses"

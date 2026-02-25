@@ -4,7 +4,7 @@
 // How: Implements guard functions that return ok/response tuples.
 
 import { z } from "zod";
-import type { Endpoint, RequestMeta } from "@core/types";
+import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import { getEdgeMeta } from "@core/edge";
 import { err } from "./http";
 import { extractModel, formatZodErrors, buildProviderCandidatesWithDiagnostics } from "./utils";
@@ -256,6 +256,7 @@ export function makeMeta(input: {
     returnMeta?: boolean;
     debug?: DebugOptions;
     providerCapabilitiesBeta?: boolean;
+    beta?: RequestBetaOptions;
 }): RequestMeta {
     const { referer, appTitle } = readAttributionHeaders(input.req);
     const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-ai-stats-debug");
@@ -311,5 +312,6 @@ export function makeMeta(input: {
         edgeAsn: edge.asn ?? null,
         returnMeta: input.returnMeta ?? false,
         providerCapabilitiesBeta: input.providerCapabilitiesBeta ?? false,
+        beta: input.beta,
     };
 }

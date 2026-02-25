@@ -56,6 +56,15 @@ const DebugOptionsSchema = z.object({
     traceLevel: z.enum(["summary", "full"]).optional(),
 }).optional();
 
+const BetaOptionsSchema = z.object({
+    openai_websocket_mode: z.boolean().optional(),
+    openaiWebsocketMode: z.boolean().optional(),
+    openai: z.object({
+        websocket_mode: z.boolean().optional(),
+        websocketMode: z.boolean().optional(),
+    }).optional(),
+}).passthrough().optional();
+
 const ImageConfigSchema = z.object({
     aspect_ratio: z.string().optional(),
     image_size: z.enum(["1K", "2K", "4K"]).optional(),
@@ -102,35 +111,6 @@ const UploadFileSchema = z.custom<File | Blob>(isFileLike, {
     message: "file is required",
 });
 
-function hasToolsInRequestShape(body: Record<string, any>): boolean {
-    if (Array.isArray(body.tools) && body.tools.length > 0) return true;
-
-    if (Array.isArray(body.messages)) {
-        for (const msg of body.messages) {
-            if (!msg || typeof msg !== "object") continue;
-            if (msg.role === "tool") return true;
-            if (Array.isArray((msg as any).tool_calls) && (msg as any).tool_calls.length > 0) return true;
-            if (typeof (msg as any).tool_call_id === "string" && (msg as any).tool_call_id.length > 0) return true;
-        }
-    }
-
-    const inputItems = Array.isArray(body.input_items)
-        ? body.input_items
-        : (Array.isArray(body.input) ? body.input : []);
-    for (const item of inputItems) {
-        if (!item || typeof item !== "object") continue;
-        const type = typeof (item as any).type === "string" ? (item as any).type : "";
-        if (type === "function_call" || type === "function_call_output" || type === "tool_call") {
-            return true;
-        }
-        if (Array.isArray((item as any).tool_calls) && (item as any).tool_calls.length > 0) return true;
-        if (typeof (item as any).tool_call_id === "string" && (item as any).tool_call_id.length > 0) return true;
-        if (typeof (item as any).call_id === "string" && (item as any).call_id.length > 0) return true;
-    }
-
-    return false;
-}
-
 // Batch schema
 export const BatchSchema = z.object({
     input_file_id: z.string().min(1),
@@ -139,6 +119,7 @@ export const BatchSchema = z.object({
     metadata: z.record(z.any()).optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type BatchRequest = z.infer<typeof BatchSchema>;
@@ -200,16 +181,9 @@ export const ResponsesSchema = z.object({
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
-}).passthrough().superRefine((obj, ctx) => {
-    if (obj.stream === true && hasToolsInRequestShape(obj as Record<string, any>)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["stream"],
-            message: "Streaming with tools is not supported. Set stream to false when tools are present.",
-        });
-    }
-}).transform((obj) => {
+}).passthrough().transform((obj) => {
     const next: any = { ...obj };
     if (next.max_output_tokens == null && next.max_completion_tokens != null) {
         next.max_output_tokens = next.max_completion_tokens;
@@ -257,6 +231,7 @@ export const EmbeddingsSchema = z.object({
     user: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 }).refine((obj) => obj.input != null || obj.inputs != null, {
     message: "input or inputs is required",
@@ -393,6 +368,7 @@ export const ChatCompletionsSchema = z.object({
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     presence_penalty: z.number().min(-2).max(2).optional(),
     seed: z.number().int().min(-9223372036854776000).max(9223372036854776000).optional(),
     stream: z.boolean().optional().default(false),
@@ -434,15 +410,7 @@ export const ChatCompletionsSchema = z.object({
     models: z.array(z.string()).optional(),
     plugins: z.array(z.record(z.any())).optional(),
     provider: ProviderRoutingSchema,
-}).passthrough().superRefine((obj, ctx) => {
-    if (obj.stream === true && hasToolsInRequestShape(obj as Record<string, any>)) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["stream"],
-            message: "Streaming with tools is not supported. Set stream to false when tools are present.",
-        });
-    }
-}).transform((obj) => {
+}).passthrough().transform((obj) => {
     return obj;
 });
 
@@ -540,6 +508,7 @@ export const AnthropicMessagesSchema = z.object({
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 }).passthrough()
     .refine((obj) => obj.max_tokens != null || obj.max_output_tokens != null, {
@@ -572,6 +541,7 @@ export const ImagesGenerationSchema = z.object({
     user: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
@@ -598,6 +568,7 @@ export const ImagesEditSchema = z.object({
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type ImagesEditRequest = z.infer<typeof ImagesEditSchema>;
@@ -608,6 +579,7 @@ export const ModerationsSchema = z.object({
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
     input: z.union([
         z.string(),
@@ -660,6 +632,7 @@ export const AudioSpeechSchema = z.object({
     }).passthrough().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type AudioSpeechRequest = z.infer<typeof AudioSpeechSchema>;
@@ -676,6 +649,7 @@ export const AudioTranscriptionSchema = z.object({
     include: z.array(z.string()).optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type AudioTranscriptionRequest = z.infer<typeof AudioTranscriptionSchema>;
@@ -690,6 +664,7 @@ export const AudioTranslationSchema = z.object({
     response_format: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
@@ -749,6 +724,7 @@ export const VideoGenerationSchema = z.object({
     output_storage_uri: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type VideoGenerationRequest = z.infer<typeof VideoGenerationSchema>;
@@ -760,6 +736,7 @@ export const OcrSchema = z.object({
     language: z.string().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
 });
 export type OcrRequest = z.infer<typeof OcrSchema>;
@@ -806,6 +783,7 @@ export const MusicGenerateSchema = z.object({
     }).passthrough().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
 });
 export type MusicGenerateRequest = z.infer<typeof MusicGenerateSchema>;
 

@@ -1768,7 +1768,7 @@
       }
     },
     "src/data/api_providers/openai/models.json": {
-      "hash": "a06acf4a0ea0ddd77bf1f42ddad19b26",
+      "hash": "e0cb162f364a12217c453802fc3731f3",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -3606,7 +3606,7 @@
       }
     },
     "src/data/pricing/openai/openai-gpt-5.3-codex/text.generate/pricing.json": {
-      "hash": "e85bbcb27da502cffae55bce4ebc6cd1",
+      "hash": "d5e42bf1ac5c77638376a22e28dde286",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -3642,7 +3642,7 @@
       }
     },
     "src/data/models/z-ai/glm-5-2026-02-11/model.json": {
-      "hash": "58e90cf2077083f51967efd06b8bcf70",
+      "hash": "e7b6ed08ca213cb9d46fef9014c0823c",
       "meta": {
         "model_id": "z-ai/glm-5-2026-02-11",
         "organisation_id": "z-ai",
@@ -5167,7 +5167,7 @@
       }
     },
     "src/data/models/prime-intellect/intellect-3-1-2026-02-18/model.json": {
-      "hash": "4b195e703eea32dc1b4fdc91e1861681",
+      "hash": "5fba6ee42c0281d4dc2c0c9e06ca6c1a",
       "meta": {
         "model_id": "prime-intellect/intellect-3-1-2026-02-18",
         "organisation_id": "prime-intellect",
@@ -5695,7 +5695,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-5-397b-a17b-2026-02-16/model.json": {
-      "hash": "79ae6fce2e696f82bf9d9651972726a5",
+      "hash": "e0e436982779f5c0077ea4055edea684",
       "meta": {
         "model_id": "qwen/qwen-3-5-397b-a17b-2026-02-16",
         "organisation_id": "qwen",
@@ -5703,7 +5703,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-5-plus-2026-02-16/model.json": {
-      "hash": "8e156995066be30c000cf61cabf8cd4a",
+      "hash": "b6e2fecead9bcaa872278ed1684e9fec",
       "meta": {
         "model_id": "qwen/qwen-3-5-plus-2026-02-16",
         "organisation_id": "qwen",
@@ -8471,7 +8471,7 @@
       }
     },
     "src/data/models/inclusionai/ring-1t-2-5-2026-02-12/model.json": {
-      "hash": "d6221e8c232413302dc4268ada8d598e",
+      "hash": "e12192c006869c5b65acf219bd8ffd4a",
       "meta": {
         "model_id": "inclusionai/ring-1t-2-5-2026-02-12",
         "organisation_id": "inclusionai",
@@ -8991,7 +8991,7 @@
       }
     },
     "src/data/models/minimax/minimax-m2-5-2026-02-12/model.json": {
-      "hash": "f30f23fd3c2d0c867321bb44ba915220",
+      "hash": "dc4ea31112552ee5544a987fb0a79f31",
       "meta": {
         "model_id": "minimax/minimax-m2-5-2026-02-12",
         "organisation_id": "minimax",
@@ -10724,6 +10724,188 @@
         "model_id": "openai/o4-mini-2025-04-16",
         "organisation_id": "openai",
         "previous_model_id": "openai/o3-mini-2025-01-30"
+      }
+    },
+    "src/data/api_providers/venice/models.json": {
+      "hash": "fd14a1083a0565f362dc0e3bc1e54218",
+      "meta": {
+        "api_provider_id": "venice",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/alibaba-cloud/api_provider.json": {
+      "hash": "1f150b4078a0d76639ae106f8adfe384",
+      "meta": {
+        "api_provider_id": "alibaba-cloud"
+      }
+    },
+    "src/data/api_providers/alibaba-cloud/models.json": {
+      "hash": "0386ab663c49cf1b12a387fc8b744189",
+      "meta": {
+        "api_provider_id": "alibaba-cloud",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/elevenlabs/api_provider.json": {
+      "hash": "aa00873e01c37b7f2e0b6e7272a17683",
+      "meta": {
+        "api_provider_id": "elevenlabs"
+      }
+    },
+    "src/data/pricing/azure/openai-gpt-5-nano/text.generate/pricing.json": {
+      "hash": "d425c18bda6b62e8b0be419ba5503649",
+      "meta": {
+        "api_provider_id": "azure",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-5-nano",
+        "model_key": "azure:openai/gpt-5-nano:text.generate"
+      }
+    },
+    "src/data/pricing/azure/openai-gpt-oss-120b/text.generate/pricing.json": {
+      "hash": "2b90de5ab83ab1245e08ee57978a838f",
+      "meta": {
+        "api_provider_id": "azure",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-oss-120b",
+        "model_key": "azure:openai/gpt-oss-120b:text.generate"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-image-1-mini/image.generate/pricing.json": {
+      "hash": "d42f597768705ea3b1654abc981531c2",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "image.generate",
+        "model_id": "openai/gpt-image-1-mini",
+        "model_key": "openai:openai/gpt-image-1-mini:image.generate"
+      }
+    },
+    "src/data/pricing/black-forest-labs/black-forest-labs-flux-2-klein-4b/image.edits/pricing.json": {
+      "hash": "3850ed7bc2a9b28720a4493f4a056899",
+      "meta": {
+        "api_provider_id": "black-forest-labs",
+        "capability_id": "image.edits",
+        "model_id": "black-forest-labs/flux-2-klein-4b",
+        "model_key": "black-forest-labs:black-forest-labs/flux-2-klein-4b:image.edits"
+      }
+    },
+    "src/data/pricing/black-forest-labs/black-forest-labs-flux-2-klein-4b/image.generate/pricing.json": {
+      "hash": "00b0b943254741e488cd537a750dcc23",
+      "meta": {
+        "api_provider_id": "black-forest-labs",
+        "capability_id": "image.generate",
+        "model_id": "black-forest-labs/flux-2-klein-4b",
+        "model_key": "black-forest-labs:black-forest-labs/flux-2-klein-4b:image.generate"
+      }
+    },
+    "src/data/pricing/openai/openai-sora-2/video.generate/pricing.json": {
+      "hash": "c12f440be802af422671848a4c1384f7",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "video.generate",
+        "model_id": "openai/sora-2",
+        "model_key": "openai:openai/sora-2:video.generate"
+      }
+    },
+    "src/data/pricing/openai/openai-sora-2-pro-2025-10-03/video.generate/pricing.json": {
+      "hash": "7a0fa006345e5815e4d1585375dff554",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "video.generate",
+        "model_id": "openai/sora-2-pro-2025-10-03",
+        "model_key": "openai:openai/sora-2-pro-2025-10-03:video.generate"
+      }
+    },
+    "src/data/pricing/google-ai-studio/google-veo-3.1-fast-preview/video.generate/pricing.json": {
+      "hash": "f68a47a3056e843b19c952293c3ae851",
+      "meta": {
+        "api_provider_id": "google-ai-studio",
+        "capability_id": "video.generate",
+        "model_id": "google/veo-3.1-fast-preview",
+        "model_key": "google-ai-studio:google/veo-3.1-fast-preview:video.generate"
+      }
+    },
+    "src/data/pricing/google-ai-studio/google-veo-3.1-preview/video.generate/pricing.json": {
+      "hash": "9ef2b7aa13448c9a46acd2622c6bfc18",
+      "meta": {
+        "api_provider_id": "google-ai-studio",
+        "capability_id": "video.generate",
+        "model_id": "google/veo-3.1-preview",
+        "model_key": "google-ai-studio:google/veo-3.1-preview:video.generate"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-4o-mini-tts/audio.generate/pricing.json": {
+      "hash": "59bf8541bb836916eaae94731a8ba578",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "audio.generate",
+        "model_id": "openai/gpt-4o-mini-tts",
+        "model_key": "openai:openai/gpt-4o-mini-tts:audio.generate"
+      }
+    },
+    "src/data/models/qwen/qwen-3-2-27b-2026-02-24/model.json": {
+      "hash": "9b075bae28bf3d8913d1eb4b65a102ff",
+      "meta": {
+        "model_id": "qwen/qwen-3-2-27b-2026-02-24",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/qwen/qwen-3-5-122b-a10b-2026-02-24/model.json": {
+      "hash": "c5bcfcf3904f5e6855374774848575c7",
+      "meta": {
+        "model_id": "qwen/qwen-3-5-122b-a10b-2026-02-24",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/qwen/qwen-3-5-35b-a3b-2026-02-24/model.json": {
+      "hash": "461c650c8f0eb290da5f2e108ac75482",
+      "meta": {
+        "model_id": "qwen/qwen-3-5-35b-a3b-2026-02-24",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/qwen/qwen-3-5-flash-2026-02-23/model.json": {
+      "hash": "c80b17fe503e67e07f4f443d2362a23b",
+      "meta": {
+        "model_id": "qwen/qwen-3-5-flash-2026-02-23",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/openai/gpt-audio-1-5-2026-02-23/model.json": {
+      "hash": "205c2f50ae49ccf9daa8082b4a952870",
+      "meta": {
+        "model_id": "openai/gpt-audio-1-5-2026-02-23",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-audio-2025-08-28"
+      }
+    },
+    "src/data/models/openai/gpt-realtime-1-5-2026-02-23/model.json": {
+      "hash": "129980909d703d9aa82b2fd5233228ed",
+      "meta": {
+        "model_id": "openai/gpt-realtime-1-5-2026-02-23",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-realtime-2025-08-28"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-audio-1.5/audio/pricing.json": {
+      "hash": "937a11a4963f0b1cbd799a88a6948adc",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "audio",
+        "model_id": "openai/gpt-audio-1.5",
+        "model_key": "openai:openai/gpt-audio-1.5:audio"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-realtime-1.5/realtime/pricing.json": {
+      "hash": "793fc34212054837e9fbb945269db218",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "realtime",
+        "model_id": "openai/gpt-realtime-1.5",
+        "model_key": "openai:openai/gpt-realtime-1.5:realtime"
       }
     }
   }

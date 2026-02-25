@@ -7,25 +7,11 @@ import type { PipelineContext } from "./before/types";
 
 export type TextIRContractIssue = {
 	code:
-		| "stream_with_tools_not_supported"
 		| "response_format_type_invalid"
 		| "response_format_json_schema_missing_schema";
 	message: string;
 	path?: string;
 };
-
-function hasToolUsageInIR(ir: IRChatRequest): boolean {
-	if (Array.isArray(ir.tools) && ir.tools.length > 0) return true;
-	for (const message of ir.messages ?? []) {
-		if (message.role === "assistant" && Array.isArray(message.toolCalls) && message.toolCalls.length > 0) {
-			return true;
-		}
-		if (message.role === "tool" && Array.isArray(message.toolResults) && message.toolResults.length > 0) {
-			return true;
-		}
-	}
-	return false;
-}
 
 function isValidResponseFormatType(
 	value: unknown,
@@ -35,15 +21,6 @@ function isValidResponseFormatType(
 
 export function validateTextIRContract(ir: IRChatRequest): TextIRContractIssue[] {
 	const issues: TextIRContractIssue[] = [];
-
-	if (ir.stream === true && hasToolUsageInIR(ir)) {
-		issues.push({
-			code: "stream_with_tools_not_supported",
-			path: "stream",
-			message:
-				"Streaming with tools is not supported. Set stream to false when tools are present.",
-		});
-	}
 
 	if (ir.responseFormat) {
 		const format = ir.responseFormat as Record<string, any>;

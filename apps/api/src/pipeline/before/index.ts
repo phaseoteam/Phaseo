@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { schemaFor } from "@core/schemas";
-import type { Endpoint, RequestMeta } from "@core/types";
+import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
 import type { PipelineContext } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
 import { err } from "./http";
@@ -218,6 +218,17 @@ export async function beforeRequest(
     );
     const debugTrace = normalizeReturnFlag(debugBody?.trace);
     const traceLevel = (debugBody?.trace_level ?? debugBody?.traceLevel) as "summary" | "full" | undefined;
+    const betaBody = ((body as any)?.beta ?? rawBody?.beta) as Record<string, any> | undefined;
+    const openAIWebSocketModeRaw =
+        betaBody?.openai_websocket_mode ??
+        betaBody?.openaiWebsocketMode ??
+        betaBody?.openai?.websocket_mode ??
+        betaBody?.openai?.websocketMode;
+    const beta: RequestBetaOptions | undefined = openAIWebSocketModeRaw === undefined
+        ? undefined
+        : {
+            openai_websocket_mode: normalizeReturnFlag(openAIWebSocketModeRaw),
+        };
     const debug = (debugEnabled || returnUpstreamRequest || returnUpstreamResponse || debugTrace)
         ? {
             enabled: debugEnabled,
@@ -237,6 +248,7 @@ export async function beforeRequest(
         returnMeta,
         debug,
         providerCapabilitiesBeta: betaCapabilities,
+        beta,
     });
     const requestPath = (() => {
         try {

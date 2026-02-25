@@ -39,6 +39,9 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Validate model discovery provider config
+              run: pnpm run data:check-new-models:test
+
             - name: Ensure state directory exists
               run: mkdir -p scripts/model-discovery/state
 
@@ -53,16 +56,37 @@ jobs:
 
             - name: Check for new models
               env:
+                  AI21_API_KEY: ${{ secrets.AI21_API_KEY }}
+                  AION_LABS_API_KEY: ${{ secrets.AION_LABS_API_KEY }}
+                  ALIBABA_CLOUD_API_KEY: ${{ secrets.ALIBABA_CLOUD_API_KEY }}
                   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
                   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+                  ARCEE_API_KEY: ${{ secrets.ARCEE_API_KEY }}
+                  ATLAS_CLOUD_API_KEY: ${{ secrets.ATLAS_CLOUD_API_KEY }}
+                  BASETEN_API_KEY: ${{ secrets.BASETEN_API_KEY }}
+                  CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+                  CHUTES_API_KEY: ${{ secrets.CHUTES_API_KEY }}
+                  CLARIFAI_PAT: ${{ secrets.CLARIFAI_PAT }}
+                  COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
                   GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-                  XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
                   DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-                  NOVITA_API_KEY: ${{ secrets.NOVITA_API_KEY }}
-                  MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
-                  ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+                  ELEVEN_LABS_API_KEY: ${{ secrets.ELEVEN_LABS_API_KEY }}
+                  FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
+                  GMI_CLOUD_API_KEY: ${{ secrets.GMI_CLOUD_API_KEY }}
+                  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+                  INCEPTION_API_KEY: ${{ secrets.INCEPTION_API_KEY }}
                   MOONSHOT_AI_API_KEY: ${{ secrets.MOONSHOT_AI_API_KEY }}
-                  MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+                  NEBIUS_TOKEN_FACTORY_API_KEY: ${{ secrets.NEBIUS_TOKEN_FACTORY_API_KEY }}
+                  NEXTBIT_API_KEY: ${{ secrets.NEXTBIT_API_KEY }}
+                  NOVITA_API_KEY: ${{ secrets.NOVITA_API_KEY }}
+                  MISTRAL_AI_API_KEY: ${{ secrets.MISTRAL_AI_API_KEY }}
+                  STEPFUN_API_KEY: ${{ secrets.STEPFUN_API_KEY }}
+                  TOGETHER_API_KEY: ${{ secrets.TOGETHER_API_KEY }}
+                  VENICE_API_KEY: ${{ secrets.VENICE_API_KEY }}
+                  WEIGHTSANDBIASES_API_KEY: ${{ secrets.WEIGHTSANDBIASES_API_KEY }}
+                  XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+                  XIAOMI_MIMO_API_KEY: ${{ secrets.XIAOMI_MIMO_API_KEY }}
+                  ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
                   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}

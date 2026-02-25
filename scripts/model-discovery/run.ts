@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createAdminClient } from "../../apps/web/src/utils/supabase/admin";
+import { getProviderDiscoveryRule } from "./providers/discovery-policy";
 import type { ProviderDefinition, ProviderModel } from "./providers/_shared";
 import { getMissingEnvVars, sortKeysDeep } from "./providers/_shared";
 
@@ -60,6 +61,32 @@ function isProviderDefinition(value: unknown): value is ProviderDefinition {
         (typeof (value as ProviderDefinition).name === "string" || typeof (value as ProviderDefinition).name === "undefined") &&
         typeof (value as ProviderDefinition).fetchModels === "function"
     );
+}
+
+function unwrapDefaultExport(value: unknown): unknown {
+    let current = value;
+    const seen = new Set<unknown>();
+
+    while (
+        current &&
+        typeof current === "object" &&
+        !Array.isArray(current) &&
+        "default" in (current as Record<string, unknown>)
+    ) {
+        if (seen.has(current)) {
+            break;
+        }
+        seen.add(current);
+
+        const keys = Object.keys(current as Record<string, unknown>);
+        if (keys.length !== 1) {
+            break;
+        }
+
+        current = (current as { default: unknown }).default;
+    }
+
+    return current;
 }
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -162,19 +189,24 @@ function loadLocalEnvFiles(): string[] {
     const candidates = [
         path.join(root, "dev.env"),
         path.join(root, ".env"),
+        path.join(root, ".dev.vars"),
         path.join(root, "dev.vars"),
         path.join(root, ".env.locals"),
         path.join(root, ".env.local"),
+        path.join(root, "scripts", "model-discovery", ".dev.vars"),
         path.join(root, "scripts", "model-discovery", "dev.env"),
         path.join(root, "scripts", "model-discovery", ".env"),
+        path.join(root, "apps", "api", ".dev.vars"),
         path.join(root, "apps", "api", "dev.vars"),
         path.join(root, "apps", "api", ".env.locals"),
         path.join(root, "apps", "api", ".env.local"),
         path.join(root, "apps", "api", ".env"),
+        path.join(root, "apps", "web", ".dev.vars"),
         path.join(root, "apps", "web", "dev.vars"),
         path.join(root, "apps", "web", ".env.locals"),
         path.join(root, "apps", "web", ".env.local"),
         path.join(root, "apps", "web", ".env"),
+        path.join(SCRIPT_DIR, ".dev.vars"),
         path.join(SCRIPT_DIR, "dev.vars"),
         path.join(SCRIPT_DIR, "dev.env"),
         path.join(SCRIPT_DIR, ".env.locals"),
@@ -183,8 +215,13 @@ function loadLocalEnvFiles(): string[] {
     ];
 
     const loaded: string[] = [];
+    const seen = new Set<string>();
 
     for (const filePath of candidates) {
+        const normalizedPath = path.normalize(filePath);
+        if (seen.has(normalizedPath)) continue;
+        seen.add(normalizedPath);
+
         if (!fs.existsSync(filePath)) continue;
         try {
             const parsed = parseEnvFileContents(fs.readFileSync(filePath, "utf-8"));
@@ -326,7 +363,12 @@ async function loadProviders(): Promise<ProviderDefinition[]> {
         .readdirSync(PROVIDERS_DIR, { withFileTypes: true })
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)
-        .filter((name) => name.endsWith(".ts") && !name.startsWith("_"))
+        .filter(
+            (name) =>
+                name.endsWith(".ts") &&
+                !name.startsWith("_") &&
+                name !== "discovery-policy.ts"
+        )
         .sort();
 
     const providers: ProviderDefinition[] = [];
@@ -341,7 +383,7 @@ async function loadProviders(): Promise<ProviderDefinition[]> {
     for (const file of files) {
         const moduleUrl = pathToFileURL(path.join(PROVIDERS_DIR, file)).href;
         const imported = (await import(moduleUrl)) as { default?: unknown };
-        const exported = imported.default;
+        const exported = unwrapDefaultExport(imported.default);
 
         if (!exported) {
             throw new Error(`Invalid provider module: ${file}`);
@@ -391,7 +433,14 @@ function buildDiscordMessage(changes: ProviderDiff[]): string {
 
 async function sendDiscordWebhook(message: string): Promise<void> {
     const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
-    if (!webhookUrl) return;
+    if (!webhookUrl || getMissingEnvVars(["DISCORD_WEBHOOK_URL"]).length > 0) return;
+
+    try {
+        new URL(webhookUrl);
+    } catch {
+        console.warn("[model-discovery] Skipping Discord webhook: DISCORD_WEBHOOK_URL is not a valid URL.");
+        return;
+    }
 
     const userId = process.env.DISCORD_USER_ID;
     const content = userId ? `<@${userId}>\n${message}` : message;
@@ -426,16 +475,23 @@ async function main(): Promise<void> {
 
     const providers = await loadProviders();
     const providerReadiness = providers.map((provider) => {
+        const discoveryRule = getProviderDiscoveryRule(provider.id);
+        const isInactiveByPolicy = !discoveryRule || !discoveryRule.active;
         const missingEnv = getMissingEnvVars(provider.requiredEnv);
         return {
             providerId: provider.id,
             providerName: provider.name,
+            isInactiveByPolicy,
+            inactiveReason:
+                discoveryRule?.reason ??
+                "No discovery policy mapping for this provider id.",
             missingEnv,
-            isReady: missingEnv.length === 0,
+            isReady: !isInactiveByPolicy && missingEnv.length === 0,
         };
     });
     const readyCount = providerReadiness.filter((provider) => provider.isReady).length;
-    const missingEnvProviders = providerReadiness.filter((provider) => !provider.isReady);
+    const inactiveProviders = providerReadiness.filter((provider) => provider.isInactiveByPolicy);
+    const missingEnvProviders = providerReadiness.filter((provider) => !provider.isInactiveByPolicy && !provider.isReady);
     const missingKeyTotals = new Map<string, number>();
     for (const provider of missingEnvProviders) {
         for (const envVar of provider.missingEnv) {
@@ -446,8 +502,24 @@ async function main(): Promise<void> {
     const results: ProviderRunResult[] = [];
     const changes: ProviderDiff[] = [];
     const readinessById = new Map<string, string[]>(providerReadiness.map((provider) => [provider.providerId, provider.missingEnv]));
+    const inactiveById = new Map<string, string | undefined>(
+        providerReadiness
+            .filter((provider) => provider.isInactiveByPolicy)
+            .map((provider) => [provider.providerId, provider.inactiveReason])
+    );
 
     for (const provider of providers) {
+        if (inactiveById.has(provider.id)) {
+            const inactiveReason = inactiveById.get(provider.id);
+            results.push({
+                providerId: provider.id,
+                providerName: provider.name,
+                status: "skipped",
+                reason: `Inactive by policy: ${inactiveReason || "Provider disabled until a stable models endpoint is available."}`,
+            });
+            continue;
+        }
+
         const missingEnv = readinessById.get(provider.id) ?? getMissingEnvVars(provider.requiredEnv);
         if (missingEnv.length > 0) {
             results.push({
@@ -509,6 +581,16 @@ async function main(): Promise<void> {
     writeJson(REPORT_PATH, report);
 
     console.log(`[model-discovery] Provider env readiness: ${readyCount}/${providers.length} ready`);
+    if (inactiveProviders.length > 0) {
+        const inactiveSummary = inactiveProviders
+            .slice(0, 12)
+            .map((provider) => `${provider.providerId}${provider.inactiveReason ? ` (${provider.inactiveReason})` : ""}`)
+            .join(", ");
+        console.log(`[model-discovery] Inactive providers by policy (${inactiveProviders.length}): ${inactiveSummary}`);
+        if (inactiveProviders.length > 12) {
+            console.log(`[model-discovery] ...and ${inactiveProviders.length - 12} more inactive providers`);
+        }
+    }
     if (missingEnvProviders.length > 0) {
         const missingEnvSummary = missingEnvProviders
             .slice(0, 12)

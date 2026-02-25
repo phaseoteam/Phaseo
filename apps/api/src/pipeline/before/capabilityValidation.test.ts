@@ -10,6 +10,49 @@ function provider(providerId: string, capabilityParams: Record<string, any>, max
 }
 
 describe("validateCapabilities", () => {
+	it("allows stream+tools and prefers providers that support both params", () => {
+		const result = validateCapabilities({
+			endpoint: "chat.completions",
+			rawBody: {
+				model: "openai/gpt-5-nano",
+				messages: [{ role: "user", content: "Call the lookup tool." }],
+				stream: true,
+				tools: [{
+					type: "function",
+					function: {
+						name: "lookup",
+						parameters: { type: "object", properties: {}, additionalProperties: false },
+					},
+				}],
+			},
+			body: {
+				model: "openai/gpt-5-nano",
+				messages: [{ role: "user", content: "Call the lookup tool." }],
+				stream: true,
+				tools: [{
+					type: "function",
+					function: {
+						name: "lookup",
+						parameters: { type: "object", properties: {}, additionalProperties: false },
+					},
+				}],
+			},
+			requestId: "req_stream_tools_provider_specific",
+			teamId: "team_test",
+			providers: [
+				provider("openai", { stream: {}, tools: {}, max_tokens: {} }, 4096),
+				provider("provider-without-tools-stream-combo", { stream: {}, max_tokens: {} }, 4096),
+			],
+			model: "openai/gpt-5-nano",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toContain("tools");
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
+		}
+	});
+
 	it("rejects unknown top-level params for text endpoints", async () => {
 		const result = validateCapabilities({
 			endpoint: "chat.completions",
