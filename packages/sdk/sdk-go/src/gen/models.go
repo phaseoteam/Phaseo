@@ -1303,6 +1303,23 @@ type ResponsesResponse struct {
 	Usage *map[string]interface{} `json:"usage,omitempty"`
 }
 
+type ResponsesWebSocketCreateEvent struct {
+	Input interface{} `json:"input,omitempty"`
+	Model string `json:"model"`
+	PreviousResponseId *string `json:"previous_response_id,omitempty"`
+	Store *bool `json:"store,omitempty"`
+	ToolChoice interface{} `json:"tool_choice,omitempty"`
+	Tools *[]map[string]interface{} `json:"tools,omitempty"`
+	Type string `json:"type"`
+}
+
+type ResponsesWebSocketServerEvent struct {
+	Error *map[string]interface{} `json:"error,omitempty"`
+	Response *map[string]interface{} `json:"response,omitempty"`
+	Status *int `json:"status,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
 type TextContentPart struct {
 	Text string `json:"text"`
 	Type string `json:"type"`

@@ -59,6 +59,8 @@ export type { RealtimeNotImplementedResponse } from "./RealtimeNotImplementedRes
 export type { ReasoningConfig } from "./ReasoningConfig.js";
 export type { ResponsesRequest } from "./ResponsesRequest.js";
 export type { ResponsesResponse } from "./ResponsesResponse.js";
+export type { ResponsesWebSocketCreateEvent } from "./ResponsesWebSocketCreateEvent.js";
+export type { ResponsesWebSocketServerEvent } from "./ResponsesWebSocketServerEvent.js";
 export type { TextContentPart } from "./TextContentPart.js";
 export type { TextModerationInput } from "./TextModerationInput.js";
 export type { ToolCall } from "./ToolCall.js";

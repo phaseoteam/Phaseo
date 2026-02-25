@@ -862,6 +862,19 @@ def listProvisioningKeysLegacy(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def openResponsesWebSocket(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = "/responses/ws"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def regenerateOAuthClientSecret(
 	client: Client,
 	*,
@@ -966,4 +979,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "createAnthropicMessage", "createAudioRealtimeCallPlaceholder", "createAudioRealtimeClientSecretsPlaceholder", "createAudioRealtimeSessionPlaceholder", "createAudioRealtimeSessionsPlaceholder", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOAuthClient", "createOcr", "createProvisioningKey", "createProvisioningKeyAlias", "createProvisioningKeyLegacy", "createRealtimeCallPlaceholder", "createRealtimeClientSecretsPlaceholder", "createRealtimeSessionPlaceholder", "createRealtimeSessionsPlaceholder", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteOAuthClient", "deleteProvisioningKey", "deleteProvisioningKeyAlias", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getAudioRealtimeCallPlaceholder", "getCredits", "getGeneration", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getProvisioningKey", "getProvisioningKeyAlias", "getProvisioningKeyLegacy", "getRealtimeCallPlaceholder", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listEndpoints", "listFiles", "listModels", "listModelsAliasApi", "listModelsAliasData", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listProvisioningKeys", "listProvisioningKeysAlias", "listProvisioningKeysLegacy", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateOAuthClient", "updateProvisioningKey", "updateProvisioningKeyAlias", "uploadFile"]
+operations___all__ = ["calculatePricing", "createAnthropicMessage", "createAudioRealtimeCallPlaceholder", "createAudioRealtimeClientSecretsPlaceholder", "createAudioRealtimeSessionPlaceholder", "createAudioRealtimeSessionsPlaceholder", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOAuthClient", "createOcr", "createProvisioningKey", "createProvisioningKeyAlias", "createProvisioningKeyLegacy", "createRealtimeCallPlaceholder", "createRealtimeClientSecretsPlaceholder", "createRealtimeSessionPlaceholder", "createRealtimeSessionsPlaceholder", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteOAuthClient", "deleteProvisioningKey", "deleteProvisioningKeyAlias", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getAudioRealtimeCallPlaceholder", "getCredits", "getGeneration", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getProvisioningKey", "getProvisioningKeyAlias", "getProvisioningKeyLegacy", "getRealtimeCallPlaceholder", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listEndpoints", "listFiles", "listModels", "listModelsAliasApi", "listModelsAliasData", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listProvisioningKeys", "listProvisioningKeysAlias", "listProvisioningKeysLegacy", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateOAuthClient", "updateProvisioningKey", "updateProvisioningKeyAlias", "uploadFile"]

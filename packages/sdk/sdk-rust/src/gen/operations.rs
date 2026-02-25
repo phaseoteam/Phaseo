@@ -335,6 +335,11 @@ pub fn listProvisioningKeysLegacy<T: Transport>(client: &Client<T>, path: &HashM
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn openResponsesWebSocket<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/responses/ws");
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn regenerateOAuthClientSecret<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/oauth-clients/{}/regenerate-secret", path.get("client_id").cloned().unwrap_or_default());
 	client.request("POST", &resolved_path, body)

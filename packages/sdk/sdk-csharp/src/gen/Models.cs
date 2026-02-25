@@ -1318,6 +1318,47 @@ public sealed class ResponsesResponse
 
 }
 
+public sealed class ResponsesWebSocketCreateEvent
+{
+	[JsonPropertyName("input")]
+	public object? Input { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("previous_response_id")]
+	public string? PreviousResponseId { get; set; }
+
+	[JsonPropertyName("store")]
+	public bool? Store { get; set; }
+
+	[JsonPropertyName("tool_choice")]
+	public object? ToolChoice { get; set; }
+
+	[JsonPropertyName("tools")]
+	public List<Dictionary<string, object>>? Tools { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class ResponsesWebSocketServerEvent
+{
+	[JsonPropertyName("error")]
+	public Dictionary<string, object>? Error { get; set; }
+
+	[JsonPropertyName("response")]
+	public Dictionary<string, object>? Response { get; set; }
+
+	[JsonPropertyName("status")]
+	public int? Status { get; set; }
+
+	[JsonPropertyName("type")]
+	public string? Type { get; set; }
+
+}
+
 public sealed class TextContentPart
 {
 	[JsonPropertyName("text")]

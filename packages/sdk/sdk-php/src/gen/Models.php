@@ -597,6 +597,25 @@ class ResponsesResponse
 	public $usage;
 }
 
+class ResponsesWebSocketCreateEvent
+{
+	public $input;
+	public $model;
+	public $previous_response_id;
+	public $store;
+	public $tool_choice;
+	public $tools;
+	public $type;
+}
+
+class ResponsesWebSocketServerEvent
+{
+	public $error;
+	public $response;
+	public $status;
+	public $type;
+}
+
 class TextContentPart
 {
 	public $text;

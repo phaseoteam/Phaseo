@@ -21,6 +21,16 @@ export type Endpoint =
     | "files.list"
     | "files.retrieve";
 
+export type RequestBetaOptions = {
+    openai_websocket_mode?: boolean;
+    openaiWebsocketMode?: boolean;
+    openai?: {
+        websocket_mode?: boolean;
+        websocketMode?: boolean;
+    };
+    [key: string]: unknown;
+};
+
 export type RequestMeta = {
     apiKeyId: string;             // Internal UUID for the gateway key
     apiKeyRef: string;            // Human-readable reference, e.g. kid_xxx
@@ -46,6 +56,7 @@ export type RequestMeta = {
     returnUpstreamResponse?: boolean;
     startedAtMs?: number;
     upstreamStartMs?: number;
+    beta?: RequestBetaOptions;
     keySource?: "gateway" | "byok";
     byokKeyId?: string | null;
     // Performance metrics

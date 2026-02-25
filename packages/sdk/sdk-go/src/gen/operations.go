@@ -992,6 +992,21 @@ func ListProvisioningKeysLegacy(client *Client, path map[string]string, query ma
 	return out, nil
 }
 
+func OpenResponsesWebSocket(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/responses/ws"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	var out interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func RegenerateOAuthClientSecret(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"]) + "/regenerate-secret"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)

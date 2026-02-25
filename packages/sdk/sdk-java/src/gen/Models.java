@@ -546,6 +546,23 @@ public final class Models {
 		public Object usage;
 	}
 
+	public static class ResponsesWebSocketCreateEvent {
+		public Object input;
+		public String model;
+		public String previous_response_id;
+		public Boolean store;
+		public Object tool_choice;
+		public java.util.List<Object> tools;
+		public Object type;
+	}
+
+	public static class ResponsesWebSocketServerEvent {
+		public Object error;
+		public Object response;
+		public Integer status;
+		public String type;
+	}
+
 	public static class TextContentPart {
 		public String text;
 		public Object type;

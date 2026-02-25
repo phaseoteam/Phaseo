@@ -4720,6 +4720,36 @@ export async function listProvisioningKeysLegacy(
   });
 }
 
+export type OpenResponsesWebSocketParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Opens a persistent websocket session for OpenAI Responses WebSocket mode.
+ *
+ * This endpoint is OpenAI-only and accepts `response.create` websocket messages.
+ * The gateway enforces `store=false`, allows one in-flight response per connection,
+ * and forwards OpenAI Responses streaming events back to the client.
+ *
+ */
+export async function openResponsesWebSocket(
+  client: Client,
+  args: OpenResponsesWebSocketParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/responses/ws";
+  return client.request<unknown>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type RegenerateOAuthClientSecretParams = {
   path?: {
     client_id: string;

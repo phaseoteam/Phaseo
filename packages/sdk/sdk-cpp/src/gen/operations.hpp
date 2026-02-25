@@ -334,6 +334,11 @@ inline Response ListProvisioningKeysLegacy(Client& client, const std::map<std::s
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response OpenResponsesWebSocket(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/responses/ws";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response RegenerateOAuthClientSecret(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{}) + "/regenerate-secret";
 	return client.request("POST", resolved_path, body);

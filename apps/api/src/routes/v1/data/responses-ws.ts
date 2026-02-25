@@ -129,7 +129,7 @@ async function resolveOpenAIGatewayKey(state: WsState, model: string): Promise<{
 		requestId: state.requestId,
 		internal: state.internal,
 	});
-	if (!ctx.ok) {
+	if (ctx.ok === false) {
 		return { ok: false, errorResponse: ctx.response };
 	}
 	const openAICandidate = ctx.value.providers.find((provider) => provider.providerId === "openai");
@@ -275,7 +275,7 @@ const responsesWsHandler = async (req: Request): Promise<Response> => {
 	}
 
 	const auth = await guardAuth(req);
-	if (!auth.ok) return auth.response;
+	if (auth.ok === false) return auth.response;
 	const state: WsState = {
 		requestId: auth.value.requestId,
 		teamId: auth.value.teamId,
@@ -476,7 +476,7 @@ const responsesWsHandler = async (req: Request): Promise<Response> => {
 	const ensureUpstreamSocket = async (model: string): Promise<boolean> => {
 		if (state.upstreamWs) return true;
 		const keyResolution = await resolveOpenAIGatewayKey(state, model);
-		if (!keyResolution.ok) {
+		if (keyResolution.ok === false) {
 			let detail = "OpenAI routing unavailable";
 			try {
 				detail = (await keyResolution.errorResponse.clone().text()).slice(0, 500) || detail;
@@ -498,7 +498,7 @@ const responsesWsHandler = async (req: Request): Promise<Response> => {
 		state.pricingCard = keyResolution.pricingCard;
 		state.teamTier = keyResolution.teamTier;
 		const upstream = await connectUpstreamOpenAIWebSocket(keyResolution.key);
-		if (!upstream.ok) {
+		if (upstream.ok === false) {
 			let detail = "";
 			try {
 				detail = (await upstream.response.clone().text()).slice(0, 500);
@@ -555,7 +555,7 @@ const responsesWsHandler = async (req: Request): Promise<Response> => {
 			}
 
 			const normalized = normalizeOpenAIWsResponseCreateEvent(rawPayload);
-			if (!normalized.ok) {
+			if (normalized.ok === false) {
 				sendSocketJson(gatewayWs, {
 					type: "error",
 					status: 400,
