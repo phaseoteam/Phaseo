@@ -67,6 +67,7 @@
     "models/ResponsesResponse.ts",
     "models/ResponsesWebSocketCreateEvent.ts",
     "models/ResponsesWebSocketServerEvent.ts",
+    "models/ResponsesWebSocketUpgradeRequiredResponse.ts",
     "models/TextContentPart.ts",
     "models/TextModerationInput.ts",
     "models/ToolCall.ts",

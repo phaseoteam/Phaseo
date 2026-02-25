@@ -10,16 +10,27 @@ description: "Use only when the user explicitly asks to stage, commit, push, and
 
 ## Naming conventions
 
-- Branch: `{description}` when starting from `main` or the repo default branch.
+- Branch: `{description}` on a fresh branch from `origin/main` (or repo default branch), unless the user explicitly says to keep using the current branch.
 - Commit: Prefer Conventional Commits (`type(scope): summary`) when possible.
   - Examples: `fix(data): restore venice provider model export`, `chore(data): refresh generated provider model mappings`
   - If scope is unclear, use `type: summary` (e.g. `chore: refresh provider model data`)
 - PR title: `{description}` summarizing the full diff.
 
+## Branch safety checks
+
+- Detect default branch: `git remote show origin` (or fallback `main`).
+- Detect current branch and open PR state:
+  - `current=$(git branch --show-current)`
+  - `gh pr list --head "$current" --state open --json number`
+- If `current` is not the default branch and there is no open PR for it, do **not** continue on that branch by default.
+- In that case, create a fresh branch from default, then continue:
+  - `git fetch origin`
+  - `git checkout -b "{description}" origin/{default}`
+- Never reuse a stale branch tied to closed/merged work unless the user explicitly asks to.
+
 ## Workflow
 
-- If on `main` (or the detected default branch), create a branch: `git checkout -b "{description}"`
-- Otherwise stay on the current branch.
+- Start on a fresh branch from the default branch unless the user explicitly requests the current branch.
 - Confirm status, then stage everything: `git status -sb` then `git add -A`.
 - Commit using a Conventional Commit message when possible; if not possible, use a terse descriptive message:
   - Preferred: `git commit -m "fix(scope): short summary"`

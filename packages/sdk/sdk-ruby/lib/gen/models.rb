@@ -63,6 +63,7 @@ module AiStats
     ResponsesResponse = Struct.new(:content, :created, :id, :model, :object, :role, :stop_reason, :type, :usage, keyword_init: true)
     ResponsesWebSocketCreateEvent = Struct.new(:input, :model, :previous_response_id, :store, :tool_choice, :tools, :type, keyword_init: true)
     ResponsesWebSocketServerEvent = Struct.new(:error, :response, :status, :type, keyword_init: true)
+    ResponsesWebSocketUpgradeRequiredResponse = Struct.new(:error, keyword_init: true)
     TextContentPart = Struct.new(:text, :type, keyword_init: true)
     TextModerationInput = Struct.new(:text, :type, keyword_init: true)
     ToolCall = Struct.new(:function, :id, :type, keyword_init: true)

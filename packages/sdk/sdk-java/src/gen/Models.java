@@ -563,6 +563,10 @@ public final class Models {
 		public String type;
 	}
 
+	public static class ResponsesWebSocketUpgradeRequiredResponse {
+		public Object error;
+	}
+
 	public static class TextContentPart {
 		public String text;
 		public Object type;

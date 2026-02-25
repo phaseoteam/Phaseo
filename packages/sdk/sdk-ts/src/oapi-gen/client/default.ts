@@ -4729,10 +4729,21 @@ export type OpenResponsesWebSocketParams = {
 
 /**
  * Opens a persistent websocket session for OpenAI Responses WebSocket mode.
+ * This route is currently experimental on AI Stats Gateway and is not
+ * recommended for production workloads.
  *
- * This endpoint is OpenAI-only and accepts `response.create` websocket messages.
+ * WebSocket handshake uses HTTP GET upgrade semantics and returns `101 Switching Protocols`
+ * on success (not `200`).
+ *
+ * This endpoint is OpenAI-only, requires `openai/<model>` format, and accepts
+ * `response.create` websocket messages.
  * The gateway enforces `store=false`, allows one in-flight response per connection,
  * and forwards OpenAI Responses streaming events back to the client.
+ *
+ * After upgrade, runtime failures are emitted as websocket `error` events
+ * (for example `invalid_response_create`, `openai_routing_failed`,
+ * `response_already_in_flight`, `model_mismatch`, `upstream_websocket_*`)
+ * rather than additional HTTP response codes.
  *
  */
 export async function openResponsesWebSocket(

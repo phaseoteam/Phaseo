@@ -557,6 +557,10 @@ pub struct ResponsesWebSocketServerEvent {
 	pub r#type: Option<String>,
 }
 
+pub struct ResponsesWebSocketUpgradeRequiredResponse {
+	pub error: Option<HashMap<String, String>>,
+}
+
 pub struct TextContentPart {
 	pub text: String,
 	pub r#type: String,

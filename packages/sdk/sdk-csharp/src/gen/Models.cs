@@ -1359,6 +1359,13 @@ public sealed class ResponsesWebSocketServerEvent
 
 }
 
+public sealed class ResponsesWebSocketUpgradeRequiredResponse
+{
+	[JsonPropertyName("error")]
+	public Dictionary<string, object>? Error { get; set; }
+
+}
+
 public sealed class TextContentPart
 {
 	[JsonPropertyName("text")]

@@ -616,6 +616,11 @@ class ResponsesWebSocketServerEvent
 	public $type;
 }
 
+class ResponsesWebSocketUpgradeRequiredResponse
+{
+	public $error;
+}
+
 class TextContentPart
 {
 	public $text;
