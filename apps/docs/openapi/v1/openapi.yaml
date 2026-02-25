@@ -292,10 +292,21 @@ paths:
             summary: Open Responses websocket session
             description: |
                 Opens a persistent websocket session for OpenAI Responses WebSocket mode.
+                This route is currently experimental on AI Stats Gateway and is not
+                recommended for production workloads.
 
-                This endpoint is OpenAI-only and accepts `response.create` websocket messages.
+                WebSocket handshake uses HTTP GET upgrade semantics and returns `101 Switching Protocols`
+                on success (not `200`).
+
+                This endpoint is OpenAI-only, requires `openai/<model>` format, and accepts
+                `response.create` websocket messages.
                 The gateway enforces `store=false`, allows one in-flight response per connection,
                 and forwards OpenAI Responses streaming events back to the client.
+
+                After upgrade, runtime failures are emitted as websocket `error` events
+                (for example `invalid_response_create`, `openai_routing_failed`,
+                `response_already_in_flight`, `model_mismatch`, `upstream_websocket_*`)
+                rather than additional HTTP response codes.
             responses:
                 "101":
                     description: WebSocket upgrade accepted.
@@ -304,12 +315,6 @@ paths:
                             $ref: "#/components/schemas/ResponsesWebSocketCreateEvent"
                         serverEvent:
                             $ref: "#/components/schemas/ResponsesWebSocketServerEvent"
-                "400":
-                    description: Bad request
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ErrorResponse"
                 "401":
                     description: Unauthorized
                     content:
@@ -321,13 +326,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/ErrorResponse"
-                "503":
-                    description: Upstream websocket unavailable
-                    content:
-                        application/json:
-                            schema:
-                                $ref: "#/components/schemas/ErrorResponse"
+                                $ref: "#/components/schemas/ResponsesWebSocketUpgradeRequiredResponse"
     /messages:
         post:
             tags:
@@ -3123,6 +3122,10 @@ components:
                     $ref: "#/components/schemas/Usage"
         ResponsesWebSocketCreateEvent:
             type: object
+            description: >
+                Client message for websocket turn creation. Gateway performs lightweight validation
+                (`type` and `model` format) before forwarding to OpenAI; deeper request-shape
+                validation is enforced by upstream.
             required:
                 - type
                 - model
@@ -3134,7 +3137,7 @@ components:
                 model:
                     type: string
                     description: >
-                        OpenAI model id. Gateway accepts `openai/<model>` or plain OpenAI model slug.
+                        OpenAI model id in provider/model format: `openai/<model>`.
                 previous_response_id:
                     type: string
                     nullable: true
@@ -3178,6 +3181,21 @@ components:
                 status:
                     type: integer
             additionalProperties: true
+        ResponsesWebSocketUpgradeRequiredResponse:
+            type: object
+            properties:
+                error:
+                    type: object
+                    properties:
+                        type:
+                            type: string
+                            example: invalid_request_error
+                        code:
+                            type: string
+                            example: websocket_upgrade_required
+                        message:
+                            type: string
+                            example: Use WebSocket upgrade for /v1/responses/ws.
         EmbeddingsRequest:
             type: object
             properties:

@@ -1,70 +1,159 @@
 ---
 title: "WebSocket Mode"
-description: "Use /v1/responses/ws for low-latency OpenAI Responses loops."
+description: "Gateway-first walkthrough for /v1/responses/ws with concrete connection, turn, and recovery flow."
 ---
 
-WebSocket mode keeps one long-lived connection open so you can run multi-turn, tool-heavy OpenAI Responses workflows with lower continuation overhead.
+This page explains how AI Stats Gateway `/v1/responses/ws` currently behaves.
 
-## Endpoint
+<Note type="warning">
+`/v1/responses/ws` is OpenAI-only and requires `openai/<model>` format.
+</Note>
 
-`wss://api.phaseo.app/v1/responses/ws`
+<Note type="warning">
+This endpoint is still experimental on AI Stats Gateway and is currently not recommended for production workloads. For production, prefer `POST /v1/responses` (and SSE streaming when needed).
+</Note>
 
-## Scope
+## Endpoint and handshake
 
-- OpenAI models only (`openai/<model>` or plain OpenAI model slug).
-- Responses protocol only (`type: "response.create"` messages).
-- One in-flight response per connection (sequential turns, no multiplexing).
-- Model must stay constant for the lifetime of a single websocket session.
-- `store` is always forced to `false` on this endpoint.
+- URL: `wss://api.phaseo.app/v1/responses/ws`
+- Method semantics: WebSocket starts as an HTTP `GET` with `Upgrade: websocket`.
+- Success status: `101 Switching Protocols` (not `200`).
+- Auth: `Authorization: Bearer YOUR_API_KEY`
 
-## Connect
+If you call this path as a normal HTTP GET without WebSocket upgrade headers, the gateway returns `426 websocket_upgrade_required`.
 
-```bash
-websocat \
-  -H="Authorization: Bearer YOUR_API_KEY" \
-  wss://api.phaseo.app/v1/responses/ws
+## How the gateway processes this endpoint
+
+For each socket session, the gateway enforces these rules:
+
+- Only `type: "response.create"` client messages are accepted.
+- Model must use provider/model format and OpenAI provider: `openai/<model>`.
+- Exactly one in-flight response is allowed per connection.
+- The model is locked after the first valid turn (`model_mismatch` if changed later).
+- `store` is always forced to `false`.
+- HTTP-style flags are removed before upstream send: `stream`, `stream_options`, `background`.
+
+## Step-by-step implementation
+
+### 1) Pick an OpenAI-routable model
+
+Use `GET /v1/models` to discover candidate model IDs, then run a first turn over `/v1/responses/ws` to confirm routing for your team/key.
+
+Example model IDs that work with this endpoint:
+
+- `openai/gpt-5-nano`
+
+### 2) Open one authenticated WebSocket connection
+
+```ts
+import WebSocket from "ws";
+
+const ws = new WebSocket("wss://api.phaseo.app/v1/responses/ws", {
+  headers: {
+    Authorization: `Bearer ${process.env.AI_STATS_API_KEY}`,
+  },
+});
+
+await new Promise<void>((resolve, reject) => {
+  ws.once("open", () => resolve());
+  ws.once("error", reject);
+});
 ```
 
-## Send a turn
+### 3) Send your first `response.create`
 
-```json
-{
-  "type": "response.create",
-  "model": "openai/gpt-5-nano",
-  "input": [
+```ts
+ws.send(JSON.stringify({
+  type: "response.create",
+  model: "openai/gpt-5-nano",
+  input: [
     {
-      "type": "message",
-      "role": "user",
-      "content": [{ "type": "input_text", "text": "Find bottlenecks in this function." }]
-    }
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "Summarize this issue in 3 bullets." }],
+    },
   ],
-  "tools": []
-}
+  tools: [],
+}));
 ```
 
-The gateway forwards OpenAI Responses websocket events back to the client (for example `response.created`, `response.output_text.delta`, `response.completed`, and `error`).
+### 4) Read server events until completion
 
-## Continue a conversation
+The gateway forwards OpenAI Responses WebSocket events. In practice, handle at least:
 
-For continuation, send another `response.create` with:
+- `response.created`
+- `response.output_text.delta`
+- `response.completed`
+- `response.failed`
+- `error`
 
-- `previous_response_id` set to the prior response ID.
-- `input` containing only new items for the next turn.
+```ts
+let lastResponseId: string | null = null;
 
-If you receive `previous_response_not_found`, restart the chain by omitting `previous_response_id` (or setting it to `null`) and sending full context.
+ws.on("message", (raw) => {
+  const msg = JSON.parse(String(raw));
 
-## Errors to handle
+  if (msg.type === "response.output_text.delta") {
+    process.stdout.write(msg.delta ?? "");
+    return;
+  }
 
-- `previous_response_not_found`
-- `websocket_connection_limit_reached`
-- `response_already_in_flight`
-- `model_mismatch`
+  if (msg.type === "response.completed") {
+    lastResponseId = msg.response?.id ?? null;
+    console.log("\ncompleted:", lastResponseId);
+    return;
+  }
 
-## Billing and auth
+  if (msg.type === "response.failed" || msg.type === "error") {
+    console.error("gateway ws error:", msg.error ?? msg);
+  }
+});
+```
 
-Authentication and billing are enforced the same way as HTTP endpoints. Usage-based charging is recorded from completed websocket responses.
+### 5) Continue the same conversation chain
+
+For subsequent turns on the same chain:
+
+- Keep the same `model`.
+- Send only new turn input.
+- Set `previous_response_id` to the prior completed response id.
+
+```ts
+ws.send(JSON.stringify({
+  type: "response.create",
+  model: "openai/gpt-5-nano",
+  previous_response_id: lastResponseId,
+  input: [
+    {
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "Now convert that to an action list." }],
+    },
+  ],
+}));
+```
+
+### 6) Handle gateway-specific errors with explicit recovery
+
+- `invalid_response_create`: gateway pre-validation failed (payload must be a JSON object with `type: "response.create"` and `model` in `openai/<model>` format).
+- `openai_routing_failed`: gateway could not route your OpenAI model for this key/team; inspect `error.message` details (which may include `openai_provider_unavailable` or `pricing_unavailable`) and choose a routable model.
+- `response_already_in_flight`: wait for current turn to finish before sending the next turn.
+- `model_mismatch`: open a new socket if you want a different model.
+- `upstream_websocket_handshake_failed` / `upstream_websocket_closed`: reconnect with backoff and retry the turn.
+- `previous_response_not_found`: resend without `previous_response_id` and include full context.
+
+Gateway behavior detail: if `previous_response_not_found` occurs and your prior payload had a non-null `previous_response_id` with array `input`, the gateway automatically retries once with `previous_response_id: null`.
+
+### 7) Evaluation checklist (non-production)
+
+- Keep one socket per active conversation worker.
+- Enforce per-socket turn queueing to avoid `response_already_in_flight`.
+- Add timeout + reconnect with exponential backoff.
+- Log response ids, error codes, and close codes.
+- Rotate API keys via normal gateway key management flow.
 
 ## Related pages
 
-1. [Responses Endpoint](../api-reference/endpoint/responses)
-2. [Streaming](./streaming)
+1. [Responses WebSocket API Reference](../api-reference/endpoint/responses-ws)
+2. [Responses Endpoint](../api-reference/endpoint/responses)
+3. [Streaming](./streaming)
