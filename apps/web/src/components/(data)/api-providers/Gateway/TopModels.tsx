@@ -129,7 +129,7 @@ export default async function TopModels({
 					})}
 				</div>
 			) : (
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<Trophy />

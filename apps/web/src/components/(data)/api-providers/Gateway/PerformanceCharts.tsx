@@ -89,7 +89,7 @@ export function LatencyChart({ data }: LatencyChartProps) {
 	if (!chartData.length || nonNullSamples === 0) {
 		return (
 			<div className="h-[200px] flex items-center justify-center">
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<Clock />
@@ -214,7 +214,7 @@ export function ThroughputChart({ data }: ThroughputChartProps) {
 	if (!chartData.length || nonNullSamples === 0) {
 		return (
 			<div className="h-[200px] flex items-center justify-center">
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<Zap />
@@ -339,7 +339,7 @@ export function E2ELatencyChart({ data }: E2ELatencyChartProps) {
 	if (!chartData.length || nonNullSamples === 0) {
 		return (
 			<div className="h-[200px] flex items-center justify-center">
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<Timer />

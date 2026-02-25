@@ -56,6 +56,12 @@ interface ChartRow {
 	details: BenchmarkComparisonScoreDetail[];
 }
 
+type RechartsTooltipContentProps = TooltipProps<number, string> & {
+	active?: boolean;
+	payload?: Array<any>;
+	label?: string | number;
+};
+
 const PROVIDER_FALLBACK_COLOURS = [
 	"#f472b6",
 	"#60a5fa",
@@ -205,7 +211,10 @@ const renderBarShape = (props: {
 	);
 };
 
-function BenchmarkTooltip({ active, payload }: TooltipProps<number, string>) {
+function BenchmarkTooltip({
+	active,
+	payload,
+}: RechartsTooltipContentProps) {
 	if (!active || !payload || !payload.length) return null;
 	const data = payload[0].payload as ChartRow;
 	const sortedDetails = [...data.details].sort((a, b) => {

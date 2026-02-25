@@ -39,11 +39,7 @@ export default async function SettingsLayout({
 		<>
 			<HideGlobalFooter />
 
-			<SidebarProvider
-				contained
-				defaultOpen
-				className="flex flex-1 min-h-0"
-			>
+			<SidebarProvider defaultOpen className="flex flex-1 min-h-0">
 				<Sidebar
 					// Use shadcn's fixed desktop sidebar so it does not move when the page scrolls.
 					// Offset by the sticky site header height (navbar + announcement bar).

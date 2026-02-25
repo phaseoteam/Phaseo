@@ -128,7 +128,7 @@ export default async function TopApps({
 					})}
 				</div>
 			) : (
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<Users />

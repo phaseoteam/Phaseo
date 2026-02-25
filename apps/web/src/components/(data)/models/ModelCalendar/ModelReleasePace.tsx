@@ -51,11 +51,17 @@ const KEY_LABELS: Record<string, string> = {
 	trend: "3-mo avg",
 };
 
+type RechartsTooltipContentProps = TooltipProps<number, string> & {
+	active?: boolean;
+	payload?: Array<any>;
+	label?: string | number;
+};
+
 const ReleaseTooltip = ({
 	active,
 	payload,
 	label,
-}: TooltipProps<number, string>) => {
+}: RechartsTooltipContentProps) => {
 	if (!active || !payload?.length) return null;
 
 	const rows = payload.filter((item) => item.value !== undefined);
@@ -224,7 +230,6 @@ export default function ModelReleasePace({
 								strokeDasharray="4 4"
 								stroke="#9ca3af"
 								strokeOpacity={0.4}
-								isFront={false}
 							/>
 						))}
 						<Recharts.XAxis

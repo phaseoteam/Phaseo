@@ -37,6 +37,12 @@ const cumulativeTokensChartConfig: ChartConfig = {
 	},
 };
 
+type RechartsTooltipContentProps = TooltipProps<number, string> & {
+	active?: boolean;
+	payload?: Array<any>;
+	label?: string | number;
+};
+
 function formatCompact(value: number): string {
 	if (value >= 1_000_000_000) {
 		return `${(value / 1_000_000_000).toFixed(1)}B`;
@@ -159,7 +165,7 @@ export default function ModelTokenTrajectoryChart({
 	if (!data || !data.points.length) {
 		return (
 			<Card className="p-6">
-				<Empty size="compact">
+				<Empty>
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
 							<BarChart3 />
@@ -227,7 +233,7 @@ export default function ModelTokenTrajectoryChart({
 	const CustomTooltip = ({
 		active,
 		payload,
-	}: TooltipProps<number, string>) => {
+	}: RechartsTooltipContentProps) => {
 		if (!active || !payload?.length) return null;
 		const point = payload[0].payload as ModelTokenTrajectoryPoint;
 		const previous = pointByDay.get(point.daysSinceRelease - 1) ?? null;

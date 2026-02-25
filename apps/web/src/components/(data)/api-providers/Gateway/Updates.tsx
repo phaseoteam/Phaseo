@@ -213,7 +213,7 @@ export default async function Updates({
 					</div>
 				) : (
 					<div className="py-8">
-						<Empty size="compact">
+						<Empty>
 							<EmptyHeader>
 								<EmptyMedia variant="icon">
 									<Sparkles className="h-5 w-5" />
