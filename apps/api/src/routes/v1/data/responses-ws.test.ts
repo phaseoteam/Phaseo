@@ -24,7 +24,7 @@ describe("responses websocket request normalization", () => {
 		expect(result.payload.background).toBeUndefined();
 	});
 
-	it("accepts plain OpenAI model slugs and rewrites gateway model", () => {
+	it("rejects plain model slugs without provider prefix", () => {
 		const result = normalizeOpenAIWsResponseCreateEvent({
 			type: "response.create",
 			model: "gpt-5-nano",
@@ -32,12 +32,9 @@ describe("responses websocket request normalization", () => {
 			stream_options: { include_usage: true },
 			input: "hello",
 		});
-		expect(result.ok).toBe(true);
-		if (!result.ok) return;
-		expect(result.gatewayModel).toBe("openai/gpt-5-nano");
-		expect(result.payload.model).toBe("gpt-5-nano");
-		expect(result.payload.store).toBe(false);
-		expect(result.payload.stream_options).toBeUndefined();
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.error).toContain("openai/<model>");
 	});
 
 	it("rejects non-OpenAI provider model prefixes", () => {
@@ -48,7 +45,7 @@ describe("responses websocket request normalization", () => {
 		});
 		expect(result.ok).toBe(false);
 		if (result.ok) return;
-		expect(result.error).toContain("only OpenAI models");
+		expect(result.error).toContain("openai/<model>");
 	});
 
 	it("rejects non-response.create events", () => {

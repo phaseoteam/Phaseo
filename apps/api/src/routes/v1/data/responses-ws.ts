@@ -60,10 +60,10 @@ export function normalizeOpenAIWsResponseCreateEvent(raw: unknown): NormalizedRe
 		return { ok: false, error: "model is required" };
 	}
 	const modelRaw = payload.model.trim();
-	if (modelRaw.includes("/") && !modelRaw.startsWith("openai/")) {
-		return { ok: false, error: "only OpenAI models are supported on this endpoint" };
+	if (!modelRaw.startsWith("openai/")) {
+		return { ok: false, error: "model must use openai/<model> format on this endpoint" };
 	}
-	const upstreamModel = modelRaw.startsWith("openai/") ? modelRaw.slice("openai/".length) : modelRaw;
+	const upstreamModel = modelRaw.slice("openai/".length);
 	if (!upstreamModel) {
 		return { ok: false, error: "invalid OpenAI model" };
 	}

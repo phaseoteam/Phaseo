@@ -2,3 +2,11 @@
 title: "Responses WebSocket"
 openapi: "GET /responses/ws"
 ---
+
+<Note type="warning">
+Experimental endpoint. Use `openai/<model>` format only, and prefer `POST /v1/responses` for production workloads.
+</Note>
+
+Successful connection is HTTP `101 Switching Protocols` (not `200`). After upgrade, failures are emitted as WebSocket `error` events.
+
+For a full gateway walkthrough (connect, send turns, continue with `previous_response_id`, and recover from errors), see [WebSocket Mode guide](../../guides/websocket-mode).
