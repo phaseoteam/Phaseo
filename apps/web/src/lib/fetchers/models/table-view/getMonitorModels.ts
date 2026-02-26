@@ -276,6 +276,19 @@ export async function getMonitorModels(
 			extractedFeatures.map((feature) => String(feature))
 		);
 		if (isFreeVariant) normalizedFeatures.add("free");
+		const featureOrderIndexForRow = new Map(
+			featureOrder.map((feature, index) => [feature, index])
+		);
+		const sortedFeatures = Array.from(normalizedFeatures).sort((a, b) => {
+			const aIndex = featureOrderIndexForRow.get(a);
+			const bIndex = featureOrderIndexForRow.get(b);
+			if (aIndex !== undefined || bIndex !== undefined) {
+				if (aIndex === undefined) return 1;
+				if (bIndex === undefined) return -1;
+				return aIndex - bIndex;
+			}
+			return a.localeCompare(b);
+		});
 
 		const providerName =
 			gatewayModel.provider?.api_provider_name ||
@@ -294,7 +307,7 @@ export async function getMonitorModels(
 				id: gatewayModel.api_provider_id,
 				inputPrice: prices.inputPrice,
 				outputPrice: prices.outputPrice,
-				features: Array.from(normalizedFeatures),
+				features: sortedFeatures,
 			},
 			endpoint: normalizeEndpoint(rawEndpoint),
 			gatewayStatus: gatewayModel?.is_active_gateway ? "active" : "inactive",
