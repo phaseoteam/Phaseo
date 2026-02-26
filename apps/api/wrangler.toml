@@ -14,7 +14,7 @@ MODEL_DISCOVERY_SHARD_SIZE = "20"
 ENTERPRISE_INVOICING_ENABLED = "true"
 
 [triggers]
-crons = ["*/5 * * * *", "5 0 * * *"]
+crons = ["*/5 * * * *"]
 
 [placement]
 mode = "smart"

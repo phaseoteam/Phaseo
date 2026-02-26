@@ -36,14 +36,20 @@ class AnthropicMessage
 class AnthropicMessagesRequest
 {
 	public $debug;
+	public $image_config;
+	public $imageConfig;
 	public $max_tokens;
 	public $messages;
 	public $metadata;
+	public $modalities;
 	public $model;
 	public $provider;
+	public $response_modalities;
+	public $responseModalities;
 	public $stream;
 	public $system;
 	public $temperature;
+	public $thinking;
 	public $tool_choice;
 	public $tools;
 	public $top_k;
@@ -174,29 +180,40 @@ class ChatCompletionsRequest
 {
 	public $debug;
 	public $frequency_penalty;
+	public $image_config;
+	public $imageConfig;
 	public $logit_bias;
 	public $logprobs;
+	public $max_completion_tokens;
 	public $max_output_tokens;
+	public $max_tokens;
 	public $max_tool_calls;
 	public $messages;
 	public $meta;
+	public $modalities;
 	public $model;
 	public $parallel_tool_calls;
 	public $presence_penalty;
 	public $provider;
 	public $reasoning;
 	public $response_format;
+	public $response_modalities;
+	public $responseModalities;
 	public $seed;
 	public $service_tier;
+	public $speed;
 	public $stream;
+	public $stream_options;
 	public $system;
 	public $temperature;
+	public $thinking;
 	public $tool_choice;
 	public $tools;
 	public $top_k;
 	public $top_logprobs;
 	public $top_p;
 	public $usage;
+	public $user;
 	public $user_id;
 }
 
@@ -311,6 +328,22 @@ class Image
 	public $b64_json;
 	public $revised_prompt;
 	public $url;
+}
+
+class ImageConfig
+{
+	public $aspect_ratio;
+	public $aspectRatio;
+	public $font_inputs;
+	public $fontInputs;
+	public $image_size;
+	public $imageSize;
+	public $include_rai_reason;
+	public $includeRaiReason;
+	public $reference_images;
+	public $referenceImages;
+	public $super_resolution_references;
+	public $superResolutionReferences;
 }
 
 class ImageContentPart
@@ -544,6 +577,10 @@ class RealtimeNotImplementedResponse
 class ReasoningConfig
 {
 	public $effort;
+	public $enabled;
+	public $include_thoughts;
+	public $includeThoughts;
+	public $max_tokens;
 	public $summary;
 }
 
@@ -552,14 +589,19 @@ class ResponsesRequest
 	public $background;
 	public $conversation;
 	public $debug;
+	public $image_config;
+	public $imageConfig;
 	public $include;
 	public $input;
 	public $input_items;
 	public $instructions;
+	public $max_completion_tokens;
 	public $max_output_tokens;
+	public $max_tokens;
 	public $max_tool_calls;
 	public $meta;
 	public $metadata;
+	public $modalities;
 	public $model;
 	public $parallel_tool_calls;
 	public $previous_response_id;
@@ -568,13 +610,17 @@ class ResponsesRequest
 	public $prompt_cache_retention;
 	public $provider;
 	public $reasoning;
+	public $response_modalities;
+	public $responseModalities;
 	public $safety_identifier;
 	public $service_tier;
+	public $speed;
 	public $store;
 	public $stream;
 	public $stream_options;
 	public $temperature;
 	public $text;
+	public $thinking;
 	public $tool_choice;
 	public $tools;
 	public $top_logprobs;
@@ -625,6 +671,19 @@ class TextContentPart
 class TextModerationInput
 {
 	public $text;
+	public $type;
+}
+
+class ThinkingConfig
+{
+	public $budget_tokens;
+	public $budgetTokens;
+	public $effort;
+	public $enabled;
+	public $include_thoughts;
+	public $includeThoughts;
+	public $max_tokens;
+	public $maxTokens;
 	public $type;
 }
 

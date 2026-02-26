@@ -32,14 +32,20 @@ public final class Models {
 
 	public static class AnthropicMessagesRequest {
 		public Object debug;
+		public Object image_config;
+		public Object imageConfig;
 		public Integer max_tokens;
 		public java.util.List<Object> messages;
 		public Object metadata;
+		public java.util.List<String> modalities;
 		public String model;
 		public Object provider;
+		public java.util.List<String> response_modalities;
+		public java.util.List<String> responseModalities;
 		public Boolean stream;
 		public Object system;
 		public Double temperature;
+		public Object thinking;
 		public Object tool_choice;
 		public java.util.List<Object> tools;
 		public Integer top_k;
@@ -157,29 +163,40 @@ public final class Models {
 	public static class ChatCompletionsRequest {
 		public Object debug;
 		public Double frequency_penalty;
+		public Object image_config;
+		public Object imageConfig;
 		public Object logit_bias;
 		public Boolean logprobs;
+		public Integer max_completion_tokens;
 		public Integer max_output_tokens;
+		public Integer max_tokens;
 		public Integer max_tool_calls;
 		public java.util.List<Object> messages;
 		public Boolean meta;
+		public java.util.List<String> modalities;
 		public String model;
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
 		public Object provider;
 		public Object reasoning;
 		public Object response_format;
+		public java.util.List<String> response_modalities;
+		public java.util.List<String> responseModalities;
 		public Integer seed;
 		public Object service_tier;
+		public String speed;
 		public Boolean stream;
+		public Object stream_options;
 		public String system;
 		public Double temperature;
+		public Object thinking;
 		public Object tool_choice;
 		public java.util.List<Object> tools;
 		public Integer top_k;
 		public Integer top_logprobs;
 		public Double top_p;
 		public Boolean usage;
+		public String user;
 		public String user_id;
 	}
 
@@ -283,6 +300,21 @@ public final class Models {
 		public String b64_json;
 		public String revised_prompt;
 		public String url;
+	}
+
+	public static class ImageConfig {
+		public String aspect_ratio;
+		public String aspectRatio;
+		public java.util.List<Object> font_inputs;
+		public java.util.List<Object> fontInputs;
+		public Object image_size;
+		public Object imageSize;
+		public Boolean include_rai_reason;
+		public Boolean includeRaiReason;
+		public java.util.List<Object> reference_images;
+		public java.util.List<Object> referenceImages;
+		public java.util.List<String> super_resolution_references;
+		public java.util.List<String> superResolutionReferences;
 	}
 
 	public static class ImageContentPart {
@@ -495,6 +527,10 @@ public final class Models {
 
 	public static class ReasoningConfig {
 		public Object effort;
+		public Boolean enabled;
+		public Boolean include_thoughts;
+		public Boolean includeThoughts;
+		public Integer max_tokens;
 		public Object summary;
 	}
 
@@ -502,14 +538,19 @@ public final class Models {
 		public Boolean background;
 		public Object conversation;
 		public Object debug;
+		public Object image_config;
+		public Object imageConfig;
 		public java.util.List<String> include;
 		public Object input;
 		public java.util.List<Object> input_items;
 		public String instructions;
+		public Integer max_completion_tokens;
 		public Integer max_output_tokens;
+		public Integer max_tokens;
 		public Integer max_tool_calls;
 		public Boolean meta;
 		public Object metadata;
+		public java.util.List<String> modalities;
 		public String model;
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
@@ -518,13 +559,17 @@ public final class Models {
 		public String prompt_cache_retention;
 		public Object provider;
 		public Object reasoning;
+		public java.util.List<String> response_modalities;
+		public java.util.List<String> responseModalities;
 		public String safety_identifier;
 		public String service_tier;
+		public String speed;
 		public Boolean store;
 		public Boolean stream;
 		public Object stream_options;
 		public Double temperature;
 		public Object text;
+		public Object thinking;
 		public Object tool_choice;
 		public java.util.List<Object> tools;
 		public Integer top_logprobs;
@@ -570,6 +615,18 @@ public final class Models {
 
 	public static class TextModerationInput {
 		public String text;
+		public Object type;
+	}
+
+	public static class ThinkingConfig {
+		public Integer budget_tokens;
+		public Integer budgetTokens;
+		public Object effort;
+		public Boolean enabled;
+		public Boolean include_thoughts;
+		public Boolean includeThoughts;
+		public Integer max_tokens;
+		public Integer maxTokens;
 		public Object type;
 	}
 

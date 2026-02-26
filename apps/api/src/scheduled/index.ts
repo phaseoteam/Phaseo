@@ -11,7 +11,6 @@ import {
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
-import { runEnterpriseInvoicingJob } from "@/pipeline/invoicing/daily";
 
 const SHARD_ROTATION_WINDOW_MS = 5 * 60 * 1000;
 
@@ -56,25 +55,6 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 	}
 }
 
-async function handleEnterpriseInvoicingScheduledEvent(
-	event: ScheduledController,
-	env: GatewayBindings
-): Promise<void> {
-	configureRuntime(env);
-	try {
-		const summary = await runEnterpriseInvoicingJob({
-			scheduledAtIso: new Date(event.scheduledTime).toISOString(),
-		});
-
-		if (summary.processed > 0 || summary.failed > 0) {
-			console.log("[enterprise-invoice-job] run summary", summary);
-		}
-	} finally {
-		clearRuntime();
-	}
-}
-
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	await handleModelDiscoveryScheduledEvent(event, env);
-	await handleEnterpriseInvoicingScheduledEvent(event, env);
 }

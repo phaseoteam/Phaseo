@@ -75,6 +75,12 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
+	[JsonPropertyName("image_config")]
+	public Dictionary<string, object>? ImageConfig { get; set; }
+
+	[JsonPropertyName("imageConfig")]
+	public Dictionary<string, object>? ImageConfig { get; set; }
+
 	[JsonPropertyName("max_tokens")]
 	public int? MaxTokens { get; set; }
 
@@ -84,11 +90,20 @@ public sealed class AnthropicMessagesRequest
 	[JsonPropertyName("metadata")]
 	public Dictionary<string, object>? Metadata { get; set; }
 
+	[JsonPropertyName("modalities")]
+	public List<string>? Modalities { get; set; }
+
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("response_modalities")]
+	public List<string>? ResponseModalities { get; set; }
+
+	[JsonPropertyName("responseModalities")]
+	public List<string>? ResponseModalities { get; set; }
 
 	[JsonPropertyName("stream")]
 	public bool? Stream { get; set; }
@@ -98,6 +113,9 @@ public sealed class AnthropicMessagesRequest
 
 	[JsonPropertyName("temperature")]
 	public double? Temperature { get; set; }
+
+	[JsonPropertyName("thinking")]
+	public Dictionary<string, object>? Thinking { get; set; }
 
 	[JsonPropertyName("tool_choice")]
 	public object? ToolChoice { get; set; }
@@ -373,14 +391,26 @@ public sealed class ChatCompletionsRequest
 	[JsonPropertyName("frequency_penalty")]
 	public double? FrequencyPenalty { get; set; }
 
+	[JsonPropertyName("image_config")]
+	public Dictionary<string, object>? ImageConfig { get; set; }
+
+	[JsonPropertyName("imageConfig")]
+	public Dictionary<string, object>? ImageConfig { get; set; }
+
 	[JsonPropertyName("logit_bias")]
 	public Dictionary<string, object>? LogitBias { get; set; }
 
 	[JsonPropertyName("logprobs")]
 	public bool? Logprobs { get; set; }
 
+	[JsonPropertyName("max_completion_tokens")]
+	public int? MaxCompletionTokens { get; set; }
+
 	[JsonPropertyName("max_output_tokens")]
 	public int? MaxOutputTokens { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public int? MaxTokens { get; set; }
 
 	[JsonPropertyName("max_tool_calls")]
 	public int? MaxToolCalls { get; set; }
@@ -390,6 +420,9 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("meta")]
 	public bool? Meta { get; set; }
+
+	[JsonPropertyName("modalities")]
+	public List<string>? Modalities { get; set; }
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
@@ -409,20 +442,35 @@ public sealed class ChatCompletionsRequest
 	[JsonPropertyName("response_format")]
 	public object? ResponseFormat { get; set; }
 
+	[JsonPropertyName("response_modalities")]
+	public List<string>? ResponseModalities { get; set; }
+
+	[JsonPropertyName("responseModalities")]
+	public List<string>? ResponseModalities { get; set; }
+
 	[JsonPropertyName("seed")]
 	public int? Seed { get; set; }
 
 	[JsonPropertyName("service_tier")]
 	public string? ServiceTier { get; set; }
 
+	[JsonPropertyName("speed")]
+	public string? Speed { get; set; }
+
 	[JsonPropertyName("stream")]
 	public bool? Stream { get; set; }
+
+	[JsonPropertyName("stream_options")]
+	public Dictionary<string, object>? StreamOptions { get; set; }
 
 	[JsonPropertyName("system")]
 	public string? System { get; set; }
 
 	[JsonPropertyName("temperature")]
 	public double? Temperature { get; set; }
+
+	[JsonPropertyName("thinking")]
+	public Dictionary<string, object>? Thinking { get; set; }
 
 	[JsonPropertyName("tool_choice")]
 	public object? ToolChoice { get; set; }
@@ -441,6 +489,9 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("usage")]
 	public bool? Usage { get; set; }
+
+	[JsonPropertyName("user")]
+	public string? User { get; set; }
 
 	[JsonPropertyName("user_id")]
 	public string? UserId { get; set; }
@@ -695,6 +746,46 @@ public sealed class Image
 
 	[JsonPropertyName("url")]
 	public string? Url { get; set; }
+
+}
+
+public sealed class ImageConfig
+{
+	[JsonPropertyName("aspect_ratio")]
+	public string? AspectRatio { get; set; }
+
+	[JsonPropertyName("aspectRatio")]
+	public string? AspectRatio { get; set; }
+
+	[JsonPropertyName("font_inputs")]
+	public List<Dictionary<string, object>>? FontInputs { get; set; }
+
+	[JsonPropertyName("fontInputs")]
+	public List<Dictionary<string, object>>? FontInputs { get; set; }
+
+	[JsonPropertyName("image_size")]
+	public string? ImageSize { get; set; }
+
+	[JsonPropertyName("imageSize")]
+	public string? ImageSize { get; set; }
+
+	[JsonPropertyName("include_rai_reason")]
+	public bool? IncludeRaiReason { get; set; }
+
+	[JsonPropertyName("includeRaiReason")]
+	public bool? IncludeRaiReason { get; set; }
+
+	[JsonPropertyName("reference_images")]
+	public List<Dictionary<string, object>>? ReferenceImages { get; set; }
+
+	[JsonPropertyName("referenceImages")]
+	public List<Dictionary<string, object>>? ReferenceImages { get; set; }
+
+	[JsonPropertyName("super_resolution_references")]
+	public List<string>? SuperResolutionReferences { get; set; }
+
+	[JsonPropertyName("superResolutionReferences")]
+	public List<string>? SuperResolutionReferences { get; set; }
 
 }
 
@@ -1179,6 +1270,18 @@ public sealed class ReasoningConfig
 	[JsonPropertyName("effort")]
 	public string? Effort { get; set; }
 
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("include_thoughts")]
+	public bool? IncludeThoughts { get; set; }
+
+	[JsonPropertyName("includeThoughts")]
+	public bool? IncludeThoughts { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public int? MaxTokens { get; set; }
+
 	[JsonPropertyName("summary")]
 	public string? Summary { get; set; }
 
@@ -1195,6 +1298,12 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
+	[JsonPropertyName("image_config")]
+	public Dictionary<string, object>? ImageConfig { get; set; }
+
+	[JsonPropertyName("imageConfig")]
+	public Dictionary<string, object>? ImageConfig { get; set; }
+
 	[JsonPropertyName("include")]
 	public List<string>? Include { get; set; }
 
@@ -1207,8 +1316,14 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("instructions")]
 	public string? Instructions { get; set; }
 
+	[JsonPropertyName("max_completion_tokens")]
+	public int? MaxCompletionTokens { get; set; }
+
 	[JsonPropertyName("max_output_tokens")]
 	public int? MaxOutputTokens { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public int? MaxTokens { get; set; }
 
 	[JsonPropertyName("max_tool_calls")]
 	public int? MaxToolCalls { get; set; }
@@ -1218,6 +1333,9 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("metadata")]
 	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("modalities")]
+	public List<string>? Modalities { get; set; }
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
@@ -1243,11 +1361,20 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("reasoning")]
 	public Dictionary<string, object>? Reasoning { get; set; }
 
+	[JsonPropertyName("response_modalities")]
+	public List<string>? ResponseModalities { get; set; }
+
+	[JsonPropertyName("responseModalities")]
+	public List<string>? ResponseModalities { get; set; }
+
 	[JsonPropertyName("safety_identifier")]
 	public string? SafetyIdentifier { get; set; }
 
 	[JsonPropertyName("service_tier")]
 	public string? ServiceTier { get; set; }
+
+	[JsonPropertyName("speed")]
+	public string? Speed { get; set; }
 
 	[JsonPropertyName("store")]
 	public bool? Store { get; set; }
@@ -1263,6 +1390,9 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("text")]
 	public Dictionary<string, object>? Text { get; set; }
+
+	[JsonPropertyName("thinking")]
+	public Dictionary<string, object>? Thinking { get; set; }
 
 	[JsonPropertyName("tool_choice")]
 	public object? ToolChoice { get; set; }
@@ -1376,6 +1506,37 @@ public sealed class TextModerationInput
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
+
+}
+
+public sealed class ThinkingConfig
+{
+	[JsonPropertyName("budget_tokens")]
+	public int? BudgetTokens { get; set; }
+
+	[JsonPropertyName("budgetTokens")]
+	public int? BudgetTokens { get; set; }
+
+	[JsonPropertyName("effort")]
+	public string? Effort { get; set; }
+
+	[JsonPropertyName("enabled")]
+	public bool? Enabled { get; set; }
+
+	[JsonPropertyName("include_thoughts")]
+	public bool? IncludeThoughts { get; set; }
+
+	[JsonPropertyName("includeThoughts")]
+	public bool? IncludeThoughts { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public int? MaxTokens { get; set; }
+
+	[JsonPropertyName("maxTokens")]
+	public int? MaxTokens { get; set; }
+
+	[JsonPropertyName("type")]
+	public string? Type { get; set; }
 
 }
 

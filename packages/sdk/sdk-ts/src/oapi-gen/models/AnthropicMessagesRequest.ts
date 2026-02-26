@@ -6,6 +6,56 @@ export interface AnthropicMessagesRequest {
     trace?: boolean;
     trace_level?: "summary" | "full";
   };
+  image_config?: {
+    aspect_ratio?: string;
+    aspectRatio?: string;
+    font_inputs?: {
+      font_url?: string;
+      text?: string;
+    }[];
+    fontInputs?: {
+      fontUrl?: string;
+      text?: string;
+    }[];
+    image_size?: "0.5K" | "1K" | "2K" | "4K";
+    imageSize?: "0.5K" | "1K" | "2K" | "4K";
+    include_rai_reason?: boolean;
+    includeRaiReason?: boolean;
+    reference_images?: {
+      [key: string]: unknown;
+    }[];
+    referenceImages?: {
+      [key: string]: unknown;
+    }[];
+    super_resolution_references?: string[];
+    superResolutionReferences?: string[];
+    [key: string]: unknown;
+  };
+  imageConfig?: {
+    aspect_ratio?: string;
+    aspectRatio?: string;
+    font_inputs?: {
+      font_url?: string;
+      text?: string;
+    }[];
+    fontInputs?: {
+      fontUrl?: string;
+      text?: string;
+    }[];
+    image_size?: "0.5K" | "1K" | "2K" | "4K";
+    imageSize?: "0.5K" | "1K" | "2K" | "4K";
+    include_rai_reason?: boolean;
+    includeRaiReason?: boolean;
+    reference_images?: {
+      [key: string]: unknown;
+    }[];
+    referenceImages?: {
+      [key: string]: unknown;
+    }[];
+    super_resolution_references?: string[];
+    superResolutionReferences?: string[];
+    [key: string]: unknown;
+  };
   max_tokens?: number;
   messages: {
     content:
@@ -30,6 +80,7 @@ export interface AnthropicMessagesRequest {
   metadata?: {
     [key: string]: string;
   };
+  modalities?: string[];
   model: string;
   provider?: {
     ignore?: string[];
@@ -37,9 +88,22 @@ export interface AnthropicMessagesRequest {
     only?: string[];
     order?: string[];
   };
+  response_modalities?: string[];
+  responseModalities?: string[];
   stream?: boolean;
   system?: string | {}[];
   temperature?: number;
+  thinking?: {
+    budget_tokens?: number;
+    budgetTokens?: number;
+    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    enabled?: boolean;
+    include_thoughts?: boolean;
+    includeThoughts?: boolean;
+    max_tokens?: number;
+    maxTokens?: number;
+    type?: "enabled" | "disabled" | "adaptive";
+  };
   tool_choice?: string | {};
   tools?: {
     description?: string;
