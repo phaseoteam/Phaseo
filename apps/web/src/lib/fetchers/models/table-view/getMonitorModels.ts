@@ -7,6 +7,7 @@ import {
 	extractFeatureKeys,
 	normalizeGatewayModel,
 	normalizeEndpoint,
+	toUsdPerMillion,
 } from "./helpers";
 
 export type { MonitorModelData } from "./types";
@@ -218,18 +219,14 @@ export async function getMonitorModels(
 			(p.meter === "input_text_tokens" || p.meter === "input_tokens") &&
 			prices.inputPrice === 0
 		) {
-			const pricePerUnit = Number(p.price_per_unit ?? 0);
-			const unitSize = Number(p.unit_size ?? 1);
-			prices.inputPrice = pricePerUnit * unitSize * 1000000;
+			prices.inputPrice = toUsdPerMillion(p.price_per_unit, p.unit_size);
 			prices.tier = p.pricing_plan || "standard";
 		}
 		if (
 			(p.meter === "output_text_tokens" || p.meter === "output_tokens") &&
 			prices.outputPrice === 0
 		) {
-			const pricePerUnit = Number(p.price_per_unit ?? 0);
-			const unitSize = Number(p.unit_size ?? 1);
-			prices.outputPrice = pricePerUnit * unitSize * 1000000;
+			prices.outputPrice = toUsdPerMillion(p.price_per_unit, p.unit_size);
 			if (prices.tier === "standard") {
 				prices.tier = p.pricing_plan || "standard";
 			}

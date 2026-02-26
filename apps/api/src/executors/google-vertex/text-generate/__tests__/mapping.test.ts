@@ -40,6 +40,18 @@ describe("google-vertex irToGemini", () => {
 		expect(request.generationConfig?.thinkingConfig?.thinkingBudget).toBeUndefined();
 	});
 
+	it("maps reasoning.effort to thinkingLevel for gemini-3.1 image preview", async () => {
+		const request = await irToGemini({
+			model: "gemini-3.1-flash-image-preview",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			reasoning: { effort: "medium", enabled: true },
+		} as any, "gemini-3.1-flash-image-preview");
+
+		expect(request.generationConfig?.thinkingConfig?.thinkingLevel).toBe("MEDIUM");
+		expect(request.generationConfig?.thinkingConfig?.thinkingBudget).toBeUndefined();
+	});
+
 	it("maps imageConfig into generationConfig.imageConfig", async () => {
 		const request = await irToGemini({
 			model: "gemini-2.5-flash-image",
@@ -47,14 +59,29 @@ describe("google-vertex irToGemini", () => {
 			messages: [{ role: "user", content: [{ type: "text", text: "draw a cat" }] }],
 			imageConfig: {
 				aspectRatio: "1:1",
-				imageSize: "1024x1024",
+				imageSize: "0.5K",
+				includeRaiReason: true,
+				referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
 			},
 		} as any);
 
 		expect(request.generationConfig?.imageConfig).toEqual({
 			aspectRatio: "1:1",
-			imageSize: "1024x1024",
+			imageSize: "0.5K",
+			includeRaiReason: true,
+			referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
 		});
+	});
+
+	it("supports disabling thought inclusion explicitly", async () => {
+		const request = await irToGemini({
+			model: "gemini-3-pro",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+			reasoning: { includeThoughts: false, enabled: true },
+		} as any, "gemini-3-pro");
+
+		expect(request.generationConfig?.thinkingConfig?.includeThoughts).toBe(false);
 	});
 });
 

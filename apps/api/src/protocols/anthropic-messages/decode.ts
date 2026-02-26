@@ -48,7 +48,7 @@ export type AnthropicMessagesRequest = {
 	};
 	image_config?: {
 		aspect_ratio?: string;
-		image_size?: "1K" | "2K" | "4K";
+		image_size?: "0.5K" | "1K" | "2K" | "4K";
 		font_inputs?: Array<{ font_url?: string; text?: string }>;
 		super_resolution_references?: string[];
 	};

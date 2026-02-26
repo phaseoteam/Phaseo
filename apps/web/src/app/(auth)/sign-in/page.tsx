@@ -7,13 +7,21 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Login } from "@/components/(gateway)/auth/Login";
 
+type SignInPageProps = {
+	searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
 export const metadata: Metadata = {
 	title: "Sign In",
 	description:
 		"Sign in or sign up to unlock the AI Stats Gateway and start exploring insights.",
 };
 
-export default function Page() {
+export default async function Page({ searchParams }: SignInPageProps) {
+	const params = (await searchParams) ?? {};
+	const signup = Array.isArray(params.signup) ? params.signup[0] : params.signup;
+	const signupNotice = signup === "exists" || signup === "check-email" ? signup : null;
+
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">
 			{/* LEFT COL */}
@@ -33,7 +41,7 @@ export default function Page() {
 				<div className="flex flex-1 items-center justify-center">
 					<div className="mx-auto w-full max-w-xs">
 						<Suspense fallback={<div>Loading…</div>}>
-							<Login />
+							<Login signupNotice={signupNotice} />
 						</Suspense>
 					</div>
 				</div>

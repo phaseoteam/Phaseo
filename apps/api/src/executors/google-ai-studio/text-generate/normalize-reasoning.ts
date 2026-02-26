@@ -1,4 +1,5 @@
 import type { IRChatRequest, IRReasoning } from "@core/ir";
+import { modelSupportsGoogleThinkingLevels } from "../../google/shared/thinking";
 
 type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
@@ -25,7 +26,7 @@ function normalizeGoogleAIStudioReasoning(
 	if (!reasoning) return undefined;
 	const normalized: IRReasoning = { ...reasoning };
 	const maxTokens = typeof maxReasoningTokens === "number" ? maxReasoningTokens : undefined;
-	const isGemini3 = typeof model === "string" && model.startsWith("gemini-3");
+	const supportsThinkingLevel = modelSupportsGoogleThinkingLevels(model ?? "");
 
 	if (normalized.enabled === false || normalized.effort === "none") {
 		normalized.enabled = false;
@@ -34,7 +35,7 @@ function normalizeGoogleAIStudioReasoning(
 		return normalized;
 	}
 
-	if (isGemini3) {
+	if (supportsThinkingLevel) {
 		if (normalized.effort) {
 			delete normalized.maxTokens;
 		}

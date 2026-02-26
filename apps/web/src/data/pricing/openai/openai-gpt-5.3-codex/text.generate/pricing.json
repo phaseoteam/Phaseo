@@ -15,7 +15,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-02-24T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +28,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-02-24T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +41,8 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-02-24T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -51,7 +54,8 @@
       "pricing_plan": "priority",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-02-24T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -63,7 +67,8 @@
       "pricing_plan": "priority",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-02-24T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -75,7 +80,8 @@
       "pricing_plan": "priority",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-02-24T00:00:00"
     }
   ]
 }

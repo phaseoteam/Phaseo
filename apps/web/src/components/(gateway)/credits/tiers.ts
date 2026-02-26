@@ -1,7 +1,6 @@
 // Two-tier pricing system: Basic (7%) and Enterprise (5%)
-// Tier determination based on previous calendar month spending
-// - Upgrade: Spend >= $10k in previous month → Enterprise
-// - Downgrade: Spend < $10k for 3 consecutive months → Basic
+// Backend team tier is the source-of-truth.
+// Spend values are used for progress/projection in UI.
 
 export type GatewayTier = {
 	key: string;
@@ -17,20 +16,23 @@ export const GATEWAY_TIERS: readonly GatewayTier[] = [
 		name: "Basic",
 		threshold: 0,
 		feePct: 7.0,
-		description: "Standard pricing for all teams. Automatic upgrade to Enterprise after spending $10k+ in a month.",
+		description:
+			"Standard pricing for all teams. Automatic Enterprise qualification after $10k in a calendar month.",
 	},
 	{
 		key: "enterprise",
 		name: "Enterprise",
 		threshold: 10_000, // $10k threshold
 		feePct: 5.0,
-		description: "Premium pricing for high-volume teams. Maintained while spending $10k+ monthly.",
+		description:
+			"Premium pricing for high-volume teams with calendar-month qualification and lock-window grace.",
 	},
 ] as const;
 
 export type ComputeArgs = {
-	lastMonth: number;              // previous month total (currency units)
-	mtd: number;                    // month-to-date total (currency units)
+	lastMonth: number; // previous month total (currency units)
+	mtd: number; // month-to-date total (currency units)
+	currentTierKey?: string | null; // optional source-of-truth tier from backend
 	tiers?: readonly GatewayTier[]; // optional override
 };
 
@@ -39,7 +41,7 @@ export type TierComputation = {
 	current: GatewayTier;
 	next: GatewayTier | null;
 	topTier: boolean;
-	remainingToNext: number;  // based on MTD
+	remainingToNext: number; // based on MTD
 	savingVsBase: number;
 	projectedSavings: number;
 	nextDiscountDelta: number;
@@ -54,6 +56,7 @@ export type TierComputation = {
 export function computeTierInfo({
 	lastMonth,
 	mtd,
+	currentTierKey,
 	tiers = GATEWAY_TIERS,
 }: ComputeArgs): TierComputation {
 	const tierCount = tiers.length;
@@ -62,8 +65,14 @@ export function computeTierInfo({
 	const [basicTier, enterpriseTier] = tiers;
 	const enterpriseThreshold = enterpriseTier.threshold;
 
-	// Current tier is based on lastMonth only
-	const isEnterprise = lastMonth >= enterpriseThreshold;
+	// Current tier: prefer backend source-of-truth when present.
+	const normalizedCurrentTier = String(currentTierKey ?? "").trim().toLowerCase();
+	const isEnterprise =
+		normalizedCurrentTier === "enterprise"
+			? true
+			: normalizedCurrentTier === "basic"
+				? false
+				: lastMonth >= enterpriseThreshold;
 	const currentIndex = isEnterprise ? 1 : 0;
 	const current = tiers[currentIndex];
 	const topTier = currentIndex === tierCount - 1;
@@ -80,8 +89,10 @@ export function computeTierInfo({
 	// Savings vs Basic tier
 	const baseFee = basicTier.feePct;
 	const savingVsBase = Math.max(0, baseFee - current.feePct);
-	const projectedSavings = savingVsBase > 0 ? Math.max(0, (mtd * savingVsBase) / 100) : 0;
-	const nextDiscountDelta = !topTier && next ? Math.max(0, current.feePct - next.feePct) : 0;
+	const projectedSavings =
+		savingVsBase > 0 ? Math.max(0, (mtd * savingVsBase) / 100) : 0;
+	const nextDiscountDelta =
+		!topTier && next ? Math.max(0, current.feePct - next.feePct) : 0;
 
 	// Progress toward Enterprise tier (if on Basic)
 	const remainingToNext = !topTier && next ? Math.max(next.threshold - mtd, 0) : 0;

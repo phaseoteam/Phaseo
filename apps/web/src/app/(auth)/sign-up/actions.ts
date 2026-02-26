@@ -32,13 +32,27 @@ export async function handleEmailSignup(formData: FormData) {
     const supabase = await createClient()
     const email = String(formData.get('email') ?? '')
     const password = String(formData.get('password') ?? '')
+    const callbackUrl = `${process.env.NEXT_PUBLIC_WEBSITE_URL}/auth/callback`
 
-    // supabase signUp - returns error on failure
-    const { error } = await supabase.auth.signUp({ email, password })
-    if (error) redirect('/error?message=Authentication failed')
+    // Supabase signUp may return "User already registered" for duplicate emails.
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: callbackUrl },
+    })
+    if (error) {
+        const message = (error.message ?? '').toLowerCase()
+        if (message.includes('already registered') || message.includes('already exists')) {
+            redirect('/sign-in?signup=exists')
+        }
+        redirect(`/error?message=${encodeURIComponent(error.message || 'Authentication failed')}`)
+    }
 
     // Only remember the method, not the identifier
     await (await cookies()).set('auth_provider', 'email', cookieOpts)
 
-    redirect(`${process.env.NEXT_PUBLIC_WEBSITE_URL}/auth/callback?type=email`)
+    if (data?.session) {
+        redirect(`${callbackUrl}?type=email`)
+    }
+    redirect('/sign-in?signup=check-email')
 }

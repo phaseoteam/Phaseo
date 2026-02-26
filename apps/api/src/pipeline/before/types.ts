@@ -146,6 +146,7 @@ export type TeamSettings = {
     routingMode: string | null;
     byokFallbackEnabled: boolean | null;
     betaChannelEnabled: boolean | null;
+    billingMode: "wallet" | "invoice";
 };
 
 /**

@@ -4,6 +4,7 @@ import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import RecentTransactions from "@/components/(gateway)/credits/RecentTransactions";
+import EnterpriseInvoices from "@/components/(gateway)/credits/EnterpriseInvoices";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -23,6 +24,74 @@ export default function TransactionsPage() {
 async function TransactionsContent() {
 	const supabase = await createClient();
 	const teamId = await getTeamIdFromCookie();
+	let teamTier = "basic";
+	let billingMode: "wallet" | "invoice" = "wallet";
+
+	try {
+		const { data: teamRow, error: teamErr } = await supabase
+			.from("teams")
+			.select("tier,billing_mode")
+			.eq("id", teamId)
+			.maybeSingle();
+
+		if (!teamErr && teamRow) {
+			teamTier = String(teamRow.tier ?? "basic").toLowerCase();
+			billingMode =
+				String(teamRow.billing_mode ?? "wallet").toLowerCase() === "invoice"
+					? "invoice"
+					: "wallet";
+		}
+	} catch {
+		teamTier = "basic";
+		billingMode = "wallet";
+	}
+
+	const isEnterpriseInvoiceMode =
+		teamTier === "enterprise" && billingMode === "invoice";
+
+	if (isEnterpriseInvoiceMode) {
+		let invoices: any[] = [];
+		try {
+			const { data: rows, error: rowsErr } = await supabase
+				.from("team_invoices")
+				.select(
+					"id,period_start,period_end,amount_nanos,currency,status,stripe_invoice_id,stripe_invoice_number,due_at,issued_at,paid_at,created_at,updated_at",
+				)
+				.eq("team_id", teamId)
+				.order("period_end", { ascending: false })
+				.limit(250);
+
+			if (!rowsErr && rows) {
+				invoices = (rows as any[]).map((r) => ({
+					id: String(r.id),
+					period_start: String(r.period_start),
+					period_end: String(r.period_end),
+					amount_nanos: Number(r.amount_nanos ?? 0),
+					currency: r.currency ?? "USD",
+					status: String(r.status ?? "draft"),
+					stripe_invoice_id: r.stripe_invoice_id ?? null,
+					stripe_invoice_number: r.stripe_invoice_number ?? null,
+					due_at: r.due_at ?? null,
+					issued_at: r.issued_at ?? null,
+					paid_at: r.paid_at ?? null,
+					created_at: r.created_at ?? null,
+					updated_at: r.updated_at ?? null,
+				}));
+			}
+		} catch {
+			invoices = [];
+		}
+
+		return (
+			<div className="space-y-6">
+				<SettingsPageHeader
+					title="Invoices"
+					description="Enterprise billing records and invoice documents."
+				/>
+				<EnterpriseInvoices invoices={invoices} />
+			</div>
+		);
+	}
 
 	let stripeCustomerId: string | null = null;
 	let transactions: any[] = [];

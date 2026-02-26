@@ -109,3 +109,20 @@ export const normalizeEndpoint = (endpoint?: string | null) => {
     const trimmed = endpoint?.replace(/\uFFFD/g, "").trim();
     return trimmed || "";
 };
+
+/**
+ * Convert a pricing rule value into USD per 1,000,000 units.
+ * For token meters this yields the table display unit ($ / 1M tokens).
+ */
+export const toUsdPerMillion = (
+    pricePerUnitRaw: unknown,
+    unitSizeRaw: unknown
+): number => {
+    const pricePerUnit = Number(pricePerUnitRaw ?? 0);
+    const unitSize = Number(unitSizeRaw ?? 1);
+
+    if (!Number.isFinite(pricePerUnit) || pricePerUnit <= 0) return 0;
+    if (!Number.isFinite(unitSize) || unitSize <= 0) return 0;
+
+    return pricePerUnit * (1_000_000 / unitSize);
+};

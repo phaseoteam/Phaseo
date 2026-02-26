@@ -27,7 +27,8 @@
 		"test:live:all-providers": "tsx scripts/run-live-provider-tests.ts --all-providers",
 		"test:live:all-api-providers": "tsx scripts/run-live-provider-tests.ts --all-api-providers",
 		"test:live:nano-banana": "pnpm exec vitest run tests/integration/nano-banana-image.live.spec.ts",
-		"test:live:video:sora": "tsx scripts/sora-video-live.ts"
+		"test:live:video:sora": "tsx scripts/sora-video-live.ts",
+		"report:missing-discovered-models": "tsx scripts/report-missing-discovered-models.ts"
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.56.1",

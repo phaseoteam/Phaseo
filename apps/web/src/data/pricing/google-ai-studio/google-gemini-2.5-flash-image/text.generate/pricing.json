@@ -32,10 +32,10 @@
       "effective_from": "2025-08-25T00:00:00"
     },
     {
-      "meter": "output_image",
-      "unit": "image",
-      "unit_size": 1,
-      "price_per_unit": 0.039,
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 30.0,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "standard",

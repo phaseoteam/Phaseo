@@ -144,6 +144,7 @@ export type IRReasoning = {
 	summary?: "auto" | "concise" | "detailed";
 	enabled?: boolean;
 	maxTokens?: number;
+	includeThoughts?: boolean;
 };
 
 /**
@@ -164,9 +165,17 @@ export type IRImageConfig = {
 	 */
 	aspectRatio?: string;
 	/**
-	 * Output image resolution tiers used by some models (for example: "1K", "2K", "4K")
+	 * Output image resolution tiers used by some models.
 	 */
-	imageSize?: "1K" | "2K" | "4K";
+	imageSize?: "0.5K" | "1K" | "2K" | "4K";
+	/**
+	 * Include model safety/RAI explanation in the response when supported.
+	 */
+	includeRaiReason?: boolean;
+	/**
+	 * Provider-native reference image payloads (for example Gemini imageConfig.referenceImages).
+	 */
+	referenceImages?: Array<Record<string, any>>;
 	/**
 	 * Custom font rendering inputs (provider-specific)
 	 */

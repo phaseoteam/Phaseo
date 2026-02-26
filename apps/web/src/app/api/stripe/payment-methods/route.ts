@@ -89,7 +89,7 @@ async function listPaymentMethods(stripe: Stripe, customerId: string) {
 
 export async function GET() {
     try {
-        const { customerId } = await requireActiveTeamStripeCustomer();
+        const { customerId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
         const stripe = getStripe();
         const payload = await listPaymentMethods(stripe, customerId);
         return NextResponse.json(payload);
@@ -105,7 +105,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const stripe = getStripe();
-        const { customerId, teamId } = await requireActiveTeamStripeCustomer();
+        const { customerId, teamId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
         const body = await request.json().catch(() => ({}));
         const returnUrl = resolveSafeReturnUrl(request, body?.returnUrl);
 
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
     try {
         const stripe = getStripe();
-        const { customerId } = await requireActiveTeamStripeCustomer();
+        const { customerId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
         const body = await request.json().catch(() => ({}));
         const paymentMethodId = typeof body?.paymentMethodId === "string" ? body.paymentMethodId.trim() : "";
         if (!paymentMethodId) {
@@ -174,7 +174,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const stripe = getStripe();
-        const { customerId, teamId } = await requireActiveTeamStripeCustomer();
+        const { customerId, teamId } = await requireActiveTeamStripeCustomer({ createIfMissing: true });
         const body = await request.json().catch(() => ({}));
         const paymentMethodId = typeof body?.paymentMethodId === "string" ? body.paymentMethodId.trim() : "";
         if (!paymentMethodId) {

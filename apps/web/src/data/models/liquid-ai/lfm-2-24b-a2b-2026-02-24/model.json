@@ -1,0 +1,17 @@
+{
+  "model_id": "liquid-ai/lfm-2-24b-a2b-2026-02-24",
+  "organisation_id": "liquid-ai",
+  "name": "LFM 2 24B A2B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-02-24T00:00:00",
+  "release_date": "2026-02-24T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "LFM 1.0",
+  "input_types": "text",
+  "output_types": "text",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

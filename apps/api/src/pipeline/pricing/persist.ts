@@ -37,6 +37,25 @@ export async function recordUsageAndCharge(args: {
     try {
         const supabase = getSupabaseAdmin();
 
+        // Enterprise invoice mode is post-paid: skip wallet debit + auto top-up.
+        // Usage is still recorded in gateway_requests during the after-stage.
+        try {
+            const { data: teamRow, error: teamErr } = await supabase
+                .from("teams")
+                .select("tier,billing_mode")
+                .eq("id", args.teamId)
+                .maybeSingle();
+            if (!teamErr) {
+                const tier = String(teamRow?.tier ?? "basic").toLowerCase();
+                const billingMode = String(teamRow?.billing_mode ?? "wallet").toLowerCase();
+                if (tier === "enterprise" && billingMode === "invoice") {
+                    return;
+                }
+            }
+        } catch {
+            // Continue with wallet flow if team billing state cannot be read.
+        }
+
         const { data, error } = await supabase.rpc('deduct_and_check_top_up', {
             p_team_id: args.teamId,
             p_cost_nanos: args.cost_nanos

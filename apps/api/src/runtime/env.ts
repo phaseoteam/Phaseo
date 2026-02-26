@@ -30,6 +30,7 @@ export type GatewayBindings = {
     XAI_DEBUG_USAGE?: string;
     AI21_API_KEY?: string;
     AI21_BASE_URL?: string;
+    ALIBABA_CLOUD_API_KEY?: string;
     ALIBABA_API_KEY?: string;
     ALIBABA_BASE_URL?: string;
     AMAZON_BEDROCK_API_KEY?: string;
@@ -70,6 +71,7 @@ export type GatewayBindings = {
     FRIENDLI_TOKEN?: string;
     FRIENDLI_BASE_URL?: string;
     GMI_API_KEY?: string;
+    GMI_CLOUD_API_KEY?: string;
     GMI_BASE_URL?: string;
     GROQ_API_KEY?: string;
     GROQ_BASE_URL?: string;
@@ -98,6 +100,7 @@ export type GatewayBindings = {
     MISTRAL_AI_API_KEY?: string;
     MISTRAL_BASE_URL?: string;
     ELEVENLABS_API_KEY?: string;
+    ELEVEN_LABS_API_KEY?: string;
     ELEVENLABS_BASE_URL?: string;
     SUNO_API_KEY?: string;
     SUNO_BASE_URL?: string;
@@ -108,7 +111,12 @@ export type GatewayBindings = {
     MORPHEUS_API_KEY?: string;
     MORPHEUS_BASE_URL?: string;
     NEBIUS_API_KEY?: string;
+    NEBIUS_TOKEN_FACTORY_API_KEY?: string;
     NEBIUS_BASE_URL?: string;
+    NEXTBIT_API_KEY?: string;
+    STEPFUN_API_KEY?: string;
+    VENICE_API_KEY?: string;
+    WEIGHTSANDBIASES_API_KEY?: string;
     BLACK_FOREST_LABS_API_KEY?: string;
     BFL_API_KEY?: string;
     BLACK_FOREST_LABS_BASE_URL?: string;
@@ -152,8 +160,18 @@ export type GatewayBindings = {
     RESEND_FROM_EMAIL?: string;
     RESEND_TEMPLATE_WELCOME_ID?: string;
     RESEND_TEMPLATE_LOW_BALANCE_ID?: string;
+    DISCORD_WEBHOOK_URL?: string;
+    DISCORD_USER_ID?: string;
     KEY_PEPPER?: string;
     GATEWAY_LOCAL_TESTING_MODE?: string;
+    MODEL_DISCOVERY_ENABLED?: string;
+    MODEL_DISCOVERY_RETENTION_DAYS?: string;
+    MODEL_DISCOVERY_SHARD_SIZE?: string;
+    MODEL_DISCOVERY_INTERNAL_BASE_URL?: string;
+    MODEL_DISCOVERY_INTERNAL_TOKEN?: string;
+    ENTERPRISE_INVOICING_ENABLED?: string;
+    STRIPE_SECRET_KEY?: string;
+    TEST_STRIPE_SECRET_KEY?: string;
     NODE_ENV?: string;
     BYOK_KMS_KEY_V1_B64?: string;
     BYOK_ACTIVE_KEY_VERSION?: string;
@@ -194,6 +212,7 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "XAI_DEBUG_USAGE",
     "AI21_API_KEY",
     "AI21_BASE_URL",
+    "ALIBABA_CLOUD_API_KEY",
     "ALIBABA_API_KEY",
     "ALIBABA_BASE_URL",
     "AMAZON_BEDROCK_API_KEY",
@@ -234,6 +253,7 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "FRIENDLI_TOKEN",
     "FRIENDLI_BASE_URL",
     "GMI_API_KEY",
+    "GMI_CLOUD_API_KEY",
     "GMI_BASE_URL",
     "GROQ_API_KEY",
     "GROQ_BASE_URL",
@@ -262,6 +282,7 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "MISTRAL_AI_API_KEY",
     "MISTRAL_BASE_URL",
     "ELEVENLABS_API_KEY",
+    "ELEVEN_LABS_API_KEY",
     "ELEVENLABS_BASE_URL",
     "SUNO_API_KEY",
     "SUNO_BASE_URL",
@@ -272,7 +293,12 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "MORPHEUS_API_KEY",
     "MORPHEUS_BASE_URL",
     "NEBIUS_API_KEY",
+    "NEBIUS_TOKEN_FACTORY_API_KEY",
     "NEBIUS_BASE_URL",
+    "NEXTBIT_API_KEY",
+    "STEPFUN_API_KEY",
+    "VENICE_API_KEY",
+    "WEIGHTSANDBIASES_API_KEY",
     "BLACK_FOREST_LABS_API_KEY",
     "BFL_API_KEY",
     "BLACK_FOREST_LABS_BASE_URL",
@@ -316,7 +342,17 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "RESEND_FROM_EMAIL",
     "RESEND_TEMPLATE_WELCOME_ID",
     "RESEND_TEMPLATE_LOW_BALANCE_ID",
+    "DISCORD_WEBHOOK_URL",
+    "DISCORD_USER_ID",
     "NODE_ENV",
+    "MODEL_DISCOVERY_ENABLED",
+    "MODEL_DISCOVERY_RETENTION_DAYS",
+    "MODEL_DISCOVERY_SHARD_SIZE",
+    "MODEL_DISCOVERY_INTERNAL_BASE_URL",
+    "MODEL_DISCOVERY_INTERNAL_TOKEN",
+    "ENTERPRISE_INVOICING_ENABLED",
+    "STRIPE_SECRET_KEY",
+    "TEST_STRIPE_SECRET_KEY",
     "BYOK_KMS_KEY_V1_B64",
     "BYOK_ACTIVE_KEY_VERSION",
 ];

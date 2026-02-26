@@ -133,5 +133,20 @@
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5",
+    "provider_api_model_id": "baseten:z-ai/glm-5",
+    "provider_model_slug": "zai-org/GLM-5",
+    "internal_model_id": "z-ai/glm-5-2026-02-11",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

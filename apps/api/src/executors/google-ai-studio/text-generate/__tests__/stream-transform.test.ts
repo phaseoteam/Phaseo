@@ -111,6 +111,40 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
 	});
 
+	it("emits reasoning_content deltas for Gemini thought parts", async () => {
+		const upstream = makeGeminiSseStream([
+			{
+				candidates: [{
+					index: 0,
+					content: {
+						parts: [{
+							text: "thinking trace",
+							thought: true,
+						}],
+					},
+					finishReason: "STOP",
+				}],
+				usageMetadata: {
+					promptTokenCount: 5,
+					candidatesTokenCount: 3,
+					totalTokenCount: 8,
+					thoughtsTokenCount: 2,
+				},
+			},
+		]);
+
+		const stream = transformStream(upstream, baseArgs({
+			ir: {
+				model: "gemini-3.1-flash-image-preview",
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+				stream: true,
+			},
+		}));
+		const output = await readStreamText(stream);
+
+		expect(output).toContain("\"reasoning_content\":\"thinking trace\"");
+	});
+
 	it("emits image deltas when Gemini stream returns inlineData image parts", async () => {
 		const upstream = makeGeminiSseStream([
 			{

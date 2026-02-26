@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
 	normalizeImageConfig,
+	normalizeModalities,
 	normalizeOpenAIToolChoice,
+	normalizeThinkingConfig,
 	normalizeResponseFormat,
 	resolveServiceTierFromSpeedAndTier,
 } from "./text-normalizers";
@@ -55,10 +57,55 @@ describe("normalizeImageConfig", () => {
 		});
 	});
 
+	it("accepts camelCase aliases and reference image passthrough fields", () => {
+		expect(
+			normalizeImageConfig({
+				aspectRatio: "9:16",
+				imageSize: "0.5K",
+				includeRaiReason: true,
+				referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
+			}),
+		).toEqual({
+			aspectRatio: "9:16",
+			imageSize: "0.5K",
+			includeRaiReason: true,
+			referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
+			fontInputs: undefined,
+			superResolutionReferences: undefined,
+		});
+	});
+
 	it("returns undefined for non-object values", () => {
 		expect(normalizeImageConfig(null)).toBeUndefined();
 		expect(normalizeImageConfig(undefined)).toBeUndefined();
 		expect(normalizeImageConfig("foo")).toBeUndefined();
+	});
+});
+
+describe("normalizeModalities", () => {
+	it("normalizes casing and response modality aliases", () => {
+		expect(normalizeModalities(["IMAGE", "text", "images"])).toEqual([
+			"image",
+			"text",
+		]);
+	});
+});
+
+describe("normalizeThinkingConfig", () => {
+	it("maps generic thinking controls to IR reasoning", () => {
+		expect(
+			normalizeThinkingConfig({
+				enabled: true,
+				effort: "high",
+				max_tokens: 1200,
+				include_thoughts: false,
+			}),
+		).toEqual({
+			enabled: true,
+			effort: "high",
+			maxTokens: 1200,
+			includeThoughts: false,
+		});
 	});
 });
 

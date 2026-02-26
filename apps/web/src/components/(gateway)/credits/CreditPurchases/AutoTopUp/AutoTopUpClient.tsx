@@ -57,6 +57,7 @@ interface Wallet {
 interface Props {
 	wallet?: Wallet | null;
 	stripeInfo?: StripeInfo | null;
+	embedded?: boolean;
 }
 
 const fmtUSD = (v: number) =>
@@ -76,7 +77,11 @@ function getDefaultPmId(info?: StripeInfo | null): string | null {
 	return first ?? null;
 }
 
-export default function AutoTopUpClient({ wallet, stripeInfo }: Props) {
+export default function AutoTopUpClient({
+	wallet,
+	stripeInfo,
+	embedded = false,
+}: Props) {
 	// Compute current "best" default PM based on provided stripeInfo
 	const initialDefaultPm = useMemo(
 		() => getDefaultPmId(stripeInfo),
@@ -265,10 +270,22 @@ export default function AutoTopUpClient({ wallet, stripeInfo }: Props) {
 		);
 	}
 
+	const Container = embedded ? "div" : Card;
+
 	return (
-		<Card>
-			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle className="flex items-center gap-2">
+		<Container className={embedded ? "space-y-4" : undefined}>
+			<CardHeader
+				className={cn(
+					"flex flex-row items-center justify-between pb-0",
+					embedded && "p-0"
+				)}
+			>
+				<CardTitle
+					className={cn(
+						"flex items-center gap-2",
+						embedded && "text-base font-semibold"
+					)}
+				>
 					Auto Top-Up
 					<Tooltip>
 						<TooltipTrigger asChild>
@@ -294,9 +311,9 @@ export default function AutoTopUpClient({ wallet, stripeInfo }: Props) {
 				</Badge>
 			</CardHeader>
 
-			<Separator className="my-4" />
+			<Separator className={embedded ? "" : "my-4"} />
 
-			<CardContent className="space-y-4">
+			<CardContent className={cn("space-y-4", embedded && "p-0")}>
 				<Dialog open={open} onOpenChange={setOpen}>
 					<DialogTrigger asChild>
 						<Button variant="outline" className="w-full">
@@ -611,6 +628,6 @@ export default function AutoTopUpClient({ wallet, stripeInfo }: Props) {
 					</div>
 				</div>
 			</CardContent>
-		</Card>
+		</Container>
 	);
 }

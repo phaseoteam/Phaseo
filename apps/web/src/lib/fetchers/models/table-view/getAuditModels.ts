@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { cacheLife, cacheTag } from "next/cache";
+import { toUsdPerMillion } from "./helpers";
 
 export interface AuditModelData {
 	modelId: string;
@@ -149,9 +150,7 @@ export async function getAuditModels(
 			});
 		}
 		const prices = pricingByKey.get(p.model_key)!;
-		const pricePerUnit = Number(p.price_per_unit ?? 0);
-		const unitSize = Number(p.unit_size ?? 1);
-		const pricePerMillion = pricePerUnit * unitSize * 1000000;
+		const pricePerMillion = toUsdPerMillion(p.price_per_unit, p.unit_size);
 
 		if (
 			(p.meter === "input_text_tokens" || p.meter === "input_tokens") &&

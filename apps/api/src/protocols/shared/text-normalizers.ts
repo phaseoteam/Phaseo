@@ -2,7 +2,7 @@
 // Why: Avoid drift across chat/responses decoders for common field mappings.
 // How: Centralizes conversion of request surface fields to IR-compatible values.
 
-import type { IRChatRequest } from "@core/ir";
+import type { IRChatRequest, IRReasoning } from "@core/ir";
 
 export function normalizeResponseFormat(
 	format: unknown,
@@ -52,16 +52,101 @@ export function normalizeImageConfig(
 
 	const value = imageConfig as Record<string, any>;
 	return {
-		aspectRatio: value.aspect_ratio,
-		imageSize: value.image_size,
+		aspectRatio: value.aspect_ratio ?? value.aspectRatio,
+		imageSize: value.image_size ?? value.imageSize,
 		fontInputs: Array.isArray(value.font_inputs)
 			? value.font_inputs.map((entry: any) => ({
 				fontUrl: entry?.font_url,
 				text: entry?.text,
 			}))
+			: Array.isArray(value.fontInputs)
+				? value.fontInputs.map((entry: any) => ({
+					fontUrl: entry?.fontUrl ?? entry?.font_url,
+					text: entry?.text,
+				}))
 			: undefined,
-		superResolutionReferences: value.super_resolution_references,
+		superResolutionReferences:
+			value.super_resolution_references ?? value.superResolutionReferences,
+		includeRaiReason: value.include_rai_reason ?? value.includeRaiReason,
+		referenceImages: Array.isArray(value.reference_images)
+			? value.reference_images
+			: Array.isArray(value.referenceImages)
+				? value.referenceImages
+				: undefined,
 	};
+}
+
+export function normalizeModalities(
+	modalities: unknown,
+): IRChatRequest["modalities"] {
+	const values = Array.isArray(modalities) ? modalities : [modalities];
+	const mapped = values
+		.map((value) => (typeof value === "string" ? value.trim().toLowerCase() : ""))
+		.map((value) => {
+			if (value === "text") return "text";
+			if (value === "image" || value === "images") return "image";
+			return "";
+		})
+		.filter((value): value is "text" | "image" => value === "text" || value === "image");
+
+	return mapped.length > 0 ? Array.from(new Set(mapped)) : undefined;
+}
+
+export function normalizeThinkingConfig(thinking: unknown): IRReasoning | undefined {
+	if (!thinking || typeof thinking !== "object") return undefined;
+	const value = thinking as Record<string, any>;
+
+	const enabledFromType =
+		typeof value.type === "string"
+			? value.type.toLowerCase() === "enabled" || value.type.toLowerCase() === "adaptive"
+			: undefined;
+	const effortRaw =
+		typeof value.effort === "string" ? value.effort.toLowerCase() : undefined;
+	const effort: IRReasoning["effort"] =
+		effortRaw === "none" ||
+		effortRaw === "minimal" ||
+		effortRaw === "low" ||
+		effortRaw === "medium" ||
+		effortRaw === "high" ||
+		effortRaw === "xhigh" ||
+		effortRaw === "max"
+			? effortRaw
+			: undefined;
+	const maxTokens = (() => {
+		const candidate =
+			value.max_tokens ??
+			value.maxTokens ??
+			value.budget_tokens ??
+			value.budgetTokens ??
+			value.thinking_budget ??
+			value.thinkingBudget;
+		return typeof candidate === "number" && Number.isFinite(candidate) ? candidate : undefined;
+	})();
+	const includeThoughts = (() => {
+		const candidate = value.include_thoughts ?? value.includeThoughts;
+		return typeof candidate === "boolean" ? candidate : undefined;
+	})();
+
+	const reasoning: IRReasoning = {
+		enabled:
+			typeof value.enabled === "boolean"
+				? value.enabled
+				: enabledFromType,
+		effort,
+		maxTokens,
+		includeThoughts,
+	};
+
+	if (
+		reasoning.enabled === undefined &&
+		reasoning.effort === undefined &&
+		reasoning.maxTokens === undefined &&
+		reasoning.includeThoughts === undefined
+	) {
+		return undefined;
+	}
+
+	return reasoning;
 }
 
 export function normalizeOpenAIToolChoice(

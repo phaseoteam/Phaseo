@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -10,9 +11,18 @@ import { CreditAmount } from "./CreditAmount";
 
 interface Props {
 	balance: number;
+	title?: string;
+	subtitle?: string | null;
+	refreshAriaLabel?: string;
 }
 
-export default function CurrentCredits({ balance }: Props) {
+export default function CurrentCredits({
+	balance,
+	title = "Current Balance",
+	subtitle = null,
+	refreshAriaLabel = "refresh balance",
+}: Props) {
+	const router = useRouter();
 	const [refreshing, setRefreshing] = useState(false);
 
 	async function handleRefresh() {
@@ -27,6 +37,8 @@ export default function CurrentCredits({ balance }: Props) {
 				success: "Credits refreshed",
 				error: () => "Failed to refresh credits",
 			});
+			// Pull fresh server component data for the current route.
+			router.refresh();
 		} catch {
 			// Errors are handled by toast.promise's error handler
 		} finally {
@@ -45,11 +57,11 @@ export default function CurrentCredits({ balance }: Props) {
 			<Card>
 				<CardHeader className="pb-0">
 					<div className="flex items-center justify-between w-full">
-						<CardTitle>Current Balance</CardTitle>
+						<CardTitle>{title}</CardTitle>
 						<Button
 							variant="ghost"
 							size="icon"
-							aria-label="refresh balance"
+							aria-label={refreshAriaLabel}
 							onClick={handleRefresh}
 							disabled={refreshing}
 						>
@@ -63,6 +75,11 @@ export default function CurrentCredits({ balance }: Props) {
 				</CardHeader>
 
 				<CardContent className="pt-4">
+					{subtitle ? (
+						<p className="text-xs text-muted-foreground mb-2">
+							{subtitle}
+						</p>
+					) : null}
 					<div>
 						<CreditAmount
 							value={balance}

@@ -18,6 +18,10 @@ import { resolveStreamForProtocol } from "@executors/_shared/text-generate/opena
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../../google/shared/media";
 import { resolveGoogleModelCandidates } from "../../google/shared/model";
+import {
+	modelSupportsGoogleThinkingLevels,
+	resolveGoogleThinkingLevelForEffort,
+} from "../../google/shared/thinking";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 
 /**
@@ -99,24 +103,23 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	}
 
 	// Thinking mode support (Gemini 2.x and 3.x)
-	if (ir.reasoning?.enabled || ir.reasoning?.effort || (ir.reasoning?.maxTokens !== undefined)) {
+	if (
+		ir.reasoning?.enabled ||
+		ir.reasoning?.effort ||
+		(ir.reasoning?.maxTokens !== undefined) ||
+		(ir.reasoning?.includeThoughts !== undefined)
+	) {
 		const thinkingConfig: any = {
-			includeThoughts: true
+			includeThoughts: ir.reasoning?.includeThoughts ?? true
 		};
 
 		const modelName = modelOverride ?? ir.model;
-		const isGemini3 = typeof modelName === "string" && modelName.startsWith("gemini-3");
+		const supportsThinkingLevel = modelSupportsGoogleThinkingLevels(modelName ?? "");
 
 		// Gemini 3+ Thinking Level
-		if (ir.reasoning?.effort && isGemini3) {
-			const levelMap: Record<string, string> = {
-				minimal: "MINIMAL",
-				low: "LOW",
-				medium: "MEDIUM",
-				high: "HIGH",
-				xhigh: "HIGH"
-			};
-			thinkingConfig.thinkingLevel = levelMap[ir.reasoning.effort] || "HIGH";
+		if (ir.reasoning?.effort && supportsThinkingLevel) {
+			const level = resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning.effort);
+			if (level) thinkingConfig.thinkingLevel = level;
 		}
 		// Gemini 2.x Thinking Budget (or fallback for Gemini 3 if effort not set)
 		else if (ir.reasoning?.maxTokens !== undefined) {
@@ -124,7 +127,7 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 			thinkingConfig.thinkingBudget = ir.reasoning.maxTokens;
 		} else if (ir.reasoning?.enabled) {
 			// default to dynamic/high
-			if (isGemini3) {
+			if (supportsThinkingLevel) {
 				thinkingConfig.thinkingLevel = "HIGH";
 			} else {
 				thinkingConfig.thinkingBudget = -1;
@@ -179,6 +182,17 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 
 		if (ir.imageConfig.imageSize) {
 			imageConfig.imageSize = ir.imageConfig.imageSize;
+		}
+
+		if (typeof ir.imageConfig.includeRaiReason === "boolean") {
+			imageConfig.includeRaiReason = ir.imageConfig.includeRaiReason;
+		}
+
+		if (
+			Array.isArray(ir.imageConfig.referenceImages) &&
+			ir.imageConfig.referenceImages.length > 0
+		) {
+			imageConfig.referenceImages = ir.imageConfig.referenceImages;
 		}
 
 		if (Object.keys(imageConfig).length > 0) {

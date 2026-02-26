@@ -67,14 +67,27 @@ const BetaOptionsSchema = z.object({
 
 const ImageConfigSchema = z.object({
     aspect_ratio: z.string().optional(),
-    image_size: z.enum(["1K", "2K", "4K"]).optional(),
+    aspectRatio: z.string().optional(),
+    image_size: z.enum(["0.5K", "1K", "2K", "4K"]).optional(),
+    imageSize: z.enum(["0.5K", "1K", "2K", "4K"]).optional(),
     font_inputs: z.array(
         z.object({
             font_url: z.string().url(),
             text: z.string(),
         }),
     ).optional(),
+    fontInputs: z.array(
+        z.object({
+            fontUrl: z.string().url(),
+            text: z.string(),
+        }),
+    ).optional(),
     super_resolution_references: z.array(z.string()).optional(),
+    superResolutionReferences: z.array(z.string()).optional(),
+    include_rai_reason: z.boolean().optional(),
+    includeRaiReason: z.boolean().optional(),
+    reference_images: z.array(z.any()).optional(),
+    referenceImages: z.array(z.any()).optional(),
 }).catchall(
     z.union([
         z.string(),
@@ -152,13 +165,26 @@ export const ResponsesSchema = z.object({
     }).optional(),
     prompt_cache_key: z.string().nullable().optional(),
     prompt_cache_retention: z.string().optional(),
-    modalities: z.array(z.enum(["text", "image"])).optional(),
+    modalities: z.array(z.string()).optional(),
+    response_modalities: z.array(z.string()).optional(),
+    responseModalities: z.array(z.string()).optional(),
     image_config: ImageConfigSchema,
+    imageConfig: ImageConfigSchema,
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh"]).nullable().optional(),
         summary: z.string().nullable().optional(),
         enabled: z.boolean().nullable().optional(),
         max_tokens: z.number().int().nonnegative().nullable().optional(),
+    }).optional(),
+    thinking: z.object({
+        enabled: z.boolean().optional(),
+        include_thoughts: z.boolean().optional(),
+        includeThoughts: z.boolean().optional(),
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
+        max_tokens: z.number().int().nonnegative().optional(),
+        maxTokens: z.number().int().nonnegative().optional(),
+        budget_tokens: z.number().int().nonnegative().optional(),
+        budgetTokens: z.number().int().nonnegative().optional(),
     }).optional(),
     safety_identifier: z.string().nullable().optional(),
     service_tier: z.string().optional(),
@@ -255,7 +281,7 @@ const TextPartSchema = z.object({
 const ImageUrlPartSchema = z.object({
     type: z.literal("image_url"),
     image_url: z.object({
-        url: z.string().url(),
+        url: z.string().min(1),
     }),
 });
 
@@ -359,6 +385,16 @@ export const ChatCompletionsSchema = z.object({
         enabled: z.boolean().optional(),
         max_tokens: z.number().int().nonnegative().optional(),
     }).optional(),
+    thinking: z.object({
+        enabled: z.boolean().optional(),
+        include_thoughts: z.boolean().optional(),
+        includeThoughts: z.boolean().optional(),
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
+        max_tokens: z.number().int().nonnegative().optional(),
+        maxTokens: z.number().int().nonnegative().optional(),
+        budget_tokens: z.number().int().nonnegative().optional(),
+        budgetTokens: z.number().int().nonnegative().optional(),
+    }).optional(),
     frequency_penalty: z.number().min(-2).max(2).optional(),
     logit_bias: z.record(z.number()).optional(),
     max_completion_tokens: z.number().int().positive().optional(),
@@ -396,8 +432,11 @@ export const ChatCompletionsSchema = z.object({
     top_p: z.number().min(0).max(1).optional(),
     stop: z.union([z.string(), z.array(z.string())]).optional(),
     response_format: ResponseFormatSchema.optional(),
-    modalities: z.array(z.enum(["text", "image"])).optional(),
+    modalities: z.array(z.string()).optional(),
+    response_modalities: z.array(z.string()).optional(),
+    responseModalities: z.array(z.string()).optional(),
     image_config: ImageConfigSchema,
+    imageConfig: ImageConfigSchema,
     // This is used as the safety identifer/userid across providers
     user_id: z.string().optional(),
     user: z.string().optional(),
@@ -501,8 +540,11 @@ export const AnthropicMessagesSchema = z.object({
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
     }).optional(),
-    modalities: z.array(z.enum(["text", "image"])).optional(),
+    modalities: z.array(z.string()).optional(),
+    response_modalities: z.array(z.string()).optional(),
+    responseModalities: z.array(z.string()).optional(),
     image_config: ImageConfigSchema,
+    imageConfig: ImageConfigSchema,
     stop_sequences: z.array(z.string()).optional(),
     // Gateway-only flags (not forwarded upstream)
     meta: z.boolean().optional(),

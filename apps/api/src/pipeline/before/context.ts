@@ -208,6 +208,76 @@ function isWithinEffectiveWindow(
     return true;
 }
 
+function splitProviderScopedModel(model: string): { providerId: string; providerModelSlug: string } | null {
+    const value = String(model ?? "").trim();
+    const slash = value.indexOf("/");
+    if (slash <= 0 || slash === value.length - 1) return null;
+    const providerId = value.slice(0, slash).trim().toLowerCase();
+    const providerModelSlug = value.slice(slash + 1).trim();
+    if (!providerId || !providerModelSlug) return null;
+    return { providerId, providerModelSlug };
+}
+
+type ProviderScopedModelRow = {
+    provider_api_model_id: string | null;
+    api_model_id: string | null;
+    effective_from: string | null;
+    effective_to: string | null;
+};
+
+async function resolveProviderScopedModelToApiModel(args: {
+    model: string;
+    endpoint: string;
+}): Promise<string | null> {
+    const split = splitProviderScopedModel(args.model);
+    if (!split) return null;
+
+    const supabase = getSupabaseAdmin();
+    const nowMs = Date.now();
+    const { data: rows, error } = await supabase
+        .from("data_api_provider_models")
+        .select("provider_api_model_id,api_model_id,effective_from,effective_to")
+        .eq("provider_id", split.providerId)
+        .eq("provider_model_slug", split.providerModelSlug)
+        .eq("is_active_gateway", true);
+    if (error || !rows?.length) return null;
+
+    const inWindow = (rows as ProviderScopedModelRow[])
+        .filter((row) => typeof row.provider_api_model_id === "string" && typeof row.api_model_id === "string")
+        .filter((row) => isWithinEffectiveWindow(row.effective_from, row.effective_to, nowMs));
+    if (!inWindow.length) return null;
+
+    const providerApiModelIds = Array.from(
+        new Set(
+            inWindow
+                .map((row) => row.provider_api_model_id)
+                .filter((id): id is string => typeof id === "string" && id.length > 0)
+        )
+    );
+    if (!providerApiModelIds.length) return null;
+
+    const { data: capabilityRows, error: capabilityError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id")
+        .eq("capability_id", args.endpoint)
+        .eq("status", "active")
+        .in("provider_api_model_id", providerApiModelIds);
+    if (capabilityError || !capabilityRows?.length) return null;
+
+    const supportedIds = new Set(
+        capabilityRows
+            .map((row: any) => row?.provider_api_model_id)
+            .filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
+    );
+
+    const candidates = inWindow
+        .filter((row) => row.provider_api_model_id && supportedIds.has(row.provider_api_model_id))
+        .sort((a, b) => toMillis(b.effective_from) - toMillis(a.effective_from));
+    if (!candidates.length) return null;
+
+    return candidates[0]?.api_model_id ?? null;
+}
+
 async function fetchTestingProviderSnapshots(args: {
     teamId: string;
     model: string;
@@ -429,26 +499,41 @@ export async function fetchGatewayContext(args: {
         }
     }
 
-    // Cache miss - fetch from database
-    const { data, error } = await supabase.rpc("gateway_fetch_request_context", {
-        team_id: args.teamId,
-        model: args.model,
-        endpoint: args.endpoint,
-        api_key_id: args.apiKeyId,
-    });
+    async function fetchParsedContext(model: string): Promise<GatewayContextData> {
+        const { data, error } = await supabase.rpc("gateway_fetch_request_context", {
+            team_id: args.teamId,
+            model,
+            endpoint: args.endpoint,
+            api_key_id: args.apiKeyId,
+        });
 
-    if (error) throw new Error(`gateway_context_rpc_error:${error.message ?? "unknown"}`);
+        if (error) throw new Error(`gateway_context_rpc_error:${error.message ?? "unknown"}`);
+        const payload = Array.isArray(data) ? (data.length ? data[0] : null) : data;
+        if (!payload) throw new Error("gateway_context_rpc_empty");
 
-    const payload = Array.isArray(data) ? (data.length ? data[0] : null) : data;
-    if (!payload) throw new Error("gateway_context_rpc_empty");
+        try {
+            return contextSchema.parse(payload);
+        } catch (e) {
+            console.error("[context.ts] Zod parsing error:", e);
+            console.error("[context.ts] Payload that failed:", payload);
+            throw e;
+        }
+    }
 
-    let parsed: GatewayContextData;
-    try {
-        parsed = contextSchema.parse(payload);
-    } catch (e) {
-        console.error("[context.ts] Zod parsing error:", e);
-        console.error("[context.ts] Payload that failed:", payload);
-        throw e;
+    let parsed = await fetchParsedContext(args.model);
+
+    // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
+    // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
+    const noProviders = (parsed.providers ?? []).length === 0;
+    const unresolved = (parsed.resolvedModel ?? args.model) === args.model;
+    if (noProviders && unresolved) {
+        const remappedModel = await resolveProviderScopedModelToApiModel({
+            model: args.model,
+            endpoint: args.endpoint,
+        });
+        if (remappedModel && remappedModel !== args.model) {
+            parsed = await fetchParsedContext(remappedModel);
+        }
     }
 
     if (args.includeTestingMode) {
@@ -473,6 +558,7 @@ export async function fetchGatewayContext(args: {
         routingMode: null,
         byokFallbackEnabled: null,
         betaChannelEnabled: false,
+        billingMode: "wallet",
     };
 
     try {
@@ -491,22 +577,33 @@ export async function fetchGatewayContext(args: {
                   .in("api_provider_id", providerIds)
             : Promise.resolve({ data: [], error: null } as any);
 
-        const [settingsResult, providerStatusResult] = await Promise.all([
+        const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
             supabase
                 .from("team_settings")
                 .select("routing_mode,byok_fallback_enabled,beta_channel_enabled")
                 .eq("team_id", args.teamId)
                 .maybeSingle(),
             providerStatusQuery,
+            supabase
+                .from("teams")
+                .select("billing_mode")
+                .eq("id", args.teamId)
+                .maybeSingle(),
         ]);
 
         if (!settingsResult?.error) {
+            const rawBillingMode = String(teamResult?.data?.billing_mode ?? "wallet")
+                .trim()
+                .toLowerCase();
+            const billingMode =
+                rawBillingMode === "invoice" ? "invoice" : "wallet";
             parsed.teamSettings = {
                 routingMode: settingsResult.data?.routing_mode ?? null,
                 byokFallbackEnabled:
                     settingsResult.data?.byok_fallback_enabled ?? null,
                 betaChannelEnabled:
                     settingsResult.data?.beta_channel_enabled ?? false,
+                billingMode,
             };
         }
 

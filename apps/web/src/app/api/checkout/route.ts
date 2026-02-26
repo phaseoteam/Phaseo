@@ -1,5 +1,6 @@
 import { getStripe } from "@/lib/stripe";
 import { NextRequest, NextResponse } from "next/server";
+import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 // Minimal Stripe integration. Requires STRIPE_SECRET_KEY in environment.
 // Creates a Checkout session for a single one-time payment in cents (integer) passed as { amount }
@@ -9,10 +10,16 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const purchaseAmount = Number(body?.purchase_amount_cents);
         const totalAmount = Number(body?.total_amount_cents) || purchaseAmount;
-        const teamId =
+        const requestedTeamId =
             typeof body?.team_id === "string" && body.team_id.trim().length > 0
                 ? body.team_id.trim()
                 : null;
+        const { teamId, customerId } = await requireActiveTeamStripeCustomer({
+            createIfMissing: true,
+        });
+        if (requestedTeamId && requestedTeamId !== teamId) {
+            return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
+        }
         if (!purchaseAmount || isNaN(purchaseAmount) || purchaseAmount < 50) {
             return NextResponse.json({ error: "Invalid purchase amount. Minimum 50 cents." }, { status: 400 });
         }
@@ -32,6 +39,7 @@ export async function POST(req: NextRequest) {
         const session = await stripe.checkout.sessions.create({
             mode: "payment",
             payment_method_types: ["card"],
+            customer: customerId,
             line_items: [
                 {
                     price_data: {
@@ -47,7 +55,7 @@ export async function POST(req: NextRequest) {
                 description: 'Credits purchase',
                 metadata: {
                     purpose: "top_up_one_off",
-                    ...(teamId ? { team_id: teamId } : {}),
+                    team_id: teamId,
                 },
             },
             success_url: `${origin}/settings/credits?checkout=success`,
@@ -56,6 +64,12 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ url: session.url });
     } catch (err: any) {
+        if (err?.message === "unauthorized") {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        if (err?.message === "missing_team") {
+            return NextResponse.json({ error: "Missing team" }, { status: 400 });
+        }
         // don't leak internals; return generic message
         return NextResponse.json({ error: err?.message || "unknown" }, { status: 500 });
     }

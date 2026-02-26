@@ -120,7 +120,9 @@ begin
     end if;
   end if;
 
-  -- Resolve alias if present
+  -- Resolve alias/model indirection:
+  -- 1) explicit alias table (`data_api_model_aliases`)
+  -- 2) provider-scoped slug form (`provider/provider_model_slug`)
   resolved_model := coalesce(
     (
       select a.api_model_id
@@ -128,6 +130,18 @@ begin
       where a.alias_slug = base_model
         and a.is_enabled = true
         and a.api_model_id is not null
+      limit 1
+    ),
+    (
+      select m.api_model_id
+      from public.data_api_provider_models m
+      where position('/' in base_model) > 0
+        and m.provider_id = split_part(base_model, '/', 1)
+        and m.provider_model_slug = regexp_replace(base_model, '^[^/]+/', '')
+        and m.is_active_gateway
+        and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
+        and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
+      order by coalesce(m.effective_from, to_timestamp(0)) desc, m.provider_api_model_id
       limit 1
     ),
     base_model
@@ -269,8 +283,8 @@ begin
   where gr.team_id = gateway_fetch_request_context.team_id
     and gr.success is true;
 
-  -- Calculate tier dynamically based on rolling 30-day spend with grace period
-  -- This updates the team's tier in the database if it changed
+  -- Calculate tier using calendar-month qualification + lock-window grace.
+  -- Function maintains team tier/counters in database when state changes.
   team_tier := calculate_tier_with_grace(gateway_fetch_request_context.team_id, team_spend_30d_nanos);
 
   team_enrichment := jsonb_build_object(

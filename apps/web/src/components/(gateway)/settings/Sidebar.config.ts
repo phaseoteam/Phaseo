@@ -80,6 +80,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				icon: CreditCard,
 				match: [
 					"/settings/credits",
+					"/settings/credits/onboarding",
 					"/settings/credits/transactions",
 					"/settings/payment-methods",
 					"/settings/tiers",

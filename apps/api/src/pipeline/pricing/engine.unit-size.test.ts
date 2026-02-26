@@ -55,4 +55,40 @@ describe("pricing engine unit_size handling", () => {
 		expect(priced.pricing.lines).toHaveLength(1);
 		expect(priced.pricing.lines[0].line_nanos).toBe(16_000);
 	});
+
+	it("prices output_image_tokens directly using per-million token rate", () => {
+		const imageTokenCard: PriceCard = {
+			provider: "google-ai-studio",
+			model: "google/gemini-3.1-flash-image-preview",
+			endpoint: "text.generate",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					pricing_plan: "standard",
+					meter: "output_image_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "60.0",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const priced = computeBill(
+			{ output_image_tokens: 2240 },
+			imageTokenCard,
+			{},
+			"standard",
+		);
+
+		expect(priced.pricing.total_nanos).toBe(134_400_000);
+		expect(priced.pricing.total_cents).toBe(13);
+		expect(priced.pricing.lines[0].dimension).toBe("output_image_tokens");
+		expect(priced.pricing.lines[0].line_nanos).toBe(134_400_000);
+	});
 });

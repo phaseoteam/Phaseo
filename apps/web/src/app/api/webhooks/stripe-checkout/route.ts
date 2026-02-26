@@ -62,9 +62,31 @@ async function ensureReusablePaymentMethod(
 }
 
 function getWebhookSecret(): string {
-    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    const raw = process.env.STRIPE_WEBHOOK_SECRET;
+    const secret = typeof raw === "string" ? raw.trim().replace(/^["']|["']$/g, "") : "";
     if (!secret) throw new Error("Stripe webhook signing secret missing");
     return secret;
+}
+
+function redactSecret(secret: string): string {
+    if (!secret) return "<empty>";
+    if (secret.length <= 12) return `${secret.slice(0, 4)}...`;
+    return `${secret.slice(0, 7)}...${secret.slice(-4)}`;
+}
+
+function summarizeStripeSignatureHeader(signature: string) {
+    const parts = signature
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+    const timestamp = parts.find((part) => part.startsWith("t=")) ?? null;
+    const v1 = parts.filter((part) => part.startsWith("v1="));
+
+    return {
+        present: signature.length > 0,
+        timestamp,
+        v1Count: v1.length,
+    };
 }
 
 function getSupabase() {
@@ -105,6 +127,95 @@ function mapStripeRefundStatus(status?: string | null): "Pending" | "Succeeded" 
     return "Pending";
 }
 
+function mapStripeInvoiceStatus(
+    status?: Stripe.Invoice.Status | null
+): "draft" | "open" | "paid" | "void" | "uncollectible" {
+    const normalized = String(status ?? "").toLowerCase();
+    if (normalized === "open") return "open";
+    if (normalized === "paid") return "paid";
+    if (normalized === "void") return "void";
+    if (normalized === "uncollectible") return "uncollectible";
+    return "draft";
+}
+
+function invoiceMetadataValue(invoice: Stripe.Invoice, key: string): string | null {
+    const raw = invoice.metadata?.[key];
+    return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
+}
+
+function unixToIso(value?: number | null): string | null {
+    if (value == null || !Number.isFinite(Number(value))) return null;
+    return new Date(Number(value) * 1000).toISOString();
+}
+
+async function upsertTeamInvoiceFromStripeInvoice(args: {
+    supabase: ReturnType<typeof getSupabase>;
+    invoice: Stripe.Invoice;
+    forceStatus?: "draft" | "open" | "paid" | "void" | "uncollectible";
+}) {
+    const { supabase, invoice, forceStatus } = args;
+    const stripeInvoiceId = invoice.id;
+    if (!stripeInvoiceId) return;
+
+    const { data: existing } = await supabase
+        .from("team_invoices")
+        .select("team_id,period_start,period_end")
+        .eq("stripe_invoice_id", stripeInvoiceId)
+        .maybeSingle();
+
+    const teamId =
+        existing?.team_id ??
+        invoiceMetadataValue(invoice, "team_id");
+    if (!teamId) {
+        console.warn("[stripe-webhook] invoice event missing team_id metadata", {
+            stripeInvoiceId,
+            eventStatus: invoice.status ?? null,
+        });
+        return;
+    }
+
+    const periodStart =
+        existing?.period_start ??
+        invoiceMetadataValue(invoice, "period_start") ??
+        invoiceMetadataValue(invoice, "cycle_start") ??
+        unixToIso((invoice as any).period_start);
+    const periodEnd =
+        existing?.period_end ??
+        invoiceMetadataValue(invoice, "period_end") ??
+        invoiceMetadataValue(invoice, "cycle_end") ??
+        unixToIso((invoice as any).period_end);
+
+    if (!periodStart || !periodEnd) {
+        console.warn("[stripe-webhook] invoice event missing period metadata", {
+            stripeInvoiceId,
+            teamId,
+        });
+        return;
+    }
+
+    const status = forceStatus ?? mapStripeInvoiceStatus(invoice.status);
+    const amountNanos = Number(invoice.amount_due ?? invoice.total ?? 0) * 10_000_000;
+    const row = {
+        team_id: teamId,
+        period_start: periodStart,
+        period_end: periodEnd,
+        amount_nanos: Math.max(0, Number.isFinite(amountNanos) ? amountNanos : 0),
+        currency: "USD",
+        status,
+        stripe_invoice_id: stripeInvoiceId,
+        stripe_invoice_number: invoice.number ?? null,
+        due_at: unixToIso(invoice.due_date),
+        issued_at: unixToIso(invoice.status_transitions?.finalized_at),
+        paid_at: unixToIso(invoice.status_transitions?.paid_at),
+        updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("team_invoices").upsert([row], {
+        onConflict: "team_id,period_start,period_end",
+    });
+    if (error) throw error;
+}
+
 export async function POST(req: Request) {
     const stripe = getStripe();
     const supabase = getSupabase();
@@ -112,11 +223,27 @@ export async function POST(req: Request) {
     // IMPORTANT: read raw body for signature verification
     const rawBody = await req.text();
     const signature = req.headers.get("stripe-signature") ?? "";
+    const signatureSummary = summarizeStripeSignatureHeader(signature);
 
     let event: Stripe.Event;
     try {
-        event = stripe.webhooks.constructEvent(rawBody, signature, getWebhookSecret());
+        const webhookSecret = getWebhookSecret();
+        event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err: any) {
+        const configuredSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+        const normalizedSecret =
+            typeof configuredSecret === "string"
+                ? configuredSecret.trim().replace(/^["']|["']$/g, "")
+                : "";
+        console.error("[stripe-webhook] Signature verification failed", {
+            error: err?.message ?? String(err),
+            bodyLength: rawBody.length,
+            hasStripeSignatureHeader: signatureSummary.present,
+            signatureTimestamp: signatureSummary.timestamp,
+            signatureV1Count: signatureSummary.v1Count,
+            configuredSecretLength: normalizedSecret.length,
+            configuredSecretPreview: redactSecret(normalizedSecret),
+        });
         return NextResponse.json(
             { message: `Webhook Error: ${err?.message || String(err)}` },
             { status: 400 }
@@ -527,6 +654,58 @@ export async function POST(req: Request) {
                     }
                 }
 
+                break;
+            }
+
+            case "invoice.created":
+            case "invoice.finalized":
+            case "invoice.updated": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                });
+                break;
+            }
+
+            case "invoice.paid":
+            case "invoice.payment_succeeded": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                    forceStatus: "paid",
+                });
+                break;
+            }
+
+            case "invoice.payment_failed": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                    forceStatus: "open",
+                });
+                break;
+            }
+
+            case "invoice.marked_uncollectible": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                    forceStatus: "uncollectible",
+                });
+                break;
+            }
+
+            case "invoice.voided": {
+                const invoice = event.data.object as Stripe.Invoice;
+                await upsertTeamInvoiceFromStripeInvoice({
+                    supabase,
+                    invoice,
+                    forceStatus: "void",
+                });
                 break;
             }
 

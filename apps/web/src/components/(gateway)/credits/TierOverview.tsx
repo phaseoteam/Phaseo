@@ -25,16 +25,26 @@ export default async function TierOverview({ teamId }: Props) {
 	// Fetch spending data
 	let lastMonthCents = 0;
 	let mtdCents = 0;
+	let teamTier: "basic" | "enterprise" = "basic";
 
 	if (teamId) {
 		try {
-			const [{ data: prev }, { data: mtd }] = await Promise.all([
+			const [{ data: prev }, { data: mtd }, { data: team }] = await Promise.all([
 				supabase.rpc("monthly_spend_prev_cents", { p_team: teamId }).single(),
 				supabase.rpc("mtd_spend_cents", { p_team: teamId }).single(),
+				supabase
+					.from("teams")
+					.select("tier")
+					.eq("id", teamId)
+					.maybeSingle(),
 			]);
 
 			lastMonthCents = Number(prev ?? 0);
 			mtdCents = Number(mtd ?? 0);
+			teamTier =
+				String(team?.tier ?? "basic").toLowerCase() === "enterprise"
+					? "enterprise"
+					: "basic";
 		} catch (err) {
 			console.error("[TierOverview] Failed to fetch spend:", err);
 		}
@@ -45,7 +55,7 @@ export default async function TierOverview({ teamId }: Props) {
 
 	// Tier calculation
 	const enterpriseThreshold = 10000;
-	const isEnterprise = lastMonth >= enterpriseThreshold;
+	const isEnterprise = teamTier === "enterprise";
 	const currentTier = isEnterprise ? "Enterprise" : "Basic";
 	const currentFee = isEnterprise ? 5.0 : 7.0;
 	const savingsRate = isEnterprise ? 2.0 : 0;
@@ -117,7 +127,7 @@ export default async function TierOverview({ teamId }: Props) {
 										unlock Enterprise tier (5% fee)
 									</>
 								) : (
-									<>Eligible for Enterprise tier next month!</>
+									<>Eligible for Enterprise tier now.</>
 								)}
 							</p>
 						</div>
@@ -196,9 +206,10 @@ export default async function TierOverview({ teamId }: Props) {
 					{/* Tier Explanation */}
 					<div className="rounded-lg border bg-muted/50 p-3">
 						<p className="text-sm text-muted-foreground">
-							<strong>How tiers work:</strong> Your tier is based on rolling
-							30-day spend. Reach $10k to unlock Enterprise pricing (5% fee).
-							Basic tier is 7%. Automatic with no commitments required.
+							<strong>How tiers work:</strong> Reach $10k in a calendar month
+							to unlock Enterprise pricing for that month and the following
+							month. After that, a 3-month low-spend streak can move teams
+							back to Basic.
 						</p>
 					</div>
 

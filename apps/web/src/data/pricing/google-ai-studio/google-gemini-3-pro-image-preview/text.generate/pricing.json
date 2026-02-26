@@ -45,10 +45,10 @@
       "effective_from": "2025-11-20T00:00:00"
     },
     {
-      "meter": "output_image",
-      "unit": "image",
-      "unit_size": 1,
-      "price_per_unit": 0.134,
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 120.0,
       "currency": "USD",
       "tiering_mode": "flat",
       "pricing_plan": "standard",
@@ -63,27 +63,6 @@
             "1K",
             "2K"
           ]
-        }
-      ],
-      "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
-    },
-    {
-      "meter": "output_image",
-      "unit": "image",
-      "unit_size": 1,
-      "price_per_unit": 0.24,
-      "currency": "USD",
-      "tiering_mode": "flat",
-      "pricing_plan": "standard",
-      "note": null,
-      "match": [
-        {
-          "path": "image_params.resolution",
-          "op": "eq",
-          "or_group": 1,
-          "and_index": 1,
-          "value": "4K"
         }
       ],
       "priority": 100,

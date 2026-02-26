@@ -25,6 +25,7 @@ export default async function SettingsLayout({
 	const userId = authData.user?.id ?? null;
 	const teamId = await getTeamIdFromCookie();
 	let showBroadcast = false;
+	let isEnterpriseInvoiceMode = false;
 	if (userId && teamId) {
 		const { data: membership } = await supabase
 			.from("team_members")
@@ -33,6 +34,15 @@ export default async function SettingsLayout({
 			.eq("user_id", userId)
 			.maybeSingle();
 		showBroadcast = (membership?.role ?? "").toLowerCase() === "admin";
+
+		const { data: teamRow } = await supabase
+			.from("teams")
+			.select("tier,billing_mode")
+			.eq("id", teamId)
+			.maybeSingle();
+		const tier = String(teamRow?.tier ?? "").toLowerCase();
+		const billingMode = String(teamRow?.billing_mode ?? "wallet").toLowerCase();
+		isEnterpriseInvoiceMode = tier === "enterprise" && billingMode === "invoice";
 	}
 
 	return (
@@ -51,7 +61,9 @@ export default async function SettingsLayout({
 					<div className="container mx-auto flex w-full flex-col gap-3 px-2 py-4">
 						<div className="shrink-0">
 							<div className="mt-2.5">
-								<SettingsTopTabsServer />
+								<SettingsTopTabsServer
+									isEnterpriseInvoiceMode={isEnterpriseInvoiceMode}
+								/>
 							</div>
 						</div>
 						<div className="w-full pt-2">

@@ -2544,6 +2544,12 @@ components:
                 max_output_tokens:
                     type: integer
                     minimum: 1
+                max_completion_tokens:
+                    type: integer
+                    minimum: 1
+                max_tokens:
+                    type: integer
+                    minimum: 1
                 meta:
                     type: boolean
                     default: false
@@ -2560,6 +2566,8 @@ components:
                 stream:
                     type: boolean
                     default: false
+                stream_options:
+                    type: object
                 temperature:
                     type: number
                     minimum: 0
@@ -2611,19 +2619,43 @@ components:
                                     type: string
                                 schema:
                                     type: object
+                modalities:
+                    type: array
+                    items:
+                        type: string
+                response_modalities:
+                    type: array
+                    items:
+                        type: string
+                responseModalities:
+                    type: array
+                    items:
+                        type: string
+                image_config:
+                    $ref: "#/components/schemas/ImageConfig"
+                imageConfig:
+                    $ref: "#/components/schemas/ImageConfig"
+                thinking:
+                    $ref: "#/components/schemas/ThinkingConfig"
                 usage:
                     type: boolean
                 provider:
                     $ref: "#/components/schemas/ProviderRoutingOptions"
                 user_id:
                     type: string
+                user:
+                    type: string
                 service_tier:
                     type: string
                     enum:
+                        - auto
+                        - default
                         - flex
                         - standard
                         - priority
                     default: standard
+                speed:
+                    type: string
         ChatMessage:
             type: object
             required:
@@ -2693,7 +2725,7 @@ components:
                     properties:
                         url:
                             type: string
-                            format: uri
+                            description: HTTP(S) URL or data URI.
         AudioContentPart:
             type: object
             required:
@@ -2796,6 +2828,116 @@ components:
                         - concise
                         - detailed
                     default: auto
+                enabled:
+                    type: boolean
+                max_tokens:
+                    type: integer
+                    minimum: 0
+                include_thoughts:
+                    type: boolean
+                includeThoughts:
+                    type: boolean
+        ThinkingConfig:
+            type: object
+            properties:
+                type:
+                    type: string
+                    enum:
+                        - enabled
+                        - disabled
+                        - adaptive
+                enabled:
+                    type: boolean
+                include_thoughts:
+                    type: boolean
+                includeThoughts:
+                    type: boolean
+                effort:
+                    type: string
+                    enum:
+                        - none
+                        - minimal
+                        - low
+                        - medium
+                        - high
+                        - xhigh
+                        - max
+                max_tokens:
+                    type: integer
+                    minimum: 0
+                maxTokens:
+                    type: integer
+                    minimum: 0
+                budget_tokens:
+                    type: integer
+                    minimum: 0
+                budgetTokens:
+                    type: integer
+                    minimum: 0
+        ImageConfig:
+            type: object
+            properties:
+                aspect_ratio:
+                    type: string
+                aspectRatio:
+                    type: string
+                image_size:
+                    type: string
+                    enum:
+                        - 0.5K
+                        - 1K
+                        - 2K
+                        - 4K
+                imageSize:
+                    type: string
+                    enum:
+                        - 0.5K
+                        - 1K
+                        - 2K
+                        - 4K
+                include_rai_reason:
+                    type: boolean
+                includeRaiReason:
+                    type: boolean
+                font_inputs:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            font_url:
+                                type: string
+                                format: uri
+                            text:
+                                type: string
+                fontInputs:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            fontUrl:
+                                type: string
+                                format: uri
+                            text:
+                                type: string
+                super_resolution_references:
+                    type: array
+                    items:
+                        type: string
+                superResolutionReferences:
+                    type: array
+                    items:
+                        type: string
+                reference_images:
+                    type: array
+                    items:
+                        type: object
+                        additionalProperties: true
+                referenceImages:
+                    type: array
+                    items:
+                        type: object
+                        additionalProperties: true
+            additionalProperties: true
         ChatCompletionsResponse:
             type: object
             properties:
@@ -2887,6 +3029,24 @@ components:
                     type: object
                     additionalProperties:
                         type: string
+                modalities:
+                    type: array
+                    items:
+                        type: string
+                response_modalities:
+                    type: array
+                    items:
+                        type: string
+                responseModalities:
+                    type: array
+                    items:
+                        type: string
+                image_config:
+                    $ref: "#/components/schemas/ImageConfig"
+                imageConfig:
+                    $ref: "#/components/schemas/ImageConfig"
+                thinking:
+                    $ref: "#/components/schemas/ThinkingConfig"
                 debug:
                     $ref: "#/components/schemas/DebugOptions"
                 provider:
@@ -3012,6 +3172,12 @@ components:
                 max_output_tokens:
                     type: integer
                     minimum: 1
+                max_completion_tokens:
+                    type: integer
+                    minimum: 1
+                max_tokens:
+                    type: integer
+                    minimum: 1
                 max_tool_calls:
                     type: integer
                     minimum: 0
@@ -3050,9 +3216,34 @@ components:
                                 - xhigh
                         summary:
                             type: string
+                        enabled:
+                            type: boolean
+                        max_tokens:
+                            type: integer
+                            minimum: 0
+                thinking:
+                    $ref: "#/components/schemas/ThinkingConfig"
+                modalities:
+                    type: array
+                    items:
+                        type: string
+                response_modalities:
+                    type: array
+                    items:
+                        type: string
+                responseModalities:
+                    type: array
+                    items:
+                        type: string
+                image_config:
+                    $ref: "#/components/schemas/ImageConfig"
+                imageConfig:
+                    $ref: "#/components/schemas/ImageConfig"
                 safety_identifier:
                     type: string
                 service_tier:
+                    type: string
+                speed:
                     type: string
                 store:
                     type: boolean

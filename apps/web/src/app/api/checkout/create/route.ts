@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
+import { requireActiveTeamStripeCustomer } from "@/lib/server/activeTeamStripe";
 
 export async function POST(req: NextRequest) {
     try {
-        const { kind, amount_pence, customerId, currency = "usd", team_id } = await req.json();
-        const teamId =
+        const { kind, amount_pence, currency = "usd", team_id } = await req.json();
+        const requestedTeamId =
             typeof team_id === "string" && team_id.trim().length > 0
                 ? team_id.trim()
                 : undefined;
+        const { teamId, customerId } = await requireActiveTeamStripeCustomer({
+            createIfMissing: true,
+        });
+
+        if (requestedTeamId && requestedTeamId !== teamId) {
+            return NextResponse.json({ error: "Team mismatch" }, { status: 403 });
+        }
 
         // Derive a base URL: prefer NEXT_PUBLIC_BASE_URL, fall back to request origin, then localhost.
         const requestOrigin = req.headers.get("origin") || req.headers.get("referer") || "http://localhost:3000";
@@ -34,8 +42,7 @@ export async function POST(req: NextRequest) {
                         request_three_d_secure: "automatic",
                     },
                 },
-                customer: customerId || undefined,            // Optional; Stripe can create a customer on its own
-                customer_creation: customerId ? undefined : "always",
+                customer: customerId,
                 line_items: [{
                     quantity: 1,
                     price_data: {
@@ -75,8 +82,7 @@ export async function POST(req: NextRequest) {
                 payment_method_options: {
                     card: { request_three_d_secure: "automatic" },
                 },
-                customer: customerId || undefined,
-                customer_creation: customerId ? undefined : "always",
+                customer: customerId,
                 line_items: [{
                     quantity: 1,
                     price_data: {
@@ -107,8 +113,7 @@ export async function POST(req: NextRequest) {
             const session = await stripe.checkout.sessions.create({
                 mode: "setup",
                 payment_method_types: ["card", "link"],
-                // Only set customer when provided. Omit customer_creation for setup sessions.
-                ...(customerId ? { customer: customerId } : {}),
+                customer: customerId,
                 success_url: successUrl,
                 cancel_url: cancelUrl,
                 setup_intent_data: {
@@ -124,6 +129,12 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ error: "Unknown kind" }, { status: 400 });
     } catch (e: any) {
+        if (e?.message === "unauthorized") {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        if (e?.message === "missing_team") {
+            return NextResponse.json({ error: "Missing team" }, { status: 400 });
+        }
         // log full error server-side for debugging
         // eslint-disable-next-line no-console
         console.error("checkout.create route error:", e);

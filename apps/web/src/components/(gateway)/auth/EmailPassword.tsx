@@ -7,9 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { handlePasswordSignIn, forgotPasswordAction } from "@/app/(auth)/sign-in/actions";
 import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function EmailPassword() {
 	const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
+	const [showPassword, setShowPassword] = React.useState(false);
+	const [password, setPassword] = React.useState("");
 
 	return (
 		<div className="grid gap-4">
@@ -44,12 +47,32 @@ export default function EmailPassword() {
 							Forgot your password?
 						</button>
 					</div>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-						required
-					/>
+					<div className="relative">
+						<Input
+							id="password"
+							name="password"
+							type={showPassword ? "text" : "password"}
+							value={password}
+							className={password.length > 0 ? "pr-10" : undefined}
+							onChange={(event) => {
+								const next = event.target.value;
+								setPassword(next);
+								if (!next) setShowPassword(false);
+							}}
+							required
+						/>
+						{password.length > 0 ? (
+							<button
+								type="button"
+								onClick={() => setShowPassword((value) => !value)}
+								aria-label={showPassword ? "Hide password" : "Show password"}
+								aria-pressed={showPassword}
+								className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+							>
+								{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+							</button>
+						) : null}
+					</div>
 				</div>
 
 				<Button type="submit" className="w-full">

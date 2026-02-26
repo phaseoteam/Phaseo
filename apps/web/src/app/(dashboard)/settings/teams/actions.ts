@@ -3,7 +3,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { getStripe } from "@/lib/stripe";
 import upsertLinearCustomer from "@/lib/linear";
 import crypto from "crypto";
 
@@ -130,20 +129,12 @@ export async function createTeamAction(name: string, userId: string) {
         .from("team_members")
         .upsert({ team_id: newTeamId, user_id: userId, role: "owner" }, { onConflict: "team_id,user_id", ignoreDuplicates: true });
 
-    const stripe = getStripe();
-
-    try {
-        const userEmail = user.email || undefined;
-        const customer = await stripe.customers.create({ name, email: userEmail, metadata: { team_id: newTeamId, user_id: userId } });
-        if (customer && newTeamId) {
-            await supabase.from("wallets").upsert(
-                { team_id: newTeamId, stripe_customer_id: customer.id },
-                { onConflict: "team_id", ignoreDuplicates: true },
-            );
-        }
-    } catch (err) {
-        console.error("[ERROR] creating Stripe customer:", err);
-    }
+    // Create wallet row now; Stripe customer is provisioned lazily when billing
+    // flows are first used for this team.
+    await supabase.from("wallets").upsert(
+        { team_id: newTeamId },
+        { onConflict: "team_id", ignoreDuplicates: true },
+    );
 
     // Upsert a Linear Customer for this team. Non-blocking: failures shouldn't block team creation.
     try {

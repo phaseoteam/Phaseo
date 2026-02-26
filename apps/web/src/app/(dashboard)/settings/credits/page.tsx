@@ -15,6 +15,9 @@ import { Metadata } from "next";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const metadata: Metadata = {
 	title: "Credits - Settings",
@@ -26,6 +29,16 @@ function money(amount: number, currency: string) {
 		currency,
 		maximumFractionDigits: 0,
 	}).format(amount);
+}
+
+function formatDate(dateLike: string | Date) {
+	const date = typeof dateLike === "string" ? new Date(dateLike) : dateLike;
+	if (!Number.isFinite(date.getTime())) return "";
+	return new Intl.DateTimeFormat("en-US", {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	}).format(date);
 }
 
 export default function Page(props: {
@@ -59,6 +72,13 @@ async function CreditsSettingsContent(props: {
 	let stripeInfo: any = null;
 	let lowBalanceEmailEnabled = false;
 	let lowBalanceEmailThresholdUsd: number | null = null;
+	let billingMode: "wallet" | "invoice" = "wallet";
+	let teamTier: "basic" | "enterprise" = "basic";
+	let invoiceOnboardingStatus: "none" | "pre_invoice" | "completed" = "none";
+	let invoiceProfileEnabled = false;
+	let invoiceBillingDay = 1;
+	let nextInvoiceAmount = 0;
+	let nextInvoiceDateIso: string | null = null;
 	let tierStats: {
 		lastMonth: number;
 		mtd: number;
@@ -85,7 +105,7 @@ async function CreditsSettingsContent(props: {
 			wallet = w;
 			try {
 				const nanos = Number(w?.balance_nanos ?? 0);
-                                initialBalance = Number((nanos / 1_000_000_000).toFixed(5));
+				initialBalance = nanos / 1_000_000_000;
 			} catch {
 				initialBalance = 0;
 			}
@@ -112,6 +132,53 @@ async function CreditsSettingsContent(props: {
 		}
 	} catch (outerErr) {
 		console.log("[WARN] unexpected team settings fetch error:", String(outerErr));
+	}
+
+	// Team billing mode (best-effort)
+	try {
+		const { data: teamRow, error: teamErr } = await supabase
+			.from("teams")
+			.select("billing_mode,tier,invoice_onboarding_status")
+			.eq("id", teamId)
+			.maybeSingle();
+
+		if (teamErr) {
+			console.log("[WARN] fetching team billing mode:", String(teamErr));
+		} else {
+			billingMode = teamRow?.billing_mode === "invoice" ? "invoice" : "wallet";
+			teamTier = String(teamRow?.tier ?? "basic").toLowerCase() === "enterprise"
+				? "enterprise"
+				: "basic";
+			const status = String(teamRow?.invoice_onboarding_status ?? "none").toLowerCase();
+			invoiceOnboardingStatus =
+				status === "pre_invoice"
+					? "pre_invoice"
+					: status === "completed"
+						? "completed"
+						: "none";
+		}
+	} catch (outerErr) {
+		console.log("[WARN] unexpected billing mode fetch error:", String(outerErr));
+	}
+
+	// Invoice profile (best-effort)
+	try {
+		const { data: invoiceProfileRow, error: invoiceProfileErr } = await supabase
+			.from("team_invoice_profiles")
+			.select("enabled,billing_day")
+			.eq("team_id", teamId)
+			.maybeSingle();
+
+		if (invoiceProfileErr) {
+			console.log("[WARN] fetching invoice profile:", String(invoiceProfileErr));
+		} else {
+			invoiceProfileEnabled = Boolean(invoiceProfileRow?.enabled);
+			if (Number.isFinite(Number(invoiceProfileRow?.billing_day))) {
+				invoiceBillingDay = Number(invoiceProfileRow?.billing_day);
+			}
+		}
+	} catch (outerErr) {
+		console.log("[WARN] unexpected invoice profile fetch error:", String(outerErr));
 	}
 
 	// Stripe: customer + payment methods
@@ -245,6 +312,7 @@ async function CreditsSettingsContent(props: {
 	} = computeTierInfo({
 		lastMonth: tierStats.lastMonth,
 		mtd: tierStats.mtd,
+		currentTierKey: teamTier,
 		tiers,
 	});
 
@@ -255,6 +323,40 @@ async function CreditsSettingsContent(props: {
 		!topTier && remainingToNext > 0
 			? money(remainingToNext, currency)
 			: null;
+	const isEnterpriseInvoiceMode =
+		billingMode === "invoice" && teamTier === "enterprise";
+	const needsInvoiceOnboarding = isEnterpriseInvoiceMode && !invoiceProfileEnabled;
+
+	if (isEnterpriseInvoiceMode) {
+		// Fallback to MTD usage if invoice preview RPC is unavailable.
+		nextInvoiceAmount = Math.max(0, tierStats.mtd);
+		try {
+			const { data: previewRows, error: previewErr } = await supabase.rpc(
+				"get_team_invoice_preview",
+				{ p_team_id: teamId }
+			);
+
+			if (previewErr) {
+				console.log("[WARN] fetching invoice preview:", String(previewErr));
+			} else {
+				const row = Array.isArray(previewRows)
+					? previewRows[0]
+					: previewRows;
+				const amountNanos = Number(row?.next_invoice_amount_nanos ?? 0);
+				nextInvoiceAmount =
+					Number.isFinite(amountNanos) && amountNanos > 0
+						? amountNanos / 1_000_000_000
+						: 0;
+				invoiceBillingDay = Number(row?.billing_day ?? 1) || 1;
+				nextInvoiceDateIso =
+					typeof row?.cycle_end === "string"
+						? row.cycle_end
+						: nextInvoiceDateIso;
+			}
+		} catch (err) {
+			console.log("[WARN] unexpected invoice preview fetch error:", String(err));
+		}
+	}
 
 	return (
 		<div className="space-y-6">
@@ -281,29 +383,103 @@ async function CreditsSettingsContent(props: {
 				latestPaymentSuccessAt={latestPaymentSuccessAt}
 			/>
 
-			<CurrentCredits balance={initialBalance} />
+			<CurrentCredits
+				balance={isEnterpriseInvoiceMode ? nextInvoiceAmount : initialBalance}
+				title={isEnterpriseInvoiceMode ? "Next Invoice Amount" : "Current Balance"}
+				subtitle={
+					isEnterpriseInvoiceMode
+						? nextInvoiceDateIso
+							? `Current cycle closes on ${formatDate(nextInvoiceDateIso)}`
+							: `Current cycle closes on billing day ${invoiceBillingDay}`
+						: null
+				}
+				refreshAriaLabel={
+					isEnterpriseInvoiceMode
+						? "refresh invoice amount"
+						: "refresh balance"
+				}
+			/>
+
+			{needsInvoiceOnboarding ? (
+				<Card className="border-amber-300/70 bg-amber-50/50 dark:border-amber-800/80 dark:bg-amber-950/20">
+					<CardHeader className="pb-2">
+						<CardTitle className="text-base">Complete invoice setup</CardTitle>
+					</CardHeader>
+					<CardContent className="flex flex-wrap items-center justify-between gap-3">
+						<p className="text-sm text-muted-foreground">
+							This team is in invoice mode, but billing day and terms are not fully configured yet.
+						</p>
+						<Button asChild size="sm">
+							<Link href="/settings/credits/onboarding">Finish setup</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			) : null}
 
 			<div className="space-y-6">
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-					<BuyCreditsClient
-						wallet={wallet}
-						stripeInfo={stripeInfo}
-						tierInfo={{
-							current,
-							next,
-							topTier,
-							savingVsBase,
-							projectedSavings,
-							remainingToNext,
-							nextDiscountDelta,
-						}}
-					/>
-					<AutoTopUpClient wallet={wallet} stripeInfo={stripeInfo} />
-				</div>
-				<LowBalanceEmailAlertsClient
-					enabled={lowBalanceEmailEnabled}
-					thresholdUsd={lowBalanceEmailThresholdUsd}
-				/>
+				{isEnterpriseInvoiceMode ? (
+					<Card>
+						<CardHeader className="pb-2">
+							<CardTitle>Enterprise Invoicing</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-2 text-sm text-muted-foreground">
+							<p>
+								Post-usage invoicing is enabled for this team. Wallet
+								top-ups and auto top-up are not used in invoice mode.
+							</p>
+							<p>
+								Billing day: <span className="font-medium text-foreground">{invoiceBillingDay}</span>
+							</p>
+							{nextInvoiceDateIso ? (
+								<p>
+									Next invoice date:{" "}
+									<span className="font-medium text-foreground">
+										{formatDate(nextInvoiceDateIso)}
+									</span>
+								</p>
+							) : null}
+						</CardContent>
+					</Card>
+				) : (
+					<>
+						<Card>
+							<CardContent className="p-0">
+								<div className="grid grid-cols-1 md:grid-cols-2">
+									<div className="p-6">
+										<BuyCreditsClient
+											wallet={wallet}
+											stripeInfo={stripeInfo}
+											embedded
+											invoiceInviteStatus={invoiceOnboardingStatus}
+											tierInfo={{
+												current,
+												next,
+												topTier,
+												savingVsBase,
+												projectedSavings,
+												remainingToNext,
+												nextDiscountDelta,
+											}}
+										/>
+									</div>
+									<div className="border-t md:border-t-0 md:border-l p-6">
+										<AutoTopUpClient
+											wallet={wallet}
+											stripeInfo={stripeInfo}
+											embedded
+										/>
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+						<div>
+							<LowBalanceEmailAlertsClient
+								enabled={lowBalanceEmailEnabled}
+								thresholdUsd={lowBalanceEmailThresholdUsd}
+							/>
+						</div>
+					</>
+				)}
 			</div>
 		</div>
 	);

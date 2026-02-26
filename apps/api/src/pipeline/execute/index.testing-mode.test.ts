@@ -55,7 +55,10 @@ function createCtx(overrides?: Partial<any>): any {
 			returnMeta: false,
 		},
 		teamSettings: {
+			routingMode: "balanced",
 			byokFallbackEnabled: true,
+			betaChannelEnabled: false,
+			billingMode: "wallet",
 		},
 		testingMode: false,
 		...overrides,

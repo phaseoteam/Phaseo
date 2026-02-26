@@ -8,7 +8,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { FileText, Calculator, Code, Terminal, DollarSign } from "lucide-react";
+import {
+	FileText,
+	Calculator,
+	Code,
+	Terminal,
+	DollarSign,
+	BrainCircuit,
+} from "lucide-react";
 
 const tools = [
         {
@@ -43,6 +50,14 @@ const tools = [
 		description: "Format, validate, and beautify JSON data.",
 		icon: Code,
 		href: "/tools/json-formatter",
+		comingSoon: false,
+	},
+	{
+		id: "nano-banana-parser",
+		title: "Nano Banana Parser",
+		description: "Parse raw candidates payloads into readable output.",
+		icon: BrainCircuit,
+		href: "/tools/nano-banana-parser",
 		comingSoon: false,
 	},
 	{

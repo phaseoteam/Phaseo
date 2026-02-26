@@ -1,0 +1,22 @@
+{
+  "model_id": "google/gemini-3-1-flash-image-preview-2026-02-26",
+  "organisation_id": "google",
+  "name": "Gemini 3.1 Flash Image Preview (Nano Banana 2)",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-02-26T00:00:00",
+  "release_date": "2026-02-26T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text,image",
+  "links": [],
+  "details": [
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-01-01T00:00:00"
+    }
+  ],
+  "benchmarks": []
+}

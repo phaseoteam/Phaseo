@@ -17,7 +17,9 @@ import type {
 import { normalizeOpenAIContent } from "../shared/normalizeContent";
 import {
 	normalizeImageConfig,
+	normalizeModalities,
 	normalizeOpenAIToolChoice,
+	normalizeThinkingConfig,
 	normalizeResponseFormat,
 	resolveServiceTierFromSpeedAndTier,
 } from "../shared/text-normalizers";
@@ -98,6 +100,20 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		unknownStringFallback: "auto",
 	});
 
+	const reasoningFromRequest = req.reasoning
+		? {
+			effort: req.reasoning.effort,
+			summary: req.reasoning.summary as any,
+			enabled: (req.reasoning as any).enabled,
+			maxTokens: (req.reasoning as any).max_tokens,
+		}
+		: undefined;
+	const thinkingAlias = normalizeThinkingConfig((req as any).thinking);
+	const reasoning = {
+		...(thinkingAlias ?? {}),
+		...(reasoningFromRequest ?? {}),
+	};
+
 	// Build IR request
 	return {
 		messages,
@@ -118,19 +134,19 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		maxToolCalls: (req as any).max_tool_calls,
 
 		// Reasoning
-		reasoning: req.reasoning
-			? {
-				effort: req.reasoning.effort,
-				summary: req.reasoning.summary as any,
-				enabled: (req.reasoning as any).enabled,
-				maxTokens: (req.reasoning as any).max_tokens,
-			}
-			: undefined,
+		reasoning:
+			Object.keys(reasoning).length > 0
+				? reasoning
+				: undefined,
 
 		// Response format
 		responseFormat: normalizeResponseFormat(req.response_format),
-		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
-		imageConfig: normalizeImageConfig((req as any).image_config),
+		modalities: normalizeModalities(
+			(req as any).modalities ??
+			(req as any).response_modalities ??
+			(req as any).responseModalities,
+		),
+		imageConfig: normalizeImageConfig((req as any).image_config ?? (req as any).imageConfig),
 
 		// Advanced parameters
 		frequencyPenalty: req.frequency_penalty,

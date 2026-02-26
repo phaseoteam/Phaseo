@@ -26,8 +26,13 @@ export default defineProvider({
             : asArray(payloadRecord?.data).length
               ? asArray(payloadRecord?.data)
               : asArray(payload);
+        const textToTextModels = models.filter((value) => {
+            const row = asRecord(value);
+            if (!row) return false;
+            return typeof row.model_type_id === "string" && row.model_type_id.trim().toLowerCase() === "text-to-text";
+        });
 
-        return normalizeModelEntries(models, (item) => {
+        return normalizeModelEntries(textToTextModels, (item) => {
             if (typeof item.id === "string" && item.id.trim()) {
                 return item.id.trim();
             }

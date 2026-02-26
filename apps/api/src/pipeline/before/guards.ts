@@ -202,7 +202,16 @@ export async function guardContext(args: {
             };
         }
 
-        if (!args.internal && !context.credit.ok) {
+        const teamTier = String(context.teamEnrichment?.tier ?? "")
+            .trim()
+            .toLowerCase();
+        const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
+            .trim()
+            .toLowerCase();
+        const bypassWalletCreditCheck =
+            teamTier === "enterprise" && billingMode === "invoice";
+
+        if (!args.internal && !context.credit.ok && !bypassWalletCreditCheck) {
             return {
                 ok: false,
                 response: err("insufficient_funds", {

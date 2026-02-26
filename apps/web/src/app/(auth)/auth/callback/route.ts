@@ -1,79 +1,24 @@
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { NextResponse } from 'next/server'
-import { getStripe } from '@/lib/stripe'
 
 function makeSlug(name: string) {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)
 }
 
-async function ensureStripeCustomerAndWallet(
+async function ensureWalletRow(
     supabaseAdmin: ReturnType<typeof createAdminClient>,
-    teamId: string,
-    userId: string,
-    email?: string,
-    name?: string
+    teamId: string
 ) {
-    // 1) If wallet exists with a customer, done.
-    const { data: wallet } = await supabaseAdmin
-        .from('wallets')
-        .select('team_id, stripe_customer_id')
-        .eq('team_id', teamId)
-        .maybeSingle();
-
-    if (wallet?.stripe_customer_id) return;
-
-    const stripeSecret = process.env.TEST_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecret) return;
-    const stripe = getStripe();
-
-    // 2) Try to reuse an existing Stripe customer (avoid dupes if DB was wiped)
-    // Prefer a metadata match, fall back to email (optional).
-    let stripeCustomerId: string | undefined;
-
-    try {
-        // Search by metadata.team_id (requires Stripe search; it's on by default for most accounts)
-        const search = await stripe.customers.search({
-            query: `metadata['team_id']:'${teamId}'`,
-            limit: 1,
-        });
-        if (search.data.length) {
-            stripeCustomerId = search.data[0].id;
-        }
-    } catch {
-        // ignore if search isn't available; we'll create if needed
-    }
-
-    if (!stripeCustomerId && email) {
-        const list = await stripe.customers.list({ email, limit: 1 });
-        if (list.data.length) {
-            stripeCustomerId = list.data[0].id;
-            // Optionally patch metadata so future searches work
-            try {
-                await stripe.customers.update(stripeCustomerId, { metadata: { user_id: userId, team_id: teamId } });
-            } catch {
-                // Intentionally ignore errors when updating Stripe customer metadata
-            }
-        }
-    }
-
-    // 3) Create a customer only if we still don't have one
-    if (!stripeCustomerId) {
-        const customer = await stripe.customers.create({
-            email: email || undefined,
-            name: name || undefined,
-            metadata: { user_id: userId, team_id: teamId },
-        });
-        stripeCustomerId = customer.id;
-    }
-
-    // 4) Upsert wallet (won't duplicate thanks to unique(team_id))
-    await supabaseAdmin
-        .from('wallets')
-        .upsert({ team_id: teamId, stripe_customer_id: stripeCustomerId }, {
+    // Ensure a wallet exists per team. Stripe customer is now created lazily
+    // when billing flows are first used.
+    await supabaseAdmin.from('wallets').upsert(
+        { team_id: teamId },
+        {
             onConflict: 'team_id',
-            ignoreDuplicates: false, // we want to update stripe_customer_id if it was null
-        });
+            ignoreDuplicates: true,
+        }
+    );
 }
 
 async function getOrCreatePersonalTeamId(opts: {
@@ -230,11 +175,38 @@ export async function GET(request: Request) {
         return NextResponse.redirect(new URL('/error', url));
     }
 
-    // 2) Ensure wallet + stripe customer only if missing
+    // 2) Ensure wallet exists. Stripe customer is created lazily when needed.
     try {
-        await ensureStripeCustomerAndWallet(supabaseAdmin, teamId, user.id, user.email ?? undefined, displayName);
+        await ensureWalletRow(supabaseAdmin, teamId);
     } catch {
         // Handle error
+    }
+
+    // 3) If this team is enterprise + invoice mode but the invoice profile is not
+    // enabled yet, route directly to billing onboarding.
+    try {
+        const { data: teamRow } = await supabaseAdmin
+            .from("teams")
+            .select("tier,billing_mode")
+            .eq("id", teamId)
+            .maybeSingle();
+
+        const isEnterprise = String(teamRow?.tier ?? "").toLowerCase() === "enterprise";
+        const isInvoiceMode = String(teamRow?.billing_mode ?? "wallet").toLowerCase() === "invoice";
+
+        if (isEnterprise && isInvoiceMode) {
+            const { data: profileRow } = await supabaseAdmin
+                .from("team_invoice_profiles")
+                .select("enabled")
+                .eq("team_id", teamId)
+                .maybeSingle();
+
+            if (!profileRow?.enabled) {
+                return NextResponse.redirect(new URL("/settings/credits/onboarding", url));
+            }
+        }
+    } catch {
+        // Ignore onboarding redirect issues and continue to default destination.
     }
 
     return NextResponse.redirect(new URL('/', url));

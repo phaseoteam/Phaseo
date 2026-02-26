@@ -473,37 +473,39 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.maxTokens).toBe(321);
 	});
 
-	it("should decode image_config", () => {
+	it("should decode image_config aliases, response modalities, and thinking alias", () => {
 		const request = {
 			model: "google/gemini-2-5-flash-image",
 			input: "Generate image",
-			modalities: ["text", "image"],
-			image_config: {
-				aspect_ratio: "4:3",
-				image_size: "1K",
-				font_inputs: [
-					{
-						font_url: "https://example.com/font.ttf",
-						text: "Caption",
-					},
-				],
-				super_resolution_references: ["https://example.com/ref.png"],
+			responseModalities: ["IMAGE"],
+			thinking: {
+				effort: "high",
+				includeThoughts: false,
+				budget_tokens: 512,
+			},
+			imageConfig: {
+				aspectRatio: "4:3",
+				imageSize: "0.5K",
+				includeRaiReason: true,
+				referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
 			},
 		};
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
-		expect(ir.modalities).toEqual(["text", "image"]);
+		expect(ir.modalities).toEqual(["image"]);
+		expect(ir.reasoning).toMatchObject({
+			effort: "high",
+			includeThoughts: false,
+			maxTokens: 512,
+		});
 		expect(ir.imageConfig).toEqual({
 			aspectRatio: "4:3",
-			imageSize: "1K",
-			fontInputs: [
-				{
-					fontUrl: "https://example.com/font.ttf",
-					text: "Caption",
-				},
-			],
-			superResolutionReferences: ["https://example.com/ref.png"],
+			imageSize: "0.5K",
+			includeRaiReason: true,
+			referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
+			fontInputs: undefined,
+			superResolutionReferences: undefined,
 		});
 	});
 

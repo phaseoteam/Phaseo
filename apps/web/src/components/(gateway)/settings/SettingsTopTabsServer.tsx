@@ -23,12 +23,17 @@ type Tab = {
 	badge?: string;
 };
 
-const BILLING_TABS: Tab[] = [
-	{ href: "/settings/credits", label: "Credits" },
-	{ href: "/settings/credits/transactions", label: "Transactions" },
-	{ href: "/settings/payment-methods", label: "Payment Methods" },
-	{ href: "/settings/tiers", label: "Tiers" },
-];
+function getBillingTabs(isEnterpriseInvoiceMode: boolean): Tab[] {
+	return [
+		{ href: "/settings/credits", label: "Credits" },
+		{
+			href: "/settings/credits/transactions",
+			label: isEnterpriseInvoiceMode ? "Invoices" : "Transactions",
+		},
+		{ href: "/settings/payment-methods", label: "Payment Methods" },
+		{ href: "/settings/tiers", label: "Tiers" },
+	];
+}
 
 const USAGE_TABS: Tab[] = [
 	{ href: "/settings/usage", label: "Usage" },
@@ -83,7 +88,10 @@ const TEAM_TABS: Tab[] = [
 	},
 ];
 
-function resolveTabs(pathname: string): Tab[] | null {
+function resolveTabs(
+	pathname: string,
+	isEnterpriseInvoiceMode: boolean,
+): Tab[] | null {
 	// Account
 	if (pathname.startsWith("/settings/account")) {
 		return [
@@ -119,7 +127,7 @@ function resolveTabs(pathname: string): Tab[] | null {
 	}
 
 	if (pathname.startsWith("/settings/credits") || pathname.startsWith("/settings/payment-methods") || pathname.startsWith("/settings/tiers")) {
-		return BILLING_TABS;
+		return getBillingTabs(isEnterpriseInvoiceMode);
 	}
 	if (pathname.startsWith("/settings/usage")) return USAGE_TABS;
 	if (
@@ -139,10 +147,13 @@ function resolveTabs(pathname: string): Tab[] | null {
 	return null;
 }
 
-export default function SettingsTopTabsServer() {
+export default function SettingsTopTabsServer(props: {
+	isEnterpriseInvoiceMode?: boolean;
+}) {
+	const isEnterpriseInvoiceMode = Boolean(props.isEnterpriseInvoiceMode);
 	const pathname = usePathname() ?? "";
 	const { toggleSidebar } = useSidebar();
-	const tabs = resolveTabs(pathname);
+	const tabs = resolveTabs(pathname, isEnterpriseInvoiceMode);
 
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
 	const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
