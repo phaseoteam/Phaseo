@@ -1365,6 +1365,10 @@ type ResponsesWebSocketServerEvent struct {
 	Type *string `json:"type,omitempty"`
 }
 
+type ResponsesWebSocketUpgradeRequiredResponse struct {
+	Error *map[string]interface{} `json:"error,omitempty"`
+}
+
 type TextContentPart struct {
 	Text string `json:"text"`
 	Type string `json:"type"`

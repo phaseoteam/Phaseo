@@ -606,6 +606,10 @@ struct ResponsesWebSocketServerEvent {
 	std::string type;
 };
 
+struct ResponsesWebSocketUpgradeRequiredResponse {
+	std::map<std::string, std::any> error;
+};
+
 struct TextContentPart {
 	std::string text;
 	std::any type;
