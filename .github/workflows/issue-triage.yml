@@ -18,8 +18,10 @@ jobs:
                   persist-credentials: false
 
             - uses: anomalyco/opencode/github@latest
+              env:
+                  OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               with:
-                  model: zen/gpt-5-nano
+                  model: opencode/gpt-5-nano
                   prompt: |
                       You are responding to a new GitHub issue on the AI Stats project — an
                       open-source monorepo that provides an AI model data registry (pricing,
@@ -46,3 +48,4 @@ jobs:
                       "*This is an automated response — a team member will follow up shortly.*"
 
                       Keep the response concise, helpful, and technically grounded.
+
