@@ -31,11 +31,14 @@ export async function handleOAuthRedirect(formData: FormData) {
 
 export async function handlePasswordSignIn(formData: FormData) {
     const supabase = await createClient();
-    const email = String(formData.get("email") ?? "");
+    const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) redirect("/error?message=Authentication failed");
+    if (error) {
+        const message = error.message || "Authentication failed";
+        redirect(`/sign-in?error=${encodeURIComponent(message)}`);
+    }
 
     // Only remember the method, not the identifier
     await (await cookies()).set("auth_provider", "email", cookieOpts);

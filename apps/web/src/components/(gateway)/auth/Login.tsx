@@ -10,7 +10,25 @@ type OAuthProvider = (typeof OAUTH)[number];
 type Provider = OAuthProvider | "email";
 type SignupNotice = "exists" | "check-email" | null;
 
-export async function Login({ signupNotice = null }: { signupNotice?: SignupNotice }) {
+function normalizeAuthError(message: string | null): string | null {
+	if (!message) return null;
+	const lower = message.toLowerCase();
+	if (lower.includes("invalid login credentials")) {
+		return "Invalid email or password. Please try again.";
+	}
+	if (lower.includes("email not confirmed")) {
+		return "Please verify your email before signing in.";
+	}
+	return message;
+}
+
+export async function Login({
+	signupNotice = null,
+	authError = null,
+}: {
+	signupNotice?: SignupNotice;
+	authError?: string | null;
+}) {
 	let lastProvider: Provider | null = null;
 	try {
 		const c = await cookies();
@@ -32,6 +50,7 @@ export async function Login({ signupNotice = null }: { signupNotice?: SignupNoti
 			: signupNotice === "check-email"
 				? "Account created. Check your email to verify, then sign in."
 				: null;
+	const authErrorText = normalizeAuthError(authError);
 
 	return (
 		<div className="flex flex-col gap-6">
@@ -46,6 +65,15 @@ export async function Login({ signupNotice = null }: { signupNotice?: SignupNoti
 			{signupNoticeText ? (
 				<p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
 					{signupNoticeText}
+				</p>
+			) : null}
+			{authErrorText ? (
+				<p
+					className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+					role="alert"
+					aria-live="polite"
+				>
+					{authErrorText}
 				</p>
 			) : null}
 

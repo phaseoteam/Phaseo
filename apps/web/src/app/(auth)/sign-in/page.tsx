@@ -21,6 +21,8 @@ export default async function Page({ searchParams }: SignInPageProps) {
 	const params = (await searchParams) ?? {};
 	const signup = Array.isArray(params.signup) ? params.signup[0] : params.signup;
 	const signupNotice = signup === "exists" || signup === "check-email" ? signup : null;
+	const authErrorParam = Array.isArray(params.error) ? params.error[0] : params.error;
+	const authError = typeof authErrorParam === "string" ? authErrorParam : null;
 
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">
@@ -41,7 +43,7 @@ export default async function Page({ searchParams }: SignInPageProps) {
 				<div className="flex flex-1 items-center justify-center">
 					<div className="mx-auto w-full max-w-xs">
 						<Suspense fallback={<div>Loading…</div>}>
-							<Login signupNotice={signupNotice} />
+							<Login signupNotice={signupNotice} authError={authError} />
 						</Suspense>
 					</div>
 				</div>
