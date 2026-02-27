@@ -1,48 +1,48 @@
-name: "🐞 Bug Report"
+name: "Bug Report"
 description: Report a defect or unintended behaviour
 title: "[Bug] "
 assignees:
-    - DanielButler1
+  - DanielButler1
 body:
-    - type: dropdown
-      id: area
-      attributes:
-          label: Area
-          options:
-              - API
-              - Data
-              - Docs
-              - Other
-              - SDKs
-              - Web
-      validations:
-          required: true
-    - type: textarea
-      id: summary
-      attributes:
-          label: Summary
-          placeholder: One clear paragraph of what’s broken.
-      validations:
-          required: true
-    - type: textarea
-      id: repro
-      attributes:
-          label: Steps to reproduce
-          placeholder: |
-              1. …
-              2. …
-              3. …
-      validations:
-          required: true
-    - type: textarea
-      id: expected
-      attributes:
-          label: Expected vs actual
-          placeholder: What should have happened?
-      validations:
-          required: true
-    - type: input
-      id: env
-      attributes:
-          label: Environment
-          placeholder: OS / Browser / Device / App version / Commit SHA
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - API
+        - Data
+        - Docs
+        - Other
+        - SDKs
+        - Web
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      placeholder: One clear paragraph of what's broken.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      placeholder: What should have happened?
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: OS / Browser / Device / App version / Commit SHA
