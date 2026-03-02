@@ -125,7 +125,7 @@
 	},
 	"devDependencies": {
 		"@eslint/eslintrc": "^3",
-		"@playwright/test": "^1.58.1",
+		"@playwright/test": "^1.58.2",
 		"@shikijs/colorized-brackets": "^3.13.0",
 		"@tailwindcss/postcss": "^4",
 		"@types/jest": "^29.5.12",
