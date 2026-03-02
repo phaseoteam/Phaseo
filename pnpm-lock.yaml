@@ -398,8 +398,8 @@ importers:
         specifier: ^1.306.2
         version: 1.342.1
       posthog-node:
-        specifier: ^5.17.0
-        version: 5.24.11
+        specifier: ^5.26.0
+        version: 5.26.0
       radix-ui:
         specifier: ^1.4.3
         version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2960,6 +2960,9 @@ packages:
   '@posthog/core@1.20.1':
     resolution: {integrity: sha512-uoTmWkYCtLYFpiK37/JCq+BuCA/OZn1qQZn5cPv1EEKt3ni3Zgg48xWCnSEyGFl5KKSXlfCruiRTwnbAtCgrBA==}
 
+  '@posthog/core@1.23.1':
+    resolution: {integrity: sha512-GViD5mOv/mcbZcyzz3z9CS0R79JzxVaqEz4sP5Dsea178M/j3ZWe6gaHDZB9yuyGfcmIMQ/8K14yv+7QrK4sQQ==}
+
   '@posthog/types@1.342.1':
     resolution: {integrity: sha512-bcyBdO88FWTkd5AVTa4Nu8T7RfY0WJrG7WMCXum/rcvNjYhS3DmOfKf8o/Bt56vA3J3yeU0vbgrmltYVoTAfaA==}
 
@@ -5431,6 +5434,7 @@ packages:
   basic-ftp@5.1.0:
     resolution: {integrity: sha512-RkaJzeJKDbaDWTIPiJwubyljaEPwpVWkm9Rt5h9Nd6h7tEXTJ3VB4qxdZBioV7JO5yLUaOKwz7vDOzlncUsegw==}
     engines: {node: '>=10.0.0'}
+    deprecated: Security vulnerability fixed in 5.2.0, please upgrade
 
   before-after-hook@3.0.2:
     resolution: {integrity: sha512-Nik3Sc0ncrMK4UUdXQmAnRtzmNQTAAXmXIopizwZ1W1t8QmfJj+zL4OA2I7XPTPW5z5TDqv4hRo/JzouDJnX3A==}
@@ -9161,8 +9165,8 @@ packages:
   posthog-js@1.342.1:
     resolution: {integrity: sha512-mMnQhWuKj4ejFicLtFzr52InmqploOyW1eInqXBkaVqE1DPhczBDmwsd9MSggY8kv0EXm8zgK+2tzBJUKcX5yg==}
 
-  posthog-node@5.24.11:
-    resolution: {integrity: sha512-tDXbYyXJyh0oUEo1SumCzmXY0FZNB0avAq0uXMo6o6JinzwY8u5cygqAgUyMDIGG8u0p6tBHq++foqULXaPmiA==}
+  posthog-node@5.26.0:
+    resolution: {integrity: sha512-DK1XF/RiunhvT57cFyPxW9OaliZzl5aREHFwY/AISL3MVOaDUb4wIccMn0G3ws3Ounen8iGH7xvzZQ0x2vEOEQ==}
     engines: {node: ^20.20.0 || >=22.22.0}
 
   potpack@1.0.2:
@@ -13585,6 +13589,10 @@ snapshots:
   '@poppinss/exception@1.2.3': {}
 
   '@posthog/core@1.20.1':
+    dependencies:
+      cross-spawn: 7.0.6
+
+  '@posthog/core@1.23.1':
     dependencies:
       cross-spawn: 7.0.6
 
@@ -21345,9 +21353,9 @@ snapshots:
       query-selector-shadow-dom: 1.0.1
       web-vitals: 5.1.0
 
-  posthog-node@5.24.11:
+  posthog-node@5.26.0:
     dependencies:
-      '@posthog/core': 1.20.1
+      '@posthog/core': 1.23.1
 
   potpack@1.0.2: {}
 
