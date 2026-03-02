@@ -70,6 +70,8 @@ const PROVIDER_ALIAS_MAP: Record<string, string> = {
 	sourceful: "sourceful",
 	suno: "suno",
 	together: "together",
+	venice: "venice",
+	"venice-ai": "venice",
 	wandb: "weights-and-biases",
 	"weights-and-biases": "weights-and-biases",
 	xai: "x-ai",

@@ -290,6 +290,12 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 		docsUrl: "https://api.together.ai/settings/api-keys",
 		minLength: 16,
 	},
+	"weights-and-biases": {
+		hint: "Weights & Biases Inference API key from account settings.",
+		example: "wandb_v1_xxxxxxxxxxxxxxxx",
+		docsUrl: "https://docs.wandb.ai/inference/api-reference",
+		minLength: 16,
+	},
 	"x-ai": {
 		hint: "xAI keys are commonly xai-... or sk-... style keys.",
 		example: "xai-xxxxxxxx",

@@ -11,6 +11,7 @@ describe("normalizeProviderId", () => {
 		expect(normalizeProviderId("AtlasCloud")).toBe("atlascloud");
 		expect(normalizeProviderId("MiniMax Lightning")).toBe("minimax-lightning");
 		expect(normalizeProviderId("Moonshot AI Turbo")).toBe("moonshot-ai-turbo");
+		expect(normalizeProviderId("Venice AI")).toBe("venice");
 		expect(normalizeProviderId("Weights & Biases")).toBe("weights-and-biases");
 	});
 
@@ -22,7 +23,7 @@ describe("normalizeProviderId", () => {
 describe("normalizeProviderList", () => {
 	it("normalizes arrays in order", () => {
 		expect(
-			normalizeProviderList(["OpenAI", "Anthropic", "Google AI Studio", "xAI", "z.AI"]),
-		).toEqual(["openai", "anthropic", "google-ai-studio", "x-ai", "z-ai"]);
+			normalizeProviderList(["OpenAI", "Anthropic", "Google AI Studio", "Venice AI", "xAI", "z.AI"]),
+		).toEqual(["openai", "anthropic", "google-ai-studio", "venice", "x-ai", "z-ai"]);
 	});
 });

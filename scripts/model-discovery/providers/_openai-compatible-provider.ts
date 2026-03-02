@@ -3,7 +3,7 @@ import { asArray, asRecord, defineProvider, fetchJson, normalizeModelEntries } f
 type OpenAICompatProviderConfig = {
     providerId: string;
     name: string;
-    apiKeyEnv: string;
+    apiKeyEnv: string | string[];
     baseUrl?: string;
     baseUrlEnv?: string;
     pathPrefix?: string;
@@ -36,17 +36,27 @@ function normalizeModelsUrl(baseUrl: string, pathPrefix?: string): string {
 }
 
 export function defineOpenAICompatibleProvider(config: OpenAICompatProviderConfig) {
+    const apiKeyEnvCandidates = Array.isArray(config.apiKeyEnv)
+        ? config.apiKeyEnv
+        : [config.apiKeyEnv];
+    const primaryApiKeyEnv = apiKeyEnvCandidates[0];
+
     return defineProvider({
         id: config.providerId,
         name: config.name,
-        requiredEnv: config.baseUrlEnv && !config.baseUrl ? [config.apiKeyEnv, config.baseUrlEnv] : [config.apiKeyEnv],
+        requiredEnv:
+            config.baseUrlEnv && !config.baseUrl
+                ? [primaryApiKeyEnv, config.baseUrlEnv]
+                : [primaryApiKeyEnv],
         async fetchModels() {
-            const key = process.env[config.apiKeyEnv];
+            const key = apiKeyEnvCandidates
+                .map((envName) => process.env[envName])
+                .find((value) => typeof value === "string" && value.trim().length > 0);
             const configuredBaseUrl = config.baseUrlEnv ? process.env[config.baseUrlEnv] : undefined;
             const baseUrl = config.baseUrl ?? configuredBaseUrl;
 
             if (!key) {
-                throw new Error("Missing API key: " + config.apiKeyEnv);
+                throw new Error("Missing API key: " + apiKeyEnvCandidates.join(" | "));
             }
             if (!baseUrl) {
                 throw new Error("Missing base URL for " + config.providerId);

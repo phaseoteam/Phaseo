@@ -3,7 +3,7 @@
 // How: Exposes provider-specific helpers for routing and execution.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openAICompatUrl, resolveOpenAICompatRoute } from "../config";
+import { openAICompatUrl, resolveOpenAICompatKey, resolveOpenAICompatRoute } from "../config";
 import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 
 beforeAll(() => {
@@ -60,6 +60,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("novitaai", "deepseek/deepseek-r1-turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("perplexity", "sonar")).toBe("chat");
 		expect(resolveOpenAICompatRoute("together", "meta-llama/Llama-3.3-70B-Instruct-Turbo")).toBe("chat");
+		expect(resolveOpenAICompatRoute("venice", "venice-uncensored")).toBe("responses");
 		expect(resolveOpenAICompatRoute("cerebras", "llama3.1-70b")).toBe("chat");
 		expect(resolveOpenAICompatRoute("fireworks", "accounts/fireworks/models/llama-v3p3-70b-instruct")).toBe("responses");
 		expect(resolveOpenAICompatRoute("groq", "llama-3.3-70b-versatile")).toBe("responses");
@@ -298,6 +299,63 @@ describe("openAICompatUrl", () => {
 		expect(openAICompatUrl("together", "/chat/completions")).toBe(
 			"https://api.together.xyz/v1/chat/completions",
 		);
+	});
+
+	it("builds venice chat and responses endpoints with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			VENICE_API_KEY: "test-venice-key",
+		} as any);
+
+		expect(openAICompatUrl("venice", "/chat/completions")).toBe(
+			"https://api.venice.ai/v1/chat/completions",
+		);
+		expect(openAICompatUrl("venice", "/responses")).toBe(
+			"https://api.venice.ai/v1/responses",
+		);
+	});
+
+	it("builds weights-and-biases chat endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			WANDB_API_KEY: "test-wandb-key",
+		} as any);
+
+		expect(openAICompatUrl("weights-and-biases", "/chat/completions")).toBe(
+			"https://api.inference.wandb.ai/v1/chat/completions",
+		);
+	});
+});
+
+describe("resolveOpenAICompatKey", () => {
+	it("prefers WANDB_API_KEY for weights-and-biases", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			WANDB_API_KEY: "test-wandb-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "weights-and-biases",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-wandb-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("falls back to WEIGHTSANDBIASES_API_KEY for weights-and-biases", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			WEIGHTSANDBIASES_API_KEY: "test-legacy-wandb-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "weights-and-biases",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-legacy-wandb-key");
+		expect(resolved.source).toBe("gateway");
 	});
 });
 
