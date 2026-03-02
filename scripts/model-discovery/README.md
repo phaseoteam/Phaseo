@@ -36,6 +36,7 @@ pnpm run data:check-new-models:test
 ## Environment variables
 
 - `DISCORD_WEBHOOK_URL` (optional, but required for alerts)
+- `DISCORD_ROLE_ID` (optional role mention)
 - `DISCORD_USER_ID` (optional mention)
 - `NEXT_PUBLIC_SUPABASE_URL` (required for DB allowlist)
 - `SUPABASE_SERVICE_ROLE_KEY` (required for DB allowlist)

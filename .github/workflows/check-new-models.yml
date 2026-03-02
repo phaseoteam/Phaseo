@@ -54,8 +54,9 @@ jobs:
             - name: Check for new internal models
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal.ts \
-                    --webhook-url "${{ secrets.DISCORD_NEW_MODEL_WEBHOOK }}" \
+                    --webhook-url "${{ secrets.DISCORD_WEBHOOK_URL }}" \
                     --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
+                    --discord-role-id "${{ secrets.DISCORD_ROLE_ID }}" \
                     --hf-orgs "${{ vars.HF_WATCH_ORGS }}" \
                     --hf-token "${{ secrets.HF_TOKEN }}"
 

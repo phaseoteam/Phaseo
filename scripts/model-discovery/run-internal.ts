@@ -4,6 +4,7 @@ import path from "node:path";
 type CliOptions = {
     webhookUrl: string | null;
     discordUserId: string | null;
+    discordRoleId: string | null;
     hfOrgs: string[];
     hfToken: string | null;
 };
@@ -46,6 +47,7 @@ function nowIso(): string {
 function parseArgs(argv: string[]): CliOptions {
     let webhookUrl: string | null = null;
     let discordUserId: string | null = null;
+    let discordRoleId: string | null = null;
     let hfToken: string | null = null;
     const hfOrgs: string[] = [];
 
@@ -67,6 +69,12 @@ function parseArgs(argv: string[]): CliOptions {
             continue;
         }
 
+        if (key === "--discord-role-id") {
+            discordRoleId = value.trim() || null;
+            index += 1;
+            continue;
+        }
+
         if (key === "--hf-orgs") {
             for (const item of value.split(/[,\s]+/)) {
                 const org = item.trim().toLowerCase();
@@ -83,7 +91,7 @@ function parseArgs(argv: string[]): CliOptions {
         }
     }
 
-    return { webhookUrl, discordUserId, hfOrgs, hfToken };
+    return { webhookUrl, discordUserId, discordRoleId, hfOrgs, hfToken };
 }
 
 function collectModelJsonFiles(rootDir: string): string[] {
@@ -361,14 +369,36 @@ function displayModelName(snapshot: ModelFileSnapshot): string {
     return parts.length >= 2 ? parts[parts.length - 2] : snapshot.filePath;
 }
 
-function appendBoundedLines(lines: string[], prefix: string, values: string[], maxItems = 40): void {
+const MODEL_DETAILS_BASE_URL = "https://ai-stats.phaseo.app";
+const HUGGING_FACE_BASE_URL = "https://huggingface.co";
+
+function appendBoundedLines(lines: string[], values: string[], maxItems = 40): void {
     const visible = values.slice(0, maxItems);
-    for (const value of visible) {
-        lines.push(`${prefix}${value}`);
-    }
-    if (values.length > maxItems) {
-        lines.push(`${prefix}...and ${values.length - maxItems} more`);
-    }
+    for (const value of visible) lines.push(value);
+    if (values.length > maxItems) lines.push(`- ...and ${values.length - maxItems} more`);
+}
+
+function buildInternalModelLink(snapshot: ModelFileSnapshot): string | null {
+    const parts = snapshot.filePath.split(/[\\/]+/g);
+    const modelsIndex = parts.indexOf("models");
+    if (modelsIndex === -1 || modelsIndex + 2 >= parts.length) return null;
+    const organisationId = parts[modelsIndex + 1];
+    const modelSlug = parts[modelsIndex + 2];
+    if (!organisationId || !modelSlug) return null;
+    return `${MODEL_DETAILS_BASE_URL}/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(modelSlug)}`;
+}
+
+function buildInternalModelLine(prefix: "New Model" | "Removed Model", snapshot: ModelFileSnapshot): string {
+    const name = displayModelName(snapshot);
+    const link = buildInternalModelLink(snapshot);
+    if (!link) return `- ${prefix}: ${name}`;
+    return `- ${prefix}: ${name} <${link}>`;
+}
+
+function buildHfModelLine(modelId: string): string {
+    const normalized = modelId.trim();
+    if (!normalized) return "- Unknown HF model";
+    return `- ${normalized} <${HUGGING_FACE_BASE_URL}/${normalized}>`;
 }
 
 function buildDiscordMessage(
@@ -384,16 +414,27 @@ function buildDiscordMessage(
         "",
     ];
 
+    if (addedPaths.length > 0) {
+        lines.push(`Internal Model Additions (${addedPaths.length}):`);
+    }
     for (const filePath of addedPaths) {
         const snapshot = currentFilesByPath[filePath];
         if (!snapshot) continue;
-        lines.push(`New Model: ${displayModelName(snapshot)}`);
+        lines.push(buildInternalModelLine("New Model", snapshot));
+    }
+
+    if (addedPaths.length > 0 && removedPaths.length > 0) {
+        lines.push("");
+    }
+
+    if (removedPaths.length > 0) {
+        lines.push(`Internal Model Removals (${removedPaths.length}):`);
     }
 
     for (const filePath of removedPaths) {
         const snapshot = previousFilesByPath[filePath];
         if (!snapshot) continue;
-        lines.push(`Removed Model: ${displayModelName(snapshot)}`);
+        lines.push(buildInternalModelLine("Removed Model", snapshot));
     }
 
     if (hfAdditionsByOrg.length > 0) {
@@ -402,7 +443,7 @@ function buildDiscordMessage(
         }
         for (const orgEntry of hfAdditionsByOrg) {
             lines.push(`Hugging Face (${orgEntry.org}) Additions (${orgEntry.addedModelIds.length}):`);
-            appendBoundedLines(lines, "- ", orgEntry.addedModelIds);
+            appendBoundedLines(lines, orgEntry.addedModelIds.map(buildHfModelLine));
             lines.push("");
         }
     }
@@ -411,7 +452,7 @@ function buildDiscordMessage(
     return message.length <= 1900 ? message : `${message.slice(0, 1890)}\n...[truncated]`;
 }
 
-async function sendDiscordWebhook(message: string, options: { webhookUrl: string; discordUserId: string | null }): Promise<void> {
+async function sendDiscordWebhook(message: string, options: { webhookUrl: string; discordUserId: string | null; discordRoleId: string | null }): Promise<void> {
     let parsed: URL;
     try {
         parsed = new URL(options.webhookUrl);
@@ -425,10 +466,17 @@ async function sendDiscordWebhook(message: string, options: { webhookUrl: string
         return;
     }
 
-    const content = options.discordUserId ? `<@${options.discordUserId}>\n${message}` : message;
+    const mentions: string[] = [];
+    if (options.discordRoleId) mentions.push(`<@&${options.discordRoleId}>`);
+    if (options.discordUserId) mentions.push(`<@${options.discordUserId}>`);
+    const content = mentions.length > 0 ? `${mentions.join(" ")}\n${message}` : message;
     const payload: Record<string, unknown> = { content };
-    if (options.discordUserId) {
-        payload.allowed_mentions = { users: [options.discordUserId] };
+    if (options.discordUserId || options.discordRoleId) {
+        payload.allowed_mentions = {
+            parse: [],
+            users: options.discordUserId ? [options.discordUserId] : [],
+            roles: options.discordRoleId ? [options.discordRoleId] : [],
+        };
     }
 
     const response = await fetch(options.webhookUrl, {
@@ -526,6 +574,7 @@ async function main(): Promise<void> {
     await sendDiscordWebhook(message, {
         webhookUrl: options.webhookUrl,
         discordUserId: options.discordUserId,
+        discordRoleId: options.discordRoleId,
     });
 }
 
