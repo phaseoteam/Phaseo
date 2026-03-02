@@ -119,7 +119,7 @@ app.post("/", async (c) => {
 			return c.json(
 				{
 					error: "Validation error",
-					details: parsed.error.errors,
+					details: parsed.error.issues,
 				},
 				400
 			);
@@ -281,7 +281,7 @@ app.patch("/:clientId", async (c) => {
 			return c.json(
 				{
 					error: "Validation error",
-					details: parsed.error.errors,
+					details: parsed.error.issues,
 				},
 				400
 			);

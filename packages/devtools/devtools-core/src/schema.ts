@@ -107,7 +107,7 @@ export const MetadataSchema = z.object({
   model: z.string().optional(),
   provider: z.string().optional(),
   status_code: z.number().optional(),
-  headers: z.record(z.string()).optional()
+  headers: z.record(z.string(), z.string()).optional()
 });
 
 export type Metadata = z.infer<typeof MetadataSchema>;
@@ -120,8 +120,8 @@ export const DevToolsEntrySchema = z.object({
   type: EndpointTypeSchema,
   timestamp: z.number(),
   duration_ms: z.number(),
-  request: z.record(z.any()),
-  response: z.record(z.any()).nullable(),
+  request: z.record(z.string(), z.any()),
+  response: z.record(z.string(), z.any()).nullable(),
   error: ErrorInfoSchema.nullable(),
   metadata: MetadataSchema
 });
@@ -165,13 +165,13 @@ export const StatsSchema = z.object({
   total_cost: z.number(),
   total_tokens: z.number(),
   total_duration_ms: z.number(),
-  by_endpoint: z.record(z.object({
+  by_endpoint: z.record(z.string(), z.object({
     count: z.number(),
     errors: z.number(),
     avg_duration_ms: z.number(),
     total_cost: z.number()
   })),
-  by_model: z.record(z.object({
+  by_model: z.record(z.string(), z.object({
     count: z.number(),
     tokens: z.number(),
     cost: z.number()

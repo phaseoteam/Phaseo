@@ -23,7 +23,7 @@ const ProviderRoutingSchema = z.object({
     enforce_distillable_text: z.boolean().nullable().optional(),
     enforceDistillableText: z.boolean().nullable().optional(),
     quantizations: z.array(z.string()).nullable().optional(),
-    sort: z.union([z.string(), z.record(z.any())]).nullable().optional(),
+    sort: z.union([z.string(), z.record(z.string(), z.any())]).nullable().optional(),
     max_price: z.object({
         prompt: z.union([z.number(), z.string()]).optional(),
         completion: z.union([z.number(), z.string()]).optional(),
@@ -38,10 +38,10 @@ const ProviderRoutingSchema = z.object({
         audio: z.union([z.number(), z.string()]).optional(),
         request: z.union([z.number(), z.string()]).optional(),
     }).optional(),
-    preferred_min_throughput: z.union([z.number(), z.record(z.number())]).optional(),
-    preferredMinThroughput: z.union([z.number(), z.record(z.number())]).optional(),
-    preferred_max_latency: z.union([z.number(), z.record(z.number())]).optional(),
-    preferredMaxLatency: z.union([z.number(), z.record(z.number())]).optional(),
+    preferred_min_throughput: z.union([z.number(), z.record(z.string(), z.number())]).optional(),
+    preferredMinThroughput: z.union([z.number(), z.record(z.string(), z.number())]).optional(),
+    preferred_max_latency: z.union([z.number(), z.record(z.string(), z.number())]).optional(),
+    preferredMaxLatency: z.union([z.number(), z.record(z.string(), z.number())]).optional(),
 }).passthrough().optional();
 
 const DebugOptionsSchema = z.object({
@@ -94,7 +94,7 @@ const ImageConfigSchema = z.object({
         z.number(),
         z.boolean(),
         z.array(z.any()),
-        z.record(z.any()),
+        z.record(z.string(), z.any()),
     ]),
 ).optional();
 
@@ -129,7 +129,7 @@ export const BatchSchema = z.object({
     input_file_id: z.string().min(1),
     endpoint: z.string().min(1),
     completion_window: z.string().optional(),
-    metadata: z.record(z.any()).optional(),
+    metadata: z.record(z.string(), z.any()).optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
@@ -143,24 +143,24 @@ export const ResponsesSchema = z.object({
     models: z.array(z.string()).optional(),
     input: z.any().optional(),
     input_items: z.array(z.any()).optional(),
-    conversation: z.union([z.string(), z.record(z.any())]).optional(),
+    conversation: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
     include: z.array(z.string()).optional(),
-    instructions: z.union([z.string(), z.array(z.any()), z.record(z.any())]).optional(),
+    instructions: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]).optional(),
     max_output_tokens: z.number().int().positive().optional(),
     max_completion_tokens: z.number().int().positive().optional(),
     max_tool_calls: z.number().int().nonnegative().optional(),
     max_tools_calls: z.number().int().nonnegative().optional(),
-    metadata: z.record(z.string()).optional(),
+    metadata: z.record(z.string(), z.string()).optional(),
     parallel_tool_calls: z.boolean().optional(),
-    plugins: z.array(z.record(z.any())).optional(),
+    plugins: z.array(z.record(z.string(), z.any())).optional(),
     session_id: z.string().max(128).optional(),
-    trace: z.record(z.any()).optional(),
+    trace: z.record(z.string(), z.any()).optional(),
     previous_response_id: z.string().optional(),
     frequency_penalty: z.number().min(-2).max(2).optional(),
     presence_penalty: z.number().min(-2).max(2).optional(),
     prompt: z.object({
         id: z.string(),
-        variables: z.record(z.any()).optional(),
+        variables: z.record(z.string(), z.any()).optional(),
         version: z.string().optional(),
     }).optional(),
     prompt_cache_key: z.string().nullable().optional(),
@@ -191,13 +191,13 @@ export const ResponsesSchema = z.object({
     speed: z.string().optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
-    stream_options: z.record(z.any()).optional(),
+    stream_options: z.record(z.string(), z.any()).optional(),
     n: z.never().optional(),
     temperature: z.number().min(0).max(2).optional(),
-    text: z.record(z.any()).optional(),
+    text: z.record(z.string(), z.any()).optional(),
     response_format: ResponseFormatSchema.optional(),
-    tool_choice: z.union([z.string(), z.record(z.any())]).optional(),
-    tools: z.array(z.record(z.any())).optional(),
+    tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
+    tools: z.array(z.record(z.string(), z.any())).optional(),
     top_logprobs: z.number().int().min(0).max(20).optional(),
     top_p: z.number().min(0).max(1).optional(),
     truncation: z.string().optional(),
@@ -396,11 +396,11 @@ export const ChatCompletionsSchema = z.object({
         budgetTokens: z.number().int().nonnegative().optional(),
     }).optional(),
     frequency_penalty: z.number().min(-2).max(2).optional(),
-    logit_bias: z.record(z.number()).optional(),
+    logit_bias: z.record(z.string(), z.number()).optional(),
     max_completion_tokens: z.number().int().positive().optional(),
     max_output_tokens: z.number().int().positive().optional(),
     max_tokens: z.number().int().positive().optional(),
-    metadata: z.record(z.string()).optional(),
+    metadata: z.record(z.string(), z.string()).optional(),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
@@ -408,7 +408,7 @@ export const ChatCompletionsSchema = z.object({
     presence_penalty: z.number().min(-2).max(2).optional(),
     seed: z.number().int().min(-9223372036854776000).max(9223372036854776000).optional(),
     stream: z.boolean().optional().default(false),
-    stream_options: z.record(z.any()).optional(),
+    stream_options: z.record(z.string(), z.any()).optional(),
     n: z.never().optional(),
     temperature: z.number().min(0).max(2).optional().default(1),
 
@@ -424,7 +424,7 @@ export const ChatCompletionsSchema = z.object({
 
     max_tool_calls: z.number().int().positive().optional(),
     parallel_tool_calls: z.boolean().optional().default(true),
-    tool_choice: z.union([z.string(), z.record(z.any())]).optional(),
+    tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
 
     top_k: z.number().int().positive().optional(),
     logprobs: z.boolean().optional().default(false),
@@ -445,9 +445,9 @@ export const ChatCompletionsSchema = z.object({
     speed: z.string().optional(),
     route: z.union([z.string(), z.null()]).optional(),
     session_id: z.string().max(128).optional(),
-    trace: z.record(z.any()).optional(),
+    trace: z.record(z.string(), z.any()).optional(),
     models: z.array(z.string()).optional(),
-    plugins: z.array(z.record(z.any())).optional(),
+    plugins: z.array(z.record(z.string(), z.any())).optional(),
     provider: ProviderRoutingSchema,
 }).passthrough().transform((obj) => {
     return obj;
@@ -475,7 +475,7 @@ const AnthropicToolUseContentSchema = z.object({
     type: z.literal("tool_use"),
     id: z.string(),
     name: z.string(),
-    input: z.record(z.any()),
+    input: z.record(z.string(), z.any()),
 });
 
 const AnthropicToolResultContentSchema = z.object({
@@ -499,7 +499,7 @@ const AnthropicMessageContentSchema = z.union([
 const AnthropicToolSchema = z.object({
     name: z.string(),
     description: z.string().optional(),
-    input_schema: z.record(z.any()),
+    input_schema: z.record(z.string(), z.any()),
 });
 
 const AnthropicToolChoiceSchema = z.union([
@@ -526,7 +526,7 @@ export const AnthropicMessagesSchema = z.object({
     n: z.never().optional(),
     tools: z.array(AnthropicToolSchema).optional(),
     tool_choice: AnthropicToolChoiceSchema.optional(),
-    metadata: z.record(z.any()).optional(),
+    metadata: z.record(z.string(), z.any()).optional(),
     service_tier: z.string().optional(),
     speed: z.string().optional(),
     thinking: z.object({
@@ -656,7 +656,7 @@ export type ModerationsRequest = z.infer<typeof ModerationsSchema>;
 const ElevenLabsSpeechConfigSchema = z.object({
     output_format: z.string().optional(),
     language_code: z.string().optional(),
-    voice_settings: z.record(z.any()).optional(),
+    voice_settings: z.record(z.string(), z.any()).optional(),
     seed: z.number().int().optional(),
     pronunciation_dictionary_locators: z.array(z.any()).optional(),
     enable_logging: z.boolean().optional(),
@@ -731,7 +731,7 @@ export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
 
 const VideoInputSourceSchema = z.union([
     z.string().min(1),
-    z.record(z.any()),
+    z.record(z.string(), z.any()),
 ]);
 
 const VideoReferenceImageSchema = z.object({
@@ -868,7 +868,7 @@ export const MusicGenerateSchema = z.object({
         prompt: z.string().optional(),
         duration: z.number().int().positive().optional(),
         callback_url: z.string().url().optional(),
-        request: z.record(z.any()).optional(),
+        request: z.record(z.string(), z.any()).optional(),
     }).passthrough().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,

@@ -142,7 +142,7 @@ const providerSchema = z
         supports_endpoint: z.boolean().optional().default(true),
         base_weight: z.coerce.number().optional().default(1),
         byok_meta: z.array(byokMetaSchema).optional().default([]),
-        capability_params: z.record(z.any()).optional().default({}),
+        capability_params: z.record(z.string(), z.any()).optional().default({}),
         max_input_tokens: z.coerce.number().nullable().optional(),
         max_output_tokens: z.coerce.number().nullable().optional(),
     })
@@ -166,8 +166,8 @@ const presetConfigSchema = z
         model: z.string().nullable().optional(),
         allowedProviders: z.array(z.string()).nullable().optional(),
         deniedProviders: z.array(z.string()).nullable().optional(),
-        defaultParams: z.record(z.any()).nullable().optional(),
-        providerPreferences: z.record(z.number()).nullable().optional(),
+        defaultParams: z.record(z.string(), z.any()).nullable().optional(),
+        providerPreferences: z.record(z.string(), z.number()).nullable().optional(),
     })
     .transform<PresetConfig>((config) => ({
         systemPrompt: config.systemPrompt ?? null,
@@ -271,7 +271,7 @@ const contextSchema = z
         key_limit_ok: gateCheckSchema,
         credit_ok: gateCheckSchema,
         providers: z.array(providerSchema).default([]),
-        pricing: z.record(priceCardSchema).default({}),
+        pricing: z.record(z.string(), priceCardSchema).default({}),
         team_enrichment: teamEnrichmentSchema.nullable().optional(),
         key_enrichment: keyEnrichmentSchema.nullable().optional(),
     })
