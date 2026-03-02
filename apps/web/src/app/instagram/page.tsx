@@ -1,11 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { withUTM } from "@/lib/utm";
+
+export const metadata: Metadata = {
+	title: "Instagram redirect",
+	description: "Redirect route to the official AI Stats Instagram account.",
+	robots: {
+		index: false,
+		follow: false,
+	},
+};
 
 export default function RedirectPage() {
-	redirect(
-		withUTM("https://instagram.com/ai__stats", {
-			campaign: "shortlink",
-			content: "instagram",
-		})
-	);
+	redirect("https://instagram.com/ai__stats");
 }

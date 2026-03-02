@@ -10,6 +10,11 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
+const externalLinks = {
+	github: "https://github.com/AI-Stats/AI-Stats",
+	discord: "https://discord.gg/zDw73wamdX",
+};
+
 const suggestions = [
 	{
 		href: "/",
@@ -113,7 +118,7 @@ export default function NotFound() {
 						<div className="mt-2 flex flex-wrap justify-center gap-2">
 							<Button variant="ghost" size="sm" asChild>
 								<Link
-									href="https://github.com/YOUR_ORG/YOUR_REPO/issues"
+									href={externalLinks.github}
 									target="_blank"
 									rel="noreferrer"
 									className="inline-flex items-center"
@@ -140,7 +145,7 @@ export default function NotFound() {
 							</Button>
 							<Button variant="ghost" size="sm" asChild>
 								<Link
-									href="https://discord.gg/YOUR_INVITE"
+									href={externalLinks.discord}
 									target="_blank"
 									rel="noreferrer"
 									className="inline-flex items-center"

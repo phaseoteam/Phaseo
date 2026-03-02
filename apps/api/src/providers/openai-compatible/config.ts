@@ -591,7 +591,11 @@ export function openAICompatUrl(providerId: string, path: string): string {
     return `${base}${prefix}${suffix}`;
 }
 
-export function openAICompatHeaders(providerId: string, key: string): Record<string, string> {
+export function openAICompatHeaders(
+    providerId: string,
+    key: string,
+    extraHeaders?: Record<string, string | undefined>,
+): Record<string, string> {
     const config = resolveOpenAICompatConfig(providerId);
     const headerName = config.apiKeyHeader ?? "Authorization";
     const prefix = config.apiKeyPrefix ?? "Bearer ";
@@ -599,6 +603,11 @@ export function openAICompatHeaders(providerId: string, key: string): Record<str
     return {
         [headerName]: headerValue,
         "Content-Type": "application/json",
+        ...(extraHeaders
+            ? Object.fromEntries(
+                Object.entries(extraHeaders).filter(([, value]) => typeof value === "string" && value.length > 0),
+            )
+            : {}),
     };
 }
 

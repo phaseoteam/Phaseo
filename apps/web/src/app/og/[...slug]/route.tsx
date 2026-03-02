@@ -32,15 +32,7 @@ type OgPayload = {
 };
 
 const brandLogoPath = "/wordmark_light.svg";
-
-const ENTITY_LABELS: Record<OgEntity, string> = {
-	organisations: "Organisation",
-	models: "Model",
-	benchmarks: "Benchmark",
-	"api-providers": "API Provider",
-	countries: "Country",
-	"subscription-plans": "Subscription Plan",
-};
+const FALLBACK_HOST = "ai-stats.org";
 
 async function loadOrganisation(
 	supabase: SupabaseClient,
@@ -181,18 +173,17 @@ function getLogoUrl(
 ): string | undefined {
 	if (!logoId) return undefined;
 
-	// 1) Try to force a light variant, but allow fallback to colour.
+	// Prefer a visible logo variant on the light OG background.
 	let resolved = resolveLogo(logoId, {
-		variant: "light",
+		variant: "auto",
 		theme: "light",
 		fallbackToColor: true,
 	}) as any;
 
-	// 2) If for some reason that didn't produce a src (misconfigured logo),
-	// fall back to the normal "auto" resolution.
+	// If that didn't produce a src, try light as a fallback.
 	if (!resolved?.src) {
 		resolved = resolveLogo(logoId, {
-			variant: "auto",
+			variant: "light",
 			theme: "light",
 			fallbackToColor: true,
 		}) as any;
@@ -258,6 +249,14 @@ function normaliseSegments(
 	return [];
 }
 
+function getTitleFontSize(name: string): number {
+	const len = name.trim().length;
+	if (len > 70) return 44;
+	if (len > 54) return 52;
+	if (len > 38) return 60;
+	return 72;
+}
+
 function createOgSupabaseClient() {
 	return createSupabaseClient(
 		process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -305,9 +304,6 @@ export async function GET(
 		});
 	}
 
-	const entityLabel = ENTITY_LABELS[kind] ?? "AI Stats";
-	const badge = entityLabel.toUpperCase();
-
 	const primaryLogoSrc = !isCountry
 		? getLogoUrl(payload.logoId, request)
 		: undefined;
@@ -315,21 +311,24 @@ export async function GET(
 	const brandLogoSrc = absoluteAsset(brandLogoPath, request);
 
 	const stats = payload.stats ?? [];
-
-	// constants for the top-right box
-	const LOGO_BOX_WIDTH = 220;
-	const LOGO_BOX_HEIGHT = 96;
+	const titleFontSize = getTitleFontSize(payload.name);
+	let hostLabel = FALLBACK_HOST;
+	try {
+		hostLabel = new URL(request.url).host || FALLBACK_HOST;
+	} catch {
+		hostLabel = FALLBACK_HOST;
+	}
 
 	return new ImageResponse(
 		(
 			<div
-				tw="h-full w-full bg-white text-slate-900"
+				tw="h-full w-full text-slate-900"
 				style={{
 					display: "flex",
-					padding: "56px 64px",
+					padding: "56px 64px 48px",
 					position: "relative",
 					fontSize: 48,
-					fontWeight: 500,
+					background: "#ffffff",
 					fontFamily:
 						"system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 				}}
@@ -337,24 +336,32 @@ export async function GET(
 				{/* MAIN COLUMN */}
 				<div
 					tw="w-full h-full"
-					style={{ display: "flex", flexDirection: "column" }}
+					style={{ display: "flex", flexDirection: "column", zIndex: 1 }}
 				>
-					{/* TOP ID */}
 					<div
-						tw="text-sm text-slate-500"
-						style={{ display: "flex" }}
+						style={{
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "flex-start",
+							gap: 0,
+						}}
 					>
-						<span
-							tw="font-mono text-sm"
+						<div
 							style={{
-								maxWidth: "520px",
+								display: "flex",
+								alignItems: "center",
+								maxWidth: 700,
+								fontFamily:
+									"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+								fontSize: 14,
+								color: "#475569",
 								overflow: "hidden",
-								textOverflow: "ellipsis",
 								whiteSpace: "nowrap",
+								textOverflow: "ellipsis",
 							}}
 						>
 							{payload.id}
-						</span>
+						</div>
 					</div>
 
 					{/* TITLE / SUBTITLE / STATS */}
@@ -368,11 +375,13 @@ export async function GET(
 						}}
 					>
 						<div
-							tw="text-[72px] leading-[1.05] font-bold tracking-tight max-w-[900px] mb-4"
+							tw="leading-[1.05] tracking-tight max-w-[900px] mb-4"
 							style={{
 								display: "flex",
 								maxWidth: "900px",
 								marginBottom: 16,
+								fontSize: titleFontSize,
+								color: "#020617",
 							}}
 						>
 							{payload.name}
@@ -385,6 +394,7 @@ export async function GET(
 									display: "flex",
 									maxWidth: "900px",
 									marginBottom: 40,
+									color: "#334155",
 								}}
 							>
 								{payload.subtitle}
@@ -417,7 +427,7 @@ export async function GET(
 											{stat.label}
 										</div>
 										<div
-											tw="mt-2 text-2xl font-semibold"
+											tw="mt-2 text-2xl"
 											style={{
 												display: "flex",
 												marginTop: 8,
@@ -444,66 +454,54 @@ export async function GET(
 
 					{/* FOOTER */}
 					<div
-						tw="mt-auto pt-8 items-center justify-between border-t border-slate-200"
 						style={{
 							display: "flex",
 							justifyContent: "space-between",
 							alignItems: "center",
-							borderTop: "1px solid #e2e8f0",
+							borderTop: "1px solid rgba(100, 116, 139, 0.26)",
 							marginTop: "auto",
-							paddingTop: 32,
+							paddingTop: 24,
 						}}
 					>
 						<div
-							tw="text-sm text-slate-500"
 							style={{
 								display: "flex",
-								flexDirection: "column",
-								alignItems: "flex-start",
+								alignItems: "center",
 							}}
 						>
-							<div
-								tw="text-[11px] font-semibold uppercase mb-2"
-								style={{ display: "flex" }}
-							>
-								{badge}
-							</div>
-							<span>ai-stats.phaseo.app</span>
+							<span style={{ fontSize: 16, color: "#475569" }}>{hostLabel}</span>
 						</div>
 
 						{brandLogoSrc ? (
 							<img
 								src={brandLogoSrc}
 								alt="AI Stats logo"
-								width={180}
-								height={60}
-								style={{ objectFit: "contain" }}
+								width={160}
+								height={54}
+								style={{ objectFit: "contain", opacity: 0.96 }}
 							/>
 						) : null}
 					</div>
 				</div>
 
-				{/* TOP-RIGHT BOX – ABSOLUTE, FIXED SIZE, RIGHT-JUSTIFIED CONTENT */}
+				{/* TOP-RIGHT ICON */}
 				{(isCountry || primaryLogoSrc) && (
 					<div
 						style={{
 							position: "absolute",
-							top: 56,
-							right: 15,
-							width: LOGO_BOX_WIDTH,
-							height: LOGO_BOX_HEIGHT,
+							top: 48,
+							right: 64,
 							display: "flex",
 							alignItems: "flex-start",
 							justifyContent: "flex-end",
+							zIndex: 3,
 						}}
 					>
 						{isCountry ? (
 							<div
 								style={{
-									fontSize: 96,
+									fontSize: 92,
 									lineHeight: 1,
-									position: "relative",
-									left: -49,
 								}}
 							>
 								{payload.flagEmoji ??
@@ -516,9 +514,10 @@ export async function GET(
 									alt={`${payload.name} logo`}
 									style={{
 										display: "block",
-										maxWidth: "80%",
-										maxHeight: "80%",
+										width: 64,
+										height: 64,
 										objectFit: "contain",
+										objectPosition: "right center",
 									}}
 								/>
 							)

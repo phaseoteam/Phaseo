@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
@@ -56,6 +56,28 @@ function parseTypeList(value: string | null): string[] {
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter((item): item is string => TYPE_OPTIONS.includes(item as any))
+}
+
+function FieldRow({
+  label,
+  description,
+  children,
+}: {
+  label: string
+  description?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
+      <div className="space-y-0.5">
+        <Label className="text-sm font-medium">{label}</Label>
+        {description ? (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <div>{children}</div>
+    </div>
+  )
 }
 
 export default function BasicTab({ model, onModelChange }: BasicTabProps) {
@@ -116,17 +138,16 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <Label>Model Name</Label>
+    <div className="space-y-5">
+      <section className="rounded-lg border p-4 space-y-4">
+        <div className="text-sm font-semibold">Identity</div>
+        <FieldRow label="Model name">
           <Input
             value={model.name || ""}
             onChange={(event) => onModelChange({ ...model, name: event.target.value })}
           />
-        </div>
-        <div>
-          <Label>Organisation ID</Label>
+        </FieldRow>
+        <FieldRow label="Organisation">
           <Select
             value={model.organisation_id ?? undefined}
             onValueChange={(value) => onModelChange({ ...model, organisation_id: value })}
@@ -142,12 +163,8 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div>
-          <Label>Status</Label>
+        </FieldRow>
+        <FieldRow label="Status">
           <Select
             value={model.status || "active"}
             onValueChange={(value) => onModelChange({ ...model, status: value })}
@@ -166,9 +183,31 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
               <SelectItem value="retired">retired</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div>
-          <Label>Previous Model</Label>
+        </FieldRow>
+        <FieldRow label="License">
+          <Input
+            value={model.license || ""}
+            onChange={(event) => onModelChange({ ...model, license: event.target.value || null })}
+            placeholder="e.g., Apache-2.0"
+          />
+        </FieldRow>
+        <FieldRow
+          label="Visibility"
+          description="Control whether this model appears in public listings."
+        >
+          <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+            <Checkbox
+              checked={Boolean(model.hidden)}
+              onCheckedChange={(checked) => onModelChange({ ...model, hidden: checked === true })}
+            />
+            Hidden
+          </label>
+        </FieldRow>
+      </section>
+
+      <section className="rounded-lg border p-4 space-y-4">
+        <div className="text-sm font-semibold">Relationships</div>
+        <FieldRow label="Previous model">
           <Select
             value={model.previous_model_id || "__none__"}
             onValueChange={(value) =>
@@ -190,9 +229,8 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div>
-          <Label>Model Family</Label>
+        </FieldRow>
+        <FieldRow label="Model family">
           <Select
             value={model.family_id || "__none__"}
             onValueChange={(value) =>
@@ -214,72 +252,45 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        </FieldRow>
+      </section>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <Label>License</Label>
-          <Input
-            value={model.license || ""}
-            onChange={(event) => onModelChange({ ...model, license: event.target.value || null })}
-            placeholder="e.g., Apache-2.0"
-          />
-        </div>
-        <div className="rounded-md border p-3">
-          <Label className="text-sm">Visibility</Label>
-          <label className="mt-2 flex items-start gap-2 text-sm">
-            <Checkbox
-              checked={Boolean(model.hidden)}
-              onCheckedChange={(checked) => onModelChange({ ...model, hidden: checked === true })}
-            />
-            <div>
-              <div>Hidden</div>
-              <div className="text-xs text-muted-foreground">Hide this model from public listings.</div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <Label>Announcement Date</Label>
+      <section className="rounded-lg border p-4 space-y-4">
+        <div className="text-sm font-semibold">Lifecycle</div>
+        <FieldRow label="Announcement date">
           <DatePickerInput
             value={formatDateForInput(model.announcement_date)}
             onChange={(value) => onModelChange({ ...model, announcement_date: value || null })}
             placeholder="Announcement date"
           />
-        </div>
-        <div>
-          <Label>Release Date</Label>
+        </FieldRow>
+        <FieldRow label="Release date">
           <DatePickerInput
             value={formatDateForInput(model.release_date)}
             onChange={(value) => onModelChange({ ...model, release_date: value || null })}
             placeholder="Release date"
           />
-        </div>
-        <div>
-          <Label>Deprecation Date</Label>
+        </FieldRow>
+        <FieldRow label="Deprecation date">
           <DatePickerInput
             value={formatDateForInput(model.deprecation_date)}
             onChange={(value) => onModelChange({ ...model, deprecation_date: value || null })}
             placeholder="Deprecation date"
           />
-        </div>
-        <div>
-          <Label>Retirement Date</Label>
+        </FieldRow>
+        <FieldRow label="Retirement date">
           <DatePickerInput
             value={formatDateForInput(model.retirement_date)}
             onChange={(value) => onModelChange({ ...model, retirement_date: value || null })}
             placeholder="Retirement date"
           />
-        </div>
-      </div>
+        </FieldRow>
+      </section>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <Label>Input Types</Label>
-          <div className="mt-2 flex flex-wrap gap-2">
+      <section className="rounded-lg border p-4 space-y-4">
+        <div className="text-sm font-semibold">Modalities</div>
+        <FieldRow label="Input types">
+          <div className="flex flex-wrap gap-2">
             {TYPE_OPTIONS.map((type) => {
               const active = inputTypes.includes(type)
               return (
@@ -296,10 +307,9 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
               )
             })}
           </div>
-        </div>
-        <div>
-          <Label>Output Types</Label>
-          <div className="mt-2 flex flex-wrap gap-2">
+        </FieldRow>
+        <FieldRow label="Output types">
+          <div className="flex flex-wrap gap-2">
             {TYPE_OPTIONS.map((type) => {
               const active = outputTypes.includes(type)
               return (
@@ -316,8 +326,8 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
               )
             })}
           </div>
-        </div>
-      </div>
+        </FieldRow>
+      </section>
     </div>
   )
 }

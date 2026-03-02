@@ -1,11 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { withUTM } from "@/lib/utm";
+
+export const metadata: Metadata = {
+	title: "Discord redirect",
+	description: "Redirect route to the official AI Stats Discord community.",
+	robots: {
+		index: false,
+		follow: false,
+	},
+};
 
 export default function RedirectPage() {
-	redirect(
-		withUTM("https://discord.gg/zDw73wamdX", {
-			campaign: "shortlink",
-			content: "discord",
-		})
-	);
+	redirect("https://discord.gg/zDw73wamdX");
 }

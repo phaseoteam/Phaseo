@@ -5,7 +5,7 @@ import NanoBananaParser from "@/components/(tools)/NanoBananaParser";
 export const metadata: Metadata = buildMetadata({
 	title: "Nano Banana parser - Parse Raw Candidates Payloads",
 	description:
-		"Paste raw Nano Banana responses and parse candidates, text parts, inline data details, and usage metadata in one place.",
+		"Paste raw Nano Banana responses and parse candidates, text parts, inline data payloads, and usage metadata in one place for faster debugging and validation.",
 	path: "/tools/nano-banana-parser",
 	keywords: [
 		"Nano Banana parser",

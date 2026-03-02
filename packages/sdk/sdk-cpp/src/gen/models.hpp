@@ -219,6 +219,21 @@ struct ChatMessage {
 	std::vector<std::map<std::string, std::any>> tool_calls;
 };
 
+struct DataModel {
+	std::optional<std::string> deprecation_date;
+	std::optional<bool> hidden;
+	std::vector<std::string> input_types;
+	std::optional<std::string> model_id;
+	std::optional<std::string> name;
+	std::optional<std::map<std::string, std::any>> organisation;
+	std::vector<std::string> output_types;
+	std::optional<std::string> release_date;
+	std::optional<std::string> retirement_date;
+	std::optional<std::string> status;
+};
+
+using DataModelOrganisation = std::any;
+
 struct DebugOptions {
 	std::optional<bool> enabled;
 	std::optional<bool> return_upstream_request;
@@ -532,6 +547,20 @@ struct ReasoningConfig {
 	std::any summary;
 };
 
+struct ResponsesInputItem {
+	std::any content;
+	std::optional<std::any> phase;
+	std::any role;
+	std::string type;
+};
+
+struct ResponsesOutputItem {
+	std::vector<std::map<std::string, std::any>> content;
+	std::optional<std::any> phase;
+	std::string role;
+	std::string type;
+};
+
 struct ResponsesRequest {
 	std::optional<bool> background;
 	std::any conversation;
@@ -539,7 +568,7 @@ struct ResponsesRequest {
 	std::map<std::string, std::any> image_config;
 	std::map<std::string, std::any> imageConfig;
 	std::vector<std::string> include;
-	std::map<std::string, std::any> input;
+	std::any input;
 	std::vector<std::map<std::string, std::any>> input_items;
 	std::string instructions;
 	std::optional<int> max_completion_tokens;
@@ -556,6 +585,8 @@ struct ResponsesRequest {
 	std::string prompt_cache_key;
 	std::string prompt_cache_retention;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
+	std::map<std::string, std::any> providerOptions;
 	std::map<std::string, std::any> reasoning;
 	std::vector<std::string> response_modalities;
 	std::vector<std::string> responseModalities;
@@ -583,6 +614,8 @@ struct ResponsesResponse {
 	std::string id;
 	std::string model;
 	std::string object;
+	std::vector<std::map<std::string, std::any>> output;
+	std::vector<std::map<std::string, std::any>> output_items;
 	std::string role;
 	std::string stop_reason;
 	std::string type;

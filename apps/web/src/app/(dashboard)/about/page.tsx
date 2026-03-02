@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = buildMetadata({
 	title: "About AI Stats",
 	description:
-		"Who we are, what we offer, and where to find announcements and policies.",
+		"Learn what AI Stats does, how the gateway and model directory work together, and where to find updates, documentation, and platform policies.",
 	path: "/about",
 	keywords: ["AI Stats", "about", "AI gateway", "model database", "announcements"],
 });

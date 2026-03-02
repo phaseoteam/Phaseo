@@ -9,7 +9,7 @@ import type { SearchParams } from "nuqs/server";
 export const metadata: Metadata = buildMetadata({
 	title: "Unified playground - AI Stats Chat",
 	description:
-		"Experimental local-browser playground for comparing multiple models across text, image, video, music, and audio endpoints.",
+		"Experimental local-browser playground for comparing multiple models across text, image, video, music, and audio endpoints with side-by-side prompts and response testing.",
 	path: "/chat/unified",
 	keywords: [
 		"AI playground",

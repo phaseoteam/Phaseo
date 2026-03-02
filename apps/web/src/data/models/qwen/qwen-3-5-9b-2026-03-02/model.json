@@ -1,0 +1,22 @@
+{
+  "model_id": "qwen/qwen-3-5-9b-2026-03-02",
+  "organisation_id": "qwen",
+  "name": "Qwen 3.5 9B",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-03-02T00:00:00",
+  "release_date": "2026-03-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/Qwen/Qwen3.5-9B"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

@@ -41,11 +41,13 @@ interface QuickFilter {
 interface AuditFiltersProps {
 	totalModels: number;
 	filteredCount: number;
+	providerOptions: Array<{ providerId: string; providerName: string }>;
 }
 
 export function AuditFilters({
 	totalModels,
 	filteredCount,
+	providerOptions,
 }: AuditFiltersProps) {
 	const [searchQuery, setSearchQuery] = useQueryState("search", {
 		defaultValue: "",
@@ -140,6 +142,11 @@ export function AuditFilters({
 			serialize: (value) => value,
 		}
 	);
+	const [filterProvider, setFilterProvider] = useQueryState("provider", {
+		defaultValue: "",
+		parse: (value) => value || "",
+		serialize: (value) => value,
+	});
 
 	const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
@@ -283,6 +290,7 @@ export function AuditFilters({
 		setFilterBenchmarksValue("");
 		setFilterHidden("");
 		setFilterHasPricing("");
+		setFilterProvider("");
 	};
 
 	const hasActiveFilters =
@@ -293,7 +301,8 @@ export function AuditFilters({
 		filterProvidersOp ||
 		filterBenchmarksOp ||
 		filterHidden ||
-		filterHasPricing;
+		filterHasPricing ||
+		filterProvider;
 
 	const activeFilterCount = [
 		searchQuery,
@@ -304,6 +313,7 @@ export function AuditFilters({
 		filterBenchmarksOp,
 		filterHidden,
 		filterHasPricing,
+		filterProvider,
 	].filter(Boolean).length;
 
 	return (
@@ -463,6 +473,52 @@ export function AuditFilters({
 										<SelectItem value="true">
 											Hidden Only
 										</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* Provider */}
+							<div className="space-y-2">
+								<Label htmlFor="provider">Provider</Label>
+								<Select
+									value={filterProvider || "any"}
+									onValueChange={(value) =>
+										setFilterProvider(value === "any" ? "" : value)
+									}
+								>
+									<SelectTrigger id="provider">
+										<SelectValue placeholder="Any provider" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="any">Any</SelectItem>
+										{providerOptions.map((provider) => (
+											<SelectItem
+												key={provider.providerId}
+												value={provider.providerId}
+											>
+												{provider.providerName}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* Pricing */}
+							<div className="space-y-2">
+								<Label htmlFor="has-pricing">Pricing</Label>
+								<Select
+									value={filterHasPricing || "any"}
+									onValueChange={(value) =>
+										setFilterHasPricing(value === "any" ? "" : value)
+									}
+								>
+									<SelectTrigger id="has-pricing">
+										<SelectValue placeholder="Any" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="any">Any</SelectItem>
+										<SelectItem value="true">Has Pricing</SelectItem>
+										<SelectItem value="false">No Pricing</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
@@ -721,8 +777,21 @@ export function AuditFilters({
 							className="gap-1 cursor-pointer"
 							onClick={() => setFilterHasPricing("")}
 						>
-							Pricing:{" "}
+							Pricing{filterProvider ? " (Provider)" : ""}:{" "}
 							{filterHasPricing === "true" ? "Yes" : "No"}
+							<X className="h-3 w-3" />
+						</Badge>
+					)}
+					{filterProvider && (
+						<Badge
+							variant="secondary"
+							className="gap-1 cursor-pointer"
+							onClick={() => setFilterProvider("")}
+						>
+							Provider:{" "}
+							{providerOptions.find(
+								(provider) => provider.providerId === filterProvider
+							)?.providerName ?? filterProvider}
 							<X className="h-3 w-3" />
 						</Badge>
 					)}

@@ -46,7 +46,7 @@ export default function PricingPlanSelect({
 
     return (
         <Select value={value} onValueChange={onChange}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="h-9 w-[180px] bg-background">
                 {/* Provide the capitalized value as the visible content */}
                 <SelectValue placeholder="Plan">
                     <span className="inline-flex items-center gap-2">

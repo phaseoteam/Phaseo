@@ -1,5 +1,4 @@
 export const OBFUSCATE_INFO_COOKIE = "obfuscate_info";
-export const OBFUSCATE_INFO_STORAGE_KEY = "ai_stats_obfuscate_info";
 
 export function parseObfuscateInfo(value: unknown): boolean | null {
 	if (typeof value !== "string") return null;

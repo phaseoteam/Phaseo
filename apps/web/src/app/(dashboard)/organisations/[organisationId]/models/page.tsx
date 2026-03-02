@@ -31,7 +31,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Models Overview by Organisation",
 			description:
-				"Discover AI models from leading organisations and see their gateway availability inside the AI Stats directory.",
+				"Discover AI models from leading organisations and review gateway availability, pricing coverage, release visibility, and model lifecycle context inside AI Stats.",
 			path,
 			keywords: [
 				"AI models",

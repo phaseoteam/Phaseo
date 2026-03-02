@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowLeft, BadgeCheck, Copy, Shield } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -12,20 +13,31 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { buildMetadata } from "@/lib/seo";
 import { createClient } from "@/utils/supabase/server";
 import CopyPresetButton from "@/components/(gateway)/marketplace/CopyPresetButton";
 
-export const metadata = {
-	title: "Preset Details - Gateway Marketplace",
+type PresetDetailPageProps = {
+	params: Promise<{ presetId: string }>;
 };
+
+export async function generateMetadata({
+	params,
+}: PresetDetailPageProps): Promise<Metadata> {
+	const { presetId } = await params;
+	return buildMetadata({
+		title: "Preset Details - Gateway Marketplace",
+		description:
+			"Review a shared AI Stats Gateway preset, inspect routing and policy configuration details, and copy it into your account to customize for your own workload and team.",
+		path: `/gateway/marketplace/${presetId}`,
+	});
+}
 
 export default async function PresetMarketplaceDetailPage({
 	params,
-}: {
-	params: { presetId: string };
-}) {
+}: PresetDetailPageProps) {
 	const supabase = await createClient();
-	const { presetId } = params;
+	const { presetId } = await params;
 
 	const {
 		data: { user },

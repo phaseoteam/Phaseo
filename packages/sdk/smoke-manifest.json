@@ -63,7 +63,7 @@
     },
     "models": {
       "description": "List available models",
-      "path": "/models",
+      "path": "/gateway/models",
       "method": "GET",
       "expectStatus": 200,
       "validateResponse": {

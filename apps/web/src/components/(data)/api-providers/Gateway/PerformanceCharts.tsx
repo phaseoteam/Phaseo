@@ -1,9 +1,7 @@
 "use client";
 
-import React from "react";
 import {
 	ChartContainer,
-	ChartTooltip,
 	type ChartConfig,
 } from "@/components/ui/chart";
 import {
@@ -14,6 +12,7 @@ import {
 	YAxis,
 	CartesianGrid,
 	ResponsiveContainer,
+	Tooltip as RechartsTooltip,
 } from "recharts";
 import { Clock, Zap, Timer } from "lucide-react";
 import {
@@ -23,33 +22,6 @@ import {
 	EmptyTitle,
 	EmptyDescription,
 } from "@/components/ui/empty";
-
-function formatAxisHourLabel(timestamp: string): string {
-	const date = new Date(timestamp);
-	if (!Number.isFinite(date.getTime())) {
-		return timestamp;
-	}
-	return date.toLocaleString("en-US", {
-		weekday: "short",
-		hour: "2-digit",
-		minute: "2-digit",
-		hour12: false,
-	});
-}
-
-function formatTooltipTimestamp(timestamp: string): string {
-	const date = new Date(timestamp);
-	if (!Number.isFinite(date.getTime())) {
-		return timestamp;
-	}
-	return date.toLocaleString("en-US", {
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-		hour12: false,
-	});
-}
 
 const latencyChartConfig: ChartConfig = {
 	latency: {
@@ -74,9 +46,15 @@ const e2eLatencyChartConfig: ChartConfig = {
 
 interface LatencyChartProps {
 	data: Array<{ timestamp: string; avgLatencyMs: number | null }>;
+	onHoverBucket?: (timestamp: string | null) => void;
+	syncId?: string;
 }
 
-export function LatencyChart({ data }: LatencyChartProps) {
+export function LatencyChart({
+	data,
+	onHoverBucket,
+	syncId,
+}: LatencyChartProps) {
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		latency: point.avgLatencyMs,
@@ -121,7 +99,19 @@ export function LatencyChart({ data }: LatencyChartProps) {
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
-				<LineChart data={chartData}>
+				<LineChart
+					data={chartData}
+					syncId={syncId}
+					syncMethod="value"
+					onMouseMove={(state: any) => {
+						const hoveredTimestamp =
+							typeof state?.activeLabel === "string"
+								? state.activeLabel
+								: state?.activePayload?.[0]?.payload?.timestamp ?? null;
+						onHoverBucket?.(hoveredTimestamp);
+					}}
+					onMouseLeave={() => onHoverBucket?.(null)}
+				>
 					<CartesianGrid
 						strokeDasharray="3 3"
 						stroke="rgba(148, 163, 184, 0.2)"
@@ -129,14 +119,7 @@ export function LatencyChart({ data }: LatencyChartProps) {
 					/>
 					<XAxis
 						dataKey="timestamp"
-						axisLine={false}
-						tickLine={false}
-						tick={{
-							fontSize: 12,
-							fill: "hsl(var(--muted-foreground))",
-						}}
-						tickFormatter={formatAxisHourLabel}
-						minTickGap={16}
+						hide
 					/>
 					<YAxis
 						axisLine={false}
@@ -147,32 +130,14 @@ export function LatencyChart({ data }: LatencyChartProps) {
 						}}
 						tickFormatter={(value) => `${value}ms`}
 					/>
-					<ChartTooltip
-						content={({ active, payload }) => {
-							if (active && payload && payload.length) {
-								const data = payload[0].payload;
-								const value = payload[0].value;
-								return (
-									<div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-										<p className="font-medium mb-1">
-											{formatTooltipTimestamp(
-												data.timestamp
-											)}
-										</p>
-										<p className="text-sm">
-											<span className="font-medium">
-												Latency:
-											</span>{" "}
-											{typeof value === "number"
-												? value.toFixed(0)
-												: value}{" "}
-											ms
-										</p>
-									</div>
-								);
-							}
-							return null;
+					<RechartsTooltip
+						cursor={{
+							stroke: "hsl(var(--border))",
+							strokeWidth: 1,
+							strokeDasharray: "4 4",
 						}}
+						content={() => null}
+						isAnimationActive={false}
 					/>
 					<Area
 						type="monotone"
@@ -189,6 +154,12 @@ export function LatencyChart({ data }: LatencyChartProps) {
 						stroke={latencyColor}
 						strokeWidth={2}
 						dot={latencyDot}
+						activeDot={{
+							r: 4,
+							strokeWidth: 2,
+							stroke: latencyColor,
+							fill: "hsl(var(--background))",
+						}}
 						connectNulls={true}
 					/>
 				</LineChart>
@@ -199,9 +170,15 @@ export function LatencyChart({ data }: LatencyChartProps) {
 
 interface ThroughputChartProps {
 	data: Array<{ timestamp: string; avgThroughput: number | null }>;
+	onHoverBucket?: (timestamp: string | null) => void;
+	syncId?: string;
 }
 
-export function ThroughputChart({ data }: ThroughputChartProps) {
+export function ThroughputChart({
+	data,
+	onHoverBucket,
+	syncId,
+}: ThroughputChartProps) {
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		throughput: point.avgThroughput,
@@ -246,7 +223,19 @@ export function ThroughputChart({ data }: ThroughputChartProps) {
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
-				<LineChart data={chartData}>
+				<LineChart
+					data={chartData}
+					syncId={syncId}
+					syncMethod="value"
+					onMouseMove={(state: any) => {
+						const hoveredTimestamp =
+							typeof state?.activeLabel === "string"
+								? state.activeLabel
+								: state?.activePayload?.[0]?.payload?.timestamp ?? null;
+						onHoverBucket?.(hoveredTimestamp);
+					}}
+					onMouseLeave={() => onHoverBucket?.(null)}
+				>
 					<CartesianGrid
 						strokeDasharray="3 3"
 						stroke="rgba(148, 163, 184, 0.2)"
@@ -254,14 +243,7 @@ export function ThroughputChart({ data }: ThroughputChartProps) {
 					/>
 					<XAxis
 						dataKey="timestamp"
-						axisLine={false}
-						tickLine={false}
-						tick={{
-							fontSize: 12,
-							fill: "hsl(var(--muted-foreground))",
-						}}
-						tickFormatter={formatAxisHourLabel}
-						minTickGap={16}
+						hide
 					/>
 					<YAxis
 						axisLine={false}
@@ -272,32 +254,14 @@ export function ThroughputChart({ data }: ThroughputChartProps) {
 						}}
 						tickFormatter={(value) => `${value}t/s`}
 					/>
-					<ChartTooltip
-						content={({ active, payload }) => {
-							if (active && payload && payload.length) {
-								const data = payload[0].payload;
-								const value = payload[0].value;
-								return (
-									<div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-										<p className="font-medium mb-1">
-											{formatTooltipTimestamp(
-												data.timestamp
-											)}
-										</p>
-										<p className="text-sm">
-											<span className="font-medium">
-												Throughput:
-											</span>{" "}
-											{typeof value === "number"
-												? value.toFixed(2)
-												: value}{" "}
-											t/s
-										</p>
-									</div>
-								);
-							}
-							return null;
+					<RechartsTooltip
+						cursor={{
+							stroke: "hsl(var(--border))",
+							strokeWidth: 1,
+							strokeDasharray: "4 4",
 						}}
+						content={() => null}
+						isAnimationActive={false}
 					/>
 					<Area
 						type="monotone"
@@ -314,6 +278,12 @@ export function ThroughputChart({ data }: ThroughputChartProps) {
 						stroke={throughputColor}
 						strokeWidth={2}
 						dot={throughputDot}
+						activeDot={{
+							r: 4,
+							strokeWidth: 2,
+							stroke: throughputColor,
+							fill: "hsl(var(--background))",
+						}}
 						connectNulls={true}
 					/>
 				</LineChart>
@@ -324,9 +294,15 @@ export function ThroughputChart({ data }: ThroughputChartProps) {
 
 interface E2ELatencyChartProps {
 	data: Array<{ timestamp: string; avgGenerationMs: number | null }>;
+	onHoverBucket?: (timestamp: string | null) => void;
+	syncId?: string;
 }
 
-export function E2ELatencyChart({ data }: E2ELatencyChartProps) {
+export function E2ELatencyChart({
+	data,
+	onHoverBucket,
+	syncId,
+}: E2ELatencyChartProps) {
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		e2eLatency: point.avgGenerationMs,
@@ -371,7 +347,19 @@ export function E2ELatencyChart({ data }: E2ELatencyChartProps) {
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
-				<LineChart data={chartData}>
+				<LineChart
+					data={chartData}
+					syncId={syncId}
+					syncMethod="value"
+					onMouseMove={(state: any) => {
+						const hoveredTimestamp =
+							typeof state?.activeLabel === "string"
+								? state.activeLabel
+								: state?.activePayload?.[0]?.payload?.timestamp ?? null;
+						onHoverBucket?.(hoveredTimestamp);
+					}}
+					onMouseLeave={() => onHoverBucket?.(null)}
+				>
 					<CartesianGrid
 						strokeDasharray="3 3"
 						stroke="rgba(148, 163, 184, 0.2)"
@@ -379,14 +367,7 @@ export function E2ELatencyChart({ data }: E2ELatencyChartProps) {
 					/>
 					<XAxis
 						dataKey="timestamp"
-						axisLine={false}
-						tickLine={false}
-						tick={{
-							fontSize: 12,
-							fill: "hsl(var(--muted-foreground))",
-						}}
-						tickFormatter={formatAxisHourLabel}
-						minTickGap={16}
+						hide
 					/>
 					<YAxis
 						axisLine={false}
@@ -397,32 +378,14 @@ export function E2ELatencyChart({ data }: E2ELatencyChartProps) {
 						}}
 						tickFormatter={(value) => `${value}ms`}
 					/>
-					<ChartTooltip
-						content={({ active, payload }) => {
-							if (active && payload && payload.length) {
-								const data = payload[0].payload;
-								const value = payload[0].value;
-								return (
-									<div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-										<p className="font-medium mb-1">
-											{formatTooltipTimestamp(
-												data.timestamp
-											)}
-										</p>
-										<p className="text-sm">
-											<span className="font-medium">
-												E2E Latency:
-											</span>{" "}
-											{typeof value === "number"
-												? value.toFixed(0)
-												: value}{" "}
-											ms
-										</p>
-									</div>
-								);
-							}
-							return null;
+					<RechartsTooltip
+						cursor={{
+							stroke: "hsl(var(--border))",
+							strokeWidth: 1,
+							strokeDasharray: "4 4",
 						}}
+						content={() => null}
+						isAnimationActive={false}
 					/>
 					<Area
 						type="monotone"
@@ -439,6 +402,12 @@ export function E2ELatencyChart({ data }: E2ELatencyChartProps) {
 						stroke={e2eColor}
 						strokeWidth={2}
 						dot={e2eDot}
+						activeDot={{
+							r: 4,
+							strokeWidth: 2,
+							stroke: e2eColor,
+							fill: "hsl(var(--background))",
+						}}
 						connectNulls={true}
 					/>
 				</LineChart>

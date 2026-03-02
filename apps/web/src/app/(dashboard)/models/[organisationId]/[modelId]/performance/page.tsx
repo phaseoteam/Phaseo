@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "Model Performance Overview",
 			description:
-				"Track performance metrics and historical usage for AI models on AI Stats.",
+				"Track AI model performance on AI Stats with latency trends, throughput signals, reliability movement, and historical usage metrics across recent gateway traffic.",
 			path,
 			keywords: ["AI model performance", "AI metrics", "AI Stats"],
 			imagePath,

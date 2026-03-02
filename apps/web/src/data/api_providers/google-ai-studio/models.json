@@ -577,7 +577,7 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-11-18T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-03-09T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -1391,7 +1391,7 @@
   {
     "api_model_id": "google/gemini-2-5-flash-preview-tts",
     "provider_api_model_id": "google-ai-studio:google/gemini-2-5-flash-preview-tts",
-    "provider_model_slug": null,
+    "provider_model_slug": "gemini-2.5-flash-preview-tts",
     "internal_model_id": "google/gemini-2-5-flash-preview-tts",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1406,7 +1406,7 @@
   {
     "api_model_id": "google/gemini-2-5-pro-preview-tts",
     "provider_api_model_id": "google-ai-studio:google/gemini-2-5-pro-preview-tts",
-    "provider_model_slug": null,
+    "provider_model_slug": "gemini-2.5-pro-preview-tts",
     "internal_model_id": "google/gemini-2-5-pro-preview-tts",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1436,7 +1436,7 @@
   {
     "api_model_id": "google/imagen-4-0-fast-generate-001",
     "provider_api_model_id": "google-ai-studio:google/imagen-4-0-fast-generate-001",
-    "provider_model_slug": null,
+    "provider_model_slug": "imagen-4.0-fast-generate-001",
     "internal_model_id": "google/imagen-4-0-fast-generate-001-2025-08-14",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1451,7 +1451,7 @@
   {
     "api_model_id": "google/imagen-4-0-generate-001",
     "provider_api_model_id": "google-ai-studio:google/imagen-4-0-generate-001",
-    "provider_model_slug": null,
+    "provider_model_slug": "imagen-4.0-generate-001",
     "internal_model_id": "google/imagen-4-0-generate-001-2025-08-14",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1466,7 +1466,7 @@
   {
     "api_model_id": "google/imagen-4-0-ultra-generate-001",
     "provider_api_model_id": "google-ai-studio:google/imagen-4-0-ultra-generate-001",
-    "provider_model_slug": null,
+    "provider_model_slug": "imagen-4.0-ultra-generate-001",
     "internal_model_id": "google/imagen-4-0-ultra-generate-001-2025-08-14",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1595,7 +1595,7 @@
   {
     "api_model_id": "google/veo-3.1-preview",
     "provider_api_model_id": "google-ai-studio:google/veo-3.1-preview",
-    "provider_model_slug": null,
+    "provider_model_slug": "veo-3.1-generate-preview",
     "internal_model_id": "google/veo-3-1-preview-2025-10-15",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1616,7 +1616,7 @@
   {
     "api_model_id": "google/veo-3.1-fast-preview",
     "provider_api_model_id": "google-ai-studio:google/veo-3.1-fast-preview",
-    "provider_model_slug": null,
+    "provider_model_slug": "veo-3.1-fast-generate-preview",
     "internal_model_id": "google/veo-3-1-fast-preview-2025-10-15",
     "is_active_gateway": false,
     "quantization_scheme": null,
@@ -1987,5 +1987,20 @@
         ]
       }
     ]
+  },
+  {
+    "api_model_id": null,
+    "provider_api_model_id": "google-ai-studio",
+    "provider_model_slug": "gemini-robotics-er-1.5-preview",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

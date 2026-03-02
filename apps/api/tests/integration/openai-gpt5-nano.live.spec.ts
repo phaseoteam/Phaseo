@@ -139,7 +139,17 @@ function expectStreamFrames(frames: any[]) {
     expect(objects.length).toBeGreaterThan(0);
     const hasChoices = objects.some((entry) => Array.isArray(entry?.choices));
     const hasResponse = objects.some((entry) => entry?.response || entry?.object === "response");
-    expect(hasChoices || hasResponse).toBe(true);
+    const hasAnthropicMessagesEvent = objects.some((entry) =>
+        typeof entry?.type === "string" &&
+        (
+            entry.type === "message_start" ||
+            entry.type === "content_block_start" ||
+            entry.type === "content_block_delta" ||
+            entry.type === "message_delta" ||
+            entry.type === "message_stop"
+        )
+    );
+    expect(hasChoices || hasResponse || hasAnthropicMessagesEvent).toBe(true);
 
     // Track tokens and cost from streaming responses (usage typically in final chunk)
     for (const frame of objects) {
@@ -286,6 +296,79 @@ describe("Live OpenAI gpt-5-nano protocols", () => {
 
             expect(response.id).toBeDefined();
             expect(response.object).toBe("response");
+            expectUsageTokens(response);
+        });
+
+        it("assistant phase round-trips without upstream errors", async () => {
+            const response: any = await runProtocol("/responses", {
+                model: MODEL,
+                input: [
+                    {
+                        type: "message",
+                        role: "assistant",
+                        phase: "commentary",
+                        content: [{ type: "output_text", text: "Thinking through the answer." }],
+                    },
+                    {
+                        type: "message",
+                        role: "assistant",
+                        phase: "final_answer",
+                        content: [{ type: "output_text", text: "Ready to answer." }],
+                    },
+                    {
+                        type: "message",
+                        role: "user",
+                        content: [{ type: "input_text", text: "Reply with the word OK." }],
+                    },
+                ],
+                debug: {
+                    enabled: true,
+                    return_upstream_request: true,
+                    return_upstream_response: true,
+                },
+            });
+
+            expect(response.id).toBeDefined();
+            expect(response.object).toBe("response");
+            expect(response.status).toBe("completed");
+            expect(response.error ?? null).toBeNull();
+
+            const outputItems = Array.isArray(response.output) ? response.output : [];
+            const assistantMessages = outputItems.filter(
+                (item: any) => item?.type === "message" && item?.role === "assistant"
+            );
+            expect(assistantMessages.length).toBeGreaterThan(0);
+
+            const phases = assistantMessages
+                .map((item: any) => item?.phase)
+                .filter((value: any) => typeof value === "string");
+            // GPT-5 nano may omit phase in output for some prompts.
+            // If present, ensure values are valid.
+            if (phases.length > 0) {
+                expect(phases.every((value: string) => value === "commentary" || value === "final_answer")).toBe(true);
+            }
+
+            if (response?.upstream_response && typeof response.upstream_response === "object") {
+                expect(response.upstream_response.error ?? null).toBeNull();
+            }
+
+            const upstreamRequestRaw = response?.upstream_request;
+            if (typeof upstreamRequestRaw === "string" && upstreamRequestRaw.trim().length > 0) {
+                const parsed = JSON.parse(upstreamRequestRaw);
+                expect(parsed?.metadata?.aistats_request_id).toBe(response.id);
+                const upstreamItems = Array.isArray(parsed?.input)
+                    ? parsed.input
+                    : (Array.isArray(parsed?.input_items) ? parsed.input_items : []);
+                const upstreamAssistantPhases = upstreamItems
+                    .filter((item: any) => item?.type === "message" && item?.role === "assistant")
+                    .map((item: any) => item?.phase)
+                    .filter((value: any) => typeof value === "string");
+                expect(upstreamAssistantPhases).toContain("commentary");
+                expect(upstreamAssistantPhases).toContain("final_answer");
+            } else {
+                throw new Error("Expected upstream_request debug payload to verify phase pass-through");
+            }
+
             expectUsageTokens(response);
         });
 

@@ -83,6 +83,39 @@ describe("text request schema validation", () => {
 		expect(responsesParsed.success).toBe(true);
 	});
 
+	it("accepts responses provider_options.openai.context_management", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "openai/gpt-5-nano",
+			input: "hello",
+			provider_options: {
+				openai: {
+					context_management: {
+						type: "compaction",
+						compact_threshold: 0.6,
+					},
+				},
+			},
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("rejects unsupported context management type", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "openai/gpt-5-nano",
+			input: "hello",
+			provider_options: {
+				openai: {
+					context_management: {
+						type: "invalid",
+					},
+				},
+			},
+		});
+
+		expect(parsed.success).toBe(false);
+	});
+
 	it("rejects responses n", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",

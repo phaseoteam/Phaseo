@@ -90,7 +90,11 @@ export type GuardOk<T> = { ok: true; value: T };
 export type GuardErr = { ok: false; response: Response };
 export type GuardResult<T> = GuardOk<T> | GuardErr;
 
-export async function guardAuth(req: Request): Promise<GuardResult<{
+type GuardAuthOptions = {
+    useKvCache?: boolean;
+};
+
+export async function guardAuth(req: Request, options: GuardAuthOptions = {}): Promise<GuardResult<{
     requestId: string;
     teamId: string;
     apiKeyId: string;
@@ -100,7 +104,7 @@ export async function guardAuth(req: Request): Promise<GuardResult<{
     internal?: boolean;
 }>> {
     const requestId = generatePublicId();
-    const auth = await authenticate(req);
+    const auth = await authenticate(req, { useKvCache: options.useKvCache });
     if (!auth.ok) {
         const reason = (auth as AuthFailure).reason;
         return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };

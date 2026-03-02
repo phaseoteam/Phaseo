@@ -388,8 +388,8 @@ SELECT cron.schedule('monthly-tier-downgrade-check', '0 0 1 * *', $$SELECT updat
    - Custom markup percentages per team
 
 5. **API Endpoints**
-   - `GET /v1/control/team/tier` - Get current tier info
-   - `POST /v1/control/team/tier` - Manually set tier (admin only)
+   - `GET /v1/team/tier` - Get current tier info
+   - `POST /v1/team/tier` - Manually set tier (admin only)
 
 ## Support
 

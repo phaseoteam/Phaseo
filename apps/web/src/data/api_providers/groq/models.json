@@ -1,0 +1,47 @@
+[
+  {
+    "api_model_id": "meta/llama-4-maverick",
+    "provider_api_model_id": "groq:meta/llama-4-maverick",
+    "provider_model_slug": "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 131072,
+    "max_output_tokens": 8192,
+    "effective_from": null,
+    "effective_to": "2026-03-09T00:00:00",
+    "capabilities": []
+  },
+  {
+    "api_model_id": "meta/llama-4-scout",
+    "provider_api_model_id": "groq:meta/llama-4-scout",
+    "provider_model_slug": "meta-llama/llama-4-scout-17b-16e-instruct",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 131072,
+    "max_output_tokens": 8192,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": null,
+    "provider_api_model_id": "groq",
+    "provider_model_slug": "qwen/qwen3-32b",
+    "internal_model_id": null,
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": 131072,
+    "max_output_tokens": 40960,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  }
+]

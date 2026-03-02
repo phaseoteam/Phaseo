@@ -2,17 +2,14 @@
 import Image from "next/image";
 import { Suspense } from "react";
 import { Pill, ThemedGitHubIcon, LiveDot } from "@/components/landingPage/Pill";
-import GatewayShowcase, {
-	GatewayShowcaseFallback,
-} from "@/components/landingPage/GatewayShowcase";
+import GatewayShowcase from "@/components/landingPage/GatewayShowcase";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
 import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
 import LatestUpdates from "@/components/landingPage/LatestUpdates";
 import type { Metadata } from "next";
-import { withUTM } from "@/lib/utm";
 
 export const metadata: Metadata = {
-	title: "Home",
+	title: "AI Model Database & API Gateway",
 	description:
 		"Discover and compare the world's most comprehensive AI model database and gateway. Browse benchmarks, features, pricing, and access state-of-the-art AI models.",
 	alternates: {
@@ -43,10 +40,7 @@ export default function Page() {
 
 				<div className="flex flex-wrap justify-center gap-3">
 					<Pill
-						href={withUTM("https://github.com/AI-Stats/AI-Stats", {
-							campaign: "hero-pill",
-							content: "github",
-						})}
+						href="https://github.com/AI-Stats/AI-Stats"
 						label="Open Source"
 						icon={<ThemedGitHubIcon />}
 						target="_blank"
@@ -61,10 +55,7 @@ export default function Page() {
 						ariaLabel="Dataset updates as soon as available"
 					/>
 					<Pill
-						href={withUTM("https://discord.gg/zDw73wamdX", {
-							campaign: "hero-pill",
-							content: "discord",
-						})}
+						href="https://discord.gg/zDw73wamdX"
 						label="Join our Discord"
 						icon={
 							<Image
@@ -92,9 +83,7 @@ export default function Page() {
 
 			<div className="mt-6 space-y-8">
 				<PartnerLogos />
-				<Suspense fallback={<GatewayShowcaseFallback />}>
-					<GatewayShowcase />
-				</Suspense>
+				<GatewayShowcase />
 			</div>
 		</div>
 	);

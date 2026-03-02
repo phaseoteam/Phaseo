@@ -18,6 +18,7 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { getUserObfuscationPreference } from "@/lib/fetchers/account/getUserObfuscationPreference";
 
 export const metadata: Metadata = {
 	title: "Credits - Settings",
@@ -86,6 +87,8 @@ async function CreditsSettingsContent(props: {
 
 	const teamId = await getTeamIdFromCookie();
 	const supabase = await createClient();
+	const { data: authData } = await supabase.auth.getUser();
+	const obfuscateInfo = await getUserObfuscationPreference(authData.user?.id ?? null);
 
 	// Fetch wallet (best-effort)
 	let w: any = null;
@@ -359,7 +362,11 @@ async function CreditsSettingsContent(props: {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div
+			className="space-y-6"
+			data-obfuscate-pii={obfuscateInfo ? "true" : "false"}
+			data-obfuscation-sync="true"
+		>
 			<SettingsPageHeader
 				title="Credits"
 				actions={

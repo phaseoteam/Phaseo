@@ -127,7 +127,7 @@ const quantizationOptions = [
 export const metadata: Metadata = {
 	title: "Model Performance Storyboard",
 	description:
-		"See how FP32, FP16, and INT8 deployments feel in practice—throughput, latency, uptime budgets, and quantization trade-offs in one place.",
+		"See how FP32, FP16, and INT8 deployments perform in practice, comparing throughput, latency, uptime budgets, and quantization trade-offs across realistic usage scenarios.",
 	alternates: {
 		canonical: "/performance",
 	},

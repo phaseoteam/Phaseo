@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
+import { getUserObfuscationPreference } from "@/lib/fetchers/account/getUserObfuscationPreference";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import AccountSettingsClient, {
 	UserPayload,
@@ -35,16 +36,17 @@ async function AccountDetailsContent() {
 
 	const { data: userRow } = await supabase
 		.from("users")
-		.select("user_id, display_name, default_team_id, obfuscate_info, created_at")
+		.select("user_id, display_name, default_team_id, created_at")
 		.eq("user_id", authUser.id)
 		.maybeSingle();
+	const obfuscateInfo = await getUserObfuscationPreference(authUser.id);
 
 	const user: UserPayload = {
 		id: authUser.id,
 		displayName: userRow?.display_name,
 		email: authUser.email ?? null,
 		defaultTeamId: userRow?.default_team_id ?? null,
-		obfuscateInfo: userRow?.obfuscate_info ?? false,
+		obfuscateInfo,
 		createdAt: userRow?.created_at,
 	};
 
@@ -61,6 +63,13 @@ async function AccountDetailsContent() {
 		.map((tm: any) => tm.teams)
 		.filter((t: any) => t && t.id && t.name) as { id: string; name: string }[];
 
-	return <AccountSettingsClient user={user} teams={teams} hasPassword={hasPassword} />;
+	return (
+		<div
+			data-obfuscate-pii={obfuscateInfo ? "true" : "false"}
+			data-obfuscation-sync="true"
+		>
+			<AccountSettingsClient user={user} teams={teams} hasPassword={hasPassword} />
+		</div>
+	);
 }
 

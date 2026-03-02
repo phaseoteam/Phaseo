@@ -3,7 +3,7 @@ import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
 import { getBenchmarkCached } from "@/lib/fetchers/benchmarks/getBenchmark";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import Script from "next/script";
 
 function parseScore(score: string | number | null | undefined): number | null {
@@ -44,7 +44,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Benchmark Leaderboard",
 			description:
-				"Explore AI benchmark leaderboards on AI Stats and compare model performance across tasks and datasets.",
+				"Explore AI benchmark leaderboards on AI Stats to compare model performance across tasks, datasets, methodology details, and historical score movement.",
 			path,
 			keywords: [
 				"AI benchmark",
@@ -226,19 +226,19 @@ export default async function Page({
 					"@type": "ListItem",
 					"position": 1,
 					"name": "Home",
-					"item": "https://aistats.org",
+					"item": absoluteUrl("/"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 2,
 					"name": "Benchmarks",
-					"item": "https://aistats.org/benchmarks",
+					"item": absoluteUrl("/benchmarks"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 3,
 					"name": benchmarkName,
-					"item": `https://aistats.org/benchmarks/${benchmarkId}`,
+					"item": absoluteUrl(`/benchmarks/${benchmarkId}`),
 				},
 			],
 		};

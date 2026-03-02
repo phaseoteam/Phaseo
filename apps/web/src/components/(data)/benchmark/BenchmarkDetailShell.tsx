@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import Image from "next/image";
 import TabBar from "@/components/(data)/benchmark/BenchmarkTabs";
-import { withUTM } from "@/lib/utm";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/getBenchmark";
 import BenchmarkEditButton from "./edit/BenchmarkEditButton";
 
@@ -28,13 +27,7 @@ export default async function BenchmarkDetailShell({
 						</p>
 						<div className="mt-3">
 							<a
-								href={withUTM(
-									"https://github.com/AI-Stats/AI-Stats",
-									{
-										campaign: "benchmark-empty-state",
-										content: "benchmark-detail-shell",
-									}
-								)}
+								href="https://github.com/AI-Stats/AI-Stats"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -68,7 +61,7 @@ export default async function BenchmarkDetailShell({
 				<div className="mb-8 flex w-full flex-col items-center justify-between gap-2 md:flex-row md:items-start md:gap-0">
 					<div className="flex flex-col items-center gap-4 md:flex-row">
 						<div className="flex flex-col items-center justify-center md:items-start">
-							<h1 className="mb-1 text-center text-3xl font-bold md:text-left md:text-5xl">
+							<h1 className="mb-1 text-center text-3xl font-bold md:text-left">
 								{benchmark.name ?? benchmark.id}
 							</h1>
 						</div>

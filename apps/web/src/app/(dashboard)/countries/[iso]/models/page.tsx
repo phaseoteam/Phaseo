@@ -26,7 +26,7 @@ export async function generateMetadata({
 		return buildMetadata({
 			title: `${isoNormalized || "Unknown"} Models - Country Catalogue`,
 			description:
-				"Browse AI models by country. This location does not yet have tracked organisations or releases in AI Stats.",
+				"Browse AI models by country on AI Stats. This location does not yet have tracked organisations or releases, but we will surface providers, launches, and benchmarks as coverage expands.",
 			path,
 			keywords: ["AI models", "countries", isoNormalized],
 			imagePath,
@@ -35,7 +35,7 @@ export async function generateMetadata({
 
 	return buildMetadata({
 		title: `${country.countryName} Models - Catalogue`,
-		description: `See every model we have mapped to ${country.countryName}. Filter through the organisations based in this country and explore their releases.`,
+		description: `See every model we have mapped to ${country.countryName}. Explore organisation-linked releases, compare model availability, and track how this country's AI catalogue evolves over time.`,
 		path,
 		keywords: [country.countryName, "AI models", "AI Stats"],
 		imagePath,

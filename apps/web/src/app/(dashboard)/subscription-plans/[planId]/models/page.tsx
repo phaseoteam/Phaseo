@@ -29,7 +29,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Subscription Plan Models",
 			description:
-				"See which AI models are included with popular AI subscription plans on AI Stats.",
+				"See which AI models are included in popular subscription plans on AI Stats, with access scope, provider coverage, and plan-level model availability details.",
 			path,
 			keywords: [
 				"AI subscription models",

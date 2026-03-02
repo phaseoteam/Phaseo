@@ -36,7 +36,13 @@ export type OpenAIResponsesResponse = {
 };
 
 export type OpenAIResponseOutputItem =
-	| { type: "message"; role: "assistant"; content: any[]; refusal?: string }
+	| {
+		type: "message";
+		role: "assistant";
+		content: any[];
+		refusal?: string;
+		phase?: "commentary" | "final_answer" | null;
+	}
 	| { type: "function_call"; call_id: string; name: string; arguments: string }
 	| { type: "reasoning"; content: Array<{ type: "output_text"; text: string; annotations?: any[] }> };
 
@@ -105,6 +111,7 @@ export function encodeOpenAIResponsesResponse(
 				role: "assistant",
 				content,
 				refusal: choice.message.refusal,
+				phase: choice.message.phase,
 			});
 		}
 

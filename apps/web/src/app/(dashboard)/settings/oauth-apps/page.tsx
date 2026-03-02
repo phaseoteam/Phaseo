@@ -10,7 +10,8 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 
 export const metadata = {
 	title: "OAuth Apps - Settings",
-	description: "Manage your OAuth applications for third-party integrations",
+	description:
+		"Manage your OAuth applications for third-party integrations, configure callback URLs and scopes, and control credentials used by external clients.",
 };
 
 export default function OAuthAppsPage() {

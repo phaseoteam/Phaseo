@@ -13,6 +13,7 @@ import {
 	DrawerTrigger,
 	DrawerContent,
 	DrawerClose,
+	DrawerTitle,
 } from "@/components/ui/drawer";
 
 interface HeaderProps {
@@ -93,6 +94,7 @@ export default function HeaderClient({
 					</Button>
 				</DrawerTrigger>
 				<DrawerContent>
+					<DrawerTitle className="sr-only">Navigation menu</DrawerTitle>
 					<div className="pt-4">
 						<nav className="flex flex-col gap-2 px-6 pb-4">
 							{navLinks}

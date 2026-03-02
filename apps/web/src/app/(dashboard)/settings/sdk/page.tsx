@@ -116,7 +116,7 @@ const SDKS: Sdk[] = [
 export const metadata: Metadata = {
 	title: "SDKs - Settings",
 	description:
-		"SDKs and integrations for the AI Stats gateway, including TypeScript, Python, and the Vercel AI SDK provider.",
+		"SDKs and integrations for the AI Stats Gateway, including TypeScript, Python, and Vercel AI SDK setup details with quick-start guidance for production use.",
 };
 
 export default function SettingsSdkPage() {

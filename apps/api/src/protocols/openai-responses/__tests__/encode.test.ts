@@ -84,6 +84,33 @@ describe("encodeOpenAIResponsesResponse", () => {
 		});
 	});
 
+	it("should encode assistant phase on message output items", () => {
+		const ir: IRChatResponse = {
+			id: "req-123",
+			nativeId: "resp-abc123",
+			model: "gpt-5.3-codex",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						phase: "final_answer",
+						content: [{ type: "text", text: "Done." }],
+					},
+					finishReason: "stop",
+				},
+			],
+		};
+
+		const response = encodeOpenAIResponsesResponse(ir, "req-123");
+
+		expect(response.output).toHaveLength(1);
+		expect(response.output[0].type).toBe("message");
+		if (response.output[0].type === "message") {
+			expect(response.output[0].phase).toBe("final_answer");
+		}
+	});
+
 	it("should encode multiple tool calls", () => {
 		const ir: IRChatResponse = {
 			id: "req-123",

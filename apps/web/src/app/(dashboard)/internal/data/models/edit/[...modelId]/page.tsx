@@ -6,11 +6,22 @@ import ModelLegacyEditor from "./ModelLegacyEditor";
 
 export default async function EditModelPage({
 	params,
+	searchParams,
 }: {
 	params: Promise<{ modelId: string[] }>;
+	searchParams: Promise<{ tab?: string; provider?: string }>;
 }) {
 	const { modelId: modelIdParts } = await params;
+	const query = await searchParams;
 	const modelId = modelIdParts.join("/");
+	const initialTab =
+		typeof query.tab === "string" && query.tab.trim()
+			? query.tab.trim()
+			: undefined;
+	const focusProviderId =
+		typeof query.provider === "string" && query.provider.trim()
+			? query.provider.trim()
+			: undefined;
 	const supabase = await createClient();
 	const { data: row } = await supabase
 		.from("data_models")
@@ -26,7 +37,11 @@ export default async function EditModelPage({
 				<h1 className="text-2xl font-semibold">Edit model</h1>
 				<p className="font-mono text-xs text-muted-foreground">{row.model_id}</p>
 			</div>
-			<ModelLegacyEditor modelId={modelId} />
+			<ModelLegacyEditor
+				modelId={modelId}
+				initialTab={initialTab}
+				focusProviderId={focusProviderId}
+			/>
 			<div className="flex">
 				<Link href="/internal/data/models" className="rounded-md border px-3 py-2 text-sm">
 					Back to models

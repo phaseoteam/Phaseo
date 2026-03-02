@@ -114,6 +114,7 @@ export type IRMessage =
 		role: "assistant";
 		content: IRContentPart[]; // Regular assistant content
 		toolCalls?: IRToolCall[]; // Optional tool calls
+		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
 	}
 	| {
 		role: "tool";
@@ -577,6 +578,7 @@ export type IRChoice = {
 		content: IRContentPart[]; // Array of content parts (can include reasoning_text, image, etc.)
 		toolCalls?: IRToolCall[];
 		refusal?: string; // Refusal to answer (content filter)
+		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
 	};
 	finishReason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;
 

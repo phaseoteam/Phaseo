@@ -1,5 +1,4 @@
 import { AlertTriangle, Info, XCircle } from "lucide-react";
-import { withUTM } from "@/lib/utm";
 
 interface ModelStatusBannerProps {
 	status:
@@ -11,10 +10,7 @@ interface ModelStatusBannerProps {
 		| null;
 }
 
-const RUMOURED_DISCORD_LINK = withUTM("https://discord.gg/zDw73wamdX", {
-	campaign: "rumoured-model-banner",
-	content: "discord",
-});
+const RUMOURED_DISCORD_LINK = "https://discord.gg/zDw73wamdX";
 
 export default function ModelStatusBanner({ status }: ModelStatusBannerProps) {
 	if (status === "Rumoured") {

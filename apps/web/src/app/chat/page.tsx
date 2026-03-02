@@ -7,7 +7,7 @@ import ChatPlaygroundLoader from "@/app/chat/ChatPlaygroundLoader";
 export const metadata: Metadata = buildMetadata({
     title: "Chat playground - AI Stats Chat",
     description:
-        "Chat with gateway models, tune parameters, and keep your chat history locally.",
+        "Use the AI Stats chat playground to test gateway models, tune parameters, compare outputs, and iterate quickly with local conversation history.",
     path: "/chat",
     keywords: ["AI chat", "playground", "AI Stats", "gateway", "chat UI"],
 });

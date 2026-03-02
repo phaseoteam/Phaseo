@@ -606,21 +606,44 @@ export async function handleError({
         auditArgs.stream = ctx?.stream;
         auditArgs.provider = providerForAudit;
     }
-    await auditFailure(auditArgs);
-    await emitGatewayRequestEvent({
+    try {
+        await auditFailure(auditArgs);
+    } catch (auditErr) {
+        console.error("[audit] failure audit insert failed", auditErr);
+    }
+    try {
+        await emitGatewayRequestEvent({
         ctx,
         result: undefined,
         requestId: auditArgs.requestId,
         teamId: auditArgs.teamId ?? "unknown",
         endpoint,
         model: ctx?.model ?? body?.model ?? null,
+        provider: stage === "execute" ? providerForAudit : null,
+        appTitle: ctx?.meta?.appTitle ?? body?.meta?.appTitle ?? attributionHeaders.appTitle ?? null,
+        referer: ctx?.meta?.referer ?? body?.meta?.referer ?? attributionHeaders.referer ?? null,
+        requestMethod: requestMeta.requestMethod,
+        requestPath: requestMeta.requestPath,
+        requestUrl: requestMeta.requestUrl,
+        userAgent: requestMeta.userAgent,
+        clientIp: requestMeta.clientIp,
+        cfRay: requestMeta.cfRay,
+        edgeColo: requestMeta.edgeColo,
+        edgeCity: requestMeta.edgeCity,
+        edgeCountry: requestMeta.edgeCountry,
+        edgeContinent: requestMeta.edgeContinent,
+        edgeAsn: requestMeta.edgeAsn,
+        keyId: ctx?.meta?.apiKeyId ?? null,
         statusCode,
         success: false,
         errorCode: `${attribution}:${errCode}`,
         errorMessage: description ?? fallbackDescription,
         errorType,
         errorStage: stage,
-        internalReason: errCode,
+        internalReason:
+            (typeof body?.reason === "string" && body.reason) ||
+            (typeof body?.error === "string" && body.error) ||
+            errCode,
         internalCode: upstreamUnsupportedParamSignal?.internalCode ?? null,
         unsupportedParam: upstreamUnsupportedParamSignal?.param ?? null,
         unsupportedParamPath: upstreamUnsupportedParamSignal?.path ?? null,
@@ -629,6 +652,9 @@ export async function handleError({
         providerResponseHeaders: headersToRecord(res.headers),
         gatewayResponse: errorPayload,
     });
+    } catch (eventErr) {
+        console.error("[observability] emitGatewayRequestEvent failed", eventErr);
+    }
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
 

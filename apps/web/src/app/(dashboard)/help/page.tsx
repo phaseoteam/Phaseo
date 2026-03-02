@@ -10,12 +10,19 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { getHelpCategories } from "@/lib/content/helpCenter";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
 	title: "Help Center",
 	description:
-		"Help center articles for account access, MFA, billing, privacy, and developer API support.",
-};
+		"Browse AI Stats help articles for account access, MFA, billing, privacy, onboarding, and developer API troubleshooting across common workflows.",
+	path: "/help",
+	keywords: [
+		"AI Stats help center",
+		"AI Stats support",
+		"gateway troubleshooting",
+	],
+});
 
 export default async function HelpCenterPage() {
 	const categories = await getHelpCategories();

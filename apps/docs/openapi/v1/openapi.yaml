@@ -33,14 +33,14 @@ paths:
                                     status:
                                         type: string
                                         example: ok
-    /models:
+    /gateway/models:
         get:
             x-beta: true
             tags:
                 - Gateway
             operationId: listModels
-            summary: List models
-            description: Returns a list of available models.
+            summary: List gateway models
+            description: Returns models currently servable through the gateway.
             parameters:
                 -
                     name: endpoints
@@ -2063,51 +2063,68 @@ paths:
                         application/json:
                             schema:
                                 $ref: "#/components/schemas/NotImplementedResponse"
-    /api/models:
-        get:
-            x-beta: true
-            tags:
-                - Gateway
-            operationId: listModelsAliasApi
-            summary: List models (alias)
-            description: Alias of /models.
-            responses:
-                "200":
-                    description: List of models
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    ok:
-                                        type: boolean
-                                    limit:
-                                        type: integer
-                                    offset:
-                                        type: integer
-                                    total:
-                                        type: integer
-                                    models:
-                                        type: array
-                                        items:
-                                            $ref: "#/components/schemas/Model"
     /data/models:
         get:
             x-beta: true
             tags:
                 - Gateway
-            operationId: listModelsAliasData
-            summary: List models (data alias)
-            description: Alias of /models.
+            operationId: listDataModels
+            summary: List data models
+            description: Returns source catalogue models from the data_models table.
+            parameters:
+                -
+                    name: include_hidden
+                    in: query
+                    description: Include hidden models in results
+                    schema:
+                        type: boolean
+                        default: false
+                -
+                    name: status
+                    in: query
+                    description: Filter by model status
+                    schema:
+                        type: array
+                        items:
+                            type: string
+                -
+                    name: organisation
+                    in: query
+                    description: Filter by organisation
+                    schema:
+                        oneOf:
+                            -
+                                $ref: "#/components/schemas/OrganisationId"
+                            -
+                                $ref: "#/components/schemas/OrganisationIdList"
+                -
+                    name: limit
+                    in: query
+                    description: Limit the number of results
+                    schema:
+                        type: integer
+                        default: 50
+                        minimum: 1
+                        maximum: 250
+                -
+                    name: offset
+                    in: query
+                    description: Offset for pagination
+                    schema:
+                        type: integer
+                        default: 0
+                        minimum: 0
             responses:
                 "200":
-                    description: List of models
+                    description: List of data models
                     content:
                         application/json:
                             schema:
                                 type: object
                                 properties:
                                     ok:
+                                        type: boolean
+                                    include_hidden:
                                         type: boolean
                                     limit:
                                         type: integer
@@ -2118,7 +2135,20 @@ paths:
                                     models:
                                         type: array
                                         items:
-                                            $ref: "#/components/schemas/Model"
+                                            $ref: "#/components/schemas/DataModel"
+                "500":
+                    description: Error
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    ok:
+                                        type: boolean
+                                    error:
+                                        type: string
+                                    message:
+                                        type: string
     /realtime:
         post:
             x-beta: true
@@ -2515,6 +2545,55 @@ components:
                                 type: array
                                 items:
                                     type: string
+        DataModelOrganisation:
+            type: object
+            nullable: true
+            properties:
+                organisation_id:
+                    type: string
+                    nullable: true
+                name:
+                    type: string
+                    nullable: true
+                country_code:
+                    type: string
+                    nullable: true
+                colour:
+                    type: string
+                    nullable: true
+        DataModel:
+            type: object
+            properties:
+                model_id:
+                    type: string
+                    nullable: true
+                name:
+                    type: string
+                    nullable: true
+                release_date:
+                    type: string
+                    nullable: true
+                deprecation_date:
+                    type: string
+                    nullable: true
+                retirement_date:
+                    type: string
+                    nullable: true
+                status:
+                    type: string
+                    nullable: true
+                hidden:
+                    type: boolean
+                input_types:
+                    type: array
+                    items:
+                        type: string
+                output_types:
+                    type: array
+                    items:
+                        type: string
+                organisation:
+                    $ref: "#/components/schemas/DataModelOrganisation"
         ChatCompletionsRequest:
             type: object
             required:
@@ -3151,11 +3230,19 @@ components:
                 model:
                     type: string
                 input:
-                    type: object
+                    oneOf:
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                $ref: "#/components/schemas/ResponsesInputItem"
+                        -
+                            type: object
                 input_items:
                     type: array
                     items:
-                        type: object
+                        $ref: "#/components/schemas/ResponsesInputItem"
                 conversation:
                     oneOf:
                         -
@@ -3201,6 +3288,49 @@ components:
                     type: string
                 prompt_cache_retention:
                     type: string
+                provider_options:
+                    type: object
+                    description: >
+                        Optional provider-specific options. Currently only OpenAI
+                        `context_management` is supported on `/v1/responses`.
+                    properties:
+                        openai:
+                            type: object
+                            properties:
+                                context_management:
+                                    type: object
+                                    description: >
+                                        Optional OpenAI context management configuration.
+                                    properties:
+                                        type:
+                                            type: string
+                                            enum:
+                                                - compaction
+                                        compact_threshold:
+                                            type: number
+                                    required:
+                                        - type
+                providerOptions:
+                    type: object
+                    description: >
+                        Camel-case alias of `provider_options`.
+                    properties:
+                        openai:
+                            type: object
+                            properties:
+                                contextManagement:
+                                    type: object
+                                    description: >
+                                        Optional OpenAI context management configuration.
+                                    properties:
+                                        type:
+                                            type: string
+                                            enum:
+                                                - compaction
+                                        compactThreshold:
+                                            type: number
+                                    required:
+                                        - type
                 reasoning:
                     type: object
                     properties:
@@ -3299,6 +3429,14 @@ components:
                     type: integer
                 model:
                     type: string
+                output:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/ResponsesOutputItem"
+                output_items:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/ResponsesOutputItem"
                 content:
                     type: array
                     items:
@@ -3311,6 +3449,65 @@ components:
                     type: string
                 usage:
                     $ref: "#/components/schemas/Usage"
+        ResponsesInputItem:
+            type: object
+            description: >
+                Responses API input item. Assistant messages support `phase`:
+                use `commentary` for intermediate assistant messages and `final_answer`
+                for final assistant messages. On follow-up turns, preserve and resend
+                assistant messages with their original `phase` values.
+            properties:
+                type:
+                    type: string
+                role:
+                    type: string
+                    enum:
+                        - user
+                        - assistant
+                        - system
+                        - developer
+                content:
+                    oneOf:
+                        -
+                            type: string
+                        -
+                            type: array
+                            items:
+                                type: object
+                        -
+                            type: object
+                phase:
+                    type: string
+                    nullable: true
+                    description: >
+                        Optional assistant message phase. Not used for user/system/developer messages.
+                    enum:
+                        - commentary
+                        - final_answer
+                    example: commentary
+        ResponsesOutputItem:
+            type: object
+            description: >
+                Responses API output item. Assistant message items may include `phase`
+                as `commentary` (intermediate) or `final_answer` (final).
+            properties:
+                type:
+                    type: string
+                role:
+                    type: string
+                content:
+                    type: array
+                    items:
+                        type: object
+                phase:
+                    type: string
+                    nullable: true
+                    description: >
+                        Optional assistant message phase returned by the model.
+                    enum:
+                        - commentary
+                        - final_answer
+                    example: final_answer
         ResponsesWebSocketCreateEvent:
             type: object
             description: >

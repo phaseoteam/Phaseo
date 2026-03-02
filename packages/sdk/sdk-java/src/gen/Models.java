@@ -217,6 +217,22 @@ public final class Models {
 		public java.util.List<Object> tool_calls;
 	}
 
+	public static class DataModel {
+		public String deprecation_date;
+		public Boolean hidden;
+		public java.util.List<String> input_types;
+		public String model_id;
+		public String name;
+		public Object organisation;
+		public java.util.List<String> output_types;
+		public String release_date;
+		public String retirement_date;
+		public String status;
+	}
+
+	public static class DataModelOrganisation {
+	}
+
 	public static class DebugOptions {
 		public Boolean enabled;
 		public Boolean return_upstream_request;
@@ -534,6 +550,20 @@ public final class Models {
 		public Object summary;
 	}
 
+	public static class ResponsesInputItem {
+		public Object content;
+		public Object phase;
+		public Object role;
+		public String type;
+	}
+
+	public static class ResponsesOutputItem {
+		public java.util.List<Object> content;
+		public Object phase;
+		public String role;
+		public String type;
+	}
+
 	public static class ResponsesRequest {
 		public Boolean background;
 		public Object conversation;
@@ -558,6 +588,8 @@ public final class Models {
 		public String prompt_cache_key;
 		public String prompt_cache_retention;
 		public Object provider;
+		public Object provider_options;
+		public Object providerOptions;
 		public Object reasoning;
 		public java.util.List<String> response_modalities;
 		public java.util.List<String> responseModalities;
@@ -585,6 +617,8 @@ public final class Models {
 		public String id;
 		public String model;
 		public String object;
+		public java.util.List<Object> output;
+		public java.util.List<Object> output_items;
 		public String role;
 		public String stop_reason;
 		public String type;

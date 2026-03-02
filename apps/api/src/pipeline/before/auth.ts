@@ -81,6 +81,31 @@ function ctEqualHex(a: string, b: string): boolean {
     return diff === 0;
 }
 
+function timingSafeEqualText(a: string, b: string): boolean {
+    const len = Math.max(a.length, b.length);
+    let diff = a.length === b.length ? 0 : 1;
+    for (let i = 0; i < len; i++) {
+        const ca = i < a.length ? a.charCodeAt(i) : 0;
+        const cb = i < b.length ? b.charCodeAt(i) : 0;
+        diff |= ca ^ cb;
+    }
+    return diff === 0;
+}
+
+function isInternalRequestAuthorized(req: Request, bindings: ReturnType<typeof getBindings>): boolean {
+    const configuredToken = String(bindings.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
+    // Require high entropy to avoid accidental weak config.
+    if (!configuredToken || configuredToken.length < 128) return false;
+    const providedToken = String(
+        req.headers.get("x-aistats-internal-token") ??
+        req.headers.get("x-ai-stats-internal-token") ??
+        req.headers.get("x-internal-token") ??
+        ""
+    ).trim();
+    if (!providedToken) return false;
+    return timingSafeEqualText(providedToken, configuredToken);
+}
+
 /* -------------------- token parsing -------------------- */
 
 /**
@@ -120,6 +145,10 @@ export type AuthSuccess = {
     internal?: boolean;
 };
 
+type AuthenticateOptions = {
+    useKvCache?: boolean;
+};
+
 type KeyRow = {
     id: string;
     team_id: string;
@@ -128,26 +157,39 @@ type KeyRow = {
 };
 
 async function getCachedKey(kid: string): Promise<KeyRow | null> {
-    const versionToken = await keyVersionToken("kid", kid);
-    const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
-    if (!cached || typeof cached !== "object") return null;
-    const row = cached as Partial<KeyRow>;
-    if (!row.id || !row.team_id || !row.status || !row.hash) return null;
-    return row as KeyRow;
+    try {
+        const versionToken = await keyVersionToken("kid", kid);
+        const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
+        if (!cached || typeof cached !== "object") return null;
+        const row = cached as Partial<KeyRow>;
+        if (!row.id || !row.team_id || !row.status || !row.hash) return null;
+        return row as KeyRow;
+    } catch {
+        // Fail open to DB lookup when KV is unavailable.
+        return null;
+    }
 }
 
 async function cacheKey(kid: string, row: KeyRow) {
-    const versionToken = await keyVersionToken("kid", kid);
-    await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
-        expirationTtl: KEY_CACHE_TTL_SECONDS,
-    });
+    try {
+        const versionToken = await keyVersionToken("kid", kid);
+        await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
+            expirationTtl: KEY_CACHE_TTL_SECONDS,
+        });
+    } catch {
+        // Ignore KV write failures.
+    }
 }
 
 async function cacheNegativeKey(kid: string) {
-    const versionToken = await keyVersionToken("kid", kid);
-    await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify({ missing: true }), {
-        expirationTtl: KEY_CACHE_TTL_NEGATIVE_SECONDS,
-    });
+    try {
+        const versionToken = await keyVersionToken("kid", kid);
+        await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify({ missing: true }), {
+            expirationTtl: KEY_CACHE_TTL_NEGATIVE_SECONDS,
+        });
+    } catch {
+        // Ignore KV write failures.
+    }
 }
 
 /**
@@ -166,7 +208,7 @@ async function cacheNegativeKey(kid: string) {
  *
  * @param authorizationHeader - Raw "Authorization" header string
  */
-export async function authenticate(req: Request): Promise<AuthSuccess | AuthFailure> {
+export async function authenticate(req: Request, options: AuthenticateOptions = {}): Promise<AuthSuccess | AuthFailure> {
     // 1. Ensure proper "Bearer ..." format.
     const authorizationHeader = req.headers.get("authorization") ?? undefined;
     if (!authorizationHeader?.startsWith("Bearer ")) {
@@ -180,10 +222,11 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
         if (!isGatewayOAuthJwt(token)) {
             return { ok: false, reason: "invalid_key_format" };
         }
-        return await authenticateOAuth(token);
+        return await authenticateOAuth(req, token, options);
     }
 
     const bindings = getBindings();
+    const useKvCache = options.useKvCache ?? true;
 
     // 2. Parse structured token.
     const parsed = parseV2(token);
@@ -191,7 +234,10 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
 
     // 3. Look up key in Supabase.
     const supabase = getSupabaseAdmin();
-    let keyRow = await getCachedKey(parsed.kid);
+    let keyRow: KeyRow | null = null;
+    if (useKvCache) {
+        keyRow = await getCachedKey(parsed.kid);
+    }
     if (!keyRow) {
         const { data, error } = await supabase
             .from("keys")
@@ -201,11 +247,15 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
 
         if (error) return { ok: false, reason: "db_error" };
         if (!data) {
-            await cacheNegativeKey(parsed.kid);
+            if (useKvCache) {
+                await cacheNegativeKey(parsed.kid);
+            }
             return { ok: false, reason: "key_not_found_or_revoked" };
         }
         keyRow = data as KeyRow;
-        await cacheKey(parsed.kid, keyRow);
+        if (useKvCache) {
+            await cacheKey(parsed.kid, keyRow);
+        }
     }
 
     if (!keyRow || keyRow.status !== "active") {
@@ -218,7 +268,7 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
 
     const success = async (): Promise<AuthSuccess | AuthFailure> => {
         let teamId = keyRow.team_id;
-        let internal = false;
+        const internal = isInternalRequestAuthorized(req, bindings);
 
         // Fire-and-forget update of last_used_at timestamp.
         dispatchBackground((async () => {
@@ -278,8 +328,9 @@ export async function authenticate(req: Request): Promise<AuthSuccess | AuthFail
  * This is called when the Authorization header contains a JWT token
  * (Bearer token with 3 dot-separated parts) instead of an API key.
  */
-async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailure> {
+async function authenticateOAuth(req: Request, token: string, options: AuthenticateOptions = {}): Promise<AuthSuccess | AuthFailure> {
     const bindings = getBindings();
+    const useKvCache = options.useKvCache ?? true;
 
     // Check if SUPABASE_URL is configured
     const supabaseUrl = bindings.SUPABASE_URL;
@@ -301,7 +352,10 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
         }
 
         // Get JWKS (with caching via KV)
-        let jwks = await getJWKSWithCache(supabaseUrl, bindings.KV || null);
+        let jwks = await getJWKSWithCache(
+            supabaseUrl,
+            useKvCache ? bindings.KV || null : null
+        );
 
         // Validate token
         let validation = await validateOAuthToken(
@@ -313,7 +367,11 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
 
         // If validation fails due to key not found, refresh JWKS and retry
         if (!validation.valid && validation.error?.includes("Public key not found")) {
-            jwks = await getJWKSWithRetry(supabaseUrl, bindings.KV || null, true);
+            jwks = await getJWKSWithRetry(
+                supabaseUrl,
+                useKvCache ? bindings.KV || null : null,
+                true
+            );
             validation = await validateOAuthToken(
                 token,
                 jwks.keys,
@@ -376,7 +434,7 @@ async function authenticateOAuth(token: string): Promise<AuthSuccess | AuthFailu
             apiKeyRef: `oauth_${claims.client_id}`,
             apiKeyKid: claims.client_id,
             userId: claims.user_id,
-            internal: false,
+            internal: isInternalRequestAuthorized(req, bindings),
         } as AuthSuccess;
     } catch (error: any) {
         const message = String(error?.message ?? "");

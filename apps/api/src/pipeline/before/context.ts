@@ -137,6 +137,19 @@ function normalizeProviderStatus(
     return "active";
 }
 
+function normalizeCapabilityStatus(
+    value: unknown
+): "active" | "deranked" | "disabled" | "internal_testing" {
+    const status = String(value ?? "").trim().toLowerCase();
+    if (status === "active") return "active";
+    if (status === "deranked") return "deranked";
+    if (status === "disabled") return "disabled";
+    if (status === "internal_testing" || status === "internal-testing" || status === "internaltesting") {
+        return "internal_testing";
+    }
+    return "active";
+}
+
 function parseModalities(value: unknown): Set<string> {
     if (Array.isArray(value)) {
         return new Set(
@@ -225,6 +238,130 @@ type ProviderScopedModelRow = {
     effective_to: string | null;
 };
 
+function setToArrayOrNull(value: Set<string>): string[] | null {
+    const list = Array.from(value).filter(Boolean);
+    return list.length ? list : null;
+}
+
+type ProviderModalitiesRow = {
+    provider_id: string | null;
+    provider_model_slug: string | null;
+    input_modalities: unknown;
+    output_modalities: unknown;
+    effective_from: string | null;
+    effective_to: string | null;
+};
+
+async function backfillProviderModalities(args: {
+    parsed: GatewayContextData;
+    requestedModel: string;
+}): Promise<GatewayContextData> {
+    const parsed = args.parsed;
+    const providers = Array.isArray(parsed.providers) ? parsed.providers : [];
+    if (!providers.length) return parsed;
+
+    const needsBackfill = providers.some((provider) => {
+        const hasInput = Array.isArray(provider.inputModalities) && provider.inputModalities.length > 0;
+        const hasOutput = Array.isArray(provider.outputModalities) && provider.outputModalities.length > 0;
+        return !hasInput || !hasOutput;
+    });
+    if (!needsBackfill) return parsed;
+
+    const modelCandidates = Array.from(
+        new Set(
+            [parsed.resolvedModel, args.requestedModel]
+                .map((value) => String(value ?? "").trim())
+                .filter(Boolean)
+        )
+    );
+    if (!modelCandidates.length) return parsed;
+
+    const providerIds = Array.from(
+        new Set(
+            providers
+                .map((provider) => provider.providerId)
+                .filter((id): id is string => typeof id === "string" && id.length > 0)
+        )
+    );
+    if (!providerIds.length) return parsed;
+
+    const supabase = getSupabaseAdmin();
+    const nowMs = Date.now();
+    const [byApiModelResult, byInternalModelResult] = await Promise.all([
+        supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_id,provider_model_slug,input_modalities,output_modalities,effective_from,effective_to"
+            )
+            .eq("is_active_gateway", true)
+            .in("provider_id", providerIds)
+            .in("api_model_id", modelCandidates),
+        supabase
+            .from("data_api_provider_models")
+            .select(
+                "provider_id,provider_model_slug,input_modalities,output_modalities,effective_from,effective_to"
+            )
+            .eq("is_active_gateway", true)
+            .in("provider_id", providerIds)
+            .in("internal_model_id", modelCandidates),
+    ]);
+
+    if (byApiModelResult.error && byInternalModelResult.error) return parsed;
+
+    const rows = [
+        ...(byApiModelResult.data ?? []),
+        ...(byInternalModelResult.data ?? []),
+    ] as ProviderModalitiesRow[];
+    if (!rows.length) return parsed;
+
+    const rowsByProviderId = new Map<string, ProviderModalitiesRow[]>();
+    for (const row of rows) {
+        const providerId = row.provider_id;
+        if (typeof providerId !== "string" || !providerId.length) continue;
+        if (!isWithinEffectiveWindow(row.effective_from, row.effective_to, nowMs)) continue;
+        const list = rowsByProviderId.get(providerId) ?? [];
+        list.push(row);
+        rowsByProviderId.set(providerId, list);
+    }
+
+    if (!rowsByProviderId.size) return parsed;
+
+    for (const [providerId, rows] of rowsByProviderId.entries()) {
+        rows.sort((a, b) => toMillis(b.effective_from) - toMillis(a.effective_from));
+        rowsByProviderId.set(providerId, rows);
+    }
+
+    const hydratedProviders = providers.map((provider) => {
+        const hasInput = Array.isArray(provider.inputModalities) && provider.inputModalities.length > 0;
+        const hasOutput = Array.isArray(provider.outputModalities) && provider.outputModalities.length > 0;
+        if (hasInput && hasOutput) return provider;
+
+        const rows = rowsByProviderId.get(provider.providerId) ?? [];
+        if (!rows.length) return provider;
+
+        const targetSlug = provider.providerModelSlug ?? null;
+        const match =
+            rows.find((row) => (row.provider_model_slug ?? null) === targetSlug) ??
+            rows.find((row) => row.provider_model_slug == null) ??
+            rows[0];
+        if (!match) return provider;
+
+        const backfilledInput = setToArrayOrNull(parseModalities(match.input_modalities));
+        const backfilledOutput = setToArrayOrNull(parseModalities(match.output_modalities));
+
+        return {
+            ...provider,
+            inputModalities: hasInput ? provider.inputModalities : backfilledInput,
+            outputModalities: hasOutput ? provider.outputModalities : backfilledOutput,
+        };
+    });
+
+    return {
+        ...parsed,
+        providers: hydratedProviders,
+    };
+}
+
 async function resolveProviderScopedModelToApiModel(args: {
     model: string;
     endpoint: string;
@@ -260,7 +397,7 @@ async function resolveProviderScopedModelToApiModel(args: {
         .from("data_api_provider_model_capabilities")
         .select("provider_api_model_id")
         .eq("capability_id", args.endpoint)
-        .eq("status", "active")
+        .in("status", ["active", "deranked"])
         .in("provider_api_model_id", providerApiModelIds);
     if (capabilityError || !capabilityRows?.length) return null;
 
@@ -309,15 +446,13 @@ async function fetchTestingProviderSnapshots(args: {
             .select(
                 "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,effective_from,effective_to,input_modalities,output_modalities"
             )
-            .in("api_model_id", modelCandidates)
-            .eq("is_active_gateway", false),
+            .in("api_model_id", modelCandidates),
         supabase
             .from("data_api_provider_models")
             .select(
                 "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,effective_from,effective_to,input_modalities,output_modalities"
             )
-            .in("internal_model_id", modelCandidates)
-            .eq("is_active_gateway", false),
+            .in("internal_model_id", modelCandidates),
     ]);
 
     if (byApiModelResult.error && byInternalModelResult.error) return [];
@@ -356,7 +491,7 @@ async function fetchTestingProviderSnapshots(args: {
             "provider_api_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at"
         )
         .eq("capability_id", args.endpoint)
-        .eq("status", "active")
+        .in("status", ["active", "deranked", "internal_testing"])
         .in("provider_api_model_id", providerModelIds);
     if (capabilityError) return [];
 
@@ -366,6 +501,7 @@ async function fetchTestingProviderSnapshots(args: {
             params: Record<string, any>;
             maxInputTokens: number | null;
             maxOutputTokens: number | null;
+            status: "active" | "deranked" | "disabled" | "internal_testing";
             sortTs: number;
         }
     >();
@@ -385,6 +521,7 @@ async function fetchTestingProviderSnapshots(args: {
                 row?.max_output_tokens === null || row?.max_output_tokens === undefined
                     ? null
                     : Number(row.max_output_tokens),
+            status: normalizeCapabilityStatus(row?.status),
             sortTs: ts,
         });
     }
@@ -446,6 +583,7 @@ async function fetchTestingProviderSnapshots(args: {
         testingProviders.push({
             providerId,
             providerStatus: "active",
+            capabilityStatus: cap?.status ?? "active",
             supportsEndpoint: true,
             baseWeight: 1,
             byokMeta: byokByProvider.get(providerId) ?? [],
@@ -535,6 +673,11 @@ export async function fetchGatewayContext(args: {
             parsed = await fetchParsedContext(remappedModel);
         }
     }
+
+    parsed = await backfillProviderModalities({
+        parsed,
+        requestedModel: args.model,
+    });
 
     if (args.includeTestingMode) {
         try {

@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
@@ -11,6 +12,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 const tabs = [
 	{ label: "Overview", key: "overview" },
@@ -32,21 +34,72 @@ export default function CountryTabs({ iso }: CountryTabsProps) {
 		key === "overview"
 			? `/countries/${iso.toLowerCase()}`
 			: `/countries/${iso.toLowerCase()}/${key}`;
+	const desktopContainerRef = React.useRef<HTMLDivElement | null>(null);
+	const tabRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
+	const [indicator, setIndicator] = React.useState({
+		left: 0,
+		width: 0,
+		opacity: 0,
+	});
+
+	const setIndicatorToKey = React.useCallback((key: string) => {
+		const container = desktopContainerRef.current;
+		const el = tabRefs.current[key];
+		if (!container || !el) return;
+
+		const containerRect = container.getBoundingClientRect();
+		const rect = el.getBoundingClientRect();
+		setIndicator({
+			left: rect.left - containerRect.left,
+			width: rect.width,
+			opacity: 1,
+		});
+	}, []);
+
+	React.useEffect(() => {
+		const update = () => setIndicatorToKey(activeKey);
+		const raf = requestAnimationFrame(update);
+		window.addEventListener("resize", update);
+		return () => {
+			cancelAnimationFrame(raf);
+			window.removeEventListener("resize", update);
+		};
+	}, [activeKey, setIndicatorToKey]);
 
 	return (
 		<>
-			<div className="hidden gap-4 border-b mb-4 md:flex">
+			<div
+				ref={desktopContainerRef}
+				className="relative mb-4 hidden gap-4 border-b md:flex"
+				onMouseLeave={() => setIndicatorToKey(activeKey)}
+			>
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute bottom-0 h-0.5 rounded bg-muted-foreground transition-[left,width,opacity] duration-200 ease-out"
+					style={{
+						left: indicator.left,
+						width: indicator.width,
+						opacity: indicator.opacity,
+					}}
+				/>
 				{tabs.map((tab) => {
 					const isActive = activeKey === tab.key;
 					return (
 						<Link
 							key={tab.key}
 							href={hrefFor(tab.key)}
-							className={`pb-2 px-2 font-medium transition-colors duration-150 ${
+							aria-current={isActive ? "page" : undefined}
+							ref={(el) => {
+								tabRefs.current[tab.key] = el;
+							}}
+							onMouseEnter={() => setIndicatorToKey(tab.key)}
+							onFocus={() => setIndicatorToKey(tab.key)}
+							className={cn(
+								"pb-2 px-2 text-sm font-medium transition-colors duration-150",
 								isActive
-									? "border-b-2 border-primary text-primary"
-									: "border-b-2 border-transparent text-muted-foreground hover:text-primary"
-							}`}
+									? "text-primary"
+									: "text-muted-foreground hover:text-primary"
+							)}
 						>
 							{tab.label}
 						</Link>

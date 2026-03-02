@@ -1,7 +1,6 @@
 import { ExtendedModel, Price } from "@/data/types";
 import ModelPriceCard from "@/components/(data)/prices/APIProviderPriceCard";
 import Image from "next/image";
-import { withUTM } from "@/lib/utm";
 
 interface ModelAPIProvidersProps {
 	model: ExtendedModel;
@@ -24,10 +23,7 @@ export default function ModelAPIProviders({ model }: ModelAPIProvidersProps) {
 				</p>
 				<div className="mt-3">
 					<a
-						href={withUTM("https://github.com/AI-Stats/AI-Stats", {
-							campaign: "model-pricing-empty-state",
-							content: "model-api-providers",
-						})}
+						href="https://github.com/AI-Stats/AI-Stats"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"

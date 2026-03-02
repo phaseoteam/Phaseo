@@ -1,11 +1,9 @@
 import APIProviderDetailShell from "@/components/(data)/api-providers/APIProviderDetailShell";
+import ProviderTokenUsageChart from "@/components/(data)/api-providers/Gateway/ProviderTokenUsageChart";
 import PerformanceCards from "@/components/(data)/api-providers/Gateway/PerformanceCards";
-import TopModels from "@/components/(data)/api-providers/Gateway/TopModels";
-import TopApps from "@/components/(data)/api-providers/Gateway/TopApps";
-import Updates from "@/components/(data)/api-providers/Gateway/Updates";
 import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHeader";
 import type { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import Script from "next/script";
 
 async function fetchProviderMeta(apiProviderId: string) {
@@ -32,7 +30,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI API Provider Performance Analytics",
 			description:
-				"Inspect AI API provider performance on AI Stats. Explore latency, throughput, and reliability metrics captured by the AI Stats Gateway.",
+				"Inspect AI API provider performance on AI Stats with latency, throughput, and reliability metrics from real gateway traffic, plus model usage trends and provider-level rankings.",
 			path: `/api-providers/${apiProvider}`,
 			keywords: [
 				"AI API provider",
@@ -54,7 +52,7 @@ export async function generateMetadata(props: {
 
 	const description = [
 		`${providerName} on AI Stats - real-world performance analytics from the AI Stats Gateway.`,
-		"Review latency, throughput, and average generation time, see which apps rely on this provider most, and track newly added models and integrations.",
+		"Review token usage trends, latency, throughput, and average generation time, plus which apps and models drive this provider's traffic.",
 	]
 		.filter(Boolean)
 		.join(" ");
@@ -160,19 +158,19 @@ export default async function Page({
 					"@type": "ListItem",
 					"position": 1,
 					"name": "Home",
-					"item": "https://aistats.org",
+					"item": absoluteUrl("/"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 2,
 					"name": "API Providers",
-					"item": "https://aistats.org/api-providers",
+					"item": absoluteUrl("/api-providers"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 3,
 					"name": providerName,
-					"item": `https://aistats.org/api-providers/${apiProvider}`,
+					"item": absoluteUrl(`/api-providers/${apiProvider}`),
 				},
 			],
 		};
@@ -210,14 +208,13 @@ export default async function Page({
 				</>
 			)}
 			<APIProviderDetailShell apiProviderId={apiProvider}>
-				<div className="flex flex-col gap-6 w-full">
-					<PerformanceCards params={params} />
+				<div className="flex flex-col gap-10 w-full">
+					<section className="space-y-2">
+						<h3 className="text-xl font-semibold">Performance</h3>
+						<PerformanceCards params={params} />
+					</section>
 
-					<TopModels count={6} apiProviderId={apiProvider} />
-
-					<TopApps count={20} apiProviderId={apiProvider} period="week" />
-
-					<Updates apiProviderId={apiProvider} />
+					<ProviderTokenUsageChart apiProviderId={apiProvider} />
 				</div>
 			</APIProviderDetailShell>
 		</>

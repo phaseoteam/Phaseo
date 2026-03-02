@@ -21,7 +21,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 async function handleInvalidateKey(req: Request) {
-    const auth = await guardAuth(req);
+    const auth = await guardAuth(req, { useKvCache: false });
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
@@ -115,3 +115,4 @@ async function handleInvalidateKey(req: Request) {
 export const keysRoutes = new Hono<Env>();
 
 keysRoutes.post("/:id/invalidate", withRuntime(handleInvalidateKey));
+

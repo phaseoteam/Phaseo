@@ -51,7 +51,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "Model Family Overview",
 			description:
-				"Explore AI model families on AI Stats, including related variants, benchmarks, and pricing information.",
+				"Explore this model's family on AI Stats, including related variants, benchmark context, provider coverage, pricing information, and release timeline connections.",
 			path,
 			keywords: [
 				"AI model family",

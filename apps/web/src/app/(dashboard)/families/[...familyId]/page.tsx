@@ -58,7 +58,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Model Family",
 			description:
-				"Explore related AI models within a family and track release timelines on AI Stats.",
+				"Explore related AI models within the same family, compare member variants, and follow release milestones, pricing context, and provider availability across AI Stats.",
 			path,
 			keywords: ["AI model family", "AI models", "AI Stats"],
 		});

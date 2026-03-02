@@ -5,7 +5,6 @@ import Link from "next/link";
 import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHeader";
 import TabBar from "@/components/(data)/api-providers/APIProviderTabs";
 import { Logo } from "@/components/Logo";
-import { withUTM } from "@/lib/utm";
 import APIProviderEditButton from "./edit/APIProviderEditButton";
 
 interface APIProviderDetailShellProps {
@@ -36,13 +35,7 @@ export default async function APIProviderDetailShell({
 						</p>
 						<div className="mt-3">
 							<a
-								href={withUTM(
-									"https://github.com/AI-Stats/AI-Stats",
-									{
-										campaign: "provider-empty-state",
-										content: "api-provider-detail-shell",
-									}
-								)}
+								href="https://github.com/AI-Stats/AI-Stats"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -76,8 +69,8 @@ export default async function APIProviderDetailShell({
 				<div className="mb-8 flex w-full flex-col items-center justify-between gap-2 md:flex-row md:items-start md:gap-0">
 					<div className="flex flex-col items-center gap-4 md:flex-row">
 						<div className="flex items-center justify-center">
-							<div className="relative flex h-12 w-12 items-center justify-center rounded-xl border md:h-24 md:w-24">
-								<div className="relative h-10 w-10 md:h-20 md:w-20">
+							<div className="relative flex h-10 w-10 items-center justify-center rounded-xl border md:h-16 md:w-16">
+								<div className="relative h-8 w-8 md:h-12 md:w-12">
 									<Logo
 										id={header.api_provider_id}
 										alt={header.api_provider_name}
@@ -88,7 +81,7 @@ export default async function APIProviderDetailShell({
 							</div>
 						</div>
 						<div className="flex flex-col items-center justify-center md:items-start">
-							<h1 className="mb-1 text-center text-3xl font-bold md:text-left md:text-5xl">
+							<h1 className="mb-1 text-center text-3xl font-bold md:text-left">
 								{header.api_provider_name}
 							</h1>
 						</div>
@@ -107,7 +100,7 @@ export default async function APIProviderDetailShell({
 									alt={header.country_code}
 									width={64}
 									height={48}
-									className="h-auto w-12 rounded-md border object-cover shadow-lg md:w-24"
+									className="h-auto w-10 rounded-md border object-cover shadow-lg md:w-16"
 								/>
 							</Link>
 						</div>

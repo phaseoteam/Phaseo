@@ -8,6 +8,27 @@ interface ModelEditButtonProps {
 	tab?: string;
 }
 
+function mapPageTabToEditorTab(tab: string | undefined): string | null {
+	if (!tab) return null;
+	const normalized = tab.trim().toLowerCase();
+	if (!normalized) return null;
+
+	const map: Record<string, string> = {
+		overview: "basic",
+		family: "basic",
+		timeline: "basic",
+		benchmarks: "benchmarks",
+		providers: "providers",
+		pricing: "pricing",
+		quickstart: "providers",
+		performance: "providers",
+		basic: "basic",
+		details: "details",
+	};
+
+	return map[normalized] ?? "basic";
+}
+
 export default async function ModelEditButton({
 	modelId,
 	tab,
@@ -30,8 +51,9 @@ export default async function ModelEditButton({
 		return null;
 	}
 
-	const href = tab
-		? `/internal/data/models/edit/${modelId}?tab=${encodeURIComponent(tab)}`
+	const editorTab = mapPageTabToEditorTab(tab);
+	const href = editorTab
+		? `/internal/data/models/edit/${modelId}?tab=${encodeURIComponent(editorTab)}`
 		: `/internal/data/models/edit/${modelId}`;
 
 	return (

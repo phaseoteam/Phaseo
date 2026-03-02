@@ -539,6 +539,42 @@ public sealed class ChatMessage
 
 }
 
+public sealed class DataModel
+{
+	[JsonPropertyName("deprecation_date")]
+	public string? DeprecationDate { get; set; }
+
+	[JsonPropertyName("hidden")]
+	public bool? Hidden { get; set; }
+
+	[JsonPropertyName("input_types")]
+	public List<string>? InputTypes { get; set; }
+
+	[JsonPropertyName("model_id")]
+	public string? ModelId { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("organisation")]
+	public Dictionary<string, object>? Organisation { get; set; }
+
+	[JsonPropertyName("output_types")]
+	public List<string>? OutputTypes { get; set; }
+
+	[JsonPropertyName("release_date")]
+	public string? ReleaseDate { get; set; }
+
+	[JsonPropertyName("retirement_date")]
+	public string? RetirementDate { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+}
+
+public sealed class DataModelOrganisation { }
+
 public sealed class DebugOptions
 {
 	[JsonPropertyName("enabled")]
@@ -1287,6 +1323,38 @@ public sealed class ReasoningConfig
 
 }
 
+public sealed class ResponsesInputItem
+{
+	[JsonPropertyName("content")]
+	public object? Content { get; set; }
+
+	[JsonPropertyName("phase")]
+	public string? Phase { get; set; }
+
+	[JsonPropertyName("role")]
+	public string? Role { get; set; }
+
+	[JsonPropertyName("type")]
+	public string? Type { get; set; }
+
+}
+
+public sealed class ResponsesOutputItem
+{
+	[JsonPropertyName("content")]
+	public List<Dictionary<string, object>>? Content { get; set; }
+
+	[JsonPropertyName("phase")]
+	public string? Phase { get; set; }
+
+	[JsonPropertyName("role")]
+	public string? Role { get; set; }
+
+	[JsonPropertyName("type")]
+	public string? Type { get; set; }
+
+}
+
 public sealed class ResponsesRequest
 {
 	[JsonPropertyName("background")]
@@ -1308,7 +1376,7 @@ public sealed class ResponsesRequest
 	public List<string>? Include { get; set; }
 
 	[JsonPropertyName("input")]
-	public Dictionary<string, object>? Input { get; set; }
+	public object? Input { get; set; }
 
 	[JsonPropertyName("input_items")]
 	public List<Dictionary<string, object>>? InputItems { get; set; }
@@ -1357,6 +1425,12 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_options")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
+
+	[JsonPropertyName("providerOptions")]
+	public Dictionary<string, object>? ProviderOptions { get; set; }
 
 	[JsonPropertyName("reasoning")]
 	public Dictionary<string, object>? Reasoning { get; set; }
@@ -1433,6 +1507,12 @@ public sealed class ResponsesResponse
 
 	[JsonPropertyName("object")]
 	public string? Object { get; set; }
+
+	[JsonPropertyName("output")]
+	public List<Dictionary<string, object>>? Output { get; set; }
+
+	[JsonPropertyName("output_items")]
+	public List<Dictionary<string, object>>? OutputItems { get; set; }
 
 	[JsonPropertyName("role")]
 	public string? Role { get; set; }

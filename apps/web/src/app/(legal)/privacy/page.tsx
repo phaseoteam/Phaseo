@@ -1,12 +1,14 @@
 // app/privacy/page.tsx
 import Link from "next/link";
-import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
 	title: "Privacy Policy | AI Stats",
 	description:
-		"How AI Stats collects, uses, and protects personal data related to the Service.",
-};
+		"Read how AI Stats collects, processes, stores, and protects personal data across the website, dashboard, and unified API Gateway services, including user controls and retention practices.",
+	path: "/privacy",
+	keywords: ["AI Stats privacy", "privacy policy", "data processing", "API privacy"],
+});
 
 export default async function PrivacyPage() {
 	return (

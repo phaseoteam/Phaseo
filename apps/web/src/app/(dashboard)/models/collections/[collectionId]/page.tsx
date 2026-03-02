@@ -45,7 +45,9 @@ export async function generateMetadata({
 
 	return {
 		title: `${collection.title} - Model collection`,
-		description: collection.description,
+		description:
+			collection.description ??
+			`Browse the ${collection.title} model collection on AI Stats with curated models, provider coverage, and quick links for comparison.`,
 		alternates: {
 			canonical: `/models/collections/${collection.id}`,
 		},

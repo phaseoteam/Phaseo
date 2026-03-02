@@ -1,7 +1,7 @@
 import { permanentRedirect } from "next/navigation";
 
 export const metadata = {
-	title: "Management API Keys - Settings",
+	title: "Provisioning Keys - Settings",
 };
 
 export default async function ProvisioningKeysPage() {

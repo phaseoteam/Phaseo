@@ -6,7 +6,6 @@ import { getModelProviderRuntimeStatsCached } from "@/lib/fetchers/models/getMod
 import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { getModelProviderRoutingHealthCached } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
-import { withUTM } from "@/lib/utm";
 
 export default async function ModelPricing({
 	modelId,
@@ -36,7 +35,10 @@ export default async function ModelPricing({
 		modelId,
 		providerIds: providersWithRules.map((p) => p.provider.api_provider_id),
 		modelAliases: providersWithRules.flatMap((p) =>
-			p.provider_models.map((pm) => pm.model_id)
+			p.provider_models.flatMap((pm) => [
+				pm.model_id,
+				pm.provider_model_slug ?? "",
+			])
 		),
 	});
 	const routingHealth = await getModelProviderRoutingHealthCached({
@@ -69,13 +71,7 @@ export default async function ModelPricing({
 					{/* Link to repository issues */}
 					<a
 						className="text-primary underline ml-1"
-						href={withUTM(
-							"https://github.com/AI-Stats/AI-Stats/issues",
-							{
-								campaign: "model-pricing-feedback",
-								content: "model-pricing-component",
-							}
-						)}
+						href="https://github.com/AI-Stats/AI-Stats/issues"
 						target="_blank"
 						rel="noopener noreferrer"
 					>

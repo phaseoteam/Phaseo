@@ -274,6 +274,11 @@ inline Response InvalidateGatewayKeyCache(Client& client, const std::map<std::st
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response ListDataModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/data/models";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response ListEndpoints(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/endpoints";
 	return client.request("GET", resolved_path, body);
@@ -285,17 +290,7 @@ inline Response ListFiles(Client& client, const std::map<std::string, std::strin
 }
 
 inline Response ListModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/models";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response ListModelsAliasApi(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/api/models";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response ListModelsAliasData(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/data/models";
+	const std::string resolved_path = "/gateway/models";
 	return client.request("GET", resolved_path, body);
 }
 

@@ -133,6 +133,8 @@ async function main(): Promise<void> {
 	const pollAttempts = Number(process.env.LIVE_VIDEO_POLL_ATTEMPTS ?? "30");
 	const pollDelayMs = Number(process.env.LIVE_VIDEO_POLL_DELAY_MS ?? "5000");
 	const testingMode = envFlag("LIVE_VIDEO_TESTING_MODE", true);
+	const internalTestToken =
+		(process.env.LIVE_INTERNAL_TEST_TOKEN ?? process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 
 	const artifactRoot =
 		process.env.LIVE_VIDEO_ARTIFACT_DIR?.trim() ||
@@ -160,7 +162,12 @@ async function main(): Promise<void> {
 		method: "POST",
 		route: "/videos",
 		body: createPayload,
-		extraHeaders: testingMode ? { "x-aistats-testing-mode": "true" } : undefined,
+		extraHeaders: testingMode
+			? {
+				"x-aistats-testing-mode": "true",
+				...(internalTestToken ? { "x-aistats-internal-token": internalTestToken } : {}),
+			}
+			: undefined,
 	});
 	await writeJson(path.join(artifactRoot, "02-create-response.json"), create.record);
 

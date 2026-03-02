@@ -11,6 +11,21 @@ import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from 
 type EventArgs = {
     ctx?: PipelineContext;
     result?: RequestResult;
+    provider?: string | null;
+    appTitle?: string | null;
+    referer?: string | null;
+    requestMethod?: string | null;
+    requestPath?: string | null;
+    requestUrl?: string | null;
+    userAgent?: string | null;
+    clientIp?: string | null;
+    cfRay?: string | null;
+    edgeColo?: string | null;
+    edgeCity?: string | null;
+    edgeCountry?: string | null;
+    edgeContinent?: string | null;
+    edgeAsn?: number | null;
+    keyId?: string | null;
     statusCode?: number | null;
     success: boolean;
     errorCode?: string | null;
@@ -181,6 +196,127 @@ function headersToRecord(headers: Headers | null | undefined): Record<string, st
     return Object.keys(out).length > 0 ? out : null;
 }
 
+type RoutingDrop = {
+    stage: string;
+    providerId: string | null;
+    reason: string | null;
+};
+
+type RoutingFailureSignals = {
+    finalCandidateCount: number | null;
+    statusGateBeforeCount: number | null;
+    statusGateAfterCount: number | null;
+    capabilityGateBeforeCount: number | null;
+    capabilityGateAfterCount: number | null;
+    filterStageCount: number | null;
+    dropReasons: string[];
+    droppedProviders: RoutingDrop[];
+    providerStatusNotReadyProviders: string[];
+};
+
+type AttemptSignals = {
+    attemptCount: number | null;
+    attemptedProviders: string[];
+    attemptFailureTypes: string[];
+    attemptStatuses: number[];
+    lastAttempt: Record<string, unknown> | null;
+};
+
+function getRoutingDiagnosticsFromArgs(args: EventArgs): any {
+    const fromCtx = (args.ctx as any)?.routingDiagnostics;
+    if (fromCtx && typeof fromCtx === "object") return fromCtx;
+    const fromErrorDetails = (args.errorDetails as any)?.routing_diagnostics;
+    if (fromErrorDetails && typeof fromErrorDetails === "object") return fromErrorDetails;
+    const fromProviderResponse = (args.providerResponse as any)?.routing_diagnostics;
+    if (fromProviderResponse && typeof fromProviderResponse === "object") return fromProviderResponse;
+    return null;
+}
+
+export function extractRoutingFailureSignals(args: EventArgs): RoutingFailureSignals {
+    const diagnostics = getRoutingDiagnosticsFromArgs(args);
+    const stages = Array.isArray(diagnostics?.filterStages) ? diagnostics.filterStages : [];
+    const statusStage = stages.find((stage: any) => stage?.stage === "status_gate");
+    const capabilityStage = stages.find((stage: any) => stage?.stage === "capability_status_gate");
+
+    const droppedProviders: RoutingDrop[] = [];
+    for (const stage of stages) {
+        const stageName = typeof stage?.stage === "string" ? stage.stage : "unknown";
+        const dropped = Array.isArray(stage?.droppedProviders) ? stage.droppedProviders : [];
+        for (const drop of dropped) {
+            droppedProviders.push({
+                stage: stageName,
+                providerId: typeof drop?.providerId === "string" ? drop.providerId : null,
+                reason: typeof drop?.reason === "string" ? drop.reason : null,
+            });
+        }
+    }
+
+    const dropReasonSet = new Set<string>();
+    const providerStatusNotReadySet = new Set<string>();
+    for (const drop of droppedProviders) {
+        if (drop.reason) dropReasonSet.add(drop.reason);
+        if (drop.reason === "provider_status_not_ready" && drop.providerId) {
+            providerStatusNotReadySet.add(drop.providerId);
+        }
+    }
+
+    return {
+        finalCandidateCount:
+            typeof diagnostics?.finalCandidateCount === "number"
+                ? diagnostics.finalCandidateCount
+                : null,
+        statusGateBeforeCount:
+            typeof statusStage?.beforeCount === "number" ? statusStage.beforeCount : null,
+        statusGateAfterCount:
+            typeof statusStage?.afterCount === "number" ? statusStage.afterCount : null,
+        capabilityGateBeforeCount:
+            typeof capabilityStage?.beforeCount === "number" ? capabilityStage.beforeCount : null,
+        capabilityGateAfterCount:
+            typeof capabilityStage?.afterCount === "number" ? capabilityStage.afterCount : null,
+        filterStageCount: stages.length || null,
+        dropReasons: Array.from(dropReasonSet.values()).sort(),
+        droppedProviders,
+        providerStatusNotReadyProviders: Array.from(providerStatusNotReadySet.values()).sort(),
+    };
+}
+
+function getAttemptErrorsFromArgs(args: EventArgs): Array<Record<string, unknown>> {
+    const fromCtx = (args.ctx as any)?.attemptErrors;
+    if (Array.isArray(fromCtx)) return fromCtx as Array<Record<string, unknown>>;
+    const fromErrorDetails = (args.errorDetails as any)?.attempt_errors;
+    if (Array.isArray(fromErrorDetails)) return fromErrorDetails as Array<Record<string, unknown>>;
+    const fromProviderResponse = (args.providerResponse as any)?.attempt_errors;
+    if (Array.isArray(fromProviderResponse)) return fromProviderResponse as Array<Record<string, unknown>>;
+    const fromFailureSample = (args.errorDetails as any)?.failure_sample;
+    if (Array.isArray(fromFailureSample)) return fromFailureSample as Array<Record<string, unknown>>;
+    return [];
+}
+
+function extractAttemptSignals(args: EventArgs): AttemptSignals {
+    const attempts = getAttemptErrorsFromArgs(args);
+    const providerSet = new Set<string>();
+    const typeSet = new Set<string>();
+    const statusSet = new Set<number>();
+    for (const attempt of attempts) {
+        const provider = typeof attempt?.provider === "string" ? attempt.provider : null;
+        if (provider) providerSet.add(provider);
+        const type = typeof attempt?.type === "string"
+            ? attempt.type
+            : (typeof attempt?.reason === "string" ? attempt.reason : null);
+        if (type) typeSet.add(type);
+        const status = Number(attempt?.status ?? NaN);
+        if (Number.isFinite(status)) statusSet.add(status);
+    }
+    const lastAttempt = attempts.length ? (attempts[attempts.length - 1] ?? null) : null;
+    return {
+        attemptCount: attempts.length || null,
+        attemptedProviders: Array.from(providerSet.values()).sort(),
+        attemptFailureTypes: Array.from(typeSet.values()).sort(),
+        attemptStatuses: Array.from(statusSet.values()).sort((a, b) => a - b),
+        lastAttempt: lastAttempt && typeof lastAttempt === "object" ? lastAttempt : null,
+    };
+}
+
 export async function emitGatewayRequestEvent(args: EventArgs) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -217,24 +353,99 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const sanitizedProviderEnablement = sanitizeForAxiom((ctx as any)?.providerEnablementDiagnostics ?? null);
         const sanitizedProviderCandidateBuild = sanitizeForAxiom((ctx as any)?.providerCandidateBuildDiagnostics ?? null);
         const requestedParams = Array.isArray(ctx?.requestedParams) ? ctx.requestedParams : [];
+        const modelRequested = (() => {
+            const fromCtxBody = (ctx?.rawBody as any)?.model;
+            if (typeof fromCtxBody === "string" && fromCtxBody.length > 0) return fromCtxBody;
+            const fromGatewayResponse = (args.gatewayResponse as any)?.model;
+            if (typeof fromGatewayResponse === "string" && fromGatewayResponse.length > 0) return fromGatewayResponse;
+            const fromErrorDetails = (args.errorDetails as any)?.model;
+            if (typeof fromErrorDetails === "string" && fromErrorDetails.length > 0) return fromErrorDetails;
+            return null;
+        })();
+        const modelResolved = args.model ?? ctx?.model ?? null;
+        const providerCandidates = Array.isArray(ctx?.providers)
+            ? ctx.providers.map((provider) => ({
+                provider_id: provider.providerId ?? null,
+                provider_status: provider.providerStatus ?? null,
+                capability_status: provider.capabilityStatus ?? null,
+                has_pricing: Boolean(provider.pricingCard),
+            }))
+            : null;
+        const routingSignals = extractRoutingFailureSignals(args);
+        const attemptSignals = extractAttemptSignals(args);
+        const keyGate = ctx?.gating?.key ?? null;
+        const keyLimitGate = ctx?.gating?.keyLimit ?? null;
+        const creditGate = ctx?.gating?.credit ?? null;
+        const generationContext = sanitizeForAxiom({
+            model_requested: modelRequested,
+            model_resolved: modelResolved,
+            endpoint: args.endpoint ?? ctx?.endpoint ?? null,
+            protocol: args.protocolOverride ?? ctx?.protocol ?? null,
+            provider: args.result?.provider ?? args.provider ?? null,
+            testing_mode: Boolean(ctx?.testingMode),
+            provider_capabilities_beta: Boolean(ctx?.providerCapabilitiesBeta),
+            team_settings: ctx?.teamSettings ?? null,
+            gates: {
+                key: keyGate,
+                key_limit: keyLimitGate,
+                credit: creditGate,
+            },
+            team_enrichment: ctx?.teamEnrichment ?? null,
+            key_enrichment: ctx?.keyEnrichment ?? null,
+            provider_candidates: providerCandidates,
+            routing_diagnostics: getRoutingDiagnosticsFromArgs(args),
+            routing_signals: routingSignals,
+            attempt_signals: attemptSignals,
+            attempt_errors: getAttemptErrorsFromArgs(args),
+        });
         const mediaCounts = countMediaFromContext(ctx);
         const resolvedErrorType = classifyErrorType(args);
 
         const event = {
             event_type: "gateway.request",
             request_id: requestId,
+            generation_id: requestId,
             team_id: teamId,
             protocol_in: args.protocolOverride ?? ctx?.protocol ?? null,
-            request_path: ctx?.requestPath ?? null,
+            app_title: args.appTitle ?? ctx?.meta?.appTitle ?? null,
+            referer: args.referer ?? ctx?.meta?.referer ?? null,
+            request_method: args.requestMethod ?? ctx?.meta?.requestMethod ?? null,
+            request_path: args.requestPath ?? ctx?.requestPath ?? ctx?.meta?.requestPath ?? null,
+            request_url: args.requestUrl ?? ctx?.meta?.requestUrl ?? null,
+            user_agent: args.userAgent ?? ctx?.meta?.userAgent ?? null,
+            client_ip: args.clientIp ?? ctx?.meta?.clientIp ?? null,
+            cf_ray: args.cfRay ?? ctx?.meta?.cfRay ?? null,
             endpoint: args.endpoint ?? ctx?.endpoint ?? null,
-            model: args.model ?? ctx?.model ?? null,
+            model: modelResolved,
+            model_requested: modelRequested,
+            model_resolved: modelResolved,
             stream: ctx?.stream ?? false,
             strictness: ctx?.strictness ?? null,
-            location: ctx?.meta?.edgeColo ?? null,
-            edge_city: ctx?.meta?.edgeCity ?? null,
-            edge_country: ctx?.meta?.edgeCountry ?? null,
-            edge_continent: ctx?.meta?.edgeContinent ?? null,
-            edge_asn: ctx?.meta?.edgeAsn ?? null,
+            testing_mode: Boolean(ctx?.testingMode),
+            provider_capabilities_beta: Boolean(ctx?.providerCapabilitiesBeta),
+            team_routing_mode: ctx?.teamSettings?.routingMode ?? null,
+            team_beta_channel_enabled: ctx?.teamSettings?.betaChannelEnabled ?? null,
+            team_byok_fallback_enabled: ctx?.teamSettings?.byokFallbackEnabled ?? null,
+            team_billing_mode: ctx?.teamSettings?.billingMode ?? null,
+            key_id: args.keyId ?? ctx?.meta?.apiKeyId ?? null,
+            gate_key_ok: keyGate?.ok ?? null,
+            gate_key_reason: keyGate?.reason ?? null,
+            gate_key_limit_ok: keyLimitGate?.ok ?? null,
+            gate_key_limit_reason: keyLimitGate?.reason ?? null,
+            gate_credit_ok: creditGate?.ok ?? null,
+            gate_credit_reason: creditGate?.reason ?? null,
+            gate_credit_balance_nanos: creditGate?.balanceNanos ?? null,
+            team_tier: (ctx?.teamEnrichment as any)?.tier ?? null,
+            team_balance_nanos: (ctx?.teamEnrichment as any)?.balance_nanos ?? null,
+            team_balance_usd: toNum((ctx?.teamEnrichment as any)?.balance_usd),
+            team_spend_24h_nanos: toNum((ctx?.teamEnrichment as any)?.spend_24h_nanos),
+            team_spend_24h_usd: toNum((ctx?.teamEnrichment as any)?.spend_24h_usd),
+            key_daily_limit_pct: toNum((ctx?.keyEnrichment as any)?.daily_limit_pct),
+            location: args.edgeColo ?? ctx?.meta?.edgeColo ?? null,
+            edge_city: args.edgeCity ?? ctx?.meta?.edgeCity ?? null,
+            edge_country: args.edgeCountry ?? ctx?.meta?.edgeCountry ?? null,
+            edge_continent: args.edgeContinent ?? ctx?.meta?.edgeContinent ?? null,
+            edge_asn: args.edgeAsn ?? ctx?.meta?.edgeAsn ?? null,
             status_code: args.statusCode ?? null,
             success: args.success,
             error_code: args.errorCode ?? null,
@@ -246,10 +457,17 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             error_unsupported_param: args.unsupportedParam ?? null,
             error_unsupported_param_path: args.unsupportedParamPath ?? null,
             error_details_redacted_json: stringifyForAxiom(sanitizedErrorDetails),
-            provider: args.result?.provider ?? null,
+            provider: args.result?.provider ?? args.provider ?? null,
             chosen_surface: ctx?.endpoint ?? null,
             chosen_executor: ctx?.capability ?? null,
             provider_candidates_count: ctx?.providers?.length ?? null,
+            provider_candidates_status_json: stringifyForAxiom(providerCandidates),
+            attempt_count: attemptSignals.attemptCount,
+            attempted_providers_count: attemptSignals.attemptedProviders.length || null,
+            attempted_providers_json: stringifyForAxiom(attemptSignals.attemptedProviders),
+            attempt_failure_types_json: stringifyForAxiom(attemptSignals.attemptFailureTypes),
+            attempt_statuses_json: stringifyForAxiom(attemptSignals.attemptStatuses),
+            attempt_last_json: stringifyForAxiom(sanitizeForAxiom(attemptSignals.lastAttempt)),
             requested_params_count: requestedParams.length || null,
             requested_params_json: stringifyForAxiom(requestedParams.length ? requestedParams : null),
             param_routing_provider_count_before: ctx?.paramRoutingDiagnostics?.providerCountBefore ?? null,
@@ -258,6 +476,21 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             param_routing_diagnostics_json: stringifyForAxiom(sanitizedParamRoutingDiagnostics),
             routing_candidates_json: stringifyForAxiom(sanitizedRoutingSnapshot),
             routing_diagnostics_json: stringifyForAxiom(sanitizedRoutingDiagnostics),
+            routing_final_candidate_count: routingSignals.finalCandidateCount,
+            routing_filter_stage_count: routingSignals.filterStageCount,
+            routing_drop_reason_count: routingSignals.dropReasons.length || null,
+            routing_drop_reasons_json: stringifyForAxiom(routingSignals.dropReasons),
+            routing_dropped_providers_json: stringifyForAxiom(routingSignals.droppedProviders),
+            routing_status_gate_before_count: routingSignals.statusGateBeforeCount,
+            routing_status_gate_after_count: routingSignals.statusGateAfterCount,
+            routing_capability_gate_before_count: routingSignals.capabilityGateBeforeCount,
+            routing_capability_gate_after_count: routingSignals.capabilityGateAfterCount,
+            routing_provider_status_not_ready_count: routingSignals.providerStatusNotReadyProviders.length || null,
+            routing_provider_status_not_ready_providers_json: stringifyForAxiom(
+                routingSignals.providerStatusNotReadyProviders
+            ),
+            error_is_provider_status_not_ready:
+                routingSignals.providerStatusNotReadyProviders.length > 0,
             attempt_errors_json: stringifyForAxiom(sanitizedAttemptErrors),
             provider_enablement_diagnostics_json: stringifyForAxiom(sanitizedProviderEnablement),
             provider_candidate_build_diagnostics_json: stringifyForAxiom(sanitizedProviderCandidateBuild),
@@ -282,6 +515,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             provider_status_text: args.result?.upstream?.statusText ?? null,
             provider_url: args.result?.upstream?.url ?? null,
             gateway_response_redacted_json: stringifyForAxiom(sanitizedGatewayResponse),
+            generation_context_json: stringifyForAxiom(generationContext),
             transform_has_upstream_request: Boolean(args.mappedRequest ?? args.result?.mappedRequest),
             env: bindings.NODE_ENV ?? null,
             gateway_version: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,

@@ -4,6 +4,18 @@ export interface ResponsesResponse {
   id?: string;
   model?: string;
   object?: string;
+  output?: {
+    content?: {}[];
+    phase?: "commentary" | "final_answer" | null;
+    role?: string;
+    type?: string;
+  }[];
+  output_items?: {
+    content?: {}[];
+    phase?: "commentary" | "final_answer" | null;
+    role?: string;
+    type?: string;
+  }[];
   role?: string;
   stop_reason?: string;
   type?: string;

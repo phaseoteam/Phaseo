@@ -49,7 +49,7 @@ async function discoverNanoBananaModel(): Promise<string> {
     let total = Number.POSITIVE_INFINITY;
 
     while (offset < total) {
-        const url = new URL(resolveGatewayUrl("/models"));
+        const url = new URL(resolveGatewayUrl("/gateway/models"));
         url.searchParams.set("limit", String(limit));
         url.searchParams.set("offset", String(offset));
 

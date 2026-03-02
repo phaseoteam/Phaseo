@@ -7,7 +7,8 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 
 export const metadata = {
 	title: "OAuth Integrations - Settings",
-	description: "Manage applications you've authorized to access your AI Stats account",
+	description:
+		"Manage third-party applications you have authorized to access your AI Stats account, review granted scopes, and revoke access when it is no longer needed.",
 };
 
 export default function AuthorizedAppsPage() {

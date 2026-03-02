@@ -16,16 +16,35 @@ import {
 	FileCheck,
 	Users,
 	Zap,
+	GitCompare,
 } from "lucide-react";
 
 const internalTools = [
 	{
-		id: "audit",
-		title: "Data Audit",
+		id: "data-editor",
+		title: "Data Editor",
 		description:
 			"Manage models, organisations, API providers, and benchmarks from dedicated CRUD pages.",
 		icon: FileCheck,
 		href: "/internal/data",
+		comingSoon: false,
+	},
+	{
+		id: "data-audit",
+		title: "Data Audit",
+		description:
+			"Audit model/provider coverage with advanced filters for gateway activity, benchmarks, and pricing.",
+		icon: BarChart3,
+		href: "/internal/audit",
+		comingSoon: false,
+	},
+	{
+		id: "api-model-conflicts",
+		title: "API Model Conflicts",
+		description:
+			"Detect likely model ID alias conflicts and pricing folder mismatches across providers.",
+		icon: GitCompare,
+		href: "/internal/api-model-conflicts",
 		comingSoon: false,
 	},
 	{
@@ -94,9 +113,11 @@ const internalTools = [
 ];
 
 export default function InternalToolsGrid() {
+	const availableTools = internalTools.filter((tool) => !tool.comingSoon);
+
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-			{internalTools.map((tool) => {
+			{availableTools.map((tool) => {
 				const Icon = tool.icon;
 				return (
 					<Card
@@ -112,11 +133,6 @@ export default function InternalToolsGrid() {
 									<CardTitle className="text-lg">
 										{tool.title}
 									</CardTitle>
-									{tool.comingSoon && (
-										<span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded mt-1 inline-block">
-											Coming Soon
-										</span>
-									)}
 								</div>
 							</div>
 						</CardHeader>
@@ -124,21 +140,12 @@ export default function InternalToolsGrid() {
 							<CardDescription className="mb-4">
 								{tool.description}
 							</CardDescription>
-							{tool.comingSoon ? (
-								<button
-									disabled
-									className="w-full bg-muted text-muted-foreground py-2 px-4 rounded-md cursor-not-allowed"
-								>
-									Coming Soon
-								</button>
-							) : (
-								<Link
-									href={tool.href}
-									className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded-md text-center block transition-colors"
-								>
-									Open Tool
-								</Link>
-							)}
+							<Link
+								href={tool.href}
+								className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded-md text-center block transition-colors"
+							>
+								Open Tool
+							</Link>
 						</CardContent>
 					</Card>
 				);

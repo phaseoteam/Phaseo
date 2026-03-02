@@ -43,7 +43,7 @@ export default function ModelUpdatesRecentReleases({
 		return (
 			<div className="mb-6">
 				<div className="mb-2 flex items-center justify-between gap-3">
-					<h1 className="text-xl font-bold">{title}</h1>
+					<h2 className="text-xl font-bold">{title}</h2>
 					{headerActions ? <div className="shrink-0">{headerActions}</div> : null}
 				</div>
 				<p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -56,7 +56,7 @@ export default function ModelUpdatesRecentReleases({
 	return (
 		<div className="mb-6">
 			<div className="mb-2 flex items-center justify-between gap-3">
-				<h1 className="text-xl font-bold">{title}</h1>
+				<h2 className="text-xl font-bold">{title}</h2>
 				{headerActions ? <div className="shrink-0">{headerActions}</div> : null}
 			</div>
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

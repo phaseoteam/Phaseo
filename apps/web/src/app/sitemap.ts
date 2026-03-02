@@ -9,6 +9,7 @@ import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPI
 import { getAllOrganisationsCached } from "@/lib/fetchers/organisations/getAllOrganisations";
 import { getAllBenchmarksCached } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
 import { getAllSubscriptionPlansCached } from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
+import { SITE_URL } from "@/lib/seo";
 
 // Cache sitemap output at the edge to avoid repeated compute (and Fast Origin Transfer)
 // from crawlers hitting `/sitemap.xml` frequently.
@@ -34,11 +35,7 @@ type ModelSitemapSource = {
 	model_id?: string | null;
 };
 
-const baseUrl = (
-	process.env.NEXT_PUBLIC_WEBSITE_URL ??
-	process.env.WEBSITE_URL ??
-	"https://ai-stats.phaseo.app"
-).replace(/\/$/, "");
+const baseUrl = SITE_URL;
 
 const staticRoutes: Array<{
     path: string;
@@ -59,6 +56,12 @@ const staticRoutes: Array<{
 		{ path: "/gateway/marketplace", changeFrequency: "weekly", priority: 0.6 },
         { path: "/contribute", changeFrequency: "monthly", priority: 0.6 },
         { path: "/roadmap", changeFrequency: "monthly", priority: 0.6 },
+        { path: "/about", changeFrequency: "monthly", priority: 0.55 },
+        { path: "/contact", changeFrequency: "monthly", priority: 0.55 },
+        { path: "/works-with", changeFrequency: "weekly", priority: 0.6 },
+        { path: "/performance", changeFrequency: "monthly", priority: 0.55 },
+        { path: "/monitor", changeFrequency: "weekly", priority: 0.55 },
+        { path: "/models/collections", changeFrequency: "weekly", priority: 0.55 },
         { path: "/tools", changeFrequency: "monthly", priority: 0.65 },
         { path: "/tools/json-formatter", changeFrequency: "monthly", priority: 0.55 },
         { path: "/tools/markdown-preview", changeFrequency: "monthly", priority: 0.55 },
@@ -77,7 +80,7 @@ const MODEL_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.78 },
     { suffix: "/quickstart", changeFrequency: "weekly", priority: 0.65 },
     { suffix: "/benchmarks", changeFrequency: "weekly", priority: 0.65 },
-    { suffix: "/pricing", changeFrequency: "weekly", priority: 0.6 },
+    { suffix: "/providers", changeFrequency: "weekly", priority: 0.6 },
     { suffix: "/family", changeFrequency: "weekly", priority: 0.6 },
     { suffix: "/timeline", changeFrequency: "weekly", priority: 0.6 },
     { suffix: "/performance", changeFrequency: "weekly", priority: 0.6 },
@@ -85,12 +88,7 @@ const MODEL_SUFFIXES: RouteSuffix[] = [
 
 const PROVIDER_SUFFIXES: RouteSuffix[] = [
     { suffix: "", changeFrequency: "weekly", priority: 0.75 },
-    { suffix: "/text-models", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/image-models", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/video-models", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/audio-models", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/embeddings-models", changeFrequency: "weekly", priority: 0.6 },
-    { suffix: "/moderations-models", changeFrequency: "weekly", priority: 0.6 },
+    { suffix: "/models", changeFrequency: "weekly", priority: 0.65 },
 ];
 
 const ORGANISATION_SUFFIXES: RouteSuffix[] = [

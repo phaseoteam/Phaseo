@@ -79,6 +79,13 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 	for (const [key, canonical] of Object.entries(registry.keyToCanonicalParam)) {
 		if (Object.prototype.hasOwnProperty.call(rawBody, key)) {
 			const rawValue = rawBody[key];
+			if (canonical === "provider_options.openai.context_management") {
+				if (!isPlainObject(rawValue)) continue;
+				const hasContextManagement =
+					hasNestedPath(rawValue, ["openai", "context_management"]) ||
+					hasNestedPath(rawValue, ["openai", "contextManagement"]);
+				if (!hasContextManagement) continue;
+			}
 			if (canonical === "reasoning" && isPlainObject(rawValue)) {
 				params.push(...getObjectChildParamPaths("reasoning", rawValue));
 			} else {

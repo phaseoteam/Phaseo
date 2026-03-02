@@ -107,6 +107,7 @@ export type PresetData = {
 export type GatewayProviderSnapshot = {
     providerId: string;
     providerStatus?: "active" | "beta" | "alpha" | "not_ready" | null;
+    capabilityStatus?: "active" | "deranked" | "disabled" | "internal_testing" | null;
     supportsEndpoint: boolean;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -192,6 +193,7 @@ export type GatewayContextData = {
 export type ProviderCandidate = {
     providerId: string;
     providerStatus?: "active" | "beta" | "alpha" | "not_ready" | null;
+    capabilityStatus?: "active" | "deranked" | "disabled" | "internal_testing" | null;
     adapter: ProviderAdapter;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];

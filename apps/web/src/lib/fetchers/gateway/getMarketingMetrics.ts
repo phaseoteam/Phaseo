@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { classifyGatewayRequestForUptime } from "@/lib/fetchers/gateway/uptimeClassification";
 
 type RawGatewayRequest = {
 	created_at: string;
@@ -255,37 +256,6 @@ async function fetchRequests(
 	return rows;
 }
 
-function isUserError(row: RawGatewayRequest): boolean {
-	const code = String(row?.error_code ?? "").toLowerCase();
-	if (code.startsWith("user:")) return true;
-	if (code.startsWith("upstream:")) return false;
-	if (code.startsWith("system:")) return false;
-	const sc = Number(row?.status_code ?? 0);
-	if (Number.isFinite(sc)) {
-		if (sc >= 500) return false;
-		if (sc === 408 || sc === 429) return false;
-		if (sc >= 400 && sc < 500) return true;
-	}
-	return false;
-}
-
-function isSuccessfulForUptime(row: RawGatewayRequest): boolean {
-	const successFlag =
-		row.success === true ||
-		row.success === 1 ||
-		row.success === "true" ||
-		row.success === "t";
-	if (successFlag) return true;
-
-	const statusCode = Number(row?.status_code ?? 0);
-	if (Number.isFinite(statusCode) && statusCode > 0 && statusCode < 400) {
-		return true;
-	}
-
-	if (isUserError(row)) return true;
-	return false;
-}
-
 async function fetchActiveGatewayModels(
 	client: SupabaseClient,
 	now = new Date()
@@ -323,14 +293,16 @@ function buildMetricsFromRows(
 		string,
 		{
 			requests: number;
-			success: number;
+			uptimeEvents: number;
+			uptimeSuccess: number;
 			latencies: number[];
 			tokens: number;
 		}
 	>();
 
 	let totalRequests = 0;
-	let totalSuccess = 0;
+	let totalUptimeEvents = 0;
+	let totalUptimeSuccess = 0;
 	const allLatencies: number[] = [];
 	let totalTokens = 0;
 	const timelineHours =
@@ -343,15 +315,25 @@ function buildMetricsFromRows(
 		const bucketKey = bucketStartISO(createdAt);
 		const bucket =
 			buckets.get(bucketKey) ??
-			{ requests: 0, success: 0, latencies: [], tokens: 0 };
+			{
+				requests: 0,
+				uptimeEvents: 0,
+				uptimeSuccess: 0,
+				latencies: [],
+				tokens: 0,
+			};
 
 		bucket.requests += 1;
 		totalRequests += 1;
 
-		const success = isSuccessfulForUptime(row);
-		if (success) {
-			bucket.success += 1;
-			totalSuccess += 1;
+		const uptimeOutcome = classifyGatewayRequestForUptime(row);
+		if (uptimeOutcome !== "exclude") {
+			bucket.uptimeEvents += 1;
+			totalUptimeEvents += 1;
+			if (uptimeOutcome === "count_success") {
+				bucket.uptimeSuccess += 1;
+				totalUptimeSuccess += 1;
+			}
 		}
 
 		const latencyCandidate =
@@ -384,7 +366,8 @@ function buildMetricsFromRows(
 		hoursAgo: number;
 		data: {
 			requests: number;
-			success: number;
+			uptimeEvents: number;
+			uptimeSuccess: number;
 			latencies: number[];
 			tokens: number;
 		};
@@ -397,7 +380,8 @@ function buildMetricsFromRows(
 		const bucket =
 			buckets.get(timestamp) ?? {
 				requests: 0,
-				success: 0,
+				uptimeEvents: 0,
+				uptimeSuccess: 0,
 				latencies: [],
 				tokens: 0,
 			};
@@ -407,7 +391,9 @@ function buildMetricsFromRows(
 	for (const entry of timeline) {
 		const data = entry.data;
 		const uptime =
-			data.requests > 0 ? (data.success / data.requests) * 100 : null;
+			data.uptimeEvents > 0
+				? (data.uptimeSuccess / data.uptimeEvents) * 100
+				: null;
 		const p95 = percentile(data.latencies, 0.95);
 		const p50 = percentile(data.latencies, 0.5);
 		const avg = average(data.latencies);
@@ -432,7 +418,9 @@ function buildMetricsFromRows(
 	}
 
 	const uptimePct =
-		totalRequests > 0 ? (totalSuccess / totalRequests) * 100 : null;
+		totalUptimeEvents > 0
+			? (totalUptimeSuccess / totalUptimeEvents) * 100
+			: null;
 	const latencyP95 = percentile(allLatencies, 0.95);
 	const latencyP50 = percentile(allLatencies, 0.5);
 	const latencyAvg = average(allLatencies);
@@ -465,7 +453,7 @@ function buildMetricsFromRows(
 			latencyP50Ms: latencyP50,
 			latencyAvgMs: latencyAvg,
 			requests24h: totalRequests,
-			successful24h: totalSuccess,
+			successful24h: totalUptimeSuccess,
 			tokens24h: totalTokens,
 			requestsPerMinAvg,
 			supportedModels: modelIds.size || null,

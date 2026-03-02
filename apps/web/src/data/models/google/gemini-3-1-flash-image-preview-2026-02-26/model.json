@@ -11,11 +11,24 @@
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text,image",
-  "links": [],
+  "links": [
+    {
+      "platform": "model_card",
+      "url": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Image-Model-Card.pdf"
+    }
+  ],
   "details": [
     {
       "name": "knowledge_cutoff",
       "value": "2025-01-01T00:00:00"
+    },
+    {
+      "name": "input_context_length",
+      "value": 131072
+    },
+    {
+      "name": "output_context_length",
+      "value": 32768
     }
   ],
   "benchmarks": []

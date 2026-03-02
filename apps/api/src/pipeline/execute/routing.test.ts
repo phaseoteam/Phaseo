@@ -35,10 +35,15 @@ function health(provider: string) {
 	} as const;
 }
 
-function candidate(providerId: string, providerStatus: "active" | "beta") {
+function candidate(
+	providerId: string,
+	providerStatus: "active" | "beta",
+	capabilityStatus: "active" | "deranked" | "disabled" | "internal_testing" = "active",
+) {
 	return {
 		providerId,
 		providerStatus,
+		capabilityStatus,
 		adapter: { name: providerId } as any,
 		baseWeight: 1,
 		byokMeta: [],
@@ -97,5 +102,27 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.testingMode).toBe(true);
 		const statusStage = result.diagnostics.filterStages.find((stage) => stage.stage === "status_gate");
 		expect(statusStage?.afterCount).toBe(2);
+	});
+
+	it("deranks providers with capability status deranked", async () => {
+		const result = await routeProviders(
+			[
+				candidate("openai", "active", "active"),
+				candidate("google-ai-studio", "active", "deranked"),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini:fast",
+				teamId: "team_123",
+				betaChannelEnabled: true,
+				providerCapabilitiesBeta: true,
+				testingMode: false,
+			}
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"openai",
+			"google-ai-studio",
+		]);
 	});
 });

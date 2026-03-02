@@ -69,10 +69,13 @@ export default function UpdateTabs() {
 	}, []);
 
 	React.useEffect(() => {
-		const raf = requestAnimationFrame(() => {
-			setIndicatorToHref(activeTab.href);
-		});
-		return () => cancelAnimationFrame(raf);
+		const update = () => setIndicatorToHref(activeTab.href);
+		const raf = requestAnimationFrame(update);
+		window.addEventListener("resize", update);
+		return () => {
+			cancelAnimationFrame(raf);
+			window.removeEventListener("resize", update);
+		};
 	}, [activeTab.href, setIndicatorToHref]);
 
 	return (

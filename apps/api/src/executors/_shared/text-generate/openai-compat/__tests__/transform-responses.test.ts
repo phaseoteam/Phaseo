@@ -199,6 +199,28 @@ describe("openAIResponsesToIR", () => {
 			expect(ir.choices[0].message.content[0].text).toBe("Hello from OpenAI");
 			expect(ir.provider).toBe("openai");
 		});
+
+		it("preserves assistant message phase from responses output", () => {
+			const openaiResponse = {
+				id: "resp_openai",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "message",
+						output_index: 0,
+						role: "assistant",
+						phase: "final_answer",
+						content: [{ type: "output_text", text: "Hello from OpenAI" }],
+					},
+				],
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_openai", "gpt-5.3-codex", "openai");
+
+			expect(ir.choices[0].message.phase).toBe("final_answer");
+		});
 	});
 });
 
@@ -356,6 +378,91 @@ describe("irToOpenAIResponses", () => {
 		expect(request.prompt).toBeUndefined();
 		expect(request.prompt_cache_key).toBeUndefined();
 		expect(request.safety_identifier).toBeUndefined();
+	});
+
+	it("preserves assistant phase when mapping IR messages to responses input", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5.3-codex",
+			messages: [{
+				role: "assistant",
+				phase: "commentary",
+				content: [{ type: "text", text: "intermediate step" }],
+			}, {
+				role: "user",
+				content: [{ type: "text", text: "continue" }],
+			}],
+			stream: false,
+		} as any, "gpt-5.3-codex", "openai");
+
+		expect(Array.isArray(request.input)).toBe(true);
+		expect(request.input[0]).toMatchObject({
+			type: "message",
+			role: "assistant",
+			phase: "commentary",
+		});
+	});
+
+	it("passes OpenAI context_management from provider_options to upstream OpenAI request", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hello" }],
+			}],
+			stream: false,
+			vendor: {
+				openai: {
+					context_management: {
+						type: "compaction",
+						compact_threshold: 0.65,
+					},
+				},
+			},
+		} as any, "gpt-5-nano", "openai");
+
+		expect(request.context_management).toEqual({
+			type: "compaction",
+			compact_threshold: 0.65,
+		});
+	});
+
+	it("does not pass OpenAI context_management to non-OpenAI providers", () => {
+		const request = irToOpenAIResponses({
+			model: "groq/llama",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "hello" }],
+			}],
+			stream: false,
+			vendor: {
+				openai: {
+					context_management: {
+						type: "compaction",
+						compact_threshold: 0.65,
+					},
+				},
+			},
+		} as any, "llama-3.3-70b-versatile", "groq");
+
+		expect(request.context_management).toBeUndefined();
+	});
+
+	it("treats assistant phase as optional when mapping IR messages to responses input", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5-nano",
+			messages: [{
+				role: "assistant",
+				content: [{ type: "text", text: "final text without phase" }],
+			}],
+			stream: false,
+		} as any, "gpt-5-nano", "openai");
+
+		expect(Array.isArray(request.input)).toBe(true);
+		expect(request.input[0]).toMatchObject({
+			type: "message",
+			role: "assistant",
+		});
+		expect("phase" in request.input[0]).toBe(false);
 	});
 });
 

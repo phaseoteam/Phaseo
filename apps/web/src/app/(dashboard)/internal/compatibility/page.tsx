@@ -5,7 +5,7 @@ import CompatibilityClient from "./CompatibilityClient";
 export const metadata = {
 	title: "Gateway Compatibility - Internal",
 	description:
-		"Validate gateway responses against official OpenAI and Anthropic response schemas.",
+		"Validate AI Stats Gateway responses against official OpenAI and Anthropic schemas, inspect mismatches, and verify response-shape compatibility before shipping changes.",
 };
 
 export default async function CompatibilityPage() {

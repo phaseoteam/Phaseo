@@ -14,7 +14,7 @@ import { getTeamIdFromCookie } from "@/utils/teamCookie";
 export const metadata: Metadata = buildMetadata({
 	title: "Contact AI Stats Support",
 	description:
-		"Reach AI Stats support, community, and documentation links for account, billing, and product questions.",
+		"Contact AI Stats support for account, billing, and product questions, with direct links to docs, community resources, and current support availability.",
 	path: "/contact",
 	keywords: [
 		"AI Stats support",

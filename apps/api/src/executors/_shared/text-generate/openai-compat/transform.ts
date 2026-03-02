@@ -118,6 +118,7 @@ export function irToOpenAIResponses(
 				type: "message",
 				role: "assistant",
 				content: msg.content.map(mapAssistantContentPart).filter(Boolean),
+				...(msg.phase !== undefined ? { phase: msg.phase } : {}),
 			});
 
 			// Add tool calls as function_call items
@@ -267,6 +268,15 @@ export function irToOpenAIResponses(
 	if (ir.prompt !== undefined) request.prompt = ir.prompt;
 	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
+	const openAIContextManagement = (ir.vendor as any)?.openai?.context_management;
+	if (providerId === "openai" && openAIContextManagement && typeof openAIContextManagement === "object") {
+		request.context_management = {
+			type: openAIContextManagement.type,
+			...(typeof openAIContextManagement.compact_threshold === "number"
+				? { compact_threshold: openAIContextManagement.compact_threshold }
+				: {}),
+		};
+	}
 	if (ir.modalities !== undefined) request.modalities = ir.modalities;
 	if (ir.imageConfig !== undefined) {
 		request.image_config = {
@@ -416,6 +426,9 @@ export function openAIResponsesToIR(
 
 		// Handle different output item types
 		if (item.type === "message") {
+			if (item.phase !== undefined) {
+				choice.message.phase = item.phase;
+			}
 			// Check if the item has pre-parsed content parts (e.g., from Google Nano Banana quirk)
 			// This allows quirks to provide already-structured IR content parts
 			if (item._contentParts && Array.isArray(item._contentParts)) {

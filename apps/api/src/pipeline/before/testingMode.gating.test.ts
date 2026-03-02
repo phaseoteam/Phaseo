@@ -1,68 +1,53 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getBindingsMock = vi.fn();
-const getSupabaseAdminMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => getBindingsMock(),
-	getSupabaseAdmin: () => getSupabaseAdminMock(),
+	getSupabaseAdmin: vi.fn(),
 }));
 
 import { resolveTestingMode } from "./testingMode";
 
-function buildSupabaseForRole(role: string | null, error: any = null) {
-	const maybeSingle = vi.fn().mockResolvedValue({
-		data: role ? { role } : null,
-		error,
-	});
-	const eq = vi.fn().mockReturnValue({ maybeSingle });
-	const select = vi.fn().mockReturnValue({ eq });
-	const from = vi.fn().mockReturnValue({ select });
-	return { from, select, eq, maybeSingle };
-}
-
 describe("resolveTestingMode gating", () => {
 	beforeEach(() => {
 		getBindingsMock.mockReset();
-		getSupabaseAdminMock.mockReset();
 		getBindingsMock.mockReturnValue({});
 	});
 
-	it("allows local override when enabled", async () => {
-		getBindingsMock.mockReturnValue({ GATEWAY_LOCAL_TESTING_MODE: "true" });
+	it("returns not_requested when testing mode not requested", async () => {
 		const result = await resolveTestingMode({
-			requested: true,
+			requested: false,
 			teamId: "team_1",
 			userId: null,
 			internal: false,
 		});
-		expect(result).toEqual({ enabled: true, reason: "local_override" });
+		expect(result).toEqual({ enabled: false, reason: "not_requested" });
 	});
 
-	it("allows platform admin users", async () => {
-		getSupabaseAdminMock.mockReturnValue(buildSupabaseForRole("admin"));
+	it("requires internal token in development for non-internal requests", async () => {
+		getBindingsMock.mockReturnValue({ NODE_ENV: "development" });
 		const result = await resolveTestingMode({
 			requested: true,
 			teamId: "team_1",
 			userId: "user_1",
 			internal: false,
 		});
-		expect(result).toEqual({ enabled: true, reason: "platform_admin" });
+		expect(result).toEqual({ enabled: false, reason: "requires_internal_token" });
 	});
 
-	it("disables testing mode in production for non-internal requests", async () => {
+	it("requires internal token in production for non-internal requests", async () => {
 		getBindingsMock.mockReturnValue({ NODE_ENV: "production" });
-		getSupabaseAdminMock.mockReturnValue(buildSupabaseForRole("admin"));
 		const result = await resolveTestingMode({
 			requested: true,
 			teamId: "team_1",
 			userId: "user_1",
 			internal: false,
 		});
-		expect(result).toEqual({ enabled: false, reason: "disabled_outside_development" });
+		expect(result).toEqual({ enabled: false, reason: "requires_internal_token" });
 	});
 
-	it("disables testing mode in production for internal requests", async () => {
+	it("allows testing mode in production for internal requests", async () => {
 		getBindingsMock.mockReturnValue({ NODE_ENV: "production" });
 		const result = await resolveTestingMode({
 			requested: true,
@@ -70,20 +55,6 @@ describe("resolveTestingMode gating", () => {
 			userId: null,
 			internal: true,
 		});
-		expect(result).toEqual({ enabled: false, reason: "disabled_outside_development" });
-	});
-
-	it("rejects non-admin users", async () => {
-		getSupabaseAdminMock.mockReturnValue(buildSupabaseForRole("user"));
-		const result = await resolveTestingMode({
-			requested: true,
-			teamId: "team_1",
-			userId: "user_2",
-			internal: false,
-		});
-		expect(result).toEqual({
-			enabled: false,
-			reason: "requires_platform_admin_or_local_override",
-		});
+		expect(result).toEqual({ enabled: true, reason: "internal" });
 	});
 });

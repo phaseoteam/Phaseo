@@ -14,7 +14,7 @@ type SignInPageProps = {
 export const metadata: Metadata = {
 	title: "Sign In",
 	description:
-		"Sign in or sign up to unlock the AI Stats Gateway and start exploring insights.",
+		"Sign in to AI Stats to access the Gateway, manage teams, monitor usage, and continue with provider routing, model analytics, and account-level billing controls.",
 };
 
 export default async function Page({ searchParams }: SignInPageProps) {

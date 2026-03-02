@@ -5,11 +5,11 @@
     "provider_model_slug": "gpt-oss-120b\t",
     "internal_model_id": "openai/gpt-oss-120b-2025-08-05",
     "is_active_gateway": true,
-    "quantization_scheme": null,
+    "quantization_scheme": "FP16",
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
+    "context_length": 131072,
+    "max_output_tokens": 40960,
     "effective_from": "2026-02-17T00:00:00",
     "effective_to": null,
     "capabilities": [
@@ -109,7 +109,7 @@
     "api_model_id": "meta/llama-3.1-8b",
     "provider_api_model_id": "cerebras:meta/llama-3.1-8b",
     "provider_model_slug": "\tllama3.1-8b",
-    "internal_model_id": null,
+    "internal_model_id": "meta/llama-3-1-8b-instruct-2024-07-23",
     "is_active_gateway": false,
     "quantization_scheme": "FP16",
     "input_modalities": "text",
@@ -118,13 +118,97 @@
     "max_output_tokens": 8000,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
   },
   {
-    "api_model_id": "qwen/qwen3-235b-a22b-instruct-2507",
-    "provider_api_model_id": "cerebras:qwen/qwen3-235b-a22b-instruct-2507",
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "cerebras:qwen/qwen3-235b-a22b-2507",
     "provider_model_slug": "qwen-3-235b-a22b-instruct-2507",
-    "internal_model_id": null,
+    "internal_model_id": "qwen/qwen-3-235b-a22b",
     "is_active_gateway": false,
     "quantization_scheme": "FP16",
     "input_modalities": "text",
@@ -139,7 +223,7 @@
     "api_model_id": "z-ai/glm-4.7",
     "provider_api_model_id": "cerebras:z-ai/glm-4.7",
     "provider_model_slug": "zai-glm-4.7",
-    "internal_model_id": null,
+    "internal_model_id": "z-ai/glm-4-7-2025-12-22",
     "is_active_gateway": false,
     "quantization_scheme": "FP16",
     "input_modalities": "text",
@@ -148,6 +232,90 @@
     "max_output_tokens": 40000,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_logprobs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -152,17 +152,26 @@ function normalizeMap(input: unknown): Record<string, string> {
 }
 
 async function loadMapByKey(key: string): Promise<Record<string, string>> {
-    const raw = await getCache().get(key, "text");
-    if (!raw) return {};
     try {
-        return normalizeMap(JSON.parse(raw));
+        const raw = await getCache().get(key, "text");
+        if (!raw) return {};
+        try {
+            return normalizeMap(JSON.parse(raw));
+        } catch {
+            return {};
+        }
     } catch {
+        // Fail open to in-memory defaults when KV is unavailable.
         return {};
     }
 }
 
 async function saveMap(key: string, map: Record<string, string>, ttlSeconds = HEALTH_STATE_TTL_SECONDS) {
-    await getCache().put(key, JSON.stringify(map), { expirationTtl: ttlSeconds });
+    try {
+        await getCache().put(key, JSON.stringify(map), { expirationTtl: ttlSeconds });
+    } catch {
+        // Ignore KV write failures.
+    }
 }
 
 async function updateMap(
@@ -271,7 +280,11 @@ async function saveHalfMap(endpoint: Endpoint, provider: string, model: string, 
 
 async function deleteHalf(endpoint: Endpoint, provider: string, model: string) {
     const key = HEALTH_KEYS.half(endpoint, model, provider);
-    await getCache().delete(key);
+    try {
+        await getCache().delete(key);
+    } catch {
+        // Ignore KV delete failures.
+    }
 }
 
 export async function readHealth(

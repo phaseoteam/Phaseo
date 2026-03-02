@@ -8,7 +8,8 @@ import { AlertTriangle } from "lucide-react";
 
 export const metadata = {
 	title: "Authorize Application - AI Stats",
-	description: "Authorize a third-party application to access your AI Stats account",
+	description:
+		"Authorize a third-party application to access your AI Stats account, choose permitted team scopes, and review exactly what the integration can read or modify before approval.",
 };
 
 interface ConsentPageProps {

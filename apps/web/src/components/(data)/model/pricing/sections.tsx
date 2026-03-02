@@ -33,75 +33,101 @@ function formatCountdown(iso?: string | null) {
 	return `Ends in ${remHours}h`;
 }
 
-export function TierTiles({ tiers }: { tiers: TokenTier[] }) {
+type DividerColumn = {
+	id: string;
+	title?: React.ReactNode;
+	subtitle?: React.ReactNode;
+	value: React.ReactNode;
+	footer?: React.ReactNode;
+};
+
+function DividerColumns({
+	columns,
+	minColumnPx = 150,
+}: {
+	columns: DividerColumn[];
+	minColumnPx?: number;
+}) {
+	if (!columns.length) return null;
+
+	return (
+		<div className="w-full overflow-x-auto rounded-lg border border-zinc-200/70 bg-background dark:border-zinc-800">
+			<div className="flex w-full min-w-max divide-x divide-zinc-200/70 dark:divide-zinc-800">
+				{columns.map((column) => (
+					<div
+						key={column.id}
+						className="min-w-0 flex-1 px-3 py-2"
+						style={{ minWidth: minColumnPx }}
+					>
+						{column.title ? (
+							<div className="mb-0.5 text-xs text-muted-foreground">
+								{column.title}
+							</div>
+						) : null}
+						{column.subtitle ? (
+							<div className="mb-0.5 text-xs text-muted-foreground/80">
+								{column.subtitle}
+							</div>
+						) : null}
+						<div className="text-sm font-semibold font-mono tabular-nums">
+							{column.value}
+						</div>
+						{column.footer ? (
+							<div className="mt-0.5 text-xs text-muted-foreground">
+								{column.footer}
+							</div>
+						) : null}
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
+export function TierTiles({
+	tiers,
+	dense = false,
+}: {
+	tiers: TokenTier[];
+	dense?: boolean;
+}) {
 	if (!tiers?.length) {
-		return <div className="text-xs text-muted-foreground">--</div>;
+		return <div className="text-sm text-muted-foreground">--</div>;
 	}
 
 	return (
-		<div className="space-y-1.5">
+		<div className={dense ? "space-y-1" : "space-y-1.5"}>
 			{tiers.map((t, i) => (
 				<div key={i}>
-					{t.label === "All usage" ? (
-						<div className="space-y-0.5">
-							{t.basePer1M != null ? (
-								<div className="text-xs font-semibold text-emerald-600">
-									{fmtUSD(t.per1M)}
-								</div>
-							) : (
-								<div className="text-xs font-semibold">
-									{fmtUSD(t.per1M)}
-								</div>
-							)}
-							{t.basePer1M != null ? (
-								<div className="flex items-center justify-between text-[11px] text-muted-foreground">
-									<span className="line-through">
-										{fmtUSD(t.basePer1M)}
-									</span>
-									{formatCountdown(t.discountEndsAt) ? (
-										<Badge
-											variant="secondary"
-											className="text-[0.6rem] uppercase tracking-wide"
-										>
-											{formatCountdown(t.discountEndsAt)}
-										</Badge>
-									) : null}
-								</div>
-							) : null}
+					<div className="space-y-0.5">
+						<div
+							className={
+								t.basePer1M != null
+									? "text-sm font-semibold text-emerald-600 font-mono tabular-nums"
+									: "text-sm font-semibold font-mono tabular-nums"
+							}
+						>
+							{fmtUSD(t.per1M)}
 						</div>
-					) : (
-						<div className="space-y-0.5">
-							<div className="flex items-center justify-between">
-								<span
-									className={
-										t.basePer1M != null
-											? "text-xs font-semibold text-emerald-600"
-											: "text-xs font-semibold"
-									}
-								>
-									{fmtUSD(t.per1M)}
+						{t.label !== "All usage" ? (
+							<div className="text-xs text-muted-foreground">{t.label}</div>
+						) : null}
+						{t.basePer1M != null ? (
+							<div className="flex items-center justify-between text-xs text-muted-foreground">
+								<span className="line-through font-mono tabular-nums">
+									{fmtUSD(t.basePer1M)}
 								</span>
-								<span className="text-[11px] text-muted-foreground">
-									{t.label}
-								</span>
+								{formatCountdown(t.discountEndsAt) ? (
+									<Badge
+										variant="secondary"
+										className="text-[0.6rem] uppercase tracking-wide"
+									>
+										{formatCountdown(t.discountEndsAt)}
+									</Badge>
+								) : null}
 							</div>
-							{t.basePer1M != null ? (
-								<div className="flex items-center justify-between text-[11px] text-muted-foreground">
-									<span className="line-through">
-										{fmtUSD(t.basePer1M)}
-									</span>
-									{formatCountdown(t.discountEndsAt) ? (
-										<Badge
-											variant="secondary"
-											className="text-[0.6rem] uppercase tracking-wide"
-										>
-											{formatCountdown(t.discountEndsAt)}
-										</Badge>
-									) : null}
-								</div>
-							) : null}
-						</div>
-					)}
+						) : null}
+					</div>
 				</div>
 			))}
 		</div>
@@ -114,12 +140,14 @@ export function TokenTripleSection({
 	headerRight,
 	hideHeader = false,
 	leadingTiles = [],
+	compact = false,
 }: {
 	title?: string;
 	triple?: TokenTriple;
 	headerRight?: React.ReactNode;
 	hideHeader?: boolean;
 	leadingTiles?: Array<{ label: string; value: string }>;
+	compact?: boolean;
 }) {
 	if (!triple) return null;
 	const segments = [
@@ -143,42 +171,68 @@ export function TokenTripleSection({
 	const showSegmentLabels = segments.length > 1;
 
 	return (
-		<div className="space-y-1">
+		<div className="space-y-1.5">
 			{!hideHeader ? (
 				<div className="flex items-center justify-between">
-					<h4 className="text-xs font-semibold">{title}</h4>
-					<span className="text-[11px] text-muted-foreground">{headerRight ?? "Per 1M tokens"}</span>
+					<h4 className="text-sm font-semibold">{title}</h4>
+					<span className="text-xs text-muted-foreground">{headerRight ?? "Per 1M tokens"}</span>
 				</div>
 			) : null}
-			<div className={`grid gap-1 ${gridClass}`}>
-				{leadingTiles.map((tile) => (
-					<div key={tile.label} className="rounded-md border p-2">
-						<div className="mb-0.5 text-[11px] text-muted-foreground">
-							{tile.label}
-						</div>
-						<div className="text-xs font-semibold">{tile.value}</div>
-					</div>
-				))}
-				{segments.map((s, idx) => (
-					<div key={idx} className="rounded-md border p-2">
-						{showSegmentLabels ? (
-							<div className="mb-0.5 text-[11px] text-muted-foreground">
-								{s.label}
+			{compact ? (
+				<div className="w-full overflow-x-auto rounded-lg border border-zinc-200/70 bg-background dark:border-zinc-800">
+					<div className="flex w-full min-w-[540px] divide-x divide-zinc-200/70 dark:divide-zinc-800">
+						{leadingTiles.map((tile) => (
+							<div key={tile.label} className="min-w-0 flex-1 px-3 py-2">
+								<div className="mb-0.5 text-xs text-muted-foreground">
+									{tile.label}
+								</div>
+								<div className="text-sm font-semibold font-mono tabular-nums">
+									{tile.value}
+								</div>
 							</div>
-						) : null}
-						<TierTiles tiers={s.tiers} />
+						))}
+						{segments.map((s, idx) => (
+							<div key={idx} className="min-w-0 flex-1 px-3 py-2">
+								{showSegmentLabels ? (
+									<div className="mb-0.5 text-xs text-muted-foreground">
+										{s.label}
+									</div>
+								) : null}
+								<TierTiles tiers={s.tiers} dense />
+							</div>
+						))}
 					</div>
-				))}
-			</div>
-		</div>
-	);
-}
-
-function Tile({ title, value }: { title: string; value: string }) {
-	return (
-		<div className="rounded-md border p-2.5">
-			<div className="mb-1 text-[11px] text-muted-foreground">{title}</div>
-			<div className="text-lg font-semibold leading-tight">{value}</div>
+				</div>
+			) : (
+				<div className={`grid gap-2 ${gridClass}`}>
+					{leadingTiles.map((tile) => (
+						<div
+							key={tile.label}
+							className="rounded-lg border border-zinc-200/70 bg-background px-3 py-2 dark:border-zinc-800"
+						>
+							<div className="mb-0.5 text-xs text-muted-foreground">
+								{tile.label}
+							</div>
+							<div className="text-sm font-semibold font-mono tabular-nums">
+								{tile.value}
+							</div>
+						</div>
+					))}
+					{segments.map((s, idx) => (
+						<div
+							key={idx}
+							className="rounded-lg border border-zinc-200/70 bg-background px-3 py-2 dark:border-zinc-800"
+						>
+							{showSegmentLabels ? (
+								<div className="mb-0.5 text-xs text-muted-foreground">
+									{s.label}
+								</div>
+							) : null}
+							<TierTiles tiers={s.tiers} />
+						</div>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }
@@ -186,43 +240,44 @@ function Tile({ title, value }: { title: string; value: string }) {
 export function ImageGenSection({ rows }: { rows?: QualityRow[] }) {
 	if (!rows || !rows.length) return null;
 
-	const items = rows.flatMap((q) =>
-		q.items.map((it) => ({
-			quality: q.quality.charAt(0).toUpperCase() + q.quality.slice(1),
-			label: it.label,
-			price: it.price,
-		}))
-	);
-	const gridClass =
-		items.length <= 1
-			? "grid-cols-1"
-			: items.length === 2
-			? "grid-cols-2"
-			: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+	const qualityRows = rows.map((row) => ({
+		quality: row.quality.charAt(0).toUpperCase() + row.quality.slice(1),
+		items: row.items,
+	}));
 
 	return (
-		<div className="space-y-1">
+		<div className="space-y-1.5">
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold uppercase tracking-wide">
+				<h4 className="text-sm font-semibold">
 					Image generation
 				</h4>
-				<span className="text-[11px] text-muted-foreground">Per image</span>
+				<span className="text-xs text-muted-foreground">Per image</span>
 			</div>
-			<div className={`grid gap-1 ${gridClass}`}>
-				{items.map((item, index) => (
+			<div className="space-y-1.5">
+				{qualityRows.map((row, rowIndex) => (
 					<div
-						key={`${item.quality}-${item.label}-${index}`}
-						className="rounded-md border p-2"
+						key={`${row.quality}-${rowIndex}`}
+						className="w-full overflow-x-auto rounded-lg border border-zinc-200/70 bg-background dark:border-zinc-800"
 					>
-						<div className="mb-0.5 text-[11px] text-muted-foreground">
-							{item.quality}
-						</div>
-						{item.label ? (
-							<div className="mb-0.5 text-[11px] text-muted-foreground/80">
-								{item.label}
+						<div className="flex w-full min-w-max divide-x divide-zinc-200/70 dark:divide-zinc-800">
+							<div className="min-w-[140px] px-3 py-2">
+								<div className="text-xs text-muted-foreground">Quality</div>
+								<div className="text-sm font-semibold">{row.quality}</div>
 							</div>
-						) : null}
-						<div className="text-xs font-semibold">{fmtUSD(item.price)}</div>
+							{row.items.map((item, itemIndex) => (
+								<div
+									key={`${row.quality}-${item.label}-${itemIndex}`}
+									className="min-w-[170px] flex-1 px-3 py-2"
+								>
+									<div className="mb-0.5 text-xs text-muted-foreground">
+										{item.label || "Any resolution"}
+									</div>
+									<div className="text-sm font-semibold font-mono tabular-nums">
+										{fmtUSD(item.price)}
+									</div>
+								</div>
+							))}
+						</div>
 					</div>
 				))}
 			</div>
@@ -245,42 +300,29 @@ export function VideoGenSection({ rows }: { rows?: ResolutionRow[] }) {
 			price: r.price,
 		}))
 	);
-	const gridClass =
-		items.length <= 1
-			? "grid-cols-1"
-			: items.length === 2
-			? "grid-cols-2"
-			: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
-
 	return (
-		<div className="space-y-1">
+		<div className="space-y-1.5">
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold uppercase tracking-wide">
+				<h4 className="text-sm font-semibold">
 					Video generation
 				</h4>
 				{hasSingleUnit ? (
-					<span className="text-[11px] text-muted-foreground">
+					<span className="text-xs text-muted-foreground">
 						{unitEntries[0][0]}
 					</span>
 				) : null}
 			</div>
-			<div className={`grid gap-1 ${gridClass}`}>
-				{items
+			<DividerColumns
+				columns={items
 					.sort((a, b) => a.resolution.localeCompare(b.resolution))
-					.map((item, i) => (
-						<div key={`${item.unit}-${item.resolution}-${i}`} className="rounded-md border p-2">
-							<div className="mb-0.5 text-[11px] text-muted-foreground">
-								{item.resolution}
-							</div>
-							{!hasSingleUnit ? (
-								<div className="mb-0.5 text-[11px] text-muted-foreground/80">
-									{item.unit}
-								</div>
-							) : null}
-							<div className="text-xs font-semibold">{fmtUSD(item.price)}</div>
-						</div>
-					))}
-			</div>
+					.map((item, i) => ({
+						id: `${item.unit}-${item.resolution}-${i}`,
+						title: item.resolution,
+						subtitle: hasSingleUnit ? undefined : item.unit,
+						value: fmtUSD(item.price),
+					}))}
+				minColumnPx={170}
+			/>
 		</div>
 	);
 }
@@ -308,40 +350,29 @@ export function InputsSection({
 			discountEndsAt: r.discountEndsAt,
 		}))
 	);
-	const gridClass =
-		items.length <= 1
-			? "grid-cols-1"
-			: items.length === 2
-			? "grid-cols-2"
-			: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
-
 	return (
-		<div className="space-y-1">
+		<div className="space-y-1.5">
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold uppercase tracking-wide">{title}</h4>
+				<h4 className="text-sm font-semibold">{title}</h4>
 				{hasSingleUnit ? (
-					<span className="text-[11px] text-muted-foreground">
+					<span className="text-xs text-muted-foreground">
 						{unitEntries[0][0]}
 					</span>
 				) : null}
 			</div>
-			<div className={`grid gap-1 ${gridClass}`}>
-				{items.map((item, index) => (
-					<div key={`${item.unit}-${item.label}-${index}`} className="rounded-md border p-2">
-						{item.label && item.label !== "All usage" ? (
-							<div className="mb-0.5 text-[11px] text-muted-foreground">
-								{item.label}
-							</div>
-						) : null}
-						{!hasSingleUnit ? (
-							<div className="mb-0.5 text-[11px] text-muted-foreground/80">
-								{item.unit}
-							</div>
-						) : null}
-						<div className="text-xs font-semibold">{fmtUSD(item.price)}</div>
-						{item.basePrice != null ? (
-							<div className="mt-0.5 flex items-center justify-between text-[11px] text-muted-foreground">
-								<span className="line-through">{fmtUSD(item.basePrice)}</span>
+			<DividerColumns
+				columns={items.map((item, index) => ({
+					id: `${item.unit}-${item.label}-${index}`,
+					title:
+						item.label && item.label !== "All usage" ? item.label : undefined,
+					subtitle: hasSingleUnit ? undefined : item.unit,
+					value: fmtUSD(item.price),
+					footer:
+						item.basePrice != null ? (
+							<div className="flex items-center justify-between">
+								<span className="line-through font-mono tabular-nums">
+									{fmtUSD(item.basePrice)}
+								</span>
 								{formatCountdown(item.discountEndsAt) ? (
 									<Badge
 										variant="secondary"
@@ -351,10 +382,10 @@ export function InputsSection({
 									</Badge>
 								) : null}
 							</div>
-						) : null}
-					</div>
-				))}
-			</div>
+						) : null,
+				}))}
+				minColumnPx={170}
+			/>
 		</div>
 	);
 }
@@ -362,37 +393,39 @@ export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 	if (!rows?.length) return null;
 
 	return (
-		<div className="space-y-1">
+		<div className="space-y-1.5">
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold uppercase tracking-wide">
+				<h4 className="text-sm font-semibold">
 					Cache Writes
 				</h4>
-				<span className="text-[11px] text-muted-foreground">
+				<span className="text-xs text-muted-foreground">
 					Per 1M tokens
 				</span>
 			</div>
-			<div className="rounded-md border p-2">
-				<div className="space-y-1">
-					{rows.map((t, i) => (
-						<div key={i}>
-							{t.label === "All usage" ? (
-								<div className="text-xs font-semibold">
-									{fmtUSD(t.per1M)}
-								</div>
-							) : (
-								<div className="flex items-center justify-between">
-									<span className="text-xs font-semibold">
-										{fmtUSD(t.per1M)}
-									</span>
-									<span className="text-[11px] text-muted-foreground">
-										{t.label}
-									</span>
-								</div>
-							)}
-						</div>
-					))}
-				</div>
-			</div>
+			<DividerColumns
+				columns={rows.map((t, i) => ({
+					id: `cache-write-${i}`,
+					title: t.label || "All usage",
+					value: fmtUSD(t.per1M),
+					footer:
+						t.basePer1M != null ? (
+							<div className="flex items-center justify-between">
+								<span className="line-through font-mono tabular-nums">
+									{fmtUSD(t.basePer1M)}
+								</span>
+								{formatCountdown(t.discountEndsAt) ? (
+									<Badge
+										variant="secondary"
+										className="text-[0.6rem] uppercase tracking-wide"
+									>
+										{formatCountdown(t.discountEndsAt)}
+									</Badge>
+								) : null}
+							</div>
+						) : null,
+				}))}
+				minColumnPx={170}
+			/>
 		</div>
 	);
 }
@@ -401,48 +434,35 @@ export function RequestsSection({ rows }: { rows?: TokenTier[] }) {
 	if (!rows?.length) return null;
 
 	return (
-		<div className="space-y-1">
+		<div className="space-y-1.5">
 			<div className="flex items-center justify-between">
-				<h4 className="text-xs font-semibold uppercase tracking-wide">Requests</h4>
-				<span className="text-[11px] text-muted-foreground">Per request</span>
+				<h4 className="text-sm font-semibold">Requests</h4>
+				<span className="text-xs text-muted-foreground">Per request</span>
 			</div>
-			<div className="rounded-md border p-2">
-				<div className="space-y-1">
-					{rows.map((t, i) => (
-						<div key={i}>
-							{t.label === "All usage" ? (
-								<div className="text-xs font-semibold">
-									{fmtUSD(t.price)}
-								</div>
-							) : (
-								<div className="flex items-center justify-between">
-									<span className="text-xs font-semibold">
-										{fmtUSD(t.price)}
-									</span>
-									<span className="text-[11px] text-muted-foreground">
-										{t.label}
-									</span>
-								</div>
-							)}
-							{t.basePer1M != null ? (
-								<div className="flex items-center justify-between text-[11px] text-muted-foreground">
-									<span className="line-through">
-										{fmtUSD(t.basePer1M)}
-									</span>
-									{formatCountdown(t.discountEndsAt) ? (
-										<Badge
-											variant="secondary"
-											className="text-[0.6rem] uppercase tracking-wide"
-										>
-											{formatCountdown(t.discountEndsAt)}
-										</Badge>
-									) : null}
-								</div>
-							) : null}
-						</div>
-					))}
-				</div>
-			</div>
+			<DividerColumns
+				columns={rows.map((t, i) => ({
+					id: `request-${i}`,
+					title: t.label || "All usage",
+					value: fmtUSD(t.price),
+					footer:
+						t.basePer1M != null ? (
+							<div className="flex items-center justify-between">
+								<span className="line-through font-mono tabular-nums">
+									{fmtUSD(t.basePer1M)}
+								</span>
+								{formatCountdown(t.discountEndsAt) ? (
+									<Badge
+										variant="secondary"
+										className="text-[0.6rem] uppercase tracking-wide"
+									>
+										{formatCountdown(t.discountEndsAt)}
+									</Badge>
+								) : null}
+							</div>
+						) : null,
+				}))}
+				minColumnPx={170}
+			/>
 		</div>
 	);
 }
@@ -456,15 +476,15 @@ export function AdvancedTable({
 
 	return (
 		<div className="space-y-1.5">
-			<details className="rounded-md border">
-				<summary className="flex cursor-pointer list-none items-center justify-between px-2.5 py-2">
-					<span className="text-xs font-semibold uppercase tracking-wide">
+			<details className="rounded-lg border border-zinc-200/70 bg-background dark:border-zinc-800">
+				<summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5">
+					<span className="text-sm font-semibold">
 						Advanced & conditional pricing
 					</span>
-					<span className="text-[11px] text-muted-foreground">Show/Hide</span>
+					<span className="text-xs text-muted-foreground">Show/Hide</span>
 				</summary>
-				<div className="px-2.5 pb-2.5">
-					<div className="overflow-x-auto rounded-md border">
+				<div className="px-3 pb-3">
+					<div className="overflow-x-auto rounded-md border border-zinc-200/80 bg-background dark:border-zinc-800">
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -480,7 +500,7 @@ export function AdvancedTable({
 									<TableRow key={i}>
 										<TableCell className="text-xs">{r.meter}</TableCell>
 										<TableCell className="text-xs">{r.unitLabel}</TableCell>
-										<TableCell>{fmtUSD(r.price)}</TableCell>
+										<TableCell className="font-mono tabular-nums text-xs">{fmtUSD(r.price)}</TableCell>
 										<TableCell className="text-xs text-muted-foreground">
 											{r.conditions?.length
 												? r.conditions.map((c, j) => (

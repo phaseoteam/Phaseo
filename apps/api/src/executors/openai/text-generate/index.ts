@@ -63,6 +63,7 @@ const OPENAI_WEBSOCKET_RECOVERABLE_ERRORS = new Set([
 ]);
 const OPENAI_WEBSOCKET_MAX_RECONNECTS = 1;
 const OPENAI_WEBSOCKET_HANDSHAKE_MAX_RETRIES = 1;
+const OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY = "aistats_request_id";
 
 function buildOpenAIResponsesWebSocketUrl(providerId: string): string {
 	// Cloudflare Workers WebSocket fetch upgrade expects https:// URL.
@@ -500,6 +501,37 @@ function withNormalizedReasoning(
 	return next;
 }
 
+function withOpenAIRequestMetadata(
+	ir: IRChatRequest,
+	providerId: string,
+	requestId: string,
+): IRChatRequest {
+	if (providerId !== "openai") return ir;
+	const explicitSafetyIdentifier = typeof ir.safetyIdentifier === "string" && ir.safetyIdentifier.trim().length > 0
+		? ir.safetyIdentifier.trim()
+		: undefined;
+	const userSafetyIdentifier = typeof ir.userId === "string" && ir.userId.trim().length > 0
+		? ir.userId.trim()
+		: undefined;
+	const safetyIdentifier = explicitSafetyIdentifier ?? userSafetyIdentifier ?? requestId;
+	const metadata = { ...(ir.metadata ?? {}) };
+	if (typeof metadata[OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY] !== "string" || metadata[OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY].length === 0) {
+		metadata[OPENAI_INTERNAL_REQUEST_ID_METADATA_KEY] = requestId;
+	}
+	return {
+		...ir,
+		metadata,
+		safetyIdentifier,
+	};
+}
+
+function openAIRequestHeaders(providerId: string, requestId: string): Record<string, string> | undefined {
+	if (providerId !== "openai") return undefined;
+	return {
+		"Idempotency-Key": requestId,
+	};
+}
+
 function cherryPickIRParams(
 	ir: IRChatRequest,
 	capabilityParams?: Record<string, any> | null,
@@ -612,6 +644,17 @@ function cherryPickIRParams(
 		next.responseFormat = responseFormat;
 	}
 
+	const openAIContextManagement = (ir.vendor as any)?.openai?.context_management;
+	if (openAIContextManagement && typeof openAIContextManagement === "object") {
+		(next as any).vendor = {
+			...((next as any).vendor ?? {}),
+			openai: {
+				...(((next as any).vendor?.openai as Record<string, any> | undefined) ?? {}),
+				context_management: openAIContextManagement,
+			},
+		};
+	}
+
 	if (ir.reasoning && !next.reasoning) {
 		next.reasoning = ir.reasoning;
 	}
@@ -627,18 +670,23 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	} as any);
 
 	const modelForRouting = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
+	const irWithRequestMetadata = withOpenAIRequestMetadata(
+		args.ir as IRChatRequest,
+		args.providerId,
+		args.requestId,
+	);
 	const route = args.providerId === "openai"
 		? "responses"
 		: resolveOpenAICompatRoute(args.providerId, modelForRouting);
 	const endpoint = route === "responses" ? "/responses" : (route === "legacy_completions" ? "/completions" : "/chat/completions");
 
 	const requestPayload = route === "responses"
-		? irToOpenAIResponses(args.ir as IRChatRequest, modelForRouting, args.providerId, args.capabilityParams)
+		? irToOpenAIResponses(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams)
 		: (route === "legacy_completions"
-			? irToOpenAICompletions(args.ir as IRChatRequest, modelForRouting)
-			: irToOpenAIChat(args.ir as IRChatRequest, modelForRouting, args.providerId, args.capabilityParams));
+			? irToOpenAICompletions(irWithRequestMetadata, modelForRouting)
+			: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams));
 
-	if ((args.ir as IRChatRequest).stream) {
+	if (irWithRequestMetadata.stream) {
 		requestPayload.stream = true;
 		if (route === "chat") {
 			requestPayload.stream_options = {
@@ -669,7 +717,11 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 
 	const res = await fetch(openAICompatUrl(args.providerId, endpoint), {
 		method: "POST",
-		headers: openAICompatHeaders(args.providerId, keyInfo.key),
+		headers: openAICompatHeaders(
+			args.providerId,
+			keyInfo.key,
+			openAIRequestHeaders(args.providerId, args.requestId),
+		),
 		body: requestBody,
 	});
 
@@ -694,7 +746,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		};
 	}
 
-	if ((args.ir as IRChatRequest).stream) {
+	if (irWithRequestMetadata.stream) {
 		const stream = resolveStreamForProtocol(res, args, route);
 		return {
 			kind: "stream",
@@ -715,10 +767,10 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	const json = await res.json().catch(() => null);
 	const ir = json
 		? (route === "responses"
-			? openAIResponsesToIR(json, args.requestId, (args.ir as IRChatRequest).model, args.providerId)
+			? openAIResponsesToIR(json, args.requestId, irWithRequestMetadata.model, args.providerId)
 			: (route === "legacy_completions"
-				? openAICompletionsToIR(json, args.requestId, (args.ir as IRChatRequest).model, args.providerId)
-				: openAIChatToIR(json, args.requestId, (args.ir as IRChatRequest).model, args.providerId)))
+				? openAICompletionsToIR(json, args.requestId, irWithRequestMetadata.model, args.providerId)
+				: openAIChatToIR(json, args.requestId, irWithRequestMetadata.model, args.providerId)))
 		: undefined;
 
 	if (ir) {

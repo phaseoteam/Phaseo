@@ -13,6 +13,10 @@ import HideGlobalFooter from "@/components/layout/HideGlobalFooter";
 
 export const metadata = {
 	title: "Settings",
+	robots: {
+		index: false,
+		follow: false,
+	},
 };
 
 export default async function SettingsLayout({

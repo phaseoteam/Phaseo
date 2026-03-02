@@ -9,7 +9,7 @@ This section documents how the gateway codebase is organized so you can quickly 
 
 | Folder | Purpose | Key files |
 | --- | --- | --- |
-| `apps/api/src/routes` | HTTP routing and endpoint registration. | `root.ts`, `v1/index.ts`, `v1/data/index.ts`, `v1/control/index.ts` |
+| `apps/api/src/routes` | HTTP routing and endpoint registration for inference and platform APIs. | `root.ts`, `v1/index.ts`, `v1/data/index.ts`, `v1/control/index.ts` |
 | `apps/api/src/pipeline` | Request lifecycle (before/execute/after), pricing, usage, and audit. | `index.ts`, `before/`, `execute/`, `after/`, `audit/` |
 | `apps/api/src/core` | Shared schemas, IR types, and low-level utilities used across layers. | `schemas.ts`, `ir.ts`, `types.ts`, `error-handler.ts` |
 | `apps/api/src/protocols` | Protocol-specific decoding/encoding for OpenAI and Anthropic surfaces. | `openai-chat/`, `openai-responses/`, `anthropic-messages/` |

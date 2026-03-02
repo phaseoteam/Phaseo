@@ -4,6 +4,80 @@ description: "Product updates, releases, and fixes across AI Stats."
 rss: true
 ---
 
+<Update label="2nd March 2026">
+# Responses API Assistant Phase Support
+
+We added support for OpenAI Responses assistant message `phase` values:
+
+- Request handling now accepts assistant message `phase` in Responses input items (`commentary` or `final_answer`)
+- Gateway Responses payloads now preserve and return assistant message `phase` when present
+- OpenAPI documentation has been updated to document `phase` in Responses request and response message items
+
+## How to pass `phase` across turns
+
+Use `phase` only on assistant messages:
+
+- `commentary` for intermediate assistant steps
+- `final_answer` for final assistant answers
+- Preserve and resend the original assistant message `phase` values on follow-up turns
+
+### Example: turn 1 request
+
+```json
+{
+  "model": "openai/gpt-5.3-codex",
+  "input": [
+    { "type": "message", "role": "user", "content": "Plan this refactor." }
+  ]
+}
+```
+
+### Example: turn 1 response excerpt
+
+```json
+{
+  "output": [
+    {
+      "type": "message",
+      "role": "assistant",
+      "phase": "commentary",
+      "content": [{ "type": "output_text", "text": "First, break this into modules..." }]
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "phase": "final_answer",
+      "content": [{ "type": "output_text", "text": "Recommended approach: ..." }]
+    }
+  ]
+}
+```
+
+### Example: turn 2 request (resend assistant messages with `phase`)
+
+```json
+{
+  "model": "openai/gpt-5.3-codex",
+  "input": [
+    {
+      "type": "message",
+      "role": "assistant",
+      "phase": "commentary",
+      "content": [{ "type": "output_text", "text": "First, break this into modules..." }]
+    },
+    {
+      "type": "message",
+      "role": "assistant",
+      "phase": "final_answer",
+      "content": [{ "type": "output_text", "text": "Recommended approach: ..." }]
+    },
+    { "type": "message", "role": "user", "content": "Now generate the migration checklist." }
+  ]
+}
+```
+
+</Update>
+
 <Update label="26th February 2026">
 # Nano Banana 2 Introduced
 

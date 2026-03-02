@@ -1,15 +1,22 @@
 import Link from "next/link";
-import type { Metadata } from "next";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import apps from "@/data/works-with-ai-stats.json";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
 	title: "Works with AI Stats",
-	description: "Apps and integrations built with the AI Stats Gateway.",
-};
+	description:
+		"Discover apps and integrations built with the AI Stats Gateway, including production tools, open-source projects, and community launches across different workflows and teams.",
+	path: "/works-with",
+	keywords: [
+		"AI Stats integrations",
+		"AI gateway apps",
+		"AI Stats community",
+	],
+});
 
 type WorksWithApp = {
 	name: string;

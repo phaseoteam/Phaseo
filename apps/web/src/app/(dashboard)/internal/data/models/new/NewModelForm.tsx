@@ -122,6 +122,24 @@ const PARAMETER_FLAGS = [
 	"parallel_tool_calls",
 ];
 
+const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
+	input_text_tokens: { unit: "token", unit_size: 1_000_000 },
+	output_text_tokens: { unit: "token", unit_size: 1_000_000 },
+	cached_read_text_tokens: { unit: "token", unit_size: 1_000_000 },
+	cached_write_text_tokens: { unit: "token", unit_size: 1_000_000 },
+	input_image_tokens: { unit: "token", unit_size: 1_000_000 },
+	output_image_tokens: { unit: "token", unit_size: 1_000_000 },
+	cached_read_image_tokens: { unit: "token", unit_size: 1_000_000 },
+	input_audio_tokens: { unit: "token", unit_size: 1_000_000 },
+	output_audio_tokens: { unit: "token", unit_size: 1_000_000 },
+	cached_read_audio_tokens: { unit: "token", unit_size: 1_000_000 },
+	output_image: { unit: "image", unit_size: 1 },
+	input_image: { unit: "image", unit_size: 1 },
+	output_video_seconds: { unit: "second", unit_size: 1 },
+	input_video_seconds: { unit: "second", unit_size: 1 },
+	requests: { unit: "request", unit_size: 1 },
+};
+
 const MODEL_DETAIL_FIELDS = [
 	{
 		key: "input_context_length",
@@ -287,6 +305,47 @@ export default function NewModelForm({
 			),
 		[providers]
 	);
+
+	const defaultPricingProviderId = providerRows[0]?.provider_id ?? sortedProviders[0]?.api_provider_id ?? "";
+	const defaultPricingApiModelId = providerRows[0]?.api_model_id || modelId;
+	const defaultPricingCapability = providerRows[0]?.capabilities[0]?.capability_id ?? "text.generate";
+
+	const createPricingRow = (meter?: string): PricingRuleDraft => {
+		const chosenMeter = meter ?? PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens";
+		const defaults = METER_DEFAULTS[chosenMeter];
+		return {
+			id: `price-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+			provider_id: defaultPricingProviderId,
+			api_model_id: defaultPricingApiModelId,
+			capability_id: defaultPricingCapability,
+			pricing_plan: "standard",
+			meter: chosenMeter,
+			unit: defaults?.unit ?? "token",
+			unit_size: String(defaults?.unit_size ?? 1),
+			price_per_unit: "0",
+			currency: "USD",
+		};
+	};
+
+	const addPricingRows = (meters: string[]) => {
+		setPricingRows((prev) => [...prev, ...meters.map((meter) => createPricingRow(meter))]);
+	};
+
+	const setPricingField = (rowId: string, field: keyof PricingRuleDraft, value: string) => {
+		setPricingRows((prev) =>
+			prev.map((row) => {
+				if (row.id !== rowId) return row;
+				if (field !== "meter") return { ...row, [field]: value };
+				const defaults = METER_DEFAULTS[value];
+				return {
+					...row,
+					meter: value,
+					unit: defaults?.unit ?? row.unit,
+					unit_size: defaults ? String(defaults.unit_size) : row.unit_size,
+				};
+			})
+		);
+	};
 
 	const providerModelPayload = useMemo(
 		() =>
@@ -1361,41 +1420,27 @@ export default function NewModelForm({
 			<section className="space-y-3 rounded-lg border p-3">
 				<div className="flex items-center justify-between">
 					<h2 className="text-sm font-medium">Pricing rules</h2>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={() =>
-							setPricingRows((prev) => [
-								...prev,
-								{
-									id: `price-${Date.now()}`,
-									provider_id: providerRows[0]?.provider_id ?? sortedProviders[0]?.api_provider_id ?? "",
-									api_model_id: providerRows[0]?.api_model_id || modelId,
-									capability_id: providerRows[0]?.capabilities[0]?.capability_id ?? "text.generate",
-									pricing_plan: "standard",
-									meter: PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens",
-									unit: "token",
-									unit_size: "1",
-									price_per_unit: "0",
-									currency: "USD",
-								},
-							])
-						}
-					>
-						<Plus className="mr-1 h-4 w-4" />
-						Add pricing row
-					</Button>
+					<div className="flex flex-wrap items-center gap-2">
+						<Button type="button" variant="outline" size="sm" onClick={() => addPricingRows([PRICING_METER_OPTIONS[0]?.value ?? "input_text_tokens"])}>
+							<Plus className="mr-1 h-4 w-4" />
+							Add pricing row
+						</Button>
+						<Button type="button" variant="outline" size="sm" onClick={() => addPricingRows(["input_text_tokens", "output_text_tokens", "cached_read_text_tokens"])}>
+							Add text token bundle
+						</Button>
+						<Button type="button" variant="outline" size="sm" onClick={() => addPricingRows(["input_image_tokens", "output_image_tokens", "cached_read_image_tokens"])}>
+							Add image token bundle
+						</Button>
+					</div>
 				</div>
+				<p className="text-xs text-muted-foreground">
+					Bundle buttons create the common meter sets. Picking a meter auto-fills unit and unit size defaults.
+				</p>
 				{pricingRows.map((row) => (
 					<div key={row.id} className="grid gap-2 rounded-md border p-2 lg:grid-cols-8">
 						<select
 							value={row.provider_id}
-							onChange={(event) =>
-								setPricingRows((prev) =>
-									prev.map((inner) => (inner.id === row.id ? { ...inner, provider_id: event.target.value } : inner))
-								)
-							}
+							onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
 							className="rounded-md border px-2 py-1.5 text-xs"
 						>
 							<option value="">Provider</option>
@@ -1407,23 +1452,13 @@ export default function NewModelForm({
 						</select>
 						<Input
 							value={row.api_model_id}
-							onChange={(event) =>
-								setPricingRows((prev) =>
-									prev.map((inner) => (inner.id === row.id ? { ...inner, api_model_id: event.target.value } : inner))
-								)
-							}
+							onChange={(event) => setPricingField(row.id, "api_model_id", event.target.value)}
 							placeholder="api_model_id"
 							className="h-8 text-xs"
 						/>
 						<select
 							value={row.capability_id}
-							onChange={(event) =>
-								setPricingRows((prev) =>
-									prev.map((inner) =>
-										inner.id === row.id ? { ...inner, capability_id: event.target.value } : inner
-									)
-								)
-							}
+							onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
 							className="rounded-md border px-2 py-1.5 text-xs"
 						>
 							{COMMON_CAPABILITIES.map((capability) => (
@@ -1434,11 +1469,7 @@ export default function NewModelForm({
 						</select>
 						<select
 							value={row.meter}
-							onChange={(event) =>
-								setPricingRows((prev) =>
-									prev.map((inner) => (inner.id === row.id ? { ...inner, meter: event.target.value } : inner))
-								)
-							}
+							onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
 							className="rounded-md border px-2 py-1.5 text-xs"
 						>
 							{PRICING_METER_OPTIONS.map((meter) => (
@@ -1449,46 +1480,26 @@ export default function NewModelForm({
 						</select>
 						<Input
 							value={row.price_per_unit}
-							onChange={(event) =>
-								setPricingRows((prev) =>
-									prev.map((inner) =>
-										inner.id === row.id ? { ...inner, price_per_unit: event.target.value } : inner
-									)
-								)
-							}
+							onChange={(event) => setPricingField(row.id, "price_per_unit", event.target.value)}
 							placeholder="Price"
 							className="h-8 text-xs"
 						/>
 						<Input
 							value={row.unit}
-							onChange={(event) =>
-								setPricingRows((prev) =>
-									prev.map((inner) => (inner.id === row.id ? { ...inner, unit: event.target.value } : inner))
-								)
-							}
+							onChange={(event) => setPricingField(row.id, "unit", event.target.value)}
 							placeholder="Unit"
 							className="h-8 text-xs"
 						/>
 						<Input
 							value={row.unit_size}
-							onChange={(event) =>
-								setPricingRows((prev) =>
-									prev.map((inner) => (inner.id === row.id ? { ...inner, unit_size: event.target.value } : inner))
-								)
-							}
+							onChange={(event) => setPricingField(row.id, "unit_size", event.target.value)}
 							placeholder="Unit size"
 							className="h-8 text-xs"
 						/>
 						<div className="flex items-center justify-between gap-2">
 							<Input
 								value={row.currency}
-								onChange={(event) =>
-									setPricingRows((prev) =>
-										prev.map((inner) =>
-											inner.id === row.id ? { ...inner, currency: event.target.value } : inner
-										)
-									)
-								}
+								onChange={(event) => setPricingField(row.id, "currency", event.target.value)}
 								placeholder="USD"
 								className="h-8 text-xs"
 							/>

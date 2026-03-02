@@ -135,6 +135,9 @@ function resolveClientModel(
     rawModel: string | null | undefined,
     ctxModel: string,
 ): string {
+    // Canonical gateway model ID should win for client-facing payloads.
+    // This prevents leaking provider snapshot/internal slugs (e.g. gpt-5-nano-2025-08-07).
+    if (ctxModel && ctxModel.includes("/")) return ctxModel;
     if (!rawModel) return ctxModel;
     if (!ctxModel) return rawModel;
     if (
@@ -227,6 +230,7 @@ function buildResponsesOutput(ir: IRChatResponse, requestId: string) {
                 id: `msg_${requestId}_${idx}`,
                 status: "completed",
                 role: "assistant",
+                ...(choice.message.phase !== undefined ? { phase: choice.message.phase } : {}),
                 content: [
                     ...textParts.map((p) => ({
                         type: "output_text",

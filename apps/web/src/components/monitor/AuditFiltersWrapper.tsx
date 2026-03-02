@@ -77,6 +77,25 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 		parse: (value) => value || "",
 		serialize: (value) => value,
 	});
+	const [filterProvider] = useQueryState("provider", {
+		defaultValue: "",
+		parse: (value) => value || "",
+		serialize: (value) => value,
+	});
+
+	const providerOptions = useMemo(() => {
+		const byId = new Map<string, string>();
+		for (const item of data) {
+			for (const provider of item.providers) {
+				if (!byId.has(provider.providerId)) {
+					byId.set(provider.providerId, provider.providerName);
+				}
+			}
+		}
+		return Array.from(byId.entries())
+			.map(([providerId, providerName]) => ({ providerId, providerName }))
+			.sort((a, b) => a.providerName.localeCompare(b.providerName));
+	}, [data]);
 
 	// Calculate filtered count
 	const filteredCount = useMemo(() => {
@@ -129,12 +148,28 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 
 			// Has pricing filter
 			if (filterHasPricing) {
-				if (filterHasPricing === "true" && item.pricingRulesCount === 0) {
+				const providerRecord = filterProvider
+					? item.providers.find(
+						(provider) => provider.providerId === filterProvider
+					)
+					: null;
+				const hasPricingForFilter = filterProvider
+					? Boolean(providerRecord?.hasPricing)
+					: item.pricingRulesCount > 0;
+
+				if (filterHasPricing === "true" && !hasPricingForFilter) {
 					return false;
 				}
-				if (filterHasPricing === "false" && item.pricingRulesCount > 0) {
+				if (filterHasPricing === "false" && hasPricingForFilter) {
 					return false;
 				}
+			}
+
+			if (filterProvider) {
+				const hasProvider = item.providers.some(
+					(provider) => provider.providerId === filterProvider
+				);
+				if (!hasProvider) return false;
 			}
 
 			// Release date filter
@@ -209,6 +244,7 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 		filterHasBenchmarks,
 		filterHidden,
 		filterHasPricing,
+		filterProvider,
 		filterReleaseDateOp,
 		filterReleaseDateValue,
 		filterProvidersOp,
@@ -219,7 +255,11 @@ export function AuditFiltersWrapper({ data }: AuditFiltersWrapperProps) {
 
 	return (
 		<div className="space-y-6">
-			<AuditFilters totalModels={data.length} filteredCount={filteredCount} />
+			<AuditFilters
+				totalModels={data.length}
+				filteredCount={filteredCount}
+				providerOptions={providerOptions}
+			/>
 			<AuditDataTable data={data} />
 		</div>
 	);

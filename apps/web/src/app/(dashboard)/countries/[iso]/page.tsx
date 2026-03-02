@@ -35,7 +35,7 @@ export async function generateMetadata({
 		return buildMetadata({
 			title: `${isoParam || "Unknown"} - AI Country View`,
 			description:
-				"This experimental view does not yet have detailed data for this country. We are continuously adding more locations to AI Stats.",
+				"This country view is still filling in. As AI Stats expands coverage, this page will include local organisations, model catalogues, provider footprints, and release activity trends.",
 			path,
 			keywords: [
 				"AI Stats",

@@ -1,7 +1,15 @@
 import type { Metadata, ResolvingMetadata } from "next";
 
-const DEFAULT_SITE_URL =
-	process.env.NEXT_PUBLIC_WEBSITE_URL ?? "https://ai-stats.phaseo.app";
+const configuredSiteUrl =
+	process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.WEBSITE_URL;
+
+if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
+	throw new Error(
+		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) must be set in production."
+	);
+}
+
+const DEFAULT_SITE_URL = configuredSiteUrl ?? "http://localhost:3000";
 
 export const SITE_URL = DEFAULT_SITE_URL.replace(/\/+$/, "");
 export const METADATA_BASE = new URL(SITE_URL);

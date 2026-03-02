@@ -85,7 +85,7 @@ function ModelsGridImpl({ filteredModels }: ModelsGridProps) {
 						className="col-span-full flex items-center my-2"
 					>
 						<div className="flex-grow border-t border-dashed border-muted-foreground opacity-50"></div>
-						<span className="mx-4 text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+						<span className="mx-4 text-xs text-muted-foreground tracking-wider font-semibold">
 							{group.label}
 						</span>
 						<div className="flex-grow border-t border-dashed border-muted-foreground opacity-50"></div>
@@ -102,7 +102,7 @@ function ModelsGridImpl({ filteredModels }: ModelsGridProps) {
 				<>
 					<div className="col-span-full flex items-center my-2">
 						<div className="flex-grow border-t border-dashed border-muted-foreground opacity-50"></div>
-						<span className="mx-4 text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+						<span className="mx-4 text-xs text-muted-foreground tracking-wider font-semibold">
 							Unknown
 						</span>
 						<div className="flex-grow border-t border-dashed border-muted-foreground opacity-50"></div>

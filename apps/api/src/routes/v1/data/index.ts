@@ -1,5 +1,5 @@
 // src/routes/v1/data/index.ts
-// Purpose: Data-plane route handler for index requests.
+// Purpose: Inference API route handler for model execution requests.
 // Why: Keeps endpoint wiring separate from pipeline logic.
 // How: Wires HTTP routes to pipeline entrypoints and response helpers.
 
@@ -24,29 +24,32 @@ import { batchRoutes } from "./batches";
 import { filesRoutes } from "./files";
 import { realtimeRoutes } from "./realtime";
 
-export const dataRouter = new Hono<Env>();
+export const inferenceRouter = new Hono<Env>();
 
-dataRouter.route("/chat/completions", chatCompletionsRoutes);
-dataRouter.route("/messages", messagesRoutes);
-dataRouter.route("/responses", responsesRoutes);
-dataRouter.route("/responses/ws", responsesWsRoutes);
-dataRouter.route("/embeddings", embeddingsRoutes);
-dataRouter.route("/moderations", moderationsRoutes);
-dataRouter.route("/audio/speech", audioSpeechRoutes);
-dataRouter.route("/audio/transcriptions", audioTranscriptionRoutes);
-dataRouter.route("/audio/translations", audioTranslationRoutes);
-dataRouter.route("/images/generations", imagesGenerationsRoutes);
-dataRouter.route("/images/edits", imagesEditsRoutes);
-dataRouter.route("/videos", videosRoutes);
-dataRouter.route("/video/generations", videosRoutes);
-dataRouter.route("/ocr", ocrRoutes);
-dataRouter.route("/music/generate", musicGenerateRoutes);
-dataRouter.route("/music/generations", musicGenerateRoutes);
-dataRouter.route("/batch", batchRoutes);
-dataRouter.route("/batches", batchRoutes);
-dataRouter.route("/files", filesRoutes);
-dataRouter.route("/realtime", realtimeRoutes);
-dataRouter.route("/audio/realtime", realtimeRoutes);
+inferenceRouter.route("/chat/completions", chatCompletionsRoutes);
+inferenceRouter.route("/messages", messagesRoutes);
+inferenceRouter.route("/responses", responsesRoutes);
+inferenceRouter.route("/responses/ws", responsesWsRoutes);
+inferenceRouter.route("/embeddings", embeddingsRoutes);
+inferenceRouter.route("/moderations", moderationsRoutes);
+inferenceRouter.route("/audio/speech", audioSpeechRoutes);
+inferenceRouter.route("/audio/transcriptions", audioTranscriptionRoutes);
+inferenceRouter.route("/audio/translations", audioTranslationRoutes);
+inferenceRouter.route("/images/generations", imagesGenerationsRoutes);
+inferenceRouter.route("/images/edits", imagesEditsRoutes);
+inferenceRouter.route("/videos", videosRoutes);
+inferenceRouter.route("/video/generations", videosRoutes);
+inferenceRouter.route("/ocr", ocrRoutes);
+inferenceRouter.route("/music/generate", musicGenerateRoutes);
+inferenceRouter.route("/music/generations", musicGenerateRoutes);
+inferenceRouter.route("/batch", batchRoutes);
+inferenceRouter.route("/batches", batchRoutes);
+inferenceRouter.route("/files", filesRoutes);
+inferenceRouter.route("/realtime", realtimeRoutes);
+inferenceRouter.route("/audio/realtime", realtimeRoutes);
+
+// Backward-compatible alias for existing imports.
+export const dataRouter = inferenceRouter;
 
 
 

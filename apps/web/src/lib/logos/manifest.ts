@@ -193,8 +193,8 @@ export const logoManifest = {
 		light: "/logos/nous_light.svg",
 		dark: "/logos/nous_dark.svg",
 	},
-	novitaai: {
-		color: "/logos/novitaai.svg",
+	novita: {
+		color: "/logos/novita.svg",
 	},
 	nvidia: {
 		color: "/logos/nvidia.svg",

@@ -28,6 +28,9 @@ describe("textParamPolicy", () => {
 			resolveProviderParamSupportOverride("cerebras", "presence_penalty"),
 		).toBe(false);
 		expect(
+			resolveProviderParamSupportOverride("openai", "provider_options.openai.context_management"),
+		).toBe(true);
+		expect(
 			resolveProviderParamSupportOverride("cerebras", "reasoning.effort"),
 		).toBeUndefined();
 	});

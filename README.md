@@ -202,3 +202,7 @@ Please report vulnerabilities privately via GitHub Security Advisories (preferre
 - Core apps (`apps/web`, `apps/api`, `apps/docs`) are AGPL-3.0.
 - SDKs under `packages/sdk/*` are MIT.
 - Full terms: `./LICENSE`.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=AI-Stats/AI-Stats&type=Date)](https://star-history.com/#AI-Stats/AI-Stats&Date)

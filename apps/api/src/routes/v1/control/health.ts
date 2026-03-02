@@ -9,7 +9,7 @@ import type { Endpoint } from "@/core/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { readHealth } from "@/pipeline/execute/health";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
-import { cacheHeaders, cacheResponse, json, withRuntime } from "@/routes/utils";
+import { cacheHeaders, json, withRuntime } from "@/routes/utils";
 
 export const healthRoutes = new Hono<Env>();
 
@@ -90,7 +90,7 @@ function normalizeEndpoint(value: string | null | undefined): Endpoint | null {
 }
 
 async function handleProviderDerank(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -235,15 +235,7 @@ async function handleProviderDerank(req: Request) {
 			}),
 		);
 
-		return cacheResponse(
-			req,
-			response,
-			{
-				scope: `health:provider-derank:${providerId}:${windowHours}:${maxPairs}:${fetchLimit}`,
-				ttlSeconds: 15,
-				staleSeconds: 15,
-			},
-		);
+		return response;
 	} catch (error: any) {
 		return json(
 			{ ok: false, error: "failed", message: String(error?.message ?? error) },
@@ -254,6 +246,7 @@ async function handleProviderDerank(req: Request) {
 }
 
 healthRoutes.get("/providers/:providerId/derank", withRuntime(handleProviderDerank));
+
 
 
 

@@ -1477,8 +1477,21 @@ export type CreateResponseParams = {
       [key: string]: unknown;
     };
     include?: string[];
-    input?: {};
-    input_items?: {}[];
+    input?:
+      | string
+      | {
+          content?: string | {}[] | {};
+          phase?: "commentary" | "final_answer" | null;
+          role?: "user" | "assistant" | "system" | "developer";
+          type?: string;
+        }[]
+      | {};
+    input_items?: {
+      content?: string | {}[] | {};
+      phase?: "commentary" | "final_answer" | null;
+      role?: "user" | "assistant" | "system" | "developer";
+      type?: string;
+    }[];
     instructions?: string;
     max_completion_tokens?: number;
     max_output_tokens?: number;
@@ -1504,6 +1517,22 @@ export type CreateResponseParams = {
       include_alpha?: boolean;
       only?: string[];
       order?: string[];
+    };
+    provider_options?: {
+      openai?: {
+        context_management?: {
+          compact_threshold?: number;
+          type: "compaction";
+        };
+      };
+    };
+    providerOptions?: {
+      openai?: {
+        contextManagement?: {
+          compactThreshold?: number;
+          type: "compaction";
+        };
+      };
     };
     reasoning?: {
       effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
@@ -1554,6 +1583,18 @@ export async function createResponse(
   id?: string;
   model?: string;
   object?: string;
+  output?: {
+    content?: {}[];
+    phase?: "commentary" | "final_answer" | null;
+    role?: string;
+    type?: string;
+  }[];
+  output_items?: {
+    content?: {}[];
+    phase?: "commentary" | "final_answer" | null;
+    role?: string;
+    type?: string;
+  }[];
   role?: string;
   stop_reason?: string;
   type?: string;
@@ -1571,6 +1612,18 @@ export async function createResponse(
     id?: string;
     model?: string;
     object?: string;
+    output?: {
+      content?: {}[];
+      phase?: "commentary" | "final_answer" | null;
+      role?: string;
+      type?: string;
+    }[];
+    output_items?: {
+      content?: {}[];
+      phase?: "commentary" | "final_answer" | null;
+      role?: string;
+      type?: string;
+    }[];
     role?: string;
     stop_reason?: string;
     type?: string;
@@ -3098,6 +3151,137 @@ export async function invalidateGatewayKeyCache(
   });
 }
 
+export type ListDataModelsParams = {
+  path?: Record<string, never>;
+  query?: {
+    include_hidden?: boolean;
+    limit?: number;
+    offset?: number;
+    organisation?:
+      | "ai21"
+      | "amazon"
+      | "anthropic"
+      | "baidu"
+      | "black-forest-labs"
+      | "bytedance"
+      | "cohere"
+      | "deepseek"
+      | "eleven-labs"
+      | "essential-ai"
+      | "google"
+      | "ibm"
+      | "inclusionai"
+      | "lg"
+      | "meta"
+      | "microsoft"
+      | "minimax"
+      | "mistral"
+      | "moonshotai"
+      | "nous"
+      | "nvidia"
+      | "openai"
+      | "perplexity"
+      | "qwen"
+      | "suno"
+      | "x-ai"
+      | "z-ai"
+      | "ai21"
+      | "amazon"
+      | "anthropic"
+      | "baidu"
+      | "black-forest-labs"
+      | "bytedance"
+      | "cohere"
+      | "deepseek"
+      | "eleven-labs"
+      | "essential-ai"
+      | "google"
+      | "ibm"
+      | "inclusionai"
+      | "lg"
+      | "meta"
+      | "microsoft"
+      | "minimax"
+      | "mistral"
+      | "moonshotai"
+      | "nous"
+      | "nvidia"
+      | "openai"
+      | "perplexity"
+      | "qwen"
+      | "suno"
+      | "x-ai"
+      | "z-ai"[];
+    status?: string[];
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns source catalogue models from the data_models table.
+ */
+export async function listDataModels(
+  client: Client,
+  args: ListDataModelsParams = {},
+): Promise<{
+  include_hidden?: boolean;
+  limit?: number;
+  models?: {
+    deprecation_date?: string | null;
+    hidden?: boolean;
+    input_types?: string[];
+    model_id?: string | null;
+    name?: string | null;
+    organisation?: {
+      colour?: string | null;
+      country_code?: string | null;
+      name?: string | null;
+      organisation_id?: string | null;
+    } | null;
+    output_types?: string[];
+    release_date?: string | null;
+    retirement_date?: string | null;
+    status?: string | null;
+  }[];
+  offset?: number;
+  ok?: boolean;
+  total?: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/data/models";
+  return client.request<{
+    include_hidden?: boolean;
+    limit?: number;
+    models?: {
+      deprecation_date?: string | null;
+      hidden?: boolean;
+      input_types?: string[];
+      model_id?: string | null;
+      name?: string | null;
+      organisation?: {
+        colour?: string | null;
+        country_code?: string | null;
+        name?: string | null;
+        organisation_id?: string | null;
+      } | null;
+      output_types?: string[];
+      release_date?: string | null;
+      retirement_date?: string | null;
+      status?: string | null;
+    }[];
+    offset?: number;
+    ok?: boolean;
+    total?: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListEndpointsParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -4406,7 +4590,7 @@ export type ListModelsParams = {
 };
 
 /**
- * Returns a list of available models.
+ * Returns models currently servable through the gateway.
  */
 export async function listModels(
   client: Client,
@@ -4433,137 +4617,7 @@ export async function listModels(
   total?: number;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/models";
-  return client.request<{
-    limit?: number;
-    models?: {
-      aliases?: string[];
-      endpoints?: string[];
-      input_types?: string[];
-      model_id?: string;
-      name?: string;
-      organisation_id?: string;
-      output_types?: string[];
-      providers?: {
-        api_provider_id?: string;
-        params?: string[];
-      }[];
-      release_date?: string;
-      status?: string;
-    }[];
-    offset?: number;
-    ok?: boolean;
-    total?: number;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type ListModelsAliasApiParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Alias of /models.
- */
-export async function listModelsAliasApi(
-  client: Client,
-  args: ListModelsAliasApiParams = {},
-): Promise<{
-  limit?: number;
-  models?: {
-    aliases?: string[];
-    endpoints?: string[];
-    input_types?: string[];
-    model_id?: string;
-    name?: string;
-    organisation_id?: string;
-    output_types?: string[];
-    providers?: {
-      api_provider_id?: string;
-      params?: string[];
-    }[];
-    release_date?: string;
-    status?: string;
-  }[];
-  offset?: number;
-  ok?: boolean;
-  total?: number;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/api/models";
-  return client.request<{
-    limit?: number;
-    models?: {
-      aliases?: string[];
-      endpoints?: string[];
-      input_types?: string[];
-      model_id?: string;
-      name?: string;
-      organisation_id?: string;
-      output_types?: string[];
-      providers?: {
-        api_provider_id?: string;
-        params?: string[];
-      }[];
-      release_date?: string;
-      status?: string;
-    }[];
-    offset?: number;
-    ok?: boolean;
-    total?: number;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type ListModelsAliasDataParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Alias of /models.
- */
-export async function listModelsAliasData(
-  client: Client,
-  args: ListModelsAliasDataParams = {},
-): Promise<{
-  limit?: number;
-  models?: {
-    aliases?: string[];
-    endpoints?: string[];
-    input_types?: string[];
-    model_id?: string;
-    name?: string;
-    organisation_id?: string;
-    output_types?: string[];
-    providers?: {
-      api_provider_id?: string;
-      params?: string[];
-    }[];
-    release_date?: string;
-    status?: string;
-  }[];
-  offset?: number;
-  ok?: boolean;
-  total?: number;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/data/models";
+  const resolvedPath = "/gateway/models";
   return client.request<{
     limit?: number;
     models?: {

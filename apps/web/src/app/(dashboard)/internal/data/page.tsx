@@ -22,9 +22,9 @@ export default async function SettingsInternalPage() {
 	return (
 		<div className="container mx-auto space-y-8 py-8">
 			<div>
-				<h1 className="text-2xl font-semibold">Internal Data Audit</h1>
+				<h1 className="text-2xl font-semibold">Internal Data Editor</h1>
 				<p className="text-sm text-muted-foreground">
-					Use dedicated pages to create, edit, and delete data records.
+					Use dedicated pages to create, edit, and delete records.
 				</p>
 			</div>
 			<div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">

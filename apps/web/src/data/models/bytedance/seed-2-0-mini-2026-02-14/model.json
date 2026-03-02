@@ -1,0 +1,22 @@
+{
+  "model_id": "bytedance/seed-2-0-mini-2026-02-14",
+  "organisation_id": "bytedance",
+  "name": "Seed 2.0 Mini",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-02-14T00:00:00",
+  "release_date": "2026-02-14T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "links": [
+    {
+      "platform": "model_card",
+      "url": "https://lf3-static.bytednsdoc.com/obj/eden-cn/lapzild-tss/ljhwZthlaukjlkulzlp/seed2/0214/Seed2.0%20Model%20Card.pdf"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

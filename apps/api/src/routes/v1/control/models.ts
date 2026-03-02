@@ -7,7 +7,7 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import type { Endpoint } from "@core/types";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
-import { json, withRuntime, cacheHeaders, cacheResponse } from "@/routes/utils";
+import { json, withRuntime, cacheHeaders } from "@/routes/utils";
 
 type ProviderModelRow = {
     provider_api_model_id: string | null;
@@ -64,6 +64,8 @@ type ProviderInfo = {
     params: string[];
 };
 
+type PrivacyScope = "shared" | "team";
+
 type CatalogueModel = {
     model_id: string;
     name: string | null;
@@ -81,6 +83,7 @@ type CatalogueModel = {
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
+const MAX_OFFSET = 5000;
 const IN_FILTER_CHUNK_SIZE = 200;
 
 function chunkArray<T>(items: T[], size: number): T[][] {
@@ -480,20 +483,78 @@ function parseMultiValue(params: URLSearchParams, name: string): string[] {
     return values.flatMap((value) => toStringArray(value));
 }
 
+function parsePrivacyScope(url: URL): PrivacyScope | null {
+    const raw = (url.searchParams.get("privacy_scope") ?? url.searchParams.get("privacy") ?? "shared")
+        .trim()
+        .toLowerCase();
+    if (raw === "shared") return "shared";
+    if (raw === "team") return "team";
+    return null;
+}
+
 async function handleModels(req: Request) {
-    const auth = await guardAuth(req);
+    const url = new URL(req.url);
+    const limit = parsePaginationParam(url.searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
+    const offset = parseOffsetParam(url.searchParams.get("offset"));
+    if (offset > MAX_OFFSET) {
+        return json(
+            {
+                ok: false,
+                error: "invalid_request",
+                message: `offset must be <= ${MAX_OFFSET}`,
+                max_offset: MAX_OFFSET,
+            },
+            400,
+            { "Cache-Control": "no-store" }
+        );
+    }
+
+    const auth = await guardAuth(req, { useKvCache: false });
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
 
-    const url = new URL(req.url);
+    const privacyScope = parsePrivacyScope(url);
+    if (!privacyScope) {
+        return json(
+            {
+                ok: false,
+                error: "invalid_request",
+                message: "privacy_scope must be one of: shared, team",
+            },
+            400,
+            { "Cache-Control": "no-store" }
+        );
+    }
+
+    const cacheScope = privacyScope === "team" ? `models:team:${auth.value.teamId}:v1` : "models:shared:v1";
+
+    if (privacyScope === "team") {
+        return json(
+            {
+                ok: false,
+                error: "not_implemented",
+                code: "models_privacy_scope_not_implemented",
+                message: "privacy_scope=team is reserved for future privacy-filtered model listing and is not implemented yet.",
+                privacy_scope: "team",
+            },
+            501,
+            { "Cache-Control": "no-store" }
+        );
+    }
+
+    const cacheOptions = {
+        scope: cacheScope,
+        ttlSeconds: 1800,
+        staleSeconds: 1800,
+        varyHeaders: [],
+    };
+
     const endpoints = parseMultiValue(url.searchParams, "endpoints");
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
     const inputTypes = parseMultiValue(url.searchParams, "input_types");
     const outputTypes = parseMultiValue(url.searchParams, "output_types");
     const params = parseMultiValue(url.searchParams, "params");
-    const limit = parsePaginationParam(url.searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
-    const offset = parseOffsetParam(url.searchParams.get("offset"));
     try {
         const models = await fetchCatalogue({
             endpoints,
@@ -503,17 +564,11 @@ async function handleModels(req: Request) {
             params,
         });
         const paged = models.slice(offset, offset + limit);
-        const cacheOptions = {
-            scope: `models:${auth.value.teamId}`,
-            ttlSeconds: 300,
-            staleSeconds: 600,
-        };
-        const response = json(
-            { ok: true, limit, offset, total: models.length, models: paged },
+        return json(
+            { ok: true, privacy_scope: privacyScope, limit, offset, total: models.length, models: paged },
             200,
             cacheHeaders(cacheOptions)
         );
-        return cacheResponse(req, response, cacheOptions);
     } catch (error: any) {
         return json(
             { ok: false, error: "failed", message: String(error?.message ?? error) },
@@ -526,4 +581,5 @@ async function handleModels(req: Request) {
 export const modelsRoutes = new Hono<Env>();
 
 modelsRoutes.get("/", withRuntime(handleModels));
+
 

@@ -4,13 +4,13 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { BadgeX, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
 	TokenTripleSection,
 	ImageGenSection,
@@ -20,6 +20,7 @@ import {
 	CacheWriteSection,
 	RequestsSection,
 } from "@/components/(data)/model/pricing/sections";
+import ProviderModelParameters from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
 	buildProviderSections,
 	fmtUSD,
@@ -28,21 +29,37 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ProviderRuntimeStats } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import { Logo } from "@/components/Logo";
+import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 
-function formatLatencyMs(value: number | null | undefined): string {
+function formatLatencySeconds(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "--";
-	return `${Math.round(value)}ms`;
+	const seconds = value / 1000;
+	const decimals = seconds >= 10 ? 1 : 2;
+	return `${seconds.toFixed(decimals)}s`;
 }
 
-function formatThroughput(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "--";
-	const rounded = value >= 100 ? value.toFixed(0) : value.toFixed(1);
-	return `${rounded} tok/s`;
+function formatThroughputValue(value: number | null | undefined): string | null {
+	if (value == null || !Number.isFinite(value)) return null;
+	return value >= 100 ? value.toFixed(0) : value.toFixed(1);
 }
 
 function formatPercent(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "--";
 	return `${value.toFixed(1)}%`;
+}
+
+function uptimeBarColorClass(value: number | null | undefined): string {
+	if (value == null || !Number.isFinite(value)) return "bg-muted";
+	if (value > 99) return "bg-emerald-500";
+	if (value >= 90) return "bg-amber-500";
+	return "bg-red-500";
+}
+
+function uptimeBarCount(value: number | null | undefined): number {
+	if (value == null || !Number.isFinite(value)) return 0;
+	if (value > 99) return 3;
+	if (value >= 90) return 2;
+	return 1;
 }
 
 function formatTokenLimit(value: number | null | undefined): string {
@@ -51,6 +68,24 @@ function formatTokenLimit(value: number | null | undefined): string {
 	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
 	if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
 	return `${Math.round(value)}`;
+}
+
+function formatTokenLimit1dp(value: number | null | undefined): string {
+	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
+	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(0)}B`;
+	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(0)}M`;
+	if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+	return `${value.toFixed(1)}`;
+}
+
+function formatLeavingDate(value: string, now: Date): string {
+	const to = new Date(value);
+	const includeYear = to.getFullYear() !== now.getFullYear();
+	return to.toLocaleDateString("en-GB", {
+		day: "2-digit",
+		month: "long",
+		...(includeYear ? { year: "numeric" as const } : {}),
+	});
 }
 
 export default function ProviderCard({
@@ -67,37 +102,22 @@ export default function ProviderCard({
 	const sec = useMemo(() => buildProviderSections(provider, plan), [provider, plan]);
 
 	const now = new Date();
-	const msIn7Days = 7 * 24 * 60 * 60 * 1000;
 
 	const planRules = provider.pricing_rules.filter(
 		(r) => (r.pricing_plan || "standard") === plan
 	);
 	const hasPlanPricing = planRules.length > 0;
-	const hasDatedPricing = planRules.some((r) => r.effective_from || r.effective_to);
-
 	const planModelKeys = new Set(planRules.map((r) => r.model_key));
 	const matchingProviderModel = provider.provider_models.find((pm) =>
 		planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
 	);
 	const isActiveGateway = matchingProviderModel?.is_active_gateway ?? false;
 
-	const comingSoonRule = planRules
-		.filter((r) => {
-			if (!r.effective_from) return false;
-			const from = new Date(r.effective_from).getTime();
-			return from > now.getTime() && from - now.getTime() <= msIn7Days;
-		})
-		.sort(
-			(a, b) =>
-				new Date(a.effective_from!).getTime() -
-				new Date(b.effective_from!).getTime()
-		)[0];
-
 	const leavingSoonRule = planRules
 		.filter((r) => {
 			if (!r.effective_to) return false;
 			const to = new Date(r.effective_to).getTime();
-			return to > now.getTime() && to - now.getTime() <= msIn7Days;
+			return to > now.getTime();
 		})
 		.sort(
 			(a, b) =>
@@ -105,7 +125,7 @@ export default function ProviderCard({
 				new Date(b.effective_to!).getTime()
 		)[0];
 
-	let status: "Active" | "Leaving Soon" | "Coming Soon" | "Inactive";
+	let status: "Active" | "Leaving Soon" | "Not Available";
 	let statusIcon: React.ElementType;
 	let statusClass: string;
 
@@ -113,37 +133,22 @@ export default function ProviderCard({
 		status = "Leaving Soon";
 		statusIcon = AlertTriangle;
 		statusClass = "h-3.5 w-3.5 text-amber-500";
-	} else if (comingSoonRule) {
-		status = "Coming Soon";
-		statusIcon = Clock;
-		statusClass = "h-3.5 w-3.5 text-amber-500";
-	} else if (isActiveGateway && hasDatedPricing) {
+	} else if (isActiveGateway) {
 		status = "Active";
-		statusIcon = CheckCircle2;
+		statusIcon = AlertTriangle;
 		statusClass = "h-3.5 w-3.5 text-emerald-500";
 	} else {
-		status = "Inactive";
-		statusIcon = XCircle;
+		status = "Not Available";
+		statusIcon = BadgeX;
 		statusClass = "h-3.5 w-3.5 text-red-500";
 	}
 
-	const countdownMs =
-		status === "Coming Soon" && comingSoonRule
-			? new Date(comingSoonRule.effective_from!).getTime() - now.getTime()
-			: status === "Leaving Soon" && leavingSoonRule
-			? new Date(leavingSoonRule.effective_to!).getTime() - now.getTime()
-			: null;
-	const inactiveReason = !isActiveGateway
-		? "Model not active in gateway"
-		: "Pricing window not specified";
-
-	const formatCountdown = (ms: number) => {
-		const totalHours = Math.max(0, Math.floor(ms / (1000 * 60 * 60)));
-		const days = Math.floor(totalHours / 24);
-		const hours = totalHours % 24;
-		if (days > 0) return `${days}d ${hours}h`;
-		return `${hours}h`;
-	};
+	const showPrimaryStatusBadge =
+		status === "Leaving Soon" || status === "Not Available";
+	const statusBadgeLabel =
+		status === "Leaving Soon" && leavingSoonRule?.effective_to
+			? `Leaving on ${formatLeavingDate(leavingSoonRule.effective_to, now)}`
+			: status;
 
 	const isFreePlan = plan === "free";
 	const imageInputs = sec.mediaInputs?.filter((r) => r.mod === "image") ?? [];
@@ -166,12 +171,9 @@ export default function ProviderCard({
 	const maxContextTokens = maxFrom(
 		textProviderModels.map((pm) => pm.context_length)
 	);
-	const showTextLimits =
-		textProviderModels.length > 0 &&
-		(maxOutputTokens !== null || maxContextTokens !== null);
-	const textLimitTiles = [
+	const textLimitMetrics = [
 		maxContextTokens !== null
-			? { label: "Context", value: formatTokenLimit(maxContextTokens) }
+			? { label: "Total Context", value: formatTokenLimit1dp(maxContextTokens) }
 			: null,
 		maxOutputTokens !== null
 			? { label: "Max output", value: formatTokenLimit(maxOutputTokens) }
@@ -184,6 +186,14 @@ export default function ProviderCard({
 		Boolean(sec.videoTokens),
 	].filter(Boolean).length;
 	const showTextTokenHeader = tokenTypeCount > 1;
+	const infoScope = matchingProviderModel
+		? provider.provider_models.filter(
+				(pm) =>
+					planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
+		  )
+		: provider.provider_models;
+	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
+	const quantizationSchemes = infoScope.map((pm) => pm.quantization_scheme);
 	const allEmpty =
 		!sec.textTokens &&
 		!sec.imageTokens &&
@@ -200,95 +210,174 @@ export default function ProviderCard({
 	if (!hasPlanPricing) return null;
 	if (allEmpty && !isFreePlan) return null;
 
+	const uptimePct = runtimeStats?.uptimePct3d;
+	const throughputValue = formatThroughputValue(runtimeStats?.throughput30m);
+	const uptimeByDay = runtimeStats?.uptimeDaily3d ?? [];
+	const uptimeBars = [2, 1, 0].map((dayOffset) => {
+		const match = uptimeByDay.find((d) => d.dayOffset === dayOffset);
+		return {
+			dayOffset,
+			label:
+				dayOffset === 0
+					? "today"
+					: dayOffset === 1
+					? "yesterday"
+					: `${dayOffset} days ago`,
+			uptimePct: match?.uptimePct ?? null,
+		};
+	});
+	const headerMetrics = [
+		...textLimitMetrics.map((metric) => ({
+			label: metric.label,
+			value: metric.value as React.ReactNode,
+		})),
+		{
+			label: "Latency",
+			value: formatLatencySeconds(runtimeStats?.latencyMs30m) as React.ReactNode,
+		},
+		{
+			label: "Throughput",
+			value: throughputValue ? (
+				<>
+					{throughputValue}
+					<span className="ml-0.5 text-[0.75em] font-medium">tps</span>
+				</>
+			) : (
+				"--"
+			),
+		},
+		{
+			label: "Uptime",
+			value: (
+				<div
+					className="mt-1.5 flex items-center justify-center gap-[3px]"
+					aria-label={`Uptime ${formatPercent(uptimePct)}`}
+				>
+					{uptimeBars.map((bar) => (
+						<HoverCard key={bar.dayOffset} openDelay={120} closeDelay={80}>
+							<HoverCardTrigger asChild>
+								<button
+									type="button"
+									aria-label={`Uptime ${formatPercent(bar.uptimePct)} ${bar.label}`}
+									className={cn(
+										"h-[18px] w-[7px] rounded-[2px] transition-colors",
+										uptimeBarCount(bar.uptimePct) > 0
+											? uptimeBarColorClass(bar.uptimePct)
+											: "bg-muted"
+									)}
+								/>
+							</HoverCardTrigger>
+							<HoverCardContent align="center" className="w-auto p-2 text-xs">
+								<p className="font-medium text-foreground">
+									{formatPercent(bar.uptimePct)} uptime {bar.label}
+								</p>
+							</HoverCardContent>
+						</HoverCard>
+					))}
+				</div>
+			),
+		},
+	];
+
 	return (
-		<Card className="border-slate-200">
-			<CardHeader className="p-2.5 pb-1">
-				<div className="flex flex-wrap items-center justify-between gap-2">
-					<div className="flex min-w-0 items-center gap-2">
-						<Link href={`/api-providers/${sec.providerId}`} className="group">
-							<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border">
-								<div className="relative h-5 w-5">
-									<Logo
-										id={sec.providerId}
-										alt={`${sec.providerName} logo`}
-										className="object-contain group-hover:opacity-80 transition"
-										fill
-									/>
-								</div>
-							</div>
-						</Link>
-						<div className="flex min-w-0 flex-wrap items-center gap-2">
+		<Card className="overflow-hidden border-zinc-200/80 shadow-sm dark:border-zinc-800">
+			<CardHeader className="px-4 py-3">
+				<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+					<div className="min-w-0 flex-1 space-y-1.5">
+						<div className="flex min-w-0 items-center gap-2">
 							<Link href={`/api-providers/${sec.providerId}`} className="group">
-								<CardTitle className="truncate text-base group-hover:text-primary transition-colors">
-									{sec.providerName}
-								</CardTitle>
+								<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-background dark:border-zinc-800">
+									<div className="relative h-5 w-5">
+										<Logo
+											id={sec.providerId}
+											alt={`${sec.providerName} logo`}
+											className="object-contain transition group-hover:opacity-80"
+											fill
+										/>
+									</div>
+								</div>
 							</Link>
-							<TooltipProvider>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<div className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-2 py-1">
-											{React.createElement(statusIcon, {
-												className: statusClass,
-											})}
-											<span className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-												{status}
-											</span>
-										</div>
-									</TooltipTrigger>
-									<TooltipContent>
-										{countdownMs !== null && (
-											<p>
-												{status === "Coming Soon"
-													? "Pricing available in "
-													: "Expires in "}
-												{formatCountdown(countdownMs)}
-											</p>
-										)}
-										{status === "Inactive" && <p>{inactiveReason}</p>}
-									</TooltipContent>
-								</Tooltip>
-							</TooltipProvider>
-							{routingStatus?.deranked ? (
-								<Badge
-									variant="destructive"
-									className="text-[0.65rem] uppercase"
-									title="Provider is temporarily deranked by routing health breakers."
-								>
-									Deranked
-								</Badge>
-							) : routingStatus?.recovering ? (
-								<Badge
-									variant="secondary"
-									className="text-[0.65rem] uppercase"
-									title="Provider is in half-open breaker recovery."
-								>
-									Recovering
-								</Badge>
-							) : null}
+							<div className="flex min-w-0 flex-wrap items-center gap-2">
+								<Link href={`/api-providers/${sec.providerId}`} className="group">
+									<CardTitle className="truncate text-lg transition-colors group-hover:text-primary">
+										{sec.providerName}
+									</CardTitle>
+								</Link>
+								{showPrimaryStatusBadge ? (
+									<div className="inline-flex items-center gap-1 rounded-full border border-zinc-200/80 bg-background px-2 py-1 dark:border-zinc-800">
+										{React.createElement(statusIcon, {
+											className: statusClass,
+										})}
+										<span className="text-[0.7rem] font-semibold text-foreground">
+											{statusBadgeLabel}
+										</span>
+									</div>
+								) : null}
+								{routingStatus?.deranked ? (
+									<Badge
+										variant="destructive"
+										className="text-[0.65rem] uppercase"
+										title="Provider is temporarily deranked by routing health breakers."
+									>
+										Deranked
+									</Badge>
+								) : routingStatus?.recovering ? (
+									<Badge
+										variant="secondary"
+										className="text-[0.65rem] uppercase"
+										title="Provider is in half-open breaker recovery."
+									>
+										Recovering
+									</Badge>
+								) : null}
+							</div>
+						</div>
+						<div className="flex flex-wrap items-center gap-1.5">
+							<ProviderInfoHoverIcons
+								providerId={sec.providerId}
+								providerModelSlugs={providerModelSlugs}
+								quantizationSchemes={quantizationSchemes}
+							/>
+							<ProviderModelParameters models={infoScope} />
 						</div>
 					</div>
 
-					<div className="flex flex-wrap items-center gap-1 justify-end">
-						<Badge variant="outline" className="text-[0.65rem]">
-							Latency {formatLatencyMs(runtimeStats?.latencyMs30m)}
-						</Badge>
-						<Badge variant="outline" className="text-[0.65rem]">
-							Throughput {formatThroughput(runtimeStats?.throughput30m)}
-						</Badge>
-						<Badge variant="outline" className="text-[0.65rem]">
-							Uptime {formatPercent(runtimeStats?.uptimePct3d)}
-						</Badge>
+					<div className="w-full rounded-lg border border-zinc-200/80 bg-background px-3 py-2 dark:border-zinc-800 lg:w-auto lg:min-w-[330px]">
+						<div
+							className={cn(
+								"grid divide-x divide-zinc-200/70 dark:divide-zinc-800",
+								headerMetrics.length <= 3
+									? "grid-cols-3"
+									: headerMetrics.length === 4
+									? "grid-cols-2 sm:grid-cols-4"
+									: "grid-cols-3 sm:grid-cols-5"
+							)}
+						>
+							{headerMetrics.map((metric) => (
+								<div
+									key={metric.label}
+									className="flex min-w-0 flex-col items-center justify-center px-2 text-center"
+								>
+									<p className="text-[11px] font-medium text-muted-foreground">
+										{metric.label}
+									</p>
+									<div className="text-sm font-semibold leading-tight text-foreground font-mono tabular-nums">
+										{metric.value}
+									</div>
+								</div>
+							))}
+						</div>
 					</div>
 				</div>
 			</CardHeader>
-			<CardContent className="p-2.5 pt-1">
-				<div className="grid grid-cols-1 gap-1.5">
+			<CardContent className="px-4 pb-4 pt-0">
+				<div className="grid grid-cols-1 gap-2 border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
 					{isFreePlan && (
-						<div className="rounded-md border p-2">
+						<div className="rounded-lg border border-zinc-200/80 bg-background px-3 py-2 dark:border-zinc-800">
 							<div className="mb-0.5 text-xs text-muted-foreground">
 								Per 1M tokens
 							</div>
-							<div className="text-lg font-semibold leading-tight">
+							<div className="text-lg font-semibold leading-tight font-mono tabular-nums">
 								{fmtUSD(0)}
 							</div>
 						</div>
@@ -299,7 +388,7 @@ export default function ProviderCard({
 							title={showTextTokenHeader ? "Text Tokens" : undefined}
 							triple={sec.textTokens}
 							hideHeader={!showTextTokenHeader}
-							leadingTiles={showTextLimits ? textLimitTiles : []}
+							compact
 						/>
 					)}
 					{!isFreePlan && sec.cacheWrites && sec.cacheWrites.length > 0 && (
@@ -315,14 +404,14 @@ export default function ProviderCard({
 						<InputsSection title="Video inputs" rows={videoInputs} />
 					)}
 					{!isFreePlan && sec.imageTokens && (
-						<TokenTripleSection title="Image Tokens" triple={sec.imageTokens} />
+						<TokenTripleSection title="Image Tokens" triple={sec.imageTokens} compact />
 					)}
 					{!isFreePlan && sec.imageGen && <ImageGenSection rows={sec.imageGen} />}
 					{!isFreePlan && sec.audioTokens && (
-						<TokenTripleSection title="Audio Tokens" triple={sec.audioTokens} />
+						<TokenTripleSection title="Audio Tokens" triple={sec.audioTokens} compact />
 					)}
 					{!isFreePlan && sec.videoTokens && (
-						<TokenTripleSection title="Video Tokens" triple={sec.videoTokens} />
+						<TokenTripleSection title="Video Tokens" triple={sec.videoTokens} compact />
 					)}
 					{!isFreePlan && sec.videoGen && <VideoGenSection rows={sec.videoGen} />}
 					{!isFreePlan && sec.otherRules.length > 0 && (
@@ -335,5 +424,4 @@ export default function ProviderCard({
 		</Card>
 	);
 }
-
 

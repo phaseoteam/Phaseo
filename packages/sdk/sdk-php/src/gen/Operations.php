@@ -381,6 +381,13 @@ function invalidateGatewayKeyCache(Client $client, ?array $path = null, ?array $
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function listDataModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/data/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listEndpoints(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -398,21 +405,7 @@ function listFiles(Client $client, ?array $path = null, ?array $query = null, ?a
 function listModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/models";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function listModelsAliasApi(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/api/models";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function listModelsAliasData(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/data/models";
+	$resolvedPath = "/gateway/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

@@ -7,7 +7,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
-import { json, withRuntime, cacheHeaders, cacheResponse } from "@/routes/utils";
+import { json, withRuntime, cacheHeaders } from "@/routes/utils";
 import type { PriceCard } from "@pipeline/pricing/types";
 
 type PricingModel = {
@@ -41,7 +41,7 @@ function parseModelKey(value?: string | null): {
 }
 
 async function handlePricingModels(req: Request) {
-    const auth = await guardAuth(req);
+    const auth = await guardAuth(req, { useKvCache: false });
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
@@ -186,7 +186,7 @@ async function handlePricingModels(req: Request) {
             200,
             cacheHeaders(cacheOptions)
         );
-        return cacheResponse(req, response, cacheOptions);
+        return response;
     } catch (error: any) {
         return json(
             { ok: false, error: "failed", message: String(error?.message ?? error) },
@@ -197,7 +197,7 @@ async function handlePricingModels(req: Request) {
 }
 
 async function handlePricingCalculate(req: Request) {
-    const auth = await guardAuth(req);
+    const auth = await guardAuth(req, { useKvCache: false });
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
@@ -246,6 +246,7 @@ export const pricingRoutes = new Hono<Env>();
 
 pricingRoutes.get("/models", withRuntime(handlePricingModels));
 pricingRoutes.post("/calculate", withRuntime(handlePricingCalculate));
+
 
 
 

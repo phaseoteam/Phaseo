@@ -18,33 +18,17 @@ import {
 	LifeBuoy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { withUTM } from "@/lib/utm";
 import { Logo } from "./Logo";
 import { FooterYearRange } from "./FooterYearRange";
 
 const startYear = 2025;
 
 const externalLinks = {
-	discord: withUTM("https://discord.gg/zDw73wamdX", {
-		campaign: "footer-social",
-		content: "discord",
-	}),
-	github: withUTM("https://github.com/AI-Stats/AI-Stats", {
-		campaign: "footer-social",
-		content: "github",
-	}),
-	insta: withUTM("https://instagram.com/ai__stats", {
-		campaign: "footer-social",
-		content: "instagram",
-	}),
-	reddit: withUTM("https://reddit.com/r/AIStats/", {
-		campaign: "footer-social",
-		content: "reddit",
-	}),
-	x: withUTM("https://x.com/ai_stats_team", {
-		campaign: "footer-social",
-		content: "x",
-	}),
+	discord: "https://discord.gg/zDw73wamdX",
+	github: "https://github.com/AI-Stats/AI-Stats",
+	insta: "https://instagram.com/ai__stats",
+	reddit: "https://reddit.com/r/AIStats/",
+	x: "https://x.com/ai_stats_team",
 };
 
 export default function Footer() {

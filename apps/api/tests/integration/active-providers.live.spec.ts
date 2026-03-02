@@ -49,12 +49,18 @@ const MESSAGES_MAX_TOKENS_BASE = Math.max(MAX_OUTPUT_TOKENS, 16);
 const MESSAGES_MAX_TOKENS_TOOL = Math.max(MAX_OUTPUT_TOKENS, 64);
 const MESSAGES_MAX_TOKENS_STRUCTURED = Math.max(MAX_OUTPUT_TOKENS, 96);
 const INCLUDE_TUNING_PARAMS = (process.env.LIVE_INCLUDE_TUNING ?? "0").trim() === "1";
+const LIVE_NOVITA_PROVIDER_ONLY = (process.env.LIVE_NOVITA_PROVIDER_ONLY ?? "1").trim() !== "0";
+const LIVE_NOVITA_TESTING_MODE = (process.env.LIVE_NOVITA_TESTING_MODE ?? "0").trim() !== "0";
+const INTERNAL_TEST_TOKEN =
+    (process.env.LIVE_INTERNAL_TEST_TOKEN ?? process.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 
 const LIVE_PROVIDER_ALIASES: Record<string, string> = {
     arcee: "arcee-ai",
     "arcee-ai": "arcee-ai",
     xai: "x-ai",
     "x-ai": "x-ai",
+    novita: "novitaai",
+    "novita-ai": "novitaai",
 };
 
 function normalizeLiveProviderId(value: string): string {
@@ -576,10 +582,38 @@ function scenarioList(): ScenarioId[] {
     return valid;
 }
 
-function getHeaders(): HeadersInit {
-    return {
+function getHeaders(args?: { testingMode?: boolean }): HeadersInit {
+    const headers: Record<string, string> = {
         Authorization: `Bearer ${GATEWAY_API_KEY}`,
         "Content-Type": "application/json",
+    };
+    if (args?.testingMode) {
+        headers["x-aistats-testing-mode"] = "1";
+        if (INTERNAL_TEST_TOKEN) {
+            headers["x-aistats-internal-token"] = INTERNAL_TEST_TOKEN;
+        }
+    }
+    return headers;
+}
+
+function withProviderOnlyHint(body: Record<string, unknown>, providerId: string): Record<string, unknown> {
+    const providerValue = body.provider;
+    const existingProvider =
+        providerValue && typeof providerValue === "object" && !Array.isArray(providerValue)
+            ? (providerValue as Record<string, unknown>)
+            : {};
+    const existingOnly = Array.isArray(existingProvider.only)
+        ? existingProvider.only
+            .map((entry) => normalizeLiveProviderId(String(entry ?? "")))
+            .filter(Boolean)
+        : [];
+    const only = Array.from(new Set([...existingOnly, normalizeLiveProviderId(providerId)]));
+    return {
+        ...body,
+        provider: {
+            ...existingProvider,
+            only,
+        },
     };
 }
 
@@ -610,6 +644,12 @@ function pickCheapestCandidate(models: string[]): string {
 }
 
 function chooseModelForProvider(providerId: string, candidates: string[]): string {
+    if (providerId === "novitaai") {
+        const llama31Exact = candidates.find((model) => model.toLowerCase() === "meta-llama/llama-3.1-8b-instruct");
+        if (llama31Exact) return llama31Exact;
+        const llama31 = candidates.find((model) => model.toLowerCase().includes("llama-3.1-8b-instruct"));
+        if (llama31) return llama31;
+    }
     if (providerId === "openai") {
         const gpt5Nano = candidates.find((model) => model.toLowerCase().includes("gpt-5-nano"));
         if (gpt5Nano) return gpt5Nano;
@@ -643,6 +683,9 @@ function providerModelCandidates(
 ): string[] {
     const direct = discovered.get(providerId) ?? [];
     if (direct.length) return direct;
+    if (providerId === "novitaai") {
+        return ["meta-llama/llama-3.1-8b-instruct"];
+    }
 
     if (providerId === "qwen") {
         return discovered.get("alibaba") ?? [];
@@ -690,7 +733,7 @@ async function fetchTextGenerateModelsByProvider(targetProviders: string[]): Pro
     let total = Number.POSITIVE_INFINITY;
 
     while (offset < total) {
-        const url = new URL(resolveGatewayUrl("/api/models"));
+        const url = new URL(resolveGatewayUrl("/gateway/models"));
         url.searchParams.set("limit", String(limit));
         url.searchParams.set("offset", String(offset));
 
@@ -772,7 +815,7 @@ async function fetchTextGenerateModelsByProviderFromSupabase(targetProviders: st
         .select("provider_api_model_id,capability_id,status")
         .in("provider_api_model_id", providerModelIds)
         .eq("capability_id", "text.generate")
-        .eq("status", "active");
+        .in("status", ["active", "deranked"]);
     if (capabilitiesRes.error) {
         throw new Error(capabilitiesRes.error.message);
     }
@@ -852,11 +895,16 @@ function assertHasUsage(payload: any, context: string) {
 }
 
 async function runScenario(providerId: string, model: string, scenario: Scenario): Promise<ScenarioRunOutcome> {
-    const body = scenario.buildBody(model, { providerId });
+    let body = scenario.buildBody(model, { providerId });
+    const useNovitaHints = providerId === "novitaai";
+    if (useNovitaHints && LIVE_NOVITA_PROVIDER_ONLY) {
+        body = withProviderOnlyHint(body, providerId);
+    }
+    const useTestingMode = useNovitaHints && LIVE_NOVITA_TESTING_MODE;
     const startedAt = Date.now();
     const res = await fetch(resolveGatewayUrl(scenario.endpoint), {
         method: "POST",
-        headers: getHeaders(),
+        headers: getHeaders({ testingMode: useTestingMode }),
         body: JSON.stringify(body),
     });
     const elapsedMs = Date.now() - startedAt;
@@ -940,7 +988,7 @@ describeLive("Live Active Providers low-cost smoke", () => {
         try {
             discovered = await fetchTextGenerateModelsByProvider(discoveryProviders);
         } catch (err) {
-            console.warn(`[live-discovery] /v1/api/models failed, falling back to Supabase: ${String((err as any)?.message ?? err)}`);
+            console.warn(`[live-discovery] /v1/gateway/models failed, falling back to Supabase: ${String((err as any)?.message ?? err)}`);
             discovered = await fetchTextGenerateModelsByProviderFromSupabase(discoveryProviders);
         }
         for (const providerId of providers) {

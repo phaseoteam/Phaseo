@@ -44,7 +44,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "Gateway Integration for Model",
 			description:
-				"Explore Gateway support, providers, and routing details for AI models on AI Stats.",
+				"Explore gateway support for this AI model, including compatible providers, streaming behavior, request formats, and routing options available across AI Stats integrations.",
 			path,
 			keywords: [
 				"AI gateway",

@@ -16,6 +16,7 @@ import {
 	getAppUsageOverTime,
 } from "@/lib/fetchers/apps/getAppUsageOverTime";
 import { getModelLeaderboardMetaByIds } from "@/lib/fetchers/rankings/getRankingsData";
+import { buildMetadata } from "@/lib/seo";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type PageProps = {
@@ -78,18 +79,32 @@ function getModelLookupVariants(modelId: string): string[] {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
 	const { appId } = await params;
 	const app = await getAppDetailsCached(appId);
+	const path = `/apps/${appId}`;
 
 	if (!app) {
-		return {
+		return buildMetadata({
 			title: "App Usage - AI Stats",
-			description: "Usage analytics for applications powered by AI Stats Gateway.",
-		};
+			description:
+				"Usage analytics for applications powered by AI Stats Gateway, including request volume, token usage, and top models over the last four weeks.",
+			path,
+		});
 	}
 
-	return {
+	return buildMetadata({
 		title: `${app.title} - App Usage | AI Stats`,
 		description: `Usage analytics for ${app.title}, including model usage and request activity over time.`,
-	};
+		path,
+		imagePath:
+			typeof app.image_url === "string" && app.image_url.startsWith("/")
+				? app.image_url
+				: undefined,
+		keywords: [
+			app.title,
+			`${app.title} AI app`,
+			"AI app analytics",
+			"AI Stats app profile",
+		],
+	});
 }
 
 export default async function Page({ params }: PageProps) {
@@ -287,19 +302,21 @@ export default async function Page({ params }: PageProps) {
 						</AvatarFallback>
 					</Avatar>
 					<div className="space-y-2">
-						{appUrl ? (
-							<Link
-								href={appUrl}
-								target="_blank"
-								rel="noreferrer"
-								className="group inline-flex items-center gap-2"
-							>
-								<h1 className="text-3xl font-bold tracking-tight">{app.title}</h1>
-								<ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
-							</Link>
-						) : (
-							<h1 className="text-3xl font-bold tracking-tight">{app.title}</h1>
-						)}
+						<h1 className="text-3xl font-bold tracking-tight">
+							{appUrl ? (
+								<Link
+									href={appUrl}
+									target="_blank"
+									rel="noreferrer"
+									className="group inline-flex items-center gap-2"
+								>
+									<span>{app.title}</span>
+									<ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+								</Link>
+							) : (
+								app.title
+							)}
+						</h1>
 						<p className="text-sm text-muted-foreground">
 							Public usage trends and model distribution across the last 4 weeks.
 						</p>

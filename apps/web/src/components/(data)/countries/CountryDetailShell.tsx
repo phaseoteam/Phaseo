@@ -25,7 +25,7 @@ export default function CountryDetailShell({
 			<div className="container mx-auto px-4 py-8">
 				<div className="mb-8 flex w-full flex-col items-center justify-between gap-4 md:flex-row md:items-start md:gap-0">
 					<div className="flex items-center gap-4">
-						<div className="flex h-12 aspect-4/3 items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:h-24">
+						<div className="flex h-10 aspect-4/3 items-center justify-center overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 md:h-16">
 							{hasFlag ? (
 								<Image
 									src={`/flags/${flagIso}.svg`}
@@ -41,7 +41,7 @@ export default function CountryDetailShell({
 							)}
 						</div>
 						<div className="space-y-1">
-							<h1 className="text-3xl font-semibold leading-tight text-zinc-950 dark:text-zinc-50 md:text-4xl">
+							<h1 className="text-3xl font-semibold leading-tight text-zinc-950 dark:text-zinc-50">
 								{countryName}
 							</h1>
 						</div>

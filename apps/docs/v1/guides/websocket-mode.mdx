@@ -37,7 +37,7 @@ For each socket session, the gateway enforces these rules:
 
 ### 1) Pick an OpenAI-routable model
 
-Use `GET /v1/models` to discover candidate model IDs, then run a first turn over `/v1/responses/ws` to confirm routing for your team/key.
+Use `GET /v1/gateway/models` to discover candidate model IDs, then run a first turn over `/v1/responses/ws` to confirm routing for your team/key.
 
 Example model IDs that work with this endpoint:
 

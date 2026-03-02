@@ -11,6 +11,7 @@ import {
 	getHelpArticleParams,
 	getHelpCategory,
 } from "@/lib/content/helpCenter";
+import { buildMetadata } from "@/lib/seo";
 
 type PageProps = {
 	params: Promise<{ category: string; slug: string }>;
@@ -80,18 +81,27 @@ export async function generateStaticParams(): Promise<
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	const { category, slug } = await props.params;
 	const article = await getHelpArticle(category, slug);
+	const path = `/help/${category}/${slug}`;
 
 	if (!article) {
-		return {
+		return buildMetadata({
 			title: "Help Article",
-			description: "Help center article page.",
-		};
+			description:
+				"Read this AI Stats help article for step-by-step guidance, troubleshooting details, related support resources, and implementation notes for common dashboard and gateway tasks.",
+			path,
+		});
 	}
 
-	return {
+	return buildMetadata({
 		title: article.title,
-		description: article.description,
-	};
+		description: `${article.description} Includes practical steps, troubleshooting notes, and links to related AI Stats support docs so teams can resolve setup and usage issues faster.`,
+		path,
+		keywords: [
+			`${article.title} help`,
+			"AI Stats help center",
+			"AI gateway support article",
+		],
+	});
 }
 
 export default async function HelpArticlePage({ params }: PageProps) {

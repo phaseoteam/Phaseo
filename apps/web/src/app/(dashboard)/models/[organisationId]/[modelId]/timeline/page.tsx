@@ -34,7 +34,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "Model Timeline Overview",
 			description:
-				"Explore AI model release timelines on AI Stats, including announcements, releases, and retirement dates.",
+				"Explore the release timeline for this AI model on AI Stats, including announcements, launches, version changes, deprecations, and retirement milestones over time.",
 			path,
 			keywords: [
 				"AI model timeline",

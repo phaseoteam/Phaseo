@@ -26,7 +26,8 @@ type StaticSponsor = {
 
 export const metadata: Metadata = {
 	title: "Contributors & Sponsors | AI Stats",
-	description: "See which contributors and sponsors are supporting AI Stats.",
+	description:
+		"Meet the contributors and sponsors supporting AI Stats, browse community profiles and contribution history, and find clear ways to participate, sponsor, or help improve the platform.",
 };
 
 const staticSponsors = null;

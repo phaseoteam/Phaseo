@@ -196,6 +196,20 @@ class ChatMessage(TypedDict):
 	tool_call_id: NotRequired[str]
 	tool_calls: NotRequired[List[Dict[str, Any]]]
 
+class DataModel(TypedDict):
+	deprecation_date: NotRequired[Optional[str]]
+	hidden: NotRequired[bool]
+	input_types: NotRequired[List[str]]
+	model_id: NotRequired[Optional[str]]
+	name: NotRequired[Optional[str]]
+	organisation: NotRequired[Optional[Dict[str, Any]]]
+	output_types: NotRequired[List[str]]
+	release_date: NotRequired[Optional[str]]
+	retirement_date: NotRequired[Optional[str]]
+	status: NotRequired[Optional[str]]
+
+DataModelOrganisation = Optional[Dict[str, Any]]
+
 class DebugOptions(TypedDict):
 	enabled: NotRequired[bool]
 	return_upstream_request: NotRequired[bool]
@@ -476,6 +490,18 @@ class ReasoningConfig(TypedDict):
 	max_tokens: NotRequired[int]
 	summary: NotRequired[Literal["auto", "concise", "detailed"]]
 
+class ResponsesInputItem(TypedDict):
+	content: NotRequired[Union[str, List[Dict[str, Any]], Dict[str, Any]]]
+	phase: NotRequired[Optional[Literal["commentary", "final_answer"]]]
+	role: NotRequired[Literal["user", "assistant", "system", "developer"]]
+	type: NotRequired[str]
+
+class ResponsesOutputItem(TypedDict):
+	content: NotRequired[List[Dict[str, Any]]]
+	phase: NotRequired[Optional[Literal["commentary", "final_answer"]]]
+	role: NotRequired[str]
+	type: NotRequired[str]
+
 class ResponsesRequest(TypedDict):
 	background: NotRequired[bool]
 	conversation: NotRequired[Union[str, Dict[str, Any]]]
@@ -483,7 +509,7 @@ class ResponsesRequest(TypedDict):
 	image_config: NotRequired[Dict[str, Any]]
 	imageConfig: NotRequired[Dict[str, Any]]
 	include: NotRequired[List[str]]
-	input: NotRequired[Dict[str, Any]]
+	input: NotRequired[Union[str, List[Dict[str, Any]], Dict[str, Any]]]
 	input_items: NotRequired[List[Dict[str, Any]]]
 	instructions: NotRequired[str]
 	max_completion_tokens: NotRequired[int]
@@ -500,6 +526,8 @@ class ResponsesRequest(TypedDict):
 	prompt_cache_key: NotRequired[str]
 	prompt_cache_retention: NotRequired[str]
 	provider: NotRequired[Dict[str, Any]]
+	provider_options: NotRequired[Dict[str, Any]]
+	providerOptions: NotRequired[Dict[str, Any]]
 	reasoning: NotRequired[Dict[str, Any]]
 	response_modalities: NotRequired[List[str]]
 	responseModalities: NotRequired[List[str]]
@@ -526,6 +554,8 @@ class ResponsesResponse(TypedDict):
 	id: NotRequired[str]
 	model: NotRequired[str]
 	object: NotRequired[str]
+	output: NotRequired[List[Dict[str, Any]]]
+	output_items: NotRequired[List[Dict[str, Any]]]
 	role: NotRequired[str]
 	stop_reason: NotRequired[str]
 	type: NotRequired[str]
@@ -629,4 +659,4 @@ class VideoGenerationResponse(TypedDict):
 	output: NotRequired[List[Dict[str, Any]]]
 	status: NotRequired[str]
 
-models___all__ = ["ActivityEntry", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatMessage", "DebugOptions", "Embedding", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorResponse", "FileResponse", "FileUploadRequest", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "ListFilesResponse", "MessageContentPart", "Model", "ModelId", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RealtimeNotImplementedResponse", "ReasoningConfig", "ResponsesRequest", "ResponsesResponse", "ResponsesWebSocketCreateEvent", "ResponsesWebSocketServerEvent", "ResponsesWebSocketUpgradeRequiredResponse", "TextContentPart", "TextModerationInput", "ThinkingConfig", "ToolCall", "ToolCallContentPart", "Usage", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse"]
+models___all__ = ["ActivityEntry", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatMessage", "DataModel", "DataModelOrganisation", "DebugOptions", "Embedding", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorResponse", "FileResponse", "FileUploadRequest", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "ListFilesResponse", "MessageContentPart", "Model", "ModelId", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RealtimeNotImplementedResponse", "ReasoningConfig", "ResponsesInputItem", "ResponsesOutputItem", "ResponsesRequest", "ResponsesResponse", "ResponsesWebSocketCreateEvent", "ResponsesWebSocketServerEvent", "ResponsesWebSocketUpgradeRequiredResponse", "TextContentPart", "TextModerationInput", "ThinkingConfig", "ToolCall", "ToolCallContentPart", "Usage", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse"]

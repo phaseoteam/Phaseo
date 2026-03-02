@@ -78,6 +78,7 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls).toHaveLength(1);
 		expect(mock.calls[0]?.method).toBe("POST");
 		expect(mock.calls[0]?.headers.Upgrade).toBeUndefined();
+		expect(mock.calls[0]?.headers["Idempotency-Key"] ?? mock.calls[0]?.headers["idempotency-key"]).toBe("req_openai_http_test");
 		expect(result.kind).toBe("completed");
 		if (result.kind !== "completed") return;
 		expect(result.ir?.choices?.[0]?.message?.content?.[0]).toMatchObject({
@@ -87,6 +88,8 @@ describe("openai text executor HTTP mode", () => {
 		const mapped = JSON.parse(result.mappedRequest || "{}");
 		expect(mapped.type).toBeUndefined();
 		expect(mapped.model).toBe("openai/gpt-5-nano-2025-08-07");
+		expect(mapped.metadata?.aistats_request_id).toBe("req_openai_http_test");
+		expect(mapped.safety_identifier).toBe("req_openai_http_test");
 	});
 
 	it("streams over HTTP responses endpoint when tools are present", async () => {
@@ -209,5 +212,116 @@ describe("openai text executor HTTP mode", () => {
 		if (result.kind !== "completed") return;
 		expect(result.upstream.status).toBe(503);
 		expect(result.ir).toBeUndefined();
+	});
+
+	it("does not overwrite caller-provided aistats request id metadata", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_http_2",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5-nano",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: {
+					input_tokens: 2,
+					output_tokens: 1,
+					total_tokens: 3,
+				},
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor(buildArgs({
+			metadata: {
+				aistats_request_id: "custom_request_id",
+				trace_id: "abc123",
+			},
+		}));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.metadata?.aistats_request_id).toBe("custom_request_id");
+		expect(mock.calls[0]?.bodyJson?.metadata?.trace_id).toBe("abc123");
+		expect(mock.calls[0]?.headers["Idempotency-Key"] ?? mock.calls[0]?.headers["idempotency-key"]).toBe("req_openai_http_test");
+	});
+
+	it("does not overwrite caller-provided safety identifier", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_http_3",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5-nano",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: {
+					input_tokens: 2,
+					output_tokens: 1,
+					total_tokens: 3,
+				},
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor(buildArgs({
+			safetyIdentifier: "safe_user_123",
+		}));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.safety_identifier).toBe("safe_user_123");
+	});
+
+	it("passes provider_options.openai.context_management to OpenAI responses requests", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_http_4",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5-nano",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: {
+					input_tokens: 2,
+					output_tokens: 1,
+					total_tokens: 3,
+				},
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor(buildArgs({
+			vendor: {
+				openai: {
+					context_management: {
+						type: "compaction",
+						compact_threshold: 0.8,
+					},
+				},
+			} as any,
+		}));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.context_management).toEqual({
+			type: "compaction",
+			compact_threshold: 0.8,
+		});
 	});
 });

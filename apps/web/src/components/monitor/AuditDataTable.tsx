@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
 	Table,
 	TableBody,
@@ -23,11 +23,8 @@ import {
 	ArrowDown,
 	ChevronLeft,
 	ChevronRight,
-	Edit,
 	ExternalLink,
 	MoreHorizontal,
-	Check,
-	X as XIcon,
 } from "lucide-react";
 import {
 	DropdownMenu,
@@ -42,7 +39,6 @@ import { Logo } from "@/components/Logo";
 import Link from "next/link";
 import { useQueryState } from "nuqs";
 import type { AuditModelData } from "@/lib/fetchers/models/table-view/getAuditModels";
-import { ComprehensiveModelEditor } from "./ComprehensiveModelEditor";
 
 interface AuditDataTableProps {
 	data: AuditModelData[];
@@ -53,12 +49,6 @@ export function AuditDataTable({
 	data,
 	loading = false,
 }: AuditDataTableProps) {
-	// Edit dialog state
-	const [editingModel, setEditingModel] = useState<AuditModelData | null>(
-		null
-	);
-	const [editDialogOpen, setEditDialogOpen] = useState(false);
-
 	const [searchQuery] = useQueryState("search", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -121,6 +111,11 @@ export function AuditDataTable({
 	});
 
 	const [filterHasPricing] = useQueryState("hasPricing", {
+		defaultValue: "",
+		parse: (value) => value || "",
+		serialize: (value) => value,
+	});
+	const [filterProvider] = useQueryState("provider", {
 		defaultValue: "",
 		parse: (value) => value || "",
 		serialize: (value) => value,
@@ -216,12 +211,28 @@ export function AuditDataTable({
 
 			// Has pricing filter
 			if (filterHasPricing) {
-				if (filterHasPricing === "true" && item.pricingRulesCount === 0) {
+				const providerRecord = filterProvider
+					? item.providers.find(
+						(provider) => provider.providerId === filterProvider
+					)
+					: null;
+				const hasPricingForFilter = filterProvider
+					? Boolean(providerRecord?.hasPricing)
+					: item.pricingRulesCount > 0;
+
+				if (filterHasPricing === "true" && !hasPricingForFilter) {
 					return false;
 				}
-				if (filterHasPricing === "false" && item.pricingRulesCount > 0) {
+				if (filterHasPricing === "false" && hasPricingForFilter) {
 					return false;
 				}
+			}
+
+			if (filterProvider) {
+				const hasProvider = item.providers.some(
+					(provider) => provider.providerId === filterProvider
+				);
+				if (!hasProvider) return false;
 			}
 
 			// Release date filter
@@ -384,6 +395,7 @@ export function AuditDataTable({
 		filterHasBenchmarks,
 		filterHidden,
 		filterHasPricing,
+		filterProvider,
 		filterReleaseDateOp,
 		filterReleaseDateValue,
 		filterProvidersOp,
@@ -405,6 +417,7 @@ export function AuditDataTable({
 		filterHasBenchmarks,
 		filterHidden,
 		filterHasPricing,
+		filterProvider,
 		filterReleaseDateOp,
 		filterReleaseDateValue,
 		filterProvidersOp,
@@ -460,13 +473,6 @@ export function AuditDataTable({
 	return (
 		<TooltipProvider>
 			<div className="space-y-4">
-				{/* Comprehensive Model Editor */}
-				<ComprehensiveModelEditor
-					model={editingModel}
-					open={editDialogOpen}
-					onOpenChange={setEditDialogOpen}
-				/>
-
 				{/* Table */}
 				<div className="border rounded-lg relative overflow-x-auto">
 					<Table className="min-w-full w-max">
@@ -541,7 +547,7 @@ export function AuditDataTable({
 										onClick={() => handleSort("pricingRulesCount")}
 										className="h-auto p-0 font-semibold"
 									>
-										Pricing Rules {getSortIcon("pricingRulesCount")}
+										Pricing Coverage {getSortIcon("pricingRulesCount")}
 									</Button>
 								</TableHead>
 								<TableHead className="bg-background min-w-24 text-center border border-gray-200 shadow-sm">
@@ -607,14 +613,45 @@ export function AuditDataTable({
 													<DropdownMenuLabel>
 														Actions
 													</DropdownMenuLabel>
-													<DropdownMenuItem
-														onClick={() => {
-															setEditingModel(item);
-															setEditDialogOpen(true);
-														}}
-													>
-														<Edit className="mr-2 h-4 w-4" />
-														Edit Model
+													<DropdownMenuItem asChild>
+														<Link
+															href={`/internal/data/models/edit/${item.modelId}?tab=basic`}
+															className="cursor-pointer"
+														>
+															Edit Basic
+														</Link>
+													</DropdownMenuItem>
+													<DropdownMenuItem asChild>
+														<Link
+															href={`/internal/data/models/edit/${item.modelId}?tab=details`}
+															className="cursor-pointer"
+														>
+															Edit Details
+														</Link>
+													</DropdownMenuItem>
+													<DropdownMenuItem asChild>
+														<Link
+															href={`/internal/data/models/edit/${item.modelId}?tab=benchmarks`}
+															className="cursor-pointer"
+														>
+															Edit Benchmarks
+														</Link>
+													</DropdownMenuItem>
+													<DropdownMenuItem asChild>
+														<Link
+															href={`/internal/data/models/edit/${item.modelId}?tab=providers${filterProvider ? `&provider=${encodeURIComponent(filterProvider)}` : ""}`}
+															className="cursor-pointer"
+														>
+															Edit Providers
+														</Link>
+													</DropdownMenuItem>
+													<DropdownMenuItem asChild>
+														<Link
+															href={`/internal/data/models/edit/${item.modelId}?tab=pricing`}
+															className="cursor-pointer"
+														>
+															Edit Pricing
+														</Link>
 													</DropdownMenuItem>
 													<DropdownMenuSeparator />
 													<DropdownMenuItem asChild>
@@ -628,11 +665,11 @@ export function AuditDataTable({
 													</DropdownMenuItem>
 													<DropdownMenuItem asChild>
 														<Link
-															href={`/models/${item.modelId}/pricing`}
+															href={`/models/${item.modelId}/providers`}
 															className="cursor-pointer"
 														>
 															<ExternalLink className="mr-2 h-4 w-4" />
-															View Pricing
+															View Providers
 														</Link>
 													</DropdownMenuItem>
 													<DropdownMenuItem asChild>
@@ -799,34 +836,82 @@ export function AuditDataTable({
 											)}
 										</TableCell>
 										<TableCell className="text-center border border-gray-200">
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<div className="flex items-center justify-center gap-2">
-														{item.pricingRulesCount > 0 ? (
-															<>
-																<Check className="h-4 w-4 text-green-600" />
-																<span className="text-sm font-medium text-green-700">
-																	{item.pricingRulesCount}
-																</span>
-															</>
-														) : (
-															<>
-																<XIcon className="h-4 w-4 text-red-600" />
-																<span className="text-sm text-red-700">
-																	0
-																</span>
-															</>
-														)}
-													</div>
-												</TooltipTrigger>
-												<TooltipContent>
-													<p>
-														{item.pricingRulesCount > 0
-															? `${item.pricingRulesCount} pricing rule${item.pricingRulesCount === 1 ? "" : "s"} configured`
-															: "No pricing rules configured"}
-													</p>
-												</TooltipContent>
-											</Tooltip>
+											{item.providers.length === 0 ? (
+												<span className="text-muted-foreground">-</span>
+											) : (
+												<Tooltip>
+													<TooltipTrigger asChild>
+														<div className="flex items-center justify-center gap-1">
+															{item.providers
+																.slice(0, 4)
+																.map((provider) => (
+																	<Link
+																		key={`pricing-${provider.providerId}`}
+																		href={`/api-providers/${provider.providerId}`}
+																	>
+																		<div
+																			className={`w-6 h-6 relative flex items-center justify-center rounded border cursor-pointer hover:scale-110 transition-transform ${
+																				provider.hasPricing
+																					? "border-green-500 bg-green-50"
+																					: "border-red-400 bg-red-50"
+																			}`}
+																		>
+																			<div className="w-5 h-5 relative">
+																				<Logo
+																					id={provider.providerId}
+																					alt={provider.providerName}
+																					className={`object-contain ${
+																						provider.supported === false
+																							? "grayscale"
+																							: ""
+																					}`}
+																					fill
+																				/>
+																			</div>
+																		</div>
+																	</Link>
+																))}
+															{item.providers.length > 4 ? (
+																<div className="w-6 h-6 flex items-center justify-center rounded border bg-muted text-xs">
+																	+{item.providers.length - 4}
+																</div>
+															) : null}
+															<span className="ml-1 text-xs text-muted-foreground">
+																{
+																	item.providers.filter((provider) => provider.hasPricing)
+																		.length
+																}
+																/{item.providers.length}
+															</span>
+														</div>
+													</TooltipTrigger>
+													<TooltipContent className="max-w-xs">
+														<div className="space-y-1">
+															{item.providers.map((provider) => (
+																<div
+																	key={`pricing-detail-${provider.providerId}`}
+																	className="flex items-center justify-between gap-2 text-xs"
+																>
+																	<span className="font-medium">
+																		{provider.providerName}
+																	</span>
+																	<span
+																		className={
+																			provider.hasPricing
+																				? "text-green-700"
+																				: "text-red-700"
+																		}
+																	>
+																		{provider.hasPricing
+																			? `Pricing (${provider.pricingRulesCount})`
+																			: "No pricing"}
+																	</span>
+																</div>
+															))}
+														</div>
+													</TooltipContent>
+												</Tooltip>
+											)}
 										</TableCell>
 										<TableCell className="text-sm text-center border border-gray-200">
 											{formatDate(item.releaseDate)}

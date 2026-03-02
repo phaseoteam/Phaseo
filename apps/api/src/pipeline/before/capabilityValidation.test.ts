@@ -237,6 +237,76 @@ describe("validateCapabilities", () => {
 		}
 	});
 
+	it("treats provider_options.openai.context_management as a routable OpenAI param", () => {
+		const result = validateCapabilities({
+			endpoint: "responses",
+			rawBody: {
+				model: "openai/gpt-5-nano",
+				input: "hello",
+				provider_options: {
+					openai: {
+						context_management: {
+							type: "compaction",
+							compact_threshold: 0.8,
+						},
+					},
+				},
+			},
+			body: {
+				model: "openai/gpt-5-nano",
+				input: "hello",
+				provider_options: {
+					openai: {
+						context_management: {
+							type: "compaction",
+							compact_threshold: 0.8,
+						},
+					},
+				},
+			},
+			requestId: "req_provider_options_context_management",
+			teamId: "team_test",
+			providers: [
+				provider("openai", {}, 4096),
+				provider("anthropic", {}, 4096),
+			],
+			model: "openai/gpt-5-nano",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toContain("provider_options.openai.context_management");
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
+		}
+	});
+
+	it("ignores empty provider_options for requested param extraction", () => {
+		const result = validateCapabilities({
+			endpoint: "responses",
+			rawBody: {
+				model: "openai/gpt-5-nano",
+				input: "hello",
+				provider_options: {},
+			},
+			body: {
+				model: "openai/gpt-5-nano",
+				input: "hello",
+				provider_options: {},
+			},
+			requestId: "req_provider_options_empty",
+			teamId: "team_test",
+			providers: [
+				provider("openai", {}, 4096),
+			],
+			model: "openai/gpt-5-nano",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toEqual([]);
+		}
+	});
+
 	it("does not hard-reject modalities based on param capability metadata", () => {
 		const result = validateCapabilities({
 			endpoint: "responses",

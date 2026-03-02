@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { StripePortalButton } from "./StripePortalButton";
 import { PaymentMethodsManager } from "./PaymentMethodsManager";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import { getUserObfuscationPreference } from "@/lib/fetchers/account/getUserObfuscationPreference";
 
 export default function Page() {
   return (
@@ -33,6 +34,8 @@ export default function Page() {
 
 async function PaymentMethodsContent() {
   const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getUser();
+  const obfuscateInfo = await getUserObfuscationPreference(authData.user?.id ?? null);
   const teamId = await getTeamIdFromCookie();
   const stripe = getStripe();
 
@@ -98,6 +101,10 @@ async function PaymentMethodsContent() {
   };
 
   return (
+    <div
+      data-obfuscate-pii={obfuscateInfo ? "true" : "false"}
+      data-obfuscation-sync="true"
+    >
       <Card>
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
@@ -122,5 +129,6 @@ async function PaymentMethodsContent() {
           {customerId && <Separator className="my-4" />}
         </CardContent>
       </Card>
+    </div>
   );
 }

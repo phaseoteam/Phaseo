@@ -4,7 +4,6 @@ import { ExtendedModel, SubscriptionPlans } from "@/data/types";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Check, X } from "lucide-react";
-import { withUTM } from "@/lib/utm";
 
 interface ModelInProductsProps {
 	model: ExtendedModel; // currently viewed model
@@ -71,10 +70,7 @@ export default function ModelInProducts({
 				</p>
 				<div className="mt-3">
 					<a
-						href={withUTM("https://github.com/AI-Stats/AI-Stats", {
-							campaign: "model-products-empty-state",
-							content: "model-in-products",
-						})}
+						href="https://github.com/AI-Stats/AI-Stats"
 						target="_blank"
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"

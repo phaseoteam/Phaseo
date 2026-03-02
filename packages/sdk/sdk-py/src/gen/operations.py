@@ -706,6 +706,19 @@ def invalidateGatewayKeyCache(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
+def listDataModels(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/data/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def listEndpoints(
 	client: Client,
 	*,
@@ -741,33 +754,7 @@ def listModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/models"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def listModelsAliasApi(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/api/models"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def listModelsAliasData(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/data/models"
+	resolved_path = "/gateway/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -979,4 +966,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "createAnthropicMessage", "createAudioRealtimeCallPlaceholder", "createAudioRealtimeClientSecretsPlaceholder", "createAudioRealtimeSessionPlaceholder", "createAudioRealtimeSessionsPlaceholder", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOAuthClient", "createOcr", "createProvisioningKey", "createProvisioningKeyAlias", "createProvisioningKeyLegacy", "createRealtimeCallPlaceholder", "createRealtimeClientSecretsPlaceholder", "createRealtimeSessionPlaceholder", "createRealtimeSessionsPlaceholder", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteOAuthClient", "deleteProvisioningKey", "deleteProvisioningKeyAlias", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getAudioRealtimeCallPlaceholder", "getCredits", "getGeneration", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getProvisioningKey", "getProvisioningKeyAlias", "getProvisioningKeyLegacy", "getRealtimeCallPlaceholder", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listEndpoints", "listFiles", "listModels", "listModelsAliasApi", "listModelsAliasData", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listProvisioningKeys", "listProvisioningKeysAlias", "listProvisioningKeysLegacy", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateOAuthClient", "updateProvisioningKey", "updateProvisioningKeyAlias", "uploadFile"]
+operations___all__ = ["calculatePricing", "createAnthropicMessage", "createAudioRealtimeCallPlaceholder", "createAudioRealtimeClientSecretsPlaceholder", "createAudioRealtimeSessionPlaceholder", "createAudioRealtimeSessionsPlaceholder", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOAuthClient", "createOcr", "createProvisioningKey", "createProvisioningKeyAlias", "createProvisioningKeyLegacy", "createRealtimeCallPlaceholder", "createRealtimeClientSecretsPlaceholder", "createRealtimeSessionPlaceholder", "createRealtimeSessionsPlaceholder", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteOAuthClient", "deleteProvisioningKey", "deleteProvisioningKeyAlias", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getAudioRealtimeCallPlaceholder", "getCredits", "getGeneration", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getProvisioningKey", "getProvisioningKeyAlias", "getProvisioningKeyLegacy", "getRealtimeCallPlaceholder", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listProvisioningKeys", "listProvisioningKeysAlias", "listProvisioningKeysLegacy", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateOAuthClient", "updateProvisioningKey", "updateProvisioningKeyAlias", "uploadFile"]

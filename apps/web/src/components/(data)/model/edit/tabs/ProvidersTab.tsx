@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
@@ -51,6 +51,7 @@ interface ProvidersTabProps {
   modelId: string
   model: ModelData
   providers: Array<{ id: string; name: string }>
+  focusProviderId?: string
   onProviderModelsChange?: (providerModels: ProviderModelRow[]) => void
   onProviderCapabilitiesChange?: (providerCapabilities: ProviderCapabilityRow[]) => void
 }
@@ -172,10 +173,33 @@ function defaultCapability(providerRowId: string, providerId: string, apiModelId
   }
 }
 
+function FieldRow({
+  label,
+  description,
+  children,
+}: {
+  label: string
+  description?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
+      <div className="space-y-0.5">
+        <Label className="text-sm font-medium">{label}</Label>
+        {description ? (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <div>{children}</div>
+    </div>
+  )
+}
+
 export default function ProvidersTab({
   modelId,
   model,
   providers,
+  focusProviderId,
   onProviderModelsChange,
   onProviderCapabilitiesChange,
 }: ProvidersTabProps) {
@@ -184,10 +208,15 @@ export default function ProvidersTab({
   const onProviderModelsChangeRef = useRef(onProviderModelsChange)
   const onProviderCapabilitiesChangeRef = useRef(onProviderCapabilitiesChange)
 
-  const sortedProviders = useMemo(
-    () => [...providers].sort((a, b) => sortLabel(a.name || a.id, b.name || b.id)),
-    [providers]
-  )
+  const sortedProviders = useMemo(() => {
+    const next = [...providers].sort((a, b) => sortLabel(a.name || a.id, b.name || b.id))
+    if (!focusProviderId) return next
+    return next.sort((a, b) => {
+      if (a.id === focusProviderId) return -1
+      if (b.id === focusProviderId) return 1
+      return 0
+    })
+  }, [providers, focusProviderId])
 
   const providerNameById = useMemo(
     () => new Map(sortedProviders.map((provider) => [provider.id, provider.name])),
@@ -198,6 +227,16 @@ export default function ProvidersTab({
     () => new Set(providerModels.map((row) => row.provider_id)),
     [providerModels]
   )
+
+  const visibleProviderOptions = useMemo(() => {
+    if (!focusProviderId) return sortedProviders
+    return sortedProviders.filter((provider) => provider.id === focusProviderId)
+  }, [sortedProviders, focusProviderId])
+
+  const visibleProviderModels = useMemo(() => {
+    if (!focusProviderId) return providerModels
+    return providerModels.filter((row) => row.provider_id === focusProviderId)
+  }, [providerModels, focusProviderId])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -393,14 +432,18 @@ export default function ProvidersTab({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2 rounded-lg border p-3">
+    <div className="space-y-5">
+      <section className="space-y-3 rounded-lg border p-4">
         <div className="flex items-center justify-between">
-          <Label className="text-sm font-medium">Provider availability</Label>
-          <span className="text-xs text-muted-foreground">A-Z ordered. Grey logos are inactive.</span>
+          <Label className="text-sm font-semibold">Provider Availability</Label>
+          <span className="text-xs text-muted-foreground">
+            {focusProviderId
+              ? `Focused on provider: ${focusProviderId}`
+              : "A-Z ordered. Grey logos are inactive."}
+          </span>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {sortedProviders.map((provider) => {
+          {visibleProviderOptions.map((provider) => {
             const active = selectedProviderIds.has(provider.id)
             return (
               <button
@@ -420,28 +463,30 @@ export default function ProvidersTab({
             )
           })}
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-3">
-        {providerModels.length === 0 ? (
+      <div className="space-y-4">
+        {visibleProviderModels.length === 0 ? (
           <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            Select one or more providers above to attach availability and capabilities.
+            {focusProviderId
+              ? "This provider is not attached yet. Click the provider above to add it."
+              : "Select one or more providers above to attach availability and capabilities."}
           </div>
         ) : null}
 
-        {providerModels.map((providerModel) => {
+        {visibleProviderModels.map((providerModel) => {
           const providerName = providerNameById.get(providerModel.provider_id) ?? providerModel.provider_id
           const capabilityRows = providerCapabilities.filter(
             (row) => row.provider_row_id === providerModel.id
           )
 
           return (
-            <div key={providerModel.id} className="space-y-3 rounded-lg border p-3">
+            <section key={providerModel.id} className="space-y-4 rounded-lg border p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Logo id={providerModel.provider_id} alt={providerName} width={18} height={18} />
                   <div>
-                    <div className="text-sm font-medium">{providerName}</div>
+                    <div className="text-sm font-semibold">{providerName}</div>
                     <div className="text-xs text-muted-foreground">{providerModel.provider_id}</div>
                   </div>
                 </div>
@@ -456,43 +501,36 @@ export default function ProvidersTab({
                 </Button>
               </div>
 
-              <div className="grid gap-2 lg:grid-cols-4">
-                <div className="space-y-1">
-                  <Label className="text-xs">Provider API model ID</Label>
-                  <Input
-                    value={providerModel.api_model_id}
-                    onChange={(event) =>
-                      updateProviderModel(providerModel.id, "api_model_id", event.target.value)
-                    }
-                    placeholder="e.g. gpt-4.1-mini"
-                    className="text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Provider model slug</Label>
-                  <Input
-                    value={providerModel.provider_model_slug ?? ""}
-                    onChange={(event) =>
-                      updateProviderModel(
-                        providerModel.id,
-                        "provider_model_slug",
-                        event.target.value || null
-                      )
-                    }
-                    placeholder="Optional provider slug"
-                    className="text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Internal model ID</Label>
-                  <Input
-                    value={model.model_id}
-                    readOnly
-                    disabled
-                    className="text-xs"
-                  />
-                </div>
-                <label className="flex items-center gap-2 pt-6 text-xs">
+              <FieldRow label="Provider API model ID">
+                <Input
+                  value={providerModel.api_model_id}
+                  onChange={(event) =>
+                    updateProviderModel(providerModel.id, "api_model_id", event.target.value)
+                  }
+                  placeholder="e.g. gpt-4.1-mini"
+                />
+              </FieldRow>
+
+              <FieldRow label="Provider model slug">
+                <Input
+                  value={providerModel.provider_model_slug ?? ""}
+                  onChange={(event) =>
+                    updateProviderModel(
+                      providerModel.id,
+                      "provider_model_slug",
+                      event.target.value || null
+                    )
+                  }
+                  placeholder="Optional provider slug"
+                />
+              </FieldRow>
+
+              <FieldRow label="Internal model ID">
+                <Input value={model.model_id} readOnly disabled />
+              </FieldRow>
+
+              <FieldRow label="Gateway active">
+                <label className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                   <Checkbox
                     checked={providerModel.is_active_gateway}
                     onCheckedChange={(checked) =>
@@ -505,26 +543,24 @@ export default function ProvidersTab({
                   />
                   Active on gateway
                 </label>
-              </div>
+              </FieldRow>
 
-              <div className="grid gap-2 lg:grid-cols-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Quantization scheme</Label>
-                  <Input
-                    value={providerModel.quantization_scheme ?? ""}
-                    onChange={(event) =>
-                      updateProviderModel(
-                        providerModel.id,
-                        "quantization_scheme",
-                        event.target.value || null
-                      )
-                    }
-                    placeholder="FP16, INT8, etc."
-                    className="text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Effective from</Label>
+              <FieldRow label="Quantization scheme">
+                <Input
+                  value={providerModel.quantization_scheme ?? ""}
+                  onChange={(event) =>
+                    updateProviderModel(
+                      providerModel.id,
+                      "quantization_scheme",
+                      event.target.value || null
+                    )
+                  }
+                  placeholder="FP16, INT8, etc."
+                />
+              </FieldRow>
+
+              <FieldRow label="Effective window">
+                <div className="grid gap-2 sm:grid-cols-2">
                   <DatePickerInput
                     value={formatDateForPicker(providerModel.effective_from)}
                     onChange={(nextValue) =>
@@ -536,9 +572,6 @@ export default function ProvidersTab({
                     }
                     placeholder="Effective from"
                   />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Effective to</Label>
                   <DatePickerInput
                     value={formatDateForPicker(providerModel.effective_to)}
                     onChange={(nextValue) =>
@@ -551,74 +584,71 @@ export default function ProvidersTab({
                     placeholder="Effective to"
                   />
                 </div>
-              </div>
+              </FieldRow>
 
-              <div className="grid gap-3 lg:grid-cols-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Input modalities</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {MODALITY_OPTIONS.map((modality) => {
-                      const enabled = parseTypes(providerModel.input_modalities).includes(modality)
-                      return (
-                        <label
-                          key={`${providerModel.id}-in-${modality}`}
-                          className={cn(
-                            "flex items-center gap-1 rounded-md border px-2 py-1 text-xs",
-                            enabled && "border-primary bg-primary/10"
-                          )}
-                        >
-                          <Checkbox
-                            checked={enabled}
-                            onCheckedChange={(checked) =>
-                              toggleProviderModality(
-                                providerModel.id,
-                                "input_modalities",
-                                modality,
-                                checked === true
-                              )
-                            }
-                          />
-                          {modality}
-                        </label>
-                      )
-                    })}
-                  </div>
+              <FieldRow label="Input modalities">
+                <div className="flex flex-wrap gap-2">
+                  {MODALITY_OPTIONS.map((modality) => {
+                    const enabled = parseTypes(providerModel.input_modalities).includes(modality)
+                    return (
+                      <label
+                        key={`${providerModel.id}-in-${modality}`}
+                        className={cn(
+                          "flex items-center gap-1 rounded-md border px-2 py-1 text-xs",
+                          enabled && "border-primary bg-primary/10"
+                        )}
+                      >
+                        <Checkbox
+                          checked={enabled}
+                          onCheckedChange={(checked) =>
+                            toggleProviderModality(
+                              providerModel.id,
+                              "input_modalities",
+                              modality,
+                              checked === true
+                            )
+                          }
+                        />
+                        {modality}
+                      </label>
+                    )
+                  })}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Output modalities</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {MODALITY_OPTIONS.map((modality) => {
-                      const enabled = parseTypes(providerModel.output_modalities).includes(modality)
-                      return (
-                        <label
-                          key={`${providerModel.id}-out-${modality}`}
-                          className={cn(
-                            "flex items-center gap-1 rounded-md border px-2 py-1 text-xs",
-                            enabled && "border-primary bg-primary/10"
-                          )}
-                        >
-                          <Checkbox
-                            checked={enabled}
-                            onCheckedChange={(checked) =>
-                              toggleProviderModality(
-                                providerModel.id,
-                                "output_modalities",
-                                modality,
-                                checked === true
-                              )
-                            }
-                          />
-                          {modality}
-                        </label>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
+              </FieldRow>
 
-              <div className="space-y-2 rounded-md border p-3">
+              <FieldRow label="Output modalities">
+                <div className="flex flex-wrap gap-2">
+                  {MODALITY_OPTIONS.map((modality) => {
+                    const enabled = parseTypes(providerModel.output_modalities).includes(modality)
+                    return (
+                      <label
+                        key={`${providerModel.id}-out-${modality}`}
+                        className={cn(
+                          "flex items-center gap-1 rounded-md border px-2 py-1 text-xs",
+                          enabled && "border-primary bg-primary/10"
+                        )}
+                      >
+                        <Checkbox
+                          checked={enabled}
+                          onCheckedChange={(checked) =>
+                            toggleProviderModality(
+                              providerModel.id,
+                              "output_modalities",
+                              modality,
+                              checked === true
+                            )
+                          }
+                        />
+                        {modality}
+                      </label>
+                    )
+                  })}
+                </div>
+              </FieldRow>
+
+              <div className="space-y-3 rounded-md border p-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium">Capabilities</Label>
+                  <Label className="text-sm font-semibold">Capabilities</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -636,7 +666,7 @@ export default function ProvidersTab({
                   </p>
                 ) : null}
 
-                {capabilityRows.map((capability) => {
+                {capabilityRows.map((capability, index) => {
                   const capabilityOptions = Array.from(
                     new Set([...CAPABILITY_OPTIONS, capability.capability_id])
                   )
@@ -647,61 +677,75 @@ export default function ProvidersTab({
                   )
 
                   return (
-                    <div key={capability.id} className="space-y-2 rounded-md border p-2">
-                      <div className="grid gap-2 lg:grid-cols-4">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Capability</Label>
-                          <Select
-                            value={capability.capability_id}
-                            onValueChange={(value) => {
-                              if (usedByOther.has(value.trim().toLowerCase())) return
-                              updateCapability(capability.id, (row) => ({
-                                ...row,
-                                capability_id: value,
-                              }))
-                            }}
-                          >
-                            <SelectTrigger className="text-xs">
-                              <SelectValue placeholder="Select capability" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {capabilityOptions.map((option) => (
-                                <SelectItem
-                                  key={option}
-                                  value={option}
-                                  disabled={usedByOther.has(option.trim().toLowerCase())}
-                                >
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                    <div key={capability.id} className="space-y-3 rounded-md border p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-medium text-muted-foreground">
+                          Capability {index + 1}
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Status</Label>
-                          <Select
-                            value={capability.status}
-                            onValueChange={(value) =>
-                              updateCapability(capability.id, (row) => ({
-                                ...row,
-                                status: value as ProviderCapabilityRow["status"],
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CAPABILITY_STATUS_OPTIONS.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                  {status}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Context length</Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeCapability(capability.id)}
+                          aria-label="Remove capability"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <FieldRow label="Capability">
+                        <Select
+                          value={capability.capability_id}
+                          onValueChange={(value) => {
+                            if (usedByOther.has(value.trim().toLowerCase())) return
+                            updateCapability(capability.id, (row) => ({
+                              ...row,
+                              capability_id: value,
+                            }))
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select capability" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {capabilityOptions.map((option) => (
+                              <SelectItem
+                                key={option}
+                                value={option}
+                                disabled={usedByOther.has(option.trim().toLowerCase())}
+                              >
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FieldRow>
+
+                      <FieldRow label="Status">
+                        <Select
+                          value={capability.status}
+                          onValueChange={(value) =>
+                            updateCapability(capability.id, (row) => ({
+                              ...row,
+                              status: value as ProviderCapabilityRow["status"],
+                            }))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CAPABILITY_STATUS_OPTIONS.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {status}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FieldRow>
+
+                      <FieldRow label="Token limits">
+                        <div className="grid gap-2 sm:grid-cols-2">
                           <Input
                             type="number"
                             value={capability.max_input_tokens ?? ""}
@@ -714,11 +758,7 @@ export default function ProvidersTab({
                               }))
                             }
                             placeholder="Max input tokens"
-                            className="text-xs"
                           />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">Max output tokens</Label>
                           <Input
                             type="number"
                             value={capability.max_output_tokens ?? ""}
@@ -731,13 +771,14 @@ export default function ProvidersTab({
                               }))
                             }
                             placeholder="Max output tokens"
-                            className="text-xs"
                           />
                         </div>
-                      </div>
+                      </FieldRow>
 
-                      <div className="space-y-1">
-                        <Label className="text-xs">Supported params</Label>
+                      <FieldRow
+                        label="Supported params"
+                        description="Toggle known request parameters supported by this capability."
+                      >
                         <div className="flex flex-wrap gap-2">
                           {PARAMETER_FLAGS.map((param) => {
                             const enabled = Boolean(capability.params[param])
@@ -766,38 +807,25 @@ export default function ProvidersTab({
                             )
                           })}
                         </div>
-                      </div>
+                      </FieldRow>
 
-                      <div className="flex items-end gap-2">
-                        <div className="flex-1 space-y-1">
-                          <Label className="text-xs">Capability notes</Label>
-                          <Input
-                            value={capability.notes ?? ""}
-                            onChange={(event) =>
-                              updateCapability(capability.id, (row) => ({
-                                ...row,
-                                notes: event.target.value || null,
-                              }))
-                            }
-                            placeholder="Optional note"
-                            className="text-xs"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeCapability(capability.id)}
-                          aria-label="Remove capability"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <FieldRow label="Notes">
+                        <Input
+                          value={capability.notes ?? ""}
+                          onChange={(event) =>
+                            updateCapability(capability.id, (row) => ({
+                              ...row,
+                              notes: event.target.value || null,
+                            }))
+                          }
+                          placeholder="Optional note"
+                        />
+                      </FieldRow>
                     </div>
                   )
                 })}
               </div>
-            </div>
+            </section>
           )
         })}
       </div>

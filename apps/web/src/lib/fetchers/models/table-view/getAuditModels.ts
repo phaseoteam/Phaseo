@@ -10,17 +10,19 @@ export interface AuditModelData {
 	releaseDate: string | null;
 	retirementDate: string | null;
 	status: string | null;
-    providers: Array<{
-        providerId: string;
-        providerName: string;
-        minInputPrice: number;
-        minOutputPrice: number;
-        capabilities: string[];
-        isActiveGateway: boolean;
-        // Provider support flag for this model
-        // true = supported, false = not supported; undefined = unknown (treated as supported by default)
-        supported?: boolean;
-    }>;
+	providers: Array<{
+		providerId: string;
+		providerName: string;
+		minInputPrice: number;
+		minOutputPrice: number;
+		capabilities: string[];
+		isActiveGateway: boolean;
+		pricingRulesCount: number;
+		hasPricing: boolean;
+		// Provider support flag for this model
+		// true = supported, false = not supported; undefined = unknown (treated as supported by default)
+		supported?: boolean;
+	}>;
 	benchmarkCount: number;
 	totalProviders: number;
 	activeGatewayProviders: number;
@@ -191,6 +193,7 @@ export async function getAuditModels(
 				minOutputPrice: number;
 				capabilities: Set<string>;
 				isActiveGateway: boolean;
+				pricingRuleKeys: Set<string>;
 			}
 		>();
 
@@ -212,10 +215,12 @@ export async function getAuditModels(
 					minOutputPrice: Number.POSITIVE_INFINITY,
 					capabilities: new Set<string>(),
 					isActiveGateway: false,
+					pricingRuleKeys: new Set<string>(),
 				});
 			}
 
 			const providerData = providersMap.get(providerId)!;
+			const providerModelKey = `${providerId}:${pm.api_model_id}`;
 
 			// Track if any provider model is active on gateway
 			if (pm.is_active_gateway) {
@@ -235,8 +240,17 @@ export async function getAuditModels(
 				}
 			}
 
+			const rulesForThisProviderModel = pricingRulesByApiModelKey.get(
+				providerModelKey
+			);
+			if (rulesForThisProviderModel) {
+				rulesForThisProviderModel.forEach((rule) =>
+					providerData.pricingRuleKeys.add(rule)
+				);
+			}
+
 			// Check pricing for this provider model
-			const modelKey = `${providerId}:${pm.api_model_id}`;
+			const modelKey = providerModelKey;
 			const capabilities_arr = Array.from(providerData.capabilities);
 
 			for (const capId of capabilities_arr) {
@@ -270,6 +284,8 @@ export async function getAuditModels(
 				p.minOutputPrice === Number.POSITIVE_INFINITY ? 0 : p.minOutputPrice,
 			capabilities: Array.from(p.capabilities),
 			isActiveGateway: p.isActiveGateway,
+			pricingRulesCount: p.pricingRuleKeys.size,
+			hasPricing: p.pricingRuleKeys.size > 0,
 			// compute if provider supports this model's modalities
 			supported:
 				(() => {

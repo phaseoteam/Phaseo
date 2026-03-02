@@ -2,6 +2,7 @@ import Hero from "./Hero";
 import Quickstart from "./Quickstart";
 import Errors from "./Errors";
 import Support from "./Support";
+import Providers from "./Providers";
 import Unavailable from "./Unavailable";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 
@@ -18,23 +19,24 @@ export default function ModelGateway({ metadata }: ModelGatewayProps) {
 	const supportedEndpoints = Array.from(
 		new Set(metadata.activeProviders.map((p) => p.endpoint).filter(Boolean))
 	);
-        return (
-                <div className="space-y-8">
-                        <Hero metadata={metadata} />
-                        {isAvailable ? (
+	return (
+		<div className="space-y-8">
+			<Hero metadata={metadata} />
+			<Providers metadata={metadata} />
+			{isAvailable ? (
 				<div className="space-y-8">
-                                        <Quickstart
-                                                modelId={metadata.modelId}      
-                                                aliases={metadata.aliases}      
-                                                endpoint={endpoint}
-                                                supportedEndpoints={supportedEndpoints}
-                                        />
-                                        <Errors />
-                                        <Support />
-                                </div>
-			) : (
-				<Unavailable modelId={metadata.modelId} />
-			)}
+					<Quickstart
+						modelId={metadata.modelId}
+						aliases={metadata.aliases}
+						endpoint={endpoint}
+						supportedEndpoints={supportedEndpoints}
+					/>
+					<Errors />
+					<Support />
+				</div>
+				) : (
+					<Unavailable modelId={metadata.modelId} />
+				)}
 		</div>
 	);
 }

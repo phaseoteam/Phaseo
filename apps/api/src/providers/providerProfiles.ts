@@ -63,6 +63,11 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "openai",
 		aliases: ["azure"],
 		text: {
+			paramPolicy: {
+				supportedParams: [
+					"provider_options.openai.context_management",
+				],
+			},
 			normalize: {
 				maxTemperature: 2,
 				serviceTierAliases: {

@@ -215,6 +215,21 @@ pub struct ChatMessage {
 	pub tool_calls: Option<Vec<HashMap<String, String>>>,
 }
 
+pub struct DataModel {
+	pub deprecation_date: Option<Option<String>>,
+	pub hidden: Option<bool>,
+	pub input_types: Option<Vec<String>>,
+	pub model_id: Option<Option<String>>,
+	pub name: Option<Option<String>>,
+	pub organisation: Option<Option<HashMap<String, String>>>,
+	pub output_types: Option<Vec<String>>,
+	pub release_date: Option<Option<String>>,
+	pub retirement_date: Option<Option<String>>,
+	pub status: Option<Option<String>>,
+}
+
+pub type DataModelOrganisation = JsonValue;
+
 pub struct DebugOptions {
 	pub enabled: Option<bool>,
 	pub return_upstream_request: Option<bool>,
@@ -528,6 +543,20 @@ pub struct ReasoningConfig {
 	pub summary: Option<String>,
 }
 
+pub struct ResponsesInputItem {
+	pub content: Option<String>,
+	pub phase: Option<Option<String>>,
+	pub role: Option<String>,
+	pub r#type: Option<String>,
+}
+
+pub struct ResponsesOutputItem {
+	pub content: Option<Vec<HashMap<String, String>>>,
+	pub phase: Option<Option<String>>,
+	pub role: Option<String>,
+	pub r#type: Option<String>,
+}
+
 pub struct ResponsesRequest {
 	pub background: Option<bool>,
 	pub conversation: Option<String>,
@@ -535,7 +564,7 @@ pub struct ResponsesRequest {
 	pub image_config: Option<HashMap<String, String>>,
 	pub imageConfig: Option<HashMap<String, String>>,
 	pub include: Option<Vec<String>>,
-	pub input: Option<HashMap<String, String>>,
+	pub input: Option<String>,
 	pub input_items: Option<Vec<HashMap<String, String>>>,
 	pub instructions: Option<String>,
 	pub max_completion_tokens: Option<i64>,
@@ -552,6 +581,8 @@ pub struct ResponsesRequest {
 	pub prompt_cache_key: Option<String>,
 	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
+	pub providerOptions: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
 	pub response_modalities: Option<Vec<String>>,
 	pub responseModalities: Option<Vec<String>>,
@@ -579,6 +610,8 @@ pub struct ResponsesResponse {
 	pub id: Option<String>,
 	pub model: Option<String>,
 	pub object: Option<String>,
+	pub output: Option<Vec<HashMap<String, String>>>,
+	pub output_items: Option<Vec<HashMap<String, String>>>,
 	pub role: Option<String>,
 	pub stop_reason: Option<String>,
 	pub r#type: Option<String>,

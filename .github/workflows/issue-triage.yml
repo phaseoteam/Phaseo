@@ -3,10 +3,19 @@ name: Issue Triage
 on:
     issues:
         types: [opened]
+    issue_comment:
+        types: [created]
 
 jobs:
     triage:
         name: AI issue triage
+        if: |
+            github.event_name == 'issues' ||
+            (
+              github.event_name == 'issue_comment' &&
+              github.event.issue.pull_request == null &&
+              github.actor != 'github-actions[bot]'
+            )
         runs-on: ubuntu-latest
         permissions:
             id-token: write
@@ -23,29 +32,45 @@ jobs:
               with:
                   model: opencode/gpt-5-nano
                   prompt: |
-                      You are responding to a new GitHub issue on the AI Stats project — an
-                      open-source monorepo that provides an AI model data registry (pricing,
-                      capabilities, statuses across 60+ providers), a Cloudflare Worker gateway
-                      API, a Next.js dashboard, and TypeScript/Python SDKs.
+                      You are responding to a new GitHub issue on AI Stats.
+                      AI Stats is an open-source monorepo with a Next.js web app, Cloudflare
+                      Worker API gateway, docs, and SDKs.
 
-                      Respond with a comment structured as follows:
+                      Your job is to produce either:
+                      1) clarifying questions when the issue is vague, OR
+                      2) a copy/paste prompt the maintainer can give to an AI coding agent.
 
-                      Start with an empathetic greeting: "We're super sorry about this issue
-                      you're facing! We'll have someone look at this as soon as possible."
+                      Always start with this exact sentence:
+                      We're super sorry about this issue you're facing! We'll have someone look at this as soon as possible.
 
-                      Then add:
+                      Output rules:
+                      - Do NOT output "Quick Overview" or "Possible Cause & Suggested Fix".
+                      - Do NOT provide long root-cause speculation.
+                      - Keep responses concise and actionable.
+                      - Put interpretation in an expandable section:
+                        <details><summary>Issue understanding</summary>...</details>
 
-                      ### Quick Overview
-                      A 2-3 sentence summary of what the reporter is experiencing or requesting.
+                      Decision logic:
+                      - If this issue thread already contains your prior clarifying questions
+                        and the latest comment answers them, generate the AI Agent Prompt now.
+                      - If the report is missing key reproduction details, output:
+                        ### Clarifying Questions
+                        Ask 1-3 specific questions needed to make implementation unambiguous.
+                        Then add:
+                        ### Next Step
+                        Say you will generate a copy/paste AI agent prompt after answers are provided.
+                      - If the report is specific enough, output:
+                        ### AI Agent Prompt (Copy/Paste)
+                        Provide a single fenced ```text``` block containing a ready-to-run
+                        prompt for an AI coding agent.
 
-                      ### Possible Cause & Suggested Fix
-                      - The most likely reason this is happening (or feasibility notes if it
-                        is a feature request)
-                      - A potential quick fix or workaround
-                      - Any clarifying questions if the issue lacks detail
+                      The AI Agent Prompt must include:
+                      - Goal
+                      - Relevant context from the issue
+                      - Implementation requirements
+                      - Acceptance criteria
+                      - Validation steps (tests/checks)
+                      - Output format expected from the agent
 
-                      End with:
-                      "*This is an automated response — a team member will follow up shortly.*"
-
-                      Keep the response concise, helpful, and technically grounded.
-
+                      End every response with:
+                      *This is an automated response - a team member will follow up shortly.*

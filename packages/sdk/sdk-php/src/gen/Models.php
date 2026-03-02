@@ -236,6 +236,22 @@ class ChatMessage
 	public $tool_calls;
 }
 
+class DataModel
+{
+	public $deprecation_date;
+	public $hidden;
+	public $input_types;
+	public $model_id;
+	public $name;
+	public $organisation;
+	public $output_types;
+	public $release_date;
+	public $retirement_date;
+	public $status;
+}
+
+class DataModelOrganisation { }
+
 class DebugOptions
 {
 	public $enabled;
@@ -584,6 +600,22 @@ class ReasoningConfig
 	public $summary;
 }
 
+class ResponsesInputItem
+{
+	public $content;
+	public $phase;
+	public $role;
+	public $type;
+}
+
+class ResponsesOutputItem
+{
+	public $content;
+	public $phase;
+	public $role;
+	public $type;
+}
+
 class ResponsesRequest
 {
 	public $background;
@@ -609,6 +641,8 @@ class ResponsesRequest
 	public $prompt_cache_key;
 	public $prompt_cache_retention;
 	public $provider;
+	public $provider_options;
+	public $providerOptions;
 	public $reasoning;
 	public $response_modalities;
 	public $responseModalities;
@@ -637,6 +671,8 @@ class ResponsesResponse
 	public $id;
 	public $model;
 	public $object;
+	public $output;
+	public $output_items;
 	public $role;
 	public $stop_reason;
 	public $type;

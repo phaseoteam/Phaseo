@@ -19,7 +19,7 @@ export async function invalidateGatewayKeyCache(keyId: string): Promise<void> {
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL;
-    const url = `${baseUrl}/api/v1/control/keys/${encodeURIComponent(keyId)}/invalidate`;
+    const url = `${baseUrl}/v1/keys/${encodeURIComponent(keyId)}/invalidate`;
 
     try {
         const res = await fetch(url, {

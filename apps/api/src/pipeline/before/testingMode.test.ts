@@ -43,24 +43,26 @@ describe("isTestingModeRequested", () => {
 		expect(isTestingModeRequested(req, { model: "openai/gpt-4o-mini" })).toBe(false);
 	});
 
-	it("auto-enables when local override env flag is set", () => {
+	it("does not auto-enable from local override env flag", () => {
 		getBindingsMock.mockReturnValue({ GATEWAY_LOCAL_TESTING_MODE: "true" });
 		const req = new Request("https://gateway.local/v1/chat/completions", {
 			method: "POST",
 			body: JSON.stringify({ model: "openai/gpt-4o-mini" }),
 		});
-		expect(isTestingModeRequested(req, { model: "openai/gpt-4o-mini" })).toBe(true);
+		expect(isTestingModeRequested(req, { model: "openai/gpt-4o-mini" })).toBe(false);
 	});
 
-	it("does not auto-enable from local override in production", () => {
+	it("still reads explicit testing header when local override is set", () => {
 		getBindingsMock.mockReturnValue({
 			GATEWAY_LOCAL_TESTING_MODE: "true",
-			NODE_ENV: "production",
 		});
 		const req = new Request("https://gateway.local/v1/chat/completions", {
 			method: "POST",
+			headers: {
+				"x-aistats-testing-mode": "true",
+			},
 			body: JSON.stringify({ model: "openai/gpt-4o-mini" }),
 		});
-		expect(isTestingModeRequested(req, { model: "openai/gpt-4o-mini" })).toBe(false);
+		expect(isTestingModeRequested(req, { model: "openai/gpt-4o-mini" })).toBe(true);
 	});
 });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
 	ArrowRight,
 	Boxes,
@@ -47,10 +48,7 @@ function getInitial(name: string) {
 
 export function GatewayShowcaseFallback() {
 	return (
-		<section className="space-y-8">
-			<div className="h-6 w-40 animate-pulse rounded bg-muted" />
-			<div className="h-11 w-full max-w-2xl animate-pulse rounded bg-muted" />
-			<div className="h-5 w-full max-w-3xl animate-pulse rounded bg-muted" />
+		<div className="space-y-8">
 			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 				{Array.from({ length: 4 }).map((_, index) => (
 					<div
@@ -62,7 +60,7 @@ export function GatewayShowcaseFallback() {
 			<div className="h-80 animate-pulse rounded-2xl border border-border/60 bg-muted/50" />
 			<div className="h-80 animate-pulse rounded-2xl border border-border/60 bg-muted/50" />
 			<div className="h-9 w-full max-w-3xl animate-pulse rounded bg-muted" />
-		</section>
+		</div>
 	);
 }
 
@@ -93,7 +91,7 @@ function EmptyTelemetry({ text }: { text: string }) {
 	);
 }
 
-export default async function GatewayShowcase() {
+async function GatewayShowcaseData() {
 	const monthlyWindowHours = 24 * 30;
 	const [metrics, topModelsRes, topAppsRes] = await Promise.all([
 		getGatewayMarketingMetrics(monthlyWindowHours),
@@ -161,41 +159,7 @@ export default async function GatewayShowcase() {
 	] as const;
 
 	return (
-		<section className="space-y-8 py-2">
-			<div className="space-y-4">
-				<Badge
-					variant="secondary"
-					className="w-fit border border-zinc-300 bg-white text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-				>
-					AI Stats Gateway
-				</Badge>
-				<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-					<div className="max-w-3xl space-y-3">
-						<h2 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
-							A model database built for discovery.
-							<br className="hidden sm:block" /> A gateway built
-							for production.
-						</h2>
-						<p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-base">
-							Explore the model database, then ship through one
-							unified API with routing, observability, and
-							governance built in.
-						</p>
-					</div>
-					<div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end lg:pt-1">
-						<Button asChild className="h-10">
-							<Link href="/gateway">
-								Explore gateway
-								<ArrowRight className="ml-1 h-4 w-4" />
-							</Link>
-						</Button>
-						<Button asChild variant="outline" className="h-10">
-							<Link href="/rankings">View live rankings</Link>
-						</Button>
-					</div>
-				</div>
-			</div>
-
+		<>
 			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 				{stats.map((stat) => {
 					const Icon = stat.icon;
@@ -230,7 +194,7 @@ export default async function GatewayShowcase() {
 						topModels.map((model, index) => (
 							<div
 								key={model.key}
-								className="flex items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800"
+								className="flex min-w-0 items-center gap-3 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-800"
 							>
 								<div className="w-5 text-xs text-muted-foreground">
 									#{index + 1}
@@ -245,16 +209,16 @@ export default async function GatewayShowcase() {
 										/>
 									</div>
 								</div>
-								<div className="min-w-0 flex-1">
+								<div className="min-w-0 flex-1 overflow-hidden">
 									{model.href ? (
 										<Link
 											href={model.href}
-											className="block truncate text-sm font-medium underline decoration-transparent hover:decoration-current transition-colors duration-200"
+											className="block max-w-full truncate text-sm font-medium underline decoration-transparent transition-colors duration-200 hover:decoration-current"
 										>
 											{model.name}
 										</Link>
 									) : (
-										<div className="truncate text-sm font-medium">
+										<div className="max-w-full truncate text-sm font-medium">
 											{model.name}
 										</div>
 									)}
@@ -338,6 +302,50 @@ export default async function GatewayShowcase() {
 					</div>
 				</>
 			) : null}
+		</>
+	);
+}
+
+export default function GatewayShowcase() {
+	return (
+		<section className="space-y-8 py-2">
+			<div className="space-y-4">
+				<Badge
+					variant="secondary"
+					className="w-fit border border-zinc-300 bg-white text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+				>
+					AI Stats Gateway
+				</Badge>
+				<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+					<div className="max-w-3xl space-y-3">
+						<h2 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
+							A model database built for discovery.
+							<br className="hidden sm:block" /> A gateway built
+							for production.
+						</h2>
+						<p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-base">
+							Explore the model database, then ship through one
+							unified API with routing, observability, and
+							governance built in.
+						</p>
+					</div>
+					<div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end lg:pt-1">
+						<Button asChild className="h-10">
+							<Link href="/gateway">
+								Explore gateway
+								<ArrowRight className="ml-1 h-4 w-4" />
+							</Link>
+						</Button>
+						<Button asChild variant="outline" className="h-10">
+							<Link href="/rankings">View live rankings</Link>
+						</Button>
+					</div>
+				</div>
+			</div>
+
+			<Suspense fallback={<GatewayShowcaseFallback />}>
+				<GatewayShowcaseData />
+			</Suspense>
 		</section>
 	);
 }

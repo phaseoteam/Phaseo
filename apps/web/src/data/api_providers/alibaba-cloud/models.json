@@ -2,9 +2,9 @@
   {
     "api_model_id": null,
     "provider_api_model_id": "alibaba-cloud",
-    "provider_model_slug": null,
+    "provider_model_slug": "z-image-turbo",
     "internal_model_id": null,
-    "is_active_gateway": null,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,

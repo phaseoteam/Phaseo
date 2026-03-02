@@ -134,11 +134,31 @@ const byokMetaSchema = z
         key: meta.key ?? meta.api_key ?? meta.raw_key ?? null,
     }));
 
+function toModalityList(value: unknown): string[] | null {
+    if (Array.isArray(value)) {
+        const normalized = value
+            .map((entry) => String(entry ?? "").trim().toLowerCase())
+            .filter(Boolean);
+        return normalized.length ? normalized : null;
+    }
+    if (typeof value === "string") {
+        const normalized = value
+            .split(",")
+            .map((entry) => entry.trim().toLowerCase())
+            .filter(Boolean);
+        return normalized.length ? normalized : null;
+    }
+    return null;
+}
+
 const providerSchema = z
     .object({
         provider_id: z.string(),
         provider_status: z.string().nullable().optional(),
+        capability_status: z.string().nullable().optional(),
         provider_model_slug: z.string().nullable().optional(),
+        input_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
+        output_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
         supports_endpoint: z.boolean().optional().default(true),
         base_weight: z.coerce.number().optional().default(1),
         byok_meta: z.array(byokMetaSchema).optional().default([]),
@@ -149,10 +169,13 @@ const providerSchema = z
     .transform<GatewayProviderSnapshot>((provider) => ({
         providerId: provider.provider_id,
         providerStatus: (provider.provider_status ?? null) as GatewayProviderSnapshot["providerStatus"],
+        capabilityStatus: (provider.capability_status ?? null) as GatewayProviderSnapshot["capabilityStatus"],
         providerModelSlug: provider.provider_model_slug ?? null,
         supportsEndpoint: provider.supports_endpoint ?? true,
         baseWeight: Number.isFinite(provider.base_weight) ? provider.base_weight : 1,
         byokMeta: provider.byok_meta,
+        inputModalities: toModalityList(provider.input_modalities),
+        outputModalities: toModalityList(provider.output_modalities),
         capabilityParams: provider.capability_params ?? {},
         maxInputTokens: provider.max_input_tokens ?? null,
         maxOutputTokens: provider.max_output_tokens ?? null,

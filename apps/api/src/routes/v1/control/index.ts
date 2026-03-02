@@ -1,6 +1,6 @@
 // src/routes/v1/control/index.ts
-// Purpose: Control-plane route handler for index operations.
-// Why: Separates admin/control traffic from data-plane requests.
+// Purpose: Platform API route handler for management and discovery operations.
+// Why: Separates product/platform traffic from inference requests.
 // How: Wires HTTP routes to pipeline entrypoints and response helpers.
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
@@ -20,24 +20,26 @@ import { managementRoutes, provisioningRoutes } from "./provisioning";
 import { keysRoutes } from "./keys";
 import oauthClientsRoutes from "./oauth-clients";
 
-export const controlRouter = new Hono<Env>();
+export const platformRouter = new Hono<Env>();
 
-controlRouter.route("/models", modelsRoutes);
-controlRouter.route("/api/models", modelsRoutes);
-controlRouter.route("/data/models", dataModelsRoutes);
-controlRouter.route("/generations", generationsRoutes);
-controlRouter.route("/organisations", organisationsRoutes);
-controlRouter.route("/providers", providersRoutes);
-controlRouter.route("/health", healthRoutes);
-controlRouter.route("/analytics", analyticsRoutes);
-controlRouter.route("/pricing", pricingRoutes);
-controlRouter.route("/credits", creditsRoutes);
-controlRouter.route("/activity", activityRoutes);
-controlRouter.route("/management", managementRoutes);
-controlRouter.route("/provisioning", provisioningRoutes);
-controlRouter.route("/keys", keysRoutes);
-controlRouter.route("/oauth-clients", oauthClientsRoutes);
-controlRouter.route("/", placeholdersRoutes);
+platformRouter.route("/gateway/models", modelsRoutes);
+platformRouter.route("/data/models", dataModelsRoutes);
+platformRouter.route("/generations", generationsRoutes);
+platformRouter.route("/organisations", organisationsRoutes);
+platformRouter.route("/providers", providersRoutes);
+platformRouter.route("/health", healthRoutes);
+platformRouter.route("/analytics", analyticsRoutes);
+platformRouter.route("/pricing", pricingRoutes);
+platformRouter.route("/credits", creditsRoutes);
+platformRouter.route("/activity", activityRoutes);
+platformRouter.route("/management", managementRoutes);
+platformRouter.route("/provisioning", provisioningRoutes);
+platformRouter.route("/keys", keysRoutes);
+platformRouter.route("/oauth-clients", oauthClientsRoutes);
+platformRouter.route("/", placeholdersRoutes);
+
+// Backward-compatible alias for existing imports.
+export const controlRouter = platformRouter;
 
 
 

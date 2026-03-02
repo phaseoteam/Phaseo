@@ -13,6 +13,7 @@ import { normalizeProviderList } from "@/lib/config/providerAliases";
 type Priority = "default" | "fast" | "quick" | "nitro";
 type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 type ProviderStatus = "active" | "beta" | "alpha" | "not_ready";
+type CapabilityStatus = "active" | "deranked" | "disabled" | "internal_testing";
 
 type RoutingPreset = {
     wSucc: number;
@@ -55,6 +56,21 @@ function normalizeProviderStatus(value?: string | null): ProviderStatus {
         normalized === "not ready"
     ) {
         return "not_ready";
+    }
+    return "active";
+}
+
+function normalizeCapabilityStatus(value?: string | null): CapabilityStatus {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    if (normalized === "active") return "active";
+    if (normalized === "deranked") return "deranked";
+    if (normalized === "disabled") return "disabled";
+    if (
+        normalized === "internal_testing" ||
+        normalized === "internal-testing" ||
+        normalized === "internaltesting"
+    ) {
+        return "internal_testing";
     }
     return "active";
 }
@@ -241,7 +257,7 @@ export type RoutedCandidate = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "capability_status_gate" | "health_breaker";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -399,6 +415,20 @@ export async function routeProviders(
         return `provider_status_${status}`;
     });
 
+    const beforeCapabilityStatusGate = poolCandidates;
+    poolCandidates = poolCandidates.filter((candidate) => {
+        const capabilityStatus = normalizeCapabilityStatus(candidate.capabilityStatus);
+        if (capabilityStatus === "disabled") return false;
+        if (capabilityStatus === "internal_testing" && !testingMode) return false;
+        return true;
+    });
+    pushStage("capability_status_gate", beforeCapabilityStatusGate, poolCandidates, (candidate) => {
+        const capabilityStatus = normalizeCapabilityStatus(candidate.capabilityStatus);
+        if (capabilityStatus === "disabled") return "capability_status_disabled";
+        if (capabilityStatus === "internal_testing") return "capability_status_internal_testing_requires_testing_mode";
+        return `capability_status_${capabilityStatus}`;
+    });
+
     if (!poolCandidates.length) {
         const diagnostics: RoutingDiagnostics = {
             model: ctx.model,
@@ -481,12 +511,21 @@ export async function routeProviders(
         const h = v.h;
         const weight = v.candidate.baseWeight > 0 ? v.candidate.baseWeight : 1;
         const providerStatus = normalizeProviderStatus(v.candidate.providerStatus);
+        const capabilityStatus = normalizeCapabilityStatus(v.candidate.capabilityStatus);
         const rolloutMultiplier =
             providerStatus === "beta"
                 ? 0.05
                 : providerStatus === "alpha"
                     ? 0.03
                     : 1;
+        const capabilityMultiplier =
+            capabilityStatus === "deranked"
+                ? 0.6
+                : capabilityStatus === "disabled"
+                    ? 0
+                    : capabilityStatus === "internal_testing"
+                        ? (testingMode ? 1 : 0)
+                        : 1;
         const succ = 1 - h.err_ewma_60s;
         const p50Curve = 1 / (1 + (h.lat_ewma_60s / preset.L0));
         const p50Norm = 1 - normalise(h.lat_ewma_60s, minP50, maxP50);
@@ -511,7 +550,7 @@ export async function routeProviders(
 
         const score = Math.max(
             0,
-            baseScore * Math.max(weight, 0.0001) * rolloutMultiplier
+            baseScore * Math.max(weight, 0.0001) * rolloutMultiplier * capabilityMultiplier
         );
         return { candidate: v.candidate, adapter: v.adapter, health: h, score };
     });

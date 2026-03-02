@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
-import { json, withRuntime, cacheHeaders, cacheResponse } from "@/routes/utils";
+import { json, withRuntime, cacheHeaders } from "@/routes/utils";
 
 type OrganisationDetails = {
     organisation_id?: string | null;
@@ -109,10 +109,16 @@ function compareRows(a: DataModelRow, b: DataModelRow): number {
 }
 
 async function handleDataModels(req: Request) {
-    const auth = await guardAuth(req);
+    const auth = await guardAuth(req, { useKvCache: false });
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
+    const cacheOptions = {
+        scope: "data-models:shared:v1",
+        ttlSeconds: 1800,
+        staleSeconds: 1800,
+        varyHeaders: [],
+    };
 
     const url = new URL(req.url);
     const includeHidden = parseBooleanParam(url.searchParams.get("include_hidden"), false);
@@ -172,12 +178,7 @@ async function handleDataModels(req: Request) {
             };
         });
 
-        const cacheOptions = {
-            scope: `data-models:${auth.value.teamId}`,
-            ttlSeconds: 300,
-            staleSeconds: 600,
-        };
-        const response = json(
+        return json(
             {
                 ok: true,
                 limit,
@@ -189,7 +190,6 @@ async function handleDataModels(req: Request) {
             200,
             cacheHeaders(cacheOptions)
         );
-        return cacheResponse(req, response, cacheOptions);
     } catch (error: any) {
         return json(
             { ok: false, error: "failed", message: String(error?.message ?? error) },
@@ -202,4 +202,5 @@ async function handleDataModels(req: Request) {
 export const dataModelsRoutes = new Hono<Env>();
 
 dataModelsRoutes.get("/", withRuntime(handleDataModels));
+
 

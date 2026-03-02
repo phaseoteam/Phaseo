@@ -1,13 +1,13 @@
 // src/routes/v1/index.ts
-// Purpose: Aggregate v1 route groups (data + control).
+// Purpose: Aggregate v1 route groups (inference + platform).
 // Why: Centralizes API version routing.
 // How: Wires HTTP routes to pipeline entrypoints and response helpers.
 
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 
-import { dataRouter } from "./data";
-import { controlRouter } from "./control";
+import { inferenceRouter } from "./data";
+import { platformRouter } from "./control";
 
 export const v1Router = new Hono<Env>();
 
@@ -16,7 +16,7 @@ const CORS_HEADERS: Record<string, string> = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers":
-        "Authorization, Content-Type, x-title, http-referer, x-gateway-debug, X-AIStats-Strictness",
+        "Authorization, Content-Type, x-title, http-referer, x-gateway-debug, X-AIStats-Strictness, x-aistats-cache-revalidate",
     "Access-Control-Max-Age": "86400",
 };
 
@@ -36,8 +36,8 @@ v1Router.use(
     },
 );
 
-v1Router.route("/", dataRouter);
-v1Router.route("/", controlRouter);
+v1Router.route("/", inferenceRouter);
+v1Router.route("/", platformRouter);
 
 
 

@@ -1,5 +1,5 @@
 /**
- * OAuth Clients Control Endpoint
+ * OAuth Clients Platform Endpoint
  *
  * Provides programmatic API access to OAuth client management.
  * This allows developers to manage their OAuth apps via API (not just web UI).
@@ -8,12 +8,12 @@
  * Authorization: Team-scoped (can only manage own team's OAuth apps)
  *
  * Endpoints:
- * - POST   /v1/control/oauth-clients      Create new OAuth app
- * - GET    /v1/control/oauth-clients      List team's OAuth apps
- * - GET    /v1/control/oauth-clients/:id  Get specific OAuth app
- * - PATCH  /v1/control/oauth-clients/:id  Update OAuth app
- * - DELETE /v1/control/oauth-clients/:id  Delete OAuth app
- * - POST   /v1/control/oauth-clients/:id/regenerate-secret  Regenerate secret
+ * - POST   /v1/oauth-clients      Create new OAuth app
+ * - GET    /v1/oauth-clients      List team's OAuth apps
+ * - GET    /v1/oauth-clients/:id  Get specific OAuth app
+ * - PATCH  /v1/oauth-clients/:id  Update OAuth app
+ * - DELETE /v1/oauth-clients/:id  Delete OAuth app
+ * - POST   /v1/oauth-clients/:id/regenerate-secret  Regenerate secret
  */
 
 import { Hono } from "hono";
@@ -50,7 +50,7 @@ function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { teamId: st
 app.use("*", async (c, next) => {
 	configureRuntime(c.env);
 	try {
-		const auth = await guardAuth(c.req.raw);
+		const auth = await guardAuth(c.req.raw, { useKvCache: false });
 		if (!auth.ok) {
 			return (auth as GuardErr).response;
 		}
@@ -90,7 +90,7 @@ const updateOAuthClientSchema = z.object({
 });
 
 /**
- * POST /v1/control/oauth-clients
+ * POST /v1/oauth-clients
  *
  * Create a new OAuth application
  */
@@ -186,7 +186,7 @@ app.post("/", async (c) => {
 });
 
 /**
- * GET /v1/control/oauth-clients
+ * GET /v1/oauth-clients
  *
  * List all OAuth apps for the authenticated team
  */
@@ -225,7 +225,7 @@ app.get("/", async (c) => {
 });
 
 /**
- * GET /v1/control/oauth-clients/:clientId
+ * GET /v1/oauth-clients/:clientId
  *
  * Get details for a specific OAuth app
  */
@@ -260,7 +260,7 @@ app.get("/:clientId", async (c) => {
 });
 
 /**
- * PATCH /v1/control/oauth-clients/:clientId
+ * PATCH /v1/oauth-clients/:clientId
  *
  * Update an OAuth app's metadata
  */
@@ -336,7 +336,7 @@ app.patch("/:clientId", async (c) => {
 });
 
 /**
- * DELETE /v1/control/oauth-clients/:clientId
+ * DELETE /v1/oauth-clients/:clientId
  *
  * Delete an OAuth app (revokes all authorizations)
  */
@@ -394,7 +394,7 @@ app.delete("/:clientId", async (c) => {
 });
 
 /**
- * POST /v1/control/oauth-clients/:clientId/regenerate-secret
+ * POST /v1/oauth-clients/:clientId/regenerate-secret
  *
  * Regenerate the client secret (invalidates old one)
  */
@@ -442,3 +442,4 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 });
 
 export default app;
+

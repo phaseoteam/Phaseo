@@ -9,7 +9,8 @@ import { SignUp } from "@/components/(gateway)/auth/sign-up/SignUp";
 
 export const metadata: Metadata = {
 	title: "Sign Up",
-	description: "Create an account to access the AI Stats Gateway.",
+	description:
+		"Create an AI Stats account to access the Gateway, configure model routing, review performance analytics, and manage billing across personal and team workspaces.",
 };
 
 export default function Page() {

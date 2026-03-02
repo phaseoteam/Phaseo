@@ -24,7 +24,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-11-18T00:00:00"
+      "effective_from": "2025-11-18T00:00:00",
+      "effective_to": "2026-03-09T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -45,7 +46,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-11-18T00:00:00"
+      "effective_from": "2025-11-18T00:00:00",
+      "effective_to": "2026-03-09T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -66,7 +68,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-11-18T00:00:00"
+      "effective_from": "2025-11-18T00:00:00",
+      "effective_to": "2026-03-09T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -87,7 +90,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-11-18T00:00:00"
+      "effective_from": "2025-11-18T00:00:00",
+      "effective_to": "2026-03-09T00:00:00"
     }
   ]
 }

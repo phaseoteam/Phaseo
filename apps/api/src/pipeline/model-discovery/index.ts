@@ -33,6 +33,43 @@ type ProviderChange = {
 	removed: string[];
 };
 
+type PricingRuleRow = {
+	rule_id: string | null;
+	provider_id: string | null;
+	api_model_id: string | null;
+	capability_id: string | null;
+	pricing_plan: string | null;
+	meter: string | null;
+	price_per_unit: number | string | null;
+	currency: string | null;
+	effective_from: string | null;
+	effective_to: string | null;
+	updated_at: string | null;
+};
+
+type PricingProviderChange = {
+	providerId: string;
+	updates: number;
+	samples: string[];
+};
+
+type PricingCursor = {
+	updatedAt: string;
+	ruleIdsAtTimestamp: string[];
+};
+
+type PricingMonitorSummary = {
+	enabled: boolean;
+	executed: boolean;
+	baselineInitialized: boolean;
+	cursorUpdatedAt: string | null;
+	ruleIdsAtTimestamp?: string[];
+	updatesDetected: number;
+	providersChanged: number;
+	providerChanges: PricingProviderChange[];
+	error?: string | null;
+};
+
 type ProviderResult =
 	| {
 			providerId: string;
@@ -70,6 +107,7 @@ type DiscoveryRunSummary = {
 	staleModelsDeleted: number;
 	results: ProviderResult[];
 	changes: ProviderChange[];
+	pricingMonitor: PricingMonitorSummary;
 };
 
 type SupabaseSeenModelRow = {
@@ -87,6 +125,11 @@ const UPSERT_BATCH_SIZE = 500;
 const MAX_DISCORD_LINES = 30;
 const MAX_LIST_ITEMS = 8;
 const MAX_SUMMARY_MODEL_SAMPLES = 5;
+const MAX_PRICING_PROVIDER_LINES = 20;
+const MAX_PRICING_SAMPLE_LINES = 6;
+const MAX_PRICING_ROWS = 5_000;
+const PRICING_PAGE_SIZE = 500;
+const RUNS_RETENTION_DAYS = 5;
 
 const PROVIDERS: ProviderConfig[] = [
 	{ providerId: "ai21", providerName: "AI21", modelsEndpoint: "https://api.ai21.com/studio/v1/models", apiKeyEnv: ["AI21_API_KEY"] },
@@ -237,6 +280,60 @@ function readBindingEnv(names: string[]): string | null {
 	return null;
 }
 
+function toBool(value: string | undefined | null, fallback = false): boolean {
+	if (value === undefined || value === null) return fallback;
+	const normalized = value.trim().toLowerCase();
+	if (!normalized) return fallback;
+	return ["1", "true", "yes", "on"].includes(normalized);
+}
+
+function safeId(value: string | null): string {
+	return value?.trim() || "?";
+}
+
+function normalizePrice(value: number | string | null): string {
+	if (typeof value === "number" && Number.isFinite(value)) return String(value);
+	if (typeof value === "string" && value.trim()) return value.trim();
+	return "?";
+}
+
+function pricingRuleIdentity(row: PricingRuleRow): string {
+	if (row.rule_id && row.rule_id.trim()) return row.rule_id.trim();
+	return [
+		safeId(row.provider_id),
+		safeId(row.api_model_id),
+		safeId(row.capability_id),
+		safeId(row.pricing_plan),
+		safeId(row.meter),
+		safeId(row.updated_at),
+	].join("|");
+}
+
+function isNewerTimestamp(a: string, b: string): boolean {
+	const aMs = Date.parse(a);
+	const bMs = Date.parse(b);
+	if (!Number.isFinite(aMs) || !Number.isFinite(bMs)) return a > b;
+	return aMs > bMs;
+}
+
+function isSameTimestamp(a: string, b: string): boolean {
+	const aMs = Date.parse(a);
+	const bMs = Date.parse(b);
+	if (!Number.isFinite(aMs) || !Number.isFinite(bMs)) return a === b;
+	return aMs === bMs;
+}
+
+function formatPricingSample(row: PricingRuleRow): string {
+	const model = safeId(row.api_model_id);
+	const capability = safeId(row.capability_id);
+	const plan = safeId(row.pricing_plan);
+	const meter = safeId(row.meter);
+	const price = normalizePrice(row.price_per_unit);
+	const currency = safeId(row.currency);
+	const status = row.effective_to ? "ended" : "active";
+	return `${model} | ${capability} | ${plan} | ${meter}=${price} ${currency} (${status})`;
+}
+
 function normalizeModelId(providerId: string, raw: string): string | null {
 	const value = raw.trim();
 	if (!value) return null;
@@ -354,33 +451,247 @@ function diffModelIds(previousIds: string[], currentIds: string[]): { added: str
 	return { added, removed };
 }
 
-function limitList(values: string[], maxItems = MAX_LIST_ITEMS): string {
-	if (values.length <= maxItems) return values.join(", ");
-	return `${values.slice(0, maxItems).join(", ")}, +${values.length - maxItems} more`;
+function parsePricingCursorFromSummary(summary: unknown): PricingCursor | null {
+	const summaryRecord = asRecord(summary);
+	if (!summaryRecord) return null;
+	const pricingRecord = asRecord(summaryRecord.pricingMonitor);
+	if (!pricingRecord) return null;
+	if (typeof pricingRecord.cursorUpdatedAt !== "string" || !pricingRecord.cursorUpdatedAt.trim()) {
+		return null;
+	}
+	const ruleIds =
+		Array.isArray(pricingRecord.ruleIdsAtTimestamp)
+			? pricingRecord.ruleIdsAtTimestamp
+				.filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+			: [];
+	return {
+		updatedAt: pricingRecord.cursorUpdatedAt,
+		ruleIdsAtTimestamp: ruleIds,
+	};
 }
 
-function buildDiscordMessage(changes: ProviderChange[]): string {
+async function loadLatestPricingCursor(): Promise<PricingCursor | null> {
+	const supabase = getSupabaseAdmin();
+	const { data, error } = await supabase
+		.from("model_discovery_runs")
+		.select("summary,status,started_at")
+		.in("status", ["completed", "completed_with_errors"])
+		.order("started_at", { ascending: false })
+		.limit(200);
+
+	if (error) throw new Error(error.message || "Failed to load pricing cursor from previous runs");
+
+	for (const row of data ?? []) {
+		const cursor = parsePricingCursorFromSummary((row as Record<string, unknown>).summary);
+		if (cursor) return cursor;
+	}
+	return null;
+}
+
+async function fetchLatestPricingUpdatedAt(): Promise<string | null> {
+	const supabase = getSupabaseAdmin();
+	const { data, error } = await supabase
+		.from("data_api_pricing_rules")
+		.select("updated_at")
+		.not("updated_at", "is", null)
+		.order("updated_at", { ascending: false })
+		.limit(1);
+
+	if (error) throw new Error(error.message || "Failed to load latest pricing updated_at");
+	const row = (data ?? [])[0] as { updated_at?: string | null } | undefined;
+	if (!row || typeof row.updated_at !== "string" || !row.updated_at.trim()) return null;
+	return row.updated_at;
+}
+
+async function fetchPricingRuleIdsAtTimestamp(updatedAt: string): Promise<string[]> {
+	const supabase = getSupabaseAdmin();
+	const rows: PricingRuleRow[] = [];
+	let from = 0;
+	while (rows.length < MAX_PRICING_ROWS) {
+		const to = from + PRICING_PAGE_SIZE - 1;
+		const { data, error } = await supabase
+			.from("data_api_pricing_rules")
+			.select("rule_id,provider_id,api_model_id,capability_id,pricing_plan,meter,price_per_unit,currency,effective_from,effective_to,updated_at")
+			.eq("updated_at", updatedAt)
+			.order("rule_id", { ascending: true })
+			.range(from, to);
+		if (error) throw new Error(error.message || "Failed to load pricing ids at checkpoint timestamp");
+		const chunk = (data ?? []) as PricingRuleRow[];
+		if (chunk.length === 0) break;
+		rows.push(...chunk);
+		if (chunk.length < PRICING_PAGE_SIZE) break;
+		from += PRICING_PAGE_SIZE;
+	}
+	return rows.map((row) => pricingRuleIdentity(row)).sort((a, b) => a.localeCompare(b));
+}
+
+async function fetchPricingRowsSince(sinceInclusive: string): Promise<PricingRuleRow[]> {
+	const supabase = getSupabaseAdmin();
+	const rows: PricingRuleRow[] = [];
+	let from = 0;
+
+	while (rows.length < MAX_PRICING_ROWS) {
+		const to = from + PRICING_PAGE_SIZE - 1;
+		const { data, error } = await supabase
+			.from("data_api_pricing_rules")
+			.select("rule_id,provider_id,api_model_id,capability_id,pricing_plan,meter,price_per_unit,currency,effective_from,effective_to,updated_at")
+			.gte("updated_at", sinceInclusive)
+			.order("updated_at", { ascending: true })
+			.range(from, to);
+
+		if (error) throw new Error(error.message || "Failed to fetch pricing changes");
+		const chunk = (data ?? []) as PricingRuleRow[];
+		if (chunk.length === 0) break;
+		rows.push(...chunk);
+		if (chunk.length < PRICING_PAGE_SIZE) break;
+		from += PRICING_PAGE_SIZE;
+	}
+
+	return rows.length > MAX_PRICING_ROWS ? rows.slice(0, MAX_PRICING_ROWS) : rows;
+}
+
+function summarizePricingChanges(rows: PricingRuleRow[]): PricingProviderChange[] {
+	const providerMap = new Map<string, PricingProviderChange>();
+	for (const row of rows) {
+		const providerId = safeId(row.provider_id);
+		const existing = providerMap.get(providerId) ?? { providerId, updates: 0, samples: [] };
+		existing.updates += 1;
+		if (existing.samples.length < MAX_PRICING_SAMPLE_LINES) {
+			existing.samples.push(formatPricingSample(row));
+		}
+		providerMap.set(providerId, existing);
+	}
+	return Array.from(providerMap.values()).sort((a, b) => b.updates - a.updates || a.providerId.localeCompare(b.providerId));
+}
+
+function shouldRunPricingMonitor(args: RunArgs): boolean {
+	if (args.shardIndex === undefined || args.shardCount === undefined) return true;
+	return args.shardIndex === 0;
+}
+
+async function runPricingMonitorCheck(): Promise<PricingMonitorSummary> {
+	const summary: PricingMonitorSummary = {
+		enabled: true,
+		executed: true,
+		baselineInitialized: false,
+		cursorUpdatedAt: null,
+		updatesDetected: 0,
+		providersChanged: 0,
+		providerChanges: [],
+	};
+
+	const cursor = await loadLatestPricingCursor();
+	if (!cursor) {
+		const latest = await fetchLatestPricingUpdatedAt();
+		summary.baselineInitialized = true;
+		summary.cursorUpdatedAt = latest;
+		summary.ruleIdsAtTimestamp = latest ? await fetchPricingRuleIdsAtTimestamp(latest) : [];
+		return summary;
+	}
+
+	const rows = await fetchPricingRowsSince(cursor.updatedAt);
+	const seenRuleIds = new Set(cursor.ruleIdsAtTimestamp);
+	const filtered: PricingRuleRow[] = [];
+
+	for (const row of rows) {
+		if (!row.updated_at) continue;
+		if (isNewerTimestamp(cursor.updatedAt, row.updated_at)) continue;
+		if (isSameTimestamp(row.updated_at, cursor.updatedAt)) {
+			const identity = pricingRuleIdentity(row);
+			if (seenRuleIds.has(identity)) continue;
+		}
+		filtered.push(row);
+	}
+
+	let nextUpdatedAt = cursor.updatedAt;
+	let nextRuleIdsAtTimestamp = new Set(cursor.ruleIdsAtTimestamp);
+	for (const row of filtered) {
+		if (!row.updated_at) continue;
+		const identity = pricingRuleIdentity(row);
+		if (isNewerTimestamp(row.updated_at, nextUpdatedAt)) {
+			nextUpdatedAt = row.updated_at;
+			nextRuleIdsAtTimestamp = new Set([identity]);
+		} else if (isSameTimestamp(row.updated_at, nextUpdatedAt)) {
+			nextRuleIdsAtTimestamp.add(identity);
+		}
+	}
+
+	const providerChanges = summarizePricingChanges(filtered);
+	summary.cursorUpdatedAt = nextUpdatedAt;
+	summary.updatesDetected = filtered.length;
+	summary.providersChanged = providerChanges.length;
+	summary.providerChanges = providerChanges;
+	summary.ruleIdsAtTimestamp = Array.from(nextRuleIdsAtTimestamp).sort((a, b) => a.localeCompare(b));
+	return summary;
+}
+
+function appendBulletedList(lines: string[], values: string[]): void {
+	const visible = values.slice(0, MAX_LIST_ITEMS);
+	for (const value of visible) {
+		lines.push(`- ${value}`);
+	}
+	if (values.length > MAX_LIST_ITEMS) {
+		lines.push(`- ...and ${values.length - MAX_LIST_ITEMS} more`);
+	}
+}
+
+function buildModelDiscordSection(changes: ProviderChange[]): string {
+	if (changes.length === 0) return "";
 	const lines: string[] = [
 		`Model discovery detected changes across ${changes.length} provider${changes.length === 1 ? "" : "s"}.`,
 		"",
 	];
 
 	for (const change of changes.slice(0, MAX_DISCORD_LINES)) {
-		lines.push(
-			`${change.providerName} (${change.providerId}): +${change.added.length} / -${change.removed.length} (${change.previousCount} -> ${change.currentCount})`,
-		);
-		if (change.added.length) lines.push(`  Added: ${limitList(change.added)}`);
-		if (change.removed.length) lines.push(`  Removed: ${limitList(change.removed)}`);
+		lines.push(`${change.providerName}`);
+		if (change.added.length > 0) {
+			lines.push(`Additions (${change.added.length}):`);
+			appendBulletedList(lines, change.added);
+		}
+		if (change.removed.length > 0) {
+			lines.push(`Deletions (${change.removed.length}):`);
+			appendBulletedList(lines, change.removed);
+		}
 		lines.push("");
 	}
 
-	const text = lines.join("\n").trim();
+	return lines.join("\n").trim();
+}
+
+function buildPricingDiscordSection(pricing: PricingMonitorSummary): string {
+	if (pricing.updatesDetected === 0 || pricing.providerChanges.length === 0) return "";
+	const lines: string[] = [
+		`Pricing monitor detected ${pricing.updatesDetected} updated rule${pricing.updatesDetected === 1 ? "" : "s"} across ${pricing.providerChanges.length} provider${pricing.providerChanges.length === 1 ? "" : "s"}.`,
+		"",
+	];
+
+	for (const provider of pricing.providerChanges.slice(0, MAX_PRICING_PROVIDER_LINES)) {
+		lines.push(`${provider.providerId}`);
+		lines.push(`Updates (${provider.updates}):`);
+		appendBulletedList(lines, provider.samples);
+		lines.push("");
+	}
+
+	if (pricing.providerChanges.length > MAX_PRICING_PROVIDER_LINES) {
+		lines.push(`...and ${pricing.providerChanges.length - MAX_PRICING_PROVIDER_LINES} more provider(s).`);
+	}
+
+	return lines.join("\n").trim();
+}
+
+function buildDiscordMessage(args: { modelChanges: ProviderChange[]; pricing: PricingMonitorSummary }): string {
+	const sections: string[] = [];
+	const modelSection = buildModelDiscordSection(args.modelChanges);
+	const pricingSection = buildPricingDiscordSection(args.pricing);
+	if (modelSection) sections.push(modelSection);
+	if (pricingSection) sections.push(pricingSection);
+	const text = sections.join("\n\n").trim();
 	if (text.length <= 1900) return text;
 	return `${text.slice(0, 1888)}\n...[truncated]`;
 }
 
-async function sendDiscordNotification(changes: ProviderChange[]): Promise<void> {
-	if (changes.length === 0) return;
+async function sendDiscordNotification(args: { modelChanges: ProviderChange[]; pricing: PricingMonitorSummary }): Promise<void> {
+	if (args.modelChanges.length === 0 && args.pricing.updatesDetected === 0) return;
 	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
 	if (!webhookUrl) return;
 
@@ -392,13 +703,22 @@ async function sendDiscordNotification(changes: ProviderChange[]): Promise<void>
 		return;
 	}
 
-	const message = buildDiscordMessage(changes);
+	const message = buildDiscordMessage(args);
+	const roleId = readBindingEnv(["DISCORD_ROLE_ID"]);
 	const userId = readBindingEnv(["DISCORD_USER_ID"]);
+	const mentions: string[] = [];
+	if (roleId) mentions.push(`<@&${roleId}>`);
+	if (userId) mentions.push(`<@${userId}>`);
+
 	const payload: Record<string, unknown> = {
-		content: userId ? `<@${userId}>\n${message}` : message,
+		content: mentions.length ? `${mentions.join(" ")}\n${message}` : message,
 	};
-	if (userId) {
-		payload.allowed_mentions = { users: [userId] };
+	if (roleId || userId) {
+		payload.allowed_mentions = {
+			parse: [],
+			roles: roleId ? [roleId] : [],
+			users: userId ? [userId] : [],
+		};
 	}
 
 	const response = await fetch(parsedUrl.toString(), {
@@ -444,6 +764,21 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 			addedSample: change.added.slice(0, MAX_SUMMARY_MODEL_SAMPLES),
 			removedSample: change.removed.slice(0, MAX_SUMMARY_MODEL_SAMPLES),
 		})),
+		pricingMonitor: {
+			enabled: summary.pricingMonitor.enabled,
+			executed: summary.pricingMonitor.executed,
+			baselineInitialized: summary.pricingMonitor.baselineInitialized,
+			cursorUpdatedAt: summary.pricingMonitor.cursorUpdatedAt,
+			ruleIdsAtTimestamp: summary.pricingMonitor.ruleIdsAtTimestamp ?? [],
+			updatesDetected: summary.pricingMonitor.updatesDetected,
+			providersChanged: summary.pricingMonitor.providersChanged,
+			providerChanges: summary.pricingMonitor.providerChanges.map((provider) => ({
+				providerId: provider.providerId,
+				updates: provider.updates,
+				samples: provider.samples.slice(0, MAX_SUMMARY_MODEL_SAMPLES),
+			})),
+			error: summary.pricingMonitor.error ?? undefined,
+		},
 		notificationError: extra.notificationError ?? undefined,
 		error: extra.error ?? undefined,
 	};
@@ -475,6 +810,11 @@ type SeenModelUpsertRow = {
 	model_id: string;
 	last_seen_at: string;
 	last_run_id: string;
+};
+
+type SeenModelDeleteRow = {
+	provider_id: string;
+	model_id: string;
 };
 
 async function fetchPreviousModelIdsByProviders(providerIds: string[]): Promise<Map<string, string[]>> {
@@ -519,6 +859,40 @@ async function upsertCurrentModels(rows: SeenModelUpsertRow[]): Promise<void> {
 	}
 }
 
+async function deleteRemovedModels(rows: SeenModelDeleteRow[]): Promise<number> {
+	if (rows.length === 0) return 0;
+
+	const supabase = getSupabaseAdmin();
+	const modelIdsByProvider = new Map<string, string[]>();
+
+	for (const row of rows) {
+		const existing = modelIdsByProvider.get(row.provider_id) ?? [];
+		existing.push(row.model_id);
+		modelIdsByProvider.set(row.provider_id, existing);
+	}
+
+	let deletedCount = 0;
+	for (const [providerId, modelIds] of modelIdsByProvider.entries()) {
+		for (let index = 0; index < modelIds.length; index += UPSERT_BATCH_SIZE) {
+			const batch = modelIds.slice(index, index + UPSERT_BATCH_SIZE);
+			const { data, error } = await supabase
+				.from("model_discovery_seen_models")
+				.delete()
+				.eq("provider_id", providerId)
+				.in("model_id", batch)
+				.select("model_id");
+
+			if (error) {
+				throw new Error(error.message || "Failed to remove deleted discovered models");
+			}
+
+			deletedCount += Array.isArray(data) ? data.length : 0;
+		}
+	}
+
+	return deletedCount;
+}
+
 async function pruneOldRows(cutoffIso: string): Promise<number> {
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
@@ -539,15 +913,27 @@ async function pruneOldRuns(cutoffIso: string): Promise<void> {
 	if (error) throw new Error(error.message || "Failed to prune old model discovery runs");
 }
 
+function shouldPruneRunsDaily(args: RunArgs, startedAt: Date): boolean {
+	if (args.trigger !== "scheduled") return false;
+	if (args.shardIndex !== undefined && args.shardIndex !== 0) return false;
+	const anchor = args.scheduledAtIso ? new Date(args.scheduledAtIso) : startedAt;
+	if (!Number.isFinite(anchor.getTime())) return false;
+	const hour = anchor.getUTCHours();
+	const minute = anchor.getUTCMinutes();
+	return hour === 0 && minute < 10;
+}
+
 export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunSummary> {
 	const startedAt = new Date();
 	const runId = crypto.randomUUID();
 	const retentionDays = toInt(readBindingEnv(["MODEL_DISCOVERY_RETENTION_DAYS"]) ?? String(DEFAULT_RETENTION_DAYS), DEFAULT_RETENTION_DAYS);
 	const staleCutoff = new Date(startedAt.getTime() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
-	const runsCutoff = new Date(startedAt.getTime() - Math.max(retentionDays * 4, 14) * 24 * 60 * 60 * 1000).toISOString();
+	const runsCutoff = new Date(startedAt.getTime() - RUNS_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
 	const shouldPrune = args.prune ?? true;
 	const shouldNotify = args.notify ?? true;
 	const providers = selectProvidersForShard(args);
+	const pricingEnabled = toBool(readBindingEnv(["PRICING_MONITOR_ENABLED"]) ?? "true", true);
+	const pricingExecuted = pricingEnabled && shouldRunPricingMonitor(args);
 
 	await insertRunStart(runId, args, startedAt.toISOString());
 
@@ -555,6 +941,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const results: ProviderResult[] = [];
 		const changes: ProviderChange[] = [];
 		const upsertRows: SeenModelUpsertRow[] = [];
+		const deleteRows: SeenModelDeleteRow[] = [];
 		const previousByProvider = await fetchPreviousModelIdsByProviders(providers.map((provider) => provider.providerId));
 
 		for (const provider of providers) {
@@ -583,6 +970,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 						model_id: modelId,
 						last_seen_at: nowIso,
 						last_run_id: runId,
+					});
+				}
+				for (const modelId of removed) {
+					deleteRows.push({
+						provider_id: provider.providerId,
+						model_id: modelId,
 					});
 				}
 
@@ -619,16 +1012,39 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		}
 
 		await upsertCurrentModels(upsertRows);
+		await deleteRemovedModels(deleteRows);
 		let staleModelsDeleted = 0;
 		if (shouldPrune) {
 			staleModelsDeleted = await pruneOldRows(staleCutoff);
-			await pruneOldRuns(runsCutoff);
+			if (shouldPruneRunsDaily(args, startedAt)) {
+				await pruneOldRuns(runsCutoff);
+			}
+		}
+
+		let pricingMonitor: PricingMonitorSummary = {
+			enabled: pricingEnabled,
+			executed: pricingExecuted,
+			baselineInitialized: false,
+			cursorUpdatedAt: null,
+			updatesDetected: 0,
+			providersChanged: 0,
+			providerChanges: [],
+		};
+
+		if (pricingExecuted) {
+			try {
+				pricingMonitor = await runPricingMonitorCheck();
+			} catch (error) {
+				const reason = error instanceof Error ? error.message : String(error);
+				pricingMonitor.error = reason;
+				console.error("[model-discovery] Pricing monitor failed:", reason);
+			}
 		}
 
 		let notificationError: string | null = null;
 		if (shouldNotify) {
 			try {
-				await sendDiscordNotification(changes);
+				await sendDiscordNotification({ modelChanges: changes, pricing: pricingMonitor });
 			} catch (error) {
 				notificationError = error instanceof Error ? error.message : String(error);
 				console.error("[model-discovery] Discord notification failed:", notificationError);
@@ -650,10 +1066,11 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted,
 			results,
 			changes,
+			pricingMonitor,
 		};
 
 		const status: RunStatus =
-			summary.providersError > 0 || notificationError
+			summary.providersError > 0 || notificationError || Boolean(summary.pricingMonitor.error)
 				? "completed_with_errors"
 				: "completed";
 		await updateRunFinish(summary, status, { notificationError });
@@ -675,6 +1092,15 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted: 0,
 			results: [],
 			changes: [],
+			pricingMonitor: {
+				enabled: pricingEnabled,
+				executed: false,
+				baselineInitialized: false,
+				cursorUpdatedAt: null,
+				updatesDetected: 0,
+				providersChanged: 0,
+				providerChanges: [],
+			},
 		};
 		try {
 			await updateRunFinish(failedSummary, "failed", { error: reason });

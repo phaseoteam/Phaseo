@@ -18,7 +18,7 @@ import {
 export const metadata: Metadata = {
 	title: "Model collections - Curated groups by capability",
 	description:
-		"Explore curated collections of AI models, from free tiers to top benchmark performers.",
+		"Explore curated AI model collections by use case, from free tiers to top benchmark performers, with quick links for evaluation and selection.",
 	alternates: {
 		canonical: "/models/collections",
 	},

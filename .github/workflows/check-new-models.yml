@@ -55,7 +55,9 @@ jobs:
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal.ts \
                     --webhook-url "${{ secrets.DISCORD_NEW_MODEL_WEBHOOK }}" \
-                    --discord-user-id "${{ secrets.DISCORD_USER_ID }}"
+                    --discord-user-id "${{ secrets.DISCORD_USER_ID }}" \
+                    --hf-orgs "${{ vars.HF_WATCH_ORGS }}" \
+                    --hf-token "${{ secrets.HF_TOKEN }}"
 
             - name: Save internal model state cache
               if: always()

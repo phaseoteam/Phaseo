@@ -1,12 +1,13 @@
 import { ReactNode, Suspense } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
 import TabBar from "@/components/(data)/model/ModelTabs";
 import { Logo } from "@/components/Logo";
 import ModelEditButton from "./edit/ModelEditButton";
 import { Badge } from "@/components/ui/badge";
 import ModelNotFoundState from "@/components/(data)/model/ModelNotFoundState";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, Scale } from "lucide-react";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -44,8 +45,8 @@ export default async function ModelDetailShell({
 				<div className="mb-8 flex w-full flex-col items-center justify-between gap-2 md:flex-row md:items-start md:gap-0">
 					<div className="flex flex-col items-center gap-4 md:flex-row">
 						<div className="flex items-center justify-center">
-							<div className="relative flex h-12 w-12 items-center justify-center rounded-xl border md:h-24 md:w-24">
-								<div className="relative h-10 w-10 md:h-20 md:w-20">
+							<div className="relative flex h-10 w-10 items-center justify-center rounded-xl border md:h-16 md:w-16">
+								<div className="relative h-8 w-8 md:h-12 md:w-12">
 									<Logo
 										id={header.organisation_id}
 										alt={header.name}
@@ -57,7 +58,7 @@ export default async function ModelDetailShell({
 						</div>
 						<div className="flex flex-col items-center justify-center md:items-start">
 							<div className="flex items-center gap-3">
-								<h1 className="mb-1 text-center text-3xl font-bold md:text-left md:text-5xl">
+								<h1 className="mb-1 text-center text-3xl font-bold md:text-left">
 									{header.name}
 								</h1>
 								{includeHidden && header.hidden ? (
@@ -75,21 +76,20 @@ export default async function ModelDetailShell({
 						</div>
 					</div>
 
-					{header.organisation.country_code && (
-						<div className="mt-2 flex h-full items-center justify-center md:mt-0 md:ml-6">
-							<Link
-								href={`/countries/${header.organisation.country_code.toLowerCase()}`}
-							>
-								<Image
-									src={`/flags/${header.organisation.country_code.toLowerCase()}.svg`}
-									alt={header.organisation.country_code}
-									width={64}
-									height={48}
-									className="h-auto w-12 rounded-md border object-cover shadow-lg md:w-24"
-								/>
+					<div className="mt-2 flex w-full flex-col gap-2 md:mt-0 md:ml-6 md:w-auto">
+						<Button asChild variant="outline" size="sm" className="justify-center">
+							<Link href={`/chat?model=${modelId}`}>
+								<MessageSquare className="h-4 w-4" />
+								Chat
 							</Link>
-						</div>
-					)}
+						</Button>
+						<Button asChild variant="outline" size="sm" className="justify-center">
+							<Link href={`/compare?models=${modelId}`}>
+								<Scale className="h-4 w-4" />
+								Compare
+							</Link>
+						</Button>
+					</div>
 				</div>
 
 				<TabBar modelId={modelId} />

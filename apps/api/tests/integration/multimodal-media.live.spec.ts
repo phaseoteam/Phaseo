@@ -197,7 +197,7 @@ async function fetchModelsCatalog(): Promise<GatewayModel[]> {
 	let total = Number.POSITIVE_INFINITY;
 
 	while (offset < total) {
-		const url = new URL(resolveGatewayUrl("/models"));
+		const url = new URL(resolveGatewayUrl("/gateway/models"));
 		url.searchParams.set("offset", String(offset));
 		url.searchParams.set("limit", String(limit));
 		const res = await fetch(url.toString(), {
@@ -208,7 +208,7 @@ async function fetchModelsCatalog(): Promise<GatewayModel[]> {
 		});
 		const payload = (await res.json()) as ModelsResponse;
 		if (!res.ok) {
-			throw new Error(`Failed to load /models (${res.status}): ${JSON.stringify(payload)}`);
+			throw new Error(`Failed to load /gateway/models (${res.status}): ${JSON.stringify(payload)}`);
 		}
 		const models = payload.models ?? [];
 		out.push(...models);

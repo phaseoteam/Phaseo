@@ -59,8 +59,21 @@ export interface ResponsesRequest {
     [key: string]: unknown;
   };
   include?: string[];
-  input?: {};
-  input_items?: {}[];
+  input?:
+    | string
+    | {
+        content?: string | {}[] | {};
+        phase?: "commentary" | "final_answer" | null;
+        role?: "user" | "assistant" | "system" | "developer";
+        type?: string;
+      }[]
+    | {};
+  input_items?: {
+    content?: string | {}[] | {};
+    phase?: "commentary" | "final_answer" | null;
+    role?: "user" | "assistant" | "system" | "developer";
+    type?: string;
+  }[];
   instructions?: string;
   max_completion_tokens?: number;
   max_output_tokens?: number;
@@ -86,6 +99,22 @@ export interface ResponsesRequest {
     include_alpha?: boolean;
     only?: string[];
     order?: string[];
+  };
+  provider_options?: {
+    openai?: {
+      context_management?: {
+        compact_threshold?: number;
+        type: "compaction";
+      };
+    };
+  };
+  providerOptions?: {
+    openai?: {
+      contextManagement?: {
+        compactThreshold?: number;
+        type: "compaction";
+      };
+    };
   };
   reasoning?: {
     effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";

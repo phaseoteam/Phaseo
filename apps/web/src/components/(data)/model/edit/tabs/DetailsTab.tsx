@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { type ReactNode, useEffect, useRef, useState } from "react"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -118,6 +118,28 @@ function createEmptyLinkValues(): Record<LinkFieldKey, string> {
   }
 }
 
+function FieldRow({
+  label,
+  description,
+  children,
+}: {
+  label: string
+  description?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
+      <div className="space-y-0.5">
+        <Label className="text-sm font-medium">{label}</Label>
+        {description ? (
+          <p className="text-xs text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <div>{children}</div>
+    </div>
+  )
+}
+
 export default function DetailsTab({
   modelId,
   model,
@@ -201,91 +223,85 @@ export default function DetailsTab({
   }, [linkValues])
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <Label className="text-sm font-medium">Model Details</Label>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {DETAIL_FIELDS.map((field) => {
-            const isCompactField = COMPACT_DETAIL_FIELDS.has(field.key)
-            const compactLabel = isCompactField
-              ? formatCompactNumberLabel(detailValues[field.key])
-              : ""
+    <div className="space-y-5">
+      <section className="rounded-lg border p-4 space-y-4">
+        <div className="text-sm font-semibold">Model Details</div>
+        {DETAIL_FIELDS.map((field) => {
+          const isCompactField = COMPACT_DETAIL_FIELDS.has(field.key)
+          const compactLabel = isCompactField
+            ? formatCompactNumberLabel(detailValues[field.key])
+            : ""
 
-            return (
-              <label key={field.key} className="text-sm">
-                <div className="mb-1 text-muted-foreground">{field.label}</div>
-                {field.inputType === "date" ? (
-                  <DatePickerInput
-                    value={detailValues[field.key]}
-                    onChange={(value) =>
-                      setDetailValues((prev) => ({
-                        ...prev,
-                        [field.key]: value,
-                      }))
-                    }
-                    placeholder={field.placeholder}
-                  />
-                ) : isCompactField ? (
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      value={detailValues[field.key]}
-                      onChange={(event) =>
-                        setDetailValues((prev) => ({
-                          ...prev,
-                          [field.key]: sanitizeDigitInput(event.target.value),
-                        }))
-                      }
-                      placeholder={field.placeholder}
-                      className={compactLabel ? "pr-16" : undefined}
-                    />
-                    {compactLabel ? (
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                        {compactLabel}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : (
+          return (
+            <FieldRow key={field.key} label={field.label}>
+              {field.inputType === "date" ? (
+                <DatePickerInput
+                  value={detailValues[field.key]}
+                  onChange={(value) =>
+                    setDetailValues((prev) => ({
+                      ...prev,
+                      [field.key]: value,
+                    }))
+                  }
+                  placeholder={field.placeholder}
+                />
+              ) : isCompactField ? (
+                <div className="relative">
                   <Input
-                    type={field.inputType}
+                    type="text"
+                    inputMode="numeric"
                     value={detailValues[field.key]}
                     onChange={(event) =>
                       setDetailValues((prev) => ({
                         ...prev,
-                        [field.key]: event.target.value,
+                        [field.key]: sanitizeDigitInput(event.target.value),
                       }))
                     }
                     placeholder={field.placeholder}
+                    className={compactLabel ? "pr-16" : undefined}
                   />
-                )}
-              </label>
-            )
-          })}
-        </div>
-      </div>
+                  {compactLabel ? (
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      {compactLabel}
+                    </span>
+                  ) : null}
+                </div>
+              ) : (
+                <Input
+                  type={field.inputType}
+                  value={detailValues[field.key]}
+                  onChange={(event) =>
+                    setDetailValues((prev) => ({
+                      ...prev,
+                      [field.key]: event.target.value,
+                    }))
+                  }
+                  placeholder={field.placeholder}
+                />
+              )}
+            </FieldRow>
+          )
+        })}
+      </section>
 
-      <div className="space-y-3 border-t pt-4">
-        <Label className="text-sm font-medium">Model Links</Label>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {LINK_FIELDS.map((field) => (
-            <label key={field.key} className="text-sm">
-              <div className="mb-1 text-muted-foreground">{field.label}</div>
-              <Input
-                type="url"
-                value={linkValues[field.key]}
-                onChange={(event) =>
-                  setLinkValues((prev) => ({
-                    ...prev,
-                    [field.key]: event.target.value,
-                  }))
-                }
-                placeholder="https://..."
-              />
-            </label>
-          ))}
-        </div>
-      </div>
+      <section className="rounded-lg border p-4 space-y-4">
+        <div className="text-sm font-semibold">Model Links</div>
+        {LINK_FIELDS.map((field) => (
+          <FieldRow key={field.key} label={field.label}>
+            <Input
+              type="url"
+              value={linkValues[field.key]}
+              onChange={(event) =>
+                setLinkValues((prev) => ({
+                  ...prev,
+                  [field.key]: event.target.value,
+                }))
+              }
+              placeholder="https://..."
+            />
+          </FieldRow>
+        ))}
+      </section>
     </div>
   )
 }

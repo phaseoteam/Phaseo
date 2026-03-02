@@ -55,7 +55,7 @@ function resolveScopedTeamId(args: {
 }
 
 async function handleCredits(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -124,7 +124,7 @@ async function handleCredits(req: Request) {
 }
 
 async function handleActivity(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -206,4 +206,5 @@ export const activityRoutes = new Hono<Env>();
 
 creditsRoutes.get("/", withRuntime(handleCredits));
 activityRoutes.get("/", withRuntime(handleActivity));
+
 

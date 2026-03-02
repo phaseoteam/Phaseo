@@ -4,6 +4,17 @@
 
 import type { ProviderQuirks } from "../../quirks/types";
 
+const NOVITA_ENABLE_THINKING_MODELS = new Set<string>([
+	"zai-org/glm-4.5",
+	"deepseek/deepseek-v3.1",
+	"deepseek/deepseek-v3.1-terminus",
+	"deepseek/deepseek-v3.2-exp",
+]);
+
+const NOVITA_SEPARATE_REASONING_MODELS = new Set<string>([
+	"deepseek/deepseek-r1-turbo",
+]);
+
 function isReasoningEnabled(ir: any): boolean | null {
 	if (!ir?.reasoning) return null;
 	if (typeof ir.reasoning.enabled === "boolean") return ir.reasoning.enabled;
@@ -13,10 +24,19 @@ function isReasoningEnabled(ir: any): boolean | null {
 	return null;
 }
 
-function supportsNovitaSeparateReasoning(model: unknown): boolean {
-	const value = typeof model === "string" ? model.toLowerCase() : "";
-	// Novita docs currently list separate_reasoning support for deepseek-r1-turbo.
-	return value.includes("deepseek-r1");
+function normalizeNovitaModel(value: unknown): string {
+	if (typeof value !== "string") return "";
+	const trimmed = value.trim().toLowerCase();
+	if (!trimmed) return "";
+	// Gateway model IDs may include provider prefix (novitaai/<model-id>).
+	if (trimmed.startsWith("novitaai/")) return trimmed.slice("novitaai/".length);
+	if (trimmed.startsWith("novita-ai/")) return trimmed.slice("novita-ai/".length);
+	return trimmed;
+}
+
+function modelInAllowlist(model: unknown, allowlist: Set<string>): boolean {
+	const normalized = normalizeNovitaModel(model);
+	return allowlist.has(normalized);
 }
 
 export const novitaQuirks: ProviderQuirks = {
@@ -35,16 +55,19 @@ export const novitaQuirks: ProviderQuirks = {
 
 		const reasoningEnabled = isReasoningEnabled(ir);
 		if (reasoningEnabled === null) return;
+		const modelName = model ?? request.model;
 
-		if (request.enable_thinking == null) {
+		if (
+			request.enable_thinking == null &&
+			modelInAllowlist(modelName, NOVITA_ENABLE_THINKING_MODELS)
+		) {
 			request.enable_thinking = reasoningEnabled;
 		}
 
-		const modelName = model ?? request.model;
 		if (
 			reasoningEnabled &&
 			request.separate_reasoning == null &&
-			supportsNovitaSeparateReasoning(modelName)
+			modelInAllowlist(modelName, NOVITA_SEPARATE_REASONING_MODELS)
 		) {
 			request.separate_reasoning = true;
 		}

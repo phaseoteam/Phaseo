@@ -90,8 +90,8 @@
     "capabilities": []
   },
   {
-    "api_model_id": "moonshot/kimi-k2.5",
-    "provider_api_model_id": "baseten:moonshot/kimi-k2.5",
+    "api_model_id": "moonshotai/kimi-k2.5",
+    "provider_api_model_id": "baseten:moonshotai/kimi-k2.5",
     "provider_model_slug": "moonshotai/Kimi-K2.5",
     "internal_model_id": "moonshot-ai/kimi-k2-5-2026-01-27",
     "is_active_gateway": false,
@@ -105,8 +105,8 @@
     "capabilities": []
   },
   {
-    "api_model_id": "moonshot/kimi-k2-thinking",
-    "provider_api_model_id": "baseten:moonshot/kimi-k2-thinking",
+    "api_model_id": "moonshotai/kimi-k2-thinking",
+    "provider_api_model_id": "baseten:moonshotai/kimi-k2-thinking",
     "provider_model_slug": "moonshotai/Kimi-K2-Thinking",
     "internal_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
     "is_active_gateway": false,
@@ -120,8 +120,8 @@
     "capabilities": []
   },
   {
-    "api_model_id": "moonshot/kimi-k2-0905",
-    "provider_api_model_id": "baseten:moonshot/kimi-k2-0905",
+    "api_model_id": "moonshotai/kimi-k2-0905",
+    "provider_api_model_id": "baseten:moonshotai/kimi-k2-0905",
     "provider_model_slug": "moonshotai/Kimi-K2-Instruct-0905",
     "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
     "is_active_gateway": false,

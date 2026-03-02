@@ -111,8 +111,21 @@ const ResponseFormatSchema = z.union([
             schema: z.any().optional(),
             schema_: z.any().optional(),
         }).optional(),
-    }).passthrough(),
+	}).passthrough(),
 ]);
+
+const OpenAIContextManagementSchema = z.object({
+	type: z.literal("compaction"),
+	compact_threshold: z.number().optional(),
+	compactThreshold: z.number().optional(),
+}).passthrough();
+
+const ResponsesProviderOptionsSchema = z.object({
+	openai: z.object({
+		context_management: OpenAIContextManagementSchema.optional(),
+		contextManagement: OpenAIContextManagementSchema.optional(),
+	}).passthrough().optional(),
+}).passthrough();
 
 function isFileLike(value: unknown): boolean {
     if (!value || typeof value !== "object") return false;
@@ -163,9 +176,11 @@ export const ResponsesSchema = z.object({
         variables: z.record(z.any()).optional(),
         version: z.string().optional(),
     }).optional(),
-    prompt_cache_key: z.string().nullable().optional(),
-    prompt_cache_retention: z.string().optional(),
-    modalities: z.array(z.string()).optional(),
+	prompt_cache_key: z.string().nullable().optional(),
+	prompt_cache_retention: z.string().optional(),
+	provider_options: ResponsesProviderOptionsSchema.optional(),
+	providerOptions: ResponsesProviderOptionsSchema.optional(),
+	modalities: z.array(z.string()).optional(),
     response_modalities: z.array(z.string()).optional(),
     responseModalities: z.array(z.string()).optional(),
     image_config: ImageConfigSchema,

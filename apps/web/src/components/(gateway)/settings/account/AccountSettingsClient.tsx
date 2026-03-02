@@ -143,6 +143,14 @@ export default function AccountSettingsClient({
 		document
 			.getElementById("dashboard-shell")
 			?.setAttribute("data-obfuscate-pii", next ? "true" : "false");
+		document
+			.querySelectorAll("[data-obfuscation-sync='true']")
+			.forEach((node) =>
+				(node as HTMLElement).setAttribute(
+					"data-obfuscate-pii",
+					next ? "true" : "false"
+				)
+			);
 		document.cookie = `${OBFUSCATE_INFO_COOKIE}=${serialized}; path=/; max-age=${
 			60 * 60 * 24 * 365
 		}; samesite=lax`;

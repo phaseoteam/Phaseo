@@ -14,6 +14,14 @@ type ProviderModelRow = {
 	effective_to: string | null;
 };
 
+const decodeQueryValue = (value: string): string => {
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return value;
+	}
+};
+
 const resolveGatewayModelIdFromInternalId = async (
 	internalModelId: string,
 	nowIso = new Date().toISOString()
@@ -57,7 +65,7 @@ export default async function ChatPlaygroundLoader({
     promptParam,
 }: ChatPlaygroundLoaderProps) {
     const models = await fetchFrontendGatewayModels();
-	const trimmedModelParam = (modelParam ?? "").trim();
+	const trimmedModelParam = decodeQueryValue((modelParam ?? "").trim());
 	const modelIdSet = new Set(models.map((m) => m.modelId));
 	let resolvedModelParam: string | null = trimmedModelParam || null;
 

@@ -6,7 +6,6 @@ export type ClientErrorPayload = {
 	source:
 		| "window.error"
 		| "window.unhandledrejection"
-		| "global-error-boundary"
 		| "manual";
 	message: string;
 	stack?: string | null;

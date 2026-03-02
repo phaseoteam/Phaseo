@@ -1,0 +1,44 @@
+[
+  {
+    "api_model_id": "moonshotai/kimi-k2-0905",
+    "provider_api_model_id": "moonshotai-turbo:moonshotai/kimi-k2-0905",
+    "provider_model_slug": "kimi-k2-turbo-preview",
+    "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2025-09-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2-thinking",
+    "provider_api_model_id": "moonshotai-turbo:moonshotai/kimi-k2-thinking",
+    "provider_model_slug": "kimi-k2-thinking-turbo",
+    "internal_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2025-11-06T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

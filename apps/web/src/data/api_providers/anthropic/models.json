@@ -832,7 +832,7 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2024-03-04T00:00:00",
-    "effective_to": "2026-01-05T00:00:00",
+    "effective_to": null,
     "capabilities": []
   },
   {

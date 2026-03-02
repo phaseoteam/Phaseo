@@ -57,7 +57,7 @@ echo ""
 echo "📝 Test 1: Create OAuth App"
 echo "----------------------------"
 
-CREATE_RESPONSE=$(curl -s -X POST "$API_BASE_URL/v1/control/oauth-clients" \
+CREATE_RESPONSE=$(curl -s -X POST "$API_BASE_URL/v1/oauth-clients" \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -236,7 +236,7 @@ echo ""
 echo "📋 Test 8: List OAuth Apps"
 echo "--------------------------"
 
-LIST_RESPONSE=$(curl -s "$API_BASE_URL/v1/control/oauth-clients" \
+LIST_RESPONSE=$(curl -s "$API_BASE_URL/v1/oauth-clients" \
   -H "Authorization: Bearer $API_KEY")
 
 APP_COUNT=$(echo "$LIST_RESPONSE" | jq '.data | length')
@@ -284,7 +284,7 @@ echo ""
 echo "🧹 Test 10: Cleanup"
 echo "-------------------"
 
-DELETE_RESPONSE=$(curl -s -X DELETE "$API_BASE_URL/v1/control/oauth-clients/$CLIENT_ID" \
+DELETE_RESPONSE=$(curl -s -X DELETE "$API_BASE_URL/v1/oauth-clients/$CLIENT_ID" \
   -H "Authorization: Bearer $API_KEY")
 
 if echo "$DELETE_RESPONSE" | jq -e '.message' > /dev/null 2>&1; then

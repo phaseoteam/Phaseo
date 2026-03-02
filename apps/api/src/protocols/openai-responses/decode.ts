@@ -24,6 +24,44 @@ import {
 	resolveServiceTierFromSpeedAndTier,
 } from "../shared/text-normalizers";
 
+type OpenAIContextManagementConfig = {
+	type: "compaction";
+	compact_threshold?: number;
+};
+
+function normalizeOpenAIContextManagement(
+	req: ResponsesRequest,
+): OpenAIContextManagementConfig | undefined {
+	const openaiProviderOptions =
+		(req as any).provider_options?.openai ??
+		(req as any).providerOptions?.openai;
+	if (!openaiProviderOptions || typeof openaiProviderOptions !== "object") {
+		return undefined;
+	}
+
+	const rawContextManagement =
+		openaiProviderOptions.context_management ??
+		openaiProviderOptions.contextManagement;
+	if (!rawContextManagement || typeof rawContextManagement !== "object") {
+		return undefined;
+	}
+
+	if ((rawContextManagement as any).type !== "compaction") {
+		return undefined;
+	}
+
+	const compactThreshold =
+		(rawContextManagement as any).compact_threshold ??
+		(rawContextManagement as any).compactThreshold;
+
+	return {
+		type: "compaction",
+		...(typeof compactThreshold === "number"
+			? { compact_threshold: compactThreshold }
+			: {}),
+	};
+}
+
 /**
  * Decode OpenAI Responses request to IR format
  *
@@ -38,6 +76,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	const messages: IRMessage[] = [];
 	const input = (req as any).input_items ?? req.input;
 	const pendingUserParts: IRContentPart[] = [];
+	const openAIContextManagement = normalizeOpenAIContextManagement(req);
 	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
 	const metadata = (req as any).user
 		? { ...(metadataFromRequest ?? {}), user: (req as any).user }
@@ -104,6 +143,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 									arguments: tc.function?.arguments || tc.arguments || "{}",
 								}))
 								: undefined,
+							phase: item.phase ?? undefined,
 						});
 					} else if (item.role === "tool" && item.tool_call_id) {
 						messages.push({
@@ -122,7 +162,18 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 				// Fallback: accept Chat Completions-style requests sent to /responses
 				else if (Array.isArray((req as any).messages)) {
 					flushPendingUserParts();
-					return decodeOpenAIChatRequest(req as any);
+					const fallback = decodeOpenAIChatRequest(req as any);
+					if (!openAIContextManagement) return fallback;
+					return {
+						...fallback,
+						vendor: {
+							...(fallback.vendor ?? {}),
+							openai: {
+								...((fallback.vendor as any)?.openai ?? {}),
+								context_management: openAIContextManagement,
+							},
+						},
+					};
 				}
 				// Function call item (assistant tool call)
 				else if (item.type === "function_call") {
@@ -253,6 +304,13 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 			(req as any).responseModalities,
 		),
 		imageConfig: normalizeImageConfig((req as any).image_config ?? (req as any).imageConfig),
+		vendor: openAIContextManagement
+			? {
+				openai: {
+					context_management: openAIContextManagement,
+				},
+			}
+			: undefined,
 	};
 }
 

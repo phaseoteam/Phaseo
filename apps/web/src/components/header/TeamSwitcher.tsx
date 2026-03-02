@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
 	LogOut,
@@ -49,6 +49,7 @@ export default function TeamSwitcher({
 	userRole,
 }: TeamSwitcherProps) {
 	const router = useRouter();
+	const pathname = usePathname();
 	const { theme, setTheme } = useTheme();
 
 	const navigateWithViewTransition = React.useCallback(
@@ -78,6 +79,7 @@ export default function TeamSwitcher({
 		getInitialTeamId(initialActiveTeamId)
 	);
 	const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
+	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
 	const activeTeam = teams.find((t) => t.id === activeTeamId) ?? teams[0];
 	const currentTheme =
@@ -106,6 +108,11 @@ export default function TeamSwitcher({
 			`wait=${minutesUntilNextWindow ?? "n/a"}`
 		);
 	}, [supportIsOpen, minutesUntilNextWindow]);
+
+	useEffect(() => {
+		setIsTeamMenuOpen(false);
+		setIsProfileMenuOpen(false);
+	}, [pathname]);
 
 	return (
 		<div className="flex items-center gap-2">
@@ -208,6 +215,7 @@ export default function TeamSwitcher({
 								className="flex w-full items-center"
 								onClick={(e) => {
 									e.preventDefault();
+									setIsTeamMenuOpen(false);
 									navigateWithViewTransition("/settings/teams");
 								}}
 							>
@@ -220,7 +228,10 @@ export default function TeamSwitcher({
 			</DropdownMenu>
 
 			{/* Profile Dropdown */}
-			<DropdownMenu>
+			<DropdownMenu
+				open={isProfileMenuOpen}
+				onOpenChange={setIsProfileMenuOpen}
+			>
 				<DropdownMenuTrigger asChild>
 					<button
 						aria-label="Open profile menu"
@@ -302,6 +313,7 @@ export default function TeamSwitcher({
 							href="/settings/account"
 							onClick={(e) => {
 								e.preventDefault();
+								setIsProfileMenuOpen(false);
 								navigateWithViewTransition("/settings/account");
 							}}
 						>
@@ -322,6 +334,7 @@ export default function TeamSwitcher({
 							)}`}
 							onClick={(e) => {
 								e.preventDefault();
+								setIsProfileMenuOpen(false);
 								navigateWithViewTransition(
 									`/settings/usage?team_id=${encodeURIComponent(
 										activeTeamId ?? "",
@@ -342,6 +355,7 @@ export default function TeamSwitcher({
 							href="/settings/credits"
 							onClick={(e) => {
 								e.preventDefault();
+								setIsProfileMenuOpen(false);
 								navigateWithViewTransition("/settings/credits");
 							}}
 						>
@@ -358,6 +372,7 @@ export default function TeamSwitcher({
 							href="/settings/keys"
 							onClick={(e) => {
 								e.preventDefault();
+								setIsProfileMenuOpen(false);
 								navigateWithViewTransition("/settings/keys");
 							}}
 						>
@@ -370,7 +385,8 @@ export default function TeamSwitcher({
 						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
 						onSelect={(e) => {
 							e.preventDefault();
-							router.push("/contact");
+							setIsProfileMenuOpen(false);
+							navigateWithViewTransition("/contact");
 						}}
 					>
 						<div className="flex items-center justify-between w-full">
@@ -413,6 +429,7 @@ export default function TeamSwitcher({
 						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
 						onSelect={(e) => {
 							e.preventDefault();
+							setIsProfileMenuOpen(false);
 							onSignOut?.();
 						}}
 					>

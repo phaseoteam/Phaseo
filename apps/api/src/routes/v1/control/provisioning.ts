@@ -211,7 +211,7 @@ function resolveScopedTeamId(args: {
 }
 
 async function handleListKeys(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -277,7 +277,7 @@ async function handleListKeys(req: Request) {
 }
 
 async function handleCreateKey(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -424,7 +424,7 @@ async function handleCreateKey(req: Request) {
 }
 
 async function handleGetKey(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -483,7 +483,7 @@ async function handleGetKey(req: Request) {
 }
 
 async function handleGetKeyAlias(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -541,7 +541,7 @@ async function handleGetKeyAlias(req: Request) {
 }
 
 async function handleUpdateKey(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -624,7 +624,7 @@ async function handleUpdateKey(req: Request) {
 }
 
 async function handleDeleteKey(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -696,4 +696,5 @@ export const keyAliasRoutes = new Hono<Env>();
 keyAliasRoutes.get("/keys", withRuntime(handleListKeys));
 keyAliasRoutes.post("/keys", withRuntime(handleCreateKey));
 keyAliasRoutes.get("/key", withRuntime(handleGetKeyAlias));
+
 

@@ -1,11 +1,18 @@
-﻿import { Suspense } from "react";
+import { Suspense } from "react";
+import type { Metadata } from "next";
 import ModelsTableHeader from "@/components/(data)/models/Models/ModelsTableHeader";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
-export const metadata = {
+export const metadata: Metadata = {
 	title: "Models table view",
+	description:
+		"Internal table layout for browsing AI Stats model records in bulk with dense columns, sortable metadata, and quick cross-provider comparisons.",
+	robots: {
+		index: false,
+		follow: true,
+	},
 };
 
 export default async function ModelsTablePage() {
@@ -43,3 +50,4 @@ export default async function ModelsTablePage() {
 		</div>
 	);
 }
+

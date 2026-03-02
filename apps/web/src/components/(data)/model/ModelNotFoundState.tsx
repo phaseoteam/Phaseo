@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { withUTM } from "@/lib/utm";
 
 interface ModelNotFoundStateProps {
 	fullScreen?: boolean;
@@ -41,13 +40,7 @@ export default function ModelNotFoundState({
 					<div className="mt-4 flex flex-col items-center gap-3">
 						<p className="text-sm text-muted-foreground">Got one to suggest?</p>
 						<a
-							href={withUTM(
-								"https://github.com/AI-Stats/AI-Stats/issues/new",
-								{
-									campaign: "model-suggestion",
-									content: "model-not-found-state",
-								}
-							)}
+							href="https://github.com/AI-Stats/AI-Stats/issues/new"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"

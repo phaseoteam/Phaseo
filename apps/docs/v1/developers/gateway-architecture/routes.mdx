@@ -10,8 +10,8 @@ The gateway uses Hono to register protocol-accurate routes. The routes call into
 `apps/api/src/routes` is the entry point for API endpoints:
 
 - `root.ts` and `v1/index.ts` register route groups.
-- `v1/data/*` wires OpenAI- and Anthropic-compatible data surfaces (chat, responses, messages, files, media).
-- `v1/control/health.ts`, `v1/control/models.ts`, and `v1/control/analytics.ts` cover control/utility endpoints.
+- `v1/data/*` wires OpenAI- and Anthropic-compatible inference surfaces (chat, responses, messages, files, media).
+- `v1/control/health.ts`, `v1/control/models.ts`, and `v1/control/analytics.ts` cover platform and utility endpoints.
 
 ## Pipeline stages
 

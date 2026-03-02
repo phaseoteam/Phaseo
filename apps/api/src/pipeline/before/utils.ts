@@ -52,6 +52,7 @@ export function buildProviderCandidatesWithDiagnostics(
         candidates.push({
             providerId: provider.providerId,
             providerStatus: provider.providerStatus ?? "not_ready",
+            capabilityStatus: provider.capabilityStatus ?? "active",
             adapter,
             baseWeight: provider.baseWeight > 0 ? provider.baseWeight : 1,
             byokMeta: provider.byokMeta,

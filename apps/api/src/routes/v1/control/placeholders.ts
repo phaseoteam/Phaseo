@@ -28,7 +28,7 @@ const KNOWN_ENDPOINTS = [
 ];
 
 async function handleListEndpoints(req: Request) {
-	const auth = await guardAuth(req);
+	const auth = await guardAuth(req, { useKvCache: false });
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
@@ -68,4 +68,5 @@ export const placeholdersRoutes = new Hono<Env>();
 
 placeholdersRoutes.get("/endpoints", withRuntime(handleListEndpoints));
 placeholdersRoutes.route("/", keyAliasRoutes);
+
 

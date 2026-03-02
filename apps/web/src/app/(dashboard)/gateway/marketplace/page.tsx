@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import {
 	ArrowLeft,
 	BadgeCheck,
@@ -29,11 +30,20 @@ import {
 } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { buildMetadata } from "@/lib/seo";
 import { createClient } from "@/utils/supabase/server";
 
-export const metadata = {
+export const metadata: Metadata = buildMetadata({
 	title: "Gateway Marketplace - AI Stats",
-};
+	description:
+		"Browse public AI Stats Gateway presets, copy proven configurations to your workspace, and customize model routing, retries, and policy behavior for your team.",
+	path: "/gateway/marketplace",
+	keywords: [
+		"AI Stats marketplace",
+		"gateway presets",
+		"AI routing presets",
+	],
+});
 
 type MarketplacePreset = {
 	id: string;

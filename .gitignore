@@ -17,6 +17,7 @@ turbo-*.log
 /.cache
 /internal/*
 !/internal/fetch-provider-model-endpoints.mjs
+/guides/
 # /supabase
 guides/private/
 /apps/api/reports

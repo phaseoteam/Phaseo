@@ -9,6 +9,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { getHelpCategory, getHelpCategoryParams } from "@/lib/content/helpCenter";
+import { buildMetadata } from "@/lib/seo";
 
 type PageProps = {
 	params: Promise<{ category: string }>;
@@ -21,18 +22,27 @@ export async function generateStaticParams(): Promise<Array<{ category: string }
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
 	const { category } = await props.params;
 	const categoryData = await getHelpCategory(category);
+	const path = `/help/${category}`;
 
 	if (!categoryData) {
-		return {
+		return buildMetadata({
 			title: "Help Category",
-			description: "Help center category page.",
-		};
+			description:
+				"Explore help articles in this AI Stats support category, including setup guides, troubleshooting steps, policy references, and practical workflows for day-to-day usage.",
+			path,
+		});
 	}
 
-	return {
+	return buildMetadata({
 		title: `${categoryData.title} Help`,
-		description: categoryData.description,
-	};
+		description: `${categoryData.description} Browse practical guides, troubleshooting steps, and implementation tips for this area of AI Stats.`,
+		path,
+		keywords: [
+			`${categoryData.title} help`,
+			"AI Stats help center",
+			"AI gateway support",
+		],
+	});
 }
 
 export default async function HelpCategoryPage({ params }: PageProps) {

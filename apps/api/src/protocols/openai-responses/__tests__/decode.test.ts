@@ -88,6 +88,75 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.messages[2].role).toBe("user");
 	});
 
+	it("should preserve assistant message phase", () => {
+		const request = {
+			model: "gpt-5.3-codex",
+			input: [
+				{
+					type: "message",
+					role: "assistant",
+					phase: "commentary",
+					content: "Thinking through options",
+				},
+			],
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+
+		expect(ir.messages).toHaveLength(1);
+		expect(ir.messages[0].role).toBe("assistant");
+		if (ir.messages[0].role === "assistant") {
+			expect(ir.messages[0].phase).toBe("commentary");
+		}
+	});
+
+	it("should decode provider_options.openai.context_management", () => {
+		const request = {
+			model: "openai/gpt-5-nano",
+			input: "hello",
+			provider_options: {
+				openai: {
+					context_management: {
+						type: "compaction",
+						compact_threshold: 0.75,
+					},
+				},
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+
+		expect(ir.vendor).toEqual({
+			openai: {
+				context_management: {
+					type: "compaction",
+					compact_threshold: 0.75,
+				},
+			},
+		});
+	});
+
+	it("should treat assistant message phase as optional when omitted", () => {
+		const request = {
+			model: "gpt-5-nano",
+			input: [
+				{
+					type: "message",
+					role: "assistant",
+					content: "No phase provided",
+				},
+			],
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+
+		expect(ir.messages).toHaveLength(1);
+		expect(ir.messages[0].role).toBe("assistant");
+		if (ir.messages[0].role === "assistant") {
+			expect(ir.messages[0].phase).toBeUndefined();
+		}
+	});
+
 	it("should decode message with content array", () => {
 		const request = {
 			model: "gpt-4",

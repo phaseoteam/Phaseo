@@ -9,19 +9,23 @@ export interface GatewayProviderDetails {
 }
 
 export interface GatewayProviderModel {
-    id: string;
-    api_provider_id: string;
-    provider_model_slug?: string | null;
-    model_id: string;
-    endpoint: string;
-    is_active_gateway: boolean;
-    input_modalities: string;
-    output_modalities: string;
-    effective_from?: string | null;
-    effective_to?: string | null;
-    created_at?: string | null;
-    updated_at?: string | null;
-    provider?: GatewayProviderDetails | null;
+	id: string;
+	api_provider_id: string;
+	provider_model_slug?: string | null;
+	quantization_scheme?: string | null;
+	context_length?: number | null;
+	model_id: string;
+	endpoint: string;
+	is_active_gateway: boolean;
+	input_modalities: string;
+	output_modalities: string;
+	max_input_tokens?: number | null;
+	max_output_tokens?: number | null;
+	effective_from?: string | null;
+	effective_to?: string | null;
+	created_at?: string | null;
+	updated_at?: string | null;
+	provider?: GatewayProviderDetails | null;
 }
 
 export interface ModelGatewayMetadata {
@@ -70,12 +74,12 @@ export default async function getModelGatewayMetadata(
         throw new Error("Model not found");
     }
 
-    const { data: providerModels, error: providerError } = await supabase
-        .from("data_api_provider_models")
-        .select(
-            "provider_api_model_id, provider_id, api_model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, effective_from, effective_to, created_at, updated_at"
-        )
-        .eq("internal_model_id", modelId);
+	const { data: providerModels, error: providerError } = await supabase
+		.from("data_api_provider_models")
+		.select(
+			"provider_api_model_id, provider_id, api_model_id, provider_model_slug, internal_model_id, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
+		)
+		.eq("internal_model_id", modelId);
 
     if (providerError) {
         throw new Error(providerError.message ?? "Failed to load gateway providers");
@@ -85,10 +89,12 @@ export default async function getModelGatewayMetadata(
         .map((row) => row.provider_api_model_id)
         .filter((id): id is string => Boolean(id));
 
-    const { data: caps, error: capsError } = await supabase
-        .from("data_api_provider_model_capabilities")
-        .select("provider_api_model_id, capability_id, params, status")
-        .in("provider_api_model_id", providerModelIds);
+	const { data: caps, error: capsError } = await supabase
+		.from("data_api_provider_model_capabilities")
+		.select(
+			"provider_api_model_id, capability_id, params, status, max_input_tokens, max_output_tokens"
+		)
+		.in("provider_api_model_id", providerModelIds);
 
     if (capsError) {
         throw new Error(capsError.message ?? "Failed to load gateway capabilities");
@@ -113,30 +119,38 @@ export default async function getModelGatewayMetadata(
         });
     }
 
-    const providers: GatewayProviderModel[] = [];
-    for (const cap of caps ?? []) {
-        if (cap.status === "disabled") continue;
-        const pm = (providerModels ?? []).find(
-            (row) => row.provider_api_model_id === cap.provider_api_model_id
-        );
-        if (!pm || !cap.capability_id) continue;
-        providers.push({
-            id: pm.provider_api_model_id,
-            api_provider_id: pm.provider_id,
-            provider_model_slug: pm.provider_model_slug,
-            model_id: pm.api_model_id,
-            endpoint: cap.capability_id,
-            is_active_gateway: pm.is_active_gateway,
-            input_modalities: Array.isArray(pm.input_modalities)
-                ? pm.input_modalities.join(",")
-                : pm.input_modalities ?? "",
-            output_modalities: Array.isArray(pm.output_modalities)
-                ? pm.output_modalities.join(",")
-                : pm.output_modalities ?? "",
-            effective_from: pm.effective_from,
-            effective_to: pm.effective_to,
-            created_at: pm.created_at,
-            updated_at: pm.updated_at,
+	const providerModelMap = new Map<string, (typeof providerModels)[number]>();
+	for (const row of providerModels ?? []) {
+		if (!row.provider_api_model_id) continue;
+		providerModelMap.set(row.provider_api_model_id, row);
+	}
+
+	const providers: GatewayProviderModel[] = [];
+	for (const cap of caps ?? []) {
+		if (cap.status === "disabled") continue;
+		const pm = providerModelMap.get(cap.provider_api_model_id);
+		if (!pm || !cap.capability_id) continue;
+		providers.push({
+			id: pm.provider_api_model_id,
+			api_provider_id: pm.provider_id,
+			provider_model_slug: pm.provider_model_slug,
+			quantization_scheme: pm.quantization_scheme ?? null,
+			context_length: pm.context_length ?? null,
+			model_id: pm.api_model_id,
+			endpoint: cap.capability_id,
+			is_active_gateway: pm.is_active_gateway,
+			input_modalities: Array.isArray(pm.input_modalities)
+				? pm.input_modalities.join(",")
+				: pm.input_modalities ?? "",
+			output_modalities: Array.isArray(pm.output_modalities)
+				? pm.output_modalities.join(",")
+				: pm.output_modalities ?? "",
+			max_input_tokens: cap.max_input_tokens ?? null,
+			max_output_tokens: cap.max_output_tokens ?? null,
+			effective_from: pm.effective_from,
+			effective_to: pm.effective_to,
+			created_at: pm.created_at,
+			updated_at: pm.updated_at,
             provider: providerMap.get(pm.provider_id) ?? null,
         });
     }

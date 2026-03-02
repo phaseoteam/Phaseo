@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: "AI Model Rankings - Live Usage Statistics",
         description:
-            "Compare AI models by usage, cost, and performance. Real-time data from AI Stats Gateway.",
+            "Compare AI models by usage, cost, latency, and throughput with live gateway data, provider breakdowns, and performance rankings from AI Stats.",
         type: "website",
     },
 };

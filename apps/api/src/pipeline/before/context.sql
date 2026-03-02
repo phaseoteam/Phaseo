@@ -350,6 +350,9 @@ begin
       m.provider_api_model_id,
       m.provider_id,
       m.provider_model_slug,
+      m.input_modalities,
+      m.output_modalities,
+      c.status as capability_status,
       c.params as capability_params,
       c.max_input_tokens,
       c.max_output_tokens
@@ -358,7 +361,7 @@ begin
       on c.provider_api_model_id = m.provider_api_model_id
     where m.api_model_id = resolved_model
       and c.capability_id = gateway_fetch_request_context.endpoint
-      and c.status = 'active'
+      and c.status in ('active', 'deranked')
       and m.is_active_gateway
       and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
       and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
@@ -370,6 +373,9 @@ begin
         jsonb_build_object(
           'provider_id', pr.provider_id,
           'provider_model_slug', pr.provider_model_slug,
+          'input_modalities', pr.input_modalities,
+          'output_modalities', pr.output_modalities,
+          'capability_status', pr.capability_status,
           'capability_params', coalesce(pr.capability_params, '{}'::jsonb),
           'max_input_tokens', pr.max_input_tokens,
           'max_output_tokens', pr.max_output_tokens,

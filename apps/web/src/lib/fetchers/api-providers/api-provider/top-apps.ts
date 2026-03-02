@@ -5,6 +5,7 @@ export type AppStats = {
     app_id: string;
     title: string;
     url: string | null;
+    image_url: string | null;
     total_tokens: number;
 };
 
@@ -47,10 +48,28 @@ export async function getTopApps(
             return [];
         }
 
+        const appIds = data
+            .map((row: any) => String(row?.app_id ?? "").trim())
+            .filter(Boolean);
+
+        const imageById = new Map<string, string | null>();
+        if (appIds.length > 0) {
+            const { data: appRows } = await supabase
+                .from("api_apps")
+                .select("id, image_url")
+                .in("id", appIds);
+
+            for (const row of appRows ?? []) {
+                if (!row?.id) continue;
+                imageById.set(row.id, row.image_url ?? null);
+            }
+        }
+
         return data.map((row: any) => ({
             app_id: row.app_id,
             title: row.title || 'Unknown App',
             url: row.url || null,
+            image_url: imageById.get(row.app_id) ?? null,
             total_tokens: Number(row.total_tokens),
         }));
     } catch (err) {

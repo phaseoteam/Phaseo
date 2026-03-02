@@ -20,9 +20,9 @@ function keyVersionKey(scope: "kid" | "id", value: string): string {
 }
 
 export async function getJson<T>(key: string): Promise<T | null> {
-    const raw = await getCache().get(key, "text");
-    if (!raw) return null;
     try {
+        const raw = await getCache().get(key, "text");
+        if (!raw) return null;
         return JSON.parse(raw) as T;
     } catch {
         return null;
@@ -39,9 +39,14 @@ export async function deleteKey(key: string): Promise<void> {
 }
 
 export async function getKeyVersion(scope: "kid" | "id", value: string): Promise<number> {
-    const raw = await getCache().get(keyVersionKey(scope, value), "text");
-    const parsed = raw ? Number(raw) : 0;
-    return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+    try {
+        const raw = await getCache().get(keyVersionKey(scope, value), "text");
+        const parsed = raw ? Number(raw) : 0;
+        return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+    } catch {
+        // Fail open: if KV is unavailable, use version 0 to keep requests serving.
+        return 0;
+    }
 }
 
 export async function setKeyVersion(scope: "kid" | "id", value: string, version: number): Promise<number> {

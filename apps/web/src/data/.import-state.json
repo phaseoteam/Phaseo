@@ -1637,7 +1637,7 @@
       }
     },
     "src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "51c6be6995dcc7fd38b87d1ee175e173",
+      "hash": "fc196551620d510a13599940a7a948fa",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -1711,32 +1711,6 @@
         "api_provider_id": "mistral"
       }
     },
-    "src/data/api_providers/moonshot-ai/api_provider.json": {
-      "hash": "3a3e5bc421f63cb5999fb6080a767297",
-      "meta": {
-        "api_provider_id": "moonshot-ai"
-      }
-    },
-    "src/data/api_providers/moonshot-ai/models.json": {
-      "hash": "2a1e4ac2f79ac35efa22d4a21ad2e99a",
-      "meta": {
-        "api_provider_id": "moonshot-ai",
-        "kind": "provider_models"
-      }
-    },
-    "src/data/api_providers/moonshot-ai-turbo/api_provider.json": {
-      "hash": "307cc1ef3d1897afb3a651e493d9febf",
-      "meta": {
-        "api_provider_id": "moonshot-ai-turbo"
-      }
-    },
-    "src/data/api_providers/moonshot-ai-turbo/models.json": {
-      "hash": "d237bd4646e5e54b0c666d18f611d955",
-      "meta": {
-        "api_provider_id": "moonshot-ai-turbo",
-        "kind": "provider_models"
-      }
-    },
     "src/data/api_providers/morph/api_provider.json": {
       "hash": "4a7803d3361aa01f8447786126dc0c6f",
       "meta": {
@@ -1747,12 +1721,6 @@
       "hash": "9c8fbb7b42cc999f5576dac749627f2d",
       "meta": {
         "api_provider_id": "nebius-token-factory"
-      }
-    },
-    "src/data/api_providers/novitaai/api_provider.json": {
-      "hash": "901a4551e61f142539cd5adb8bb94539",
-      "meta": {
-        "api_provider_id": "novitaai"
       }
     },
     "src/data/api_providers/openai/api_provider.json": {
@@ -2172,21 +2140,12 @@
       }
     },
     "src/data/pricing/google-ai-studio/google-gemini-3-pro-preview/text.generate/pricing.json": {
-      "hash": "7b5c8280d233b97a6873a6cc1162f1fa",
+      "hash": "6994c1b3f7623dc53709530a964bdc59",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "capability_id": "text.generate",
         "model_id": "google/gemini-3-pro-preview",
         "model_key": "google-ai-studio:google/gemini-3-pro-preview:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/xiaomi-mimo-v2-flash/text.generate/pricing.json": {
-      "hash": "832e911acf5bd17068fd91850ebb6213",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "xiaomi/mimo-v2-flash",
-        "model_key": "novitaai:xiaomi/mimo-v2-flash:text.generate"
       }
     },
     "src/data/pricing/openai/openai-ada/text.generate/pricing.json": {
@@ -3088,60 +3047,6 @@
         "capability_id": "text.generate",
         "model_id": "minimax/minimax-m2.1",
         "model_key": "minimax-lightning:minimax/minimax-m2.1:text.generate"
-      }
-    },
-    "src/data/pricing/moonshot-ai/moonshot-ai-kimi-k2-2025-07-11/text.generate/pricing.json": {
-      "hash": "bbd3c28386332385f6cde43e28f13c65",
-      "meta": {
-        "api_provider_id": "moonshot-ai",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2-2025-07-11",
-        "model_key": "moonshot-ai:moonshot-ai/kimi-k2-2025-07-11:text.generate"
-      }
-    },
-    "src/data/pricing/moonshot-ai/moonshot-ai-kimi-k2-2025-09-05/text.generate/pricing.json": {
-      "hash": "79dff93e2cbc2b48b4101771c7efd399",
-      "meta": {
-        "api_provider_id": "moonshot-ai",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2-2025-09-05",
-        "model_key": "moonshot-ai:moonshot-ai/kimi-k2-2025-09-05:text.generate"
-      }
-    },
-    "src/data/pricing/moonshot-ai/moonshot-ai-kimi-k2-thinking/text.generate/pricing.json": {
-      "hash": "2f6d3583e83ee9995427917ae222e7e8",
-      "meta": {
-        "api_provider_id": "moonshot-ai",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2-thinking",
-        "model_key": "moonshot-ai:moonshot-ai/kimi-k2-thinking:text.generate"
-      }
-    },
-    "src/data/pricing/moonshot-ai/moonshot-ai-kimi-k2.5/text.generate/pricing.json": {
-      "hash": "2a27090c753a1df07c24d44ea4443016",
-      "meta": {
-        "api_provider_id": "moonshot-ai",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2.5",
-        "model_key": "moonshot-ai:moonshot-ai/kimi-k2.5:text.generate"
-      }
-    },
-    "src/data/pricing/moonshot-ai-turbo/moonshot-ai-kimi-k2-2025-09-05/text.generate/pricing.json": {
-      "hash": "2b9155bc8b20f22e70632dca88a8621d",
-      "meta": {
-        "api_provider_id": "moonshot-ai-turbo",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2-2025-09-05",
-        "model_key": "moonshot-ai-turbo:moonshot-ai/kimi-k2-2025-09-05:text.generate"
-      }
-    },
-    "src/data/pricing/moonshot-ai-turbo/moonshot-ai-kimi-k2-thinking/text.generate/pricing.json": {
-      "hash": "5e4310eed2a76b4c4164e5d9632020a0",
-      "meta": {
-        "api_provider_id": "moonshot-ai-turbo",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2-thinking",
-        "model_key": "moonshot-ai-turbo:moonshot-ai/kimi-k2-thinking:text.generate"
       }
     },
     "src/data/pricing/openai/openai-chatgpt-4o/text.generate/pricing.json": {
@@ -4143,13 +4048,6 @@
         "previous_model_id": null
       }
     },
-    "src/data/api_providers/novitaai/models.json": {
-      "hash": "be435a6ed5cbf018346b6ab13625a725",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "kind": "provider_models"
-      }
-    },
     "src/data/pricing/minimax/minimax-minimax-2.5/text.generate/pricing.json": {
       "hash": "d2604c78344186cae84276907fdf42f0",
       "meta": {
@@ -4169,7 +4067,7 @@
       }
     },
     "src/data/api_providers/cerebras/models.json": {
-      "hash": "cc5cd8ea1eecfce39d4bc220d431b94f",
+      "hash": "3edb1531279de294726d0212aa20a868",
       "meta": {
         "api_provider_id": "cerebras",
         "kind": "provider_models"
@@ -4194,21 +4092,21 @@
       }
     },
     "src/data/api_providers/atlascloud/models.json": {
-      "hash": "13154fe09ad63bda4d3da70775c3ee94",
+      "hash": "3b0b7cc455bf54bd3f92dc0ef912cfab",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
       }
     },
     "src/data/api_providers/baseten/models.json": {
-      "hash": "eeffaae021b3f834212c6a9d9598ac48",
+      "hash": "19fede8bf38ccf84b8fac8ce8f3db36a",
       "meta": {
         "api_provider_id": "baseten",
         "kind": "provider_models"
       }
     },
     "src/data/api_providers/cohere/models.json": {
-      "hash": "cf55ba4beb02d81fe7b8c316d4babcf5",
+      "hash": "e2b5410798049a335121d69f13a9fe71",
       "meta": {
         "api_provider_id": "cohere",
         "kind": "provider_models"
@@ -4253,7 +4151,7 @@
       }
     },
     "src/data/api_providers/together/models.json": {
-      "hash": "c5f7dc5fcec578f49ab4e046b2f97b30",
+      "hash": "735d5a4be41af681debd685c5331d085",
       "meta": {
         "api_provider_id": "together",
         "kind": "provider_models"
@@ -4281,591 +4179,6 @@
         "capability_id": "text.generate",
         "model_id": "google/gemini-3.1-pro-preview",
         "model_key": "google-vertex:google/gemini-3.1-pro-preview:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/baidu-ernie-4.5-21B-a3b/text.generate/pricing.json": {
-      "hash": "dfaacb42c8fbbb8b983f9f47750eaeb7",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "baidu/ernie-4.5-21B-a3b",
-        "model_key": "novitaai:baidu/ernie-4.5-21B-a3b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/baidu-ernie-4.5-21B-a3b-thinking/text.generate/pricing.json": {
-      "hash": "e76fc736cc3b4a72d0a0319a48e09d7c",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "baidu/ernie-4.5-21B-a3b-thinking",
-        "model_key": "novitaai:baidu/ernie-4.5-21B-a3b-thinking:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/baidu-ernie-4.5-300b-a47b/text.generate/pricing.json": {
-      "hash": "ab550c3575c200dcc32dfcd398dc87b4",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "baidu/ernie-4.5-300b-a47b",
-        "model_key": "novitaai:baidu/ernie-4.5-300b-a47b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/baidu-ernie-4.5-vl-28b-a3b/text.generate/pricing.json": {
-      "hash": "b2e94a538b0b249213ef02bbe4affdf5",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "baidu/ernie-4.5-vl-28b-a3b",
-        "model_key": "novitaai:baidu/ernie-4.5-vl-28b-a3b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/baidu-ernie-4.5-vl-28b-a3b-thinking/text.generate/pricing.json": {
-      "hash": "d423729b60a6a3aef7ad225d466a64e9",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "baidu/ernie-4.5-vl-28b-a3b-thinking",
-        "model_key": "novitaai:baidu/ernie-4.5-vl-28b-a3b-thinking:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/baidu-ernie-4.5-vl-424b-a47b/text.generate/pricing.json": {
-      "hash": "e4ac03f1a0c7de2f72c83ecf1b692b45",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "baidu/ernie-4.5-vl-424b-a47b",
-        "model_key": "novitaai:baidu/ernie-4.5-vl-424b-a47b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/deepseek-deepseek-ocr-2/text.generate/pricing.json": {
-      "hash": "5cb6e8c53b35a34813d5342200b230c3",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "deepseek/deepseek-ocr-2",
-        "model_key": "novitaai:deepseek/deepseek-ocr-2:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/deepseek-deepseek-prover-v2-671b/text.generate/pricing.json": {
-      "hash": "9e20726c7987f7b89a8ac9661e1d4fa5",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "deepseek/deepseek-prover-v2-671b",
-        "model_key": "novitaai:deepseek/deepseek-prover-v2-671b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/deepseek-deepseek-r1-0528/text.generate/pricing.json": {
-      "hash": "60742a16cc7f24bc14dfa0b229aa794e",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "deepseek/deepseek-r1-0528",
-        "model_key": "novitaai:deepseek/deepseek-r1-0528:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/deepseek-deepseek-v3-0324/text.generate/pricing.json": {
-      "hash": "0895ce90f1c4e7298386c272920ef8cc",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "deepseek/deepseek-v3-0324",
-        "model_key": "novitaai:deepseek/deepseek-v3-0324:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/deepseek-deepseek-v3.1/text.generate/pricing.json": {
-      "hash": "2405a32c534573dc096a6bbca8b10908",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "deepseek/deepseek-v3.1",
-        "model_key": "novitaai:deepseek/deepseek-v3.1:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/deepseek-deepseek-v3.1-terminus/text.generate/pricing.json": {
-      "hash": "43488036551928b886b45073933d44e8",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "deepseek/deepseek-v3.1-terminus",
-        "model_key": "novitaai:deepseek/deepseek-v3.1-terminus:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/deepseek-deepseek-v3.2/text.generate/pricing.json": {
-      "hash": "67362a63d5b509b76f98b6f28a9c61b6",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "deepseek/deepseek-v3.2",
-        "model_key": "novitaai:deepseek/deepseek-v3.2:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/deepseek-v3.2-exp/text.generate/pricing.json": {
-      "hash": "bfa42f0875d735ccf9b30aa0378755bf",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "deepseek/v3.2-exp",
-        "model_key": "novitaai:deepseek/v3.2-exp:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/google-gemma-3-27b/text.generate/pricing.json": {
-      "hash": "5102de6a18c4a7c77bf8cdb6934af9d1",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "google/gemma-3-27b",
-        "model_key": "novitaai:google/gemma-3-27b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/kwaipilot-kat-coder-pro/text.generate/pricing.json": {
-      "hash": "5793e67fd0fc23147e27a5a057b0137e",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "kwaipilot/kat-coder-pro",
-        "model_key": "novitaai:kwaipilot/kat-coder-pro:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/meta-llama-4-maverick/text.generate/pricing.json": {
-      "hash": "dfad82d4f25073c5ca8b15ffe3149a6d",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "meta/llama-4-maverick",
-        "model_key": "novitaai:meta/llama-4-maverick:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/meta-llama-4-scout/text.generate/pricing.json": {
-      "hash": "c11357937bdb0d40afc21f3783af3052",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "meta/llama-4-scout",
-        "model_key": "novitaai:meta/llama-4-scout:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/meta-llama-llama-3-70b/text.generate/pricing.json": {
-      "hash": "4ed2db284dab4d824f76658406b444eb",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "meta-llama/llama-3-70b",
-        "model_key": "novitaai:meta-llama/llama-3-70b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/meta-llama-llama-3-8b-instruct/text.generate/pricing.json": {
-      "hash": "e48ed83ee735c9018a5d59e9939d07ab",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "meta-llama/llama-3-8b-instruct",
-        "model_key": "novitaai:meta-llama/llama-3-8b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/meta-llama-llama-3.1-8b-instruct/text.generate/pricing.json": {
-      "hash": "bee55f57a42dda02a3610e01cbdef590",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "meta-llama/llama-3.1-8b-instruct",
-        "model_key": "novitaai:meta-llama/llama-3.1-8b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/meta-llama-llama-3.3-70b-instruct/text.generate/pricing.json": {
-      "hash": "f11d4e48cd35082228976e3456080412",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "meta-llama/llama-3.3-70b-instruct",
-        "model_key": "novitaai:meta-llama/llama-3.3-70b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/minimax-minimax-2.5/text.generate/pricing.json": {
-      "hash": "101eda56725d1389c5955e94d0c95fb6",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "minimax/minimax-2.5",
-        "model_key": "novitaai:minimax/minimax-2.5:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/minimax-minimax-m1-80k/text.generate/pricing.json": {
-      "hash": "a660addb838c56c7419a7401104eb713",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "minimax/minimax-m1-80k",
-        "model_key": "novitaai:minimax/minimax-m1-80k:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/minimax-minimax-m2/text.generate/pricing.json": {
-      "hash": "3fd63531e3fdd9f2ddb83cd996d894cd",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "minimax/minimax-m2",
-        "model_key": "novitaai:minimax/minimax-m2:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/minimax-minimax-m2.1/text.generate/pricing.json": {
-      "hash": "db5197fae4cf048d3291f2d59e14c2ab",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "minimax/minimax-m2.1",
-        "model_key": "novitaai:minimax/minimax-m2.1:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/mistralai-mistral-nemo/text.generate/pricing.json": {
-      "hash": "5f9273845d574f9163ba06ff55afda47",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "mistralai/mistral-nemo",
-        "model_key": "novitaai:mistralai/mistral-nemo:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/moonshot-ai-kimi-k2-2025-07-11/text.generate/pricing.json": {
-      "hash": "60adf9b09762c1a0c852a82bc5d4e1ac",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2-2025-07-11",
-        "model_key": "novitaai:moonshot-ai/kimi-k2-2025-07-11:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/moonshot-ai-kimi-k2-2025-09-05/text.generate/pricing.json": {
-      "hash": "c9cc057daf24b5fa29099959cb19ca3e",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2-2025-09-05",
-        "model_key": "novitaai:moonshot-ai/kimi-k2-2025-09-05:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/moonshot-ai-kimi-k2-thinking/text.generate/pricing.json": {
-      "hash": "8399817d333513f82299434b171fda3f",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2-thinking",
-        "model_key": "novitaai:moonshot-ai/kimi-k2-thinking:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/moonshot-ai-kimi-k2.5/text.generate/pricing.json": {
-      "hash": "ede676c9a695fa52969ec8930863dedb",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "moonshot-ai/kimi-k2.5",
-        "model_key": "novitaai:moonshot-ai/kimi-k2.5:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/openai-gpt-oss-120b/text.generate/pricing.json": {
-      "hash": "b033110e8fb316d06fb325fbc7db1e51",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "openai/gpt-oss-120b",
-        "model_key": "novitaai:openai/gpt-oss-120b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/openai-gpt-oss-20b/text.generate/pricing.json": {
-      "hash": "4f15b04c5e7dc26c4a5f21cc23a2a8e8",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "openai/gpt-oss-20b",
-        "model_key": "novitaai:openai/gpt-oss-20b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen-3.5-397b-a17b/text.generate/pricing.json": {
-      "hash": "055e59572b6d4c498837d5d03941ae56",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen-3.5-397b-a17b",
-        "model_key": "novitaai:qwen/qwen-3.5-397b-a17b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen-mt-plus/text.generate/pricing.json": {
-      "hash": "b1be89e58e089bd789064db42bdfb233",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen-mt-plus",
-        "model_key": "novitaai:qwen/qwen-mt-plus:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen2.5-72b-instruct/text.generate/pricing.json": {
-      "hash": "695f0b731b81376bf12edf9899bd8b1a",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen2.5-72b-instruct",
-        "model_key": "novitaai:qwen/qwen2.5-72b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen2.5-7b/text.generate/pricing.json": {
-      "hash": "c45ccddcb543041c76dd73c033d727fd",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen2.5-7b",
-        "model_key": "novitaai:qwen/qwen2.5-7b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen2.5-vl-72b-instruct/text.generate/pricing.json": {
-      "hash": "e970fa0495cbaaaa4dab5e64a048b9ee",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen2.5-vl-72b-instruct",
-        "model_key": "novitaai:qwen/qwen2.5-vl-72b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-235b-a22b/text.generate/pricing.json": {
-      "hash": "15c13733db67b6c5d366e62d1eba85db",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-235b-a22b",
-        "model_key": "novitaai:qwen/qwen3-235b-a22b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-235b-a22b-instruct-2507/text.generate/pricing.json": {
-      "hash": "712b2d70b980aefbf1ed8456ce7e24c6",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-235b-a22b-instruct-2507",
-        "model_key": "novitaai:qwen/qwen3-235b-a22b-instruct-2507:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-235b-a22b-thinking-2507/text.generate/pricing.json": {
-      "hash": "8fe2ad8ab0028b471626b6ff0720317e",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-235b-a22b-thinking-2507",
-        "model_key": "novitaai:qwen/qwen3-235b-a22b-thinking-2507:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-30b-a3b/text.generate/pricing.json": {
-      "hash": "a2969950d82f20a6d6d035e200a9edd5",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-30b-a3b",
-        "model_key": "novitaai:qwen/qwen3-30b-a3b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-32b/text.generate/pricing.json": {
-      "hash": "cf9eaa610549611212669a538b3c261c",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-32b",
-        "model_key": "novitaai:qwen/qwen3-32b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-4b/text.generate/pricing.json": {
-      "hash": "b74d630186d226d7fe9aa4cd7e8d2165",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-4b",
-        "model_key": "novitaai:qwen/qwen3-4b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-coder-30b-a3b-instruct/text.generate/pricing.json": {
-      "hash": "d71ae0ebed99520d99c0360c9d20ab63",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-coder-30b-a3b-instruct",
-        "model_key": "novitaai:qwen/qwen3-coder-30b-a3b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-coder-480b-a35b-instruct/text.generate/pricing.json": {
-      "hash": "d083c502a50d415d2771db309b6c94bf",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-coder-480b-a35b-instruct",
-        "model_key": "novitaai:qwen/qwen3-coder-480b-a35b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-coder-next/text.generate/pricing.json": {
-      "hash": "7af50ddebcaf49fa0e7d7e2c7728580a",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-coder-next",
-        "model_key": "novitaai:qwen/qwen3-coder-next:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-max/text.generate/pricing.json": {
-      "hash": "2b80e81944b2c58bdfa15c7add992a47",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-max",
-        "model_key": "novitaai:qwen/qwen3-max:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-next-80b-a3b-instruct/text.generate/pricing.json": {
-      "hash": "0b909dfec6ae74704beb3a43552f33e8",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-next-80b-a3b-instruct",
-        "model_key": "novitaai:qwen/qwen3-next-80b-a3b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-next-80b-a3b-thinking/text.generate/pricing.json": {
-      "hash": "81bedc68490c317d26bd0a5d496e5824",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-next-80b-a3b-thinking",
-        "model_key": "novitaai:qwen/qwen3-next-80b-a3b-thinking:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-omni-30b-a3b-instruct/text.generate/pricing.json": {
-      "hash": "b6b1e77984aba05a94a7509eff87997d",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-omni-30b-a3b-instruct",
-        "model_key": "novitaai:qwen/qwen3-omni-30b-a3b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-omni-30b-a3b-thinking/text.generate/pricing.json": {
-      "hash": "6033e764a387441b1c4b8b68475721c4",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-omni-30b-a3b-thinking",
-        "model_key": "novitaai:qwen/qwen3-omni-30b-a3b-thinking:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-vl-235b-a22b-instruct/text.generate/pricing.json": {
-      "hash": "15de4de55a4839d2625f5c4f8d6aca16",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-vl-235b-a22b-instruct",
-        "model_key": "novitaai:qwen/qwen3-vl-235b-a22b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-vl-30b-a3b-instruct/text.generate/pricing.json": {
-      "hash": "b141a0998d89b838903daa6bc8112d1c",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-vl-30b-a3b-instruct",
-        "model_key": "novitaai:qwen/qwen3-vl-30b-a3b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-vl-30b-a3b-thinking/text.generate/pricing.json": {
-      "hash": "106e7bbf0e44d64425c69a6a79eabc74",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-vl-30b-a3b-thinking",
-        "model_key": "novitaai:qwen/qwen3-vl-30b-a3b-thinking:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3-vl-8b-instruct/text.generate/pricing.json": {
-      "hash": "f7a235b249ff711039ab9184ef1aba53",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-vl-8b-instruct",
-        "model_key": "novitaai:qwen/qwen3-vl-8b-instruct:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/qwen-qwen3.5-397b-a17b/text.generate/pricing.json": {
-      "hash": "c922c39d474819353b732db8b06c0c22",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3.5-397b-a17b",
-        "model_key": "novitaai:qwen/qwen3.5-397b-a17b:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/z-ai-glm-4.5/text.generate/pricing.json": {
-      "hash": "9ceb461092fc17a830ca1e39b2adda81",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.5",
-        "model_key": "novitaai:z-ai/glm-4.5:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/z-ai-glm-4.5-air/text.generate/pricing.json": {
-      "hash": "d70d25045c5a3a7d2a001d1d93e7cf6a",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.5-air",
-        "model_key": "novitaai:z-ai/glm-4.5-air:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/z-ai-glm-4.5v/text.generate/pricing.json": {
-      "hash": "93f318c5b0cf3c40a01ca76d2f4012d9",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.5v",
-        "model_key": "novitaai:z-ai/glm-4.5v:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/z-ai-glm-4.6/text.generate/pricing.json": {
-      "hash": "1459e3b596f6b4408e99b8d0b3d61f5e",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.6",
-        "model_key": "novitaai:z-ai/glm-4.6:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/z-ai-glm-4.6v/text.generate/pricing.json": {
-      "hash": "214e28d55d1e1663def7c1b9ecfdbe97",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.6v",
-        "model_key": "novitaai:z-ai/glm-4.6v:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/z-ai-glm-4.7/text.generate/pricing.json": {
-      "hash": "84828ce39fa3888b9d9d7b66b048c54f",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.7",
-        "model_key": "novitaai:z-ai/glm-4.7:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/z-ai-glm-4.7-flash/text.generate/pricing.json": {
-      "hash": "91fcf77f4dcab0f0b9bfd8b59f672486",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.7-flash",
-        "model_key": "novitaai:z-ai/glm-4.7-flash:text.generate"
-      }
-    },
-    "src/data/pricing/novitaai/z-ai-glm-5/text.generate/pricing.json": {
-      "hash": "1e122a73ffea4fe220e987ad46fd48de",
-      "meta": {
-        "api_provider_id": "novitaai",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-5",
-        "model_key": "novitaai:z-ai/glm-5:text.generate"
       }
     },
     "src/data/models/openai/o4-mini-deep-research-2025-06-26/model.json": {
@@ -7581,7 +6894,7 @@
       }
     },
     "src/data/models/google/gemini-3-pro-preview-2025-11-18/model.json": {
-      "hash": "e7e2ef2c09dc21b6b46272bf8a739494",
+      "hash": "032a362e68f8621e8d20def8abab804b",
       "meta": {
         "model_id": "google/gemini-3-pro-preview-2025-11-18",
         "organisation_id": "google",
@@ -10669,7 +9982,7 @@
       }
     },
     "src/data/api_providers/venice/models.json": {
-      "hash": "fd14a1083a0565f362dc0e3bc1e54218",
+      "hash": "9e1691409105f25de110143c74c478be",
       "meta": {
         "api_provider_id": "venice",
         "kind": "provider_models"
@@ -10682,7 +9995,7 @@
       }
     },
     "src/data/api_providers/alibaba-cloud/models.json": {
-      "hash": "0386ab663c49cf1b12a387fc8b744189",
+      "hash": "6ae7cffe2e2f6c2ba7b2b3d1847a098d",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "kind": "provider_models"
@@ -10913,11 +10226,824 @@
       }
     },
     "src/data/models/google/gemini-3-1-flash-image-preview-2026-02-26/model.json": {
-      "hash": "2d7143db219ec7f47a0d9286373e4170",
+      "hash": "36c3a497b2dbffbaa321c787c0fb9d36",
       "meta": {
         "model_id": "google/gemini-3-1-flash-image-preview-2026-02-26",
         "organisation_id": "google",
         "previous_model_id": null
+      }
+    },
+    "src/data/models/bytedance/seed-2-0-lite-2026-02-14/model.json": {
+      "hash": "28fbd2edbf007d5f4151903095a1e526",
+      "meta": {
+        "model_id": "bytedance/seed-2-0-lite-2026-02-14",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/bytedance/seed-2-0-mini-2026-02-14/model.json": {
+      "hash": "d5cbd6cb5df3c8eb1a6288e1a751f49c",
+      "meta": {
+        "model_id": "bytedance/seed-2-0-mini-2026-02-14",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/bytedance/seed-2-0-pro-2026-02-14/model.json": {
+      "hash": "47104477d805e8ccee0b73380a08d187",
+      "meta": {
+        "model_id": "bytedance/seed-2-0-pro-2026-02-14",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
+    "src/data/api_providers/fireworks/models.json": {
+      "hash": "66e91dfa9a1ab4e8f782a0baf3ad43ac",
+      "meta": {
+        "api_provider_id": "fireworks",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/gmicloud/models.json": {
+      "hash": "5584aac46a484e9fa2d45b28eda4dab4",
+      "meta": {
+        "api_provider_id": "gmicloud",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/groq/models.json": {
+      "hash": "dc6ad0c3d3a574c38e5cfec0977d4681",
+      "meta": {
+        "api_provider_id": "groq",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/nextbit/models.json": {
+      "hash": "3cb1c23ce93d5a7727a3d61b9baf3972",
+      "meta": {
+        "api_provider_id": "nextbit",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/nousresearch/api_provider.json": {
+      "hash": "b777ed05a654dee3f11553f86b2098bf",
+      "meta": {
+        "api_provider_id": "nousresearch"
+      }
+    },
+    "src/data/api_providers/stepfun/models.json": {
+      "hash": "085d34615b1d1dd41d7bea0022658f5d",
+      "meta": {
+        "api_provider_id": "stepfun",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/weights-and-biases/models.json": {
+      "hash": "f69c648e6e57c0d6c35ba08c5513d99d",
+      "meta": {
+        "api_provider_id": "weights-and-biases",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/moonshotai/api_provider.json": {
+      "hash": "ef7df704581181115036d5a5629b8b18",
+      "meta": {
+        "api_provider_id": "moonshotai"
+      }
+    },
+    "src/data/api_providers/moonshotai/models.json": {
+      "hash": "a15c861cf41ae685387a4e42d5726ffd",
+      "meta": {
+        "api_provider_id": "moonshotai",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/moonshotai-turbo/api_provider.json": {
+      "hash": "f2b7d2c95e095afedf6968e468ef48be",
+      "meta": {
+        "api_provider_id": "moonshotai-turbo"
+      }
+    },
+    "src/data/api_providers/moonshotai-turbo/models.json": {
+      "hash": "fcd50717f44cd9abdedc9118a79ad0e2",
+      "meta": {
+        "api_provider_id": "moonshotai-turbo",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/api_providers/novita/api_provider.json": {
+      "hash": "7127f925ac2e72d6f69e75f9498d9d33",
+      "meta": {
+        "api_provider_id": "novita"
+      }
+    },
+    "src/data/api_providers/novita/models.json": {
+      "hash": "9651c45e167f21a3cd4ebffc10bdad5f",
+      "meta": {
+        "api_provider_id": "novita",
+        "kind": "provider_models"
+      }
+    },
+    "src/data/pricing/novita/baidu-ernie-4.5-21B-a3b/text.generate/pricing.json": {
+      "hash": "0b4bfd5450722b1723ca38bd6eae9baf",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "baidu/ernie-4.5-21B-a3b",
+        "model_key": "novita:baidu/ernie-4.5-21B-a3b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/baidu-ernie-4.5-21B-a3b-thinking/text.generate/pricing.json": {
+      "hash": "bbafe5ea5885a48263253e0232bfd737",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "baidu/ernie-4.5-21B-a3b-thinking",
+        "model_key": "novita:baidu/ernie-4.5-21B-a3b-thinking:text.generate"
+      }
+    },
+    "src/data/pricing/novita/baidu-ernie-4.5-300b-a47b/text.generate/pricing.json": {
+      "hash": "e50caa0198f016f288e9af069f4165cc",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "baidu/ernie-4.5-300b-a47b",
+        "model_key": "novita:baidu/ernie-4.5-300b-a47b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/baidu-ernie-4.5-vl-28b-a3b/text.generate/pricing.json": {
+      "hash": "d7f9b9f2e94526941d900efc956b6203",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "baidu/ernie-4.5-vl-28b-a3b",
+        "model_key": "novita:baidu/ernie-4.5-vl-28b-a3b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/baidu-ernie-4.5-vl-28b-a3b-thinking/text.generate/pricing.json": {
+      "hash": "9bc60956709fec0b789eae3025a644c3",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "baidu/ernie-4.5-vl-28b-a3b-thinking",
+        "model_key": "novita:baidu/ernie-4.5-vl-28b-a3b-thinking:text.generate"
+      }
+    },
+    "src/data/pricing/novita/baidu-ernie-4.5-vl-424b-a47b/text.generate/pricing.json": {
+      "hash": "902dc535a7d1d0366eb63ad87e161b7c",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "baidu/ernie-4.5-vl-424b-a47b",
+        "model_key": "novita:baidu/ernie-4.5-vl-424b-a47b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/deepseek-deepseek-ocr-2/text.generate/pricing.json": {
+      "hash": "06ec082c7308ab518ff16b4e370cd7fa",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-ocr-2",
+        "model_key": "novita:deepseek/deepseek-ocr-2:text.generate"
+      }
+    },
+    "src/data/pricing/novita/deepseek-deepseek-prover-v2-671b/text.generate/pricing.json": {
+      "hash": "de4ec08f36178d66f6e1972f01a6cfc5",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-prover-v2-671b",
+        "model_key": "novita:deepseek/deepseek-prover-v2-671b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/deepseek-deepseek-r1-0528/text.generate/pricing.json": {
+      "hash": "24369e03003392be2bd5725466b39e2b",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-r1-0528",
+        "model_key": "novita:deepseek/deepseek-r1-0528:text.generate"
+      }
+    },
+    "src/data/pricing/novita/deepseek-deepseek-v3-0324/text.generate/pricing.json": {
+      "hash": "6df12b7dafdb75bae70f3bebc6292df1",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v3-0324",
+        "model_key": "novita:deepseek/deepseek-v3-0324:text.generate"
+      }
+    },
+    "src/data/pricing/novita/deepseek-deepseek-v3.1/text.generate/pricing.json": {
+      "hash": "c803cdfeb1999fa8cf2091bfd694aa6b",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v3.1",
+        "model_key": "novita:deepseek/deepseek-v3.1:text.generate"
+      }
+    },
+    "src/data/pricing/novita/deepseek-deepseek-v3.1-terminus/text.generate/pricing.json": {
+      "hash": "0613b0e4e1269c2f3e80de877cffb4fc",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v3.1-terminus",
+        "model_key": "novita:deepseek/deepseek-v3.1-terminus:text.generate"
+      }
+    },
+    "src/data/pricing/novita/deepseek-deepseek-v3.2/text.generate/pricing.json": {
+      "hash": "4905c9c3b4d28ad6aa14d00004309a30",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/deepseek-v3.2",
+        "model_key": "novita:deepseek/deepseek-v3.2:text.generate"
+      }
+    },
+    "src/data/pricing/novita/deepseek-v3.2-exp/text.generate/pricing.json": {
+      "hash": "58be6c57ee1c953a2d704f79b7b4dd41",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "deepseek/v3.2-exp",
+        "model_key": "novita:deepseek/v3.2-exp:text.generate"
+      }
+    },
+    "src/data/pricing/novita/google-gemma-3-27b/text.generate/pricing.json": {
+      "hash": "8685dff07154d7f23a3c01afa12d0af8",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "google/gemma-3-27b",
+        "model_key": "novita:google/gemma-3-27b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/kwaipilot-kat-coder-pro/text.generate/pricing.json": {
+      "hash": "570fad5d9ae878cadcd48c8ccb4fe874",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "kwaipilot/kat-coder-pro",
+        "model_key": "novita:kwaipilot/kat-coder-pro:text.generate"
+      }
+    },
+    "src/data/pricing/novita/meta-llama-3-70b/text.generate/pricing.json": {
+      "hash": "92738d2e04d46e406deeb94030d2e59e",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "meta/llama-3-70b",
+        "model_key": "novita:meta/llama-3-70b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/meta-llama-3-8b/text.generate/pricing.json": {
+      "hash": "d0157ef5cf98e2c172f127cb8c5feeca",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "meta/llama-3-8b",
+        "model_key": "novita:meta/llama-3-8b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/meta-llama-3.1-8b/text.generate/pricing.json": {
+      "hash": "afae7b548c28e7eca84d479dac2dac0c",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "meta/llama-3.1-8b",
+        "model_key": "novita:meta/llama-3.1-8b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/meta-llama-3.3-70b/text.generate/pricing.json": {
+      "hash": "cdd59e97da63ffd0c0be59cfc8b22a81",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "meta/llama-3.3-70b",
+        "model_key": "novita:meta/llama-3.3-70b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/meta-llama-4-maverick/text.generate/pricing.json": {
+      "hash": "2f27c19d97862bf45e95a1b15782f225",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "meta/llama-4-maverick",
+        "model_key": "novita:meta/llama-4-maverick:text.generate"
+      }
+    },
+    "src/data/pricing/novita/meta-llama-4-scout/text.generate/pricing.json": {
+      "hash": "1311f46319cbec408e09326b5c3fab68",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "meta/llama-4-scout",
+        "model_key": "novita:meta/llama-4-scout:text.generate"
+      }
+    },
+    "src/data/pricing/novita/minimax-minimax-2.5/text.generate/pricing.json": {
+      "hash": "9bdf8fe5ef1dcb2d84922319239c7fa1",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-2.5",
+        "model_key": "novita:minimax/minimax-2.5:text.generate"
+      }
+    },
+    "src/data/pricing/novita/minimax-minimax-m1-80k/text.generate/pricing.json": {
+      "hash": "634c5a6248acab2a397c24496b705efb",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m1-80k",
+        "model_key": "novita:minimax/minimax-m1-80k:text.generate"
+      }
+    },
+    "src/data/pricing/novita/minimax-minimax-m2/text.generate/pricing.json": {
+      "hash": "8c091e0ff129266d4336498b7bd7e06a",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2",
+        "model_key": "novita:minimax/minimax-m2:text.generate"
+      }
+    },
+    "src/data/pricing/novita/minimax-minimax-m2.1/text.generate/pricing.json": {
+      "hash": "ced10b8135761474c5c4ab69ed77eada",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2.1",
+        "model_key": "novita:minimax/minimax-m2.1:text.generate"
+      }
+    },
+    "src/data/pricing/novita/minimax-minimax-m2.5/text.generate/pricing.json": {
+      "hash": "11b4bd910762933cb7d73365e8d98baf",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "minimax/minimax-m2.5",
+        "model_key": "novita:minimax/minimax-m2.5:text.generate"
+      }
+    },
+    "src/data/pricing/novita/mistralai-mistral-nemo/text.generate/pricing.json": {
+      "hash": "576f48952b1738418ed95d51a6becef7",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "mistralai/mistral-nemo",
+        "model_key": "novita:mistralai/mistral-nemo:text.generate"
+      }
+    },
+    "src/data/pricing/novita/openai-gpt-oss-120b/text.generate/pricing.json": {
+      "hash": "9cd41030960ceb93aa8329b526cf31a8",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-oss-120b",
+        "model_key": "novita:openai/gpt-oss-120b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/openai-gpt-oss-20b/text.generate/pricing.json": {
+      "hash": "2d175d2be648926b8e879be49da7610c",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-oss-20b",
+        "model_key": "novita:openai/gpt-oss-20b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen-3.5-397b-a17b/text.generate/pricing.json": {
+      "hash": "471db779decbdf5ff0f9e5bc7fd3d0e7",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen-3.5-397b-a17b",
+        "model_key": "novita:qwen/qwen-3.5-397b-a17b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen-mt-plus/text.generate/pricing.json": {
+      "hash": "fc936bc2291a8050e524ec7e59257fc0",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen-mt-plus",
+        "model_key": "novita:qwen/qwen-mt-plus:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen2.5-72b/text.generate/pricing.json": {
+      "hash": "8bf792963beec170ad809a58bb411f84",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen2.5-72b",
+        "model_key": "novita:qwen/qwen2.5-72b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen2.5-7b/text.generate/pricing.json": {
+      "hash": "5675ddcd97a536d7be9b1a045af58760",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen2.5-7b",
+        "model_key": "novita:qwen/qwen2.5-7b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen2.5-vl-72b/text.generate/pricing.json": {
+      "hash": "1d26e4abb7499f640a44f344084b91d4",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen2.5-vl-72b",
+        "model_key": "novita:qwen/qwen2.5-vl-72b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-235b-a22b/text.generate/pricing.json": {
+      "hash": "0e30a7cc1cb70a74592416e96921cb35",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-235b-a22b",
+        "model_key": "novita:qwen/qwen3-235b-a22b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-235b-a22b-instruct-2507/text.generate/pricing.json": {
+      "hash": "960ce806483acaa26ac60c6bf8714ce1",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-235b-a22b-instruct-2507",
+        "model_key": "novita:qwen/qwen3-235b-a22b-instruct-2507:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-235b-a22b-thinking-2507/text.generate/pricing.json": {
+      "hash": "e83ca019817a270e05dafb4a3be27138",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-235b-a22b-thinking-2507",
+        "model_key": "novita:qwen/qwen3-235b-a22b-thinking-2507:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-30b-a3b/text.generate/pricing.json": {
+      "hash": "b5b51172725c87773bddf168d3910e4c",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-30b-a3b",
+        "model_key": "novita:qwen/qwen3-30b-a3b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-32b/text.generate/pricing.json": {
+      "hash": "696181cfdd8e50989f7c96417b711465",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-32b",
+        "model_key": "novita:qwen/qwen3-32b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-4b/text.generate/pricing.json": {
+      "hash": "3412d6ccf8d6193e3eecbbc996dd8638",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-4b",
+        "model_key": "novita:qwen/qwen3-4b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-coder-30b-a3b/text.generate/pricing.json": {
+      "hash": "62b3ffe0acfeec2ef386b479c8b74241",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-coder-30b-a3b",
+        "model_key": "novita:qwen/qwen3-coder-30b-a3b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-coder-480b-a35b/text.generate/pricing.json": {
+      "hash": "0de9e053847e64137a91aa2862680c3b",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-coder-480b-a35b",
+        "model_key": "novita:qwen/qwen3-coder-480b-a35b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-coder-next/text.generate/pricing.json": {
+      "hash": "23ba365f8c5fe089f50a19128f1204a8",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-coder-next",
+        "model_key": "novita:qwen/qwen3-coder-next:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-max/text.generate/pricing.json": {
+      "hash": "31a87f7efea86df7264c92ecbc9ec39a",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-max",
+        "model_key": "novita:qwen/qwen3-max:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-next-80b-a3b-thinking/text.generate/pricing.json": {
+      "hash": "9f80e1faaec0ef911a8ad2360fb47582",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-next-80b-a3b-thinking",
+        "model_key": "novita:qwen/qwen3-next-80b-a3b-thinking:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-omni-30b-a3b/text.generate/pricing.json": {
+      "hash": "fa51db8445cd89ae690a0c9c8c44aa11",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-omni-30b-a3b",
+        "model_key": "novita:qwen/qwen3-omni-30b-a3b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-omni-30b-a3b-thinking/text.generate/pricing.json": {
+      "hash": "18fdc348922f39dc3a55947dc8cf0698",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-omni-30b-a3b-thinking",
+        "model_key": "novita:qwen/qwen3-omni-30b-a3b-thinking:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-vl-235b-a22b/text.generate/pricing.json": {
+      "hash": "4b5f6929a2eea68af600129bc200af7b",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-vl-235b-a22b",
+        "model_key": "novita:qwen/qwen3-vl-235b-a22b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-vl-235b-a22b-thinking/text.generate/pricing.json": {
+      "hash": "2b19eff5416890f1918870cda6300e1e",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-vl-235b-a22b-thinking",
+        "model_key": "novita:qwen/qwen3-vl-235b-a22b-thinking:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-vl-30b-a3b/text.generate/pricing.json": {
+      "hash": "6cd2960d5af7315c9689aeb260c25aad",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-vl-30b-a3b",
+        "model_key": "novita:qwen/qwen3-vl-30b-a3b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-vl-30b-a3b-thinking/text.generate/pricing.json": {
+      "hash": "fca33da529b1f1cface3bbe22d732590",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-vl-30b-a3b-thinking",
+        "model_key": "novita:qwen/qwen3-vl-30b-a3b-thinking:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3.5-397b-a17b/text.generate/pricing.json": {
+      "hash": "2b3419c155049171cec9118747277ea6",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3.5-397b-a17b",
+        "model_key": "novita:qwen/qwen3.5-397b-a17b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen3-next-80b-a3b-instruct/text.generate/pricing.json": {
+      "hash": "3f683a8c9c8910858b9bb29aff7dabdd",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen3-next-80b-a3b-instruct",
+        "model_key": "novita:qwen3-next-80b-a3b-instruct:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen3-vl-8b-instruct/text.generate/pricing.json": {
+      "hash": "a258171e9eeb52cf1dee14f0a7039b51",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen3-vl-8b-instruct",
+        "model_key": "novita:qwen3-vl-8b-instruct:text.generate"
+      }
+    },
+    "src/data/pricing/novita/xiaomi-mimo-v2-flash/text.generate/pricing.json": {
+      "hash": "b3aaf8cfab7d87cdf8b428216f9e574c",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "xiaomi/mimo-v2-flash",
+        "model_key": "novita:xiaomi/mimo-v2-flash:text.generate"
+      }
+    },
+    "src/data/pricing/novita/z-ai-glm-4.5/text.generate/pricing.json": {
+      "hash": "103a874b4f97f006c8ff8c74ff809065",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-4.5",
+        "model_key": "novita:z-ai/glm-4.5:text.generate"
+      }
+    },
+    "src/data/pricing/novita/z-ai-glm-4.5-air/text.generate/pricing.json": {
+      "hash": "408db3ae7e60672d98966670a4904c07",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-4.5-air",
+        "model_key": "novita:z-ai/glm-4.5-air:text.generate"
+      }
+    },
+    "src/data/pricing/novita/z-ai-glm-4.5v/text.generate/pricing.json": {
+      "hash": "248872add2d4d241ddb2aafd62a41a7f",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-4.5v",
+        "model_key": "novita:z-ai/glm-4.5v:text.generate"
+      }
+    },
+    "src/data/pricing/novita/z-ai-glm-4.6/text.generate/pricing.json": {
+      "hash": "49893704090ce2c50255a658565171fd",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-4.6",
+        "model_key": "novita:z-ai/glm-4.6:text.generate"
+      }
+    },
+    "src/data/pricing/novita/z-ai-glm-4.6v/text.generate/pricing.json": {
+      "hash": "5e38b12b6fb4c05150c4fef100d8efb2",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-4.6v",
+        "model_key": "novita:z-ai/glm-4.6v:text.generate"
+      }
+    },
+    "src/data/pricing/novita/z-ai-glm-4.7/text.generate/pricing.json": {
+      "hash": "42bd2e3da9adc899f7061eefc62af14e",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-4.7",
+        "model_key": "novita:z-ai/glm-4.7:text.generate"
+      }
+    },
+    "src/data/pricing/novita/z-ai-glm-4.7-flash/text.generate/pricing.json": {
+      "hash": "4f642090c2482957626789f7dab0abdd",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-4.7-flash",
+        "model_key": "novita:z-ai/glm-4.7-flash:text.generate"
+      }
+    },
+    "src/data/pricing/novita/z-ai-glm-5/text.generate/pricing.json": {
+      "hash": "44c5dfa030acd2d3b1a08eb4b2206360",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-5",
+        "model_key": "novita:z-ai/glm-5:text.generate"
+      }
+    },
+    "src/data/pricing/novita/zai-org-glm-4.5-air/text.generate/pricing.json": {
+      "hash": "2d425d2ca6dbc16aaef3c6ff7895aaac",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "zai-org/glm-4.5-air",
+        "model_key": "novita:zai-org/glm-4.5-air:text.generate"
+      }
+    },
+    "src/data/pricing/moonshotai/moonshotai-kimi-k2/text.generate/pricing.json": {
+      "hash": "e5737c907707fc5a685f9c6c70835aec",
+      "meta": {
+        "api_provider_id": "moonshotai",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2",
+        "model_key": "moonshotai:moonshotai/kimi-k2:text.generate"
+      }
+    },
+    "src/data/pricing/moonshotai/moonshotai-kimi-k2-0905/text.generate/pricing.json": {
+      "hash": "073242141235836df83909b83a2b512a",
+      "meta": {
+        "api_provider_id": "moonshotai",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2-0905",
+        "model_key": "moonshotai:moonshotai/kimi-k2-0905:text.generate"
+      }
+    },
+    "src/data/pricing/moonshotai/moonshotai-kimi-k2.5/text.generate/pricing.json": {
+      "hash": "cd4c2240d7a7f98ca5d15c9128b0316e",
+      "meta": {
+        "api_provider_id": "moonshotai",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.5",
+        "model_key": "moonshotai:moonshotai/kimi-k2.5:text.generate"
+      }
+    },
+    "src/data/pricing/moonshotai-turbo/moonshotai-kimi-k2-0905/text.generate/pricing.json": {
+      "hash": "47a872d11e839671ae338e257de9110a",
+      "meta": {
+        "api_provider_id": "moonshotai-turbo",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2-0905",
+        "model_key": "moonshotai-turbo:moonshotai/kimi-k2-0905:text.generate"
+      }
+    },
+    "src/data/pricing/novita/moonshotai-kimi-k2/text.generate/pricing.json": {
+      "hash": "0fc8c8e6dea94923c38ec4c0c14d57c0",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2",
+        "model_key": "novita:moonshotai/kimi-k2:text.generate"
+      }
+    },
+    "src/data/pricing/novita/moonshotai-kimi-k2-0905/text.generate/pricing.json": {
+      "hash": "de7d8c1762904b71a3e5e929081144d4",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2-0905",
+        "model_key": "novita:moonshotai/kimi-k2-0905:text.generate"
+      }
+    },
+    "src/data/pricing/novita/moonshotai-kimi-k2-thinking/text.generate/pricing.json": {
+      "hash": "1b8438d79e65e31e61068605e626c726",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2-thinking",
+        "model_key": "novita:moonshotai/kimi-k2-thinking:text.generate"
+      }
+    },
+    "src/data/pricing/novita/moonshotai-kimi-k2.5/text.generate/pricing.json": {
+      "hash": "99e74506a21361ddbfb33bff6d232d7d",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.5",
+        "model_key": "novita:moonshotai/kimi-k2.5:text.generate"
+      }
+    },
+    "src/data/pricing/novita/nan/text.generate/pricing.json": {
+      "hash": "1cae9873ab24aea1a05cd01bbd0088b7",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "nan",
+        "model_key": "novita:nan:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-next-80b-a3b/text.generate/pricing.json": {
+      "hash": "f961bab584d9f83d9e8f4b9191b6ccde",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-next-80b-a3b",
+        "model_key": "novita:qwen/qwen3-next-80b-a3b:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-vl-8b/text.generate/pricing.json": {
+      "hash": "367a001c9b049a6940973d12e1bcd55f",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-vl-8b",
+        "model_key": "novita:qwen/qwen3-vl-8b:text.generate"
+      }
+    },
+    "src/data/pricing/moonshotai/moonshotai-kimi-k2-thinking/text.generate/pricing.json": {
+      "hash": "7c16561b93da270d81c3a67aba916112",
+      "meta": {
+        "api_provider_id": "moonshotai",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2-thinking",
+        "model_key": "moonshotai:moonshotai/kimi-k2-thinking:text.generate"
+      }
+    },
+    "src/data/pricing/moonshotai-turbo/moonshotai-kimi-k2-thinking/text.generate/pricing.json": {
+      "hash": "cd5646009305797313bd7cf2a5dacd2b",
+      "meta": {
+        "api_provider_id": "moonshotai-turbo",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2-thinking",
+        "model_key": "moonshotai-turbo:moonshotai/kimi-k2-thinking:text.generate"
       }
     }
   }

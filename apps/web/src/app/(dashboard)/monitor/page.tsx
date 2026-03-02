@@ -10,7 +10,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Monitor - Change History",
 	description:
-		"Track recent changes across models, providers, pricing, and data updates on AI Stats.",
+		"Track recent changes across models, providers, pricing, and dataset updates on AI Stats with a chronological feed of platform activity and release-level metadata edits.",
 	keywords: [
 		"AI model changes",
 		"AI updates",

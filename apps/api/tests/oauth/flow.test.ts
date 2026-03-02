@@ -80,7 +80,7 @@ describe('OAuth 2.1 Flow Integration Tests', () => {
   describe('Step 1: OAuth App Registration', () => {
     it('should create OAuth app', async () => {
       const response = await fetch(
-        `${TEST_CONFIG.apiBaseUrl}/v1/control/oauth-clients`,
+        `${TEST_CONFIG.apiBaseUrl}/v1/oauth-clients`,
         {
           method: 'POST',
           headers: {
@@ -107,7 +107,7 @@ describe('OAuth 2.1 Flow Integration Tests', () => {
 
     it('should list OAuth apps', async () => {
       const response = await fetch(
-        `${TEST_CONFIG.apiBaseUrl}/v1/control/oauth-clients`,
+        `${TEST_CONFIG.apiBaseUrl}/v1/oauth-clients`,
         {
           headers: {
             Authorization: `Bearer ${TEST_CONFIG.supabaseKey}`,

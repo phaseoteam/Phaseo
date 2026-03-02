@@ -4,7 +4,8 @@ import InternalToolsGrid from "@/components/internal/InternalToolsGrid";
 
 export const metadata = {
 	title: "Internal Tools",
-	description: "Admin tools and utilities for managing the AI Stats platform",
+	description:
+		"Internal admin tools and operational utilities for managing AI Stats platform data, validating integrations, and running maintenance workflows safely.",
 };
 
 export default async function InternalPage() {

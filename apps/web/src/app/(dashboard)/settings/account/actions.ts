@@ -6,10 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createHash, randomBytes } from 'crypto'
 import { cookies } from 'next/headers'
-import {
-    OBFUSCATE_INFO_COOKIE,
-    serializeObfuscateInfo,
-} from '@/lib/obfuscation'
+import { OBFUSCATE_INFO_COOKIE, serializeObfuscateInfo } from '@/lib/obfuscation'
 
 export async function updateAccount(payload: {
     display_name?: string | null

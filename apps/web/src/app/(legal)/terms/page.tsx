@@ -1,12 +1,14 @@
 // app/terms/page.tsx
 import Link from "next/link";
-import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
 	title: "Terms of Service | AI Stats",
 	description:
-		"Terms governing use of the AI Stats model directory and unified API gateway.",
-};
+		"Review the AI Stats Terms of Service governing access to the model directory, dashboard features, billing behavior, and unified API Gateway usage requirements.",
+	path: "/terms",
+	keywords: ["AI Stats terms", "terms of service", "API usage terms", "gateway terms"],
+});
 
 export default async function TermsPage() {
 	return (

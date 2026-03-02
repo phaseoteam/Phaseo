@@ -353,6 +353,21 @@ type ChatMessage struct {
 	ToolCalls *[]map[string]interface{} `json:"tool_calls,omitempty"`
 }
 
+type DataModel struct {
+	DeprecationDate *string `json:"deprecation_date,omitempty"`
+	Hidden *bool `json:"hidden,omitempty"`
+	InputTypes *[]string `json:"input_types,omitempty"`
+	ModelId *string `json:"model_id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Organisation *map[string]interface{} `json:"organisation,omitempty"`
+	OutputTypes *[]string `json:"output_types,omitempty"`
+	ReleaseDate *string `json:"release_date,omitempty"`
+	RetirementDate *string `json:"retirement_date,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
+type DataModelOrganisation = *map[string]interface{}
+
 type DebugOptions struct {
 	Enabled *bool `json:"enabled,omitempty"`
 	ReturnUpstreamRequest *bool `json:"return_upstream_request,omitempty"`
@@ -1291,6 +1306,20 @@ type ReasoningConfig struct {
 	Summary *string `json:"summary,omitempty"`
 }
 
+type ResponsesInputItem struct {
+	Content interface{} `json:"content,omitempty"`
+	Phase *string `json:"phase,omitempty"`
+	Role *string `json:"role,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
+type ResponsesOutputItem struct {
+	Content *[]map[string]interface{} `json:"content,omitempty"`
+	Phase *string `json:"phase,omitempty"`
+	Role *string `json:"role,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
 type ResponsesRequest struct {
 	Background *bool `json:"background,omitempty"`
 	Conversation interface{} `json:"conversation,omitempty"`
@@ -1298,7 +1327,7 @@ type ResponsesRequest struct {
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
 	ImageConfig *map[string]interface{} `json:"imageConfig,omitempty"`
 	Include *[]string `json:"include,omitempty"`
-	Input *map[string]interface{} `json:"input,omitempty"`
+	Input interface{} `json:"input,omitempty"`
 	InputItems *[]map[string]interface{} `json:"input_items,omitempty"`
 	Instructions *string `json:"instructions,omitempty"`
 	MaxCompletionTokens *int `json:"max_completion_tokens,omitempty"`
@@ -1315,6 +1344,8 @@ type ResponsesRequest struct {
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"providerOptions,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
 	ResponseModalities *[]string `json:"response_modalities,omitempty"`
 	ResponseModalities *[]string `json:"responseModalities,omitempty"`
@@ -1342,6 +1373,8 @@ type ResponsesResponse struct {
 	Id *string `json:"id,omitempty"`
 	Model *string `json:"model,omitempty"`
 	Object *string `json:"object,omitempty"`
+	Output *[]map[string]interface{} `json:"output,omitempty"`
+	OutputItems *[]map[string]interface{} `json:"output_items,omitempty"`
 	Role *string `json:"role,omitempty"`
 	StopReason *string `json:"stop_reason,omitempty"`
 	Type *string `json:"type,omitempty"`

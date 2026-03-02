@@ -37,7 +37,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "Model Benchmarks Overview",
 			description:
-				"Explore detailed benchmark scores for AI models on AI Stats. Compare performance across industry-standard tests.",
+				"Explore detailed benchmark scores for AI models on AI Stats and compare performance across industry-standard evaluations, category breakdowns, and historical result updates.",
 			path,
 			keywords: ["AI model benchmarks", "AI performance", "AI Stats"],
 			imagePath,

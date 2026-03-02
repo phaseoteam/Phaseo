@@ -75,8 +75,8 @@
     "capabilities": []
   },
   {
-    "api_model_id": "moonshot-ai/kimi-k2-thinking",
-    "provider_api_model_id": "together:moonshot-ai/kimi-k2-thinking",
+    "api_model_id": "moonshotai/kimi-k2-thinking",
+    "provider_api_model_id": "together:moonshotai/kimi-k2-thinking",
     "provider_model_slug": null,
     "internal_model_id": "moonshot-ai/kimi-k2-thinking-2025-11-06",
     "is_active_gateway": false,
@@ -90,8 +90,8 @@
     "capabilities": []
   },
   {
-    "api_model_id": "moonshot-ai/kimi-k2-0905",
-    "provider_api_model_id": "together:moonshot-ai/kimi-k2-0905",
+    "api_model_id": "moonshotai/kimi-k2-0905",
+    "provider_api_model_id": "together:moonshotai/kimi-k2-0905",
     "provider_model_slug": null,
     "internal_model_id": "moonshot-ai/kimi-k2-2025-09-05",
     "is_active_gateway": false,
@@ -450,8 +450,8 @@
     "capabilities": []
   },
   {
-    "api_model_id": "qwen/qwen3-235b-a22b-instruct-2507",
-    "provider_api_model_id": "together:qwen/qwen3-235b-a22b-instruct-2507",
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "together:qwen/qwen3-235b-a22b-2507",
     "provider_model_slug": null,
     "internal_model_id": "qwen/qwen-3-235b-a22b",
     "is_active_gateway": false,

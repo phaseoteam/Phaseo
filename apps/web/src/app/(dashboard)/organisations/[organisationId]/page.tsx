@@ -3,8 +3,7 @@ import { getOrganisationDataCached } from "@/lib/fetchers/organisations/getOrgan
 import Image from "next/image";
 import OrganisationDetailShell from "@/components/(data)/organisation/OrganisationDetailShell";
 import type { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
-import { withUTM } from "@/lib/utm";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import Script from "next/script";
 
 async function fetchOrganisation(organisationId: string, includeHidden: boolean) {
@@ -33,7 +32,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "AI Organisation Overview",
 			description:
-				"Discover AI organisations, their latest models, and gateway availability inside the AI Stats directory.",
+				"Discover AI organisations, their latest models, and gateway availability with profile-level insights, release timelines, and ecosystem context across the AI Stats directory.",
 			path,
 			keywords: [
 				"AI organisation",
@@ -100,7 +99,7 @@ export default async function Page({
 			"@type": "Organization",
 			"name": orgName,
 			"description": description,
-			"url": `https://aistats.org/organisations/${organisationId}`,
+			"url": absoluteUrl(`/organisations/${organisationId}`),
 		};
 
 		// FAQ Schema
@@ -162,19 +161,19 @@ export default async function Page({
 					"@type": "ListItem",
 					"position": 1,
 					"name": "Home",
-					"item": "https://aistats.org",
+					"item": absoluteUrl("/"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 2,
 					"name": "Organizations",
-					"item": "https://aistats.org/organisations",
+					"item": absoluteUrl("/organisations"),
 				},
 				{
 					"@type": "ListItem",
 					"position": 3,
 					"name": orgName,
-					"item": `https://aistats.org/organisations/${organisationId}`,
+					"item": absoluteUrl(`/organisations/${organisationId}`),
 				},
 			],
 		};
@@ -201,14 +200,7 @@ export default async function Page({
 						</p>
 						<div className="mt-3">
 							<a
-								href={withUTM(
-									"https://github.com/AI-Stats/AI-Stats/issues/new",
-									{
-										campaign: "organisation-suggestion",
-										content:
-											"organisation-detail-empty-state",
-									}
-								)}
+								href="https://github.com/AI-Stats/AI-Stats/issues/new"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
