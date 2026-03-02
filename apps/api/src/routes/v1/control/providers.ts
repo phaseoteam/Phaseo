@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
-import { json, withRuntime, cacheHeaders } from "@/routes/utils";
+import { json, withRuntime, cacheHeaders, cacheResponse } from "@/routes/utils";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
@@ -93,7 +93,7 @@ async function handleProviders(req: Request) {
             200,
             cacheHeaders(cacheOptions)
         );
-        return response;
+        return cacheResponse(req, response, cacheOptions);
     } catch (error: any) {
         return json(
             { ok: false, error: "failed", message: String(error?.message ?? error) },
