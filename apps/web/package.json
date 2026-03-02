@@ -106,7 +106,7 @@
 		"react-fast-marquee": "^1.6.5",
 		"react-hook-form": "^7.71.1",
 		"react-markdown": "^10.1.0",
-		"react-resizable-panels": "^4.6.5",
+		"react-resizable-panels": "^4.7.0",
 		"recharts": "^2.15.4",
 		"rehype-raw": "^7.0.0",
 		"rehype-sanitize": "^6.0.0",
