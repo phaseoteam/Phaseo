@@ -71,8 +71,8 @@ importers:
         specifier: ^20.3.0
         version: 20.3.1(@types/node@25.2.3)
       zod:
-        specifier: ^3.25.76
-        version: 3.25.76
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.32.1
@@ -85,7 +85,7 @@ importers:
         version: 17.3.1
       openai:
         specifier: ^4.78.0
-        version: 4.104.0(encoding@0.1.13)(ws@8.19.0)(zod@3.25.76)
+        version: 4.104.0(encoding@0.1.13)(ws@8.19.0)(zod@4.3.6)
       tsx:
         specifier: ^4.20.6
         version: 4.21.0
@@ -120,8 +120,8 @@ importers:
         specifier: ^10.1.0
         version: 10.1.0(@types/react@19.2.7)(react@19.2.3)
       zod:
-        specifier: ^3.25.76
-        version: 3.25.76
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@types/node':
         specifier: ^25.2.3
@@ -306,7 +306,7 @@ importers:
         version: 12.10.1(@types/react@19.2.7)(immer@11.1.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       ai:
         specifier: ^6.0.105
-        version: 6.0.105(zod@3.25.76)
+        version: 6.0.105(zod@4.3.6)
       ajv:
         specifier: ^8.17.1
         version: 8.17.1
@@ -467,8 +467,8 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       zod:
-        specifier: ^3.25.76
-        version: 3.25.76
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3
@@ -556,8 +556,8 @@ importers:
   packages/devtools/devtools-core:
     dependencies:
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@types/node':
         specifier: ^25.2.3
@@ -674,7 +674,7 @@ importers:
         version: 3.0.8
       '@ai-sdk/provider-utils':
         specifier: ^4.0.15
-        version: 4.0.15(zod@3.25.76)
+        version: 4.0.15(zod@4.3.6)
     devDependencies:
       '@types/node':
         specifier: ^25.2.3
@@ -684,7 +684,7 @@ importers:
         version: 4.0.18(vitest@4.0.18(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.16.9)(tsx@4.21.0)(yaml@2.8.2))
       ai:
         specifier: ^6.0.105
-        version: 6.0.105(zod@3.25.76)
+        version: 6.0.105(zod@4.3.6)
       rimraf:
         specifier: ^6.0.1
         version: 6.1.2
@@ -695,8 +695,8 @@ importers:
         specifier: ^4.0.18
         version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@25.2.3)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.16.9)(tsx@4.21.0)(yaml@2.8.2)
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.3.6
+        version: 4.3.6
 
   packages/openapi-backends/oapi-backend-cpp:
     dependencies:
@@ -11122,9 +11122,6 @@ packages:
   zod@3.24.0:
     resolution: {integrity: sha512-Hz+wiY8yD0VLA2k/+nsg2Abez674dDGTai33SwNvMPuf9uIrBC9eFgIMQxBBbHFxVXi8W+5nX9DcAh9YNSQm/w==}
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
-
   zod@4.3.6:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
 
@@ -11169,26 +11166,26 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/gateway@3.0.59(zod@3.25.76)':
+  '@ai-sdk/gateway@3.0.59(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.16(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.16(zod@4.3.6)
       '@vercel/oidc': 3.1.0
-      zod: 3.25.76
+      zod: 4.3.6
 
-  '@ai-sdk/provider-utils@4.0.15(zod@3.25.76)':
+  '@ai-sdk/provider-utils@4.0.15(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
-      zod: 3.25.76
+      zod: 4.3.6
 
-  '@ai-sdk/provider-utils@4.0.16(zod@3.25.76)':
+  '@ai-sdk/provider-utils@4.0.16(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
-      zod: 3.25.76
+      zod: 4.3.6
 
   '@ai-sdk/provider@3.0.8':
     dependencies:
@@ -16209,13 +16206,13 @@ snapshots:
       clean-stack: 4.2.0
       indent-string: 5.0.0
 
-  ai@6.0.105(zod@3.25.76):
+  ai@6.0.105(zod@4.3.6):
     dependencies:
-      '@ai-sdk/gateway': 3.0.59(zod@3.25.76)
+      '@ai-sdk/gateway': 3.0.59(zod@4.3.6)
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.16(zod@3.25.76)
+      '@ai-sdk/provider-utils': 4.0.16(zod@4.3.6)
       '@opentelemetry/api': 1.9.0
-      zod: 3.25.76
+      zod: 4.3.6
 
   ajv-draft-04@1.0.0(ajv@8.17.1):
     optionalDependencies:
@@ -18023,8 +18020,8 @@ snapshots:
       '@babel/parser': 7.29.0
       eslint: 10.0.1(jiti@2.6.1)
       hermes-parser: 0.25.1
-      zod: 3.25.76
-      zod-validation-error: 4.0.2(zod@3.25.76)
+      zod: 4.3.6
+      zod-validation-error: 4.0.2(zod@4.3.6)
     transitivePeerDependencies:
       - supports-color
 
@@ -21045,7 +21042,7 @@ snapshots:
       is-docker: 2.2.1
       is-wsl: 2.2.0
 
-  openai@4.104.0(encoding@0.1.13)(ws@8.19.0)(zod@3.25.76):
+  openai@4.104.0(encoding@0.1.13)(ws@8.19.0)(zod@4.3.6):
     dependencies:
       '@types/node': 18.19.130
       '@types/node-fetch': 2.6.13
@@ -21056,7 +21053,7 @@ snapshots:
       node-fetch: 2.7.0(encoding@0.1.13)
     optionalDependencies:
       ws: 8.19.0
-      zod: 3.25.76
+      zod: 4.3.6
     transitivePeerDependencies:
       - encoding
 
@@ -23956,17 +23953,15 @@ snapshots:
     dependencies:
       zod: 3.24.0
 
-  zod-validation-error@4.0.2(zod@3.25.76):
+  zod-validation-error@4.0.2(zod@4.3.6):
     dependencies:
-      zod: 3.25.76
+      zod: 4.3.6
 
   zod@3.21.4: {}
 
   zod@3.23.8: {}
 
   zod@3.24.0: {}
-
-  zod@3.25.76: {}
 
   zod@4.3.6: {}
 
