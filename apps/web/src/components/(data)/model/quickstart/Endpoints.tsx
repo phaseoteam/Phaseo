@@ -13,7 +13,7 @@ import PathCell from "./PathCell";
 import Link from "next/link";
 
 export default async function Endpoints() {
-	const modelsExample = `curl -s ${BASE_URL}/models \\
+	const modelsExample = `curl -s ${BASE_URL}/api/models \\
   -H "Authorization: Bearer $AI_STATS_API_KEY" | jq '.[0:5]'`;
 
 	return (
@@ -47,7 +47,7 @@ export default async function Endpoints() {
 							<tr className="border-b">
 								<td className="p-3 font-mono text-xs">GET</td>
 								<PathCell className="p-3 font-mono text-xs">
-									/v1/models
+									/v1/api/models
 								</PathCell>
 								<td className="p-3">
 									Access all available models and their

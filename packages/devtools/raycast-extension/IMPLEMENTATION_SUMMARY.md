@@ -28,7 +28,7 @@ This Raycast extension allows users to browse AI models, organisations, and API 
 
 #### 3. Enhanced Models Endpoint
 - **File**: `apps/api/src/routes/v1/control/models.ts` (modified)
-- **Endpoint**: `GET /v1/models`
+- **Endpoint**: `GET /v1/api/models`
 - **Enhancements**:
   - Added `organisation_name` field
   - Added `organisation_colour` field
@@ -255,7 +255,7 @@ packages/devtools/raycast-extension/
 ### Backend API
 - [ ] GET /v1/organisations returns data
 - [ ] GET /v1/providers returns data
-- [ ] GET /v1/models includes organisation_name and organisation_colour
+- [ ] GET /v1/api/models includes organisation_name and organisation_colour
 - [ ] All endpoints require authentication
 - [ ] Pagination works correctly
 - [ ] Error responses are properly formatted

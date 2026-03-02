@@ -96,7 +96,7 @@ The built extension will be in the `dist/` directory.
 
 ## API Endpoints Used
 
-- `GET /v1/models` - List all AI models
+- `GET /v1/api/models` - List all AI models
 - `GET /v1/organisations` - List all organisations
 - `GET /v1/providers` - List all API providers
 
