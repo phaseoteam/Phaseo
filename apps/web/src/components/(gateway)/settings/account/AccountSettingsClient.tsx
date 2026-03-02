@@ -192,7 +192,7 @@ export default function AccountSettingsClient({
 		const parsed = schema.safeParse(current);
 		if (!parsed.success) {
 			const msg =
-				parsed.error.errors[0]?.message ?? "Please check your inputs.";
+				parsed.error.issues[0]?.message ?? "Please check your inputs.";
 			toast.error(msg);
 			return;
 		}
@@ -240,7 +240,7 @@ export default function AccountSettingsClient({
 
 		if (!parsed.success) {
 			const msg =
-				parsed.error.errors[0]?.message ?? "Please check your inputs.";
+				parsed.error.issues[0]?.message ?? "Please check your inputs.";
 			toast.error(msg);
 			return;
 		}
@@ -277,7 +277,7 @@ export default function AccountSettingsClient({
 
 		if (!parsed.success) {
 			const msg =
-				parsed.error.errors[0]?.message ?? "Please check your inputs.";
+				parsed.error.issues[0]?.message ?? "Please check your inputs.";
 			toast.error(msg);
 			return;
 		}

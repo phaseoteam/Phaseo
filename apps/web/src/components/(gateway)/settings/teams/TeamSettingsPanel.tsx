@@ -163,7 +163,7 @@ export default function TeamSettingsPanel({
 
 		if (!parsed.success) {
 			toast.error(
-				parsed.error.errors[0]?.message ?? "Please check your inputs."
+				parsed.error.issues[0]?.message ?? "Please check your inputs."
 			);
 			return;
 		}

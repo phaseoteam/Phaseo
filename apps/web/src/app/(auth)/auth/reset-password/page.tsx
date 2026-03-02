@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
 
         if (!parsed.success) {
             const msg =
-                parsed.error.errors[0]?.message ?? 'Please check your inputs.'
+                parsed.error.issues[0]?.message ?? 'Please check your inputs.'
             toast.error(msg)
             return
         }
