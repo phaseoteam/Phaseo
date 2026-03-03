@@ -35,7 +35,7 @@
       "meter": "input_audio_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.25,
+      "price_per_unit": 0.5,
       "currency": "USD",
       "tiering_mode": null,
       "pricing_plan": "standard",
