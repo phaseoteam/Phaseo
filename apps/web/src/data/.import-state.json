@@ -2810,7 +2810,7 @@
       }
     },
     "src/data/models/google/gemini-3-1-flash-lite-preview-2026-03-03/model.json": {
-      "hash": "4751c96b84ed432ed718e8671a440c3b",
+      "hash": "1846b37551d8a702ba75c06b7bf8b683",
       "meta": {
         "model_id": "google/gemini-3-1-flash-lite-preview-2026-03-03",
         "organisation_id": "google",
@@ -8405,7 +8405,7 @@
       }
     },
     "src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "a83070686a408a7b4d97cdac429fb61b",
+      "hash": "eea77f22097cc1e45d8ba83effc963de",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -8418,7 +8418,7 @@
       }
     },
     "src/data/api_providers/google-vertex/models.json": {
-      "hash": "f569f2d52069de3960446e4abbef6262",
+      "hash": "2ccc30280ff777f8675c7e2bd8fbc101",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"

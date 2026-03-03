@@ -17,6 +17,19 @@
       "url": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
     }
   ],
-  "details": [],
+  "details": [
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-01-01T00:00:00"
+    },
+    {
+      "name": "input_context_length",
+      "value": 1048576
+    },
+    {
+      "name": "output_context_length",
+      "value": 65536
+    }
+  ],
   "benchmarks": []
 }

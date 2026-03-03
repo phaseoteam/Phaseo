@@ -182,6 +182,76 @@
     "max_output_tokens": 65536,
     "effective_from": "2026-03-03T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
   }
 ]
