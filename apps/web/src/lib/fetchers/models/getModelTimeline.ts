@@ -12,6 +12,13 @@ export type RawEvent = {
     modelName?: string;
 };
 
+type TimelineNode = {
+    model_id: string;
+    name: string | null;
+    announcement_date: string | null;
+    release_date: string | null;
+};
+
 export default async function getModelTimeline(
     modelId: string,
     includeHidden: boolean
@@ -101,16 +108,24 @@ export default async function getModelTimeline(
         `),
         includeHidden
     )
-        .eq("previous_model_id", modelId)
-        .order("release_date", { ascending: true, nullsFirst: false })
-        .order("announcement_date", { ascending: true, nullsFirst: false })
-        .limit(1);
+        .eq("previous_model_id", modelId);
 
     if (futureError) {
         throw new Error(futureError.message || "Failed to fetch future model timeline node");
     }
 
-    const nextModel = futureModels?.[0] ?? null;
+    const nextModel =
+        (futureModels as TimelineNode[] | null)
+            ?.map((candidate: TimelineNode) => ({ candidate, date: versionDate(candidate) }))
+            .filter(
+                (entry): entry is { candidate: TimelineNode; date: string } => Boolean(entry.date)
+            )
+            .sort((a, b) => {
+                if (a.date === b.date) {
+                    return a.candidate.model_id.localeCompare(b.candidate.model_id);
+                }
+                return a.date < b.date ? -1 : 1;
+            })[0]?.candidate ?? null;
     if (nextModel) {
         const date = versionDate(nextModel);
         if (date) {
