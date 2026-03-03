@@ -600,7 +600,7 @@ export async function getModelBenchmarkHighlights(
 ): Promise<ModelBenchmarkHighlight[]> {
 	"use cache";
 
-	cacheLife("minutes");
+	cacheLife("hours");
 	cacheTag("data:benchmarks");
 	cacheTag(`model:benchmarks:highlights:${modelId}`);
 
@@ -614,7 +614,7 @@ export async function getModelBenchmarkTableData(
 ): Promise<Record<string, ModelBenchmarkResult[]>> {
 	"use cache";
 
-	cacheLife("minutes");
+	cacheLife("hours");
 	cacheTag("data:benchmarks");
 	cacheTag(`model:benchmarks:table:${modelId}`);
 
@@ -628,7 +628,7 @@ export async function getModelBenchmarkComparisonData(
 ): Promise<BenchmarkComparisonChart[]> {
 	"use cache";
 
-	cacheLife("minutes");
+	cacheLife("hours");
 	cacheTag("data:benchmarks");
 	cacheTag(`model:benchmarks:comparisons:${modelId}`);
 
