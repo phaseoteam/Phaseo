@@ -130,7 +130,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
-      "rank": 33
+      "rank": 34
     },
     {
       "benchmark_id": "livebench",

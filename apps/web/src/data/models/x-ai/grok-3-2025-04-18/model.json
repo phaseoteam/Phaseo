@@ -74,7 +74,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 25
+      "rank": 26
     },
     {
       "benchmark_id": "mmlu-pro",

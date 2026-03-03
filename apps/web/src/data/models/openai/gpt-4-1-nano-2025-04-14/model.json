@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 53
+      "rank": 54
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",

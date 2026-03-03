@@ -34,80 +34,91 @@
   "benchmarks": [
     {
       "benchmark_id": "humanitys-last-exam",
-      "score": null,
+      "score": 0.16,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 16
     },
     {
       "benchmark_id": "gpqa-diamond",
-      "score": null,
+      "score": 0.869,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 9
     },
     {
       "benchmark_id": "mmmu-pro",
-      "score": null,
+      "score": 0.768,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 3
     },
     {
       "benchmark_id": "charxiv-reasoning",
-      "score": null,
+      "score": 0.732,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 3
     },
     {
       "benchmark_id": "video-mmmu",
-      "score": null,
+      "score": 0.848,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 1
     },
     {
       "benchmark_id": "simpleqa",
-      "score": null,
+      "score": 0.433,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 4
     },
     {
       "benchmark_id": "facts-benchmark-suite",
-      "score": null,
+      "score": 0.406,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 2
     },
     {
       "benchmark_id": "mmmlu",
-      "score": null,
+      "score": 0.889,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 5
     },
     {
       "benchmark_id": "livecodebench",
-      "score": null,
+      "score": 0.72,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 2
     },
     {
       "benchmark_id": "openai-mrcr-8-needle-128k",
-      "score": null,
+      "score": 0.601,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 2
     },
     {
       "benchmark_id": "openai-mrcr-8-needle-1m",
-      "score": null,
+      "score": 0.123,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf",
+      "rank": 2
     }
   ]
 }

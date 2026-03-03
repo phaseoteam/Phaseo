@@ -122,7 +122,7 @@
       }
     },
     "src/data/benchmarks/charxiv-reasoning/benchmark.json": {
-      "hash": "03ac6f8c123b45fa8d4008a94ebe9de7",
+      "hash": "535fbf4a8d50322c95050f996b0a150b",
       "meta": {
         "benchmark_id": "charxiv-reasoning"
       }
@@ -206,7 +206,7 @@
       }
     },
     "src/data/benchmarks/facts-benchmark-suite/benchmark.json": {
-      "hash": "edcca30c44bae5c2afb80cb7c7791a84",
+      "hash": "55fc9a81bd0fee4e0321b15caabcd18d",
       "meta": {
         "benchmark_id": "facts-benchmark-suite"
       }
@@ -248,7 +248,7 @@
       }
     },
     "src/data/benchmarks/gpqa-diamond/benchmark.json": {
-      "hash": "be618c2dd910861392923d216b765b3e",
+      "hash": "6b40e1cf5bc4c8b17c48b75efb63e52c",
       "meta": {
         "benchmark_id": "gpqa-diamond"
       }
@@ -302,7 +302,7 @@
       }
     },
     "src/data/benchmarks/humanitys-last-exam/benchmark.json": {
-      "hash": "134042140f898e867333095a492eee84",
+      "hash": "94a392515f71008671d09d48d88d35eb",
       "meta": {
         "benchmark_id": "humanitys-last-exam"
       }
@@ -344,7 +344,7 @@
       }
     },
     "src/data/benchmarks/livecodebench/benchmark.json": {
-      "hash": "c0adcef79fcae90b5545bbc866181712",
+      "hash": "2e32aa19f5fc188f7aa2a2ffba1d7b37",
       "meta": {
         "benchmark_id": "livecodebench"
       }
@@ -494,7 +494,7 @@
       }
     },
     "src/data/benchmarks/mmmlu/benchmark.json": {
-      "hash": "7508fd46477bb75d53b4a18905740d49",
+      "hash": "8d9416b40633b006601df3e60053b212",
       "meta": {
         "benchmark_id": "mmmlu"
       }
@@ -506,7 +506,7 @@
       }
     },
     "src/data/benchmarks/mmmu-pro/benchmark.json": {
-      "hash": "d3195a0d7333c689c37ad249719f506c",
+      "hash": "fa5d78c7594584debe086aeda8bcb9d7",
       "meta": {
         "benchmark_id": "mmmu-pro"
       }
@@ -560,13 +560,13 @@
       }
     },
     "src/data/benchmarks/openai-mrcr-8-needle-128k/benchmark.json": {
-      "hash": "eb11ed137eb5942e77ca4a7a1c376a49",
+      "hash": "a486ecba1a6b2c527440c6bd17ae43c8",
       "meta": {
         "benchmark_id": "openai-mrcr-8-needle-128k"
       }
     },
     "src/data/benchmarks/openai-mrcr-8-needle-1m/benchmark.json": {
-      "hash": "f895b94ed417a49f130c6ac4a1f54848",
+      "hash": "da16dcf9287d121bde7d92e42ad72ca4",
       "meta": {
         "benchmark_id": "openai-mrcr-8-needle-1m"
       }
@@ -638,7 +638,7 @@
       }
     },
     "src/data/benchmarks/simpleqa/benchmark.json": {
-      "hash": "0510b873de3c2ca89269d0cb198d5be5",
+      "hash": "2b8e407a5c26aa6a4456d01537d1c263",
       "meta": {
         "benchmark_id": "simpleqa"
       }
@@ -782,7 +782,7 @@
       }
     },
     "src/data/benchmarks/video-mmmu/benchmark.json": {
-      "hash": "49ecb48cc1e199f3a3fbb6e7c267b644",
+      "hash": "9c559ec6f115af3fcd3bc93aef5768f5",
       "meta": {
         "benchmark_id": "video-mmmu"
       }
@@ -1194,7 +1194,7 @@
       }
     },
     "src/data/models/ai21/jamba-large-1-5-2024-08-22/model.json": {
-      "hash": "0757f4b9cf90985e25e433591f12e715",
+      "hash": "410c7ad7e25f9ca1b2defce51ce70f38",
       "meta": {
         "model_id": "ai21/jamba-large-1-5-2024-08-22",
         "organisation_id": "ai21",
@@ -1202,7 +1202,7 @@
       }
     },
     "src/data/models/ai21/jamba-large-1-6-2025-03-06/model.json": {
-      "hash": "d84edddad379293e4751c4935609bcd6",
+      "hash": "372a8cfe3a70bdad8a1a628bc55bab6b",
       "meta": {
         "model_id": "ai21/jamba-large-1-6-2025-03-06",
         "organisation_id": "ai21",
@@ -1218,7 +1218,7 @@
       }
     },
     "src/data/models/ai21/jamba-mini-1-5-2024-08-22/model.json": {
-      "hash": "3d0df2e9dabb6b96f5dea11a93e92fd3",
+      "hash": "539dde94893ef7dba193ffef60206582",
       "meta": {
         "model_id": "ai21/jamba-mini-1-5-2024-08-22",
         "organisation_id": "ai21",
@@ -1226,7 +1226,7 @@
       }
     },
     "src/data/models/ai21/jamba-mini-1-6-2025-03-06/model.json": {
-      "hash": "db2ba7bc8b2c1cb5a389dd88ae8a591c",
+      "hash": "2997a8afa6d110109ef6437bda7fee4d",
       "meta": {
         "model_id": "ai21/jamba-mini-1-6-2025-03-06",
         "organisation_id": "ai21",
@@ -1354,7 +1354,7 @@
       }
     },
     "src/data/models/amazon/nova-2-lite-2025-12-02/model.json": {
-      "hash": "26d87b88681e39f9f14c527796580c2c",
+      "hash": "7608f91637e845851ac5c1a832900883",
       "meta": {
         "model_id": "amazon/nova-2-lite-2025-12-02",
         "organisation_id": "amazon",
@@ -1370,7 +1370,7 @@
       }
     },
     "src/data/models/amazon/nova-2-pro-2025-12-02/model.json": {
-      "hash": "79024e5e7730215da6ae71a804220671",
+      "hash": "6cb0a6e3d58946950d7aa2a5708a32b0",
       "meta": {
         "model_id": "amazon/nova-2-pro-2025-12-02",
         "organisation_id": "amazon",
@@ -1394,7 +1394,7 @@
       }
     },
     "src/data/models/amazon/nova-lite-1-0-2024-12-04/model.json": {
-      "hash": "fc3e1c8628b339ebfa527abfb46808bd",
+      "hash": "4a200624f4c5ba9602785ae79a637a44",
       "meta": {
         "model_id": "amazon/nova-lite-1-0-2024-12-04",
         "organisation_id": "amazon",
@@ -1402,7 +1402,7 @@
       }
     },
     "src/data/models/amazon/nova-micro-1-0-2024-12-04/model.json": {
-      "hash": "a0e2cfc33032190578d67fc7543eaa05",
+      "hash": "5d57be246334feef2b005d5c514e429b",
       "meta": {
         "model_id": "amazon/nova-micro-1-0-2024-12-04",
         "organisation_id": "amazon",
@@ -1418,7 +1418,7 @@
       }
     },
     "src/data/models/amazon/nova-premier-2025-04-30/model.json": {
-      "hash": "6df30e1cd294f62c44bff2258d08502d",
+      "hash": "d3331177540967d80d3186687d916ed5",
       "meta": {
         "model_id": "amazon/nova-premier-2025-04-30",
         "organisation_id": "amazon",
@@ -1426,7 +1426,7 @@
       }
     },
     "src/data/models/amazon/nova-pro-1-0-2024-12-04/model.json": {
-      "hash": "ec51438978ec9b074ab8908cad0995f8",
+      "hash": "9bb50e20a85e9e70276f3d4de26e5d9d",
       "meta": {
         "model_id": "amazon/nova-pro-1-0-2024-12-04",
         "organisation_id": "amazon",
@@ -1498,7 +1498,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-5-haiku-2024-11-04/model.json": {
-      "hash": "09d56fcb448b55ac1ceb04ffbbc30f16",
+      "hash": "80dd4f42c5447c5c690af1a7c7e12c9a",
       "meta": {
         "model_id": "anthropic/claude-3-5-haiku-2024-11-04",
         "organisation_id": "anthropic",
@@ -1506,7 +1506,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-5-sonnet-2024-06-21/model.json": {
-      "hash": "611f5b4cb6c6c7b0c20171d03ec45a30",
+      "hash": "2be347c5dad92198e2f9e46affd14b88",
       "meta": {
         "model_id": "anthropic/claude-3-5-sonnet-2024-06-21",
         "organisation_id": "anthropic",
@@ -1514,7 +1514,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-5-sonnet-2024-10-22/model.json": {
-      "hash": "45d3384480a9e3bef72f2eaaaabae590",
+      "hash": "dd0d84d12033aebf970cb443ddfc25c2",
       "meta": {
         "model_id": "anthropic/claude-3-5-sonnet-2024-10-22",
         "organisation_id": "anthropic",
@@ -1522,7 +1522,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-7-sonnet-2025-02-24/model.json": {
-      "hash": "dbc4d98353a89f3fc50f29cb65a7bfc7",
+      "hash": "9ecb1e975fbf6334eb2f0505381ef1c9",
       "meta": {
         "model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
         "organisation_id": "anthropic",
@@ -1530,7 +1530,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-haiku-2024-03-13/model.json": {
-      "hash": "ef96340bd62aeb008a57d0cb8bbbd39f",
+      "hash": "25bac8a40b22320f0744057f89a8b839",
       "meta": {
         "model_id": "anthropic/claude-3-haiku-2024-03-13",
         "organisation_id": "anthropic",
@@ -1538,7 +1538,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-opus-2024-03-04/model.json": {
-      "hash": "7fcf59813b5478be5b612c15c8095a0d",
+      "hash": "846a5a2a7efcbda66da9982014a98619",
       "meta": {
         "model_id": "anthropic/claude-3-opus-2024-03-04",
         "organisation_id": "anthropic",
@@ -1546,7 +1546,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-sonnet-2024-03-04/model.json": {
-      "hash": "bcc6735df9cffd8d46b2ef099dcc009c",
+      "hash": "55366a44498af058cffeb2ace4b382c8",
       "meta": {
         "model_id": "anthropic/claude-3-sonnet-2024-03-04",
         "organisation_id": "anthropic",
@@ -1586,7 +1586,7 @@
       }
     },
     "src/data/models/anthropic/claude-opus-4-1-2025-08-05/model.json": {
-      "hash": "962172bef3f9f1ea228ec7b30a0b0fdc",
+      "hash": "b65190e8d218ce775e0aa439905d3621",
       "meta": {
         "model_id": "anthropic/claude-opus-4-1-2025-08-05",
         "organisation_id": "anthropic",
@@ -1594,7 +1594,7 @@
       }
     },
     "src/data/models/anthropic/claude-opus-4-2025-05-21/model.json": {
-      "hash": "6231918bc9fdda494843ef62621005aa",
+      "hash": "8fd41ffd4a89220995ae2b3b5fab0e8c",
       "meta": {
         "model_id": "anthropic/claude-opus-4-2025-05-21",
         "organisation_id": "anthropic",
@@ -1618,7 +1618,7 @@
       }
     },
     "src/data/models/anthropic/claude-sonnet-4-2025-05-21/model.json": {
-      "hash": "bf6525f9cdb25a1e857f7ab574ee3b99",
+      "hash": "adc8bb5e3a5de6f70fc34a52e1c74faf",
       "meta": {
         "model_id": "anthropic/claude-sonnet-4-2025-05-21",
         "organisation_id": "anthropic",
@@ -2178,7 +2178,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-r1-2025-01-20/model.json": {
-      "hash": "ae611c172ccbe7e64b8ce2867150e62c",
+      "hash": "f521ca93fb775d3229164d27abe2848c",
       "meta": {
         "model_id": "deepseek/deepseek-r1-2025-01-20",
         "organisation_id": "deepseek",
@@ -2186,7 +2186,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-r1-2025-05-28/model.json": {
-      "hash": "1f302467617ae260c426b7b5ac6dba77",
+      "hash": "5e7f38b7bfcfba2dbf8458129b33e14d",
       "meta": {
         "model_id": "deepseek/deepseek-r1-2025-05-28",
         "organisation_id": "deepseek",
@@ -2266,7 +2266,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-v3-2-speciale-2025-12-01/model.json": {
-      "hash": "2f9ad2764018a1468843d99ecbfc3c30",
+      "hash": "6b4af220db274249eb039f541538fdb8",
       "meta": {
         "model_id": "deepseek/deepseek-v3-2-speciale-2025-12-01",
         "organisation_id": "deepseek",
@@ -2282,7 +2282,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-v3-2025-03-25/model.json": {
-      "hash": "dd91198975feefe63f317af759177136",
+      "hash": "fcff92c87c99c30063e0b19e4c89d0e3",
       "meta": {
         "model_id": "deepseek/deepseek-v3-2025-03-25",
         "organisation_id": "deepseek",
@@ -2482,7 +2482,7 @@
       }
     },
     "src/data/models/google/gemini-1-0-pro-2023-12-06/model.json": {
-      "hash": "52fa3fbd30b764caa8289096f4fa5efe",
+      "hash": "543455692254f384ddfc6ad3e2193d23",
       "meta": {
         "model_id": "google/gemini-1-0-pro-2023-12-06",
         "organisation_id": "google",
@@ -2498,7 +2498,7 @@
       }
     },
     "src/data/models/google/gemini-1-0-ultra-2023-12-06/model.json": {
-      "hash": "dd4fc7fea9ca07ca7f9ff83c08561aae",
+      "hash": "91c3d948e5e0e5b3f1a93bfcafd079a6",
       "meta": {
         "model_id": "google/gemini-1-0-ultra-2023-12-06",
         "organisation_id": "google",
@@ -2586,7 +2586,7 @@
       }
     },
     "src/data/models/google/gemini-2-0-flash-2025-02-05/model.json": {
-      "hash": "65aed208534d4dcf63e2c51c95ce6f74",
+      "hash": "712a59c2282253f74383d3ffebaf6037",
       "meta": {
         "model_id": "google/gemini-2-0-flash-2025-02-05",
         "organisation_id": "google",
@@ -2690,7 +2690,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-flash-lite-preview-2025-06-17/model.json": {
-      "hash": "44f1e87b6fb9d14111069dbbfb959613",
+      "hash": "f33de3fbc87b655d303492f4b3666eeb",
       "meta": {
         "model_id": "google/gemini-2-5-flash-lite-preview-2025-06-17",
         "organisation_id": "google",
@@ -2714,7 +2714,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-flash-preview-2025-04-17/model.json": {
-      "hash": "d19c23df6e96169fcdbfc1df5ae72360",
+      "hash": "a92dbbbbc5d4acb926ec7ef9234d3393",
       "meta": {
         "model_id": "google/gemini-2-5-flash-preview-2025-04-17",
         "organisation_id": "google",
@@ -2722,7 +2722,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-flash-preview-2025-05-20/model.json": {
-      "hash": "d4b318e871cce37b9001c5b983b50a37",
+      "hash": "f89202e675dfbfcd72764774d825db9d",
       "meta": {
         "model_id": "google/gemini-2-5-flash-preview-2025-05-20",
         "organisation_id": "google",
@@ -2770,7 +2770,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-pro-preview-2025-05-06/model.json": {
-      "hash": "507c3761a74091b5645043e104ea4093",
+      "hash": "6f74b8dab3b7c194bc76b70f8019cdbf",
       "meta": {
         "model_id": "google/gemini-2-5-pro-preview-2025-05-06",
         "organisation_id": "google",
@@ -2778,7 +2778,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-pro-preview-2025-06-05/model.json": {
-      "hash": "904d3b9fbec3d714df9c1b45d479b159",
+      "hash": "4f08f49605606e79bd88cb4cdbcf6e59",
       "meta": {
         "model_id": "google/gemini-2-5-pro-preview-2025-06-05",
         "organisation_id": "google",
@@ -2810,7 +2810,7 @@
       }
     },
     "src/data/models/google/gemini-3-1-flash-lite-preview-2026-03-03/model.json": {
-      "hash": "13493771bed1158263c34e26e91afc27",
+      "hash": "ee61eb6452aa8efe614a5e6b3aaccbf5",
       "meta": {
         "model_id": "google/gemini-3-1-flash-lite-preview-2026-03-03",
         "organisation_id": "google",
@@ -2850,7 +2850,7 @@
       }
     },
     "src/data/models/google/gemini-diffusion/model.json": {
-      "hash": "813c2aa1fe6cee221c2a65ff4922dad7",
+      "hash": "0e03b44f4a069af128c237442e79da53",
       "meta": {
         "model_id": "google/gemini-diffusion",
         "organisation_id": "google",
@@ -2954,7 +2954,7 @@
       }
     },
     "src/data/models/google/gemma-3-12b-2025-03-12/model.json": {
-      "hash": "36f11a9381bba570845b25dcede73d02",
+      "hash": "30746539c83e18dadb3a443c03fcb1ea",
       "meta": {
         "model_id": "google/gemma-3-12b-2025-03-12",
         "organisation_id": "google",
@@ -2962,7 +2962,7 @@
       }
     },
     "src/data/models/google/gemma-3-1b-2025-03-12/model.json": {
-      "hash": "08125587d643bb9e60d97a0696ce5d43",
+      "hash": "58639a62d5d925890f5aa730e06d701f",
       "meta": {
         "model_id": "google/gemma-3-1b-2025-03-12",
         "organisation_id": "google",
@@ -2970,7 +2970,7 @@
       }
     },
     "src/data/models/google/gemma-3-27b-2025-03-12/model.json": {
-      "hash": "e44782563661bf1754096f06045ab6a6",
+      "hash": "24c3bbcb0a50ce2cda58802c1966a5c8",
       "meta": {
         "model_id": "google/gemma-3-27b-2025-03-12",
         "organisation_id": "google",
@@ -2978,7 +2978,7 @@
       }
     },
     "src/data/models/google/gemma-3-4b-2025-03-12/model.json": {
-      "hash": "64352e7424cf06624eb40d5d900c3c24",
+      "hash": "8ff79c1bf9478fdf534b5f7beba3cd75",
       "meta": {
         "model_id": "google/gemma-3-4b-2025-03-12",
         "organisation_id": "google",
@@ -3722,7 +3722,7 @@
       }
     },
     "src/data/models/lg/exaone-4-0-1-2b-2025-07-15/model.json": {
-      "hash": "dd81a7b63d6cb69d9ff32d51493db1a7",
+      "hash": "660407fdf38b8ca09301e589975ac4f3",
       "meta": {
         "model_id": "lg/exaone-4-0-1-2b-2025-07-15",
         "organisation_id": "lg",
@@ -3730,7 +3730,7 @@
       }
     },
     "src/data/models/lg/exaone-4-0-32b-2025-07-15/model.json": {
-      "hash": "97d522a3bc963a7a62c062dc645023c0",
+      "hash": "6efbc87aa7411a1d8cecfe1a8f2c67aa",
       "meta": {
         "model_id": "lg/exaone-4-0-32b-2025-07-15",
         "organisation_id": "lg",
@@ -3882,7 +3882,7 @@
       }
     },
     "src/data/models/meta/llama-3-1-405b-instruct-2024-07-23/model.json": {
-      "hash": "6b05589443522a8248ef5f312bea0afd",
+      "hash": "c704a9e8eab837e84bbe9a6ca68e06a9",
       "meta": {
         "model_id": "meta/llama-3-1-405b-instruct-2024-07-23",
         "organisation_id": "meta",
@@ -3890,7 +3890,7 @@
       }
     },
     "src/data/models/meta/llama-3-1-70b-instruct-2024-07-23/model.json": {
-      "hash": "276a7b8bac30385580127a5aeb4ad151",
+      "hash": "22294102aef5d6d7440ea030d75d2f42",
       "meta": {
         "model_id": "meta/llama-3-1-70b-instruct-2024-07-23",
         "organisation_id": "meta",
@@ -3898,7 +3898,7 @@
       }
     },
     "src/data/models/meta/llama-3-1-8b-instruct-2024-07-23/model.json": {
-      "hash": "98edab34e972d799dbc263b82ed30ee5",
+      "hash": "986cdcffe516491629a68986196b4415",
       "meta": {
         "model_id": "meta/llama-3-1-8b-instruct-2024-07-23",
         "organisation_id": "meta",
@@ -3922,7 +3922,7 @@
       }
     },
     "src/data/models/meta/llama-3-2-3b-instruct-2024-09-25/model.json": {
-      "hash": "143c2be90f3059a6d9b009122a899ff6",
+      "hash": "178173c8c57fb1c1cc84d5589c50cf9c",
       "meta": {
         "model_id": "meta/llama-3-2-3b-instruct-2024-09-25",
         "organisation_id": "meta",
@@ -3938,7 +3938,7 @@
       }
     },
     "src/data/models/meta/llama-3-3-70b-instruct-2024-12-06/model.json": {
-      "hash": "a27ba1a52973c43a8770f48dfa5c55ca",
+      "hash": "54007a55b4ea017f70ccdae9785eb7aa",
       "meta": {
         "model_id": "meta/llama-3-3-70b-instruct-2024-12-06",
         "organisation_id": "meta",
@@ -4002,7 +4002,7 @@
       }
     },
     "src/data/models/microsoft/phi-3-5-mini-instruct-2024-08-23/model.json": {
-      "hash": "5eff5ca3b8951546e16506b295859abe",
+      "hash": "d794bb61315ea287099de0631be5ac11",
       "meta": {
         "model_id": "microsoft/phi-3-5-mini-instruct-2024-08-23",
         "organisation_id": "microsoft",
@@ -4010,7 +4010,7 @@
       }
     },
     "src/data/models/microsoft/phi-3-5-moe-instruct-2024-08-23/model.json": {
-      "hash": "1016fb4bb9cecb2fc2899069436c276a",
+      "hash": "4ceecf6ef0d92922153fb56426d3e0b1",
       "meta": {
         "model_id": "microsoft/phi-3-5-moe-instruct-2024-08-23",
         "organisation_id": "microsoft",
@@ -4074,7 +4074,7 @@
       }
     },
     "src/data/models/microsoft/phi-4-2024-12-12/model.json": {
-      "hash": "d0ee314305dcf7abedf947cd241709b3",
+      "hash": "d508a145240c4ba860ca65b04aefc1c1",
       "meta": {
         "model_id": "microsoft/phi-4-2024-12-12",
         "organisation_id": "microsoft",
@@ -4098,7 +4098,7 @@
       }
     },
     "src/data/models/microsoft/phi-4-mini-reasoning-2025-04-30/model.json": {
-      "hash": "da4ef0f8870c474888bda79494dc9676",
+      "hash": "8b70b468e34857fa3bfb70f38d8e66c5",
       "meta": {
         "model_id": "microsoft/phi-4-mini-reasoning-2025-04-30",
         "organisation_id": "microsoft",
@@ -4114,7 +4114,7 @@
       }
     },
     "src/data/models/microsoft/phi-4-reasoning-2025-04-30/model.json": {
-      "hash": "e9a8315b2313944d91d041268095e790",
+      "hash": "bb00e4fae9e1384bfda3feb2518e4009",
       "meta": {
         "model_id": "microsoft/phi-4-reasoning-2025-04-30",
         "organisation_id": "microsoft",
@@ -4122,7 +4122,7 @@
       }
     },
     "src/data/models/microsoft/phi-4-reasoning-plus-2025-04-30/model.json": {
-      "hash": "efb36a10789b94aedd85d7d146e06748",
+      "hash": "f48911da0819acefc5caebc32324b141",
       "meta": {
         "model_id": "microsoft/phi-4-reasoning-plus-2025-04-30",
         "organisation_id": "microsoft",
@@ -4674,7 +4674,7 @@
       }
     },
     "src/data/models/mistral/mistral-small-3-2-2025-06-20/model.json": {
-      "hash": "bd84c6aa9e86ff5c71b4106ccea8f4bc",
+      "hash": "eedd4cb0c1e5f3badc9f255649991c2c",
       "meta": {
         "model_id": "mistral/mistral-small-3-2-2025-06-20",
         "organisation_id": "mistral",
@@ -5002,7 +5002,7 @@
       }
     },
     "src/data/models/nvidia/llama-3-1-nemotron-nano-8b-v1-2025-03-18/model.json": {
-      "hash": "14819cd9a02a092e1362dab4df4f2719",
+      "hash": "1e2c3294ee00a348d6b3c32c94c0af2d",
       "meta": {
         "model_id": "nvidia/llama-3-1-nemotron-nano-8b-v1-2025-03-18",
         "organisation_id": "nvidia",
@@ -5010,7 +5010,7 @@
       }
     },
     "src/data/models/nvidia/llama-3-1-nemotron-ultra-253b-v1-2025-04-07/model.json": {
-      "hash": "feb9cacfe78e9bc6fd8a9f20fc26b8ca",
+      "hash": "ad9ff07e48655201189124203a8efbb4",
       "meta": {
         "model_id": "nvidia/llama-3-1-nemotron-ultra-253b-v1-2025-04-07",
         "organisation_id": "nvidia",
@@ -5018,7 +5018,7 @@
       }
     },
     "src/data/models/nvidia/llama-3-3-nemotron-super-49b-v1-2025-03-18/model.json": {
-      "hash": "e7e4848a3fe7f9f3766f22c7d7bbc5f7",
+      "hash": "d362c92f6c5c30ee077e3783a1125a6f",
       "meta": {
         "model_id": "nvidia/llama-3-3-nemotron-super-49b-v1-2025-03-18",
         "organisation_id": "nvidia",
@@ -5306,7 +5306,7 @@
       }
     },
     "src/data/models/openai/gpt-3-5-turbo-2023-03-21/model.json": {
-      "hash": "7506f9bf05ce8d667b6857737e50f106",
+      "hash": "e1b248a8a10daa2a76d61d8913d11b80",
       "meta": {
         "model_id": "openai/gpt-3-5-turbo-2023-03-21",
         "organisation_id": "openai",
@@ -5330,7 +5330,7 @@
       }
     },
     "src/data/models/openai/gpt-4-1-2025-04-14/model.json": {
-      "hash": "62dbe711f8a5a2f952cfb582b9b1493f",
+      "hash": "93329cd560ac135ad59730b61af4c242",
       "meta": {
         "model_id": "openai/gpt-4-1-2025-04-14",
         "organisation_id": "openai",
@@ -5338,7 +5338,7 @@
       }
     },
     "src/data/models/openai/gpt-4-1-mini-2025-04-14/model.json": {
-      "hash": "005055e7499372cf4ad216d34dd74a0a",
+      "hash": "b7d14859f501e3865b36ab3eb82dbb9b",
       "meta": {
         "model_id": "openai/gpt-4-1-mini-2025-04-14",
         "organisation_id": "openai",
@@ -5346,7 +5346,7 @@
       }
     },
     "src/data/models/openai/gpt-4-1-nano-2025-04-14/model.json": {
-      "hash": "2cb2e8b5c5e143ebfca2763d11fa6547",
+      "hash": "83a305121946ce06b1d7b622862e9aa4",
       "meta": {
         "model_id": "openai/gpt-4-1-nano-2025-04-14",
         "organisation_id": "openai",
@@ -5354,7 +5354,7 @@
       }
     },
     "src/data/models/openai/gpt-4-2023-03-14/model.json": {
-      "hash": "cfe4a56dc34223c11642abab31003a9c",
+      "hash": "f1081629b7ab27a1561ff975136a1463",
       "meta": {
         "model_id": "openai/gpt-4-2023-03-14",
         "organisation_id": "openai",
@@ -5394,7 +5394,7 @@
       }
     },
     "src/data/models/openai/gpt-4-5-2025-02-27/model.json": {
-      "hash": "8fa919c50d8c44e10b94132ad7c5b172",
+      "hash": "6c5a81eb715fdf17a1a730ce979c3f3b",
       "meta": {
         "model_id": "openai/gpt-4-5-2025-02-27",
         "organisation_id": "openai",
@@ -5434,7 +5434,7 @@
       }
     },
     "src/data/models/openai/gpt-4o-2024-08-06/model.json": {
-      "hash": "445892fecec13051cd593717e5854e64",
+      "hash": "083752384e7cd9fcf97db5ee64e1e21c",
       "meta": {
         "model_id": "openai/gpt-4o-2024-08-06",
         "organisation_id": "openai",
@@ -5474,7 +5474,7 @@
       }
     },
     "src/data/models/openai/gpt-4o-mini-2024-07-18/model.json": {
-      "hash": "9d76be72f691907f5e90e1dab907f594",
+      "hash": "c9555468ea4c01b2dbc26aa7f6b36782",
       "meta": {
         "model_id": "openai/gpt-4o-mini-2024-07-18",
         "organisation_id": "openai",
@@ -5674,7 +5674,7 @@
       }
     },
     "src/data/models/openai/gpt-5-2025-08-07/model.json": {
-      "hash": "b54b75095d4edfdb333886b5a2e8d5d5",
+      "hash": "fecb395f6c09e7b5bfc902f88e706184",
       "meta": {
         "model_id": "openai/gpt-5-2025-08-07",
         "organisation_id": "openai",
@@ -5730,7 +5730,7 @@
       }
     },
     "src/data/models/openai/gpt-5-mini-2025-08-07/model.json": {
-      "hash": "35922abed59216ccebe41aad0df41f33",
+      "hash": "74261a49b71ee4311c5de4ba6ed0ac8a",
       "meta": {
         "model_id": "openai/gpt-5-mini-2025-08-07",
         "organisation_id": "openai",
@@ -5738,7 +5738,7 @@
       }
     },
     "src/data/models/openai/gpt-5-nano-2025-08-07/model.json": {
-      "hash": "8d69230ed822acbb989e0f0356686daf",
+      "hash": "c53fad8324ed12e09b9839c91bbcff0f",
       "meta": {
         "model_id": "openai/gpt-5-nano-2025-08-07",
         "organisation_id": "openai",
@@ -5818,7 +5818,7 @@
       }
     },
     "src/data/models/openai/gpt-oss-120b-2025-08-05/model.json": {
-      "hash": "de44e502a7262d3da7cacc2bcc94d727",
+      "hash": "c4f9fd2b5f933ab6b700950fcc3bac80",
       "meta": {
         "model_id": "openai/gpt-oss-120b-2025-08-05",
         "organisation_id": "openai",
@@ -5826,7 +5826,7 @@
       }
     },
     "src/data/models/openai/gpt-oss-20b-2025-08-05/model.json": {
-      "hash": "bdc9eda592885898a5a089b20b825357",
+      "hash": "2778c3b6353f8c62998b8c14d33d9daa",
       "meta": {
         "model_id": "openai/gpt-oss-20b-2025-08-05",
         "organisation_id": "openai",
@@ -5882,7 +5882,7 @@
       }
     },
     "src/data/models/openai/o1-2024-12-17/model.json": {
-      "hash": "95dc4beda7c18dbfc446892e6e3937bb",
+      "hash": "e7404cdff8d4b6ec4a742025ed057c8e",
       "meta": {
         "model_id": "openai/o1-2024-12-17",
         "organisation_id": "openai",
@@ -5890,7 +5890,7 @@
       }
     },
     "src/data/models/openai/o1-mini-2024-09-12/model.json": {
-      "hash": "b9a80e3298e5a5c4eca701a821576157",
+      "hash": "33ce3b33ac73a9fe8336c74a390c7570",
       "meta": {
         "model_id": "openai/o1-mini-2024-09-12",
         "organisation_id": "openai",
@@ -5898,7 +5898,7 @@
       }
     },
     "src/data/models/openai/o1-preview-2024-09-12/model.json": {
-      "hash": "1617a7f9678a55bc3e32bb661494234c",
+      "hash": "9d30cb3d4953f0b85b50ff5cd458f479",
       "meta": {
         "model_id": "openai/o1-preview-2024-09-12",
         "organisation_id": "openai",
@@ -5906,7 +5906,7 @@
       }
     },
     "src/data/models/openai/o1-pro-2025-03-19/model.json": {
-      "hash": "ad7be0fe5e617c1e31f40fe545c50604",
+      "hash": "f12989f2f997975789719602f99b52eb",
       "meta": {
         "model_id": "openai/o1-pro-2025-03-19",
         "organisation_id": "openai",
@@ -5914,7 +5914,7 @@
       }
     },
     "src/data/models/openai/o3-2025-04-16/model.json": {
-      "hash": "8fbe946e7ac9f53f4535a76955517a35",
+      "hash": "5fdd2fdfd0ed0d73fe0a1623401674f6",
       "meta": {
         "model_id": "openai/o3-2025-04-16",
         "organisation_id": "openai",
@@ -5930,7 +5930,7 @@
       }
     },
     "src/data/models/openai/o3-mini-2025-01-30/model.json": {
-      "hash": "349865098969f39d099269a1809615dd",
+      "hash": "a086d0015dc5d98e324e3bd44e47e458",
       "meta": {
         "model_id": "openai/o3-mini-2025-01-30",
         "organisation_id": "openai",
@@ -5946,7 +5946,7 @@
       }
     },
     "src/data/models/openai/o3-pro-2025-06-10/model.json": {
-      "hash": "72ce235341a0d64600f66a1058370e9b",
+      "hash": "b95a71123d7a30e3548a9a00bd215108",
       "meta": {
         "model_id": "openai/o3-pro-2025-06-10",
         "organisation_id": "openai",
@@ -5954,7 +5954,7 @@
       }
     },
     "src/data/models/openai/o4-mini-2025-04-16/model.json": {
-      "hash": "9cbba4ab13ffec03439e8ead81c54a1e",
+      "hash": "4dcd7a1f8cb851a13b08e576f24b0376",
       "meta": {
         "model_id": "openai/o4-mini-2025-04-16",
         "organisation_id": "openai",
@@ -7530,7 +7530,7 @@
       }
     },
     "src/data/models/x-ai/grok-1-5-2024-03-28/model.json": {
-      "hash": "9c2c9959e9967f1497dda23650772d7e",
+      "hash": "41b1576b9d13698d2b746f4ce680d467",
       "meta": {
         "model_id": "x-ai/grok-1-5-2024-03-28",
         "organisation_id": "x-ai",
@@ -7546,7 +7546,7 @@
       }
     },
     "src/data/models/x-ai/grok-2-2024-08-13/model.json": {
-      "hash": "e55a22219921efe3151e0dfb2f81dc41",
+      "hash": "2537f1faaac57375ddde0a6304cdbb47",
       "meta": {
         "model_id": "x-ai/grok-2-2024-08-13",
         "organisation_id": "x-ai",
@@ -7562,7 +7562,7 @@
       }
     },
     "src/data/models/x-ai/grok-2-mini-2024-08-13/model.json": {
-      "hash": "e02d1515cfebaa7f7da9b3a489f8c7f5",
+      "hash": "8b4d345c87b41a96138303e9940f45e3",
       "meta": {
         "model_id": "x-ai/grok-2-mini-2024-08-13",
         "organisation_id": "x-ai",
@@ -7578,7 +7578,7 @@
       }
     },
     "src/data/models/x-ai/grok-3-2025-04-18/model.json": {
-      "hash": "281c7ffa6a35db16ef0b44e0d8657284",
+      "hash": "f0d2f72f0fa1817d5f9d160a9ac51e5b",
       "meta": {
         "model_id": "x-ai/grok-3-2025-04-18",
         "organisation_id": "x-ai",
@@ -7586,7 +7586,7 @@
       }
     },
     "src/data/models/x-ai/grok-3-beta-2025-02-19/model.json": {
-      "hash": "a09420df5cf1b8590711d56144f47571",
+      "hash": "4818146ebcafe32cda3460af85eaeafd",
       "meta": {
         "model_id": "x-ai/grok-3-beta-2025-02-19",
         "organisation_id": "x-ai",
@@ -7594,7 +7594,7 @@
       }
     },
     "src/data/models/x-ai/grok-3-mini-2025-04-18/model.json": {
-      "hash": "642bbca7bf0a9deb6e963943c5965a3a",
+      "hash": "37fe025cf7824456644ee5f9ee7aeae0",
       "meta": {
         "model_id": "x-ai/grok-3-mini-2025-04-18",
         "organisation_id": "x-ai",
@@ -7602,7 +7602,7 @@
       }
     },
     "src/data/models/x-ai/grok-3-mini-beta-2025-02-19/model.json": {
-      "hash": "66fe70f5615e97b50bc54ebfffa104ab",
+      "hash": "92e98f071714708b033d4ad3f3d91573",
       "meta": {
         "model_id": "x-ai/grok-3-mini-beta-2025-02-19",
         "organisation_id": "x-ai",

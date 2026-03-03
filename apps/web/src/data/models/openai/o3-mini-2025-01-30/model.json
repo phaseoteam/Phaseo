@@ -155,7 +155,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": null,
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -163,7 +163,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -171,7 +171,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": null,
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -179,7 +179,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": null,
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "lisanbench",

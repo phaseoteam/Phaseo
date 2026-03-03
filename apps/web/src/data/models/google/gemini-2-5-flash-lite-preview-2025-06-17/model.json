@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "Thinking",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-model-family-expands/",
-      "rank": 39
+      "rank": 40
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "No Thinking",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-model-family-expands/",
-      "rank": 39
+      "rank": 40
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "Thinking, No Tools",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-model-family-expands/",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": "No Thinking, No Tools",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-model-family-expands/",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "lmarena-text",
@@ -135,7 +135,7 @@
       "is_self_reported": true,
       "other_info": "Thinking",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-model-family-expands/",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "simpleqa",
@@ -143,7 +143,7 @@
       "is_self_reported": true,
       "other_info": "No Thinking",
       "source_link": "https://blog.google/products/gemini/gemini-2-5-model-family-expands/",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "swe-bench",

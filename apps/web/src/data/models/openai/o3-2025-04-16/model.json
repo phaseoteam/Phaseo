@@ -179,7 +179,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",

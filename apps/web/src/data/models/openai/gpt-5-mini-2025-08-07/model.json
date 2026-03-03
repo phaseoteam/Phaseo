@@ -139,7 +139,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 18
+      "rank": 19
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -203,7 +203,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "multi-challenge",
@@ -275,7 +275,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "arc-agi-1",
