@@ -350,7 +350,7 @@ export function UsageStackedBar({
 														/>
 														<span>{cfg?.label ?? String(name ?? "")}</span>
 													</span>
-													<span className="ml-auto pl-3 font-mono">
+													<span className="ml-auto pl-3 tabular-nums">
 														{formatNumber(val)}
 													</span>
 												</div>
@@ -360,12 +360,12 @@ export function UsageStackedBar({
 									<div className="space-y-0.5 border-t border-border/60 pt-1.5 text-xs">
 										<div className="flex items-center justify-between">
 											<span className="text-muted-foreground">Total</span>
-											<span className="font-mono">{formatNumber(weeklyTotal)}</span>
+											<span className="tabular-nums">{formatNumber(weeklyTotal)}</span>
 										</div>
 										{isCurrentWeek ? (
 											<div className="flex items-center justify-between">
 												<span className="text-muted-foreground">Weekly Pace</span>
-												<span className="font-mono">
+												<span className="tabular-nums">
 													{formatPaceGain(weeklyPaceGain)}
 												</span>
 											</div>

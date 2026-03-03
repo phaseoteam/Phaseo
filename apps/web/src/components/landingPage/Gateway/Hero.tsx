@@ -66,7 +66,7 @@ function StatCard({
 			<div className="absolute inset-0 bg-gradient-to-br from-zinc-50/50 to-transparent opacity-0 transition-opacity group-hover:opacity-100 dark:from-zinc-900/40" />
 			<div className="relative flex items-center justify-between">
 				<div className="space-y-1">
-					<p className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+					<p className="text-3xl font-bold tracking-tight tabular-nums text-zinc-900 dark:text-zinc-100">
 						{value}
 					</p>
 					<p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">

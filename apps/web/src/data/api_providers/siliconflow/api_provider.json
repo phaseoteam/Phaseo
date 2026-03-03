@@ -3,5 +3,6 @@
   "api_provider_name": "SiliconFlow",
   "description": null,
   "link": "https://docs.siliconflow.cn/",
-  "country_code": "CN"
+  "country_code": "CN",
+  "status": "NotReady"
 }

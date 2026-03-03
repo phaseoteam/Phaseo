@@ -83,7 +83,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 12
+      "rank": 15
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -99,7 +99,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -107,7 +107,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "browsecomp-long-context-128k",

@@ -3,5 +3,6 @@
   "api_provider_name": "z.AI",
   "description": null,
   "link": "https://docs.z.ai/guides/overview/quick-start",
-  "country_code": "CN"
+  "country_code": "CN",
+  "status": "Active"
 }

@@ -169,7 +169,7 @@ async function GatewayShowcaseData() {
 							className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
 						>
 							<div className="flex items-center justify-between">
-								<p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+								<p className="text-2xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
 									{stat.value}
 								</p>
 								<Icon className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
@@ -227,7 +227,7 @@ async function GatewayShowcaseData() {
 									</p>
 								</div>
 								<div className="text-right">
-									<div className="text-sm font-mono font-medium">
+									<div className="text-sm tabular-nums font-medium">
 										{formatCompact(model.tokens)}
 									</div>
 									<div className="text-[11px] text-muted-foreground">
@@ -289,7 +289,7 @@ async function GatewayShowcaseData() {
 										</p>
 									</div>
 									<div className="text-right">
-										<div className="text-sm font-mono font-medium">
+										<div className="text-sm tabular-nums font-medium">
 											{formatCompact(app.tokens)}
 										</div>
 										<div className="text-[11px] text-muted-foreground">

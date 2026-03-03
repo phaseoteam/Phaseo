@@ -3,5 +3,6 @@
   "api_provider_name": "ElevenLabs",
   "description": null,
   "link": "https://elevenlabs.io/docs/",
-  "country_code": "GB"
+  "country_code": "GB",
+  "status": "NotReady"
 }

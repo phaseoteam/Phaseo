@@ -50,6 +50,7 @@ const staticRoutes: Array<{
         { path: "/organisations", changeFrequency: "weekly", priority: 0.75 },
         { path: "/families", changeFrequency: "weekly", priority: 0.75 },
         { path: "/subscription-plans", changeFrequency: "weekly", priority: 0.75 },
+        { path: "/pricing", changeFrequency: "weekly", priority: 0.75 },
         { path: "/compare", changeFrequency: "weekly", priority: 0.7 },
 		{ path: "/migrate", changeFrequency: "weekly", priority: 0.7 },
 		{ path: "/gateway", changeFrequency: "weekly", priority: 0.7 },

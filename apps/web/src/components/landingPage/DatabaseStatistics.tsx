@@ -76,7 +76,7 @@ export default async function DatabaseStats() {
 					<Card className="h-full gap-0 p-4 flex flex-col items-center justify-between border border-gray-200 dark:border-gray-700 border-b-2 border-b-gray-300 dark:border-b-gray-600 cursor-pointer">
 						<CardHeader className="text-center p-0 w-full">
 							<div className="flex-1 flex items-center justify-center">
-								<CardTitle className="text-3xl font-bold">
+								<CardTitle className="text-3xl font-bold tabular-nums">
 									{stat.value}
 								</CardTitle>
 							</div>

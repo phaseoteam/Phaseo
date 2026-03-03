@@ -3,5 +3,6 @@
   "api_provider_name": "ByteDance Seed",
   "description": null,
   "link": "https://seed.bytedance.com/",
-  "country_code": "CN"
+  "country_code": "CN",
+  "status": "NotReady"
 }

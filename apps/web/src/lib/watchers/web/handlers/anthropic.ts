@@ -30,12 +30,20 @@ export async function handleAnthropic(supabase: any): Promise<Array<{ type: "web
 
     const existingLinks = new Set(existing?.map((r: any) => r.link) || []);
     const newUrls = urls.filter(u => !existingLinks.has(u));
+    const blockedPathPrefixes = ["/learn", "/engineering"];
     const filteredUrls = newUrls.filter(u => {
         const url = new URL(u);
         const pathname = url.pathname.toLowerCase();
-        if (pathname === "/learn" || pathname.startsWith("/learn/")) {
+        const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+
+        if (
+            blockedPathPrefixes.some((prefix) =>
+                normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`)
+            )
+        ) {
             return false;
         }
+
         const segments = url.pathname.split('/').filter(Boolean);
         return segments.length > 1;
     });

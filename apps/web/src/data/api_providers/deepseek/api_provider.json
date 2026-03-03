@@ -3,5 +3,6 @@
   "api_provider_name": "DeepSeek",
   "description": null,
   "link": "https://api-docs.deepseek.com/",
-  "country_code": "CA"
+  "country_code": "CA",
+  "status": "Active"
 }

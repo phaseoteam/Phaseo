@@ -222,19 +222,19 @@ export function PerformanceScatter({
                                     </div>
                                     <div className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs">
                                         <span className="text-muted-foreground">Cost</span>
-                                        <span className="text-right font-mono">
+                                        <span className="text-right tabular-nums">
                                             ${point.cost.toFixed(2)}/1M
                                         </span>
                                         <span className="text-muted-foreground">
                                             {mode === "throughput" ? "Throughput" : "Latency"}
                                         </span>
-                                        <span className="text-right font-mono">
+                                        <span className="text-right tabular-nums">
                                             {mode === "throughput"
                                                 ? `${point.throughput.toFixed(1)} tok/s`
                                                 : `${Math.round(point.latency)}ms`}
                                         </span>
                                         <span className="text-muted-foreground">Requests</span>
-                                        <span className="text-right font-mono">
+                                        <span className="text-right tabular-nums">
                                             {formatCompact(point.requests)}
                                         </span>
                                     </div>

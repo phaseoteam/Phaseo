@@ -83,11 +83,11 @@ const COMPARISON_DATA = [
 	},
 	{
 		capability: "Pricing Model",
-		description: "Gateway fee structure",
+		description: "Credit purchase fee structure",
 		gateway: {
-			value: "7% basic, 5% enterprise",
+			value: "7% basic, 5% enterprise top-up fee",
 			highlight: true,
-			details: "Volume discounts, no per-request fees",
+			details: "Applied on credit purchases, not token requests",
 		},
 		openRouter: {
 			value: "5.5% flat",
@@ -95,7 +95,7 @@ const COMPARISON_DATA = [
 			details: "Fixed rate for all usage",
 		},
 		vercel: {
-			value: "0% gateway fee",
+			value: "0% platform fee",
 			highlight: false,
 			details: "But limited routing capabilities",
 		},

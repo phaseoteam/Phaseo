@@ -138,7 +138,7 @@ const PROVIDERS: ProviderConfig[] = [
 		providerId: "alibaba",
 		providerName: "Alibaba Cloud",
 		modelsEndpoint: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/models",
-		apiKeyEnv: ["ALIBABA_CLOUD_API_KEY", "ALIBABA_API_KEY"],
+		apiKeyEnv: ["ALIBABA_CLOUD_API_KEY"],
 	},
 	{
 		providerId: "anthropic",
@@ -160,6 +160,7 @@ const PROVIDERS: ProviderConfig[] = [
 		authStyle: "clarifai_key",
 	},
 	{ providerId: "cohere", providerName: "Cohere", modelsEndpoint: "https://api.cohere.ai/compatibility/v1/models", apiKeyEnv: ["COHERE_API_KEY"] },
+	{ providerId: "deepinfra", providerName: "DeepInfra", modelsEndpoint: "https://api.deepinfra.com/v1/openai/models", apiKeyEnv: ["DEEPINFRA_API_KEY"] },
 	{ providerId: "deepseek", providerName: "DeepSeek", modelsEndpoint: "https://api.deepseek.com/models", apiKeyEnv: ["DEEPSEEK_API_KEY"] },
 	{
 		providerId: "elevenlabs",

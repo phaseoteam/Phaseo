@@ -1,4 +1,4 @@
-// Purpose: Executor for alibaba/qwen / video-generate.
+// Purpose: Executor for Alibaba Cloud video-generate.
 // Why: Enables Wan video create flow through IR -> DashScope -> IR.
 // How: Submits async task, returns queued response with encoded task identifier.
 
@@ -87,9 +87,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
-		() => bindings.ALIBABA_API_KEY || bindings.QWEN_API_KEY,
+		() => bindings.ALIBABA_CLOUD_API_KEY,
 	);
-	const baseUrl = (bindings.ALIBABA_BASE_URL || bindings.QWEN_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
+	const baseUrl = (bindings.ALIBABA_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
 	const requestObject = irToWanRequest(ir, model);
 	const requestBody = JSON.stringify(requestObject);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;

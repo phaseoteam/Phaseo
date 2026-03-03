@@ -3,5 +3,6 @@
   "api_provider_name": "Friendli",
   "description": null,
   "link": "https://friendli.ai/docs/guides/openai-compatibility",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

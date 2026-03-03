@@ -3,5 +3,6 @@
   "api_provider_name": "Arcee AI",
   "description": null,
   "link": "https://docs.arcee.ai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

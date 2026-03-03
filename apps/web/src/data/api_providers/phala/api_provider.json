@@ -3,5 +3,6 @@
   "api_provider_name": "Phala",
   "description": null,
   "link": "https://www.phala.network/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

@@ -91,7 +91,7 @@ export default async function TierOverview({ teamId }: Props) {
 				<CardContent className="space-y-4">
 					{/* Fee Rate */}
 					<div className="flex items-baseline justify-between">
-						<span className="text-sm text-muted-foreground">Gateway Fee</span>
+						<span className="text-sm text-muted-foreground">Credit Top-Up Fee</span>
 						<div className="flex items-baseline gap-1">
 							<span className="text-3xl font-bold">{currentFee}%</span>
 							{savingsRate > 0 && (
@@ -124,7 +124,7 @@ export default async function TierOverview({ teamId }: Props) {
 								{remainingToEnterprise > 0 ? (
 									<>
 										Spend {money(remainingToEnterprise)} more this month to
-										unlock Enterprise tier (5% fee)
+										unlock Enterprise tier (5% top-up fee)
 									</>
 								) : (
 									<>Eligible for Enterprise tier now.</>
@@ -207,7 +207,7 @@ export default async function TierOverview({ teamId }: Props) {
 					<div className="rounded-lg border bg-muted/50 p-3">
 						<p className="text-sm text-muted-foreground">
 							<strong>How tiers work:</strong> Reach $10k in a calendar month
-							to unlock Enterprise pricing for that month and the following
+							to unlock Enterprise top-up fee pricing for that month and the following
 							month. After that, a 3-month low-spend streak can move teams
 							back to Basic.
 						</p>
@@ -218,7 +218,7 @@ export default async function TierOverview({ teamId }: Props) {
 						<div className="rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-900 dark:bg-orange-950/30">
 							<p className="text-sm text-orange-900 dark:text-orange-100">
 								<strong>Heads up:</strong> Your spending is below $10k this
-								month. You'll keep Enterprise pricing with a 3-month grace
+								month. You'll keep Enterprise top-up fee pricing with a 3-month grace
 								period.
 							</p>
 						</div>

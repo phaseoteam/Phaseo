@@ -3,5 +3,6 @@
   "api_provider_name": "Mistral",
   "description": null,
   "link": "https://docs.mistral.ai/",
-  "country_code": "FR"
+  "country_code": "FR",
+  "status": "Active"
 }

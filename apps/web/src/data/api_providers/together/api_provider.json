@@ -3,5 +3,6 @@
   "api_provider_name": "Together",
   "description": null,
   "link": "https://docs.together.ai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

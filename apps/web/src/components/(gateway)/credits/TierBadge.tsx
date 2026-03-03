@@ -60,7 +60,7 @@ export function TierBadge({
 							Current tier: {tierName}
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Gateway fee: {feePct.toFixed(1)}%{" "}
+							Credit top-up fee: {feePct.toFixed(1)}%{" "}
 							{hasSavings
 								? `(save ${savingsPoints.toFixed(1)}% vs Basic)`
 								: ""}
@@ -78,7 +78,7 @@ export function TierBadge({
 
 					{topTier ? (
 						<p className="text-xs text-muted-foreground">
-							You're on Enterprise tier with the lowest fee. Reach out if you
+							You're on Enterprise tier with the lowest top-up fee. Reach out if you
 							need custom pricing or dedicated support.
 						</p>
 					) : (
@@ -90,7 +90,7 @@ export function TierBadge({
 									{nextFeePct !== undefined && nextFeePct !== null ? (
 										<>
 											{" "}
-											({nextFeePct.toFixed(1)}% fee
+											({nextFeePct.toFixed(1)}% top-up fee
 											{nextDiscountDelta
 												? `, save ${nextDiscountDelta.toFixed(1)}%`
 												: ""}

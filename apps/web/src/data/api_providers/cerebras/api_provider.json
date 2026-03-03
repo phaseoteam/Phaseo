@@ -3,5 +3,6 @@
   "api_provider_name": "Cerebras",
   "description": null,
   "link": "https://inference-docs.cerebras.ai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "Active"
 }

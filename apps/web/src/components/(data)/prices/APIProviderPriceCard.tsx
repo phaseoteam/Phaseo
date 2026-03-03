@@ -91,7 +91,7 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 						<Card
 							className={`flex flex-col items-center justify-center rounded-lg border border-zinc-200/70 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 p-3 ${accent}`}
 						>
-							<span className="text-xl font-semibold font-mono tracking-tight">
+							<span className="text-xl font-semibold tabular-nums tracking-tight">
 								{value}
 							</span>
 							<span
@@ -178,7 +178,7 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 									<span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
 										Throughput
 									</span>
-									<span className="text-sm font-mono font-semibold">
+									<span className="text-sm tabular-nums font-semibold">
 										{throughput !== null &&
 										throughput !== undefined &&
 										throughput !== ""
@@ -190,7 +190,7 @@ export default function ModelPriceCard({ model }: ModelPriceCardProps) {
 									<span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
 										Latency
 									</span>
-									<span className="text-sm font-mono font-semibold">
+									<span className="text-sm tabular-nums font-semibold">
 										{latency !== null &&
 										latency !== undefined &&
 										latency !== ""

@@ -49,7 +49,11 @@ async function main() {
         },
         benchmarks: loadBenchmarks,
         organisations: loadOrganisations,
-        providers: loadProviders,
+        providers: async tracker => {
+            // Keep provider model references valid by refreshing data_models first.
+            await loadModels(tracker, { modelId: null });
+            await loadProviders(tracker);
+        },
         aliases: loadAliases,
         subscription_plans: loadSubscriptionPlans,
         all: async tracker => {

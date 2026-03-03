@@ -107,7 +107,7 @@ export function PerformanceLeaderboard({
 					) : null}
 				</div>
 				<div className="text-right">
-					<div className="font-mono text-sm">
+					<div className="tabular-nums text-sm">
 						{formatThroughput(entry.throughput)}{" "}
 						<span className="text-xs text-muted-foreground">tok/s</span>
 					</div>

@@ -180,9 +180,13 @@ async function updateMap(
     ttlSeconds = HEALTH_STATE_TTL_SECONDS
 ): Promise<Record<string, string>> {
     const map = await loadMapByKey(key);
+    const before = JSON.stringify(map);
     const next = updater(map);
     const updated: Record<string, string> = next && typeof next === "object" ? next : map;
-    await saveMap(key, updated, ttlSeconds);
+    const after = JSON.stringify(updated);
+    if (after !== before) {
+        await saveMap(key, updated, ttlSeconds);
+    }
     return updated;
 }
 
@@ -254,18 +258,6 @@ async function setHealthFields(endpoint: Endpoint, model: string, updates: Recor
         }
         return map;
     });
-}
-
-async function incrHealthField(endpoint: Endpoint, model: string, fieldKey: string, delta: number): Promise<number> {
-    const key = HEALTH_KEYS.health(endpoint, model);
-    let nextValue = 0;
-    await updateMap(key, (map) => {
-        const current = asNum(map[fieldKey], 0);
-        nextValue = current + delta;
-        map[fieldKey] = String(nextValue);
-        return map;
-    });
-    return nextValue;
 }
 
 async function loadHalfMap(endpoint: Endpoint, provider: string, model: string): Promise<Record<string, string>> {
@@ -500,11 +492,15 @@ export async function maybeOpenOnRecentErrors(
 }
 
 export async function onCallStart(endpoint: Endpoint, provider: string, model: string) {
-    const inflightField = field(provider, "inflight");
-    const inflight = await incrHealthField(endpoint, model, inflightField, 1);
-    const softCap = Math.max(CONFIG_DEFAULTS.load_soft_cap, 1);
-    await setHealthFields(endpoint, model, {
-        [field(provider, "current_load")]: Math.min(1, inflight / softCap),
+    const key = HEALTH_KEYS.health(endpoint, model);
+    await updateMap(key, (map) => {
+        const inflightField = field(provider, "inflight");
+        const currentInflight = asNum(map[inflightField], 0);
+        const inflight = currentInflight + 1;
+        const softCap = Math.max(CONFIG_DEFAULTS.load_soft_cap, 1);
+        map[inflightField] = String(inflight);
+        map[field(provider, "current_load")] = String(Math.min(1, inflight / softCap));
+        return map;
     });
 }
 
@@ -522,68 +518,70 @@ export async function onCallEnd(
 ) {
     const { provider, model, ok, latency_ms } = params;
     const tokens = (params.tokens_in ?? 0) + (params.tokens_out ?? 0);
-    const map = await loadStateMap(endpoint, model);
-    const now = Date.now();
+    const key = HEALTH_KEYS.health(endpoint, model);
+    await updateMap(key, (map) => {
+        const now = Date.now();
+        const tau10 = HEALTH_CONSTANTS.TAU_10S_MS;
+        const tau60 = HEALTH_CONSTANTS.TAU_60S_MS;
+        const tau300 = HEALTH_CONSTANTS.TAU_300S_MS;
 
-    const tau10 = HEALTH_CONSTANTS.TAU_10S_MS;
-    const tau60 = HEALTH_CONSTANTS.TAU_60S_MS;
-    const tau300 = HEALTH_CONSTANTS.TAU_300S_MS;
+        const last10 = readNumber(map, provider, "last_ts_10s") || now;
+        const last60 = readNumber(map, provider, "last_ts_60s") || now;
+        const last300 = readNumber(map, provider, "last_ts_300s") || now;
 
-    const last10 = readNumber(map, provider, "last_ts_10s") || now;
-    const last60 = readNumber(map, provider, "last_ts_60s") || now;
-    const last300 = readNumber(map, provider, "last_ts_300s") || now;
+        const decay10 = Math.exp(-(now - last10) / tau10);
+        const decay60 = Math.exp(-(now - last60) / tau60);
+        const decay300 = Math.exp(-(now - last300) / tau300);
 
-    const decay10 = Math.exp(-(now - last10) / tau10);
-    const decay60 = Math.exp(-(now - last60) / tau60);
-    const decay300 = Math.exp(-(now - last300) / tau300);
+        const decay = (prev: number, sample: number, d: number) => prev * d + (1 - d) * sample;
 
-    const decay = (prev: number, sample: number, d: number) => prev * d + (1 - d) * sample;
+        const lat10 = decay(readNumber(map, provider, "lat_ewma_10s"), latency_ms, decay10);
+        const lat60 = decay(readNumber(map, provider, "lat_ewma_60s"), latency_ms, decay60);
+        const lat300 = decay(readNumber(map, provider, "lat_ewma_300s"), latency_ms, decay300);
 
-    const lat10 = decay(readNumber(map, provider, "lat_ewma_10s"), latency_ms, decay10);
-    const lat60 = decay(readNumber(map, provider, "lat_ewma_60s"), latency_ms, decay60);
-    const lat300 = decay(readNumber(map, provider, "lat_ewma_300s"), latency_ms, decay300);
+        const errSample = ok ? 0 : 1;
+        const err10 = decay(readNumber(map, provider, "err_ewma_10s"), errSample, decay10);
+        const err60 = decay(readNumber(map, provider, "err_ewma_60s"), errSample, decay60);
+        const err300 = decay(readNumber(map, provider, "err_ewma_300s"), errSample, decay300);
 
-    const errSample = ok ? 0 : 1;
-    const err10 = decay(readNumber(map, provider, "err_ewma_10s"), errSample, decay10);
-    const err60 = decay(readNumber(map, provider, "err_ewma_60s"), errSample, decay60);
-    const err300 = decay(readNumber(map, provider, "err_ewma_300s"), errSample, decay300);
+        const rate10 = readNumber(map, provider, "rate_10s") * decay10 + (1000 / tau10);
+        const rate60 = readNumber(map, provider, "rate_60s") * decay60 + (1000 / tau60);
 
-    const rate10 = readNumber(map, provider, "rate_10s") * decay10 + (1000 / tau10);
-    const rate60 = readNumber(map, provider, "rate_60s") * decay60 + (1000 / tau60);
+        let tp60 = readNumber(map, provider, "tp_ewma_60s");
+        if (tokens > 0 && params.generation_ms && params.generation_ms > 0) {
+            const tps = tokens / Math.max(params.generation_ms / 1000, 0.001);
+            tp60 = decay(tp60, tps, decay60);
+        }
 
-    let tp60 = readNumber(map, provider, "tp_ewma_60s");
-    if (tokens > 0 && params.generation_ms && params.generation_ms > 0) {
-        const tps = tokens / Math.max(params.generation_ms / 1000, 0.001);
-        tp60 = decay(tp60, tps, decay60);
-    }
+        const recOk = decay(readNumber(map, provider, "rec_ok_ew_60s"), ok ? 1 : 0, decay60);
+        const recTot = decay(readNumber(map, provider, "rec_tot_ew_60s"), 1, decay60);
 
-    const recOk = decay(readNumber(map, provider, "rec_ok_ew_60s"), ok ? 1 : 0, decay60);
-    const recTot = decay(readNumber(map, provider, "rec_tot_ew_60s"), 1, decay60);
+        const softCap = readConfig(map, provider, "load_soft_cap");
+        const inflightField = field(provider, "inflight");
+        const inflight = Math.max(asNum(map[inflightField], 0) - 1, 0);
+        const load = Math.min(1, inflight / Math.max(softCap, 1));
 
-    const softCap = readConfig(map, provider, "load_soft_cap");
-    const inflight = Math.max(await incrHealthField(endpoint, model, field(provider, "inflight"), -1), 0);
-    const load = Math.min(1, inflight / Math.max(softCap, 1));
-
-    await setHealthFields(endpoint, model, {
-        [field(provider, "lat_ewma_10s")]: lat10,
-        [field(provider, "lat_ewma_60s")]: lat60,
-        [field(provider, "lat_ewma_300s")]: lat300,
-        [field(provider, "err_ewma_10s")]: err10,
-        [field(provider, "err_ewma_60s")]: err60,
-        [field(provider, "err_ewma_300s")]: err300,
-        [field(provider, "rate_10s")]: rate10,
-        [field(provider, "rate_60s")]: rate60,
-        [field(provider, "tp_ewma_60s")]: tp60,
-        [field(provider, "rec_ok_ew_60s")]: recOk,
-        [field(provider, "rec_tot_ew_60s")]: recTot,
-        [field(provider, "last_ts_10s")]: now,
-        [field(provider, "last_ts_60s")]: now,
-        [field(provider, "last_ts_300s")]: now,
-        [field(provider, "current_load")]: load,
-        [field(provider, "last_updated")]: now,
-        [field(provider, "load_soft_cap")]: softCap,
-        [field(provider, "err_open_th")]: readConfig(map, provider, "err_open_th"),
-        [field(provider, "base_open_secs")]: readConfig(map, provider, "base_open_secs"),
-        [field(provider, "max_open_secs")]: readConfig(map, provider, "max_open_secs"),
+        map[inflightField] = String(inflight);
+        map[field(provider, "lat_ewma_10s")] = String(lat10);
+        map[field(provider, "lat_ewma_60s")] = String(lat60);
+        map[field(provider, "lat_ewma_300s")] = String(lat300);
+        map[field(provider, "err_ewma_10s")] = String(err10);
+        map[field(provider, "err_ewma_60s")] = String(err60);
+        map[field(provider, "err_ewma_300s")] = String(err300);
+        map[field(provider, "rate_10s")] = String(rate10);
+        map[field(provider, "rate_60s")] = String(rate60);
+        map[field(provider, "tp_ewma_60s")] = String(tp60);
+        map[field(provider, "rec_ok_ew_60s")] = String(recOk);
+        map[field(provider, "rec_tot_ew_60s")] = String(recTot);
+        map[field(provider, "last_ts_10s")] = String(now);
+        map[field(provider, "last_ts_60s")] = String(now);
+        map[field(provider, "last_ts_300s")] = String(now);
+        map[field(provider, "current_load")] = String(load);
+        map[field(provider, "last_updated")] = String(now);
+        map[field(provider, "load_soft_cap")] = String(softCap);
+        map[field(provider, "err_open_th")] = String(readConfig(map, provider, "err_open_th"));
+        map[field(provider, "base_open_secs")] = String(readConfig(map, provider, "base_open_secs"));
+        map[field(provider, "max_open_secs")] = String(readConfig(map, provider, "max_open_secs"));
+        return map;
     });
 }

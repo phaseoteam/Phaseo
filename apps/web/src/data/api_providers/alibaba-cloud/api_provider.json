@@ -3,5 +3,6 @@
   "api_provider_name": "Alibaba Cloud",
   "description": null,
   "link": "https://www.alibabacloud.com/help/en/model-studio/models",
-  "country_code": "CN"
+  "country_code": "CN",
+  "status": "Beta"
 }

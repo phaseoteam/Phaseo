@@ -3,5 +3,6 @@
   "api_provider_name": "GMICloud",
   "description": null,
   "link": "https://docs.gmicloud.ai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

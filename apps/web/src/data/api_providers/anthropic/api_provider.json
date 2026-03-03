@@ -3,5 +3,6 @@
   "api_provider_name": "Anthropic",
   "description": null,
   "link": "https://docs.anthropic.com/en/home",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "Active"
 }

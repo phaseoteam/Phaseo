@@ -3,5 +3,6 @@
   "api_provider_name": "Crusoe",
   "description": null,
   "link": "https://docs.crusoecloud.com/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

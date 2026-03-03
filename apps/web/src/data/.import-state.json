@@ -50,13 +50,13 @@
       }
     },
     "src/data/benchmarks/arc-agi-1/benchmark.json": {
-      "hash": "8f22170ac2e2a7f1b7b2f55b9e6a266c",
+      "hash": "6a11c33245e666dbc2804ea42f70e429",
       "meta": {
         "benchmark_id": "arc-agi-1"
       }
     },
     "src/data/benchmarks/arc-agi-2/benchmark.json": {
-      "hash": "9068c6be58aec223f6bd9a4af3e096df",
+      "hash": "73203fb611c50bd2aed5f9130128c646",
       "meta": {
         "benchmark_id": "arc-agi-2"
       }
@@ -1318,7 +1318,7 @@
       }
     },
     "src/data/models/x-ai/grok-3-2025-04-18/model.json": {
-      "hash": "f2cbd24e140047b83ef2318a39157d7a",
+      "hash": "281c7ffa6a35db16ef0b44e0d8657284",
       "meta": {
         "model_id": "x-ai/grok-3-2025-04-18",
         "organisation_id": "x-ai",
@@ -1334,7 +1334,7 @@
       }
     },
     "src/data/models/x-ai/grok-3-mini-2025-04-18/model.json": {
-      "hash": "60c2197d4154c66a607465effdae7ff9",
+      "hash": "642bbca7bf0a9deb6e963943c5965a3a",
       "meta": {
         "model_id": "x-ai/grok-3-mini-2025-04-18",
         "organisation_id": "x-ai",
@@ -1469,12 +1469,6 @@
         "previous_model_id": null
       }
     },
-    "src/data/aliases/openai-gpt-chat/alias.json": {
-      "hash": "9e3ad2f2a6bcb368cfc2e69f72cd2897",
-      "meta": {
-        "alias_slug": "openai/gpt-chat"
-      }
-    },
     "src/data/aliases/openai-gpt-latest/alias.json": {
       "hash": "1568cac4171daa5bb4bc89b111776368",
       "meta": {
@@ -1482,7 +1476,7 @@
       }
     },
     "src/data/api_providers/ai21/api_provider.json": {
-      "hash": "1c4b7004d03bf36899481061d438f47c",
+      "hash": "c9262b0d9ba25ce533972e67ab2d3c61",
       "meta": {
         "api_provider_id": "ai21"
       }
@@ -1495,7 +1489,7 @@
       }
     },
     "src/data/api_providers/amazon-bedrock/api_provider.json": {
-      "hash": "5f60575f4cb6b6c5410d4dfa807eb25a",
+      "hash": "3fea258e0d79550ed1da307a48e9c2b3",
       "meta": {
         "api_provider_id": "amazon-bedrock"
       }
@@ -1508,38 +1502,38 @@
       }
     },
     "src/data/api_providers/anthropic/api_provider.json": {
-      "hash": "939fcfd5959b7a46455bef5f5cc23934",
+      "hash": "35a9d556d8f9709e5258eb54149da9bd",
       "meta": {
         "api_provider_id": "anthropic"
       }
     },
     "src/data/api_providers/anthropic/models.json": {
-      "hash": "09b11cd9f89a8536936280c99f0098d8",
+      "hash": "e1cafcb5acf5ae31908db792315f6025",
       "meta": {
         "api_provider_id": "anthropic",
         "kind": "provider_models"
       }
     },
     "src/data/api_providers/atlascloud/api_provider.json": {
-      "hash": "fdc39183f6c0bd88a9760cf800da4d9c",
+      "hash": "a7e4f2a86d3e5d9fb24e913337dc8f1b",
       "meta": {
         "api_provider_id": "atlascloud"
       }
     },
     "src/data/api_providers/azure/api_provider.json": {
-      "hash": "64b4b446b27fcc93005f5456ee25f3df",
+      "hash": "b9ff0af3fd3173285b8bb8683bdc797f",
       "meta": {
         "api_provider_id": "azure"
       }
     },
     "src/data/api_providers/baseten/api_provider.json": {
-      "hash": "ba394213218a40cc8ac72f80c3b69eb9",
+      "hash": "c8e4129c0dda556fa8e6f10ba0c747c4",
       "meta": {
         "api_provider_id": "baseten"
       }
     },
     "src/data/api_providers/black-forest-labs/api_provider.json": {
-      "hash": "10070de2c017646fe81d02340e19b481",
+      "hash": "0977c578c4dbd6f111288aabcf89c4c7",
       "meta": {
         "api_provider_id": "black-forest-labs"
       }
@@ -1552,55 +1546,55 @@
       }
     },
     "src/data/api_providers/bytedance-seed/api_provider.json": {
-      "hash": "57781856e23c8d0a53f45500f669aaf7",
+      "hash": "75db1288413ad77e21a1e22c7dbe8e76",
       "meta": {
         "api_provider_id": "bytedance-seed"
       }
     },
     "src/data/api_providers/cerebras/api_provider.json": {
-      "hash": "3906b4e7ea7c46a43d0ecf5f98a2df1b",
+      "hash": "9352d66a268bfd41f3e79fcc361434ba",
       "meta": {
         "api_provider_id": "cerebras"
       }
     },
     "src/data/api_providers/chutes/api_provider.json": {
-      "hash": "ff4d971d307fe354fff85fd970c9ea71",
+      "hash": "b3783e453be4ea996d92792ec055234c",
       "meta": {
         "api_provider_id": "chutes"
       }
     },
     "src/data/api_providers/clarifai/api_provider.json": {
-      "hash": "fdbbd6acfab13f94f584f0e4b9e1f896",
+      "hash": "4480d2a4d255a16c2a10766789d44c8c",
       "meta": {
         "api_provider_id": "clarifai"
       }
     },
     "src/data/api_providers/cloudflare/api_provider.json": {
-      "hash": "1e9475c725eebc5d2b3ff85769b0904f",
+      "hash": "c7e5950457e3e757f85eea33669316d0",
       "meta": {
         "api_provider_id": "cloudflare"
       }
     },
     "src/data/api_providers/cohere/api_provider.json": {
-      "hash": "f6f497ff0717f55e38e9d373b134301e",
+      "hash": "a16dbffd56c740ebfa172c01b2c19ba1",
       "meta": {
         "api_provider_id": "cohere"
       }
     },
     "src/data/api_providers/crusoe/api_provider.json": {
-      "hash": "66bd044b96d7609ea4c2e39698c24528",
+      "hash": "0d31252c8907197429265a6bdf12f1f1",
       "meta": {
         "api_provider_id": "crusoe"
       }
     },
     "src/data/api_providers/deepinfra/api_provider.json": {
-      "hash": "e896e63c91c54d684b30c7452f9d6b24",
+      "hash": "1ba667894d15d4dc98b031cbdfb1aed8",
       "meta": {
         "api_provider_id": "deepinfra"
       }
     },
     "src/data/api_providers/deepseek/api_provider.json": {
-      "hash": "d8509378e982cf805170268d985f1b05",
+      "hash": "727631bfaadd7ddb991e43e840c966ea",
       "meta": {
         "api_provider_id": "deepseek"
       }
@@ -1613,74 +1607,74 @@
       }
     },
     "src/data/api_providers/fireworks/api_provider.json": {
-      "hash": "e698fef22e01569fad9c772716a1d37b",
+      "hash": "0c2383b330944c4f35ae253fe446839d",
       "meta": {
         "api_provider_id": "fireworks"
       }
     },
     "src/data/api_providers/friendli/api_provider.json": {
-      "hash": "7c9903217fcfdaac64415ab165f3fdcd",
+      "hash": "73bd729fb5b49ebe3d3dc58571b9a849",
       "meta": {
         "api_provider_id": "friendli"
       }
     },
     "src/data/api_providers/gmicloud/api_provider.json": {
-      "hash": "8e32849dd8b58ad846dddff1c397a9cf",
+      "hash": "481605832465a758d63483ab0d6dd28d",
       "meta": {
         "api_provider_id": "gmicloud"
       }
     },
     "src/data/api_providers/google-ai-studio/api_provider.json": {
-      "hash": "e9ea0a08465a22d0bd29f5d0be816a85",
+      "hash": "7d506cbba143fdb6ab8fe78774675ccc",
       "meta": {
         "api_provider_id": "google-ai-studio"
       }
     },
     "src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "fc196551620d510a13599940a7a948fa",
+      "hash": "a83070686a408a7b4d97cdac429fb61b",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
       }
     },
     "src/data/api_providers/google-vertex/api_provider.json": {
-      "hash": "4b181b9b7ca7fa850e02caa2c0884ce2",
+      "hash": "fa072caa3edb83334cb8f3b4e6149eba",
       "meta": {
         "api_provider_id": "google-vertex"
       }
     },
     "src/data/api_providers/groq/api_provider.json": {
-      "hash": "0c46513ebe8a06d5e0cab9a0e801d968",
+      "hash": "79eca712563c55659576b39e26f5002a",
       "meta": {
         "api_provider_id": "groq"
       }
     },
     "src/data/api_providers/hyperbolic/api_provider.json": {
-      "hash": "f408f78fbc7a43b40051c3347ec60365",
+      "hash": "95449393b8f5a3ea4a2e2c56d901140a",
       "meta": {
         "api_provider_id": "hyperbolic"
       }
     },
     "src/data/api_providers/infermatic/api_provider.json": {
-      "hash": "9772d758ff44af5bcd48d05ed6958a9e",
+      "hash": "24806e3d633b130fe4cd6effcba8ac00",
       "meta": {
         "api_provider_id": "infermatic"
       }
     },
     "src/data/api_providers/inflection/api_provider.json": {
-      "hash": "f2f9e3549fc8ebdfc0d33cd50c3aa973",
+      "hash": "3b4a21a13303d8dbcc933394e5930ba6",
       "meta": {
         "api_provider_id": "inflection"
       }
     },
     "src/data/api_providers/liquid-ai/api_provider.json": {
-      "hash": "674a5ab60f502c4a00564d0446e553f2",
+      "hash": "316f22eab0880522641d7a963e30825e",
       "meta": {
         "api_provider_id": "liquid-ai"
       }
     },
     "src/data/api_providers/minimax/api_provider.json": {
-      "hash": "0df37bd0296663b85a4caac3076c7c76",
+      "hash": "c38904e8c5fc6f8431394e87caa5b0d8",
       "meta": {
         "api_provider_id": "minimax"
       }
@@ -1693,7 +1687,7 @@
       }
     },
     "src/data/api_providers/minimax-lightning/api_provider.json": {
-      "hash": "efa0e7492ed2880387440a41d4fcd560",
+      "hash": "9ba7c356c6fb1a79e086a75d2b417ebc",
       "meta": {
         "api_provider_id": "minimax-lightning"
       }
@@ -1706,25 +1700,25 @@
       }
     },
     "src/data/api_providers/mistral/api_provider.json": {
-      "hash": "892a2c06277f1fd5c975b3d914bdb5d5",
+      "hash": "a1da4679c6afaece4dd36d7091966553",
       "meta": {
         "api_provider_id": "mistral"
       }
     },
     "src/data/api_providers/morph/api_provider.json": {
-      "hash": "4a7803d3361aa01f8447786126dc0c6f",
+      "hash": "4bb22c3512974247e2e8d1e62117828a",
       "meta": {
         "api_provider_id": "morph"
       }
     },
     "src/data/api_providers/nebius-token-factory/api_provider.json": {
-      "hash": "9c8fbb7b42cc999f5576dac749627f2d",
+      "hash": "237dce575c0f5525da5994e28033b483",
       "meta": {
         "api_provider_id": "nebius-token-factory"
       }
     },
     "src/data/api_providers/openai/api_provider.json": {
-      "hash": "dc20e78af218df36b5fd226b4d1f5f06",
+      "hash": "bfb33f4f0542db8038b5453657851898",
       "meta": {
         "api_provider_id": "openai"
       }
@@ -1737,49 +1731,43 @@
       }
     },
     "src/data/api_providers/parasail/api_provider.json": {
-      "hash": "8b56cf3a48eace64f8f1d7f22895a1ed",
+      "hash": "28913dca5ca54f106152046fb8977057",
       "meta": {
         "api_provider_id": "parasail"
       }
     },
     "src/data/api_providers/perplexity/api_provider.json": {
-      "hash": "86b6d8237bea1c6fabec02d7a96865cd",
+      "hash": "fa74327d23b6cf8679533641f613dfab",
       "meta": {
         "api_provider_id": "perplexity"
       }
     },
     "src/data/api_providers/phala/api_provider.json": {
-      "hash": "6756309eb88a9e01a541a3f807e3539d",
+      "hash": "de4764b8a171e3827934308c9916afaf",
       "meta": {
         "api_provider_id": "phala"
       }
     },
-    "src/data/api_providers/qwen/api_provider.json": {
-      "hash": "547a6ac6c32d00064b205c721c7373a6",
-      "meta": {
-        "api_provider_id": "qwen"
-      }
-    },
     "src/data/api_providers/sambanova/api_provider.json": {
-      "hash": "166ca4f81cafec97dafaab0c0a5da426",
+      "hash": "54c7c9978f18157290fe1f47b81104b5",
       "meta": {
         "api_provider_id": "sambanova"
       }
     },
     "src/data/api_providers/siliconflow/api_provider.json": {
-      "hash": "6ff847bf617e538684d58a6242548c72",
+      "hash": "02fe842296c78afcd29c4ac7540a7300",
       "meta": {
         "api_provider_id": "siliconflow"
       }
     },
     "src/data/api_providers/sourceful/api_provider.json": {
-      "hash": "7363344436291eb61862ff72473a4f15",
+      "hash": "943ceaf3f656292ca6389a5bb8db7177",
       "meta": {
         "api_provider_id": "sourceful"
       }
     },
     "src/data/api_providers/suno/api_provider.json": {
-      "hash": "0f6b06b4fd6a6978f7929de6825222b4",
+      "hash": "cef49b74d15a17a368d2608cad424a3f",
       "meta": {
         "api_provider_id": "suno"
       }
@@ -1792,19 +1780,19 @@
       }
     },
     "src/data/api_providers/together/api_provider.json": {
-      "hash": "da14723738279637152451db8c2bab0e",
+      "hash": "153fc7b3f528d89c667baddf8a47b806",
       "meta": {
         "api_provider_id": "together"
       }
     },
     "src/data/api_providers/weights-and-biases/api_provider.json": {
-      "hash": "25173229e23fc405241a5b1f13eb3f56",
+      "hash": "06956fddea0fb0e5c16d9ba71b81d021",
       "meta": {
         "api_provider_id": "weights-and-biases"
       }
     },
     "src/data/api_providers/x-ai/api_provider.json": {
-      "hash": "6b5fdfe13d4688aa14bdddd3b50540c2",
+      "hash": "478153979326a662ec4e8f93043c63d6",
       "meta": {
         "api_provider_id": "x-ai"
       }
@@ -1817,7 +1805,7 @@
       }
     },
     "src/data/api_providers/xiaomi/api_provider.json": {
-      "hash": "a22d84e2e5f83767839200c34aece2ad",
+      "hash": "f879d36015114cbb00a77d0ae262a15d",
       "meta": {
         "api_provider_id": "xiaomi"
       }
@@ -1830,7 +1818,7 @@
       }
     },
     "src/data/api_providers/z-ai/api_provider.json": {
-      "hash": "6eb087d586cfbdd6aaa36f07e951f34d",
+      "hash": "1004b3fb21d384bcb6dc1e326cdb12a2",
       "meta": {
         "api_provider_id": "z-ai"
       }
@@ -2036,7 +2024,7 @@
       }
     },
     "src/data/api_providers/aion-labs/api_provider.json": {
-      "hash": "bcd35887ebafbeed6cc38274f1c0731d",
+      "hash": "78fa3f4c122e0bfdb61a08705cb06c59",
       "meta": {
         "api_provider_id": "aion-labs"
       }
@@ -2692,7 +2680,7 @@
       }
     },
     "src/data/api_providers/arcee-ai/api_provider.json": {
-      "hash": "246f6fcd89230f330f7ce253d53e2a5d",
+      "hash": "778932acd4cb7817c79ee85d43dcc6d6",
       "meta": {
         "api_provider_id": "arcee-ai"
       }
@@ -3505,7 +3493,7 @@
       }
     },
     "src/data/models/z-ai/glm-5-2026-02-11/model.json": {
-      "hash": "e7b6ed08ca213cb9d46fef9014c0823c",
+      "hash": "1a1dd4fa719180cad9d90c288d4c329a",
       "meta": {
         "model_id": "z-ai/glm-5-2026-02-11",
         "organisation_id": "z-ai",
@@ -4067,14 +4055,14 @@
       }
     },
     "src/data/api_providers/cerebras/models.json": {
-      "hash": "3edb1531279de294726d0212aa20a868",
+      "hash": "071655cf66d4bbb29a2e92c20e231790",
       "meta": {
         "api_provider_id": "cerebras",
         "kind": "provider_models"
       }
     },
     "src/data/pricing/cerebras/openai-gpt-oss-120b/text.generate/pricing.json": {
-      "hash": "ed67199737aa39a391ec6667137d73e1",
+      "hash": "9d5ae2fb4e1967197336d163d54b29ca",
       "meta": {
         "api_provider_id": "cerebras",
         "capability_id": "text.generate",
@@ -4120,45 +4108,45 @@
       }
     },
     "src/data/api_providers/google-vertex/models.json": {
-      "hash": "4cfe0c4edb209a3510a9ce3fdbe4b94f",
+      "hash": "f569f2d52069de3960446e4abbef6262",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
       }
     },
     "src/data/api_providers/inceptron/api_provider.json": {
-      "hash": "7e8e8ecd7c9083966b136471850c2ec7",
+      "hash": "40ea22f9b83c185a18be8e4fef84cee8",
       "meta": {
         "api_provider_id": "inceptron"
       }
     },
     "src/data/api_providers/nextbit/api_provider.json": {
-      "hash": "c4cd2287b001e68f17b9d8c60c72f31f",
+      "hash": "d682e99bafd79f1f760f9d0b3dbc5871",
       "meta": {
         "api_provider_id": "nextbit"
       }
     },
     "src/data/api_providers/nvidia/api_provider.json": {
-      "hash": "e93259c3e5dd661bb893fbb77a166c62",
+      "hash": "ae867012e9a1b1b04c32a06035985c59",
       "meta": {
         "api_provider_id": "nvidia"
       }
     },
     "src/data/api_providers/stepfun/api_provider.json": {
-      "hash": "d337387c51e726cf3838e9ba4010a022",
+      "hash": "5f325a164b5748601bab10c65f6ef406",
       "meta": {
         "api_provider_id": "stepfun"
       }
     },
     "src/data/api_providers/together/models.json": {
-      "hash": "735d5a4be41af681debd685c5331d085",
+      "hash": "dadc79e05222ca1bfadc76b083dc5129",
       "meta": {
         "api_provider_id": "together",
         "kind": "provider_models"
       }
     },
     "src/data/api_providers/venice/api_provider.json": {
-      "hash": "724597826cbd9cfca700102b36c1fec9",
+      "hash": "00d2ba3279d928ee02b2448005c69d6c",
       "meta": {
         "api_provider_id": "venice"
       }
@@ -4886,7 +4874,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-235b-a22b/model.json": {
-      "hash": "3af4ed4f1d6a82d9728d50e9c4209b49",
+      "hash": "975b0db658aa43576fc00be416000e02",
       "meta": {
         "model_id": "qwen/qwen-3-235b-a22b",
         "organisation_id": "qwen",
@@ -4966,7 +4954,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-5-397b-a17b-2026-02-16/model.json": {
-      "hash": "e0e436982779f5c0077ea4055edea684",
+      "hash": "61cb0199e4d2c537c5dd53a18ceccfb9",
       "meta": {
         "model_id": "qwen/qwen-3-5-397b-a17b-2026-02-16",
         "organisation_id": "qwen",
@@ -5614,7 +5602,7 @@
       }
     },
     "src/data/models/anthropic/claude-3-7-sonnet-2025-02-24/model.json": {
-      "hash": "c8af2e03c983069687a9028c9119afd4",
+      "hash": "dbc4d98353a89f3fc50f29cb65a7bfc7",
       "meta": {
         "model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
         "organisation_id": "anthropic",
@@ -5686,7 +5674,7 @@
       }
     },
     "src/data/models/anthropic/claude-opus-4-2025-05-21/model.json": {
-      "hash": "511e51c8cbe82178eb4b83a9652d16ee",
+      "hash": "6231918bc9fdda494843ef62621005aa",
       "meta": {
         "model_id": "anthropic/claude-opus-4-2025-05-21",
         "organisation_id": "anthropic",
@@ -5710,7 +5698,7 @@
       }
     },
     "src/data/models/anthropic/claude-sonnet-4-2025-05-21/model.json": {
-      "hash": "cc5527ed3cfac16f99429b0e152b5272",
+      "hash": "bf6525f9cdb25a1e857f7ab574ee3b99",
       "meta": {
         "model_id": "anthropic/claude-sonnet-4-2025-05-21",
         "organisation_id": "anthropic",
@@ -6246,7 +6234,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-r1-2025-01-20/model.json": {
-      "hash": "c73c7affe876111ef17e38da8d946677",
+      "hash": "21be05d00f18b87a0d58511d90e0f50b",
       "meta": {
         "model_id": "deepseek/deepseek-r1-2025-01-20",
         "organisation_id": "deepseek",
@@ -6254,7 +6242,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-r1-2025-05-28/model.json": {
-      "hash": "e36a5d248eb9f115ecc7a25a1694abda",
+      "hash": "b4628cedf9c7b57512187026ad08dc57",
       "meta": {
         "model_id": "deepseek/deepseek-r1-2025-05-28",
         "organisation_id": "deepseek",
@@ -6318,7 +6306,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-v3-2-2025-12-01/model.json": {
-      "hash": "759c4e2b50cd81941d0e5601d903200f",
+      "hash": "e2f00f1cbf008e3a2e81d650bac035ad",
       "meta": {
         "model_id": "deepseek/deepseek-v3-2-2025-12-01",
         "organisation_id": "deepseek",
@@ -6846,7 +6834,7 @@
       }
     },
     "src/data/models/google/gemini-2-5-pro-preview-2025-06-05/model.json": {
-      "hash": "2ec8debaa85b328612fde1ae4fab9152",
+      "hash": "904d3b9fbec3d714df9c1b45d479b159",
       "meta": {
         "model_id": "google/gemini-2-5-pro-preview-2025-06-05",
         "organisation_id": "google",
@@ -8822,7 +8810,7 @@
       }
     },
     "src/data/models/moonshot-ai/kimi-k2-5-2026-01-27/model.json": {
-      "hash": "3decbd268c288f1983c8156d3f1eed4b",
+      "hash": "77699c656ab1fdec646d3834c28cf2bf",
       "meta": {
         "model_id": "moonshot-ai/kimi-k2-5-2026-01-27",
         "organisation_id": "moonshot-ai",
@@ -9238,7 +9226,7 @@
       }
     },
     "src/data/models/openai/codex-mini-2025-05-16/model.json": {
-      "hash": "d9133be12b2747d847133fc02f813538",
+      "hash": "93d5a0d0af23bddb9ecf4def0114aa80",
       "meta": {
         "model_id": "openai/codex-mini-2025-05-16",
         "organisation_id": "openai",
@@ -9366,7 +9354,7 @@
       }
     },
     "src/data/models/openai/gpt-4-1-2025-04-14/model.json": {
-      "hash": "fc366938f3b28f7cd98001f20c5eb9c9",
+      "hash": "62dbe711f8a5a2f952cfb582b9b1493f",
       "meta": {
         "model_id": "openai/gpt-4-1-2025-04-14",
         "organisation_id": "openai",
@@ -9374,7 +9362,7 @@
       }
     },
     "src/data/models/openai/gpt-4-1-mini-2025-04-14/model.json": {
-      "hash": "ee18446d6608d190a7b7eb6a1aea06b0",
+      "hash": "005055e7499372cf4ad216d34dd74a0a",
       "meta": {
         "model_id": "openai/gpt-4-1-mini-2025-04-14",
         "organisation_id": "openai",
@@ -9382,7 +9370,7 @@
       }
     },
     "src/data/models/openai/gpt-4-1-nano-2025-04-14/model.json": {
-      "hash": "d7cdbde8fc05f01865f4f40834fd1b1b",
+      "hash": "2cb2e8b5c5e143ebfca2763d11fa6547",
       "meta": {
         "model_id": "openai/gpt-4-1-nano-2025-04-14",
         "organisation_id": "openai",
@@ -9430,7 +9418,7 @@
       }
     },
     "src/data/models/openai/gpt-4-5-2025-02-27/model.json": {
-      "hash": "68a5fd668eb5c1fb6549dccc6c02de34",
+      "hash": "8fa919c50d8c44e10b94132ad7c5b172",
       "meta": {
         "model_id": "openai/gpt-4-5-2025-02-27",
         "organisation_id": "openai",
@@ -9710,19 +9698,11 @@
       }
     },
     "src/data/models/openai/gpt-5-2025-08-07/model.json": {
-      "hash": "971ed2efe63af590c3c10ad6445176f0",
+      "hash": "b54b75095d4edfdb333886b5a2e8d5d5",
       "meta": {
         "model_id": "openai/gpt-5-2025-08-07",
         "organisation_id": "openai",
         "previous_model_id": "openai/gpt-4-5-2025-02-27"
-      }
-    },
-    "src/data/models/openai/gpt-5-3/model.json": {
-      "hash": "84656a06483619ae6be4866289e75de8",
-      "meta": {
-        "model_id": "openai/gpt-5-3",
-        "organisation_id": "openai",
-        "previous_model_id": "openai/gpt-5-2-2025-12-11"
       }
     },
     "src/data/models/openai/gpt-5-3-codex-2026-02-05/model.json": {
@@ -9766,7 +9746,7 @@
       }
     },
     "src/data/models/openai/gpt-5-mini-2025-08-07/model.json": {
-      "hash": "3f5238c82f1acbb6faa75c422f242fb5",
+      "hash": "35922abed59216ccebe41aad0df41f33",
       "meta": {
         "model_id": "openai/gpt-5-mini-2025-08-07",
         "organisation_id": "openai",
@@ -9774,7 +9754,7 @@
       }
     },
     "src/data/models/openai/gpt-5-nano-2025-08-07/model.json": {
-      "hash": "401d730d56345c394f454f8e43e55d06",
+      "hash": "8d69230ed822acbb989e0f0356686daf",
       "meta": {
         "model_id": "openai/gpt-5-nano-2025-08-07",
         "organisation_id": "openai",
@@ -9902,7 +9882,7 @@
       }
     },
     "src/data/models/openai/o1-2024-12-17/model.json": {
-      "hash": "301de7b4288d90542f4c299fac89b0b7",
+      "hash": "95dc4beda7c18dbfc446892e6e3937bb",
       "meta": {
         "model_id": "openai/o1-2024-12-17",
         "organisation_id": "openai",
@@ -9910,7 +9890,7 @@
       }
     },
     "src/data/models/openai/o1-mini-2024-09-12/model.json": {
-      "hash": "2a75d9fd6b0a727696e8574a0ad0b7c8",
+      "hash": "b9a80e3298e5a5c4eca701a821576157",
       "meta": {
         "model_id": "openai/o1-mini-2024-09-12",
         "organisation_id": "openai",
@@ -9926,7 +9906,7 @@
       }
     },
     "src/data/models/openai/o1-pro-2025-03-19/model.json": {
-      "hash": "693a63a714f9a6d6c3d8254ad2335296",
+      "hash": "ad7be0fe5e617c1e31f40fe545c50604",
       "meta": {
         "model_id": "openai/o1-pro-2025-03-19",
         "organisation_id": "openai",
@@ -9934,7 +9914,7 @@
       }
     },
     "src/data/models/openai/o3-2025-04-16/model.json": {
-      "hash": "4ada2ca079da7fbde4f7fa69977453ab",
+      "hash": "8fbe946e7ac9f53f4535a76955517a35",
       "meta": {
         "model_id": "openai/o3-2025-04-16",
         "organisation_id": "openai",
@@ -9950,7 +9930,7 @@
       }
     },
     "src/data/models/openai/o3-mini-2025-01-30/model.json": {
-      "hash": "bdeeddfa481b1f08a0d15f4a07f5be60",
+      "hash": "349865098969f39d099269a1809615dd",
       "meta": {
         "model_id": "openai/o3-mini-2025-01-30",
         "organisation_id": "openai",
@@ -9958,7 +9938,7 @@
       }
     },
     "src/data/models/openai/o3-preview/model.json": {
-      "hash": "91863207611bd49acdc84c300930490e",
+      "hash": "da211883d0cc40b18e4f9a591c3f581c",
       "meta": {
         "model_id": "openai/o3-preview",
         "organisation_id": "openai",
@@ -9966,7 +9946,7 @@
       }
     },
     "src/data/models/openai/o3-pro-2025-06-10/model.json": {
-      "hash": "c555fcde32935eca3635a14745756f43",
+      "hash": "72ce235341a0d64600f66a1058370e9b",
       "meta": {
         "model_id": "openai/o3-pro-2025-06-10",
         "organisation_id": "openai",
@@ -9974,7 +9954,7 @@
       }
     },
     "src/data/models/openai/o4-mini-2025-04-16/model.json": {
-      "hash": "b676471ac518c3510364bd5571c5fd3a",
+      "hash": "9cbba4ab13ffec03439e8ead81c54a1e",
       "meta": {
         "model_id": "openai/o4-mini-2025-04-16",
         "organisation_id": "openai",
@@ -9989,7 +9969,7 @@
       }
     },
     "src/data/api_providers/alibaba-cloud/api_provider.json": {
-      "hash": "1f150b4078a0d76639ae106f8adfe384",
+      "hash": "d649e2e19a50646cf176c34d3b72bdea",
       "meta": {
         "api_provider_id": "alibaba-cloud"
       }
@@ -10002,7 +9982,7 @@
       }
     },
     "src/data/api_providers/elevenlabs/api_provider.json": {
-      "hash": "aa00873e01c37b7f2e0b6e7272a17683",
+      "hash": "4c7c2899515301943c93d1288e8f7e91",
       "meta": {
         "api_provider_id": "elevenlabs"
       }
@@ -10154,7 +10134,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-5-122b-a10b-2026-02-24/model.json": {
-      "hash": "c5bcfcf3904f5e6855374774848575c7",
+      "hash": "227108ad5fad683919ae44b647093c07",
       "meta": {
         "model_id": "qwen/qwen-3-5-122b-a10b-2026-02-24",
         "organisation_id": "qwen",
@@ -10162,7 +10142,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-5-27b-2026-02-24/model.json": {
-      "hash": "e39f32b4e12c6fe1d1dd9d1ce18dad13",
+      "hash": "0d77449436714c4f53a74377e22f9859",
       "meta": {
         "model_id": "qwen/qwen-3-5-27b-2026-02-24",
         "organisation_id": "qwen",
@@ -10170,7 +10150,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-5-35b-a3b-2026-02-24/model.json": {
-      "hash": "461c650c8f0eb290da5f2e108ac75482",
+      "hash": "90003350f1d2696903d7b71357359884",
       "meta": {
         "model_id": "qwen/qwen-3-5-35b-a3b-2026-02-24",
         "organisation_id": "qwen",
@@ -10186,7 +10166,7 @@
       }
     },
     "src/data/api_providers/inception/api_provider.json": {
-      "hash": "0c2bb4f12e1c0746e89ff217f2d4ba86",
+      "hash": "92c5a1c293cb861a274f91c99665d0fe",
       "meta": {
         "api_provider_id": "inception"
       }
@@ -10286,7 +10266,7 @@
       }
     },
     "src/data/api_providers/nousresearch/api_provider.json": {
-      "hash": "b777ed05a654dee3f11553f86b2098bf",
+      "hash": "00f4d6623683ff9df4009b36380a5345",
       "meta": {
         "api_provider_id": "nousresearch"
       }
@@ -10306,7 +10286,7 @@
       }
     },
     "src/data/api_providers/moonshotai/api_provider.json": {
-      "hash": "ef7df704581181115036d5a5629b8b18",
+      "hash": "1796d8df34423825c1b37d4e4760ecab",
       "meta": {
         "api_provider_id": "moonshotai"
       }
@@ -10319,7 +10299,7 @@
       }
     },
     "src/data/api_providers/moonshotai-turbo/api_provider.json": {
-      "hash": "f2b7d2c95e095afedf6968e468ef48be",
+      "hash": "f657c8ed316d1d0bd464e6115612a7ac",
       "meta": {
         "api_provider_id": "moonshotai-turbo"
       }
@@ -10332,13 +10312,13 @@
       }
     },
     "src/data/api_providers/novita/api_provider.json": {
-      "hash": "7127f925ac2e72d6f69e75f9498d9d33",
+      "hash": "6b032df663033aac24e2dd3f8d77da30",
       "meta": {
         "api_provider_id": "novita"
       }
     },
     "src/data/api_providers/novita/models.json": {
-      "hash": "9651c45e167f21a3cd4ebffc10bdad5f",
+      "hash": "a1b7e144e0d2f3442060f9288fc68e0b",
       "meta": {
         "api_provider_id": "novita",
         "kind": "provider_models"
@@ -10614,15 +10594,6 @@
         "model_key": "novita:openai/gpt-oss-20b:text.generate"
       }
     },
-    "src/data/pricing/novita/qwen-qwen-3.5-397b-a17b/text.generate/pricing.json": {
-      "hash": "471db779decbdf5ff0f9e5bc7fd3d0e7",
-      "meta": {
-        "api_provider_id": "novita",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen-3.5-397b-a17b",
-        "model_key": "novita:qwen/qwen-3.5-397b-a17b:text.generate"
-      }
-    },
     "src/data/pricing/novita/qwen-qwen-mt-plus/text.generate/pricing.json": {
       "hash": "fc936bc2291a8050e524ec7e59257fc0",
       "meta": {
@@ -10657,24 +10628,6 @@
         "capability_id": "text.generate",
         "model_id": "qwen/qwen2.5-vl-72b",
         "model_key": "novita:qwen/qwen2.5-vl-72b:text.generate"
-      }
-    },
-    "src/data/pricing/novita/qwen-qwen3-235b-a22b/text.generate/pricing.json": {
-      "hash": "0e30a7cc1cb70a74592416e96921cb35",
-      "meta": {
-        "api_provider_id": "novita",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-235b-a22b",
-        "model_key": "novita:qwen/qwen3-235b-a22b:text.generate"
-      }
-    },
-    "src/data/pricing/novita/qwen-qwen3-235b-a22b-instruct-2507/text.generate/pricing.json": {
-      "hash": "960ce806483acaa26ac60c6bf8714ce1",
-      "meta": {
-        "api_provider_id": "novita",
-        "capability_id": "text.generate",
-        "model_id": "qwen/qwen3-235b-a22b-instruct-2507",
-        "model_key": "novita:qwen/qwen3-235b-a22b-instruct-2507:text.generate"
       }
     },
     "src/data/pricing/novita/qwen-qwen3-235b-a22b-thinking-2507/text.generate/pricing.json": {
@@ -10813,7 +10766,7 @@
       }
     },
     "src/data/pricing/novita/qwen-qwen3.5-397b-a17b/text.generate/pricing.json": {
-      "hash": "2b3419c155049171cec9118747277ea6",
+      "hash": "0fe34f717dfae58b1a989bd5649b0afd",
       "meta": {
         "api_provider_id": "novita",
         "capability_id": "text.generate",
@@ -11001,15 +10954,6 @@
         "model_key": "novita:moonshotai/kimi-k2.5:text.generate"
       }
     },
-    "src/data/pricing/novita/nan/text.generate/pricing.json": {
-      "hash": "1cae9873ab24aea1a05cd01bbd0088b7",
-      "meta": {
-        "api_provider_id": "novita",
-        "capability_id": "text.generate",
-        "model_id": "nan",
-        "model_key": "novita:nan:text.generate"
-      }
-    },
     "src/data/pricing/novita/qwen-qwen3-next-80b-a3b/text.generate/pricing.json": {
       "hash": "f961bab584d9f83d9e8f4b9191b6ccde",
       "meta": {
@@ -11044,6 +10988,132 @@
         "capability_id": "text.generate",
         "model_id": "moonshotai/kimi-k2-thinking",
         "model_key": "moonshotai-turbo:moonshotai/kimi-k2-thinking:text.generate"
+      }
+    },
+    "src/data/models/google/gemini-3-1-flash-lite-preview-2026-03-03/model.json": {
+      "hash": "4751c96b84ed432ed718e8671a440c3b",
+      "meta": {
+        "model_id": "google/gemini-3-1-flash-lite-preview-2026-03-03",
+        "organisation_id": "google",
+        "previous_model_id": "google/gemini-2-5-flash-lite-preview-2025-09-25"
+      }
+    },
+    "src/data/models/openai/gpt-5-4/model.json": {
+      "hash": "2cb4aabfeca2fb316f470abb48411d80",
+      "meta": {
+        "model_id": "openai/gpt-5-4",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-5-2-2025-12-11"
+      }
+    },
+    "src/data/models/qwen/qwen-3-5-0-8b-2026-03-02/model.json": {
+      "hash": "6ca6b01b4dcac172b7d7401564656c93",
+      "meta": {
+        "model_id": "qwen/qwen-3-5-0-8b-2026-03-02",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/qwen/qwen-3-5-2b-2026-03-02/model.json": {
+      "hash": "074432fd5509984f245bc33644a06165",
+      "meta": {
+        "model_id": "qwen/qwen-3-5-2b-2026-03-02",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/qwen/qwen-3-5-4b-2026-03-02/model.json": {
+      "hash": "418268175a273f5bf84a8ababde72779",
+      "meta": {
+        "model_id": "qwen/qwen-3-5-4b-2026-03-02",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "src/data/models/qwen/qwen-3-5-9b-2026-03-02/model.json": {
+      "hash": "576f73d4d869c90132c817a0b574e68b",
+      "meta": {
+        "model_id": "qwen/qwen-3-5-9b-2026-03-02",
+        "organisation_id": "qwen",
+        "previous_model_id": null
+      }
+    },
+    "src/data/aliases/google-gemini-flash-latest/alias.json": {
+      "hash": "4d3486711993e656078efbf09f033f4c",
+      "meta": {
+        "alias_slug": "google/gemini-flash-latest"
+      }
+    },
+    "src/data/aliases/google-gemini-flash-lite-latest/alias.json": {
+      "hash": "c8d1c8f764a718a7474630be88faaa05",
+      "meta": {
+        "alias_slug": "google/gemini-flash-lite-latest"
+      }
+    },
+    "src/data/aliases/google-gemini-pro-latest/alias.json": {
+      "hash": "2abf1a7aed94cb0f498c5f103470b4ba",
+      "meta": {
+        "alias_slug": "google/gemini-pro-latest"
+      }
+    },
+    "src/data/aliases/openai-gpt-chat-latest/alias.json": {
+      "hash": "f167e53599207adeac4330176747ea90",
+      "meta": {
+        "alias_slug": "openai/gpt-chat-latest"
+      }
+    },
+    "src/data/pricing/cerebras/meta-llama-3.1-8b/text.generate/pricing.json": {
+      "hash": "a4a8c1ed7746089b44b74acff97f11f4",
+      "meta": {
+        "api_provider_id": "cerebras",
+        "capability_id": "text.generate",
+        "model_id": "meta/llama-3.1-8b",
+        "model_key": "cerebras:meta/llama-3.1-8b:text.generate"
+      }
+    },
+    "src/data/pricing/cerebras/qwen-qwen3-235b-a22b-2507/text.generate/pricing.json": {
+      "hash": "34b8ff65ec3238f4dbcbc2393a73f34e",
+      "meta": {
+        "api_provider_id": "cerebras",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-235b-a22b-2507",
+        "model_key": "cerebras:qwen/qwen3-235b-a22b-2507:text.generate"
+      }
+    },
+    "src/data/pricing/cerebras/z-ai-glm-4.7/text.generate/pricing.json": {
+      "hash": "35d4e7109d3c4998db267c2d16200df7",
+      "meta": {
+        "api_provider_id": "cerebras",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-4.7",
+        "model_key": "cerebras:z-ai/glm-4.7:text.generate"
+      }
+    },
+    "src/data/pricing/google-ai-studio/google-gemini-3.1-flash-lite-preview/text.generate/pricing.json": {
+      "hash": "5456dcb9388420448678c741cb65fd3b",
+      "meta": {
+        "api_provider_id": "google-ai-studio",
+        "capability_id": "text.generate",
+        "model_id": "google/gemini-3.1-flash-lite-preview",
+        "model_key": "google-ai-studio:google/gemini-3.1-flash-lite-preview:text.generate"
+      }
+    },
+    "src/data/pricing/google-vertex/google-gemini-3.1-flash-lite-preview/text.generate/pricing.json": {
+      "hash": "5d199f83c5e7eeb630e18d4ddcf29418",
+      "meta": {
+        "api_provider_id": "google-vertex",
+        "capability_id": "text.generate",
+        "model_id": "google/gemini-3.1-flash-lite-preview",
+        "model_key": "google-vertex:google/gemini-3.1-flash-lite-preview:text.generate"
+      }
+    },
+    "src/data/pricing/novita/qwen-qwen3-235b-a22b-2507/text.generate/pricing.json": {
+      "hash": "d473b205aa8697efe82005eac777c7be",
+      "meta": {
+        "api_provider_id": "novita",
+        "capability_id": "text.generate",
+        "model_id": "qwen/qwen3-235b-a22b-2507",
+        "model_key": "novita:qwen/qwen3-235b-a22b-2507:text.generate"
       }
     }
   }

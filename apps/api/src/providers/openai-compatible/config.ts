@@ -33,6 +33,7 @@ const OPENAI_LEGACY_COMPLETIONS_MODELS = new Set<string>([
 
 const ALIBABA_RESPONSES_PATH_PREFIX = "/api/v2/apps/protocols/compatible-mode/v1";
 const WANDB_API_KEY_ENVS = ["WANDB_API_KEY", "WEIGHTSANDBIASES_API_KEY"] as const;
+const ALIBABA_CLOUD_API_KEY_ENVS = ["ALIBABA_CLOUD_API_KEY"] as const;
 
 export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     openai: {
@@ -48,7 +49,7 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         providerId: "alibaba",
         baseUrl: "https://dashscope-intl.aliyuncs.com",
         pathPrefix: "/compatible-mode/v1",
-        apiKeyEnv: "ALIBABA_API_KEY",
+        apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
         baseUrlEnv: "ALIBABA_BASE_URL",
     },
     "atlas-cloud": {
@@ -331,8 +332,8 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         providerId: "qwen",
         baseUrl: "https://dashscope-intl.aliyuncs.com",
         pathPrefix: "/compatible-mode/v1",
-        apiKeyEnv: "QWEN_API_KEY",
-        baseUrlEnv: "QWEN_BASE_URL",
+        apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
+        baseUrlEnv: "ALIBABA_BASE_URL",
     },
     phala: {
         providerId: "phala",
@@ -627,6 +628,10 @@ function readFirstBinding(names: readonly string[]): string | undefined {
 export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
     if (args.providerId === "weights-and-biases") {
         return resolveProviderKey(args, () => readFirstBinding(WANDB_API_KEY_ENVS));
+    }
+
+    if (args.providerId === "alibaba" || args.providerId === "qwen") {
+        return resolveProviderKey(args, () => readFirstBinding(ALIBABA_CLOUD_API_KEY_ENVS));
     }
 
     const config = resolveOpenAICompatConfig(args.providerId);

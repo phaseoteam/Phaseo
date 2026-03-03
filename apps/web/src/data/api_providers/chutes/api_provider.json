@@ -3,5 +3,6 @@
   "api_provider_name": "Chutes",
   "description": null,
   "link": "https://chutes.ai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

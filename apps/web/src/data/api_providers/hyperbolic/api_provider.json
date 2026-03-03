@@ -3,5 +3,6 @@
   "api_provider_name": "Hyperbolic",
   "description": null,
   "link": "https://docs.hyperbolic.ai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

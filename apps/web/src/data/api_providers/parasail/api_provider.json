@@ -3,5 +3,6 @@
   "api_provider_name": "Parasail",
   "description": null,
   "link": "https://docs.parasail.io/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

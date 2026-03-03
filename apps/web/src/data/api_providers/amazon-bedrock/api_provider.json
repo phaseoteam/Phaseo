@@ -3,5 +3,6 @@
   "api_provider_name": "Amazon Bedrock",
   "description": null,
   "link": "https://aws.amazon.com/bedrock",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

@@ -679,7 +679,7 @@ export default function ModelPricingClient({
                                             return (
                                                 <div
                                                     key={`${price.frequency}:${price.currency}:${price.price}`}
-                                                    className="text-sm font-medium"
+                                                    className="text-sm font-medium tabular-nums"
                                                 >
                                                     {formatted}
                                                     {suffix}

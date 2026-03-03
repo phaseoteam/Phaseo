@@ -70,6 +70,7 @@ function encodeChoice(
 			role: "assistant",
 			content: text,
 			...(images.length > 0 ? { images } : {}),
+			...(choice.message.refusal ? { refusal: choice.message.refusal } : {}),
 			tool_calls: choice.message.toolCalls?.map((tc) => ({
 				id: tc.id,
 				type: "function" as const,
@@ -109,15 +110,21 @@ function splitContentParts(parts: IRContentPart[]): {
 /**
  * Encode IR usage to gateway usage format
  *
- * Maps to both new OpenAI-aligned meters and legacy meters for pricing
+ * Emits only canonical usage meters.
  */
 function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 	if (!usage) return undefined;
-	const totalTokens = usage.totalTokens;
+	const usageAny = usage as IRUsage & {
+		promptTokens?: number;
+		completionTokens?: number;
+	};
+	const inputTokens = usage.inputTokens ?? usageAny.promptTokens;
+	const outputTokens = usage.outputTokens ?? usageAny.completionTokens;
+	const totalTokens = usage.totalTokens ?? ((inputTokens ?? 0) + (outputTokens ?? 0));
 
 	const result: GatewayUsage = {
-		input_tokens: usage.inputTokens,
-		output_tokens: usage.outputTokens,
+		input_tokens: inputTokens,
+		output_tokens: outputTokens,
 		total_tokens: totalTokens,
 	};
 
@@ -137,22 +144,6 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 			output_images: usage._ext?.outputImageTokens,
 			output_audio: usage._ext?.outputAudioTokens,
 		};
-	}
-
-	if (usage.inputTokens != null) {
-		result.input_text_tokens = usage.inputTokens;
-	}
-	if (usage.outputTokens != null) {
-		result.output_text_tokens = usage.outputTokens;
-	}
-	if (usage.cachedInputTokens != null) {
-		result.cached_read_text_tokens = usage.cachedInputTokens;
-	}
-	if (usage.reasoningTokens != null) {
-		result.reasoning_tokens = usage.reasoningTokens;
-	}
-	if (usage._ext?.cachedWriteTokens != null) {
-		result.cached_write_text_tokens = usage._ext.cachedWriteTokens;
 	}
 
 	return result;

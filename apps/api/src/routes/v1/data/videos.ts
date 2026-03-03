@@ -429,13 +429,13 @@ async function fetchGoogleVideoContent(uri: string) {
 
 async function fetchDashscopeTask(taskId: string) {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.ALIBABA_API_KEY || bindings.QWEN_API_KEY;
+	const key = bindings.ALIBABA_CLOUD_API_KEY;
 	if (!key) {
 		return err("upstream_error", {
 			reason: "dashscope_key_missing",
 		});
 	}
-	const baseUrl = (bindings.ALIBABA_BASE_URL || bindings.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com").replace(/\/+$/, "");
+	const baseUrl = (bindings.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com").replace(/\/+$/, "");
 	return fetch(`${baseUrl}/api/v1/tasks/${encodeURIComponent(taskId)}`, {
 		method: "GET",
 		headers: {

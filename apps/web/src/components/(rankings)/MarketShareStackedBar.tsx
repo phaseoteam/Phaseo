@@ -281,7 +281,7 @@ export function MarketShareStackedBar({
 													{cfg?.label ?? String(name ?? "")}
 												</span>
 											</span>
-											<span className="ml-auto font-mono">
+											<span className="ml-auto tabular-nums">
 												{normalizeToPercent
 													? formatPercent(val)
 													: formatNumber(val)}

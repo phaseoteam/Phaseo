@@ -109,7 +109,7 @@ export function MarketShareLeaderboard({
 							)}
 						</div>
 						<div className="text-right">
-							<div className="font-mono text-sm">
+							<div className="tabular-nums text-sm">
 								{formatPercent(entry.share_pct)}
 							</div>
 							<div className="text-xs text-muted-foreground">
@@ -172,7 +172,7 @@ export function MarketShareLeaderboard({
 									)}
 								</div>
 								<div className="text-right">
-									<div className="font-mono text-sm">
+									<div className="tabular-nums text-sm">
 										{formatPercent(entry.share_pct)}
 									</div>
 									<div className="text-xs text-muted-foreground">

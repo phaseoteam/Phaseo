@@ -3,5 +3,6 @@
   "api_provider_name": "MiniMax",
   "description": null,
   "link": "https://www.minimax.io/platform_overview",
-  "country_code": "CN"
+  "country_code": "CN",
+  "status": "Active"
 }

@@ -198,7 +198,7 @@ export function AppsUsageList({
 							<div className="h-4" />
 						</div>
 						<div className="text-right flex items-center">
-							<div className="font-mono text-sm">
+							<div className="tabular-nums text-sm">
 								{formatTokens(entry.tokens)}{" "}
 								<span className="text-xs text-muted-foreground">Tok</span>
 							</div>
@@ -265,7 +265,7 @@ export function AppsUsageList({
 									<div className="h-4" />
 								</div>
 								<div className="text-right flex items-center">
-									<div className="font-mono text-sm">
+									<div className="tabular-nums text-sm">
 										{formatTokens(entry.tokens)}{" "}
 										<span className="text-xs text-muted-foreground">
 											Tok

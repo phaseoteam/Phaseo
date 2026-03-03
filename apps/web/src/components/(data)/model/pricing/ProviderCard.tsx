@@ -361,7 +361,7 @@ export default function ProviderCard({
 									<p className="text-[11px] font-medium text-muted-foreground">
 										{metric.label}
 									</p>
-									<div className="text-sm font-semibold leading-tight text-foreground font-mono tabular-nums">
+									<div className="text-sm font-semibold leading-tight text-foreground tabular-nums">
 										{metric.value}
 									</div>
 								</div>
@@ -377,7 +377,7 @@ export default function ProviderCard({
 							<div className="mb-0.5 text-xs text-muted-foreground">
 								Per 1M tokens
 							</div>
-							<div className="text-lg font-semibold leading-tight font-mono tabular-nums">
+							<div className="text-lg font-semibold leading-tight tabular-nums">
 								{fmtUSD(0)}
 							</div>
 						</div>

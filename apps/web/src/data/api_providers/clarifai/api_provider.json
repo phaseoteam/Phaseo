@@ -3,5 +3,6 @@
   "api_provider_name": "Clarifai",
   "description": null,
   "link": "https://docs.clarifai.com/getting-started/quickstart/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

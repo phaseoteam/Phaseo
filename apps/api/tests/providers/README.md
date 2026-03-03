@@ -8,6 +8,10 @@ Comprehensive test suites for each provider across all supported protocols and f
 tests/providers/
 ├── helpers/
 │   └── provider-test-suite.ts    # Shared utilities for all provider tests
+├── alibaba-cloud/
+│   ├── chat-completions.spec.ts  # Alibaba Cloud (DashScope Intl) Chat Completions tests
+│   ├── responses-api.spec.ts     # Alibaba Cloud (DashScope Intl) Responses API tests
+│   └── messages.spec.ts          # Alibaba Cloud (DashScope Intl) Anthropic Messages tests
 ├── openai/
 │   ├── chat-completions.spec.ts  # Chat Completions API tests
 │   └── responses-api.spec.ts     # Responses API tests

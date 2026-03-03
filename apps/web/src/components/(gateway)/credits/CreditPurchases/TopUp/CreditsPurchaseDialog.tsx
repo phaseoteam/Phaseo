@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import { Spinner } from "@/components/ui/spinner";
 import { ChargeSavedPayment } from "@/app/(dashboard)/settings/credits/actions";
+import posthog from "posthog-js";
+import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
 
 /* Helpers */
 const formatUSD = (v: number) =>
@@ -35,6 +37,35 @@ const formatUSD = (v: number) =>
 
 function clamp(n: number, min: number, max: number) {
 	return Math.max(min, Math.min(max, n));
+}
+
+function trackFirstPaymentSaveCardClick(payload: {
+	creditsAmountUsd: number;
+	feeUsd: number;
+	totalUsd: number;
+}) {
+	if (typeof window === "undefined" || !isAnalyticsCaptureAllowed()) {
+		return;
+	}
+
+	const eventPayload = {
+		source: "credits_top_up_dialog",
+		credits_amount_usd: payload.creditsAmountUsd,
+		fee_usd: payload.feeUsd,
+		total_usd: payload.totalUsd,
+		currency: "usd",
+	};
+
+	const gtag = (window as any).gtag;
+	if (typeof gtag === "function") {
+		gtag("event", "first_payment_save_card_click", eventPayload);
+	}
+
+	try {
+		posthog.capture("first_payment_save_card_click", eventPayload);
+	} catch {
+		// no-op; analytics should never block checkout
+	}
 }
 
 export default function CreditsPurchaseDialog({
@@ -166,6 +197,22 @@ export default function CreditsPurchaseDialog({
 		if (disabled) return;
 		setErr(null);
 		setIsLoading(true);
+
+		const hasSavedPaymentMethods =
+			(stripeInfo?.paymentMethods?.length ?? 0) > 0 ||
+			Boolean(stripeInfo?.hasPaymentMethod);
+		const isFirstCardAndFirstPaymentClick =
+			selectedPm === "new" &&
+			mode === "pay_and_save" &&
+			!hasSavedPaymentMethods;
+		if (isFirstCardAndFirstPaymentClick) {
+			trackFirstPaymentSaveCardClick({
+				creditsAmountUsd: parsed,
+				feeUsd: fee,
+				totalUsd: total,
+			});
+		}
+
 		// Update URL to indicate a payment attempt is in progress so the
 		// parent page can show a processing banner. Use a short unique-ish
 		// value (timestamp) to avoid caching and allow multiple attempts.
@@ -311,7 +358,7 @@ export default function CreditsPurchaseDialog({
 						</DialogTitle>
 						<DialogDescription>
 							Pick a card, choose an amount, and confirm. A small
-							service fee applies.
+							top-up fee applies.
 						</DialogDescription>
 					</DialogHeader>
 				</div>
@@ -458,7 +505,7 @@ export default function CreditsPurchaseDialog({
 							</div>
 							<div className="flex items-center gap-2">
 								<span className="text-zinc-600">
-									Service Fee
+									Top-Up Fee
 								</span>
 								<HoverCard>
 									<HoverCardTrigger asChild>
@@ -476,7 +523,7 @@ export default function CreditsPurchaseDialog({
 										{(FEE_RATE * 100)
 											.toFixed(2)
 											.replace(/\.?0+$/, "")}
-										% of the top-up as a service fee, with a
+										% of the top-up as a fee, with a
 										minimum fee of $1.
 									</HoverCardContent>
 								</HoverCard>

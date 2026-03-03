@@ -8,7 +8,6 @@ import { keyVersionToken } from "@/core/kv";
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
 const KEY_CACHE_TTL_SECONDS = 60;
-const KEY_CACHE_TTL_NEGATIVE_SECONDS = 60;
 
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
@@ -156,11 +155,20 @@ type KeyRow = {
     hash: string;
 };
 
-async function getCachedKey(kid: string): Promise<KeyRow | null> {
+type CachedKeyLookup = KeyRow | "missing" | null;
+
+function isValidKidFormat(kid: string): boolean {
+    // Generated keys are base62 (12 chars); allow a wider safe range for compatibility.
+    return /^[A-Za-z0-9]{6,64}$/.test(kid);
+}
+
+async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
     try {
         const versionToken = await keyVersionToken("kid", kid);
         const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
         if (!cached || typeof cached !== "object") return null;
+        const marker = cached as { missing?: unknown };
+        if (marker.missing === true) return "missing";
         const row = cached as Partial<KeyRow>;
         if (!row.id || !row.team_id || !row.status || !row.hash) return null;
         return row as KeyRow;
@@ -175,17 +183,6 @@ async function cacheKey(kid: string, row: KeyRow) {
         const versionToken = await keyVersionToken("kid", kid);
         await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
             expirationTtl: KEY_CACHE_TTL_SECONDS,
-        });
-    } catch {
-        // Ignore KV write failures.
-    }
-}
-
-async function cacheNegativeKey(kid: string) {
-    try {
-        const versionToken = await keyVersionToken("kid", kid);
-        await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify({ missing: true }), {
-            expirationTtl: KEY_CACHE_TTL_NEGATIVE_SECONDS,
         });
     } catch {
         // Ignore KV write failures.
@@ -231,12 +228,18 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
     // 2. Parse structured token.
     const parsed = parseV2(token);
     if (!parsed) return { ok: false, reason: "invalid_key_format" };
+    if (!isValidKidFormat(parsed.kid)) return { ok: false, reason: "invalid_key_format" };
 
     // 3. Look up key in Supabase.
     const supabase = getSupabaseAdmin();
     let keyRow: KeyRow | null = null;
+    let cachedLookup: CachedKeyLookup = null;
     if (useKvCache) {
-        keyRow = await getCachedKey(parsed.kid);
+        cachedLookup = await getCachedKey(parsed.kid);
+        if (cachedLookup === "missing") {
+            return { ok: false, reason: "key_not_found_or_revoked" };
+        }
+        keyRow = cachedLookup;
     }
     if (!keyRow) {
         const { data, error } = await supabase
@@ -247,9 +250,8 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 
         if (error) return { ok: false, reason: "db_error" };
         if (!data) {
-            if (useKvCache) {
-                await cacheNegativeKey(parsed.kid);
-            }
+            // Do not negative-cache misses in KV to avoid write amplification
+            // from high-cardinality invalid key traffic.
             return { ok: false, reason: "key_not_found_or_revoked" };
         }
         keyRow = data as KeyRow;

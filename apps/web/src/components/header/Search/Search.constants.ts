@@ -36,6 +36,12 @@ export const curatedGroups: ResultGroup[] = [
                 icon: "plan",
             },
             {
+                id: "quick-pricing",
+                title: "Pricing",
+                href: "/pricing",
+                icon: "page",
+            },
+            {
                 id: "quick-countries",
                 title: "Countries",
                 href: "/countries",

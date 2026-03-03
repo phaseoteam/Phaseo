@@ -83,7 +83,7 @@ export default function CurrentCredits({
 					<div>
 						<CreditAmount
 							value={balance}
-							className={`text-3xl font-semibold font-mono ${
+							className={`text-3xl font-semibold ${
 								balance < 0 ? "text-red-500" : ""
 							}`}
 						/>

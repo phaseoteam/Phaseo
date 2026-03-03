@@ -42,9 +42,9 @@ describe("encodeOpenAIChatResponse", () => {
 			content: "Hello! How can I help you today?",
 		});
 		expect(response.choices[0].finish_reason).toBe("stop");
-		expect(response.usage).toEqual({
-			prompt_tokens: 10,
-			completion_tokens: 8,
+		expect(response.usage).toMatchObject({
+			input_tokens: 10,
+			output_tokens: 8,
 			total_tokens: 18,
 		});
 	});

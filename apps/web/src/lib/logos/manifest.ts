@@ -193,6 +193,10 @@ export const logoManifest = {
 		light: "/logos/nous_light.svg",
 		dark: "/logos/nous_dark.svg",
 	},
+	nousresearch: {
+		light: "/logos/nous_light.svg",
+		dark: "/logos/nous_dark.svg",
+	},
 	novita: {
 		color: "/logos/novita.svg",
 	},

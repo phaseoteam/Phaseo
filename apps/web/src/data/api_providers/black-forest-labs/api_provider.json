@@ -3,5 +3,6 @@
   "api_provider_name": "Black Forest Labs",
   "description": null,
   "link": "https://docs.bfl.ai/",
-  "country_code": "DE"
+  "country_code": "DE",
+  "status": "NotReady"
 }

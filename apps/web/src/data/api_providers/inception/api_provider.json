@@ -3,5 +3,6 @@
   "api_provider_name": "Inception",
   "description": null,
   "link": null,
-  "country_code": null
+  "country_code": null,
+  "status": "NotReady"
 }

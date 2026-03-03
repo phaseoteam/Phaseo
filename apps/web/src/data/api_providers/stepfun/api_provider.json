@@ -3,5 +3,6 @@
   "api_provider_name": "StepFun",
   "description": null,
   "link": "https://platform.stepfun.com/",
-  "country_code": "CN"
+  "country_code": "CN",
+  "status": "NotReady"
 }

@@ -2002,5 +2002,20 @@
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "google/gemini-3.1-flash-lite-preview",
+    "provider_api_model_id": "google-ai-studio:google/gemini-3.1-flash-lite-preview",
+    "provider_model_slug": "gemini-3.1-flash-lite-preview",
+    "internal_model_id": "google/gemini-3-1-flash-lite-preview-2026-03-03",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio,video",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-03-03T00:00:00",
+    "effective_to": null,
+    "capabilities": []
   }
 ]

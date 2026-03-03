@@ -273,7 +273,7 @@ export function ModelLeaderboard({
 								) : null}
 							</div>
 							<div className="text-right">
-								<div className="font-mono text-sm">
+								<div className="tabular-nums text-sm">
 									{formatTokens(entry.tokens)}
 								</div>
 								<div className={cn("text-xs", change.className)}>
@@ -375,7 +375,7 @@ export function ModelLeaderboard({
 										) : null}
 									</div>
 									<div className="text-right">
-										<div className="font-mono text-sm">
+										<div className="tabular-nums text-sm">
 											{formatTokens(entry.tokens)}
 										</div>
 										<div

@@ -3,5 +3,6 @@
   "api_provider_name": "NextBit",
   "description": null,
   "link": "https://www.nextbit256.com/docs",
-  "country_code": "ES"
+  "country_code": "ES",
+  "status": "NotReady"
 }

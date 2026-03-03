@@ -87,7 +87,7 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-sm font-mono text-muted-foreground">
+                                    <div className="text-sm tabular-nums text-muted-foreground">
                                         Velocity: {Number(model.velocity ?? 0).toFixed(0)}
                                     </div>
                                 </div>

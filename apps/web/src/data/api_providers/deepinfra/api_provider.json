@@ -3,5 +3,6 @@
   "api_provider_name": "DeepInfra",
   "description": null,
   "link": "https://deepinfra.com/docs/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

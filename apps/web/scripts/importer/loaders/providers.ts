@@ -5,6 +5,8 @@ import { listDirs, readJsonWithHash, chunk } from "../util";
 import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
 import { ChangeTracker } from "../state";
 
+type ProviderStatus = "Active" | "Beta" | "Alpha" | "NotReady";
+
 const toTextArray = (value?: string[] | string | null): string[] | null => {
     if (Array.isArray(value)) return value.length ? value : null;
     if (typeof value === "string") {
@@ -23,17 +25,70 @@ const toNullableInt = (value: unknown): number | null => {
     return Number.isFinite(parsed) ? parsed : null;
 };
 
-const toProviderStatus = (value: unknown): "Active" | "Beta" | "Alpha" | "NotReady" => {
+const parseProviderStatus = (value: unknown): ProviderStatus | null => {
     const raw = value == null ? "" : String(value).trim();
-    if (!raw) return "NotReady";
+    if (!raw) return null;
 
     const status = raw.toLowerCase();
     if (status === "beta") return "Beta";
     if (status === "alpha") return "Alpha";
-    if (status === "notready" || status === "not_ready" || status === "not-ready") return "NotReady";
+    if (
+        status === "notready" ||
+        status === "not_ready" ||
+        status === "not-ready" ||
+        status === "not ready"
+    ) return "NotReady";
     if (status === "active") return "Active";
-    // Keep importer resilient when source uses unknown values.
-    return "NotReady";
+    return null;
+};
+
+const PROVIDER_STATUS_KEYS = [
+    "status",
+    "Status",
+    "provider_status",
+    "providerStatus",
+    "api_provider_status",
+    "apiProviderStatus",
+    "provider status",
+    "Provider Status",
+    "API Provider Status",
+] as const;
+
+const getProviderStatusFromSource = (source: Record<string, unknown>): {
+    value: unknown;
+    key: string | null;
+} => {
+    for (const key of PROVIDER_STATUS_KEYS) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+            return { value: source[key], key };
+        }
+    }
+    return { value: undefined, key: null };
+};
+
+const loadExistingProviderStatuses = async (
+    supa: ReturnType<typeof client>
+): Promise<Map<string, ProviderStatus>> => {
+    const statuses = new Map<string, ProviderStatus>();
+    const pageSize = 1000;
+    for (let offset = 0; ; offset += pageSize) {
+        const res = await supa
+            .from("data_api_providers")
+            .select("api_provider_id,status")
+            .range(offset, offset + pageSize - 1);
+        const rows = assertOk(res, "select data_api_providers (api_provider_id,status)") as Array<{
+            api_provider_id?: string | null;
+            status?: string | null;
+        }>;
+        for (const row of rows) {
+            if (typeof row?.api_provider_id !== "string" || !row.api_provider_id) continue;
+            const parsed = parseProviderStatus(row.status);
+            if (!parsed) continue;
+            statuses.set(row.api_provider_id, parsed);
+        }
+        if (rows.length < pageSize) break;
+    }
+    return statuses;
 };
 
 const compactNullish = (value: unknown): unknown => {
@@ -111,6 +166,7 @@ export async function loadProviders(
     const dirs = await listDirs(DIR_PROVIDERS);
     const supa = client();
     const knownModelIds = await loadExistingModelIds(supa);
+    const existingProviderStatuses = await loadExistingProviderStatuses(supa);
     const invalidInternalModelRefs: Array<{
         provider_id: string;
         source_file: string;
@@ -151,7 +207,17 @@ export async function loadProviders(
         const { data: j, hash } = await readJsonWithHash<any>(fp);
         const change = tracker.track(fp, hash, { api_provider_id: j.api_provider_id });
 
-        const status = toProviderStatus(j.status);
+        const sourceStatus = getProviderStatusFromSource(j as Record<string, unknown>);
+        const parsedStatus = parseProviderStatus(sourceStatus.value);
+        const fallbackStatus = existingProviderStatuses.get(j.api_provider_id) ?? "Active";
+        const status = parsedStatus ?? fallbackStatus;
+
+        if (sourceStatus.key && sourceStatus.value != null && parsedStatus == null) {
+            console.warn(
+                `[importer] Unrecognized provider status '${String(sourceStatus.value)}' for provider=${j.api_provider_id}; preserving existing status (${fallbackStatus}).`
+            );
+        }
+
         const row = {
             api_provider_id: j.api_provider_id,
             api_provider_name: j.api_provider_name,
@@ -193,6 +259,7 @@ export async function loadProviders(
                         ? model.internal_model_id.trim()
                         : null;
                 if (modelFilter && requestedInternalModelId !== modelFilter) continue;
+                let internalModelId = requestedInternalModelId;
                 if (requestedInternalModelId && !knownModelIds.has(requestedInternalModelId)) {
                     invalidInternalModelRefs.push({
                         provider_id: j.api_provider_id,
@@ -201,6 +268,7 @@ export async function loadProviders(
                         api_model_id: model.api_model_id,
                         internal_model_id: requestedInternalModelId,
                     });
+                    internalModelId = null;
                 }
                 const provider_api_model_id = model.provider_api_model_id;
                 providerModelIds.add(provider_api_model_id);
@@ -209,7 +277,7 @@ export async function loadProviders(
                     provider_id: j.api_provider_id,
                     api_model_id: model.api_model_id,
                     provider_model_slug: model.provider_model_slug ?? null,
-                    internal_model_id: requestedInternalModelId,
+                    internal_model_id: internalModelId,
                     is_active_gateway: !!model.is_active_gateway,
                     input_modalities: toTextArray(model.input_modalities),
                     output_modalities: toTextArray(model.output_modalities),
@@ -254,9 +322,10 @@ export async function loadProviders(
             invalidInternalModelRefs.length > 50
                 ? `\n...and ${invalidInternalModelRefs.length - 50} more invalid rows.`
                 : "";
-        throw new Error(
-            `Invalid provider model mappings: ${invalidInternalModelRefs.length} row(s) reference ` +
-            `internal_model_id values that do not exist in public.data_models.\n${details}${suffix}`
+        console.warn(
+            `[importer] Invalid provider model mappings: ${invalidInternalModelRefs.length} row(s) reference ` +
+            `internal_model_id values that do not exist in public.data_models. ` +
+            `Those rows will be imported with internal_model_id=null.\n${details}${suffix}`
         );
     }
 

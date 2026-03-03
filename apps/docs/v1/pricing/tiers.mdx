@@ -1,123 +1,97 @@
 ---
 title: "Pricing Tiers"
-description: "Understand how AI Gateway pricing tiers work and how to maximize your savings"
+description: "Understand credit purchase fees, tier qualification, and how Gateway billing works"
 ---
 
 # Pricing Tiers
 
-AI Gateway uses a simple two-tier pricing system that automatically adjusts based on your usage.
+Gateway billing has two parts:
+
+1. **Model usage pricing**: credits are consumed at model prices shown in the catalog.
+2. **Credit purchase fee**: a tier-based fee is applied only when buying credits.
 
 ## Tier Overview
 
 <CardGroup cols={2}>
   <Card title="Basic Tier" icon="tag">
-    **7% gateway fee**
+    **7% credit purchase fee**
 
-    Default tier for all teams. Automatic upgrade to Enterprise when you spend $10,000+ in a rolling 30-day period.
+    Default tier for teams. Applies when you top up credits.
   </Card>
 
   <Card title="Enterprise Tier" icon="star">
-    **5% gateway fee**
+    **5% credit purchase fee**
 
-    Premium pricing for high-volume teams. Maintained while spending $10k+ monthly, with a 3-month grace period.
+    Reduced top-up fee for high-volume teams.
   </Card>
 </CardGroup>
 
-## How It Works
+## How Qualification Works
 
-Your tier is calculated automatically **before each request** based on your rolling 30-day spend:
+Tier qualification is based on **calendar-month spend**:
 
 <Steps>
-  <Step title="Check your spend">
-    The system calculates your total gateway spend over the last 30 days
+  <Step title="Track monthly spend">
+    We track your team's Gateway spend during the current calendar month.
   </Step>
 
-  <Step title="Determine tier">
-    - If spend >= $10,000 -> Enterprise (5% fee)
-    - If spend < $10,000 -> Basic (7% fee)
+  <Step title="Apply threshold">
+    - Monthly spend **>= $10,000**: Enterprise tier (5% top-up fee)
+    - Monthly spend **< $10,000**: Basic tier (7% top-up fee)
   </Step>
 
-  <Step title="Apply pricing">
-    Your current request is processed with the appropriate tier's fee
+  <Step title="Apply fee on top-up">
+    The active tier fee is applied when credits are purchased.
+    Model requests then consume credits at listed model rates.
   </Step>
 </Steps>
 
-### Example Scenario
-
-```
-Day 1-20: Total spend = $8,000
-  -> All requests pay 7% (Basic tier)
-
-Day 21: Spend reaches $10,500
-  -> This request pays 7% (Basic)
-  -> Tier upgraded to Enterprise
-
-Day 22+: Total 30-day spend = $11,000
-  -> All requests pay 5% (Enterprise tier) [DONE]
-```
-
 ## Grace Period
 
-Enterprise teams have a **3-month grace period** to prevent immediate downgrades due to temporary spending fluctuations.
-
-### How the Grace Period Works
-
-1. Your spending dips below $10k in a 30-day period
-2. Counter increments (1st low-spend period)
-3. If spending remains below $10k, counter continues (2nd period)
-4. After **3 consecutive periods** below threshold -> Downgrade to Basic
-5. If spending goes back above $10k at any point -> Counter resets to 0
+Enterprise teams include a **3-month grace period** to avoid rapid tier changes during short-term spend dips.
 
 <Info>
-  **Active teams**: Tier checked before each request
+  **Active teams**: tier status is reflected from backend billing state.
 
-  **Dormant teams**: Tier checked monthly on the 1st (prevents indefinite Enterprise status)
+  **Low-spend streaks**: extended time below threshold can move teams back to Basic.
 </Info>
 
-## Savings Calculator
+## Example
 
-Enterprise tier saves you **2% on every request** compared to Basic:
-
-| Monthly Spend | Basic Fee (7%) | Enterprise Fee (5%) | Monthly Savings |
-|---------------|----------------|---------------------|-----------------|
-| $10,000       | $700           | $500                | **$200** |
-| $25,000       | $1,750         | $1,250              | **$500** |
-| $50,000       | $3,500         | $2,500              | **$1,000** |
-| $100,000      | $7,000         | $5,000              | **$2,000** |
+| Scenario | Top-Up Amount | Applied Fee | Credits Added (before usage) |
+|---|---:|---:|---:|
+| Basic tier | $100 | 7% ($7) | $100 credits |
+| Enterprise tier | $100 | 5% ($5) | $100 credits |
+| Free model usage | No top-up | $0 | Uses free model allowance |
 
 ## Frequently Asked Questions
 
 <AccordionGroup>
-  <Accordion title="When does my tier update?">
-    Your tier is calculated in real-time before each request based on your rolling 30-day spend. There's no waiting period--as soon as you cross $10k, your next request uses Enterprise pricing.
+  <Accordion title="Are fees charged on every request?">
+    No. Fees are charged when you purchase credits. Requests consume those credits at the model prices displayed in the catalog.
   </Accordion>
 
-  <Accordion title="What if I stop using the gateway for a few months?">
-    Dormant Enterprise teams are checked monthly. If your 30-day spend stays below $10k for 3 consecutive months, you'll be downgraded to Basic tier.
+  <Accordion title="Do you mark up token pricing beyond model rates?">
+    Model usage rates follow the catalog pricing. The separate platform fee is the top-up fee shown by your active tier.
   </Accordion>
 
-  <Accordion title="Can I request a custom tier or discount?">
-    Yes! For custom pricing, volume commitments, or enterprise agreements, contact our sales team at sales@example.com.
+  <Accordion title="When does my tier change?">
+    Tier status follows monthly spend qualification and backend billing state. You can view your current tier in settings.
   </Accordion>
 
-  <Accordion title="Are there any minimum commitments?">
-    No. You can use the Basic tier with no minimums, and you'll automatically upgrade to Enterprise when you reach the threshold.
-  </Accordion>
-
-  <Accordion title="How do promotional codes work?">
-    Promotional codes are applied during the Stripe checkout process when adding credits to your account. Stripe coupon codes provide percentage or fixed-amount discounts on your credit purchases.
+  <Accordion title="Can I request custom enterprise terms?">
+    Yes. For committed volume, invoicing, or procurement requirements, contact sales.
   </Accordion>
 </AccordionGroup>
 
 ## Viewing Your Tier
 
-Check your current tier and savings in your dashboard:
+Check your current tier and top-up fee in your dashboard:
 
-1. Navigate to **Settings** -> **Pricing & Tiers**
-2. View your current tier, fee percentage, and estimated monthly savings
-3. Track your progress toward Enterprise tier (if on Basic)
-4. See spending trends and projections
+1. Navigate to **Settings -> Pricing & Tiers**
+2. View your current fee rate and qualification progress
+3. Review monthly spend trends and upgrade path
 
 <Card title="Questions?" icon="question">
-  Need help understanding your pricing? Contact support at support@example.com or join our [Discord community](https://discord.gg/aQyywCvgZ5).
+  Need help with billing or tiers? Contact support at support@example.com or join our [Discord community](https://discord.gg/aQyywCvgZ5).
 </Card>

@@ -3,5 +3,6 @@
   "api_provider_name": "Azure",
   "description": null,
   "link": "https://learn.microsoft.com/en-us/azure/ai-services/openai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

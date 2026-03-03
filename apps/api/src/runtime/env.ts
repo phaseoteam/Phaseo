@@ -31,7 +31,6 @@ export type GatewayBindings = {
     AI21_API_KEY?: string;
     AI21_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
-    ALIBABA_API_KEY?: string;
     ALIBABA_BASE_URL?: string;
     AMAZON_BEDROCK_API_KEY?: string;
     AMAZON_BEDROCK_BASE_URL?: string;
@@ -135,8 +134,6 @@ export type GatewayBindings = {
     PERPLEXITY_BASE_URL?: string;
     PHALA_API_KEY?: string;
     PHALA_BASE_URL?: string;
-    QWEN_API_KEY?: string;
-    QWEN_BASE_URL?: string;
     RELACE_API_KEY?: string;
     RELACE_BASE_URL?: string;
     SAMBANOVA_API_KEY?: string;
@@ -217,7 +214,6 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "AI21_API_KEY",
     "AI21_BASE_URL",
     "ALIBABA_CLOUD_API_KEY",
-    "ALIBABA_API_KEY",
     "ALIBABA_BASE_URL",
     "AMAZON_BEDROCK_API_KEY",
     "AMAZON_BEDROCK_BASE_URL",
@@ -321,8 +317,6 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "PERPLEXITY_BASE_URL",
     "PHALA_API_KEY",
     "PHALA_BASE_URL",
-    "QWEN_API_KEY",
-    "QWEN_BASE_URL",
     "RELACE_API_KEY",
     "RELACE_BASE_URL",
     "SAMBANOVA_API_KEY",

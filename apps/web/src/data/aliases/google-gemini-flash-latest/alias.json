@@ -1,0 +1,7 @@
+{
+  "alias_slug": "google/gemini-flash-latest",
+  "resolved_api_model_id": "google/gemini-3-flash-preview",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

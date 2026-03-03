@@ -85,7 +85,7 @@ describe("openAICompatUrl", () => {
 	it("uses dashscope responses prefix for alibaba responses endpoint", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			ALIBABA_API_KEY: "test-alibaba-key",
+			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
 		} as any);
 
 		expect(openAICompatUrl("alibaba", "/responses")).toBe(
@@ -99,7 +99,7 @@ describe("openAICompatUrl", () => {
 	it("trims chat prefix from alibaba base url override when building responses url", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			ALIBABA_API_KEY: "test-alibaba-key",
+			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
 			ALIBABA_BASE_URL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
 		} as any);
 
@@ -357,5 +357,36 @@ describe("resolveOpenAICompatKey", () => {
 		expect(resolved.key).toBe("test-legacy-wandb-key");
 		expect(resolved.source).toBe("gateway");
 	});
+
+	it("falls back to ALIBABA_CLOUD_API_KEY for alibaba", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "alibaba",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-alibaba-cloud-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("uses ALIBABA_CLOUD_API_KEY for qwen", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "qwen",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-alibaba-cloud-key");
+		expect(resolved.source).toBe("gateway");
+	});
 });
+
 

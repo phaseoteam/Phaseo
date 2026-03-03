@@ -3,5 +3,6 @@
   "api_provider_name": "Inceptron",
   "description": null,
   "link": "https://docs.inceptron.io/",
-  "country_code": "SE"
+  "country_code": "SE",
+  "status": "NotReady"
 }

@@ -3,5 +3,6 @@
   "api_provider_name": "Cohere",
   "description": null,
   "link": "https://docs.cohere.com/v2/cohere-documentation",
-  "country_code": "CA"
+  "country_code": "CA",
+  "status": "NotReady"
 }

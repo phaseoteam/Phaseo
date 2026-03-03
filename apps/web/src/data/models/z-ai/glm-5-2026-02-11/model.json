@@ -22,5 +22,22 @@
       "value": 28500000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 0.447,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 14
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.049,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 11
+    }
+  ]
 }

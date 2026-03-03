@@ -69,7 +69,7 @@ function DividerColumns({
 								{column.subtitle}
 							</div>
 						) : null}
-						<div className="text-sm font-semibold font-mono tabular-nums">
+						<div className="text-sm font-semibold tabular-nums">
 							{column.value}
 						</div>
 						{column.footer ? (
@@ -103,8 +103,8 @@ export function TierTiles({
 						<div
 							className={
 								t.basePer1M != null
-									? "text-sm font-semibold text-emerald-600 font-mono tabular-nums"
-									: "text-sm font-semibold font-mono tabular-nums"
+									? "text-sm font-semibold text-emerald-600 tabular-nums"
+									: "text-sm font-semibold tabular-nums"
 							}
 						>
 							{fmtUSD(t.per1M)}
@@ -114,7 +114,7 @@ export function TierTiles({
 						) : null}
 						{t.basePer1M != null ? (
 							<div className="flex items-center justify-between text-xs text-muted-foreground">
-								<span className="line-through font-mono tabular-nums">
+								<span className="line-through tabular-nums">
 									{fmtUSD(t.basePer1M)}
 								</span>
 								{formatCountdown(t.discountEndsAt) ? (
@@ -186,7 +186,7 @@ export function TokenTripleSection({
 								<div className="mb-0.5 text-xs text-muted-foreground">
 									{tile.label}
 								</div>
-								<div className="text-sm font-semibold font-mono tabular-nums">
+								<div className="text-sm font-semibold tabular-nums">
 									{tile.value}
 								</div>
 							</div>
@@ -213,7 +213,7 @@ export function TokenTripleSection({
 							<div className="mb-0.5 text-xs text-muted-foreground">
 								{tile.label}
 							</div>
-							<div className="text-sm font-semibold font-mono tabular-nums">
+							<div className="text-sm font-semibold tabular-nums">
 								{tile.value}
 							</div>
 						</div>
@@ -272,7 +272,7 @@ export function ImageGenSection({ rows }: { rows?: QualityRow[] }) {
 									<div className="mb-0.5 text-xs text-muted-foreground">
 										{item.label || "Any resolution"}
 									</div>
-									<div className="text-sm font-semibold font-mono tabular-nums">
+									<div className="text-sm font-semibold tabular-nums">
 										{fmtUSD(item.price)}
 									</div>
 								</div>
@@ -370,7 +370,7 @@ export function InputsSection({
 					footer:
 						item.basePrice != null ? (
 							<div className="flex items-center justify-between">
-								<span className="line-through font-mono tabular-nums">
+								<span className="line-through tabular-nums">
 									{fmtUSD(item.basePrice)}
 								</span>
 								{formatCountdown(item.discountEndsAt) ? (
@@ -410,7 +410,7 @@ export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 					footer:
 						t.basePer1M != null ? (
 							<div className="flex items-center justify-between">
-								<span className="line-through font-mono tabular-nums">
+								<span className="line-through tabular-nums">
 									{fmtUSD(t.basePer1M)}
 								</span>
 								{formatCountdown(t.discountEndsAt) ? (
@@ -447,7 +447,7 @@ export function RequestsSection({ rows }: { rows?: TokenTier[] }) {
 					footer:
 						t.basePer1M != null ? (
 							<div className="flex items-center justify-between">
-								<span className="line-through font-mono tabular-nums">
+								<span className="line-through tabular-nums">
 									{fmtUSD(t.basePer1M)}
 								</span>
 								{formatCountdown(t.discountEndsAt) ? (
@@ -500,7 +500,7 @@ export function AdvancedTable({
 									<TableRow key={i}>
 										<TableCell className="text-xs">{r.meter}</TableCell>
 										<TableCell className="text-xs">{r.unitLabel}</TableCell>
-										<TableCell className="font-mono tabular-nums text-xs">{fmtUSD(r.price)}</TableCell>
+										<TableCell className="tabular-nums text-xs">{fmtUSD(r.price)}</TableCell>
 										<TableCell className="text-xs text-muted-foreground">
 											{r.conditions?.length
 												? r.conditions.map((c, j) => (

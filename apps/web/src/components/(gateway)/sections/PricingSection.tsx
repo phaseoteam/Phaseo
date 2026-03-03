@@ -3,24 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CheckItem from "../page/CheckItem";
 
 const PRICING_BENEFITS = [
-	"Transparent fees: deposit once, route freely.",
-	"Provider-aligned bills with no hidden multipliers.",
+	"Credits are consumed at model prices shown in the catalog.",
+	"Top-up fees are applied when purchasing credits, not per request.",
 	"Usage exports for finance and RevOps teams - Coming Soon.",
 	"Per-key spend limits keep experiments safe - Beta.",
 ];
 
 const PRICING_EXAMPLES = [
 	{
-		scenario: "Testing & hobby usage",
-		gateway: "10% fee → $5.00 on $50 monthly spend",
+		scenario: "Free model usage",
+		gateway: "No credit purchase fee",
 	},
 	{
-		scenario: "Regular product usage",
-		gateway: "9% fee → $45.00 on $500 monthly spend",
+		scenario: "Basic tier top-up",
+		gateway: "7.0% fee on credit purchases",
 	},
 	{
-		scenario: "Enterprise traffic",
-		gateway: "8% fee → $400.00 on $5k monthly spend",
+		scenario: "Enterprise tier top-up",
+		gateway: "5.0% fee on credit purchases",
 	},
 ];
 
@@ -30,21 +30,18 @@ export function PricingSection() {
 			<div className="space-y-6">
 				<div className="space-y-3">
 					<h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-						Predictable pricing, with an automatic sliding scale
+						Predictable pricing with clear credit economics
 					</h2>
 					<p className="text-sm text-slate-600 dark:text-slate-400">
-						Every top-up covers the raw provider bill plus our
-						gateway fee, which starts at 10% and steps down toward
-						7.5% as usage grows. This adaptive scale keeps fees
-						aligned with your runway so higher-volume programs
-						benefit from faster routing and deeper savings.
+						All model usage consumes credits using the prices shown in our
+						model catalog. Top-up fees are only applied when you purchase
+						credits (top-up), with tier-based rates for Basic and Enterprise
+						teams.
 					</p>
 				</div>
 				<Card className="border-slate-200">
 					<CardHeader className="space-y-2">
-						<CardTitle className="text-base">
-							What is included
-						</CardTitle>
+						<CardTitle className="text-base">What is included</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-3">
 						<ul className="space-y-2 text-sm text-slate-700">
@@ -59,12 +56,8 @@ export function PricingSection() {
 					<table className="w-full text-left text-sm">
 						<thead className="bg-slate-50 text-slate-600 dark:bg-neutral-900 dark:text-slate-300">
 							<tr>
-								<th className="px-4 py-3 font-medium">
-									Scenario
-								</th>
-								<th className="px-4 py-3 font-medium">
-									Gateway fee
-								</th>
+								<th className="px-4 py-3 font-medium">Scenario</th>
+								<th className="px-4 py-3 font-medium">Credit purchase fee</th>
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-slate-100">
@@ -82,12 +75,11 @@ export function PricingSection() {
 					</table>
 				</div>
 				<p className="text-xs text-slate-500 dark:text-slate-300">
-					Review your live tier and projected discount at{" "}
+					Review your live tier and top-up fee at{" "}
 					<Link className="underline" href="/settings/tiers">
 						/settings/tiers
 					</Link>{" "}
-					based on this month’s spend so you know how close you are to
-					the next band.
+					based on this month&apos;s spend.
 				</p>
 			</div>
 		</section>

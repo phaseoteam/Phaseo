@@ -74,7 +74,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 23
+      "rank": 26
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -82,7 +82,7 @@
       "is_self_reported": false,
       "other_info": "Low Reasoning Effort",
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa-diamond",

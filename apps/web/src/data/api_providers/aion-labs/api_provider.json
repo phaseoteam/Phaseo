@@ -3,5 +3,6 @@
   "api_provider_name": "AionLabs",
   "description": null,
   "link": "https://www.aionlabs.ai/",
-  "country_code": "IL"
+  "country_code": "IL",
+  "status": "NotReady"
 }

@@ -14,7 +14,7 @@ jobs:
             (
               github.event_name == 'issue_comment' &&
               github.event.issue.pull_request == null &&
-              github.actor != 'github-actions[bot]'
+              !endsWith(github.actor, '[bot]')
             )
         runs-on: ubuntu-latest
         permissions:
@@ -36,41 +36,32 @@ jobs:
                       AI Stats is an open-source monorepo with a Next.js web app, Cloudflare
                       Worker API gateway, docs, and SDKs.
 
-                      Your job is to produce either:
-                      1) clarifying questions when the issue is vague, OR
-                      2) a copy/paste prompt the maintainer can give to an AI coding agent.
+                      Your job is to produce:
+                      1) a concise issue understanding, and
+                      2) a short copy/paste prompt the maintainer can give to an AI coding agent.
 
                       Always start with this exact sentence:
                       We're super sorry about this issue you're facing! We'll have someone look at this as soon as possible.
 
                       Output rules:
+                      - Keep the response short and practical.
                       - Do NOT output "Quick Overview" or "Possible Cause & Suggested Fix".
-                      - Do NOT provide long root-cause speculation.
-                      - Keep responses concise and actionable.
-                      - Put interpretation in an expandable section:
+                      - Do NOT output long implementation plans, acceptance criteria lists, or test checklists.
+                      - Put interpretation in an expandable section first:
                         <details><summary>Issue understanding</summary>...</details>
-
-                      Decision logic:
-                      - If this issue thread already contains your prior clarifying questions
-                        and the latest comment answers them, generate the AI Agent Prompt now.
-                      - If the report is missing key reproduction details, output:
-                        ### Clarifying Questions
-                        Ask 1-3 specific questions needed to make implementation unambiguous.
-                        Then add:
-                        ### Next Step
-                        Say you will generate a copy/paste AI agent prompt after answers are provided.
-                      - If the report is specific enough, output:
+                      - Immediately after that, output:
                         ### AI Agent Prompt (Copy/Paste)
-                        Provide a single fenced ```text``` block containing a ready-to-run
-                        prompt for an AI coding agent.
-
-                      The AI Agent Prompt must include:
-                      - Goal
-                      - Relevant context from the issue
-                      - Implementation requirements
-                      - Acceptance criteria
-                      - Validation steps (tests/checks)
-                      - Output format expected from the agent
+                        Provide a single fenced ```text``` block.
+                      - Keep the AI Agent Prompt as succinct as possible by default.
+                      - For simple/normal issues, keep it short and direct.
+                      - For genuinely complex issues, you may expand modestly to preserve clarity.
+                      - The AI Agent Prompt must:
+                        - Summarize the bug.
+                        - Mention where it is likely happening (area/component/file path if known).
+                        - Suggest a possible fix direction.
+                        - Explicitly tell the agent to reproduce and inspect the codebase/logs/tests and not rely only on the bug report.
+                      - If key details are missing, make a reasonable assumption and continue. You may add at most 2 short clarifying questions after the prompt under:
+                        ### Clarifying Questions (Optional)
 
                       End every response with:
                       *This is an automated response - a team member will follow up shortly.*

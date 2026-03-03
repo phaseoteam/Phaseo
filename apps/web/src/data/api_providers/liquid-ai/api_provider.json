@@ -3,5 +3,6 @@
   "api_provider_name": "Liquid",
   "description": null,
   "link": "https://www.liquid.ai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "NotReady"
 }

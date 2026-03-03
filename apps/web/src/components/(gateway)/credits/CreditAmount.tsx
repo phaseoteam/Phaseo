@@ -9,7 +9,7 @@ interface CreditAmountProps {
 
 export function CreditAmount({ value, className = "" }: CreditAmountProps) {
 	return (
-		<span className={`font-mono ${className}`}>
+		<span className={`tabular-nums ${className}`}>
 			<NumberFlow
 				value={value}
 				locales="en-US"

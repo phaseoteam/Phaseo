@@ -90,7 +90,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 24
+      "rank": 27
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -98,7 +98,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "confabulations",
@@ -179,6 +179,22 @@
       "other_info": null,
       "source_link": "https://github.com/lechmazur/generalization",
       "rank": 5
+    },
+    {
+      "benchmark_id": "arc-agi-1",
+      "score": 0.158,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 27
+    },
+    {
+      "benchmark_id": "arc-agi-2",
+      "score": 0.013,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": null,
+      "rank": 17
     }
   ]
 }

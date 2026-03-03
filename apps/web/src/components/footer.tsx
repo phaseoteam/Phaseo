@@ -204,12 +204,22 @@ export default function Footer() {
 									variant="ghost"
 									className="h-8 w-full justify-start px-2"
 								>
+									<Link href="/pricing" aria-label="Pricing">
+										<DollarSign className="h-4 w-4" />
+										<span className="text-xs">Pricing</span>
+									</Link>
+								</Button>
+								<Button
+									asChild
+									variant="ghost"
+									className="h-8 w-full justify-start px-2"
+								>
 									<Link
 										href="/tools/pricing-calculator"
 										aria-label="Pricing Calculator"
 									>
 										<DollarSign className="h-4 w-4" />
-										<span className="text-xs">Pricing</span>
+										<span className="text-xs">Pricing Calculator</span>
 									</Link>
 								</Button>
 								<Button
@@ -511,12 +521,22 @@ export default function Footer() {
 								variant="ghost"
 								className="w-fit py-1 px-2 h-7"
 							>
+								<Link href="/pricing" aria-label="Pricing">
+									<DollarSign className="h-4 w-4" />
+									<span className="text-xs">Pricing</span>
+								</Link>
+							</Button>
+							<Button
+								asChild
+								variant="ghost"
+								className="w-fit py-1 px-2 h-7"
+							>
 								<Link
 									href="/tools/pricing-calculator"
 									aria-label="Pricing Calculator"
 								>
 									<DollarSign className="h-4 w-4" />
-									<span className="text-xs">Pricing</span>
+									<span className="text-xs">Pricing Calculator</span>
 								</Link>
 							</Button>
 							<Button

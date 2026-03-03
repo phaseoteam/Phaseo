@@ -3,5 +3,6 @@
   "api_provider_name": "Venice",
   "description": null,
   "link": "https://docs.venice.ai/",
-  "country_code": "US"
+  "country_code": "US",
+  "status": "Alpha"
 }

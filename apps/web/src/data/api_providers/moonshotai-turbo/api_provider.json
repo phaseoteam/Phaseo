@@ -3,5 +3,6 @@
   "api_provider_name": "Moonshot AI Turbo",
   "description": null,
   "link": "https://platform.moonshot.ai/",
-  "country_code": "CN"
+  "country_code": "CN",
+  "status": "NotReady"
 }

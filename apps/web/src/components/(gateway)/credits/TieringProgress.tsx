@@ -118,14 +118,14 @@ export default async function TieringProgress({
 						</p>
 						{projectedSavings > 0 && (
 							<p className="text-xs text-emerald-600 dark:text-emerald-400">
-								💰 Saving ~{money(projectedSavings, currency)} this month vs Basic pricing
+								Saving ~{money(projectedSavings, currency)} this month vs Basic pricing
 							</p>
 						)}
 					</div>
 
 					<div className="space-y-1 text-left md:text-right">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Gateway fee
+							Credit top-up fee
 						</div>
 						<div className="flex items-center justify-start gap-2 text-lg font-semibold md:justify-end md:text-xl">
 							<span>{currentFee.toFixed(1)}%</span>
@@ -160,7 +160,7 @@ export default async function TieringProgress({
 						<TrendingUp className="h-4 w-4" />
 						<AlertDescription>
 							Only {money(remainingToNext, currency)} away from Enterprise tier!
-							Spend {money(enterpriseThreshold, currency)}+ this month to unlock 5% pricing next month.
+							Spend {money(enterpriseThreshold, currency)}+ this month to unlock the 5% top-up fee next month.
 						</AlertDescription>
 					</Alert>
 				)}
@@ -171,7 +171,7 @@ export default async function TieringProgress({
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
 							Your month-to-date spend ({money(mtd, currency)}) is below the Enterprise threshold.
-							Spend {money(enterpriseThreshold, currency)}+ to maintain Enterprise pricing.
+							Spend {money(enterpriseThreshold, currency)}+ to maintain Enterprise top-up fee pricing.
 							Note: Tier downgrades occur after 3 consecutive months below threshold.
 						</AlertDescription>
 					</Alert>
@@ -216,7 +216,7 @@ export default async function TieringProgress({
 							</div>
 							<div className="text-sm font-semibold">{basicTier.name}</div>
 							<div className="text-xs text-muted-foreground">
-								{basicTier.feePct.toFixed(1)}% fee
+								{basicTier.feePct.toFixed(1)}% top-up fee
 							</div>
 							<div className="mt-1 text-xs text-muted-foreground">
 								{money(basicTier.threshold, currency)}+
@@ -243,7 +243,7 @@ export default async function TieringProgress({
 							</div>
 							<div className="text-sm font-semibold">{enterpriseTier.name}</div>
 							<div className="text-xs text-muted-foreground">
-								{enterpriseTier.feePct.toFixed(1)}% fee
+								{enterpriseTier.feePct.toFixed(1)}% top-up fee
 							</div>
 							<div className="mt-1 text-xs text-muted-foreground">
 								{money(enterpriseTier.threshold, currency)}+/mo
@@ -264,21 +264,21 @@ export default async function TieringProgress({
 					<div className="mb-2 text-sm font-medium">How it works</div>
 					<div className="space-y-3 rounded-lg border p-4 text-sm">
 						<div>
-							<div className="font-medium">✓ Basic Tier (7%)</div>
+							<div className="font-medium">Basic Tier (7%)</div>
 							<p className="text-xs text-muted-foreground">
 								All teams start here. Automatic upgrade after spending {money(enterpriseThreshold, currency)}+ in any month.
 							</p>
 						</div>
 						<div>
-							<div className="font-medium">✓ Enterprise Tier (5%)</div>
+							<div className="font-medium">Enterprise Tier (5%)</div>
 							<p className="text-xs text-muted-foreground">
-								High-volume teams save 2% on all requests. Maintained while spending {money(enterpriseThreshold, currency)}+ monthly.
+								High-volume teams save 2% on credit purchase fees. Maintained while spending {money(enterpriseThreshold, currency)}+ monthly.
 								Downgrade to Basic after 3 consecutive months below threshold.
 							</p>
 						</div>
 					</div>
 					<p className="mt-3 text-xs text-muted-foreground">
-						💡 Tiers are automatically updated on the 1st of each month based on the previous month's spend.
+						Tiers are automatically updated on the 1st of each month based on the previous month's spend.
 					</p>
 					<p className="mt-2 text-xs text-muted-foreground">
 						Questions? Contact support for custom pricing or volume discounts.
@@ -288,3 +288,4 @@ export default async function TieringProgress({
 		</Card>
 	);
 }
+
