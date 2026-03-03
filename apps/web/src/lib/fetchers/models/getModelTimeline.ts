@@ -18,8 +18,17 @@ export default async function getModelTimeline(
 ): Promise<{ events: RawEvent[] } | null> {
     const supabase = await createClient();
 
-    const { data, error } = await applyHiddenFilter(
-        supabase.from("data_models").select(`timeline, hidden`),
+    const { data: model, error } = await applyHiddenFilter(
+        supabase.from("data_models").select(`
+            model_id,
+            name,
+            previous_model_id,
+            announcement_date,
+            release_date,
+            deprecation_date,
+            retirement_date,
+            hidden
+        `),
         includeHidden
     )
         .eq("model_id", modelId)
@@ -29,18 +38,94 @@ export default async function getModelTimeline(
         throw new Error(error.message || "Failed to fetch model timeline");
     }
 
-    const timeline = data?.timeline ?? null;
+    const events: RawEvent[] = [];
 
-    // Support both shapes: an array (legacy) or an object { events: [] }
-    if (Array.isArray(timeline)) {
-        return { events: timeline as RawEvent[] };
-    }
-    if (timeline && Array.isArray(timeline.events)) {
-        return { events: timeline.events as RawEvent[] };
+    const pushModelEvent = (date: string | null | undefined, eventName: string) => {
+        if (!date) return;
+        events.push({
+            date,
+            eventType: "ModelEvent",
+            eventName,
+        });
+    };
+
+    const versionDate = (row: {
+        release_date?: string | null;
+        announcement_date?: string | null;
+    }) => row.release_date ?? row.announcement_date ?? null;
+
+    // Core lifecycle events for this model
+    pushModelEvent(model.announcement_date, "Announced");
+    pushModelEvent(model.release_date, "Released");
+    pushModelEvent(model.deprecation_date, "Deprecated");
+    pushModelEvent(model.retirement_date, "Retired");
+
+    // Immediate previous version
+    if (model.previous_model_id) {
+        const { data: previousModel, error: previousError } = await applyHiddenFilter(
+            supabase.from("data_models").select(`
+                model_id,
+                name,
+                announcement_date,
+                release_date,
+                hidden
+            `),
+            includeHidden
+        )
+            .eq("model_id", model.previous_model_id)
+            .maybeSingle();
+
+        if (previousError) {
+            throw new Error(previousError.message || "Failed to fetch previous model timeline node");
+        }
+
+        const date = previousModel ? versionDate(previousModel) : null;
+        if (previousModel && date) {
+            events.push({
+                date,
+                eventType: "PreviousModel",
+                modelId: previousModel.model_id,
+                modelName: previousModel.name ?? previousModel.model_id,
+            });
+        }
     }
 
-    // Return empty events array if no timeline present
-    return { events: [] };
+    // Immediate next version (first model that points back to this one)
+    const { data: futureModels, error: futureError } = await applyHiddenFilter(
+        supabase.from("data_models").select(`
+            model_id,
+            name,
+            announcement_date,
+            release_date,
+            hidden
+        `),
+        includeHidden
+    )
+        .eq("previous_model_id", modelId)
+        .order("release_date", { ascending: true, nullsFirst: false })
+        .order("announcement_date", { ascending: true, nullsFirst: false })
+        .limit(1);
+
+    if (futureError) {
+        throw new Error(futureError.message || "Failed to fetch future model timeline node");
+    }
+
+    const nextModel = futureModels?.[0] ?? null;
+    if (nextModel) {
+        const date = versionDate(nextModel);
+        if (date) {
+            events.push({
+                date,
+                eventType: "FutureModel",
+                modelId: nextModel.model_id,
+                modelName: nextModel.name ?? nextModel.model_id,
+            });
+        }
+    }
+
+    return {
+        events: events.sort((a, b) => (a.date < b.date ? 1 : -1)),
+    };
 }
 
 /**
