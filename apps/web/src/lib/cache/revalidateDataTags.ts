@@ -33,6 +33,7 @@ export function revalidateModelDataTags(
 	if (options.modelId) {
 		revalidateTag(`model:header:${options.modelId}`, EXPIRE_NOW);
 		revalidateTag(`data:models:${options.modelId}`, EXPIRE_NOW);
+		revalidateTag(`data:benchmarks:model:${options.modelId}`, EXPIRE_NOW);
 		revalidateTag(
 			`model:benchmarks:highlights:${options.modelId}`,
 			EXPIRE_NOW

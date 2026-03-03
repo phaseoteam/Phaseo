@@ -88,6 +88,14 @@ type RawBenchmarkPayload = {
 	results: ModelBenchmarkResult[];
 };
 
+function modelBenchmarkTag(modelId: string): string {
+	return `data:benchmarks:model:${modelId}`;
+}
+
+function modelBenchmarkPairTag(modelId: string, benchmarkId: string): string {
+	return `data:benchmarks:model:${modelId}:benchmark:${benchmarkId}`;
+}
+
 function parseScore(
 	value: string | number | null | undefined
 ): number | null {
@@ -601,10 +609,14 @@ export async function getModelBenchmarkHighlights(
 	"use cache";
 
 	cacheLife("hours");
-	cacheTag("data:benchmarks");
+	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:highlights:${modelId}`);
 
 	const { results } = await loadBenchmarkResults(modelId, includeHidden);
+	for (const result of results) {
+		if (!result.benchmark_id) continue;
+		cacheTag(modelBenchmarkPairTag(modelId, result.benchmark_id));
+	}
 	return selectHighlightResults(results);
 }
 
@@ -615,10 +627,14 @@ export async function getModelBenchmarkTableData(
 	"use cache";
 
 	cacheLife("hours");
-	cacheTag("data:benchmarks");
+	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:table:${modelId}`);
 
 	const { results } = await loadBenchmarkResults(modelId, includeHidden);
+	for (const result of results) {
+		if (!result.benchmark_id) continue;
+		cacheTag(modelBenchmarkPairTag(modelId, result.benchmark_id));
+	}
 	return groupResultsByBenchmarkName(results);
 }
 
@@ -629,8 +645,13 @@ export async function getModelBenchmarkComparisonData(
 	"use cache";
 
 	cacheLife("hours");
-	cacheTag("data:benchmarks");
+	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:comparisons:${modelId}`);
 
-	return fetchBenchmarkComparisonCharts(modelId, includeHidden);
+	const charts = await fetchBenchmarkComparisonCharts(modelId, includeHidden);
+	for (const chart of charts) {
+		if (!chart.benchmarkId) continue;
+		cacheTag(modelBenchmarkPairTag(modelId, chart.benchmarkId));
+	}
+	return charts;
 }
