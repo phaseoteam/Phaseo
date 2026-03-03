@@ -88,8 +88,6 @@ type RawBenchmarkPayload = {
 	results: ModelBenchmarkResult[];
 };
 
-const rawResultsPromiseCache = new Map<string, Promise<RawBenchmarkPayload>>();
-
 function parseScore(
 	value: string | number | null | undefined
 ): number | null {
@@ -253,15 +251,9 @@ async function loadBenchmarkResults(
 	modelId: string,
 	includeHidden: boolean
 ): Promise<RawBenchmarkPayload> {
-	const cacheKey = `${modelId}:${includeHidden ? "1" : "0"}`;
-	let promise = rawResultsPromiseCache.get(cacheKey);
-
-	if (!promise) {
-		promise = fetchBenchmarkResultsRaw(modelId, includeHidden);
-		rawResultsPromiseCache.set(cacheKey, promise);
-	}
-
-	return promise;
+	// Rely on Next.js cache tags/lifetimes instead of process-local memoization.
+	// This avoids stale benchmark data persisting after importer updates.
+	return fetchBenchmarkResultsRaw(modelId, includeHidden);
 }
 
 function selectHighlightResults(
@@ -608,7 +600,8 @@ export async function getModelBenchmarkHighlights(
 ): Promise<ModelBenchmarkHighlight[]> {
 	"use cache";
 
-	cacheLife("days");
+	cacheLife("minutes");
+	cacheTag("data:benchmarks");
 	cacheTag(`model:benchmarks:highlights:${modelId}`);
 
 	const { results } = await loadBenchmarkResults(modelId, includeHidden);
@@ -621,7 +614,8 @@ export async function getModelBenchmarkTableData(
 ): Promise<Record<string, ModelBenchmarkResult[]>> {
 	"use cache";
 
-	cacheLife("days");
+	cacheLife("minutes");
+	cacheTag("data:benchmarks");
 	cacheTag(`model:benchmarks:table:${modelId}`);
 
 	const { results } = await loadBenchmarkResults(modelId, includeHidden);
@@ -634,7 +628,8 @@ export async function getModelBenchmarkComparisonData(
 ): Promise<BenchmarkComparisonChart[]> {
 	"use cache";
 
-	cacheLife("days");
+	cacheLife("minutes");
+	cacheTag("data:benchmarks");
 	cacheTag(`model:benchmarks:comparisons:${modelId}`);
 
 	return fetchBenchmarkComparisonCharts(modelId, includeHidden);
