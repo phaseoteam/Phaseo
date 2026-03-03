@@ -31,5 +31,83 @@
       "value": 65536
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "video-mmmu",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "simpleqa",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "facts-benchmark-suite",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-128k",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-1m",
+      "score": null,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-1-Flash-Lite-Model-Card.pdf"
+    }
+  ]
 }

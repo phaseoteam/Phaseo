@@ -2178,7 +2178,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-r1-2025-01-20/model.json": {
-      "hash": "21be05d00f18b87a0d58511d90e0f50b",
+      "hash": "ae611c172ccbe7e64b8ce2867150e62c",
       "meta": {
         "model_id": "deepseek/deepseek-r1-2025-01-20",
         "organisation_id": "deepseek",
@@ -2186,7 +2186,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-r1-2025-05-28/model.json": {
-      "hash": "b4628cedf9c7b57512187026ad08dc57",
+      "hash": "1f302467617ae260c426b7b5ac6dba77",
       "meta": {
         "model_id": "deepseek/deepseek-r1-2025-05-28",
         "organisation_id": "deepseek",
@@ -2250,7 +2250,7 @@
       }
     },
     "src/data/models/deepseek/deepseek-v3-2-2025-12-01/model.json": {
-      "hash": "e2f00f1cbf008e3a2e81d650bac035ad",
+      "hash": "5827a9b31d8280f00139ae98ed36370a",
       "meta": {
         "model_id": "deepseek/deepseek-v3-2-2025-12-01",
         "organisation_id": "deepseek",
@@ -2810,7 +2810,7 @@
       }
     },
     "src/data/models/google/gemini-3-1-flash-lite-preview-2026-03-03/model.json": {
-      "hash": "1846b37551d8a702ba75c06b7bf8b683",
+      "hash": "13493771bed1158263c34e26e91afc27",
       "meta": {
         "model_id": "google/gemini-3-1-flash-lite-preview-2026-03-03",
         "organisation_id": "google",
@@ -4786,7 +4786,7 @@
       }
     },
     "src/data/models/moonshot-ai/kimi-k2-5-2026-01-27/model.json": {
-      "hash": "77699c656ab1fdec646d3834c28cf2bf",
+      "hash": "241caa4eaad830696cbce64bf0359d1b",
       "meta": {
         "model_id": "moonshot-ai/kimi-k2-5-2026-01-27",
         "organisation_id": "moonshot-ai",
@@ -6666,7 +6666,7 @@
       }
     },
     "src/data/models/qwen/qwen-3-235b-a22b/model.json": {
-      "hash": "975b0db658aa43576fc00be416000e02",
+      "hash": "cf300ce207b541ab27187104e836c3c0",
       "meta": {
         "model_id": "qwen/qwen-3-235b-a22b",
         "organisation_id": "qwen",
@@ -7850,7 +7850,7 @@
       }
     },
     "src/data/models/z-ai/glm-5-2026-02-11/model.json": {
-      "hash": "1a1dd4fa719180cad9d90c288d4c329a",
+      "hash": "7b8ff15ec99d96f05181375cb0947bcd",
       "meta": {
         "model_id": "z-ai/glm-5-2026-02-11",
         "organisation_id": "z-ai",

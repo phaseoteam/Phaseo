@@ -175,7 +175,7 @@
     {
       "benchmark_id": "arc-agi-1",
       "score": 0.212,
-      "is_self_reported": true,
+      "is_self_reported": false,
       "other_info": null,
       "source_link": null,
       "rank": 24
@@ -183,7 +183,7 @@
     {
       "benchmark_id": "arc-agi-2",
       "score": 0.011,
-      "is_self_reported": true,
+      "is_self_reported": false,
       "other_info": null,
       "source_link": null,
       "rank": 18
