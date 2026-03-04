@@ -8602,7 +8602,7 @@
       }
     },
     "src/data/api_providers/openai/models.json": {
-      "hash": "e0cb162f364a12217c453802fc3731f3",
+      "hash": "50f9c044a4d70abf0bdf6551cf86a812",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -11122,6 +11122,23 @@
       "meta": {
         "plan_id": "supergrok-heavy",
         "organisation_id": "x-ai"
+      }
+    },
+    "src/data/models/openai/gpt-5-3-chat-2026-03-03/model.json": {
+      "hash": "3b23085a2acc71e97660cca4190c3471",
+      "meta": {
+        "model_id": "openai/gpt-5-3-chat-2026-03-03",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-5-2-chat-2025-12-11"
+      }
+    },
+    "src/data/pricing/openai/openai-gpt-5.3-chat/text.generate/pricing.json": {
+      "hash": "2284cb9e89e02d79a196deae59f16b6b",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "text.generate",
+        "model_id": "openai/gpt-5.3-chat",
+        "model_key": "openai:openai/gpt-5.3-chat:text.generate"
       }
     }
   }

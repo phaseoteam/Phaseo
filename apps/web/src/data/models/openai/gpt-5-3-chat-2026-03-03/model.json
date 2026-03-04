@@ -11,8 +11,12 @@
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
-  "family_id": "openai/gpt-5-3",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://openai.com/index/gpt-5-3-instant/"
+    }
+  ],
   "details": [],
   "benchmarks": []
 }
