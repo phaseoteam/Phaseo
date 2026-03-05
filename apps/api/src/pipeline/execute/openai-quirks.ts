@@ -23,6 +23,8 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<string>> = {
 	"gpt-5.2-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"gpt-5.3": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
 	"gpt-5.3-codex": new Set(["none", "minimal", "low", "medium", "high", "xhigh"]),
+	"gpt-5.4": new Set(["none", "low", "medium", "high", "xhigh"]),
+	"gpt-5.4-pro": new Set(["medium", "high", "xhigh"]),
 
 	// Pre-GPT-5.1 models (o1, o3-mini) - don't support "none"
 	"o1": new Set(["low", "medium", "high"]),

@@ -1,9 +1,9 @@
 {
-  "model_id": "openai/gpt-5-4",
+  "model_id": "openai/gpt-5-4-pro",
   "organisation_id": "openai",
-  "name": "GPT 5.4",
+  "name": "GPT 5.4 Pro",
   "status": "Available",
-  "previous_model_id": "openai/gpt-5-2-2025-12-11",
+  "previous_model_id": "openai/gpt-5-2-pro-2025-12-11",
   "announced_date": "2026-03-05T00:00:00",
   "release_date": "2026-03-05T00:00:00",
   "deprecation_date": null,
@@ -19,7 +19,7 @@
     },
     {
       "platform": "api_reference",
-      "url": "https://developers.openai.com/api/docs/models/gpt-5.4"
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4-pro"
     }
   ],
   "details": [
@@ -41,7 +41,7 @@
     },
     {
       "name": "supported_reasoning_efforts",
-      "value": "none, low, medium, high, xhigh"
+      "value": "medium, high, xhigh"
     },
     {
       "name": "long_context_pricing_note",

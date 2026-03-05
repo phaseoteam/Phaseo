@@ -46,6 +46,12 @@ function openAIReasoningFallback(model: string): TextReasoningEffort[] {
 	if (m.includes("gpt-5.1-codex-max")) {
 		return ["none", "minimal", "low", "medium", "high", "xhigh"];
 	}
+	if (m.includes("gpt-5.4-pro")) {
+		return ["medium", "high", "xhigh"];
+	}
+	if (m.includes("gpt-5.4")) {
+		return ["none", "low", "medium", "high", "xhigh"];
+	}
 	if (m.includes("gpt-5.2") || m.includes("gpt-5.3")) {
 		return ["none", "minimal", "low", "medium", "high", "xhigh"];
 	}

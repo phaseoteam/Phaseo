@@ -1,6 +1,6 @@
 {
   "alias_slug": "openai/gpt-latest",
-  "resolved_api_model_id": "openai/gpt-5.2",
+  "resolved_api_model_id": "openai/gpt-5.4",
   "channel": "stable",
   "is_enabled": true,
   "notes": null
