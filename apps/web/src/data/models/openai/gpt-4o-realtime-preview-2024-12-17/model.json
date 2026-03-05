@@ -2,7 +2,7 @@
   "model_id": "openai/gpt-4o-realtime-preview-2024-12-17",
   "organisation_id": "openai",
   "name": "GPT 4o Realtime Preview",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "announced_date": null,
   "release_date": "2024-12-17T00:00:00",
