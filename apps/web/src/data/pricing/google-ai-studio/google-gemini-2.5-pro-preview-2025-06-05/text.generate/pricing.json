@@ -16,7 +16,7 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
@@ -37,7 +37,7 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "gt",
           "or_group": 1,
           "and_index": 1,
@@ -58,7 +58,7 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 1,
@@ -79,7 +79,7 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "gt",
           "or_group": 1,
           "and_index": 1,

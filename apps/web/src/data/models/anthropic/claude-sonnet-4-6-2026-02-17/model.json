@@ -12,19 +12,6 @@
   "input_types": "text,image",
   "output_types": "text",
   "links": [],
-  "details": [
-    {
-      "name": "input_context_length",
-      "value": 200000
-    },
-    {
-      "name": "knowledge_cutoff",
-      "value": "2025-08-01T00:00:00"
-    },
-    {
-      "name": "output_context_length",
-      "value": 64000
-    }
-  ],
+  "details": [],
   "benchmarks": []
 }

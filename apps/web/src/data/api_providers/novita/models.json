@@ -7877,5 +7877,20 @@
         ]
       }
     ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.5-highspeed",
+    "provider_api_model_id": "novita:minimax/minimax-m2.5-highspeed",
+    "provider_model_slug": "minimax/minimax-m2.5-highspeed",
+    "internal_model_id": "minimax/minimax-m2-5-2026-02-12",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

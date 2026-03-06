@@ -16,7 +16,7 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
@@ -36,14 +36,14 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
           "value": 32768.0
         },
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
@@ -63,7 +63,7 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
@@ -83,7 +83,7 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "lt",
           "or_group": 1,
           "and_index": 1,
@@ -103,14 +103,14 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "gte",
           "or_group": 1,
           "and_index": 1,
           "value": 32768.0
         },
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "lte",
           "or_group": 1,
           "and_index": 2,
@@ -130,7 +130,7 @@
       "note": null,
       "match": [
         {
-          "path": "input_text_tokens",
+          "path": "input_tokens",
           "op": "gte",
           "or_group": 1,
           "and_index": 1,

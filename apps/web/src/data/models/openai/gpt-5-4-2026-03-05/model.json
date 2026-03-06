@@ -1,9 +1,9 @@
 {
-  "model_id": "openai/gpt-5-4-pro",
+  "model_id": "openai/gpt-5-4-2026-03-05",
   "organisation_id": "openai",
-  "name": "GPT 5.4 Pro",
+  "name": "GPT 5.4",
   "status": "Available",
-  "previous_model_id": "openai/gpt-5-2-pro-2025-12-11",
+  "previous_model_id": "openai/gpt-5-2-2025-12-11",
   "announced_date": "2026-03-05T00:00:00",
   "release_date": "2026-03-05T00:00:00",
   "deprecation_date": null,
@@ -11,7 +11,6 @@
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
-  "family_id": "openai/gpt-5-4",
   "links": [
     {
       "platform": "announcement",
@@ -19,7 +18,11 @@
     },
     {
       "platform": "api_reference",
-      "url": "https://developers.openai.com/api/docs/models/gpt-5.4-pro"
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4"
+    },
+    {
+      "platform": "model_card",
+      "url": "https://deploymentsafety.openai.com/gpt-5-4-thinking"
     }
   ],
   "details": [
@@ -34,18 +37,6 @@
     {
       "name": "knowledge_cutoff",
       "value": "2025-08-31T00:00:00"
-    },
-    {
-      "name": "supported_parameters",
-      "value": "max_completion_tokens, reasoning_effort, verbosity"
-    },
-    {
-      "name": "supported_reasoning_efforts",
-      "value": "medium, high, xhigh"
-    },
-    {
-      "name": "long_context_pricing_note",
-      "value": "If prompt exceeds 272K tokens, pricing uses 2x input and 1.5x output multipliers for the full session in standard, batch, and flex tiers."
     }
   ],
   "benchmarks": []
