@@ -410,10 +410,11 @@ function getSupportedEfforts(model: string): ReasoningEffort[] {
 	if (normalized in OPENAI_REASONING_EFFORT_SUPPORT) {
 		return Array.from(OPENAI_REASONING_EFFORT_SUPPORT[normalized]).sort();
 	}
-	for (const [modelPrefix, efforts] of Object.entries(OPENAI_REASONING_EFFORT_SUPPORT)) {
-		if (normalized.startsWith(`${modelPrefix}-`) || normalized.startsWith(`${modelPrefix}_`)) {
-			return Array.from(efforts).sort();
-		}
+	const prefixMatch = Object.entries(OPENAI_REASONING_EFFORT_SUPPORT)
+		.sort(([left], [right]) => right.length - left.length)
+		.find(([modelPrefix]) => normalized.startsWith(`${modelPrefix}-`) || normalized.startsWith(`${modelPrefix}_`));
+	if (prefixMatch) {
+		return Array.from(prefixMatch[1]).sort();
 	}
 	return ["low", "medium", "high"];
 }

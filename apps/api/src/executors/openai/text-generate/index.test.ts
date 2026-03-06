@@ -324,4 +324,37 @@ describe("openai text executor HTTP mode", () => {
 			compact_threshold: 0.8,
 		});
 	});
+
+	it("clamps dated gpt-5.4-pro snapshots to the pro reasoning floor", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_http_5",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5.4-pro-2026-03-05",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: {
+					input_tokens: 2,
+					output_tokens: 1,
+					total_tokens: 3,
+				},
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor(buildArgs({
+			model: "openai/gpt-5.4-pro-2026-03-05",
+			reasoning: { effort: "none" },
+		}));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls).toHaveLength(1);
+		expect(mock.calls[0]?.bodyJson?.reasoning).toEqual({ effort: "medium" });
+	});
 });

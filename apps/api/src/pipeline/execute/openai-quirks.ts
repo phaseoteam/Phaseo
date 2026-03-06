@@ -51,11 +51,12 @@ export function getSupportedEfforts(model: string): string[] {
 		return Array.from(OPENAI_REASONING_EFFORT_SUPPORT[normalized]).sort();
 	}
 
-	// Check prefix match (e.g., "gpt-5.1-2024-12-17" matches "gpt-5.1")
-	for (const [modelPrefix, efforts] of Object.entries(OPENAI_REASONING_EFFORT_SUPPORT)) {
-		if (normalized.startsWith(modelPrefix + "-") || normalized.startsWith(modelPrefix + "_")) {
-			return Array.from(efforts).sort();
-		}
+	// Check longest prefix match first so pro/model variants win over base series.
+	const prefixMatch = Object.entries(OPENAI_REASONING_EFFORT_SUPPORT)
+		.sort(([left], [right]) => right.length - left.length)
+		.find(([modelPrefix]) => normalized.startsWith(modelPrefix + "-") || normalized.startsWith(modelPrefix + "_"));
+	if (prefixMatch) {
+		return Array.from(prefixMatch[1]).sort();
 	}
 
 	// Default for unknown models

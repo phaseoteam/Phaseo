@@ -40,6 +40,8 @@ describe("openai reasoning effort quirks", () => {
 
 		expectSupports("gpt-5.4-pro", ["medium", "high", "xhigh"]);
 		expectSupports("openai/gpt-5.4-pro", ["medium", "high", "xhigh"]);
+		expectSupports("gpt-5.4-pro-2026-03-05", ["medium", "high", "xhigh"]);
 		expect(validateOpenAIReasoningEffort("gpt-5.4-pro", "none")).toContain("does not support");
+		expect(validateOpenAIReasoningEffort("gpt-5.4-pro-2026-03-05", "none")).toContain("does not support");
 	});
 });
