@@ -17,6 +17,19 @@
       "url": "https://www.anthropic.com/news/claude-haiku-4-5"
     }
   ],
-  "details": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "output_context_length",
+      "value": 64000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-02-01T00:00:00"
+    }
+  ],
   "benchmarks": []
 }

@@ -2,7 +2,7 @@
   "model_id": "google/gemini-2-5-flash-preview-2025-05-20",
   "organisation_id": "google",
   "name": "Gemini 2.5 Flash Preview (2025-05-20)",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "google/gemini-2-5-flash-preview-2025-04-17",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": "2025-05-20T00:00:00",

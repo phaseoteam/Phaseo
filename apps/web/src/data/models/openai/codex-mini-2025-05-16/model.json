@@ -2,7 +2,7 @@
   "model_id": "openai/codex-mini-2025-05-16",
   "organisation_id": "openai",
   "name": "Codex Mini",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "announced_date": "2025-05-16T00:00:00",
   "release_date": "2025-05-16T00:00:00",

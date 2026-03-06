@@ -21,7 +21,20 @@
       "url": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf"
     }
   ],
-  "details": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 200000
+    },
+    {
+      "name": "output_context_length",
+      "value": 64000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-05-01T00:00:00"
+    }
+  ],
   "benchmarks": [
     {
       "benchmark_id": "arc-agi-1",
