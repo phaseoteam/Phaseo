@@ -350,6 +350,7 @@ begin
       m.provider_api_model_id,
       m.provider_id,
       m.provider_model_slug,
+      m.routing_status as model_status,
       m.input_modalities,
       m.output_modalities,
       c.status as capability_status,
@@ -361,7 +362,7 @@ begin
       on c.provider_api_model_id = m.provider_api_model_id
     where m.api_model_id = resolved_model
       and c.capability_id = gateway_fetch_request_context.endpoint
-      and c.status in ('active', 'deranked')
+      and c.status in ('active', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
       and m.is_active_gateway
       and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
       and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
@@ -373,6 +374,7 @@ begin
         jsonb_build_object(
           'provider_id', pr.provider_id,
           'provider_model_slug', pr.provider_model_slug,
+          'model_status', pr.model_status,
           'input_modalities', pr.input_modalities,
           'output_modalities', pr.output_modalities,
           'capability_status', pr.capability_status,

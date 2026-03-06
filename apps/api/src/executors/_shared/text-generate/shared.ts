@@ -1,4 +1,4 @@
-// Shared text.generate helpers
+﻿// Shared text.generate helpers
 // Purpose: Common preprocessing and adapter hooks for text executors.
 // Why: Keeps provider executors small and consistent across openai-compat and native adapters.
 // How: Filters IR params and applies pre/post hooks around the executor call.
@@ -123,6 +123,8 @@ export function cherryPickIRParams(
 					return "speed";
 				case "prompt_cache_key":
 					return "promptCacheKey";
+				case "prompt_cache_retention":
+					return "promptCacheRetention";
 				case "safety_identifier":
 					return "safetyIdentifier";
 				case "user":
@@ -190,3 +192,7 @@ export function buildTextExecutor(args: {
 		return result;
 	};
 }
+
+
+
+

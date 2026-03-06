@@ -180,12 +180,12 @@ const PROVIDERS: ProviderConfig[] = [
 		providerId: "google-ai-studio",
 		providerName: "Google AI Studio",
 		modelsEndpoint: "https://generativelanguage.googleapis.com/v1beta/models",
-		apiKeyEnv: ["GOOGLE_API_KEY", "GOOGLE_AI_STUDIO_API_KEY"],
+		apiKeyEnv: ["GOOGLE_AI_STUDIO_API_KEY"],
 		authStyle: "google_api_key_query",
 	},
 	{ providerId: "groq", providerName: "Groq", modelsEndpoint: "https://api.groq.com/openai/v1/models", apiKeyEnv: ["GROQ_API_KEY"] },
 	{ providerId: "inception", providerName: "Inception", modelsEndpoint: "https://api.inceptionlabs.ai/v1/models", apiKeyEnv: ["INCEPTION_API_KEY"] },
-	{ providerId: "mistral", providerName: "Mistral", modelsEndpoint: "https://api.mistral.ai/v1/models", apiKeyEnv: ["MISTRAL_AI_API_KEY", "MISTRAL_API_KEY"] },
+	{ providerId: "mistral", providerName: "Mistral", modelsEndpoint: "https://api.mistral.ai/v1/models", apiKeyEnv: ["MISTRAL_AI_API_KEY"] },
 	{ providerId: "moonshot-ai", providerName: "Moonshot AI", modelsEndpoint: "https://api.moonshot.ai/v1/models", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	{
 		providerId: "nebius-token-factory",
@@ -204,9 +204,9 @@ const PROVIDERS: ProviderConfig[] = [
 		providerId: "weights-and-biases",
 		providerName: "Weights & Biases",
 		modelsEndpoint: "https://api.inference.wandb.ai/v1/models",
-		apiKeyEnv: ["WEIGHTSANDBIASES_API_KEY", "WANDB_API_KEY"],
+		apiKeyEnv: ["WEIGHTSANDBIASES_API_KEY"],
 	},
-	{ providerId: "x-ai", providerName: "xAI", modelsEndpoint: "https://api.x.ai/v1/models", apiKeyEnv: ["XAI_API_KEY", "X_AI_API_KEY"] },
+	{ providerId: "x-ai", providerName: "xAI", modelsEndpoint: "https://api.x.ai/v1/models", apiKeyEnv: ["X_AI_API_KEY"] },
 	{ providerId: "xiaomi", providerName: "Xiaomi", modelsEndpoint: "https://api.xiaomimimo.com/v1/models", apiKeyEnv: ["XIAOMI_MIMO_API_KEY"] },
 	{ providerId: "z-ai", providerName: "z.AI", modelsEndpoint: "https://api.z.ai/api/paas/v4/models", apiKeyEnv: ["ZAI_API_KEY"] },
 ];
@@ -1111,3 +1111,5 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		throw error;
 	}
 }
+
+

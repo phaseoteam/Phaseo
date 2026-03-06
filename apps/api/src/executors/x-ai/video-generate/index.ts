@@ -79,7 +79,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
 		() => {
 			const bindings = getBindings() as unknown as Record<string, string | undefined>;
-			return bindings.X_AI_API_KEY || bindings.XAI_API_KEY;
+			return bindings.X_AI_API_KEY;
 		},
 	);
 
@@ -190,3 +190,4 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 }
 
 export const executor: ProviderExecutor = execute;
+

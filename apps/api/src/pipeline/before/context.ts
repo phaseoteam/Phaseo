@@ -1,4 +1,4 @@
-// lib/gateway/before/context.ts
+﻿// lib/gateway/before/context.ts
 // Purpose: Before-stage helpers for auth, validation, and context building.
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Calls RPC/SQL to fetch provider, pricing, and gating context.
@@ -6,7 +6,14 @@
 import { getSupabaseAdmin, getCache } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
 import { contextSchema } from "./schemas";
-import type { ByokKeyMeta, GatewayContextData, GatewayProviderSnapshot } from "./types";
+import type {
+    ByokKeyMeta,
+    CapabilityRoutingStatus,
+    GatewayContextData,
+    GatewayProviderSnapshot,
+    ProviderRolloutStatus,
+    RoutingStatus,
+} from "./types";
 
 const CONTEXT_CACHE_PREFIX = "gateway:context";
 
@@ -126,7 +133,7 @@ function isContextLike(value: unknown): value is GatewayContextData {
 
 function normalizeProviderStatus(
     value: unknown
-): "active" | "beta" | "alpha" | "not_ready" {
+): ProviderRolloutStatus {
     const status = String(value ?? "").trim().toLowerCase();
     if (status === "active") return "active";
     if (status === "beta") return "beta";
@@ -137,18 +144,43 @@ function normalizeProviderStatus(
     return "active";
 }
 
-function normalizeCapabilityStatus(
-    value: unknown
-): "active" | "deranked" | "disabled" | "internal_testing" {
+function normalizeRoutingStatus(value: unknown): RoutingStatus {
     const status = String(value ?? "").trim().toLowerCase();
     if (status === "active") return "active";
-    if (status === "deranked") return "deranked";
-    if (status === "disabled") return "disabled";
-    if (status === "internal_testing" || status === "internal-testing" || status === "internaltesting") {
-        return "internal_testing";
+    if (status === "deranked" || status === "deranked_lvl1" || status === "deranked-lvl1") {
+        return "deranked_lvl1";
     }
+    if (status === "deranked_lvl2" || status === "deranked-lvl2") return "deranked_lvl2";
+    if (status === "deranked_lvl3" || status === "deranked-lvl3") return "deranked_lvl3";
+    if (status === "disabled") return "disabled";
+    if (status === "notready" || status === "not_ready" || status === "not ready") return "disabled";
     return "active";
 }
+
+function normalizeCapabilityStatus(value: unknown): CapabilityRoutingStatus {
+    const status = String(value ?? "").trim().toLowerCase();
+    if (
+        status === "internal_testing" ||
+        status === "internal-testing" ||
+        status === "internaltesting"
+    ) {
+        return "internal_testing";
+    }
+    return normalizeRoutingStatus(status);
+}
+
+const ROUTABLE_CAPABILITY_STATUSES = [
+    "active",
+    "deranked",
+    "deranked_lvl1",
+    "deranked_lvl2",
+    "deranked_lvl3",
+] as const;
+
+const ROUTABLE_CAPABILITY_STATUSES_WITH_TESTING = [
+    ...ROUTABLE_CAPABILITY_STATUSES,
+    "internal_testing",
+] as const;
 
 function parseModalities(value: unknown): Set<string> {
     if (Array.isArray(value)) {
@@ -397,7 +429,7 @@ async function resolveProviderScopedModelToApiModel(args: {
         .from("data_api_provider_model_capabilities")
         .select("provider_api_model_id")
         .eq("capability_id", args.endpoint)
-        .in("status", ["active", "deranked"])
+        .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
         .in("provider_api_model_id", providerApiModelIds);
     if (capabilityError || !capabilityRows?.length) return null;
 
@@ -444,13 +476,13 @@ async function fetchTestingProviderSnapshots(args: {
         supabase
             .from("data_api_provider_models")
             .select(
-                "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,effective_from,effective_to,input_modalities,output_modalities"
+                "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,routing_status,effective_from,effective_to,input_modalities,output_modalities"
             )
             .in("api_model_id", modelCandidates),
         supabase
             .from("data_api_provider_models")
             .select(
-                "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,effective_from,effective_to,input_modalities,output_modalities"
+                "provider_api_model_id,provider_id,provider_model_slug,is_active_gateway,routing_status,effective_from,effective_to,input_modalities,output_modalities"
             )
             .in("internal_model_id", modelCandidates),
     ]);
@@ -491,7 +523,7 @@ async function fetchTestingProviderSnapshots(args: {
             "provider_api_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at"
         )
         .eq("capability_id", args.endpoint)
-        .in("status", ["active", "deranked", "internal_testing"])
+        .in("status", [...ROUTABLE_CAPABILITY_STATUSES_WITH_TESTING])
         .in("provider_api_model_id", providerModelIds);
     if (capabilityError) return [];
 
@@ -501,7 +533,7 @@ async function fetchTestingProviderSnapshots(args: {
             params: Record<string, any>;
             maxInputTokens: number | null;
             maxOutputTokens: number | null;
-            status: "active" | "deranked" | "disabled" | "internal_testing";
+            status: CapabilityRoutingStatus;
             sortTs: number;
         }
     >();
@@ -583,6 +615,8 @@ async function fetchTestingProviderSnapshots(args: {
         testingProviders.push({
             providerId,
             providerStatus: "active",
+            providerRoutingStatus: "active",
+            modelRoutingStatus: normalizeRoutingStatus(row?.routing_status),
             capabilityStatus: cap?.status ?? "active",
             supportsEndpoint: true,
             baseWeight: 1,
@@ -701,6 +735,7 @@ export async function fetchGatewayContext(args: {
         routingMode: null,
         byokFallbackEnabled: null,
         betaChannelEnabled: false,
+        cacheAwareRoutingEnabled: null,
         billingMode: "wallet",
     };
 
@@ -716,14 +751,113 @@ export async function fetchGatewayContext(args: {
         const providerStatusQuery = providerIds.length
             ? supabase
                   .from("data_api_providers")
-                  .select("api_provider_id,status")
+                  .select("api_provider_id,status,routing_status")
                   .in("api_provider_id", providerIds)
             : Promise.resolve({ data: [], error: null } as any);
+
+        const modelCandidates = Array.from(
+            new Set(
+                [parsed.resolvedModel, args.model]
+                    .map((value) => String(value ?? "").trim())
+                    .filter(Boolean)
+            )
+        );
+
+        const modelStatusByKey = new Map<string, { status: RoutingStatus; sortTs: number }>();
+        const setModelStatus = (row: any) => {
+            const providerId = typeof row?.provider_id === "string" ? row.provider_id : null;
+            if (!providerId) return;
+            const providerModelSlug =
+                row?.provider_model_slug === null || row?.provider_model_slug === undefined
+                    ? ""
+                    : String(row.provider_model_slug);
+            const key = `${providerId}::${providerModelSlug}`;
+            const sortTs = toMillis(row?.effective_from);
+            const existing = modelStatusByKey.get(key);
+            if (existing && existing.sortTs > sortTs) return;
+            modelStatusByKey.set(key, {
+                status: normalizeRoutingStatus(row?.routing_status),
+                sortTs,
+            });
+        };
+
+        const modelStatusQueries =
+            providerIds.length && modelCandidates.length
+                ? await Promise.all([
+                      supabase
+                          .from("data_api_provider_models")
+                          .select("provider_api_model_id,provider_id,provider_model_slug,routing_status,effective_from,effective_to")
+                          .in("provider_id", providerIds)
+                          .in("api_model_id", modelCandidates),
+                      supabase
+                          .from("data_api_provider_models")
+                          .select("provider_api_model_id,provider_id,provider_model_slug,routing_status,effective_from,effective_to")
+                          .in("provider_id", providerIds)
+                          .in("internal_model_id", modelCandidates),
+                  ])
+                : ([
+                      { data: [], error: null },
+                      { data: [], error: null },
+                  ] as const);
+
+        const modelStatusNowMs = Date.now();
+        for (const result of modelStatusQueries) {
+            if (result?.error) continue;
+            for (const row of result.data ?? []) {
+                if (!isWithinEffectiveWindow(row?.effective_from, row?.effective_to, modelStatusNowMs)) continue;
+                setModelStatus(row);
+            }
+        }
+
+        const providerModelById = new Map<string, { providerId: string; providerModelSlug: string }>();
+        for (const result of modelStatusQueries) {
+            if (result?.error) continue;
+            for (const row of result.data ?? []) {
+                const providerApiModelId = typeof row?.provider_api_model_id === "string" ? row.provider_api_model_id : null;
+                const providerId = typeof row?.provider_id === "string" ? row.provider_id : null;
+                if (!providerApiModelId || !providerId) continue;
+                if (!isWithinEffectiveWindow(row?.effective_from, row?.effective_to, modelStatusNowMs)) continue;
+                providerModelById.set(providerApiModelId, {
+                    providerId,
+                    providerModelSlug:
+                        row?.provider_model_slug === null || row?.provider_model_slug === undefined
+                            ? ""
+                            : String(row.provider_model_slug),
+                });
+            }
+        }
+
+        const capabilityStatusByKey = new Map<string, { status: CapabilityRoutingStatus; sortTs: number }>();
+        const providerApiModelIds = Array.from(providerModelById.keys());
+        if (providerApiModelIds.length) {
+            const { data: capabilityRows, error: capabilityError } = await supabase
+                .from("data_api_provider_model_capabilities")
+                .select("provider_api_model_id,status,updated_at,created_at")
+                .eq("capability_id", args.endpoint)
+                .in("status", [...ROUTABLE_CAPABILITY_STATUSES_WITH_TESTING])
+                .in("provider_api_model_id", providerApiModelIds);
+            if (!capabilityError) {
+                for (const row of capabilityRows ?? []) {
+                    const providerApiModelId = typeof row?.provider_api_model_id === "string" ? row.provider_api_model_id : null;
+                    if (!providerApiModelId) continue;
+                    const providerModel = providerModelById.get(providerApiModelId);
+                    if (!providerModel) continue;
+                    const key = `${providerModel.providerId}::${providerModel.providerModelSlug}`;
+                    const sortTs = Math.max(toMillis(row?.updated_at), toMillis(row?.created_at));
+                    const existing = capabilityStatusByKey.get(key);
+                    if (existing && existing.sortTs > sortTs) continue;
+                    capabilityStatusByKey.set(key, {
+                        status: normalizeCapabilityStatus(row?.status),
+                        sortTs,
+                    });
+                }
+            }
+        }
 
         const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
             supabase
                 .from("team_settings")
-                .select("routing_mode,byok_fallback_enabled,beta_channel_enabled")
+                .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,cache_aware_routing_enabled")
                 .eq("team_id", args.teamId)
                 .maybeSingle(),
             providerStatusQuery,
@@ -746,32 +880,45 @@ export async function fetchGatewayContext(args: {
                     settingsResult.data?.byok_fallback_enabled ?? null,
                 betaChannelEnabled:
                     settingsResult.data?.beta_channel_enabled ?? false,
+                cacheAwareRoutingEnabled:
+                    settingsResult.data?.cache_aware_routing_enabled ?? null,
                 billingMode,
             };
         }
 
+        const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
+        const routingStatusByProvider = new Map<string, RoutingStatus>();
         if (!providerStatusResult?.error) {
-            const statusByProvider = new Map<string, string>();
             for (const row of providerStatusResult.data ?? []) {
                 if (!row?.api_provider_id) continue;
-                statusByProvider.set(
+                rolloutStatusByProvider.set(
                     row.api_provider_id,
                     normalizeProviderStatus(row.status),
                 );
+                routingStatusByProvider.set(
+                    row.api_provider_id,
+                    normalizeRoutingStatus(row.routing_status),
+                );
             }
-
-            parsed.providers = (parsed.providers ?? []).map((provider) => ({
-                ...provider,
-                providerStatus: normalizeProviderStatus(
-                    statusByProvider.get(provider.providerId),
-                ),
-            }));
-        } else {
-            parsed.providers = (parsed.providers ?? []).map((provider) => ({
-                ...provider,
-                providerStatus: "active",
-            }));
         }
+
+        parsed.providers = (parsed.providers ?? []).map((provider) => {
+            const modelKey = `${provider.providerId}::${provider.providerModelSlug ?? ""}`;
+            const capabilityStatus = capabilityStatusByKey.get(modelKey)?.status ?? normalizeCapabilityStatus(provider.capabilityStatus);
+            return {
+                ...provider,
+                providerStatus: rolloutStatusByProvider.get(provider.providerId) ?? "active",
+                providerRoutingStatus:
+                    routingStatusByProvider.get(provider.providerId) ??
+                    normalizeRoutingStatus(provider.providerRoutingStatus) ??
+                    "active",
+                modelRoutingStatus:
+                    modelStatusByKey.get(modelKey)?.status ??
+                    normalizeRoutingStatus(provider.modelRoutingStatus) ??
+                    "active",
+                capabilityStatus,
+            };
+        });
     } catch {
         // Keep defaults if enrichment fails, never block request path.
     }
@@ -822,6 +969,10 @@ export async function fetchGatewayContext(args: {
 
     return parsed;
 }
+
+
+
+
 
 
 

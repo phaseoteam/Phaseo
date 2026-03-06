@@ -53,6 +53,11 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"user",
 			"service_tier",
 			"speed",
+			"prompt_cache_key",
+			"prompt_cache_retention",
+			"provider_options",
+			"providerOptions",
+			"safety_identifier",
 			"route",
 			"session_id",
 			"models",
@@ -89,6 +94,11 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			thinking: "reasoning",
 			service_tier: "service_tier",
 			speed: "speed",
+			prompt_cache_key: "prompt_cache_key",
+			prompt_cache_retention: "prompt_cache_retention",
+			provider_options: "provider_options",
+			providerOptions: "provider_options",
+			safety_identifier: "safety_identifier",
 		},
 	},
 	responses: {
@@ -183,8 +193,9 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			service_tier: "service_tier",
 			speed: "speed",
 			prompt_cache_key: "prompt_cache_key",
-			provider_options: "provider_options.openai.context_management",
-			providerOptions: "provider_options.openai.context_management",
+			prompt_cache_retention: "prompt_cache_retention",
+			provider_options: "provider_options",
+			providerOptions: "provider_options",
 			safety_identifier: "safety_identifier",
 			background: "background",
 			instructions: "instructions",
@@ -236,6 +247,11 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			thinking: "reasoning",
 			service_tier: "service_tier",
 			speed: "speed",
+			prompt_cache_key: "prompt_cache_key",
+			prompt_cache_retention: "prompt_cache_retention",
+			provider_options: "provider_options",
+			providerOptions: "provider_options",
+			safety_identifier: "safety_identifier",
 		},
 	},
 };
@@ -250,6 +266,8 @@ const CAPABILITY_PARAM_ALIASES: Record<string, string[]> = {
 	modalities: ["modalities", "response_modalities", "responseModalities"],
 	image_config: ["image_config", "imageConfig"],
 	provider_options: ["provider_options", "providerOptions"],
+	prompt_cache_key: ["prompt_cache_key"],
+	prompt_cache_retention: ["prompt_cache_retention"],
 	logprobs: ["logprobs", "top_logprobs"],
 	top_logprobs: ["top_logprobs", "logprobs"],
 };
@@ -299,3 +317,6 @@ export function resolveProviderParamSupportOverride(
 		paramPathCandidates: candidates,
 	});
 }
+
+
+

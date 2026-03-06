@@ -19,9 +19,9 @@ import {
 	normalizeImageConfig,
 	normalizeModalities,
 	normalizeOpenAIToolChoice,
-	normalizeThinkingConfig,
 	normalizeResponseFormat,
 	resolveServiceTierFromSpeedAndTier,
+	normalizeProviderCacheOptions,
 } from "../shared/text-normalizers";
 
 type OpenAIContextManagementConfig = {
@@ -32,16 +32,12 @@ type OpenAIContextManagementConfig = {
 function normalizeOpenAIContextManagement(
 	req: ResponsesRequest,
 ): OpenAIContextManagementConfig | undefined {
-	const openaiProviderOptions =
-		(req as any).provider_options?.openai ??
-		(req as any).providerOptions?.openai;
+	const openaiProviderOptions = (req as any).provider_options?.openai;
 	if (!openaiProviderOptions || typeof openaiProviderOptions !== "object") {
 		return undefined;
 	}
 
-	const rawContextManagement =
-		openaiProviderOptions.context_management ??
-		openaiProviderOptions.contextManagement;
+	const rawContextManagement = openaiProviderOptions.context_management;
 	if (!rawContextManagement || typeof rawContextManagement !== "object") {
 		return undefined;
 	}
@@ -50,9 +46,7 @@ function normalizeOpenAIContextManagement(
 		return undefined;
 	}
 
-	const compactThreshold =
-		(rawContextManagement as any).compact_threshold ??
-		(rawContextManagement as any).compactThreshold;
+	const compactThreshold = (rawContextManagement as any).compact_threshold;
 
 	return {
 		type: "compaction",
@@ -74,10 +68,11 @@ function normalizeOpenAIContextManagement(
  */
 export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatRequest {
 	const messages: IRMessage[] = [];
-	const input = (req as any).input_items ?? req.input;
+	const input = req.input;
 	const pendingUserParts: IRContentPart[] = [];
 	const openAIContextManagement = normalizeOpenAIContextManagement(req);
 	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
+	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
 	const metadata = (req as any).user
 		? { ...(metadataFromRequest ?? {}), user: (req as any).user }
 		: metadataFromRequest;
@@ -234,22 +229,18 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice);
 
 	// Transform reasoning
-	const reasoningFromRequest: IRReasoning | undefined = req.reasoning
+	const reasoningCandidate: IRReasoning | undefined = req.reasoning
 		? {
-			effort: req.reasoning.effort || "medium",
+			effort: req.reasoning.effort,
 			summary: req.reasoning.summary || undefined,
-			enabled: (req.reasoning as any).enabled ?? undefined,
-			maxTokens: (req.reasoning as any).max_tokens ?? undefined,
+			enabled: req.reasoning.enabled ?? undefined,
+			maxTokens: req.reasoning.max_tokens ?? undefined,
 		}
 		: undefined;
-	const thinkingAlias = normalizeThinkingConfig((req as any).thinking);
-	const reasoningMerged = {
-		...(thinkingAlias ?? {}),
-		...(reasoningFromRequest ?? {}),
-	};
 	const reasoning: IRReasoning | undefined =
-		Object.keys(reasoningMerged).length > 0 ? reasoningMerged : undefined;
-
+		reasoningCandidate && Object.values(reasoningCandidate).some((value) => value !== undefined)
+			? reasoningCandidate
+			: undefined;
 	return {
 		messages,
 		model: req.model,
@@ -287,7 +278,6 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		include: (req as any).include,
 		conversation: (req as any).conversation,
 		previousResponseId: (req as any).previous_response_id,
-		prompt: (req as any).prompt,
 		metadata,
 		background: (req as any).background,
 		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
@@ -297,13 +287,12 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		}),
 		userId: (req as any).user,
 		promptCacheKey: (req as any).prompt_cache_key,
+		promptCacheRetention: providerCacheOptions.promptCacheRetention,
+		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
+		googleCachedContent: providerCacheOptions.googleCachedContent,
 		safetyIdentifier: (req as any).safety_identifier,
-		modalities: normalizeModalities(
-			(req as any).modalities ??
-			(req as any).response_modalities ??
-			(req as any).responseModalities,
-		),
-		imageConfig: normalizeImageConfig((req as any).image_config ?? (req as any).imageConfig),
+		modalities: normalizeModalities((req as any).modalities),
+		imageConfig: normalizeImageConfig((req as any).image_config),
 		vendor: openAIContextManagement
 			? {
 				openai: {
@@ -313,4 +302,10 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 			: undefined,
 	};
 }
+
+
+
+
+
+
 

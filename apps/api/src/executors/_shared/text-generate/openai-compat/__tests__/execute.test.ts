@@ -72,9 +72,9 @@ describe("executeOpenAICompat", () => {
 		expect(Array.isArray(capturedBody?.tools)).toBe(true);
 	});
 
-	it("keeps alibaba on /responses without falling back to chat", async () => {
+	it("routes alibaba-cloud to responses for text models", async () => {
 		const args = buildArgs();
-		args.providerId = "alibaba";
+		args.providerId = "alibaba-cloud";
 		args.endpoint = "chat.completions";
 		args.protocol = "openai.chat.completions";
 		args.ir = {
@@ -85,20 +85,29 @@ describe("executeOpenAICompat", () => {
 
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.alibaba.example/api/v2/apps/protocols/compatible-mode/v1/responses",
-			response: jsonResponse(
-				{ error: { message: "unknown endpoint /responses" } },
-				{ status: 404 },
-			),
+			response: jsonResponse({
+				id: "resp_1",
+				object: "response",
+				created_at: 1735689600,
+				model: "qwen2.5-72b-instruct",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: "ok" },
+					finish_reason: "stop",
+				}],
+				usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+			}),
 		}]);
 
 		const result = await executeOpenAICompat(args);
 		mock.restore();
 
 		expect(result.kind).toBe("completed");
-		expect(result.upstream.status).toBe(404);
+		expect(result.upstream.status).toBe(200);
 		expect(mock.calls).toHaveLength(1);
 		expect(mock.calls[0]?.url).toBe(
 			"https://api.alibaba.example/api/v2/apps/protocols/compatible-mode/v1/responses",
 		);
 	});
 });
+

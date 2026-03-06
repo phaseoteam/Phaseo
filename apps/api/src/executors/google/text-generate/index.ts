@@ -1,4 +1,4 @@
-// Purpose: Executor for google / text-generate.
+﻿// Purpose: Executor for google / text-generate.
 // Why: Isolates provider-specific behavior per capability.
 // How: Transforms IR and calls the provider API for this capability.
 
@@ -90,6 +90,10 @@ async function irToGemini(ir: IRChatRequest, modelOverride?: string | null): Pro
 	const request: any = {
 		contents,
 	};
+
+	if (ir.googleCachedContent !== undefined) {
+		request.cachedContent = ir.googleCachedContent;
+	}
 
 	if (systemInstruction) {
 		request.systemInstruction = systemInstruction;
@@ -328,7 +332,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const bindings = getBindings() as any;
 
 	const keyInfo = resolveProviderKey(args, () => {
-		return bindings.GOOGLE_API_KEY || bindings.GOOGLE_AI_STUDIO_API_KEY;
+		return bindings.GOOGLE_AI_STUDIO_API_KEY;
 	});
 
 	// Determine model candidates (must be in URL, not body)
@@ -499,7 +503,7 @@ export function transformStream(
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
-	const provider = args.providerId || "google";
+	const provider = args.providerId || "google-ai-studio";
 
 	const openAIStream = new ReadableStream<Uint8Array>({
 		async start(controller) {
@@ -730,4 +734,7 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
+
+
+
 

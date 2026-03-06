@@ -360,7 +360,7 @@ describe("decodeOpenAIChatRequest", () => {
 				{
 					role: "tool",
 					tool_call_id: "call_abc123",
-					content: "Sunny, 72°F",
+					content: "Sunny, 72F",
 				},
 			],
 		};
@@ -373,7 +373,7 @@ describe("decodeOpenAIChatRequest", () => {
 			expect(ir.messages[2].toolResults).toHaveLength(1);
 			expect(ir.messages[2].toolResults[0]).toEqual({
 				toolCallId: "call_abc123",
-				content: "Sunny, 72°F",
+				content: "Sunny, 72F",
 			});
 		}
 	});
@@ -453,21 +453,21 @@ describe("decodeOpenAIChatRequest", () => {
 		expect(ir.maxTokens).toBe(777);
 	});
 
-	it("should decode image_config aliases, response modalities, and thinking alias", () => {
+	it("should decode image_config, modalities, and reasoning", () => {
 		const request = {
 			model: "google/gemini-2-5-flash-image",
 			messages: [{ role: "user", content: "Generate image" }],
-			response_modalities: ["IMAGE"],
-			thinking: {
+			modalities: ["IMAGE"],
+			reasoning: {
+				effort: "high",
 				enabled: true,
-				include_thoughts: false,
 				max_tokens: 256,
 			},
-			imageConfig: {
-				aspectRatio: "9:16",
-				imageSize: "0.5K",
-				includeRaiReason: true,
-				referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
+			image_config: {
+				aspect_ratio: "9:16",
+				image_size: "0.5K",
+				include_rai_reason: true,
+				reference_images: [{ referenceType: "REFERENCE_TYPE_RAW" }],
 			},
 		};
 
@@ -475,8 +475,8 @@ describe("decodeOpenAIChatRequest", () => {
 
 		expect(ir.modalities).toEqual(["image"]);
 		expect(ir.reasoning).toMatchObject({
+			effort: "high",
 			enabled: true,
-			includeThoughts: false,
 			maxTokens: 256,
 		});
 		expect(ir.imageConfig).toEqual({
@@ -488,7 +488,6 @@ describe("decodeOpenAIChatRequest", () => {
 			superResolutionReferences: undefined,
 		});
 	});
-
 	it("should map speed fast to priority service tier", () => {
 		const request = {
 			model: "gpt-4",
@@ -617,4 +616,108 @@ describe("decodeOpenAIChatRequest", () => {
 		expect(ir.stream).toBe(false);
 	});
 });
+
+
+describe("decodeOpenAIChatRequest cache options", () => {
+	it("should decode provider-specific cache controls", () => {
+		const request = {
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "Hello" }],
+			provider_options: {
+				openai: {
+					prompt_cache_retention: "5m",
+				},
+				anthropic: {
+					cache_control: {
+						type: "ephemeral",
+						ttl: "5m",
+					},
+				},
+				google: {
+					cached_content: "cachedContents/xyz",
+				},
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.promptCacheRetention).toBe("5m");
+		expect(ir.anthropicCacheControl).toEqual({
+			type: "ephemeral",
+			ttl: "5m",
+		});
+		expect(ir.googleCachedContent).toBe("cachedContents/xyz");
+	});
+
+
+	it("ignores top-level cache aliases", () => {
+		const request = {
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "Hello" }],
+			cache_control: { type: "ephemeral", ttl: "5m" },
+			cached_content: "cachedContents/top",
+			conversation_id: "conv_top_level",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.promptCacheRetention).toBeUndefined();
+		expect(ir.anthropicCacheControl).toBeUndefined();
+		expect(ir.googleCachedContent).toBeUndefined();
+	});
+
+	it("should decode reasoning object and inception vendor options", () => {
+		const request = {
+			model: "inception/mercury-2",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: {
+				effort: "xhigh",
+				summary: "concise",
+			},
+			reasoning_summary_wait: true,
+			diffusing: false,
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+
+		expect(ir.reasoning).toMatchObject({
+			effort: "xhigh",
+			summary: "concise",
+		});
+		expect((ir.vendor as any)?.inception).toEqual({
+			reasoning_summary_wait: true,
+			diffusing: false,
+		});
+	});
+
+	it("should decode top-level reasoning aliases and thinking config", () => {
+		const request = {
+			model: "inception/mercury-2",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning_effort: "xhigh",
+			reasoning_summary: "detailed",
+			thinking: {
+				enabled: true,
+				effort: "low",
+				max_tokens: 1200,
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.reasoning).toMatchObject({
+			enabled: true,
+			effort: "xhigh",
+			summary: "detailed",
+			maxTokens: 1200,
+		});
+	});
+});
+
+
+
+
+
+
+
+
+
+
 

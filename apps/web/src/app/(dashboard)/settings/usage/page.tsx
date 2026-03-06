@@ -222,6 +222,7 @@ async function UsageSettingsContent({
 				timeRange={{ from, to: nowIso }}
 				range={range}
 				colorMap={Object.fromEntries(colorMap)}
+				modelMetadata={modelMetadata}
 			/>
 
 			<Card>
@@ -237,3 +238,4 @@ async function UsageSettingsContent({
 		</div>
 	);
 }
+

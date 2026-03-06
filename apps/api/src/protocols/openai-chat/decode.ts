@@ -18,10 +18,11 @@ import { normalizeOpenAIContent } from "../shared/normalizeContent";
 import {
 	normalizeImageConfig,
 	normalizeModalities,
-	normalizeOpenAIToolChoice,
 	normalizeThinkingConfig,
+	normalizeOpenAIToolChoice,
 	normalizeResponseFormat,
 	resolveServiceTierFromSpeedAndTier,
+	normalizeProviderCacheOptions,
 } from "../shared/text-normalizers";
 
 /**
@@ -39,21 +40,19 @@ import {
 export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequest {
 	const reqAny = req as any;
 	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
+	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
 	const metadata = req.user
 		? { ...(metadataFromRequest ?? {}), user: req.user }
 		: metadataFromRequest;
-	// Transform messages
 	const messages: IRMessage[] = [];
 
-	// Handle top-level system field (convenience field)
-	if (req.system) {
+	if (reqAny.system) {
 		messages.push({
 			role: "system",
-			content: normalizeOpenAIContent(req.system),
+			content: normalizeOpenAIContent(reqAny.system),
 		});
 	}
 
-	// Transform message array
 	for (const msgAny of req.messages as Array<any>) {
 		const normalizedRole = msgAny.role;
 
@@ -75,7 +74,6 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 				toolCalls: Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined,
 			});
 		} else if (normalizedRole === "tool") {
-			// Tool result message
 			messages.push({
 				role: "tool",
 				toolResults: [
@@ -88,14 +86,12 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		}
 	}
 
-	// Transform tools
 	const tools: IRTool[] | undefined = req.tools?.map((t: any) => ({
 		name: t.function?.name || t.name,
 		description: t.function?.description || t.description,
 		parameters: t.function?.parameters || t.parameters || {},
 	}));
 
-	// Transform tool choice
 	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice, {
 		unknownStringFallback: "auto",
 	});
@@ -104,51 +100,61 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		? {
 			effort: req.reasoning.effort,
 			summary: req.reasoning.summary as any,
-			enabled: (req.reasoning as any).enabled,
-			maxTokens: (req.reasoning as any).max_tokens,
+			enabled: req.reasoning.enabled,
+			maxTokens: req.reasoning.max_tokens,
 		}
 		: undefined;
-	const thinkingAlias = normalizeThinkingConfig((req as any).thinking);
+	const reasoningEffortAlias =
+		typeof reqAny.reasoning_effort === "string" && reqAny.reasoning_effort.length > 0
+			? reqAny.reasoning_effort
+			: undefined;
+	const reasoningSummaryAlias =
+		typeof reqAny.reasoning_summary === "string" && reqAny.reasoning_summary.length > 0
+			? reqAny.reasoning_summary
+			: undefined;
+	const reasoningFromThinking = normalizeThinkingConfig(reqAny.thinking);
 	const reasoning = {
-		...(thinkingAlias ?? {}),
+		...(reasoningFromThinking ?? {}),
 		...(reasoningFromRequest ?? {}),
+		...(reasoningEffortAlias !== undefined ? { effort: reasoningEffortAlias } : {}),
+		...(reasoningSummaryAlias !== undefined ? { summary: reasoningSummaryAlias } : {}),
 	};
 
-	// Build IR request
+	const hasInceptionVendorOptions =
+		typeof reqAny.diffusing === "boolean" ||
+		typeof reqAny.reasoning_summary_wait === "boolean" ||
+		typeof reqAny.reasoning_summary_wait === "number";
+	const vendor = hasInceptionVendorOptions
+		? {
+			inception: {
+				...(typeof reqAny.diffusing === "boolean" ? { diffusing: reqAny.diffusing } : {}),
+				...((typeof reqAny.reasoning_summary_wait === "boolean" || typeof reqAny.reasoning_summary_wait === "number")
+					? { reasoning_summary_wait: reqAny.reasoning_summary_wait }
+					: {}),
+			},
+		}
+		: undefined;
+
 	return {
 		messages,
 		model: req.model,
 		stream: req.stream ?? false,
-
-		// Generation parameters
 		maxTokens: (req as any).max_completion_tokens ?? req.max_tokens ?? req.max_output_tokens,
 		temperature: req.temperature,
 		topP: req.top_p,
-		topK: req.top_k,
+		topK: (req as any).top_k,
 		seed: req.seed,
-
-		// Tool calling
 		tools,
 		toolChoice,
 		parallelToolCalls: req.parallel_tool_calls,
 		maxToolCalls: (req as any).max_tool_calls,
-
-		// Reasoning
 		reasoning:
-			Object.keys(reasoning).length > 0
+			reasoning && Object.values(reasoning).some((value) => value !== undefined)
 				? reasoning
 				: undefined,
-
-		// Response format
 		responseFormat: normalizeResponseFormat(req.response_format),
-		modalities: normalizeModalities(
-			(req as any).modalities ??
-			(req as any).response_modalities ??
-			(req as any).responseModalities,
-		),
+		modalities: normalizeModalities((req as any).modalities ?? (req as any).response_modalities ?? (req as any).responseModalities),
 		imageConfig: normalizeImageConfig((req as any).image_config ?? (req as any).imageConfig),
-
-		// Advanced parameters
 		frequencyPenalty: req.frequency_penalty,
 		presencePenalty: req.presence_penalty,
 		logitBias: req.logit_bias,
@@ -163,9 +169,12 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			speed: (req as any).speed,
 		}),
 		promptCacheKey: (req as any).prompt_cache_key,
+		promptCacheRetention: providerCacheOptions.promptCacheRetention,
+		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
+		googleCachedContent: providerCacheOptions.googleCachedContent,
+		xaiConversationId: providerCacheOptions.xaiConversationId,
 		safetyIdentifier: (req as any).safety_identifier,
-
-		// Metadata
+		vendor,
 		userId: req.user_id ?? req.user,
 		metadata,
 	};
@@ -187,4 +196,5 @@ function decodeToolCall(tc: any): IRToolCall {
 		arguments: tc.function?.arguments || tc.arguments || "{}",
 	};
 }
+
 

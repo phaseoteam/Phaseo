@@ -1,17 +1,45 @@
 ---
 title: "Claude Code"
-description: "Connect Claude-compatible workflows to the AI Stats Gateway."
+description: "Connect Claude Code to the AI Stats Gateway via the Anthropic-compatible API."
 ---
 
-If your Claude tooling supports a custom base URL and API key, you can point it at the AI Stats Gateway and continue using `/v1/messages`.
+Claude Code supports third-party LLM gateways via environment variables. AI Stats exposes an Anthropic-compatible surface at `/v1/messages`, so you can point Claude Code at AI Stats without changing your prompts.
 
-## Recommended setup
+## Prerequisites
 
-- Base URL: `https://api.phaseo.app/v1`
-- Auth: `Authorization: Bearer <AI_STATS_API_KEY>`
-- Endpoint: `/messages`
+- An AI Stats API key.
+- Claude Code installed locally.
 
-## Tips
+## 1) Set gateway environment variables
 
-- Verify model ids with the [Models endpoint](../../api-reference/endpoint/models.mdx).
-- If you need tool calling or structured outputs, confirm model support first.
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_ai_stats_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
+$env:ANTHROPIC_AUTH_TOKEN = "your_ai_stats_api_key"
+$env:ANTHROPIC_API_KEY = ""
+```
+
+## 2) Pick a model (optional)
+
+Set `ANTHROPIC_MODEL` if you want a fixed default. Use model ids listed in [Models](../../api-reference/endpoint/models.mdx).
+
+## 3) Start Claude Code
+
+```bash
+claude
+```
+
+## Endpoint mapping
+
+- Claude Code calls Anthropic-style endpoints (`/v1/messages`).
+- AI Stats handles those requests through [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+
+## Compatibility notes
+
+- `ANTHROPIC_AUTH_TOKEN` is sent as an `Authorization` header, which AI Stats accepts.
+- Current limitation: streaming + tools on Anthropic Messages can return `400 invalid_request`. If your workflow depends on streamed tool loops, test this path before broad rollout.

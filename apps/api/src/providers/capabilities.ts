@@ -15,8 +15,7 @@ export type ProviderCapabilityProfile = {
 };
 
 const FULL_MULTIMODAL_VIDEO_PROVIDERS = new Set<string>([
-	"openai",
-	"google",
+	"openai",
 	"google-ai-studio",
 	"google-vertex",
 	"amazon-bedrock",

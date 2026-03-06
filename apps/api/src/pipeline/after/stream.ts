@@ -25,6 +25,10 @@ import {
     countRequestedTools,
     countRequestedToolResults,
 } from "./tool-usage";
+import {
+    maybeWriteStickyRoutingFromUsage,
+    resolveCacheAwareRoutingPreference,
+} from "../execute/sticky-routing";
 
 export async function handleStreamResponse(
     ctx: PipelineContext,
@@ -40,6 +44,13 @@ export async function handleStreamResponse(
         : result.upstream;
 
     const upstreamStatus = result.upstream.status;
+    const cacheAwareRoutingEnabled = resolveCacheAwareRoutingPreference(
+        ctx.body,
+        typeof ctx.teamSettings?.cacheAwareRoutingEnabled === "boolean"
+            ? ctx.teamSettings.cacheAwareRoutingEnabled
+            : true
+    );
+    const stickyRoutingModel = getBaseModel(ctx.model);
     // Cache native ID from first chunk to avoid checking every frame
     let cachedNativeId: string | undefined;
     let cachedFinishReason: string | null = null;
@@ -253,6 +264,27 @@ export async function handleStreamResponse(
             const releaseRuntime = ensureRuntimeForBackground();
             try {
             const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
+            const maybeWriteStickyForUsage = async (usageForSticky: any) => {
+                if (!usageForSticky) return;
+                try {
+                    await maybeWriteStickyRoutingFromUsage({
+                        teamId: ctx.teamId,
+                        endpoint: ctx.endpoint,
+                        model: stickyRoutingModel,
+                        body: ctx.body,
+                        providerId: result.provider,
+                        usage: usageForSticky,
+                        enabled: cacheAwareRoutingEnabled,
+                    });
+                } catch (error) {
+                    console.warn("[gateway] sticky routing write failed", {
+                        endpoint: ctx.endpoint,
+                        model: ctx.model,
+                        provider: result.provider,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            };
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final usage raw", {
                     requestId: ctx.requestId,
@@ -325,6 +357,7 @@ export async function handleStreamResponse(
                 result.bill.currency = pricedWithByok.currency;
                 result.bill.usage = pricedWithByok.pricedUsage;
                 result.bill.finish_reason = bill.finish_reason ?? result.bill.finish_reason;
+                await maybeWriteStickyForUsage(result.bill.usage);
 
                 // Normalize finish reason for consistent storage
                 const normalizedFinishReason = normalizeFinishReason(
@@ -369,6 +402,7 @@ export async function handleStreamResponse(
                     pricedUsage: usageWithToolMetrics,
                     currencyHint: result.bill.currency ?? card?.currency ?? "USD",
                 });
+                await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
                 await handleSuccessAudit(
                     ctx,
                     result,
@@ -426,6 +460,7 @@ export async function handleStreamResponse(
             result.bill.currency = pricedWithByok.currency;
             result.bill.usage = pricedWithByok.pricedUsage;
             result.bill.finish_reason = cachedFinishReason ?? result.bill.finish_reason;
+            await maybeWriteStickyForUsage(result.bill.usage);
 
             await handleSuccessAudit(
                 ctx,
@@ -459,6 +494,8 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
+
+
 
 
 

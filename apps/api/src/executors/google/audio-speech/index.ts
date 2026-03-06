@@ -140,7 +140,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
-		() => bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY,
+		() => bindings.GOOGLE_AI_STUDIO_API_KEY,
 	);
 
 	const voiceCandidate = resolveGoogleVoiceName(ir);
@@ -240,3 +240,4 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 }
 
 export const executor: ProviderExecutor = execute;
+

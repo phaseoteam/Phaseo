@@ -14,9 +14,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const tabs = [
+type ModelTab = {
+	label: string;
+	key: string;
+	hidden?: boolean;
+};
+
+const tabs: ModelTab[] = [
 	{ label: "Overview", key: "overview" },
-	{ label: "Family", key: "family" },
+	{ label: "Family", key: "family", hidden: true },
 	{ label: "Timeline", key: "timeline" },
 	{ label: "Benchmarks", key: "benchmarks" },
 	{ label: "Providers", key: "providers" },
@@ -34,11 +40,12 @@ export default function TabBar({ modelId }: { modelId: string }) {
 	const lastSegment = pathnameSegments[pathnameSegments.length - 1];
 	const normalizedLastSegment =
 		lastSegment === "pricing" ? "providers" : lastSegment;
+	const visibleTabs = tabs.filter((tab) => !tab.hidden);
 	const activeKey = tabs.some((t) => t.key === lastSegment)
 		? (lastSegment as string)
 		: tabs.some((t) => t.key === normalizedLastSegment)
 			? (normalizedLastSegment as string)
-			: "overview";
+			: (visibleTabs[0]?.key ?? "overview");
 	const hrefFor = (key: string) =>
 		key === "overview" ? `/models/${modelId}` : `/models/${modelId}/${key}`;
 	const desktopContainerRef = React.useRef<HTMLDivElement | null>(null);
@@ -90,7 +97,7 @@ export default function TabBar({ modelId }: { modelId: string }) {
 						opacity: indicator.opacity,
 					}}
 				/>
-				{tabs.map((t) => {
+				{visibleTabs.map((t) => {
 					const href = hrefFor(t.key);
 					const isActive = activeKey === t.key;
 					return (
@@ -122,7 +129,7 @@ export default function TabBar({ modelId }: { modelId: string }) {
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button className="group w-full p-2 border rounded text-base bg-background text-foreground flex justify-between items-center">
-							{tabs.find((t) => t.key === activeKey)?.label ??
+							{visibleTabs.find((t) => t.key === activeKey)?.label ??
 								"Overview"}
 							<ChevronDown className="ml-2 h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
 						</Button>
@@ -131,7 +138,7 @@ export default function TabBar({ modelId }: { modelId: string }) {
 						align="start"
 						className="w-(--radix-popper-anchor-width)"
 					>
-						{tabs.map((t) => (
+						{visibleTabs.map((t) => (
 							<DropdownMenuItem key={t.key} asChild>
 								<Link href={hrefFor(t.key)}>{t.label}</Link>
 							</DropdownMenuItem>

@@ -13,7 +13,7 @@ type ModalityRequirements = {
 };
 
 function isGoogleImagePreviewModel(candidate: ProviderCandidate, modelId: string): boolean {
-	if (candidate.providerId !== "google-ai-studio" && candidate.providerId !== "google") {
+	if (candidate.providerId !== "google-ai-studio") {
 		return false;
 	}
 	const haystack = `${modelId} ${candidate.providerModelSlug ?? ""}`.toLowerCase();

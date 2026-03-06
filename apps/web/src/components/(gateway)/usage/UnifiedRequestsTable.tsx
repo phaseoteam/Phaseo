@@ -47,14 +47,12 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { formatRelativeToNow } from "@/lib/formatRelative";
 import { buildUsageDisplay, extractUsageMeters, formatUsageNumber } from "./usageMeters";
+import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 
 interface UnifiedRequestsTableProps {
 	timeRange: { from: string; to: string };
 	appNames: Map<string, string>;
-	modelMetadata: Map<
-		string,
-		{ organisationId: string; organisationName: string }
-	>;
+	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
 	onExportRef?: React.MutableRefObject<
 		((format: "csv" | "pdf") => void) | null
@@ -286,7 +284,8 @@ export default function UnifiedRequestsTable({
 					: "-";
 				return {
 					Timestamp: new Date(row.created_at).toLocaleString(),
-					Model: row.model_id || "-",
+					Model: getModelDisplayName(row.model_id, modelMetadata),
+					"Model ID": row.model_id || "-",
 					Provider: providerLabel,
 					App: appNames.get(row.app_id || "") || "-",
 					Usage: usageSummary,
@@ -308,7 +307,7 @@ export default function UnifiedRequestsTable({
 				exportToPDF(exportData, filename, "Gateway Requests");
 			}
 		},
-		[data, appNames, providerNames],
+		[data, appNames, providerNames, modelMetadata],
 	);
 
 	// Expose export handler via ref
@@ -470,6 +469,7 @@ export default function UnifiedRequestsTable({
 									const providerLabel = row.provider
 										? providerNames.get(row.provider) || row.provider
 										: null;
+									const modelLabel = getModelDisplayName(row.model_id, modelMetadata);
 
 									return (
 										<TableRow
@@ -568,11 +568,11 @@ export default function UnifiedRequestsTable({
 																href={modelHref}
 																className="underline decoration-transparent hover:decoration-current transition-colors duration-200 hover:text-primary truncate"
 															>
-																{row.model_id}
+																{modelLabel}
 															</Link>
 														) : (
-															<span className="truncate">
-																{row.model_id}
+															<span className="truncate" title={row.model_id ?? undefined}>
+																{modelLabel}
 															</span>
 														)}
 													</div>
@@ -737,4 +737,3 @@ export default function UnifiedRequestsTable({
 		</div>
 	);
 }
-

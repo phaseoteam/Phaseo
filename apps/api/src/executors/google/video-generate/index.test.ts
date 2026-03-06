@@ -10,7 +10,7 @@ function buildArgs(ir: IRVideoGenerationRequest): ExecutorExecuteArgs {
 		ir,
 		requestId: "req_google_video_test",
 		teamId: "team_test",
-		providerId: "google",
+		providerId: "google-ai-studio",
 		endpoint: "video.generation",
 		protocol: "google.video",
 		capability: "video.generate",

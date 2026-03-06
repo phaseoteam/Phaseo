@@ -2,7 +2,7 @@
 // Why: Avoid drift across chat/responses decoders for common field mappings.
 // How: Centralizes conversion of request surface fields to IR-compatible values.
 
-import type { IRChatRequest, IRReasoning } from "@core/ir";
+import type { IRCacheControl, IRChatRequest, IRReasoning } from "@core/ir";
 
 export function normalizeResponseFormat(
 	format: unknown,
@@ -64,7 +64,7 @@ export function normalizeImageConfig(
 					fontUrl: entry?.fontUrl ?? entry?.font_url,
 					text: entry?.text,
 				}))
-			: undefined,
+				: undefined,
 		superResolutionReferences:
 			value.super_resolution_references ?? value.superResolutionReferences,
 		includeRaiReason: value.include_rai_reason ?? value.includeRaiReason,
@@ -195,3 +195,60 @@ export function resolveServiceTierFromSpeedAndTier(input: {
 	}
 	return undefined;
 }
+
+function pickFirstNonEmptyString(...values: unknown[]): string | undefined {
+	for (const value of values) {
+		if (typeof value !== "string") continue;
+		const trimmed = value.trim();
+		if (!trimmed) continue;
+		return trimmed;
+	}
+	return undefined;
+}
+
+function normalizeCacheControl(value: unknown): (IRCacheControl & { scope?: string }) | undefined {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+	const next = { ...(value as Record<string, any>) } as IRCacheControl & { scope?: string };
+	if (typeof next.type === "string") next.type = next.type.trim();
+	if (typeof next.ttl === "string") next.ttl = next.ttl.trim();
+	if (typeof next.scope === "string") next.scope = next.scope.trim();
+	if (Object.keys(next).length === 0) return undefined;
+	return next;
+}
+
+export function normalizeProviderCacheOptions(rawRequest: any): {
+	promptCacheRetention?: string;
+	anthropicCacheControl?: IRCacheControl & { scope?: string };
+	googleCachedContent?: string;
+	xaiConversationId?: string;
+} {
+	const providerOptions = rawRequest?.provider_options;
+	const openaiOptions = providerOptions?.openai ?? {};
+	const anthropicOptions = providerOptions?.anthropic ?? {};
+	const googleOptions = providerOptions?.google ?? {};
+	const xaiOptions = providerOptions?.xai ?? providerOptions?.["x-ai"] ?? {};
+
+	return {
+		promptCacheRetention: pickFirstNonEmptyString(
+			openaiOptions?.prompt_cache_retention,
+		),
+		anthropicCacheControl: normalizeCacheControl(
+			anthropicOptions?.cache_control,
+		),
+		googleCachedContent: pickFirstNonEmptyString(
+			googleOptions?.cached_content,
+		),
+		xaiConversationId: pickFirstNonEmptyString(
+			xaiOptions?.conversation_id,
+			xaiOptions?.conversationId,
+		),
+	};
+}
+
+
+
+
+
+
+
+

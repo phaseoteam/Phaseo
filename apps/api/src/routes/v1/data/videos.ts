@@ -129,7 +129,7 @@ function normalizeVideoModelForPricing(providerId: string, model: string): strin
 		if (/^sora-2-pro(?:-|$)/i.test(bareModel)) out.push("openai/sora-2-pro-2025-10-03");
 	}
 
-	if (provider === "google-ai-studio" || provider === "google" || provider === "google-vertex") {
+	if (provider === "google-ai-studio" || provider === "google-vertex") {
 		const withoutModelsPrefix = trimmed.replace(/^models\//i, "");
 		const withoutGooglePrefix = withoutModelsPrefix.replace(/^google\//i, "");
 		const googleAliasMap: Record<string, string> = {
@@ -382,7 +382,7 @@ function decodeMiniMaxVideoId(videoId: string): string | null {
 
 async function fetchGoogleOperation(operationName: string) {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY;
+	const key = bindings.GOOGLE_AI_STUDIO_API_KEY;
 	if (!key) {
 		return err("upstream_error", {
 			reason: "google_key_missing",
@@ -399,7 +399,7 @@ async function fetchGoogleOperation(operationName: string) {
 
 async function fetchGoogleVideoContent(uri: string) {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY;
+	const key = bindings.GOOGLE_AI_STUDIO_API_KEY;
 	if (!key) {
 		return err("upstream_error", {
 			reason: "google_key_missing",
@@ -447,7 +447,7 @@ async function fetchDashscopeTask(taskId: string) {
 
 async function fetchXAiVideoStatus(videoId: string) {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.X_AI_API_KEY || bindings.XAI_API_KEY;
+	const key = bindings.X_AI_API_KEY;
 	if (!key) {
 		return err("upstream_error", {
 			reason: "xai_key_missing",
@@ -465,7 +465,7 @@ async function fetchXAiVideoStatus(videoId: string) {
 
 async function fetchXAiVideoContent(videoId: string) {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	const key = bindings.X_AI_API_KEY || bindings.XAI_API_KEY;
+	const key = bindings.X_AI_API_KEY;
 	if (!key) {
 		return err("upstream_error", {
 			reason: "xai_key_missing",
@@ -1036,3 +1036,5 @@ videosRoutes.delete("/:videoId", withRuntime(async (req) => {
 		videoMeta,
 	});
 }));
+
+

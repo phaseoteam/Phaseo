@@ -11,6 +11,7 @@ import InvestigateGeneration from "./UsageHeader/InvestigateGeneration";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { revalidateUsage } from "@/app/(dashboard)/gateway/usage/actions";
+import { type ModelMetadataMap } from "./model-display";
 
 interface RequestsSectionProps {
 	title?: string;
@@ -21,7 +22,7 @@ interface RequestsSectionProps {
 	modelProviders: Map<string, string[]>;
 	providerNames: Map<string, string>;
 	apiKeys: { id: string; name: string | null; prefix: string | null }[];
-	modelMetadata: Map<string, { organisationId: string; organisationName: string }>;
+	modelMetadata: ModelMetadataMap;
 }
 
 export default function RequestsSection({

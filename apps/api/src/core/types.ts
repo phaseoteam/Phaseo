@@ -76,7 +76,7 @@ export type DebugOptions = {
 };
 
 export type ModelId = string;
-export type ProviderName = "openai" | "anthropic" | "google" | "groq" | "stability" | "elevenlabs" | "together" | "fireworks" | string;
+export type ProviderName = "openai" | "anthropic" | "google-ai-studio" | "google-vertex" | "groq" | "stability" | "elevenlabs" | "together" | "fireworks" | string;
 
 export interface ProviderCapability {
     provider: ProviderName;

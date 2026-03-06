@@ -81,7 +81,8 @@ function clampEffort(requested: ReasoningEffort, supported: ReasoningEffort[]): 
 	if (supportedOrdered.length === 0) return requested;
 
 	const requestedIndex = REASONING_EFFORT_ORDER.indexOf(requested);
-	if (requestedIndex <= 0) return supportedOrdered[0];
+	if (requestedIndex < 0) return requested;
+	if (requestedIndex === 0) return supportedOrdered[0];
 	if (requestedIndex >= REASONING_EFFORT_ORDER.length - 1) {
 		return supportedOrdered[supportedOrdered.length - 1];
 	}
@@ -251,6 +252,8 @@ function cherryPickIRParams(
 					return "serviceTier";
 				case "prompt_cache_key":
 					return "promptCacheKey";
+				case "prompt_cache_retention":
+					return "promptCacheRetention";
 				case "safety_identifier":
 					return "safetyIdentifier";
 				case "user":
@@ -286,7 +289,7 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const quirks = getProviderQuirks(args.providerId);
 	const keyInfo = resolveProviderKey(
 		{ providerId: args.providerId, byokMeta: args.byokMeta },
-		() => (getBindings() as any).X_AI_API_KEY || (getBindings() as any).XAI_API_KEY,
+		() => (getBindings() as any).X_AI_API_KEY,
 	);
 
 	const modelForRoutingRaw = args.providerModelSlug ?? irRequest.model;
@@ -344,7 +347,9 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		const requestBody = JSON.stringify(sanitized.request);
 		const response = await fetch(openAICompatUrl(args.providerId, "/responses"), {
 			method: "POST",
-			headers: openAICompatHeaders(args.providerId, keyInfo.key),
+			headers: openAICompatHeaders(args.providerId, keyInfo.key, {
+				"x-grok-conv-id": irRequest.xaiConversationId,
+			}),
 			body: requestBody,
 		});
 		return {
@@ -487,3 +492,12 @@ export const executor: ProviderExecutor = async (execArgs: ExecutorExecuteArgs) 
 	const processed = cherryPickIRParams(normalized, execArgs.capabilityParams);
 	return executeXAi({ ...execArgs, ir: processed });
 };
+
+
+
+
+
+
+
+
+

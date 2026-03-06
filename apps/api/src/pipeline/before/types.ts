@@ -100,14 +100,27 @@ export type PresetData = {
     visibility: "private" | "team" | "public";
 };
 
+export type ProviderRolloutStatus = "active" | "beta" | "alpha" | "not_ready";
+
+export type RoutingStatus =
+    | "active"
+    | "deranked_lvl1"
+    | "deranked_lvl2"
+    | "deranked_lvl3"
+    | "disabled";
+
+export type CapabilityRoutingStatus = RoutingStatus | "internal_testing";
+
 /**
  * Snapshot of a provider's configuration and capabilities
  * Returned from the RPC call for gateway context
  */
 export type GatewayProviderSnapshot = {
     providerId: string;
-    providerStatus?: "active" | "beta" | "alpha" | "not_ready" | null;
-    capabilityStatus?: "active" | "deranked" | "disabled" | "internal_testing" | null;
+    providerStatus?: ProviderRolloutStatus | null;
+    providerRoutingStatus?: RoutingStatus | null;
+    modelRoutingStatus?: RoutingStatus | null;
+    capabilityStatus?: CapabilityRoutingStatus | null;
     supportsEndpoint: boolean;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -147,6 +160,7 @@ export type TeamSettings = {
     routingMode: string | null;
     byokFallbackEnabled: boolean | null;
     betaChannelEnabled: boolean | null;
+    cacheAwareRoutingEnabled?: boolean | null;
     billingMode: "wallet" | "invoice";
 };
 
@@ -192,8 +206,10 @@ export type GatewayContextData = {
  */
 export type ProviderCandidate = {
     providerId: string;
-    providerStatus?: "active" | "beta" | "alpha" | "not_ready" | null;
-    capabilityStatus?: "active" | "deranked" | "disabled" | "internal_testing" | null;
+    providerStatus?: ProviderRolloutStatus | null;
+    providerRoutingStatus?: RoutingStatus | null;
+    modelRoutingStatus?: RoutingStatus | null;
+    capabilityStatus?: CapabilityRoutingStatus | null;
     adapter: ProviderAdapter;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -301,4 +317,5 @@ export type PipelineContext = {
     keyId?: string | null;
     testingMode?: boolean;
 };
+
 

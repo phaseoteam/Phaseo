@@ -38,6 +38,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     elevenlabs: ElevenLabsAdapter,
     suno: SunoAdapter,
     alibaba: createOpenAICompatibleAdapter("alibaba"),
+    "alibaba-cloud": createOpenAICompatibleAdapter("alibaba-cloud"),
     "atlas-cloud": createOpenAICompatibleAdapter("atlas-cloud"),
     atlascloud: createOpenAICompatibleAdapter("atlas-cloud"), // Alias for database naming
     clarifai: createOpenAICompatibleAdapter("clarifai"),
@@ -52,7 +53,6 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     featherless: createOpenAICompatibleAdapter("featherless"),
     friendli: createOpenAICompatibleAdapter("friendli"),
     gmicloud: createOpenAICompatibleAdapter("gmicloud"),
-    google: createOpenAICompatibleAdapter("google"),
     groq: createOpenAICompatibleAdapter("groq"),
     hyperbolic: createOpenAICompatibleAdapter("hyperbolic"),
     inception: createOpenAICompatibleAdapter("inception"),
@@ -62,12 +62,15 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     minimax: createOpenAICompatibleAdapter("minimax"),
     "minimax-lightning": createOpenAICompatibleAdapter("minimax-lightning"),
     "moonshot-ai-turbo": createOpenAICompatibleAdapter("moonshot-ai-turbo"),
+    moonshotai: createOpenAICompatibleAdapter("moonshotai"),
+    "moonshotai-turbo": createOpenAICompatibleAdapter("moonshotai-turbo"),
     morph: createOpenAICompatibleAdapter("morph"),
     morpheus: createOpenAICompatibleAdapter("morpheus"),
     "z-ai": createOpenAICompatibleAdapter("z-ai"),
     zai: createOpenAICompatibleAdapter("zai"),
     "moonshot-ai": createOpenAICompatibleAdapter("moonshot-ai"),
     novitaai: createOpenAICompatibleAdapter("novitaai"),
+    novita: createOpenAICompatibleAdapter("novita"),
     parasail: createOpenAICompatibleAdapter("parasail"),
     phala: createOpenAICompatibleAdapter("phala"),
     qwen: createOpenAICompatibleAdapter("qwen"),
@@ -181,3 +184,4 @@ export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdap
 export function adapterById(providerId: string): ProviderAdapter | null {
     return ADAPTERS[providerId] ?? null;
 }
+

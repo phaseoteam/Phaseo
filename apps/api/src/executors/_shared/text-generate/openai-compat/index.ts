@@ -30,7 +30,7 @@ import {
 	shouldFallbackToChatFromError,
 } from "./retry-policy";
 
-const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba", "qwen"]);
+const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba-cloud"]);
 
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	// Use upstream start time from pipeline (set before executor is called)

@@ -14,21 +14,51 @@ description: "Browse gateway-servable models from the API provider model catalog
   "total": 123,
   "models": [
     {
+      "id": "openai/gpt-4o-mini",
+      "canonical_slug": "openai/gpt-4o-mini",
       "model_id": "openai/gpt-4o-mini",
       "name": "GPT-4o Mini",
+      "description": "GPT-4o Mini via AI Stats Gateway. Supports chat/completions, responses.",
+      "created": 1721260800,
       "release_date": "2024-07-18",
       "status": "active",
       "organisation_id": "openai",
+      "organisation_name": "OpenAI",
       "aliases": ["gpt-4o-mini"],
       "endpoints": ["chat/completions", "responses"],
       "input_types": ["text"],
       "output_types": ["text"],
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": null,
+        "instruct_type": "chat"
+      },
       "providers": [
         {
           "api_provider_id": "openai",
           "params": ["temperature", "max_tokens"]
         }
-      ]
+      ],
+      "supported_params": ["temperature", "max_tokens"],
+      "supported_parameters": ["temperature", "max_tokens"],
+      "top_provider_id": "openai",
+      "top_provider": {
+        "context_length": null,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      },
+      "pricing": {
+        "prompt": "0.00000015",
+        "completion": "0.0000006",
+        "request": null,
+        "image": null,
+        "input_cache_read": "0.00000003",
+        "input_cache_write": null,
+        "web_search": null
+      },
+      "per_request_limits": null
     }
   ]
 }

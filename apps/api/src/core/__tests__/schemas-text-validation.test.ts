@@ -44,27 +44,22 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts responses response_format json_schema and json_object", () => {
-		const jsonSchemaParsed = ResponsesSchema.safeParse({
+	it("accepts responses text config", () => {
+		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",
 			input: "hello",
-			response_format: {
-				type: "json_schema",
-				json_schema: {
-					name: "answer",
-					schema: { type: "object" },
-					strict: false,
+			text: {
+				format: {
+					type: "json_schema",
+					json_schema: {
+						name: "answer",
+						schema: { type: "object" },
+						strict: false,
+					},
 				},
 			},
 		});
-		expect(jsonSchemaParsed.success).toBe(true);
-
-		const jsonObjectParsed = ResponsesSchema.safeParse({
-			model: "gpt-4.1",
-			input: "hello",
-			response_format: { type: "json_object" },
-		});
-		expect(jsonObjectParsed.success).toBe(true);
+		expect(parsed.success).toBe(true);
 	});
 
 	it("accepts global beta flags", () => {
@@ -100,6 +95,40 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	it("accepts provider-specific cache options in provider_options", () => {
+		const responsesParsed = ResponsesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			input: "hello",
+			provider_options: {
+				anthropic: {
+					cache_control: {
+						type: "ephemeral",
+						ttl: "1h",
+						scope: "all_text",
+					},
+				},
+				google: {
+					cached_content: "cachedContents/demo-cache",
+					cache_ttl: "1h",
+				},
+			},
+		});
+		expect(responsesParsed.success).toBe(true);
+
+		const chatParsed = ChatCompletionsSchema.safeParse({
+			model: "openai/gpt-5-nano",
+			messages: [{ role: "user", content: "hello" }],
+			provider_options: {
+				google: {
+					cache_control: { type: "ephemeral", ttl: "5m" },
+					cached_content: "cachedContents/demo-cache",
+					cache_ttl: "5m",
+				},
+			},
+		});
+		expect(chatParsed.success).toBe(true);
+	});
+
 	it("rejects unsupported context management type", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "openai/gpt-5-nano",
@@ -126,3 +155,4 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(false);
 	});
 });
+

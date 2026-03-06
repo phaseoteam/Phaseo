@@ -32,7 +32,7 @@ const OPENAI_LEGACY_COMPLETIONS_MODELS = new Set<string>([
 ]);
 
 const ALIBABA_RESPONSES_PATH_PREFIX = "/api/v2/apps/protocols/compatible-mode/v1";
-const WANDB_API_KEY_ENVS = ["WANDB_API_KEY", "WEIGHTSANDBIASES_API_KEY"] as const;
+const WEIGHTSANDBIASES_API_KEY_ENVS = ["WEIGHTSANDBIASES_API_KEY"] as const;
 const ALIBABA_CLOUD_API_KEY_ENVS = ["ALIBABA_CLOUD_API_KEY"] as const;
 
 export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
@@ -44,13 +44,13 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "OPENAI_BASE_URL",
         supportsResponses: true,
     },
-    // Alibaba DashScope OpenAI-compatible API
-    alibaba: {
-        providerId: "alibaba",
+    "alibaba-cloud": {
+        providerId: "alibaba-cloud",
         baseUrl: "https://dashscope-intl.aliyuncs.com",
         pathPrefix: "/compatible-mode/v1",
         apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
         baseUrlEnv: "ALIBABA_BASE_URL",
+        supportsResponses: true,
     },
     "atlas-cloud": {
         providerId: "atlas-cloud",
@@ -99,10 +99,11 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     },
     baseten: {
         providerId: "baseten",
-        baseUrl: "https://api.baseten.co",
+        baseUrl: "https://inference.baseten.co",
         pathPrefix: "/v1",
         apiKeyEnv: "BASETEN_API_KEY",
         baseUrlEnv: "BASETEN_BASE_URL",
+        apiKeyPrefix: "Api-Key ",
         supportsResponses: false,
     },
     "bytedance-seed": {
@@ -234,7 +235,7 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     },
     minimax: {
         providerId: "minimax",
-        // MiniMax OpenAI compatibility docs use api.minimax.io.
+        // MiniMax OpenAI compatibility docs use api.minimax.io for international endpoints.
         baseUrl: "https://api.minimax.io",
         pathPrefix: "/v1",
         apiKeyEnv: "MINIMAX_API_KEY",
@@ -251,7 +252,7 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         providerId: "mistral",
         baseUrl: "https://api.mistral.ai",
         pathPrefix: "/v1",
-        apiKeyEnv: "MISTRAL_API_KEY",
+        apiKeyEnv: "MISTRAL_AI_API_KEY",
         baseUrlEnv: "MISTRAL_BASE_URL",
         supportsResponses: false,
     },
@@ -262,8 +263,22 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         apiKeyEnv: "MOONSHOT_AI_API_KEY",
         baseUrlEnv: "MOONSHOT_AI_BASE_URL",
     },
+    moonshotai: {
+        providerId: "moonshotai",
+        baseUrl: "https://api.moonshot.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "MOONSHOT_AI_API_KEY",
+        baseUrlEnv: "MOONSHOT_AI_BASE_URL",
+    },
     "moonshot-ai-turbo": {
         providerId: "moonshot-ai-turbo",
+        baseUrl: "https://api.moonshot.ai",
+        pathPrefix: "/v1",
+        apiKeyEnv: "MOONSHOT_AI_API_KEY",
+        baseUrlEnv: "MOONSHOT_AI_BASE_URL",
+    },
+    "moonshotai-turbo": {
+        providerId: "moonshotai-turbo",
         baseUrl: "https://api.moonshot.ai",
         pathPrefix: "/v1",
         apiKeyEnv: "MOONSHOT_AI_API_KEY",
@@ -292,6 +307,14 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "NOVITA_BASE_URL",
         supportsResponses: false,
     },
+    novita: {
+        providerId: "novita",
+        baseUrl: "https://api.novita.ai",
+        pathPrefix: "/openai/v1",
+        apiKeyEnv: "NOVITA_API_KEY",
+        baseUrlEnv: "NOVITA_BASE_URL",
+        supportsResponses: false,
+    },
     nvidia: {
         providerId: "nvidia",
         baseUrl: "https://integrate.api.nvidia.com",
@@ -309,7 +332,7 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
     venice: {
         providerId: "venice",
         baseUrl: "https://api.venice.ai",
-        pathPrefix: "/v1",
+        pathPrefix: "/api/v1",
         apiKeyEnv: "VENICE_API_KEY",
         baseUrlEnv: "VENICE_BASE_URL",
         supportsResponses: true,
@@ -327,13 +350,6 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         pathPrefix: "/v1",
         apiKeyEnv: "PARASAIL_API_KEY",
         baseUrlEnv: "PARASAIL_BASE_URL",
-    },
-    qwen: {
-        providerId: "qwen",
-        baseUrl: "https://dashscope-intl.aliyuncs.com",
-        pathPrefix: "/compatible-mode/v1",
-        apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
-        baseUrlEnv: "ALIBABA_BASE_URL",
     },
     phala: {
         providerId: "phala",
@@ -361,7 +377,7 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         providerId: "weights-and-biases",
         baseUrl: "https://api.inference.wandb.ai",
         pathPrefix: "/v1",
-        apiKeyEnv: "WANDB_API_KEY",
+        apiKeyEnv: "WEIGHTSANDBIASES_API_KEY",
         baseUrlEnv: "WANDB_BASE_URL",
         supportsResponses: false,
     },
@@ -381,17 +397,12 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         baseUrlEnv: "XIAOMI_MIMO_BASE_URL",
         supportsResponses: false,
     },
+    // Primary Gemini keypath for AI Studio endpoints.
     "google-ai-studio": {
         providerId: "google-ai-studio",
         pathPrefix: "/v1",
         apiKeyEnv: "GOOGLE_AI_STUDIO_API_KEY",
         baseUrlEnv: "GOOGLE_AI_STUDIO_BASE_URL",
-    },
-    google: {
-        providerId: "google",
-        pathPrefix: "/v1",
-        apiKeyEnv: "GOOGLE_API_KEY",
-        baseUrlEnv: "GOOGLE_BASE_URL",
     },
     "x-ai": {
         providerId: "x-ai",
@@ -405,7 +416,7 @@ export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
         providerId: "xai",
         baseUrl: "https://api.x.ai",
         pathPrefix: "/v1",
-        apiKeyEnv: "XAI_API_KEY",
+        apiKeyEnv: "X_AI_API_KEY",
         baseUrlEnv: "XAI_BASE_URL",
         supportsResponses: true,
     },
@@ -559,7 +570,7 @@ export function openAICompatUrl(providerId: string, path: string): string {
     const config = resolveOpenAICompatConfig(providerId);
     const suffix = normalizePathSegment(path);
     const isAlibabaResponsesRoute =
-        (providerId === "alibaba" || providerId === "qwen") && suffix === "/responses";
+        providerId === "alibaba-cloud" && suffix === "/responses";
     let base = config.baseUrl?.replace(/\/+$/, "") ?? "";
     const configuredPrefix = normalizePathSegment(
         isAlibabaResponsesRoute ? ALIBABA_RESPONSES_PATH_PREFIX : (config.pathPrefix ?? "/v1"),
@@ -627,10 +638,10 @@ function readFirstBinding(names: readonly string[]): string | undefined {
 
 export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
     if (args.providerId === "weights-and-biases") {
-        return resolveProviderKey(args, () => readFirstBinding(WANDB_API_KEY_ENVS));
+        return resolveProviderKey(args, () => readFirstBinding(WEIGHTSANDBIASES_API_KEY_ENVS));
     }
 
-    if (args.providerId === "alibaba" || args.providerId === "qwen") {
+    if (args.providerId === "alibaba-cloud") {
         return resolveProviderKey(args, () => readFirstBinding(ALIBABA_CLOUD_API_KEY_ENVS));
     }
 
@@ -667,10 +678,6 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
         return "responses";
     }
 
-    if (providerId === "alibaba" || providerId === "qwen") {
-        return "responses";
-    }
-
     if (typeof config.supportsResponses === "boolean") {
         return config.supportsResponses ? "responses" : "chat";
     }
@@ -682,3 +689,5 @@ export function supportsOpenAICompatResponses(providerId: string, model?: string
     if (typeof config.supportsResponses === "boolean") return config.supportsResponses;
     return resolveOpenAICompatRoute(providerId, model) === "responses";
 }
+
+

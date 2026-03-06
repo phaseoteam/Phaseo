@@ -1,4 +1,4 @@
-// Purpose: Executor for anthropic / text-generate.
+﻿// Purpose: Executor for anthropic / text-generate.
 // Why: Isolates provider-specific behavior per capability.
 // How: Transforms IR and calls the provider API for this capability.
 
@@ -38,7 +38,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			},
 		);
 
-		// Transform IR → Anthropic Messages format
+		// Transform IR â†’ Anthropic Messages format
 		const requestPayload = irToAnthropicMessages(args.ir, args.maxOutputTokens);
 
 		const requestBody = {
@@ -407,6 +407,7 @@ export function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens
 		if (typeof ir.toolChoice === "string") {
 			if (ir.toolChoice === "auto") request.tool_choice = { type: "auto" };
 			else if (ir.toolChoice === "required") request.tool_choice = { type: "any" };
+			else if (ir.toolChoice === "none") request.tool_choice = { type: "none" };
 		} else {
 			request.tool_choice = { type: "tool", name: ir.toolChoice.name };
 		}
@@ -451,6 +452,7 @@ export function irToAnthropicMessages(ir: IRChatRequest, providerMaxOutputTokens
 			: structuredOutputInstruction;
 		request.system = system;
 	}
+	applyAnthropicCacheControlDefaults(request, ir.anthropicCacheControl);
 	applyAnthropicServiceControls(request, {
 		serviceTier: ir.serviceTier,
 		speed: ir.speed,
@@ -489,6 +491,63 @@ function buildAnthropicStructuredOutputInstruction(ir: IRChatRequest): string | 
 	return undefined;
 }
 
+
+function normalizeAnthropicCacheControlValue(value: unknown): Record<string, any> | undefined {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+	const next: Record<string, any> = { ...(value as Record<string, any>) };
+	delete next.scope;
+	if (typeof next.type === "string") next.type = next.type.trim();
+	if (typeof next.ttl === "string") next.ttl = next.ttl.trim();
+	for (const key of Object.keys(next)) {
+		if (next[key] === undefined || next[key] === null || next[key] === "") delete next[key];
+	}
+	return Object.keys(next).length > 0 ? next : undefined;
+}
+
+function applyCacheControlToContentBlocks(content: any[] | undefined, cacheControl: Record<string, any>): void {
+	if (!Array.isArray(content)) return;
+	for (const block of content) {
+		if (!block || typeof block !== "object") continue;
+		if (block.type !== "text" && block.type !== "image") continue;
+		if (block.cache_control && typeof block.cache_control === "object") continue;
+		block.cache_control = { ...cacheControl };
+	}
+}
+
+function applyAnthropicCacheControlDefaults(
+	request: any,
+	control: unknown,
+): void {
+	const scopeRaw = typeof (control as any)?.scope === "string" ? (control as any).scope.trim().toLowerCase() : "all_text";
+	if (scopeRaw === "none") return;
+
+	const cacheControl = normalizeAnthropicCacheControlValue(control);
+	if (!cacheControl) return;
+
+	if (scopeRaw === "all_text") {
+		if (typeof request.system === "string" && request.system.trim().length > 0) {
+			request.system = [{ type: "text", text: request.system, cache_control: { ...cacheControl } }];
+		} else if (Array.isArray(request.system)) {
+			applyCacheControlToContentBlocks(request.system, cacheControl);
+		}
+	}
+
+	const messages = Array.isArray(request.messages) ? request.messages : [];
+	if (scopeRaw === "last_user_message") {
+		for (let i = messages.length - 1; i >= 0; i -= 1) {
+			const msg = messages[i];
+			if (msg?.role !== "user") continue;
+			applyCacheControlToContentBlocks(msg.content, cacheControl);
+			break;
+		}
+		return;
+	}
+
+	for (const msg of messages) {
+		if (msg?.role !== "user") continue;
+		applyCacheControlToContentBlocks(msg.content, cacheControl);
+	}
+}
 function applyAnthropicServiceControls(
 	request: any,
 	controls: { serviceTier?: string; speed?: string },
@@ -522,8 +581,13 @@ function applyAnthropicServiceControls(
  * Map IR content part to Anthropic content block
  */
 function mapIRContentToAnthropic(part: any): any {
+	const cacheControl = normalizeAnthropicCacheControlValue(part?.cacheControl);
 	if (part.type === "text") {
-		return { type: "text", text: part.text };
+		return {
+			type: "text",
+			text: part.text,
+			...(cacheControl ? { cache_control: cacheControl } : {}),
+		};
 	}
 
 	if (part.type === "image") {
@@ -531,6 +595,7 @@ function mapIRContentToAnthropic(part: any): any {
 			return {
 				type: "image",
 				source: { type: "url", url: part.data },
+				...(cacheControl ? { cache_control: cacheControl } : {}),
 			};
 		} else {
 			return {
@@ -540,6 +605,7 @@ function mapIRContentToAnthropic(part: any): any {
 					media_type: part.mimeType || "image/jpeg",
 					data: part.data,
 				},
+				...(cacheControl ? { cache_control: cacheControl } : {}),
 			};
 		}
 	}
@@ -664,4 +730,5 @@ function createUsageFinalizer(res: Response, args: ExecutorExecuteArgs): () => P
 }
 
 export const executor: ProviderExecutor = async (args) => executeAnthropic(args);
+
 

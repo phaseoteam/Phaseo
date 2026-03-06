@@ -19,7 +19,7 @@ export function resolveAzureConfig(): AzureOpenAIConfig {
     }
     return {
         baseUrl,
-        apiVersion: bindings.AZURE_OPENAI_API_VERSION ?? "2024-02-15-preview",
+        apiVersion: bindings.AZURE_OPENAI_API_VERSION ?? "2024-10-21",
     };
 }
 

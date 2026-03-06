@@ -1,4 +1,4 @@
-// Purpose: Executor for google-ai-studio / text-generate.
+﻿// Purpose: Executor for google-ai-studio / text-generate.
 // Why: Isolates provider-specific behavior per capability.
 // How: Transforms IR and calls the provider API for this capability.
 
@@ -90,6 +90,10 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	const request: any = {
 		contents,
 	};
+
+	if (ir.googleCachedContent !== undefined) {
+		request.cachedContent = ir.googleCachedContent;
+	}
 
 	// Build generationConfig
 	const generationConfig: any = {};
@@ -365,7 +369,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	// Resolve API key: prefer decrypted BYOK for this provider, else use gateway keys.
 	const keyInfo = resolveProviderKey(args, () => {
-		return bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GOOGLE_API_KEY;
+		return bindings.GOOGLE_AI_STUDIO_API_KEY;
 	});
 
 	// Determine model candidates (must be in URL, not body)
@@ -873,3 +877,7 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
+
+
+
+

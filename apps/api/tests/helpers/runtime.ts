@@ -56,10 +56,9 @@ export function setupTestRuntime() {
         OPENAI_API_KEY: "test-openai-key",
         GOOGLE_AI_STUDIO_API_KEY: "test-google-key",
         GOOGLE_AI_STUDIO_BASE_URL: "https://api.google-ai-studio.example",
-        GOOGLE_API_KEY: "test-google-key",
         GOOGLE_BASE_URL: "https://api.google.example",
         ANTHROPIC_API_KEY: "test-anthropic-key",
-        XAI_API_KEY: "test-xai-key",
+        X_AI_API_KEY: "test-xai-key",
         AI21_API_KEY: "test-ai21-key",
         AI21_BASE_URL: "https://api.ai21.example",
         ALIBABA_CLOUD_API_KEY: "test-alibaba-key",
@@ -92,7 +91,7 @@ export function setupTestRuntime() {
         MINIMAX_BASE_URL: "https://api.minimax.example",
         ZAI_API_KEY: "test-zai-key",
         ZAI_BASE_URL: "https://api.zai.example",
-        MISTRAL_API_KEY: "test-mistral-key",
+        MISTRAL_AI_API_KEY: "test-mistral-key",
         MISTRAL_BASE_URL: "https://api.mistral.example",
         ELEVENLABS_API_KEY: "test-elevenlabs-key",
         ELEVENLABS_BASE_URL: "https://api.elevenlabs.example",
@@ -147,3 +146,4 @@ export function teardownTestRuntime() {
     configured = false;
     clearRuntime();
 }
+

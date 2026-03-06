@@ -52,6 +52,8 @@ export function buildProviderCandidatesWithDiagnostics(
         candidates.push({
             providerId: provider.providerId,
             providerStatus: provider.providerStatus ?? "active",
+            providerRoutingStatus: provider.providerRoutingStatus ?? "active",
+            modelRoutingStatus: provider.modelRoutingStatus ?? "active",
             capabilityStatus: provider.capabilityStatus ?? "active",
             adapter,
             baseWeight: provider.baseWeight > 0 ? provider.baseWeight : 1,

@@ -61,7 +61,7 @@ describe("video codec (OpenAI edge shape <-> video IR)", () => {
 				id: "req_123",
 				nativeId: "op_abc",
 				model: "google/veo-3.1-generate-preview",
-				provider: "google",
+				provider: "google-ai-studio",
 				status: "queued",
 				output: [{ uri: "gs://bucket/video.mp4" }],
 				result: { operation_name: "operations/123" },
@@ -74,7 +74,7 @@ describe("video codec (OpenAI edge shape <-> video IR)", () => {
 		expect(response.object).toBe("video");
 		expect(response.status).toBe("queued");
 		expect(response.model).toBe("google/veo-3.1-generate-preview");
-		expect(response.provider).toBe("google");
+		expect(response.provider).toBe("google-ai-studio");
 		expect(Array.isArray(response.output)).toBe(true);
 		expect(response.usage).toEqual({
 			input_tokens: 1,

@@ -471,11 +471,11 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.serviceTier).toBe("priority");
 	});
 
-	it("should decode output_config.effort=max into IR reasoning effort xhigh", () => {
+	it("should decode reasoning.effort=max into IR reasoning effort xhigh", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
-			output_config: {
+			reasoning: {
 				effort: "max",
 			},
 			messages: [{ role: "user", content: "Hello" }],
@@ -499,14 +499,14 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.reasoning?.effort).toBe("xhigh");
 	});
 
-	it("should decode thinking.effort values and preserve thinking budget", () => {
+	it("should decode reasoning values and preserve reasoning max_tokens", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
-			thinking: {
-				type: "enabled",
-				budget_tokens: 512,
+			reasoning: {
 				effort: "high",
+				enabled: true,
+				max_tokens: 512,
 			},
 			messages: [{ role: "user", content: "Hello" }],
 		};
@@ -622,6 +622,43 @@ describe("decodeAnthropicMessagesRequest", () => {
 			"user",
 			"assistant",
 		]);
+	});
+});
+
+
+describe("decodeAnthropicMessagesRequest cache control", () => {
+	it("should preserve cache_control on text and image blocks", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 512,
+			messages: [
+				{
+					role: "user",
+					content: [
+						{
+							type: "text",
+							text: "Cache this block",
+							cache_control: { type: "ephemeral", ttl: "5m" },
+						},
+						{
+							type: "image",
+							source: {
+								type: "url",
+								url: "https://example.com/img.png",
+							},
+							cache_control: { type: "ephemeral", ttl: "1h" },
+						},
+					],
+				},
+			],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+		expect(ir.messages[0].role).toBe("user");
+		if (ir.messages[0].role === "user") {
+			expect((ir.messages[0].content[0] as any).cacheControl).toEqual({ type: "ephemeral", ttl: "5m" });
+			expect((ir.messages[0].content[1] as any).cacheControl).toEqual({ type: "ephemeral", ttl: "1h" });
+		}
 	});
 });
 

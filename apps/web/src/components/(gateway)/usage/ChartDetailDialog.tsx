@@ -27,6 +27,13 @@ interface ChartDetailDialogProps {
 	metric: "requests" | "tokens" | "cost";
 }
 
+type BreakdownRow = {
+	model: string;
+	requests: number;
+	tokens: number;
+	cost: number;
+};
+
 export default function ChartDetailDialog({
 	open,
 	onOpenChange,
@@ -36,41 +43,52 @@ export default function ChartDetailDialog({
 }: ChartDetailDialogProps) {
 	if (!breakdown || !bucket) return null;
 
-	// Convert breakdown to array and sort by metric
-	const rows = Object.entries(breakdown)
-		.map(([modelId, data]) => ({
-			Model: modelId,
-			Requests: data.requests,
-			Tokens: data.tokens,
-			Cost: `$${data.cost.toFixed(5)}`,
-		}))
-		.sort((a, b) => {
-			if (metric === "requests") return b.Requests - a.Requests;
-			if (metric === "tokens") return b.Tokens - a.Tokens;
-			// cost
-			return parseFloat(b.Cost.slice(1)) - parseFloat(a.Cost.slice(1));
-		});
+	const rows = React.useMemo(() => {
+		return Object.entries(breakdown)
+			.map(([modelId, data]) => ({
+				model: modelId,
+				requests: data.requests,
+				tokens: data.tokens,
+				cost: data.cost,
+			}))
+			.sort((a, b) => {
+				if (metric === "requests") return b.requests - a.requests;
+				if (metric === "tokens") return b.tokens - a.tokens;
+				return b.cost - a.cost;
+			});
+	}, [breakdown, metric]);
+
+	const totals = React.useMemo(
+		() =>
+			rows.reduce(
+				(acc, row) => ({
+					requests: acc.requests + row.requests,
+					tokens: acc.tokens + row.tokens,
+					cost: acc.cost + row.cost,
+				}),
+				{ requests: 0, tokens: 0, cost: 0 },
+			),
+		[rows],
+	);
 
 	const handleExport = (format: "csv" | "pdf") => {
+		const exportRows = rows.map((row) => ({
+			Model: row.model,
+			Requests: row.requests,
+			Tokens: row.tokens,
+			Cost: `$${row.cost.toFixed(5)}`,
+		}));
+
 		const timestamp = new Date().toISOString().split("T")[0];
 		const filename = `chart-breakdown-${bucket}-${timestamp}`;
 		const title = `Chart Breakdown - ${bucket}`;
 
 		if (format === "csv") {
-			exportToCSV(rows, filename);
+			exportToCSV(exportRows, filename);
 		} else {
-			exportToPDF(rows, filename, title);
+			exportToPDF(exportRows, filename, title);
 		}
 	};
-
-	const totals = rows.reduce(
-		(acc, row) => ({
-			requests: acc.requests + row.Requests,
-			tokens: acc.tokens + row.Tokens,
-			cost: acc.cost + parseFloat(row.Cost.slice(1)),
-		}),
-		{ requests: 0, tokens: 0, cost: 0 }
-	);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,7 +98,6 @@ export default function ChartDetailDialog({
 				</DialogHeader>
 
 				<div className="space-y-4">
-					{/* Export Buttons */}
 					<div className="flex justify-end gap-2">
 						<Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
 							<Download className="mr-2 h-4 w-4" />
@@ -92,7 +109,6 @@ export default function ChartDetailDialog({
 						</Button>
 					</div>
 
-					{/* Breakdown Table */}
 					<div className="rounded-md border max-h-[400px] overflow-auto">
 						<Table>
 							<TableHeader>
@@ -104,19 +120,18 @@ export default function ChartDetailDialog({
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{rows.map((row, idx) => (
-									<TableRow key={idx}>
-										<TableCell className="font-medium">{row.Model}</TableCell>
+								{rows.map((row) => (
+									<TableRow key={row.model}>
+										<TableCell className="font-medium">{row.model}</TableCell>
 										<TableCell className="text-right font-mono">
-											{row.Requests.toLocaleString()}
+											{row.requests.toLocaleString()}
 										</TableCell>
 										<TableCell className="text-right font-mono">
-											{row.Tokens.toLocaleString()}
+											{row.tokens.toLocaleString()}
 										</TableCell>
-										<TableCell className="text-right font-mono">{row.Cost}</TableCell>
+										<TableCell className="text-right font-mono">${row.cost.toFixed(5)}</TableCell>
 									</TableRow>
 								))}
-								{/* Totals Row */}
 								<TableRow className="bg-muted font-semibold">
 									<TableCell>Total</TableCell>
 									<TableCell className="text-right font-mono">

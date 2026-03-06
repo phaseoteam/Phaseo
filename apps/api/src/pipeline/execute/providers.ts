@@ -4,8 +4,17 @@
 // How: Ranks providers using health metrics and weights.
 
 import { routeProviders } from "./routing";
+import { resolveCacheAwareRoutingPreference } from "./sticky-routing";
 import type { PipelineContext } from "../before/types";
 import type { ProviderCandidate } from "../before/types";
+
+function resolveCacheAwareRoutingFlag(ctx: PipelineContext): boolean {
+    const fallback =
+        typeof ctx.teamSettings?.cacheAwareRoutingEnabled === "boolean"
+            ? ctx.teamSettings.cacheAwareRoutingEnabled
+            : true;
+    return resolveCacheAwareRoutingPreference(ctx.body, fallback);
+}
 
 export async function rankProviders(
     candidates: ProviderCandidate[],
@@ -21,6 +30,7 @@ export async function rankProviders(
         providerCapabilitiesBeta: ctx.providerCapabilitiesBeta ?? false,
         testingMode: ctx.testingMode ?? false,
         requestId: ctx.requestId ?? null,
+        cacheAwareRouting: resolveCacheAwareRoutingFlag(ctx),
     });
     const ranked = routed.ranked;
     (ctx as any).routingSnapshot = ranked.map((entry) => ({
@@ -32,13 +42,4 @@ export async function rankProviders(
     (ctx as any).routingDiagnostics = routed.diagnostics;
     return ranked;
 }
-
-
-
-
-
-
-
-
-
 

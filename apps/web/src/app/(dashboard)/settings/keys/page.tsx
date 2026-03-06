@@ -1,10 +1,15 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialog";
 import KeysPanel from "@/components/(gateway)/settings/keys/KeysPanel";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { Button } from "@/components/ui/button";
+
+const QUICKSTART_DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
 
 export const metadata = {
 	title: "API Keys - Settings",
@@ -116,11 +121,23 @@ async function KeysContent() {
 				title="API Keys"
 				description="Create and manage gateway API keys for this team."
 				actions={
-					<CreateKeyDialog
-						currentUserId={user?.id}
-						currentTeamId={initialTeamId}
-						teams={teams}
-					/>
+					<div className="flex items-center gap-2">
+						<Button asChild variant="outline" size="sm">
+							<Link
+								href={QUICKSTART_DOCS_HREF}
+								target="_blank"
+								rel="noreferrer"
+							>
+								Quick start
+								<ArrowUpRight className="ml-1 h-4 w-4" />
+							</Link>
+						</Button>
+						<CreateKeyDialog
+							currentUserId={user?.id}
+							currentTeamId={initialTeamId}
+							teams={teams}
+						/>
+					</div>
 				}
 			/>
 			<KeysPanel

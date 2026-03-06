@@ -7,6 +7,7 @@ import { loadPriceCard, computeBill } from "../pricing";
 import type { PriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
+import { deriveCachePricingContext } from "../pricing/cache-context";
 
 function derivePricingPlan(body: any, usage: any): string {
     const explicit = typeof body?.pricing_plan === "string" ? body.pricing_plan.trim().toLowerCase() : "";
@@ -69,6 +70,7 @@ export function calculatePricing(
             const pricingPlan = derivePricingPlan(body, usage);
             const requestOptions = {
                 ...(body ?? {}),
+                ...deriveCachePricingContext(body),
                 pricing_plan: pricingPlan,
             };
 
@@ -87,6 +89,7 @@ export function calculatePricing(
 
     return { pricedUsage, totalCents, totalNanos, currency };
 }
+
 
 
 

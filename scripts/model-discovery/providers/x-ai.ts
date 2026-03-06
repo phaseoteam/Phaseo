@@ -3,13 +3,13 @@ import { asArray, asRecord, defineProvider, fetchJson, normalizeModelEntries } f
 export default defineProvider({
     id: "x-ai",
     name: "xAI",
-    requiredEnv: ["XAI_API_KEY"],
+    requiredEnv: ["X_AI_API_KEY"],
     async fetchModels() {
         const payload = await fetchJson({
             url: "https://api.x.ai/v1/models",
             init: {
                 headers: {
-                    Authorization: `Bearer ${process.env.XAI_API_KEY}`,
+                    Authorization: `Bearer ${process.env.X_AI_API_KEY}`,
                 },
             },
         });
@@ -17,3 +17,4 @@ export default defineProvider({
         return normalizeModelEntries(data, (item) => (typeof item.id === "string" ? item.id : null));
     },
 });
+

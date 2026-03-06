@@ -137,3 +137,38 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.system).toContain("\"temperature_c\"");
 	});
 });
+
+describe("irToAnthropicMessages cache control", () => {
+	it("applies default anthropic cache control to the last user message", () => {
+		const request = createBaseRequest();
+		request.anthropicCacheControl = {
+			type: "ephemeral",
+			ttl: "5m",
+			scope: "last_user_message",
+		} as any;
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.messages[0].content[0].cache_control).toEqual({
+			type: "ephemeral",
+			ttl: "5m",
+		});
+	});
+
+	it("preserves per-block cache control when present", () => {
+		const request = createBaseRequest();
+		request.messages = [{
+			role: "user",
+			content: [{
+				type: "text",
+				text: "Hello",
+				cacheControl: { type: "ephemeral", ttl: "1h" },
+			} as any],
+		}] as any;
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.messages[0].content[0].cache_control).toEqual({
+			type: "ephemeral",
+			ttl: "1h",
+		});
+	});
+});

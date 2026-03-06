@@ -49,8 +49,7 @@ describe("provider capability profiles", () => {
 
 	it("enables full multimodal adapter capabilities for priority providers", () => {
 		const providers = [
-			"openai",
-			"google",
+			"openai",
 			"google-ai-studio",
 			"google-vertex",
 			"amazon-bedrock",

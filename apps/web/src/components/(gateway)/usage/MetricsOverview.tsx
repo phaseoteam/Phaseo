@@ -5,6 +5,7 @@ import { useQueryState } from "nuqs";
 import { Activity, Coins, Zap } from "lucide-react";
 import MetricChartCard from "./MetricChartCard";
 import MetricDetailDialog from "./MetricDetailDialog";
+import { type ModelMetadataMap } from "./model-display";
 import {
 	fetchChartData,
 	ChartDataResult,
@@ -14,6 +15,7 @@ interface MetricsOverviewProps {
 	timeRange: { from: string; to: string };
 	range: "1h" | "1d" | "1w" | "1m" | "1y";
 	colorMap: Record<string, string>;
+	modelMetadata: ModelMetadataMap;
 }
 
 type MetricType = "requests" | "tokens" | "cost" | null;
@@ -22,6 +24,7 @@ export default function MetricsOverview({
 	timeRange,
 	range,
 	colorMap,
+	modelMetadata,
 }: MetricsOverviewProps) {
 	const [keyFilter] = useQueryState("key");
 	const [chartData, setChartData] = useState<ChartDataResult | null>(null);
@@ -29,7 +32,6 @@ export default function MetricsOverview({
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [selectedMetric, setSelectedMetric] = useState<MetricType>(null);
 
-	// Fetch chart data
 	useEffect(() => {
 		const fetchData = async () => {
 			setLoading(true);
@@ -56,40 +58,8 @@ export default function MetricsOverview({
 		setDialogOpen(true);
 	};
 
-	// Format functions
 	const formatNumber = (value: number) => value.toLocaleString();
 	const formatCost = (value: number) => `$${value.toFixed(5)}`;
-
-	// Convert provider breakdown to dialog format
-	const getProviderData = (metric: "requests" | "tokens" | "cost") => {
-		if (!chartData?.providerBreakdown) return [];
-
-		return Array.from(chartData.providerBreakdown.entries())
-			.map(([providerId, metrics]) => {
-				const modelData = Array.from(metrics.models.entries()).map(([modelId, modelMetrics]) => {
-					const values = [modelMetrics[metric]];
-					return {
-						modelId,
-						total: modelMetrics[metric],
-						avg: modelMetrics[metric] / modelMetrics.requests,
-						min: Math.min(...values),
-						max: Math.max(...values),
-						count: modelMetrics.requests,
-					};
-				});
-
-				const allValues = modelData.map((m) => m.total);
-				return {
-					providerId,
-					total: metrics[metric],
-					avg: metrics[metric] / metrics.requests,
-					min: Math.min(...allValues),
-					max: Math.max(...allValues),
-					models: modelData.sort((a, b) => b.total - a.total),
-				};
-			})
-			.sort((a, b) => b.total - a.total);
-	};
 
 	if (loading) {
 		return (
@@ -108,7 +78,6 @@ export default function MetricsOverview({
 	return (
 		<>
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				{/* Requests Card */}
 				<MetricChartCard
 					title="Requests"
 					icon={Activity}
@@ -118,11 +87,11 @@ export default function MetricsOverview({
 					format={formatNumber}
 					chartData={chartData.requestsChart}
 					colorMap={colorMap}
+					modelMetadata={modelMetadata}
 					onClick={() => handleCardClick("requests")}
 					metricType="number"
 				/>
 
-				{/* Tokens Card */}
 				<MetricChartCard
 					title="Tokens"
 					icon={Zap}
@@ -132,11 +101,11 @@ export default function MetricsOverview({
 					format={formatNumber}
 					chartData={chartData.tokensChart}
 					colorMap={colorMap}
+					modelMetadata={modelMetadata}
 					onClick={() => handleCardClick("tokens")}
 					metricType="number"
 				/>
 
-				{/* Cost Card */}
 				<MetricChartCard
 					title="Cost"
 					icon={Coins}
@@ -146,12 +115,12 @@ export default function MetricsOverview({
 					format={formatCost}
 					chartData={chartData.costChart}
 					colorMap={colorMap}
+					modelMetadata={modelMetadata}
 					onClick={() => handleCardClick("cost")}
 					metricType="currency"
 				/>
 			</div>
 
-			{/* Detail Dialogs */}
 			{selectedMetric === "requests" && (
 				<MetricDetailDialog
 					open={dialogOpen}
@@ -159,9 +128,9 @@ export default function MetricsOverview({
 					title="Requests Breakdown"
 					metric="requests"
 					chartData={chartData.requestsChart}
-					providerData={getProviderData("requests")}
 					colorMap={colorMap}
 					format={formatNumber}
+					modelMetadata={modelMetadata}
 				/>
 			)}
 
@@ -172,9 +141,9 @@ export default function MetricsOverview({
 					title="Tokens Breakdown"
 					metric="tokens"
 					chartData={chartData.tokensChart}
-					providerData={getProviderData("tokens")}
 					colorMap={colorMap}
 					format={formatNumber}
+					modelMetadata={modelMetadata}
 				/>
 			)}
 
@@ -185,11 +154,12 @@ export default function MetricsOverview({
 					title="Cost Breakdown"
 					metric="cost"
 					chartData={chartData.costChart}
-					providerData={getProviderData("cost")}
 					colorMap={colorMap}
 					format={formatCost}
+					modelMetadata={modelMetadata}
 				/>
 			)}
 		</>
 	);
 }
+

@@ -4,16 +4,28 @@
 // How: Captures routing snapshots for analytics and debugging.
 
 import type { Endpoint } from "@core/types";
-import type { ProviderCandidate } from "../before/types";
+import type {
+    CapabilityRoutingStatus,
+    ProviderCandidate,
+    ProviderRolloutStatus,
+    RoutingStatus,
+} from "../before/types";
 import type { PriceCard } from "../pricing/types";
 import { readHealthMany, ProviderHealth } from "./health";
 import { stripPrioritySuffix } from "./utils";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
+import {
+    readStickyRouting,
+    resolveStickyRoutingContext,
+    stickyRoutingCacheBoostMultiplier,
+    type StickyRoutingContext,
+    type StickyRoutingEntry,
+} from "./sticky-routing";
 
 type Priority = "default" | "fast" | "quick" | "nitro";
 type RoutingMode = "balanced" | "price" | "latency" | "throughput";
-type ProviderStatus = "active" | "beta" | "alpha" | "not_ready";
-type CapabilityStatus = "active" | "deranked" | "disabled" | "internal_testing";
+type ProviderStatus = ProviderRolloutStatus;
+type CapabilityStatus = CapabilityRoutingStatus;
 
 type RoutingPreset = {
     wSucc: number;
@@ -60,11 +72,21 @@ function normalizeProviderStatus(value?: string | null): ProviderStatus {
     return "active";
 }
 
-function normalizeCapabilityStatus(value?: string | null): CapabilityStatus {
+function normalizeRoutingStatus(value?: string | null): RoutingStatus {
     const normalized = String(value ?? "").trim().toLowerCase();
     if (normalized === "active") return "active";
-    if (normalized === "deranked") return "deranked";
+    if (normalized === "deranked" || normalized === "deranked_lvl1" || normalized === "deranked-lvl1") {
+        return "deranked_lvl1";
+    }
+    if (normalized === "deranked_lvl2" || normalized === "deranked-lvl2") return "deranked_lvl2";
+    if (normalized === "deranked_lvl3" || normalized === "deranked-lvl3") return "deranked_lvl3";
     if (normalized === "disabled") return "disabled";
+    if (normalized === "notready" || normalized === "not_ready" || normalized === "not ready") return "disabled";
+    return "active";
+}
+
+function normalizeCapabilityStatus(value?: string | null): CapabilityStatus {
+    const normalized = String(value ?? "").trim().toLowerCase();
     if (
         normalized === "internal_testing" ||
         normalized === "internal-testing" ||
@@ -72,7 +94,15 @@ function normalizeCapabilityStatus(value?: string | null): CapabilityStatus {
     ) {
         return "internal_testing";
     }
-    return "active";
+    return normalizeRoutingStatus(normalized);
+}
+
+function routingStatusMultiplier(status: RoutingStatus): number {
+    if (status === "deranked_lvl1") return 1e-3;
+    if (status === "deranked_lvl2") return 1e-6;
+    if (status === "deranked_lvl3") return 1e-9;
+    if (status === "disabled") return 0;
+    return 1;
 }
 
 function applyRoutingMode(preset: RoutingPreset, mode: RoutingMode): RoutingPreset {
@@ -249,6 +279,26 @@ function computePriceScores(
     return scores;
 }
 
+function shouldApplyStickyRoutingBoost(
+    candidate: ProviderCandidate,
+    stickyHint: StickyRoutingEntry
+): boolean {
+    if (!Number.isFinite(stickyHint.cachedReadTokens) || stickyHint.cachedReadTokens <= 0) {
+        return false;
+    }
+
+    const meterPrices = extractMeterPrices(candidate.pricingCard ?? null);
+    const cachedReadPrice = meterPrices.get("cached_read_text_tokens");
+    const inputPrice = meterPrices.get("input_text_tokens");
+
+    // If both prices are present, only boost when cache reads are cheaper than standard input.
+    if (cachedReadPrice !== undefined && inputPrice !== undefined) {
+        return cachedReadPrice < inputPrice;
+    }
+
+    // Keep sticky behavior when explicit cache pricing is unavailable.
+    return true;
+}
 export type RoutedCandidate = {
     candidate: ProviderCandidate;
     adapter: ProviderCandidate["adapter"];
@@ -257,7 +307,7 @@ export type RoutedCandidate = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "capability_status_gate" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "health_breaker";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -276,6 +326,14 @@ export type RoutingDiagnostics = {
     includeAlpha: boolean;
     betaChannelEnabled: boolean;
     providerCapabilitiesBeta: boolean;
+    stickyRouting: {
+        enabled: boolean;
+        contextResolved: boolean;
+        contextSource: "prompt_cache_key" | "context_hash" | null;
+        hintedProvider: string | null;
+        cachedReadTokens: number | null;
+        applied: boolean;
+    };
     filterStages: RoutingFilterStageDiagnostics[];
     finalCandidateCount: number;
 };
@@ -338,6 +396,7 @@ export async function routeProviders(
         providerCapabilitiesBeta?: boolean;
         testingMode?: boolean;
         requestId?: string | null;
+        cacheAwareRouting?: boolean;
     }
 ): Promise<{ ranked: RoutedCandidate[]; diagnostics: RoutingDiagnostics }> {
     const { base, priority, strict } = parsePriority(ctx.model);
@@ -357,9 +416,64 @@ export async function routeProviders(
     const betaChannelEnabled = Boolean(ctx.betaChannelEnabled);
     const providerCapabilitiesBeta = Boolean(ctx.providerCapabilitiesBeta);
     const testingMode = Boolean(ctx.testingMode);
+    const cacheAwareRoutingEnabled = ctx.cacheAwareRouting !== false;
     const allowBetaProviders = betaChannelEnabled || providerCapabilitiesBeta;
     const requestedMaxTokens = getRequestedMaxTokens(ctx.body);
     const filterStages: RoutingFilterStageDiagnostics[] = [];
+
+    let stickyContext: StickyRoutingContext | null = null;
+    let stickyHint: StickyRoutingEntry | null = null;
+    let stickyRoutingApplied = false;
+
+    if (cacheAwareRoutingEnabled) {
+        try {
+            stickyContext = await resolveStickyRoutingContext({
+                endpoint: ctx.endpoint,
+                body: ctx.body,
+            });
+            if (stickyContext) {
+                stickyHint = await readStickyRouting(
+                    ctx.teamId,
+                    ctx.endpoint,
+                    base,
+                    stickyContext.key,
+                );
+            }
+        } catch (error) {
+            console.warn("[gateway] sticky routing read failed", {
+                endpoint: ctx.endpoint,
+                model: ctx.model,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    }
+
+    const buildStickyDiagnostics = () => ({
+        enabled: cacheAwareRoutingEnabled,
+        contextResolved: Boolean(stickyContext),
+        contextSource: stickyContext?.source ?? null,
+        hintedProvider: stickyHint?.providerId ?? null,
+        cachedReadTokens:
+            typeof stickyHint?.cachedReadTokens === "number"
+                ? stickyHint.cachedReadTokens
+                : null,
+        applied: stickyRoutingApplied,
+    });
+
+    const buildDiagnostics = (finalCandidateCount: number): RoutingDiagnostics => ({
+        model: ctx.model,
+        endpoint: ctx.endpoint,
+        priority,
+        routingMode: mode,
+        strictPriority: strict,
+        testingMode,
+        includeAlpha,
+        betaChannelEnabled,
+        providerCapabilitiesBeta,
+        stickyRouting: buildStickyDiagnostics(),
+        filterStages,
+        finalCandidateCount,
+    });
 
     const pushStage = (
         stage: RoutingFilterStageDiagnostics["stage"],
@@ -415,6 +529,30 @@ export async function routeProviders(
         return `provider_status_${status}`;
     });
 
+    const beforeProviderRoutingStatusGate = poolCandidates;
+    poolCandidates = poolCandidates.filter((candidate) => {
+        const routingStatus = normalizeRoutingStatus(candidate.providerRoutingStatus);
+        if (routingStatus === "disabled") return false;
+        return true;
+    });
+    pushStage("provider_routing_status_gate", beforeProviderRoutingStatusGate, poolCandidates, (candidate) => {
+        const routingStatus = normalizeRoutingStatus(candidate.providerRoutingStatus);
+        if (routingStatus === "disabled") return "provider_routing_status_disabled";
+        return "provider_routing_status_" + routingStatus;
+    });
+
+    const beforeModelRoutingStatusGate = poolCandidates;
+    poolCandidates = poolCandidates.filter((candidate) => {
+        const routingStatus = normalizeRoutingStatus(candidate.modelRoutingStatus);
+        if (routingStatus === "disabled") return false;
+        return true;
+    });
+    pushStage("model_routing_status_gate", beforeModelRoutingStatusGate, poolCandidates, (candidate) => {
+        const routingStatus = normalizeRoutingStatus(candidate.modelRoutingStatus);
+        if (routingStatus === "disabled") return "model_routing_status_disabled";
+        return "model_routing_status_" + routingStatus;
+    });
+
     const beforeCapabilityStatusGate = poolCandidates;
     poolCandidates = poolCandidates.filter((candidate) => {
         const capabilityStatus = normalizeCapabilityStatus(candidate.capabilityStatus);
@@ -426,23 +564,11 @@ export async function routeProviders(
         const capabilityStatus = normalizeCapabilityStatus(candidate.capabilityStatus);
         if (capabilityStatus === "disabled") return "capability_status_disabled";
         if (capabilityStatus === "internal_testing") return "capability_status_internal_testing_requires_testing_mode";
-        return `capability_status_${capabilityStatus}`;
+        return "capability_status_" + capabilityStatus;
     });
 
     if (!poolCandidates.length) {
-        const diagnostics: RoutingDiagnostics = {
-            model: ctx.model,
-            endpoint: ctx.endpoint,
-            priority,
-            routingMode: mode,
-            strictPriority: strict,
-            testingMode,
-            includeAlpha,
-            betaChannelEnabled,
-            providerCapabilitiesBeta,
-            filterStages,
-            finalCandidateCount: 0,
-        };
+        const diagnostics = buildDiagnostics(0);
         console.log("[gateway] provider pool empty", {
             model: ctx.model,
             endpoint: ctx.endpoint,
@@ -511,6 +637,8 @@ export async function routeProviders(
         const h = v.h;
         const weight = v.candidate.baseWeight > 0 ? v.candidate.baseWeight : 1;
         const providerStatus = normalizeProviderStatus(v.candidate.providerStatus);
+        const providerRoutingStatus = normalizeRoutingStatus(v.candidate.providerRoutingStatus);
+        const modelRoutingStatus = normalizeRoutingStatus(v.candidate.modelRoutingStatus);
         const capabilityStatus = normalizeCapabilityStatus(v.candidate.capabilityStatus);
         const rolloutMultiplier =
             providerStatus === "beta"
@@ -518,14 +646,23 @@ export async function routeProviders(
                 : providerStatus === "alpha"
                     ? 0.03
                     : 1;
-        const capabilityMultiplier =
-            capabilityStatus === "deranked"
-                ? 0.6
-                : capabilityStatus === "disabled"
-                    ? 0
-                    : capabilityStatus === "internal_testing"
-                        ? (testingMode ? 1 : 0)
-                        : 1;
+        const capabilityRoutingMultiplier =
+            capabilityStatus === "internal_testing"
+                ? (testingMode ? 1 : 0)
+                : routingStatusMultiplier(capabilityStatus);
+        const routingStatusMultiplierCombined =
+            routingStatusMultiplier(providerRoutingStatus) *
+            routingStatusMultiplier(modelRoutingStatus) *
+            capabilityRoutingMultiplier;
+        const cacheRoutingMultiplier =
+            stickyHint &&
+            stickyHint.providerId === v.candidate.providerId &&
+            shouldApplyStickyRoutingBoost(v.candidate, stickyHint)
+                ? stickyRoutingCacheBoostMultiplier(stickyHint.cachedReadTokens)
+                : 1;
+        if (cacheRoutingMultiplier > 1) {
+            stickyRoutingApplied = true;
+        }
         const succ = 1 - h.err_ewma_60s;
         const p50Curve = 1 / (1 + (h.lat_ewma_60s / preset.L0));
         const p50Norm = 1 - normalise(h.lat_ewma_60s, minP50, maxP50);
@@ -550,7 +687,11 @@ export async function routeProviders(
 
         const score = Math.max(
             0,
-            baseScore * Math.max(weight, 0.0001) * rolloutMultiplier * capabilityMultiplier
+            baseScore *
+                Math.max(weight, 0.0001) *
+                rolloutMultiplier *
+                routingStatusMultiplierCombined *
+                cacheRoutingMultiplier
         );
         return { candidate: v.candidate, adapter: v.adapter, health: h, score };
     });
@@ -565,37 +706,13 @@ export async function routeProviders(
             const ranked = [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
             return {
                 ranked,
-                diagnostics: {
-                    model: ctx.model,
-                    endpoint: ctx.endpoint,
-                    priority,
-                    routingMode: mode,
-                    strictPriority: strict,
-                    testingMode,
-                    includeAlpha,
-                    betaChannelEnabled,
-                    providerCapabilitiesBeta,
-                    filterStages,
-                    finalCandidateCount: ranked.length,
-                },
+                diagnostics: buildDiagnostics(ranked.length),
             };
         }
         const ranked = [...ordered, ...weightedOrder(remaining, (s) => s.score, rng)];
         return {
             ranked,
-            diagnostics: {
-                model: ctx.model,
-                endpoint: ctx.endpoint,
-                priority,
-                routingMode: mode,
-                strictPriority: strict,
-                testingMode,
-                includeAlpha,
-                betaChannelEnabled,
-                providerCapabilitiesBeta,
-                filterStages,
-                finalCandidateCount: ranked.length,
-            },
+            diagnostics: buildDiagnostics(ranked.length),
         };
     }
 
@@ -603,47 +720,14 @@ export async function routeProviders(
         const ranked = [...scored].sort((a, b) => b.score - a.score);
         return {
             ranked,
-            diagnostics: {
-                model: ctx.model,
-                endpoint: ctx.endpoint,
-                priority,
-                routingMode: mode,
-                strictPriority: strict,
-                testingMode,
-                includeAlpha,
-                betaChannelEnabled,
-                providerCapabilitiesBeta,
-                filterStages,
-                finalCandidateCount: ranked.length,
-            },
+            diagnostics: buildDiagnostics(ranked.length),
         };
     }
 
     const ranked = weightedOrder(scored, (s) => s.score, rng);
     return {
         ranked,
-        diagnostics: {
-            model: ctx.model,
-            endpoint: ctx.endpoint,
-            priority,
-            routingMode: mode,
-            strictPriority: strict,
-            testingMode,
-            includeAlpha,
-            betaChannelEnabled,
-            providerCapabilitiesBeta,
-            filterStages,
-            finalCandidateCount: ranked.length,
-        },
+        diagnostics: buildDiagnostics(ranked.length),
     };
 }
-
-
-
-
-
-
-
-
-
 

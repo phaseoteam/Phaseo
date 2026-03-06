@@ -9,8 +9,7 @@ const REQUIRED_MODALITY_CAPABILITIES = [
 ] as const;
 
 const PRIORITY_PROVIDERS = [
-	"openai",
-	"google",
+	"openai",
 	"google-ai-studio",
 	"google-vertex",
 	"amazon-bedrock",

@@ -1,4 +1,4 @@
-// Purpose: Executor for google-vertex / text-generate.
+﻿// Purpose: Executor for google-vertex / text-generate.
 // Why: Uses Vertex native endpoints with model-family-specific converters.
 // How: IR -> provider-specific Vertex payload -> IR, with protocol conversion handled downstream.
 
@@ -354,6 +354,10 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 
 	const request: any = { contents };
 
+	if (ir.googleCachedContent !== undefined) {
+		request.cachedContent = ir.googleCachedContent;
+	}
+
 	const generationConfig: any = {};
 	if (ir.temperature !== undefined) generationConfig.temperature = ir.temperature;
 	if (ir.maxTokens !== undefined) generationConfig.maxOutputTokens = ir.maxTokens;
@@ -699,3 +703,6 @@ export const executor: ProviderExecutor = buildTextExecutor({
 	postprocess,
 	transformStream,
 });
+
+
+

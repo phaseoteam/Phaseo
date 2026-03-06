@@ -22,7 +22,7 @@
  *   that generate images alongside text in text.generate responses
  */
 export type IRContentPart =
-	| { type: "text"; text: string }
+	| { type: "text"; text: string; cacheControl?: IRCacheControl }
 	| {
 		type: "reasoning_text";
 		text: string;
@@ -35,6 +35,7 @@ export type IRContentPart =
 		data: string; // URL or base64
 		mimeType?: string;
 		detail?: "auto" | "low" | "high"; // OpenAI detail level
+		cacheControl?: IRCacheControl;
 		// Optional signature for preserving reasoning context across turns (Google Nano Banana)
 		thoughtSignature?: string;
 	}
@@ -148,6 +149,12 @@ export type IRReasoning = {
 	includeThoughts?: boolean;
 };
 
+export type IRCacheControl = {
+	type?: string;
+	ttl?: string;
+	[key: string]: any;
+};
+
 /**
  * Response format configuration
  */
@@ -246,6 +253,12 @@ export type IRChatRequest = {
 	serviceTier?: string;
 	speed?: string;
 	promptCacheKey?: string;
+	promptCacheRetention?: string;
+	anthropicCacheControl?: IRCacheControl & {
+		scope?: "all_text" | "last_user_message" | "none" | string;
+	};
+	googleCachedContent?: string;
+	xaiConversationId?: string;
 	safetyIdentifier?: string;
 
 	// Metadata
@@ -783,3 +796,8 @@ export function hasToolCalls(message: IRMessage): boolean {
 export function countTotalTokens(usage?: IRUsage): number {
 	return usage?.totalTokens ?? 0;
 }
+
+
+
+
+

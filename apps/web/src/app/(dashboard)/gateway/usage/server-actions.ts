@@ -175,7 +175,8 @@ export async function fetchOrganizationColors(
 	const normalizeApiId = (id: string) => {
 		const base = id.split(":")[0];
 		const dotToDash = base.replace(/\./g, "-");
-		return Array.from(new Set([id, base, dotToDash]));
+		const withoutOrg = id.includes("/") ? id.split("/").slice(1).join("/") : id;
+		return Array.from(new Set([id, base, dotToDash, withoutOrg])).filter(Boolean);
 	};
 
 	// 1) Direct internal model IDs -> org colors
@@ -271,11 +272,20 @@ export async function fetchOrganizationColors(
 
 /**
  * Fetch model metadata for filters
- * Returns a map of model_id -> { organisationId, organisationName }
+ * Returns a map of model_id -> { organisationId, organisationName, modelName? }
  */
 export async function fetchModelMetadata(
 	modelIds: string[]
-): Promise<Map<string, { organisationId: string; organisationName: string }>> {
+): Promise<
+	Map<
+		string,
+		{
+			organisationId: string;
+			organisationName: string;
+			modelName?: string;
+		}
+	>
+> {
 	const { supabase } = await requireAuthenticatedUser();
 
 	if (modelIds.length === 0) {
@@ -285,23 +295,67 @@ export async function fetchModelMetadata(
 	const uniqueModelIds = Array.from(new Set(modelIds));
 	const metadataMap = new Map<
 		string,
-		{ organisationId: string; organisationName: string }
+		{
+			organisationId: string;
+			organisationName: string;
+			modelName?: string;
+		}
 	>();
 
 	const addMetadata = (
 		key: string | null | undefined,
-		value: { organisationId: string; organisationName: string },
+		value: {
+			organisationId: string;
+			organisationName: string;
+			modelName?: string;
+		},
 	) => {
 		if (!key) return;
-		if (!metadataMap.has(key)) {
+		const existing = metadataMap.get(key);
+		if (!existing) {
 			metadataMap.set(key, value);
+			return;
+		}
+		if (!existing.modelName && value.modelName) {
+			metadataMap.set(key, { ...existing, modelName: value.modelName });
 		}
 	};
 
 	const normalizeApiId = (id: string) => {
-		const base = id.split(":")[0];
-		const dotToDash = base.replace(/\./g, "-");
-		return Array.from(new Set([id, base, dotToDash]));
+		const variants = new Set<string>();
+		const queue: string[] = [];
+
+		const add = (value: string | null | undefined) => {
+			const v = value?.trim();
+			if (!v || variants.has(v)) return;
+			variants.add(v);
+			queue.push(v);
+		};
+
+		add(id);
+
+		while (queue.length > 0) {
+			const current = queue.shift()!;
+			add(current.toLowerCase());
+			add(current.replace(/\./g, "-"));
+			if (current.includes("/")) {
+				add(current.split("/").slice(1).join("/"));
+			}
+			if (current.includes(":")) {
+				const parts = current.split(":");
+				add(parts[0]);
+				add(parts.slice(1).join(":"));
+			}
+		}
+
+		return Array.from(variants);
+	};
+
+	const deriveOrganisationId = (modelId: string | null | undefined) => {
+		if (!modelId) return "unknown";
+		const slashIndex = modelId.indexOf("/");
+		if (slashIndex > 0) return modelId.slice(0, slashIndex);
+		return modelId;
 	};
 
 	const { data: models } = await supabase
@@ -309,6 +363,7 @@ export async function fetchModelMetadata(
 		.select(
 			`
 			model_id,
+			name,
 			organisation_id,
 			organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, organisation_name)
 		`
@@ -317,21 +372,33 @@ export async function fetchModelMetadata(
 
 	if (models) {
 		models.forEach((m: any) => {
-			if (m.organisation) {
-				const value = {
-					organisationId: m.organisation.organisation_id,
-					organisationName: m.organisation.organisation_name || m.organisation.organisation_id,
-				};
-				addMetadata(m.model_id, value);
-				if (m.model_id.includes("/")) {
-					const withoutOrg = m.model_id.split("/").slice(1).join("/");
-					addMetadata(withoutOrg, value);
-				}
+			const organisationId =
+				typeof m?.organisation?.organisation_id === "string" && m.organisation.organisation_id
+					? m.organisation.organisation_id
+					: typeof m?.organisation_id === "string" && m.organisation_id
+						? m.organisation_id
+						: deriveOrganisationId(m?.model_id);
+
+			const organisationName =
+				typeof m?.organisation?.organisation_name === "string" && m.organisation.organisation_name
+					? m.organisation.organisation_name
+					: organisationId;
+
+			const value = {
+				organisationId,
+				organisationName,
+				modelName: typeof m?.name === "string" ? m.name : undefined,
+			};
+
+			addMetadata(m?.model_id, value);
+			if (typeof m?.model_id === "string" && m.model_id.includes("/")) {
+				const withoutOrg = m.model_id.split("/").slice(1).join("/");
+				addMetadata(withoutOrg, value);
 			}
 		});
 	}
 
-	// Also resolve API model IDs to internal model metadata.
+	// Resolve API model IDs -> internal model IDs -> data_models.name
 	const apiLookupIds = Array.from(
 		new Set(uniqueModelIds.flatMap((id) => normalizeApiId(id))),
 	);
@@ -343,6 +410,7 @@ export async function fetchModelMetadata(
 			internal_model_id,
 			model:data_models!data_api_provider_models_internal_model_id_fkey(
 				model_id,
+				name,
 				organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, organisation_name)
 			)
 		`
@@ -351,15 +419,33 @@ export async function fetchModelMetadata(
 
 	if (providerModels) {
 		providerModels.forEach((pm: any) => {
-			const org = pm?.model?.organisation;
-			if (!org) return;
-			const value = {
-				organisationId: org.organisation_id,
-				organisationName: org.organisation_name || org.organisation_id,
-			};
-			const apiId: string | null = pm.api_model_id ?? null;
+			const apiId: string | null = typeof pm?.api_model_id === "string" ? pm.api_model_id : null;
 			const internalId: string | null =
-				pm.internal_model_id ?? pm?.model?.model_id ?? null;
+				typeof pm?.internal_model_id === "string"
+					? pm.internal_model_id
+					: typeof pm?.model?.model_id === "string"
+						? pm.model.model_id
+						: null;
+
+			if (!apiId && !internalId) return;
+
+			const organisationId =
+				typeof pm?.model?.organisation?.organisation_id === "string" &&
+				pm.model.organisation.organisation_id
+					? pm.model.organisation.organisation_id
+					: deriveOrganisationId(internalId);
+
+			const organisationName =
+				typeof pm?.model?.organisation?.organisation_name === "string" &&
+				pm.model.organisation.organisation_name
+					? pm.model.organisation.organisation_name
+					: organisationId;
+
+			const value = {
+				organisationId,
+				organisationName,
+				modelName: typeof pm?.model?.name === "string" ? pm.model.name : undefined,
+			};
 
 			addMetadata(apiId, value);
 			if (apiId && apiId.includes(":")) {
@@ -386,7 +472,6 @@ export async function fetchModelMetadata(
 
 	return metadataMap;
 }
-
 /**
  * Fetch provider names for display labels
  * Returns a map of provider_id -> provider name
@@ -735,11 +820,72 @@ export async function fetchChartData(
 		return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
 	}
 
+	function floorToBucketStart(date: Date, range: string): Date {
+		const d = new Date(date);
+		if (range === "1h") {
+			d.setSeconds(0, 0);
+			d.setMinutes(Math.floor(d.getMinutes() / 5) * 5);
+			return d;
+		}
+		if (range === "1d") {
+			d.setMinutes(0, 0, 0);
+			return d;
+		}
+		if (range === "1m" || range === "1w") {
+			d.setHours(0, 0, 0, 0);
+			return d;
+		}
+		d.setDate(1);
+		d.setHours(0, 0, 0, 0);
+		return d;
+	}
+
+	function advanceBucket(date: Date, range: string) {
+		if (range === "1h") {
+			date.setMinutes(date.getMinutes() + 5);
+			return;
+		}
+		if (range === "1d") {
+			date.setHours(date.getHours() + 1);
+			return;
+		}
+		if (range === "1m" || range === "1w") {
+			date.setDate(date.getDate() + 1);
+			return;
+		}
+		date.setMonth(date.getMonth() + 1);
+	}
+
+	function buildExpectedBuckets(fromIso: string, toIso: string, range: string): string[] {
+		const from = new Date(fromIso);
+		const to = new Date(toIso);
+		const cursor = floorToBucketStart(from, range);
+		const labels: string[] = [];
+		let safety = 0;
+		while (cursor.getTime() <= to.getTime() && safety < 10000) {
+			labels.push(bucketFor(cursor, range));
+			advanceBucket(cursor, range);
+			safety += 1;
+		}
+		return labels;
+	}
+
 	// Build provider breakdown and chart data
 	const providerBreakdown = new Map<string, ProviderMetrics>();
 	const requestsBuckets = new Map<string, Map<string, number>>();
 	const tokensBuckets = new Map<string, Map<string, number>>();
 	const costBuckets = new Map<string, Map<string, number>>();
+	const expectedBuckets = buildExpectedBuckets(
+		params.timeRange.from,
+		params.timeRange.to,
+		params.range,
+	);
+
+	for (const bucket of expectedBuckets) {
+		requestsBuckets.set(bucket, new Map());
+		tokensBuckets.set(bucket, new Map());
+		costBuckets.set(bucket, new Map());
+	}
 
 	(rows ?? []).forEach((row: any) => {
 		const provider = row.provider || "unknown";
@@ -856,3 +1002,4 @@ export async function fetchChartData(
 		},
 	};
 }
+

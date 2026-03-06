@@ -21,11 +21,9 @@ export type GatewayBindings = {
     OPENAI_BASE_URL?: string;
     GOOGLE_AI_STUDIO_API_KEY?: string;
     GOOGLE_AI_STUDIO_BASE_URL?: string;
-    GOOGLE_API_KEY?: string;
     GOOGLE_BASE_URL?: string;
     ANTHROPIC_API_KEY?: string;
     X_AI_API_KEY?: string;
-    XAI_API_KEY?: string;
     XAI_BASE_URL?: string;
     XAI_DEBUG_USAGE?: string;
     AI21_API_KEY?: string;
@@ -95,7 +93,6 @@ export type GatewayBindings = {
     MANCER_BASE_URL?: string;
     MINIMAX_API_KEY?: string;
     MINIMAX_BASE_URL?: string;
-    MISTRAL_API_KEY?: string;
     MISTRAL_AI_API_KEY?: string;
     MISTRAL_BASE_URL?: string;
     ELEVENLABS_API_KEY?: string;
@@ -144,7 +141,6 @@ export type GatewayBindings = {
     SOURCEFUL_BASE_URL?: string;
     TOGETHER_API_KEY?: string;
     TOGETHER_BASE_URL?: string;
-    WANDB_API_KEY?: string;
     WANDB_BASE_URL?: string;
     AION_LABS_API_KEY?: string;
     AION_LABS_BASE_URL?: string;
@@ -166,7 +162,6 @@ export type GatewayBindings = {
     MODEL_DISCOVERY_ENABLED?: string;
     MODEL_DISCOVERY_RETENTION_DAYS?: string;
     MODEL_DISCOVERY_SHARD_SIZE?: string;
-    MODEL_DISCOVERY_INTERNAL_BASE_URL?: string;
     MODEL_DISCOVERY_INTERNAL_TOKEN?: string;
     PRICING_MONITOR_ENABLED?: string;
     ENTERPRISE_INVOICING_ENABLED?: string;
@@ -201,14 +196,12 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "OPENAI_BASE_URL",
     "GOOGLE_AI_STUDIO_API_KEY",
     "GOOGLE_AI_STUDIO_BASE_URL",
-    "GOOGLE_API_KEY",
     "GOOGLE_BASE_URL",
     "ANTHROPIC_API_KEY",
     "KEY_PEPPER",
     "GATEWAY_INTERNAL_TEST_TOKEN",
     "GATEWAY_LOCAL_TESTING_MODE",
     "X_AI_API_KEY",
-    "XAI_API_KEY",
     "XAI_BASE_URL",
     "XAI_DEBUG_USAGE",
     "AI21_API_KEY",
@@ -278,7 +271,6 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "MANCER_BASE_URL",
     "MINIMAX_API_KEY",
     "MINIMAX_BASE_URL",
-    "MISTRAL_API_KEY",
     "MISTRAL_AI_API_KEY",
     "MISTRAL_BASE_URL",
     "ELEVENLABS_API_KEY",
@@ -327,7 +319,6 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "SOURCEFUL_BASE_URL",
     "TOGETHER_API_KEY",
     "TOGETHER_BASE_URL",
-    "WANDB_API_KEY",
     "WANDB_BASE_URL",
     "AION_LABS_API_KEY",
     "AION_LABS_BASE_URL",
@@ -347,7 +338,6 @@ const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "MODEL_DISCOVERY_ENABLED",
     "MODEL_DISCOVERY_RETENTION_DAYS",
     "MODEL_DISCOVERY_SHARD_SIZE",
-    "MODEL_DISCOVERY_INTERNAL_BASE_URL",
     "MODEL_DISCOVERY_INTERNAL_TOKEN",
     "PRICING_MONITOR_ENABLED",
     "ENTERPRISE_INVOICING_ENABLED",
@@ -380,17 +370,8 @@ function snapshotBindings(env: GatewayBindings): GatewayBindings {
     }
 
     // Backward-compatible aliases used across scripts/docs/tests.
-    if (!snap.X_AI_API_KEY && env.XAI_API_KEY) {
-        snap.X_AI_API_KEY = `${env.XAI_API_KEY}`;
-    }
-    if (!snap.XAI_API_KEY && env.X_AI_API_KEY) {
-        snap.XAI_API_KEY = `${env.X_AI_API_KEY}`;
-    }
     if (!snap.KV && env.GATEWAY_CACHE) {
         snap.KV = env.GATEWAY_CACHE;
-    }
-    if (!snap.MISTRAL_API_KEY && env.MISTRAL_AI_API_KEY) {
-        snap.MISTRAL_API_KEY = `${env.MISTRAL_AI_API_KEY}`;
     }
     return Object.freeze(snap) as GatewayBindings;
 }
@@ -496,4 +477,5 @@ export function getByokKey(version: number): string {
     const s = String(raw).trim().replace(/^["']|["']$/g, "");
     return s.startsWith("base64:") ? s.slice(7) : s;
 }
+
 

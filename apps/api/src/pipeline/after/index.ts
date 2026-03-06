@@ -19,6 +19,11 @@ import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
+import { getBaseModel } from "../execute/utils";
+import {
+    maybeWriteStickyRoutingFromUsage,
+    resolveCacheAwareRoutingPreference,
+} from "../execute/sticky-routing";
 
 function decodeBase64ToBytes(value: string): Uint8Array {
 	const binary = atob(value);
@@ -238,6 +243,33 @@ async function handleNonStreamResponse(
     result.bill.currency = currencyFinal;
     result.bill.usage = shapedUsageFinal;
 
+    const cacheAwareRoutingEnabled = resolveCacheAwareRoutingPreference(
+        ctx.body,
+        typeof ctx.teamSettings?.cacheAwareRoutingEnabled === "boolean"
+            ? ctx.teamSettings.cacheAwareRoutingEnabled
+            : true
+    );
+    await ctx.timer.span("after_write_sticky_routing", async () => {
+        try {
+            await maybeWriteStickyRoutingFromUsage({
+                teamId: ctx.teamId,
+                endpoint: ctx.endpoint,
+                model: getBaseModel(ctx.model),
+                body: ctx.body,
+                providerId: result.provider,
+                usage: shapedUsageFinal,
+                enabled: cacheAwareRoutingEnabled,
+            });
+        } catch (error) {
+            console.warn("[gateway] sticky routing write failed", {
+                endpoint: ctx.endpoint,
+                model: ctx.model,
+                provider: result.provider,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+    });
+
     // Extract finish reason and normalize it for consistent storage
     const finishReason = await ctx.timer.span("after_extract_finish_reason", () => {
         const rawFinishReason = extractFinishReason(payload);
@@ -316,6 +348,8 @@ async function handleNonStreamResponse(
     const headers = makeHeaders(timingHeader);
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, result.upstream.status, headers));
 }
+
+
 
 
 

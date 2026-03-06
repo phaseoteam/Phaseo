@@ -57,7 +57,7 @@ export function normalizeFinishReason(
 	}
 
 	// Google (Gemini/Vertex)
-	if (provider === "google" || provider === "google-ai-studio" || provider === "google-vertex") {
+	if (provider === "google-ai-studio" || provider === "google-vertex") {
 		if (lower === "stop") return "stop";
 		if (lower === "max_tokens") return "length";
 		if (lower === "safety") return "safety";

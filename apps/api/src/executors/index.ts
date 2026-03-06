@@ -22,7 +22,6 @@ import { executor as openaiText } from "./openai/text-generate";
 import { executor as openAICompatText } from "./openai-compat/text-generate";
 import { executor as anthropicText } from "./anthropic/text-generate";
 import { executor as azureText } from "./azure/text-generate";
-import { executor as googleText } from "./google/text-generate";
 import { executor as googleAiStudioText } from "./google-ai-studio/text-generate";
 import { executor as googleAudioSpeech } from "./google/audio-speech";
 import { executor as xAiText } from "./x-ai/text-generate";
@@ -43,7 +42,6 @@ import { executor as togetherText } from "./together/text-generate";
 
 // Embeddings executors (migrated providers only)
 import { executor as openaiEmbeddings } from "./openai/embeddings";
-import { executor as googleEmbeddings } from "./google/embeddings";
 import { executor as googleAiStudioEmbeddings } from "./google-ai-studio/embeddings";
 
 // Moderations executors (migrated providers only)
@@ -130,12 +128,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	azure: {
 		"text.generate": azureText,
 	},
-	google: {
-		"text.generate": googleText,
-		embeddings: googleEmbeddings,
-		"audio.speech": googleAudioSpeech,
-		"video.generate": googleVideo,
-	},
+
 	"google-ai-studio": {
 		"text.generate": googleAiStudioText,
 		embeddings: googleAiStudioEmbeddings,
@@ -205,4 +198,5 @@ export function isProviderCapabilityEnabled(providerId: string, capability: stri
 		providerSupportsAdapterCapability(providerId, normalizedCapability as AdapterBackedCapability),
 	);
 }
+
 

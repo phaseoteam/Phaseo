@@ -1,4 +1,4 @@
-// Purpose: Shared OpenAI-compatible text adapter and transformations.
+﻿// Purpose: Shared OpenAI-compatible text adapter and transformations.
 // Why: Consolidates OpenAI-style quirks across many providers.
 // How: Maps IR to OpenAI formats and normalizes streaming events.
 
@@ -167,6 +167,7 @@ export function irToOpenAIChat(
 	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
 	if (ir.speed !== undefined) request.speed = ir.speed;
 	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
+	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
 	if (ir.streamOptions !== undefined) request.stream_options = ir.streamOptions;
 	if (ir.metadata !== undefined) request.metadata = ir.metadata;
@@ -430,5 +431,7 @@ function mapFinishReason(reason: string | undefined): any {
 			return "stop";
 	}
 }
+
+
 
 

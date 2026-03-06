@@ -93,7 +93,7 @@ export function ensureRuntimeConfigured(): void {
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
         GOOGLE_AI_STUDIO_API_KEY: process.env.GOOGLE_AI_STUDIO_API_KEY,
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-        XAI_API_KEY: process.env.XAI_API_KEY,
+        X_AI_API_KEY: process.env.X_AI_API_KEY,
         KEY_PEPPER: process.env.KEY_PEPPER,
         NODE_ENV: process.env.NODE_ENV,
         BYOK_KMS_KEY_V1_B64: process.env.BYOK_KMS_KEY_V1_B64,
@@ -102,3 +102,4 @@ export function ensureRuntimeConfigured(): void {
 
     configureRuntime(bindings);
 }
+

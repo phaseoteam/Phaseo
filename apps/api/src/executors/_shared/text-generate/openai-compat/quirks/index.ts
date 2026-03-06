@@ -24,6 +24,7 @@ import { openAIQuirks } from "../providers/openai/quirks";
 import { basetenQuirks } from "../providers/baseten/quirks";
 import { cohereQuirks } from "../providers/cohere/quirks";
 import { togetherQuirks } from "../providers/together/quirks";
+import { inceptionQuirks } from "../providers/inception/quirks";
 import { defaultQuirks } from "./default";
 
 /**
@@ -40,7 +41,9 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	deepseek: deepseekQuirks,
 	mistral: mistralQuirks,
 	"moonshot-ai": moonshotQuirks,
+	moonshotai: moonshotQuirks,
 	"moonshot-ai-turbo": moonshotQuirks,
+	"moonshotai-turbo": moonshotQuirks,
 	xiaomi: xiaomiQuirks,
 	"x-ai": xAiQuirks,
 	xai: xAiQuirks,
@@ -50,12 +53,14 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	cerebras: cerebrasQuirks,
 	fireworks: fireworksQuirks,
 	novitaai: novitaQuirks,
+	novita: novitaQuirks,
 	"novita-ai": novitaQuirks,
 	perplexity: perplexityQuirks,
 	openai: openAIQuirks,
 	baseten: basetenQuirks,
 	cohere: cohereQuirks,
 	together: togetherQuirks,
+	inception: inceptionQuirks,
 	// Note: Google quirks removed - Google now uses native implementation, not OpenAI-compat
 };
 
@@ -69,4 +74,5 @@ export function getProviderQuirks(providerId?: string | null): ProviderQuirks {
 }
 
 export type { ProviderQuirks } from "./types";
+
 

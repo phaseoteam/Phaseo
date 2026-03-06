@@ -44,14 +44,7 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("friendli", "meta-llama-3.1-8b-instruct")).toBe("chat");
 		expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");
 		expect(resolveOpenAICompatRoute("minimax", "minimax-m2")).toBe("chat");
-		expect(resolveOpenAICompatRoute("alibaba", "qwen3.5-plus")).toBe("responses");
-		expect(resolveOpenAICompatRoute("qwen", "qwen3-max")).toBe("responses");
-		expect(resolveOpenAICompatRoute("alibaba", "qwen3-max-2026-01-23")).toBe("responses");
-		expect(resolveOpenAICompatRoute("qwen", "alibaba/qwen3.5-plus-2026-02-15")).toBe("responses");
-		expect(resolveOpenAICompatRoute("alibaba", "qwen-plus")).toBe("responses");
-		expect(resolveOpenAICompatRoute("qwen", "qwen-max-latest")).toBe("responses");
-		expect(resolveOpenAICompatRoute("alibaba", "qwen3-max-preview")).toBe("responses");
-		expect(resolveOpenAICompatRoute("alibaba", "qwen2.5-72b-instruct")).toBe("responses");
+		expect(resolveOpenAICompatRoute("alibaba-cloud", "qwen3.5-plus")).toBe("responses");
 		expect(resolveOpenAICompatRoute("z-ai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("zai", "glm-4.6")).toBe("chat");
 		expect(resolveOpenAICompatRoute("xiaomi", "MiMo-7B-RL")).toBe("chat");
@@ -82,31 +75,31 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
-	it("uses dashscope responses prefix for alibaba responses endpoint", () => {
+	it("uses dashscope responses prefix for alibaba-cloud responses endpoint", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
 			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
 		} as any);
 
-		expect(openAICompatUrl("alibaba", "/responses")).toBe(
+		expect(openAICompatUrl("alibaba-cloud", "/responses")).toBe(
 			"https://dashscope-intl.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1/responses",
 		);
-		expect(openAICompatUrl("alibaba", "/chat/completions")).toBe(
+		expect(openAICompatUrl("alibaba-cloud", "/chat/completions")).toBe(
 			"https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
 		);
 	});
 
-	it("trims chat prefix from alibaba base url override when building responses url", () => {
+	it("trims chat prefix from alibaba-cloud base url override when building responses url", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
 			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
 			ALIBABA_BASE_URL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
 		} as any);
 
-		expect(openAICompatUrl("alibaba", "/responses")).toBe(
+		expect(openAICompatUrl("alibaba-cloud", "/responses")).toBe(
 			"https://dashscope-intl.aliyuncs.com/api/v2/apps/protocols/compatible-mode/v1/responses",
 		);
-		expect(openAICompatUrl("alibaba", "/chat/completions")).toBe(
+		expect(openAICompatUrl("alibaba-cloud", "/chat/completions")).toBe(
 			"https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
 		);
 	});
@@ -154,7 +147,7 @@ describe("openAICompatUrl", () => {
 		} as any);
 
 		expect(openAICompatUrl("baseten", "/chat/completions")).toBe(
-			"https://api.baseten.co/v1/chat/completions",
+			"https://inference.baseten.co/v1/chat/completions",
 		);
 	});
 
@@ -277,6 +270,9 @@ describe("openAICompatUrl", () => {
 		expect(openAICompatUrl("novitaai", "/chat/completions")).toBe(
 			"https://api.novita.ai/openai/v1/chat/completions",
 		);
+		expect(openAICompatUrl("novita", "/chat/completions")).toBe(
+			"https://api.novita.ai/openai/v1/chat/completions",
+		);
 	});
 
 	it("builds perplexity chat endpoint without a path prefix", () => {
@@ -301,24 +297,24 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
-	it("builds venice chat and responses endpoints with /v1 prefix", () => {
+	it("builds venice chat and responses endpoints with /api/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
 			VENICE_API_KEY: "test-venice-key",
 		} as any);
 
 		expect(openAICompatUrl("venice", "/chat/completions")).toBe(
-			"https://api.venice.ai/v1/chat/completions",
+			"https://api.venice.ai/api/v1/chat/completions",
 		);
 		expect(openAICompatUrl("venice", "/responses")).toBe(
-			"https://api.venice.ai/v1/responses",
+			"https://api.venice.ai/api/v1/responses",
 		);
 	});
 
 	it("builds weights-and-biases chat endpoint with /v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			WANDB_API_KEY: "test-wandb-key",
+			WEIGHTSANDBIASES_API_KEY: "test-wandb-key",
 		} as any);
 
 		expect(openAICompatUrl("weights-and-biases", "/chat/completions")).toBe(
@@ -328,10 +324,10 @@ describe("openAICompatUrl", () => {
 });
 
 describe("resolveOpenAICompatKey", () => {
-	it("prefers WANDB_API_KEY for weights-and-biases", () => {
+	it("uses WEIGHTSANDBIASES_API_KEY for weights-and-biases", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			WANDB_API_KEY: "test-wandb-key",
+			WEIGHTSANDBIASES_API_KEY: "test-wandb-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -343,44 +339,28 @@ describe("resolveOpenAICompatKey", () => {
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("falls back to WEIGHTSANDBIASES_API_KEY for weights-and-biases", () => {
+	it("does not accept WANDB_API_KEY for weights-and-biases", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			WEIGHTSANDBIASES_API_KEY: "test-legacy-wandb-key",
+			WANDB_API_KEY: "test-legacy-wandb-key",
 		} as any);
 
-		const resolved = resolveOpenAICompatKey({
-			providerId: "weights-and-biases",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-legacy-wandb-key");
-		expect(resolved.source).toBe("gateway");
+		expect(() =>
+			resolveOpenAICompatKey({
+				providerId: "weights-and-biases",
+				byokMeta: [],
+			} as any),
+		).toThrowError("weights-and-biases_key_missing");
 	});
 
-	it("falls back to ALIBABA_CLOUD_API_KEY for alibaba", () => {
+	it("uses ALIBABA_CLOUD_API_KEY for alibaba-cloud", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
 			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
-			providerId: "alibaba",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-alibaba-cloud-key");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("uses ALIBABA_CLOUD_API_KEY for qwen", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			ALIBABA_CLOUD_API_KEY: "test-alibaba-cloud-key",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "qwen",
+			providerId: "alibaba-cloud",
 			byokMeta: [],
 		} as any);
 
@@ -388,5 +368,3 @@ describe("resolveOpenAICompatKey", () => {
 		expect(resolved.source).toBe("gateway");
 	});
 });
-
-

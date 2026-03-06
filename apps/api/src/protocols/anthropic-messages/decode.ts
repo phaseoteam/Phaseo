@@ -35,16 +35,11 @@ export type AnthropicMessagesRequest = {
 	service_tier?: string;
 	speed?: string;
 	stop_sequences?: string[];
-	thinking?: {
-		type: "enabled" | "disabled" | "adaptive";
-		budget_tokens?: number;
-		effort?: "low" | "medium" | "high" | "max" | "xhigh";
-	};
-	output_config?: {
-		effort?: "low" | "medium" | "high" | "max" | "xhigh";
-	};
 	reasoning?: {
 		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+		enabled?: boolean;
+		summary?: "auto" | "concise" | "detailed";
+		max_tokens?: number;
 	};
 	image_config?: {
 		aspect_ratio?: string;
@@ -59,11 +54,18 @@ export type AnthropicMessage = {
 	content: string | AnthropicContentBlock[];
 };
 
+export type AnthropicCacheControl = {
+	type?: string;
+	ttl?: string;
+	scope?: string;
+	[key: string]: any;
+};
+
 export type AnthropicContentBlock =
-	| { type: "text"; text: string }
-	| { type: "image"; source: { type: "base64" | "url"; data?: string; url?: string; media_type?: string } }
+	| { type: "text"; text: string; cache_control?: AnthropicCacheControl }
+	| { type: "image"; cache_control?: AnthropicCacheControl; source: { type: "base64" | "url"; data?: string; url?: string; media_type?: string } }
 	| { type: "tool_use"; id: string; name: string; input: Record<string, any> }
-	| { type: "tool_result"; tool_use_id: string; content: string | any[] };
+	| { type: "tool_result"; tool_use_id: string; content: string | any[]; cache_control?: AnthropicCacheControl };
 
 export type AnthropicTool = {
 	name: string;
@@ -206,7 +208,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		tools,
 		toolChoice,
 
-		// Reasoning / thinking
+		// Reasoning
 		reasoning: resolveRequestedReasoning(req),
 
 		// Advanced parameters
@@ -237,20 +239,37 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 }
 
 function resolveRequestedReasoning(req: AnthropicMessagesRequest): IRChatRequest["reasoning"] {
-	const outputConfigEffort = req.output_config?.effort;
-	const anthropicReasoningEffort = req.reasoning?.effort;
-	const thinkingEffort = req.thinking?.effort;
-	const effort = mapAnthropicEffortToIr(outputConfigEffort ?? anthropicReasoningEffort ?? thinkingEffort);
-	const enabled = req.thinking ? req.thinking.type === "enabled" : undefined;
-	const maxTokens = req.thinking?.budget_tokens;
+	const reasoningReq = req.reasoning;
+	const effort = mapAnthropicEffortToIr(reasoningReq?.effort);
+	const enabled =
+		typeof reasoningReq?.enabled === "boolean"
+			? reasoningReq.enabled
+			: undefined;
+	const summary =
+		reasoningReq?.summary === "auto" ||
+		reasoningReq?.summary === "concise" ||
+		reasoningReq?.summary === "detailed"
+			? reasoningReq.summary
+			: undefined;
+	const maxTokensCandidate = reasoningReq?.max_tokens;
+	const maxTokens =
+		typeof maxTokensCandidate === "number" && Number.isFinite(maxTokensCandidate)
+			? maxTokensCandidate
+			: undefined;
 
-	if (effort === undefined && enabled === undefined && maxTokens === undefined) {
+	if (
+		effort === undefined &&
+		enabled === undefined &&
+		summary === undefined &&
+		maxTokens === undefined
+	) {
 		return undefined;
 	}
 
 	return {
 		effort,
 		enabled,
+		summary,
 		maxTokens,
 	};
 }
@@ -273,16 +292,22 @@ function normalizeAnthropicMessageContent(
  */
 function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart | any {
 	if (block.type === "text") {
-		return { type: "text", text: block.text };
+		return {
+			type: "text",
+			text: block.text,
+			cacheControl: normalizeAnthropicCacheControl((block as any).cache_control),
+		};
 	}
 
 	if (block.type === "image") {
+		const cacheControl = normalizeAnthropicCacheControl((block as any).cache_control);
 		if (block.source.type === "url") {
 			return {
 				type: "image",
 				source: "url" as const,
 				data: block.source.url || "",
 				mimeType: block.source.media_type,
+				cacheControl,
 			};
 		} else {
 			return {
@@ -290,6 +315,7 @@ function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart 
 				source: "data" as const,
 				data: block.source.data || "",
 				mimeType: block.source.media_type,
+				cacheControl,
 			};
 		}
 	}
@@ -308,6 +334,15 @@ function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart 
 	return { type: "text", text: String(block) };
 }
 
+
+function normalizeAnthropicCacheControl(value: unknown): AnthropicCacheControl | undefined {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+	const next = { ...(value as Record<string, any>) } as AnthropicCacheControl;
+	if (typeof next.type === "string") next.type = next.type.trim();
+	if (typeof next.ttl === "string") next.ttl = next.ttl.trim();
+	if (typeof next.scope === "string") next.scope = next.scope.trim();
+	return Object.keys(next).length > 0 ? next : undefined;
+}
 function normalizeToolResultContent(content: string | any[]): string {
 	if (typeof content === "string") {
 		return content;

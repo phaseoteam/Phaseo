@@ -40,6 +40,10 @@ export function EnhancedChartTooltip({
 	// Show only top 5 items to keep tooltip compact
 	const displayItems = nonZeroItems.slice(0, 5);
 	const hasMore = nonZeroItems.length > 5;
+	const total = nonZeroItems.reduce(
+		(sum, item) => sum + (Number(item.value) || 0),
+		0,
+	);
 
 	return (
 		<div
@@ -82,6 +86,11 @@ export function EnhancedChartTooltip({
 						+{nonZeroItems.length - 5} more
 					</div>
 				)}
+			</div>
+
+			<div className="mt-2 pt-1.5 border-t flex items-center justify-between px-1.5">
+				<span className="text-[10px] font-medium text-muted-foreground">Total</span>
+				<span className="font-mono text-[11px]">{format(total)}</span>
 			</div>
 		</div>
 	);

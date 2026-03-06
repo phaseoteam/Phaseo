@@ -1,17 +1,54 @@
 ---
 title: "Codex"
-description: "Use AI Stats as the backend for Codex-style coding agents."
+description: "Use the AI Stats Gateway as a custom provider for Codex CLI."
 ---
 
-If your coding agent supports OpenAI-compatible configuration, you can route it through AI Stats.
+Codex CLI supports custom model providers through `~/.codex/config.toml`, so you can route requests to AI Stats without changing your local workflow.
 
-## Recommended setup
+## Prerequisites
 
-- Base URL: `https://api.phaseo.app/v1`
-- Auth: `Authorization: Bearer <AI_STATS_API_KEY>`
-- Endpoint: `/chat/completions` or `/responses`
+- An AI Stats API key.
+- Codex CLI installed locally.
 
-## Tips
+## 1) Set your API key
 
-- Keep prompts and tool definitions consistent across environments.
-- Use [Routing and fallbacks](../routing-and-fallbacks.mdx) guidance for production workloads.
+```bash
+export AI_STATS_API_KEY="your_ai_stats_api_key"
+```
+
+```powershell
+$env:AI_STATS_API_KEY = "your_ai_stats_api_key"
+```
+
+## 2) Configure Codex to use AI Stats
+
+Create or update `~/.codex/config.toml`:
+
+```toml
+model = "openai/gpt-5-3-codex-2026-02-05"
+model_provider = "ai_stats"
+
+[model_providers.ai_stats]
+name = "AI Stats"
+base_url = "https://api.phaseo.app/v1"
+env_key = "AI_STATS_API_KEY"
+wire_api = "responses"
+```
+
+## 3) Start Codex
+
+```bash
+codex
+```
+
+## Verification
+
+- Confirm your model id exists in [Models](../../api-reference/endpoint/models.mdx) before launching.
+- Use [Responses](../../api-reference/endpoint/responses.mdx) for the default Codex-style flow.
+- If needed for compatibility, switch `wire_api` to `chat` and use [Chat Completions](../../api-reference/endpoint/chat-completions.mdx).
+
+## Troubleshooting
+
+- `401 Unauthorized`: check that `AI_STATS_API_KEY` is set in the same shell running `codex`.
+- `model_not_found`: fetch a current id from [Models](../../api-reference/endpoint/models.mdx) and update `model`.
+- Provider-specific issues: follow [Routing and fallbacks](../routing-and-fallbacks.mdx) for failover behavior.

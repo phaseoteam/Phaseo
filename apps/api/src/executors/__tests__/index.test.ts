@@ -63,8 +63,7 @@ describe("resolveProviderExecutor", () => {
 			"zai",
 			// Additional configured compat providers
 			"cohere",
-			"crusoe",
-			"google",
+			"crusoe",
 			"qwen",
 		];
 		for (const provider of providers) {
@@ -77,65 +76,21 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("suno", "text.generate")).toBeNull();
 	});
 
-	it("resolves provider display-name aliases used in routing hints", () => {
-		const displayNames = [
-			"AI21",
-			"AionLabs",
-			"Alibaba",
-			"Amazon Bedrock",
-			"Anthropic",
-			"Arcee",
-			"AtlasCloud",
-			"Azure",
-			"Baseten",
-			"ByteDance Seed",
-			"Cerebras",
-			"Chutes",
-			"Clarifai",
-			"Cloudflare",
-			"DeepInfra",
-			"DeepSeek",
-			"Featherless",
-			"Fireworks",
-			"Friendli",
-			"GMICloud",
-			"Google AI Studio",
-			"Google Vertex",
-			"Groq",
-			"Hyperbolic",
-			"Inception",
-			"Infermatic",
-			"Inflection",
-			"Liquid",
-			"Mancer",
-			"MiniMax",
-			"MiniMax Lightning",
-			"Mistral",
-			"Moonshot AI",
-			"Moonshot AI Turbo",
-			"Morph",
-			"Morpheus",
-			"Nebius Token Factory",
-			"NovitaAI",
-			"OpenAI",
-			"Parasail",
-			"Perplexity",
-			"Phala",
-			"Qwen",
-			"Relace",
-			"Sambanova",
-			"SiliconFlow",
-			"Sourceful",
-			"Together",
-			"Venice AI",
-			"Weights & Biases",
-			"xAI",
-			"z.AI",
-			"Xiaomi",
-			"Arcee AI",
+	it("normalizes canonical provider ids used in routing hints", () => {
+		const variants = [
+			"OPENAI",
+			"AION-LABS",
+			"ARCEE-AI",
+			"GOOGLE-AI-STUDIO",
+			"GOOGLE-VERTEX",
+			"MINIMAX-LIGHTNING",
+			"MOONSHOT-AI",
+			"WEIGHTS-AND-BIASES",
+			"X-AI",
+			"Z-AI",
 		];
 
-		for (const name of displayNames) {
+		for (const name of variants) {
 			const providerId = normalizeProviderId(name);
 			expect(
 				resolveProviderExecutor(providerId, "text.generate"),
@@ -185,9 +140,7 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("arcee-ai", "images.generations")).toBeNull();
 		expect(resolveProviderExecutor("arcee-ai", "audio.transcription")).toBeNull();
 		expect(resolveProviderExecutor("morpheus", "images.generations")).toBeTruthy();
-		expect(resolveProviderExecutor("morpheus", "audio.transcription")).toBeTruthy();
-		expect(resolveProviderExecutor("google", "images.generations")).toBeTruthy();
-		expect(resolveProviderExecutor("google", "audio.transcription")).toBeTruthy();
+		expect(resolveProviderExecutor("morpheus", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("xai", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("xai", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("black-forest-labs", "images.generations")).toBeTruthy();
@@ -230,8 +183,7 @@ describe("resolveProviderExecutor", () => {
 		expectEnabled("openai", "audio.translations");
 		expectEnabled("openai", "video.generation");
 		expectDisabled("openai", "music.generate");
-
-		// Google AI Studio vs Google: both are now fully multimodal.
+		// Google AI Studio: full multimodal coverage.
 		expectEnabled("google-ai-studio", "video.generation");
 		expectEnabled("google-ai-studio", "images.generations");
 		expectEnabled("google-ai-studio", "images.edits");

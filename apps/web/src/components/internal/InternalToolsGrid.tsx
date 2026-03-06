@@ -15,7 +15,6 @@ import {
 	Settings,
 	FileCheck,
 	Users,
-	Zap,
 	GitCompare,
 } from "lucide-react";
 
@@ -54,15 +53,6 @@ const internalTools = [
 			"Validate gateway responses against official OpenAI and Anthropic response schemas.",
 		icon: FileCheck,
 		href: "/internal/compatibility",
-		comingSoon: false,
-	},
-	{
-		id: "latency-comparison",
-		title: "Latency Comparison",
-		description:
-			"Compare response times between gateway and direct providers with live streaming diagnostics.",
-		icon: Zap,
-		href: "/tools/latency-comparison",
 		comingSoon: false,
 	},
 	{

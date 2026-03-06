@@ -15,6 +15,7 @@ import {
 import { X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
+import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 
 interface UsageTableFiltersProps {
 	models: string[];
@@ -22,7 +23,7 @@ interface UsageTableFiltersProps {
 	modelProviders: Map<string, string[]>;
 	providerNames: Map<string, string>;
 	apiKeys: { id: string; name: string | null; prefix: string | null }[];
-	modelMetadata: Map<string, { organisationId: string; organisationName: string }>;
+	modelMetadata: ModelMetadataMap;
 	children?: React.ReactNode;
 }
 
@@ -159,7 +160,7 @@ export default function UsageTableFilters({
 														className="rounded flex-shrink-0"
 													/>
 												) : null}
-												<span className="truncate">{model}</span>
+												<span className="truncate">{getModelDisplayName(model, modelMetadata)}</span>
 											</div>
 										</SelectItem>
 									);

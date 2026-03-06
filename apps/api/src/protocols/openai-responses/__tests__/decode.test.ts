@@ -256,7 +256,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 				{
 					type: "function_call_output",
 					call_id: "call_abc123",
-					output: "Sunny, 22°C",
+					output: "Sunny, 22C",
 				},
 			],
 		};
@@ -271,7 +271,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 			expect(ir.messages[1].toolResults).toHaveLength(1);
 			expect(ir.messages[1].toolResults[0]).toEqual({
 				toolCallId: "call_abc123",
-				content: "Sunny, 22°C",
+				content: "Sunny, 22C",
 			});
 		}
 	});
@@ -478,7 +478,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 		});
 	});
 
-	it("should use default reasoning effort if not specified", () => {
+	it("should omit empty reasoning object", () => {
 		const request = {
 			model: "gpt-4",
 			input: "Test",
@@ -487,7 +487,7 @@ describe("decodeOpenAIResponsesRequest", () => {
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
 
-		expect(ir.reasoning?.effort).toBe("medium");
+		expect(ir.reasoning).toBeUndefined();
 	});
 
 	it("should decode generation parameters", () => {
@@ -542,21 +542,20 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.maxTokens).toBe(321);
 	});
 
-	it("should decode image_config aliases, response modalities, and thinking alias", () => {
+	it("should decode image_config, modalities, and reasoning", () => {
 		const request = {
 			model: "google/gemini-2-5-flash-image",
 			input: "Generate image",
-			responseModalities: ["IMAGE"],
-			thinking: {
+			modalities: ["IMAGE"],
+			reasoning: {
 				effort: "high",
-				includeThoughts: false,
-				budget_tokens: 512,
+				max_tokens: 512,
 			},
-			imageConfig: {
-				aspectRatio: "4:3",
-				imageSize: "0.5K",
-				includeRaiReason: true,
-				referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
+			image_config: {
+				aspect_ratio: "4:3",
+				image_size: "0.5K",
+				include_rai_reason: true,
+				reference_images: [{ referenceType: "REFERENCE_TYPE_RAW" }],
 			},
 		};
 
@@ -565,7 +564,6 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.modalities).toEqual(["image"]);
 		expect(ir.reasoning).toMatchObject({
 			effort: "high",
-			includeThoughts: false,
 			maxTokens: 512,
 		});
 		expect(ir.imageConfig).toEqual({
@@ -578,46 +576,6 @@ describe("decodeOpenAIResponsesRequest", () => {
 		});
 	});
 
-	it("should map speed fast to priority service tier", () => {
-		const request = {
-			model: "gpt-4",
-			input: "Hello",
-			speed: "fast",
-		};
-
-		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
-		expect(ir.speed).toBe("fast");
-		expect(ir.serviceTier).toBe("priority");
-	});
-
-	it("should preserve explicit service_tier from OpenAI Responses request", () => {
-		const request = {
-			model: "gpt-4",
-			input: "Hello",
-			service_tier: "priority",
-		};
-
-		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
-		expect(ir.serviceTier).toBe("priority");
-		expect(ir.speed).toBeUndefined();
-	});
-
-	it("should preserve developer role", () => {
-		const request = {
-			model: "gpt-4",
-			input: [
-				{
-					type: "message",
-					role: "developer",
-					content: "System instructions",
-				},
-			],
-		};
-
-		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
-
-		expect(ir.messages[0].role).toBe("developer");
-	});
 
 	it("should handle empty input array", () => {
 		const request = {
@@ -734,11 +692,6 @@ describe("decodeOpenAIResponsesRequest", () => {
 			conversation: "conv_123",
 			previous_response_id: "resp_123",
 			stream_options: { include_usage: true },
-			prompt: {
-				id: "pmpt_1",
-				variables: { topic: "math" },
-				version: "2",
-			},
 		};
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
@@ -748,11 +701,57 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.conversation).toBe("conv_123");
 		expect(ir.previousResponseId).toBe("resp_123");
 		expect(ir.streamOptions).toEqual({ include_usage: true });
-		expect(ir.prompt).toEqual({
-			id: "pmpt_1",
-			variables: { topic: "math" },
-			version: "2",
-		});
 	});
 });
+
+
+describe("decodeOpenAIResponsesRequest cache options", () => {
+	it("should decode provider-specific cache controls", () => {
+		const request = {
+			model: "gpt-4.1",
+			input: "Hello",
+			provider_options: {
+				openai: {
+					prompt_cache_retention: "1h",
+				},
+				anthropic: {
+					cache_control: {
+						type: "ephemeral",
+						ttl: "1h",
+						scope: "last_user_message",
+					},
+				},
+				google: {
+					cached_content: "cachedContents/abc123",
+				},
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.promptCacheRetention).toBe("1h");
+		expect(ir.anthropicCacheControl).toEqual({
+			type: "ephemeral",
+			ttl: "1h",
+			scope: "last_user_message",
+		});
+		expect(ir.googleCachedContent).toBe("cachedContents/abc123");
+	});
+
+
+	it("ignores top-level cache aliases", () => {
+		const request = {
+			model: "gpt-4.1",
+			input: "Hello",
+			cache_control: { type: "ephemeral", ttl: "1h" },
+			cached_content: "cachedContents/top-level",
+			conversation_id: "conv_top_level",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.promptCacheRetention).toBeUndefined();
+		expect(ir.anthropicCacheControl).toBeUndefined();
+		expect(ir.googleCachedContent).toBeUndefined();
+	});
+});
+
 

@@ -155,6 +155,8 @@ const providerSchema = z
     .object({
         provider_id: z.string(),
         provider_status: z.string().nullable().optional(),
+        provider_routing_status: z.string().nullable().optional(),
+        model_status: z.string().nullable().optional(),
         capability_status: z.string().nullable().optional(),
         provider_model_slug: z.string().nullable().optional(),
         input_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
@@ -169,6 +171,8 @@ const providerSchema = z
     .transform<GatewayProviderSnapshot>((provider) => ({
         providerId: provider.provider_id,
         providerStatus: (provider.provider_status ?? null) as GatewayProviderSnapshot["providerStatus"],
+        providerRoutingStatus: (provider.provider_routing_status ?? null) as GatewayProviderSnapshot["providerRoutingStatus"],
+        modelRoutingStatus: (provider.model_status ?? null) as GatewayProviderSnapshot["modelRoutingStatus"],
         capabilityStatus: (provider.capability_status ?? null) as GatewayProviderSnapshot["capabilityStatus"],
         providerModelSlug: provider.provider_model_slug ?? null,
         supportsEndpoint: provider.supports_endpoint ?? true,

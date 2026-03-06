@@ -157,7 +157,7 @@ def fetch_mistral_models() -> list[str]:
         return []
 
 def fetch_xai_models() -> list[str]:
-    api_key = os.getenv('XAI_API_KEY')
+    api_key = os.getenv('X_AI_API_KEY')
     if not api_key:
         return []
     try:
@@ -481,3 +481,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
