@@ -1,4 +1,10 @@
 export interface AnthropicContentBlock {
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
   content?: string;
   id?: string;
   input?: {};

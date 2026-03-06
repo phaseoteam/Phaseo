@@ -4211,7 +4211,7 @@
         "status": "active",
         "params": [
           {
-            "param_id": "seed",
+            "param_id": "include_reasoning",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -4225,7 +4225,21 @@
             "notes": null
           },
           {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
             "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "seed",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -4239,55 +4253,6 @@
             "notes": null
           },
           {
-            "param_id": "stop",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "frequency_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "presence_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "logit_bias",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "logprobs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_logprobs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
             "param_id": "tool_choice",
             "provider_min": null,
             "provider_max": null,
@@ -4295,14 +4260,7 @@
             "notes": null
           },
           {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
+            "param_id": "tools",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -4336,7 +4294,7 @@
         "status": "active",
         "params": [
           {
-            "param_id": "seed",
+            "param_id": "include_reasoning",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -4350,6 +4308,13 @@
             "notes": null
           },
           {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
             "param_id": "response_format",
             "provider_min": null,
             "provider_max": null,
@@ -4357,56 +4322,7 @@
             "notes": null
           },
           {
-            "param_id": "structured_outputs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "stop",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "frequency_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "presence_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "logit_bias",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "logprobs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_logprobs",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "tools",
+            "param_id": "seed",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -4420,14 +4336,7 @@
             "notes": null
           },
           {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
+            "param_id": "tools",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,

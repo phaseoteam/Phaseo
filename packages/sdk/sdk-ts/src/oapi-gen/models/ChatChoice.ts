@@ -34,7 +34,7 @@ export interface ChatChoice {
           type: "tool_call";
         }[];
     name?: string;
-    role: "system" | "user" | "assistant" | "tool";
+    role: "system" | "developer" | "user" | "assistant" | "tool";
     tool_call_id?: string;
     tool_calls?: {
       function: {

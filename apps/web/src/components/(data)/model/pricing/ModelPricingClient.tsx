@@ -114,6 +114,12 @@ function getProviderModelScopeForPlan(
         : provider.provider_models;
 }
 
+function isProviderModelActiveForPlan(
+    model: ProviderPricing["provider_models"][number]
+): boolean {
+    return model.is_active_gateway && model.capability_status !== "disabled";
+}
+
 function getQuantizationFilterFromUrl(value: string | null): string {
     if (!value) return "all";
     const next = value.trim();
@@ -220,7 +226,7 @@ export default function ModelPricingClient({
 
         const isProviderActiveForPlan = (provider: ProviderPricing) => {
             const modelScope = getProviderModelScopeForPlan(provider, plan);
-            return modelScope.some((pm) => pm.is_active_gateway);
+            return modelScope.some((pm) => isProviderModelActiveForPlan(pm));
         };
 
         const byActive = (a: ProviderPricing, b: ProviderPricing) => {
@@ -337,7 +343,7 @@ export default function ModelPricingClient({
 
         for (const provider of filteredProviders) {
             const scope = getProviderModelScopeForPlan(provider, plan);
-            if (scope.some((pm) => pm.is_active_gateway)) {
+            if (scope.some((pm) => isProviderModelActiveForPlan(pm))) {
                 active.push(provider);
             } else {
                 inactive.push(provider);

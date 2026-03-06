@@ -12,6 +12,7 @@ type ActivityEntry struct {
 }
 
 type AnthropicContentBlock struct {
+	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Content *string `json:"content,omitempty"`
 	Id *string `json:"id,omitempty"`
 	Input *map[string]interface{} `json:"input,omitempty"`
@@ -29,24 +30,24 @@ type AnthropicMessage struct {
 
 type AnthropicMessagesRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
-	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
-	ImageConfig *map[string]interface{} `json:"imageConfig,omitempty"`
-	MaxTokens *int `json:"max_tokens,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	MaxTokens int `json:"max_tokens"`
 	Messages []map[string]interface{} `json:"messages"`
+	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-	Modalities *[]string `json:"modalities,omitempty"`
 	Model string `json:"model"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
-	ResponseModalities *[]string `json:"response_modalities,omitempty"`
-	ResponseModalities *[]string `json:"responseModalities,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
+	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
+	StopSequences *[]string `json:"stop_sequences,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
 	System interface{} `json:"system,omitempty"`
 	Temperature *float64 `json:"temperature,omitempty"`
-	Thinking *map[string]interface{} `json:"thinking,omitempty"`
 	ToolChoice interface{} `json:"tool_choice,omitempty"`
 	Tools *[]map[string]interface{} `json:"tools,omitempty"`
 	TopK *int `json:"top_k,omitempty"`
 	TopP *float64 `json:"top_p,omitempty"`
+	Usage *bool `json:"usage,omitempty"`
 }
 
 type AnthropicMessagesResponse struct {
@@ -293,6 +294,12 @@ const (
 )
 
 
+type CacheControl struct {
+	Scope *string `json:"scope,omitempty"`
+	Ttl *string `json:"ttl,omitempty"`
+	Type *string `json:"type,omitempty"`
+}
+
 type ChatChoice struct {
 	FinishReason *string `json:"finish_reason,omitempty"`
 	Index *int `json:"index,omitempty"`
@@ -301,37 +308,36 @@ type ChatChoice struct {
 
 type ChatCompletionsRequest struct {
 	Debug *map[string]interface{} `json:"debug,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
-	ImageConfig *map[string]interface{} `json:"imageConfig,omitempty"`
 	LogitBias *map[string]interface{} `json:"logit_bias,omitempty"`
 	Logprobs *bool `json:"logprobs,omitempty"`
 	MaxCompletionTokens *int `json:"max_completion_tokens,omitempty"`
-	MaxOutputTokens *int `json:"max_output_tokens,omitempty"`
 	MaxTokens *int `json:"max_tokens,omitempty"`
 	MaxToolCalls *int `json:"max_tool_calls,omitempty"`
 	Messages []map[string]interface{} `json:"messages"`
 	Meta *bool `json:"meta,omitempty"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Modalities *[]string `json:"modalities,omitempty"`
 	Model string `json:"model"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
+	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
 	ResponseFormat interface{} `json:"response_format,omitempty"`
-	ResponseModalities *[]string `json:"response_modalities,omitempty"`
-	ResponseModalities *[]string `json:"responseModalities,omitempty"`
+	SafetyIdentifier *string `json:"safety_identifier,omitempty"`
 	Seed *int `json:"seed,omitempty"`
 	ServiceTier *string `json:"service_tier,omitempty"`
-	Speed *string `json:"speed,omitempty"`
+	Stop interface{} `json:"stop,omitempty"`
+	Store *bool `json:"store,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
 	StreamOptions *map[string]interface{} `json:"stream_options,omitempty"`
-	System *string `json:"system,omitempty"`
 	Temperature *float64 `json:"temperature,omitempty"`
-	Thinking *map[string]interface{} `json:"thinking,omitempty"`
 	ToolChoice interface{} `json:"tool_choice,omitempty"`
 	Tools *[]map[string]interface{} `json:"tools,omitempty"`
-	TopK *int `json:"top_k,omitempty"`
 	TopLogprobs *int `json:"top_logprobs,omitempty"`
 	TopP *float64 `json:"top_p,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
@@ -458,17 +464,11 @@ type Image struct {
 
 type ImageConfig struct {
 	AspectRatio *string `json:"aspect_ratio,omitempty"`
-	AspectRatio *string `json:"aspectRatio,omitempty"`
 	FontInputs *[]map[string]interface{} `json:"font_inputs,omitempty"`
-	FontInputs *[]map[string]interface{} `json:"fontInputs,omitempty"`
 	ImageSize *string `json:"image_size,omitempty"`
-	ImageSize *string `json:"imageSize,omitempty"`
 	IncludeRaiReason *bool `json:"include_rai_reason,omitempty"`
-	IncludeRaiReason *bool `json:"includeRaiReason,omitempty"`
 	ReferenceImages *[]map[string]interface{} `json:"reference_images,omitempty"`
-	ReferenceImages *[]map[string]interface{} `json:"referenceImages,omitempty"`
 	SuperResolutionReferences *[]string `json:"super_resolution_references,omitempty"`
-	SuperResolutionReferences *[]string `json:"superResolutionReferences,omitempty"`
 }
 
 type ImageContentPart struct {
@@ -525,15 +525,31 @@ type MessageContentPart = interface{}
 
 type Model struct {
 	Aliases *[]string `json:"aliases,omitempty"`
+	Architecture *map[string]interface{} `json:"architecture,omitempty"`
+	CanonicalSlug *string `json:"canonical_slug,omitempty"`
+	Created *int `json:"created,omitempty"`
+	DeprecationDate *string `json:"deprecation_date,omitempty"`
+	Description *string `json:"description,omitempty"`
 	Endpoints *[]string `json:"endpoints,omitempty"`
+	Id *string `json:"id,omitempty"`
 	InputTypes *[]string `json:"input_types,omitempty"`
 	ModelId *string `json:"model_id,omitempty"`
 	Name *string `json:"name,omitempty"`
+	OrganisationColour *string `json:"organisation_colour,omitempty"`
 	OrganisationId *string `json:"organisation_id,omitempty"`
+	OrganisationName *string `json:"organisation_name,omitempty"`
 	OutputTypes *[]string `json:"output_types,omitempty"`
+	PerRequestLimits *map[string]interface{} `json:"per_request_limits,omitempty"`
+	Pricing *map[string]interface{} `json:"pricing,omitempty"`
+	PricingDetail *map[string]interface{} `json:"pricing_detail,omitempty"`
 	Providers *[]map[string]interface{} `json:"providers,omitempty"`
 	ReleaseDate *string `json:"release_date,omitempty"`
+	RetirementDate *string `json:"retirement_date,omitempty"`
 	Status *string `json:"status,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	TopProvider *map[string]interface{} `json:"top_provider,omitempty"`
+	TopProviderId *string `json:"top_provider_id,omitempty"`
 }
 
 type ModelId string
@@ -1519,6 +1535,12 @@ type Provider struct {
 	Link *string `json:"link,omitempty"`
 }
 
+type ProviderOptions struct {
+	Anthropic *map[string]interface{} `json:"anthropic,omitempty"`
+	Google *map[string]interface{} `json:"google,omitempty"`
+	Openai *map[string]interface{} `json:"openai,omitempty"`
+}
+
 type ProviderRoutingOptions struct {
 	Ignore *[]string `json:"ignore,omitempty"`
 	IncludeAlpha *bool `json:"include_alpha,omitempty"`
@@ -1566,67 +1588,49 @@ type RealtimeNotImplementedResponse struct {
 type ReasoningConfig struct {
 	Effort *string `json:"effort,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
-	IncludeThoughts *bool `json:"include_thoughts,omitempty"`
-	IncludeThoughts *bool `json:"includeThoughts,omitempty"`
 	MaxTokens *int `json:"max_tokens,omitempty"`
 	Summary *string `json:"summary,omitempty"`
 }
 
 type ResponsesInputItem struct {
 	Content interface{} `json:"content,omitempty"`
-	Phase *string `json:"phase,omitempty"`
 	Role *string `json:"role,omitempty"`
 	Type *string `json:"type,omitempty"`
 }
 
 type ResponsesOutputItem struct {
 	Content *[]map[string]interface{} `json:"content,omitempty"`
-	Phase *string `json:"phase,omitempty"`
 	Role *string `json:"role,omitempty"`
 	Type *string `json:"type,omitempty"`
 }
 
 type ResponsesRequest struct {
 	Background *bool `json:"background,omitempty"`
-	Conversation interface{} `json:"conversation,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
-	ImageConfig *map[string]interface{} `json:"imageConfig,omitempty"`
 	Include *[]string `json:"include,omitempty"`
-	Input interface{} `json:"input,omitempty"`
-	InputItems *[]map[string]interface{} `json:"input_items,omitempty"`
+	Input interface{} `json:"input"`
 	Instructions *string `json:"instructions,omitempty"`
-	MaxCompletionTokens *int `json:"max_completion_tokens,omitempty"`
 	MaxOutputTokens *int `json:"max_output_tokens,omitempty"`
-	MaxTokens *int `json:"max_tokens,omitempty"`
-	MaxToolCalls *int `json:"max_tool_calls,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Modalities *[]string `json:"modalities,omitempty"`
 	Model string `json:"model"`
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
-	Prompt *map[string]interface{} `json:"prompt,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
-	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
-	ProviderOptions *map[string]interface{} `json:"providerOptions,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
-	ResponseModalities *[]string `json:"response_modalities,omitempty"`
-	ResponseModalities *[]string `json:"responseModalities,omitempty"`
 	SafetyIdentifier *string `json:"safety_identifier,omitempty"`
 	ServiceTier *string `json:"service_tier,omitempty"`
-	Speed *string `json:"speed,omitempty"`
 	Store *bool `json:"store,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
-	StreamOptions *map[string]interface{} `json:"stream_options,omitempty"`
 	Temperature *float64 `json:"temperature,omitempty"`
 	Text *map[string]interface{} `json:"text,omitempty"`
-	Thinking *map[string]interface{} `json:"thinking,omitempty"`
 	ToolChoice interface{} `json:"tool_choice,omitempty"`
 	Tools *[]map[string]interface{} `json:"tools,omitempty"`
-	TopLogprobs *int `json:"top_logprobs,omitempty"`
 	TopP *float64 `json:"top_p,omitempty"`
 	Truncation *string `json:"truncation,omitempty"`
 	Usage *bool `json:"usage,omitempty"`
@@ -1676,18 +1680,6 @@ type TextContentPart struct {
 type TextModerationInput struct {
 	Text string `json:"text"`
 	Type string `json:"type"`
-}
-
-type ThinkingConfig struct {
-	BudgetTokens *int `json:"budget_tokens,omitempty"`
-	BudgetTokens *int `json:"budgetTokens,omitempty"`
-	Effort *string `json:"effort,omitempty"`
-	Enabled *bool `json:"enabled,omitempty"`
-	IncludeThoughts *bool `json:"include_thoughts,omitempty"`
-	IncludeThoughts *bool `json:"includeThoughts,omitempty"`
-	MaxTokens *int `json:"max_tokens,omitempty"`
-	MaxTokens *int `json:"maxTokens,omitempty"`
-	Type *string `json:"type,omitempty"`
 }
 
 type ToolCall struct {

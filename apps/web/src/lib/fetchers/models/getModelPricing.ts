@@ -24,6 +24,7 @@ export interface ProviderModel {
     provider_model_slug?: string | null;
     model_id: string;
     endpoint: string;
+    capability_status?: string | null;
     is_active_gateway: boolean;
     input_modalities: string;   // CSV in your current schema
     output_modalities: string;  // CSV in your current schema
@@ -215,10 +216,9 @@ export default async function getModelPricing(
         const capabilities = Array.isArray(row.data_api_provider_model_capabilities)
             ? (row.data_api_provider_model_capabilities as ProviderModelCapability[])
             : [];
-        const enabledCapabilities = capabilities.filter((cap) => cap?.status !== "disabled");
         const entry = providerMap.get(pid)!;
 
-        for (const capability of enabledCapabilities) {
+        for (const capability of capabilities) {
             if (!capability?.capability_id) continue;
             const providerModel: ProviderModel = {
                 id: row.provider_api_model_id,
@@ -226,6 +226,7 @@ export default async function getModelPricing(
                 provider_model_slug: row.provider_model_slug,
                 model_id: row.api_model_id,
                 endpoint: capability.capability_id,
+                capability_status: capability.status ?? null,
                 is_active_gateway: row.is_active_gateway,
                 input_modalities: Array.isArray(row.input_modalities)
                     ? row.input_modalities.join(",")

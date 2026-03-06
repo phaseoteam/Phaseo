@@ -425,7 +425,8 @@ function clampEffort(requested: ReasoningEffort, supported: ReasoningEffort[]): 
 	if (supportedOrdered.length === 0) return requested;
 
 	const requestedIndex = REASONING_EFFORT_ORDER.indexOf(requested);
-	if (requestedIndex <= 0) return supportedOrdered[0];
+	if (requestedIndex < 0) return requested;
+	if (requestedIndex === 0) return supportedOrdered[0];
 	if (requestedIndex >= REASONING_EFFORT_ORDER.length - 1) {
 		return supportedOrdered[supportedOrdered.length - 1];
 	}
@@ -625,6 +626,8 @@ function cherryPickIRParams(
 					return "serviceTier";
 				case "prompt_cache_key":
 					return "promptCacheKey";
+				case "prompt_cache_retention":
+					return "promptCacheRetention";
 				case "safety_identifier":
 					return "safetyIdentifier";
 				case "user":

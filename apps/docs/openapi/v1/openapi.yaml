@@ -2445,6 +2445,51 @@ components:
           enum:
             - summary
             - full
+    CacheControl:
+      type: object
+      properties:
+        type:
+          type: string
+        ttl:
+          type: string
+        scope:
+          type: string
+      additionalProperties: true
+    ProviderOptions:
+      type: object
+      description: Optional provider-specific options.
+      properties:
+        openai:
+          type: object
+          properties:
+            context_management:
+              type: object
+              description: Optional OpenAI context management configuration.
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - compaction
+                compact_threshold:
+                  type: number
+              required:
+                - type
+            prompt_cache_retention:
+              type: string
+        anthropic:
+          type: object
+          properties:
+            cache_control:
+              $ref: '#/components/schemas/CacheControl'
+        google:
+          type: object
+          properties:
+            cache_control:
+              $ref: '#/components/schemas/CacheControl'
+            cached_content:
+              type: string
+            cache_ttl:
+              type: string
     Provider:
       type: object
       properties:
@@ -2469,16 +2514,41 @@ components:
     Model:
       type: object
       properties:
+        id:
+          type: string
+        canonical_slug:
+          type: string
         model_id:
           type: string
         name:
           type: string
+          nullable: true
+        description:
+          type: string
+        created:
+          type: integer
+          nullable: true
         release_date:
           type: string
+          nullable: true
+        deprecation_date:
+          type: string
+          nullable: true
+        retirement_date:
+          type: string
+          nullable: true
         status:
           type: string
+          nullable: true
         organisation_id:
           type: string
+          nullable: true
+        organisation_name:
+          type: string
+          nullable: true
+        organisation_colour:
+          type: string
+          nullable: true
         aliases:
           type: array
           items:
@@ -2506,6 +2576,83 @@ components:
                 type: array
                 items:
                   type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          items:
+            type: string
+        architecture:
+          type: object
+          properties:
+            modality:
+              type: string
+            input_modalities:
+              type: array
+              items:
+                type: string
+            output_modalities:
+              type: array
+              items:
+                type: string
+            tokenizer:
+              type: string
+              nullable: true
+            instruct_type:
+              type: string
+              nullable: true
+        top_provider_id:
+          type: string
+          nullable: true
+        top_provider:
+          type: object
+          properties:
+            context_length:
+              type: integer
+              nullable: true
+            max_completion_tokens:
+              type: integer
+              nullable: true
+            is_moderated:
+              type: boolean
+        pricing:
+          type: object
+          properties:
+            prompt:
+              type: string
+              nullable: true
+            completion:
+              type: string
+              nullable: true
+            request:
+              type: string
+              nullable: true
+            image:
+              type: string
+              nullable: true
+            input_cache_read:
+              type: string
+              nullable: true
+            input_cache_write:
+              type: string
+              nullable: true
+            web_search:
+              type: string
+              nullable: true
+        pricing_detail:
+          type: object
+          properties:
+            pricing_plan:
+              type: string
+            meters:
+              type: object
+              additionalProperties: true
+        per_request_limits:
+          type: object
+          nullable: true
+          additionalProperties: true
     DataModelOrganisation:
       type: object
       nullable: true
@@ -2563,8 +2710,6 @@ components:
       properties:
         model:
           type: string
-        system:
-          type: string
         messages:
           type: array
           minItems: 1
@@ -2580,20 +2725,16 @@ components:
           type: object
           additionalProperties:
             type: number
-        max_output_tokens:
-          type: integer
-          minimum: 1
         max_completion_tokens:
           type: integer
           minimum: 1
         max_tokens:
           type: integer
           minimum: 1
-        meta:
-          type: boolean
-          default: false
-        debug:
-          $ref: '#/components/schemas/DebugOptions'
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
         presence_penalty:
           type: number
           minimum: -2
@@ -2602,6 +2743,8 @@ components:
           type: integer
           minimum: -9223372036854776000
           maximum: 9223372036854776000
+        store:
+          type: boolean
         stream:
           type: boolean
           default: false
@@ -2631,9 +2774,6 @@ components:
           oneOf:
             - type: string
             - type: object
-        top_k:
-          type: integer
-          minimum: 1
         logprobs:
           type: boolean
           default: false
@@ -2645,6 +2785,12 @@ components:
           type: number
           minimum: 0
           maximum: 1
+        stop:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
         response_format:
           oneOf:
             - type: string
@@ -2658,24 +2804,14 @@ components:
           type: array
           items:
             type: string
-        response_modalities:
-          type: array
-          items:
-            type: string
-        responseModalities:
-          type: array
-          items:
-            type: string
         image_config:
           $ref: '#/components/schemas/ImageConfig'
-        imageConfig:
-          $ref: '#/components/schemas/ImageConfig'
-        thinking:
-          $ref: '#/components/schemas/ThinkingConfig'
         usage:
           type: boolean
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
+        provider_options:
+          $ref: '#/components/schemas/ProviderOptions'
         user_id:
           type: string
         user:
@@ -2688,9 +2824,19 @@ components:
             - flex
             - standard
             - priority
-          default: standard
-        speed:
+        prompt_cache_key:
           type: string
+          nullable: true
+        safety_identifier:
+          type: string
+          nullable: true
+        meta:
+          type: boolean
+          default: false
+        echo_upstream_request:
+          type: boolean
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
     ChatMessage:
       type: object
       required:
@@ -2700,6 +2846,7 @@ components:
           type: string
           enum:
             - system
+            - developer
             - user
             - assistant
             - tool
@@ -2861,53 +3008,10 @@ components:
         max_tokens:
           type: integer
           minimum: 0
-        include_thoughts:
-          type: boolean
-        includeThoughts:
-          type: boolean
-    ThinkingConfig:
-      type: object
-      properties:
-        type:
-          type: string
-          enum:
-            - enabled
-            - disabled
-            - adaptive
-        enabled:
-          type: boolean
-        include_thoughts:
-          type: boolean
-        includeThoughts:
-          type: boolean
-        effort:
-          type: string
-          enum:
-            - none
-            - minimal
-            - low
-            - medium
-            - high
-            - xhigh
-            - max
-        max_tokens:
-          type: integer
-          minimum: 0
-        maxTokens:
-          type: integer
-          minimum: 0
-        budget_tokens:
-          type: integer
-          minimum: 0
-        budgetTokens:
-          type: integer
-          minimum: 0
     ImageConfig:
       type: object
       properties:
         aspect_ratio:
-          type: string
-        aspectRatio:
           type: string
         image_size:
           type: string
@@ -2916,16 +3020,7 @@ components:
             - 1K
             - 2K
             - 4K
-        imageSize:
-          type: string
-          enum:
-            - 0.5K
-            - 1K
-            - 2K
-            - 4K
         include_rai_reason:
-          type: boolean
-        includeRaiReason:
           type: boolean
         font_inputs:
           type: array
@@ -2937,30 +3032,11 @@ components:
                 format: uri
               text:
                 type: string
-        fontInputs:
-          type: array
-          items:
-            type: object
-            properties:
-              fontUrl:
-                type: string
-                format: uri
-              text:
-                type: string
         super_resolution_references:
           type: array
           items:
             type: string
-        superResolutionReferences:
-          type: array
-          items:
-            type: string
         reference_images:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        referenceImages:
           type: array
           items:
             type: object
@@ -3011,6 +3087,7 @@ components:
       required:
         - model
         - messages
+        - max_tokens
       properties:
         model:
           type: string
@@ -3020,6 +3097,15 @@ components:
             - type: array
               items:
                 type: object
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                  text:
+                    type: string
+                  cache_control:
+                    $ref: '#/components/schemas/CacheControl'
         messages:
           type: array
           minItems: 1
@@ -3031,7 +3117,7 @@ components:
         temperature:
           type: number
           minimum: 0
-          maximum: 2
+          maximum: 1
         top_p:
           type: number
           minimum: 0
@@ -3045,32 +3131,27 @@ components:
             $ref: '#/components/schemas/AnthropicTool'
         tool_choice:
           oneOf:
-            - type: string
             - type: object
+            - type: string
         stream:
           type: boolean
         metadata:
           type: object
-          additionalProperties:
-            type: string
-        modalities:
+          additionalProperties: true
+        reasoning:
+          $ref: '#/components/schemas/ReasoningConfig'
+        stop_sequences:
           type: array
           items:
             type: string
-        response_modalities:
-          type: array
-          items:
-            type: string
-        responseModalities:
-          type: array
-          items:
-            type: string
-        image_config:
-          $ref: '#/components/schemas/ImageConfig'
-        imageConfig:
-          $ref: '#/components/schemas/ImageConfig'
-        thinking:
-          $ref: '#/components/schemas/ThinkingConfig'
+        provider_options:
+          $ref: '#/components/schemas/ProviderOptions'
+        usage:
+          type: boolean
+        meta:
+          type: boolean
+        echo_upstream_request:
+          type: boolean
         debug:
           $ref: '#/components/schemas/DebugOptions'
         provider:
@@ -3127,6 +3208,8 @@ components:
             - tool_result
         text:
           type: string
+        cache_control:
+          $ref: '#/components/schemas/CacheControl'
         source:
           type: object
           properties:
@@ -3170,6 +3253,7 @@ components:
       type: object
       required:
         - model
+        - input
       properties:
         model:
           type: string
@@ -3180,14 +3264,8 @@ components:
               items:
                 $ref: '#/components/schemas/ResponsesInputItem'
             - type: object
-        input_items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResponsesInputItem'
-        conversation:
-          oneOf:
-            - type: string
-            - type: object
+        background:
+          type: boolean
         include:
           type: array
           items:
@@ -3197,15 +3275,6 @@ components:
         max_output_tokens:
           type: integer
           minimum: 1
-        max_completion_tokens:
-          type: integer
-          minimum: 1
-        max_tokens:
-          type: integer
-          minimum: 1
-        max_tool_calls:
-          type: integer
-          minimum: 0
         metadata:
           type: object
           additionalProperties:
@@ -3214,111 +3283,20 @@ components:
           type: boolean
         previous_response_id:
           type: string
-        prompt:
-          type: object
-          properties:
-            id:
-              type: string
-            variables:
-              type: object
-            version:
-              type: string
-        prompt_cache_key:
-          type: string
-        prompt_cache_retention:
-          type: string
-        provider_options:
-          type: object
-          description: >
-            Optional provider-specific options. Currently only OpenAI
-            `context_management` is supported on `/v1/responses`.
-          properties:
-            openai:
-              type: object
-              properties:
-                context_management:
-                  type: object
-                  description: |
-                    Optional OpenAI context management configuration.
-                  properties:
-                    type:
-                      type: string
-                      enum:
-                        - compaction
-                    compact_threshold:
-                      type: number
-                  required:
-                    - type
-        providerOptions:
-          type: object
-          description: |
-            Camel-case alias of `provider_options`.
-          properties:
-            openai:
-              type: object
-              properties:
-                contextManagement:
-                  type: object
-                  description: |
-                    Optional OpenAI context management configuration.
-                  properties:
-                    type:
-                      type: string
-                      enum:
-                        - compaction
-                    compactThreshold:
-                      type: number
-                  required:
-                    - type
         reasoning:
-          type: object
-          properties:
-            effort:
-              type: string
-              enum:
-                - none
-                - minimal
-                - low
-                - medium
-                - high
-                - xhigh
-            summary:
-              type: string
-            enabled:
-              type: boolean
-            max_tokens:
-              type: integer
-              minimum: 0
-        thinking:
-          $ref: '#/components/schemas/ThinkingConfig'
-        modalities:
-          type: array
-          items:
-            type: string
-        response_modalities:
-          type: array
-          items:
-            type: string
-        responseModalities:
-          type: array
-          items:
-            type: string
-        image_config:
-          $ref: '#/components/schemas/ImageConfig'
-        imageConfig:
-          $ref: '#/components/schemas/ImageConfig'
-        safety_identifier:
-          type: string
+          $ref: '#/components/schemas/ReasoningConfig'
         service_tier:
           type: string
-        speed:
-          type: string
+          enum:
+            - auto
+            - default
+            - flex
+            - standard
+            - priority
         store:
           type: boolean
         stream:
           type: boolean
-        stream_options:
-          type: object
         temperature:
           type: number
           minimum: 0
@@ -3333,23 +3311,36 @@ components:
           type: array
           items:
             type: object
-        top_logprobs:
-          type: integer
-          minimum: 0
-          maximum: 20
         top_p:
           type: number
           minimum: 0
           maximum: 1
         truncation:
           type: string
-        background:
-          type: boolean
+          enum:
+            - auto
+            - disabled
         user:
           type: string
+        prompt_cache_key:
+          type: string
+          nullable: true
+        safety_identifier:
+          type: string
+          nullable: true
+        modalities:
+          type: array
+          items:
+            type: string
+        image_config:
+          $ref: '#/components/schemas/ImageConfig'
+        provider_options:
+          $ref: '#/components/schemas/ProviderOptions'
         usage:
           type: boolean
         meta:
+          type: boolean
+        echo_upstream_request:
           type: boolean
         debug:
           $ref: '#/components/schemas/DebugOptions'
@@ -3388,11 +3379,7 @@ components:
           $ref: '#/components/schemas/Usage'
     ResponsesInputItem:
       type: object
-      description: >
-        Responses API input item. Assistant messages support `phase`: use
-        `commentary` for intermediate assistant messages and `final_answer` for
-        final assistant messages. On follow-up turns, preserve and resend
-        assistant messages with their original `phase` values.
+      description: Responses API input item.
       properties:
         type:
           type: string
@@ -3410,21 +3397,9 @@ components:
               items:
                 type: object
             - type: object
-        phase:
-          type: string
-          nullable: true
-          description: >
-            Optional assistant message phase. Not used for user/system/developer
-            messages.
-          enum:
-            - commentary
-            - final_answer
-          example: commentary
     ResponsesOutputItem:
       type: object
-      description: >
-        Responses API output item. Assistant message items may include `phase`
-        as `commentary` (intermediate) or `final_answer` (final).
+      description: Responses API output item.
       properties:
         type:
           type: string
@@ -3434,15 +3409,6 @@ components:
           type: array
           items:
             type: object
-        phase:
-          type: string
-          nullable: true
-          description: |
-            Optional assistant message phase returned by the model.
-          enum:
-            - commentary
-            - final_answer
-          example: final_answer
     ResponsesWebSocketCreateEvent:
       type: object
       description: >

@@ -17,6 +17,7 @@ class ActivityEntry
 
 class AnthropicContentBlock
 {
+	public $cache_control;
 	public $content;
 	public $id;
 	public $input;
@@ -36,24 +37,24 @@ class AnthropicMessage
 class AnthropicMessagesRequest
 {
 	public $debug;
-	public $image_config;
-	public $imageConfig;
+	public $echo_upstream_request;
 	public $max_tokens;
 	public $messages;
+	public $meta;
 	public $metadata;
-	public $modalities;
 	public $model;
 	public $provider;
-	public $response_modalities;
-	public $responseModalities;
+	public $provider_options;
+	public $reasoning;
+	public $stop_sequences;
 	public $stream;
 	public $system;
 	public $temperature;
-	public $thinking;
 	public $tool_choice;
 	public $tools;
 	public $top_k;
 	public $top_p;
+	public $usage;
 }
 
 class AnthropicMessagesResponse
@@ -169,6 +170,13 @@ class BatchResponse
 
 class BenchmarkId { }
 
+class CacheControl
+{
+	public $scope;
+	public $ttl;
+	public $type;
+}
+
 class ChatChoice
 {
 	public $finish_reason;
@@ -179,37 +187,36 @@ class ChatChoice
 class ChatCompletionsRequest
 {
 	public $debug;
+	public $echo_upstream_request;
 	public $frequency_penalty;
 	public $image_config;
-	public $imageConfig;
 	public $logit_bias;
 	public $logprobs;
 	public $max_completion_tokens;
-	public $max_output_tokens;
 	public $max_tokens;
 	public $max_tool_calls;
 	public $messages;
 	public $meta;
+	public $metadata;
 	public $modalities;
 	public $model;
 	public $parallel_tool_calls;
 	public $presence_penalty;
+	public $prompt_cache_key;
 	public $provider;
+	public $provider_options;
 	public $reasoning;
 	public $response_format;
-	public $response_modalities;
-	public $responseModalities;
+	public $safety_identifier;
 	public $seed;
 	public $service_tier;
-	public $speed;
+	public $stop;
+	public $store;
 	public $stream;
 	public $stream_options;
-	public $system;
 	public $temperature;
-	public $thinking;
 	public $tool_choice;
 	public $tools;
-	public $top_k;
 	public $top_logprobs;
 	public $top_p;
 	public $usage;
@@ -349,17 +356,11 @@ class Image
 class ImageConfig
 {
 	public $aspect_ratio;
-	public $aspectRatio;
 	public $font_inputs;
-	public $fontInputs;
 	public $image_size;
-	public $imageSize;
 	public $include_rai_reason;
-	public $includeRaiReason;
 	public $reference_images;
-	public $referenceImages;
 	public $super_resolution_references;
-	public $superResolutionReferences;
 }
 
 class ImageContentPart
@@ -424,15 +425,31 @@ class MessageContentPart { }
 class Model
 {
 	public $aliases;
+	public $architecture;
+	public $canonical_slug;
+	public $created;
+	public $deprecation_date;
+	public $description;
 	public $endpoints;
+	public $id;
 	public $input_types;
 	public $model_id;
 	public $name;
+	public $organisation_colour;
 	public $organisation_id;
+	public $organisation_name;
 	public $output_types;
+	public $per_request_limits;
+	public $pricing;
+	public $pricing_detail;
 	public $providers;
 	public $release_date;
+	public $retirement_date;
 	public $status;
+	public $supported_parameters;
+	public $supported_params;
+	public $top_provider;
+	public $top_provider_id;
 }
 
 class ModelId { }
@@ -541,6 +558,13 @@ class Provider
 	public $link;
 }
 
+class ProviderOptions
+{
+	public $anthropic;
+	public $google;
+	public $openai;
+}
+
 class ProviderRoutingOptions
 {
 	public $ignore;
@@ -594,8 +618,6 @@ class ReasoningConfig
 {
 	public $effort;
 	public $enabled;
-	public $include_thoughts;
-	public $includeThoughts;
 	public $max_tokens;
 	public $summary;
 }
@@ -603,7 +625,6 @@ class ReasoningConfig
 class ResponsesInputItem
 {
 	public $content;
-	public $phase;
 	public $role;
 	public $type;
 }
@@ -611,7 +632,6 @@ class ResponsesInputItem
 class ResponsesOutputItem
 {
 	public $content;
-	public $phase;
 	public $role;
 	public $type;
 }
@@ -619,45 +639,31 @@ class ResponsesOutputItem
 class ResponsesRequest
 {
 	public $background;
-	public $conversation;
 	public $debug;
+	public $echo_upstream_request;
 	public $image_config;
-	public $imageConfig;
 	public $include;
 	public $input;
-	public $input_items;
 	public $instructions;
-	public $max_completion_tokens;
 	public $max_output_tokens;
-	public $max_tokens;
-	public $max_tool_calls;
 	public $meta;
 	public $metadata;
 	public $modalities;
 	public $model;
 	public $parallel_tool_calls;
 	public $previous_response_id;
-	public $prompt;
 	public $prompt_cache_key;
-	public $prompt_cache_retention;
 	public $provider;
 	public $provider_options;
-	public $providerOptions;
 	public $reasoning;
-	public $response_modalities;
-	public $responseModalities;
 	public $safety_identifier;
 	public $service_tier;
-	public $speed;
 	public $store;
 	public $stream;
-	public $stream_options;
 	public $temperature;
 	public $text;
-	public $thinking;
 	public $tool_choice;
 	public $tools;
-	public $top_logprobs;
 	public $top_p;
 	public $truncation;
 	public $usage;
@@ -712,19 +718,6 @@ class TextContentPart
 class TextModerationInput
 {
 	public $text;
-	public $type;
-}
-
-class ThinkingConfig
-{
-	public $budget_tokens;
-	public $budgetTokens;
-	public $effort;
-	public $enabled;
-	public $include_thoughts;
-	public $includeThoughts;
-	public $max_tokens;
-	public $maxTokens;
 	public $type;
 }
 

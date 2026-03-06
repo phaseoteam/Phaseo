@@ -18,6 +18,7 @@ struct ActivityEntry {
 };
 
 struct AnthropicContentBlock {
+	std::map<std::string, std::any> cache_control;
 	std::string content;
 	std::string id;
 	std::map<std::string, std::any> input;
@@ -35,24 +36,24 @@ struct AnthropicMessage {
 
 struct AnthropicMessagesRequest {
 	std::map<std::string, std::any> debug;
-	std::map<std::string, std::any> image_config;
-	std::map<std::string, std::any> imageConfig;
-	std::optional<int> max_tokens;
+	std::optional<bool> echo_upstream_request;
+	int max_tokens;
 	std::vector<std::map<std::string, std::any>> messages;
+	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
-	std::vector<std::string> modalities;
 	std::string model;
 	std::map<std::string, std::any> provider;
-	std::vector<std::string> response_modalities;
-	std::vector<std::string> responseModalities;
+	std::map<std::string, std::any> provider_options;
+	std::map<std::string, std::any> reasoning;
+	std::vector<std::string> stop_sequences;
 	std::optional<bool> stream;
 	std::any system;
 	std::optional<double> temperature;
-	std::map<std::string, std::any> thinking;
 	std::any tool_choice;
 	std::vector<std::map<std::string, std::any>> tools;
 	std::optional<int> top_k;
 	std::optional<double> top_p;
+	std::optional<bool> usage;
 };
 
 struct AnthropicMessagesResponse {
@@ -156,6 +157,12 @@ struct BatchResponse {
 
 using BenchmarkId = std::any;
 
+struct CacheControl {
+	std::string scope;
+	std::string ttl;
+	std::string type;
+};
+
 struct ChatChoice {
 	std::any finish_reason;
 	std::optional<int> index;
@@ -164,37 +171,36 @@ struct ChatChoice {
 
 struct ChatCompletionsRequest {
 	std::map<std::string, std::any> debug;
+	std::optional<bool> echo_upstream_request;
 	std::optional<double> frequency_penalty;
 	std::map<std::string, std::any> image_config;
-	std::map<std::string, std::any> imageConfig;
 	std::map<std::string, std::any> logit_bias;
 	std::optional<bool> logprobs;
 	std::optional<int> max_completion_tokens;
-	std::optional<int> max_output_tokens;
 	std::optional<int> max_tokens;
 	std::optional<int> max_tool_calls;
 	std::vector<std::map<std::string, std::any>> messages;
 	std::optional<bool> meta;
+	std::map<std::string, std::any> metadata;
 	std::vector<std::string> modalities;
 	std::string model;
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
+	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
 	std::any response_format;
-	std::vector<std::string> response_modalities;
-	std::vector<std::string> responseModalities;
+	std::optional<std::string> safety_identifier;
 	std::optional<int> seed;
 	std::any service_tier;
-	std::string speed;
+	std::any stop;
+	std::optional<bool> store;
 	std::optional<bool> stream;
 	std::map<std::string, std::any> stream_options;
-	std::string system;
 	std::optional<double> temperature;
-	std::map<std::string, std::any> thinking;
 	std::any tool_choice;
 	std::vector<std::map<std::string, std::any>> tools;
-	std::optional<int> top_k;
 	std::optional<int> top_logprobs;
 	std::optional<double> top_p;
 	std::optional<bool> usage;
@@ -321,17 +327,11 @@ struct Image {
 
 struct ImageConfig {
 	std::string aspect_ratio;
-	std::string aspectRatio;
 	std::vector<std::map<std::string, std::any>> font_inputs;
-	std::vector<std::map<std::string, std::any>> fontInputs;
 	std::any image_size;
-	std::any imageSize;
 	std::optional<bool> include_rai_reason;
-	std::optional<bool> includeRaiReason;
 	std::vector<std::map<std::string, std::any>> reference_images;
-	std::vector<std::map<std::string, std::any>> referenceImages;
 	std::vector<std::string> super_resolution_references;
-	std::vector<std::string> superResolutionReferences;
 };
 
 struct ImageContentPart {
@@ -388,15 +388,31 @@ using MessageContentPart = std::any;
 
 struct Model {
 	std::vector<std::string> aliases;
+	std::map<std::string, std::any> architecture;
+	std::string canonical_slug;
+	std::optional<int> created;
+	std::optional<std::string> deprecation_date;
+	std::string description;
 	std::vector<std::string> endpoints;
+	std::string id;
 	std::vector<std::string> input_types;
 	std::string model_id;
-	std::string name;
-	std::string organisation_id;
+	std::optional<std::string> name;
+	std::optional<std::string> organisation_colour;
+	std::optional<std::string> organisation_id;
+	std::optional<std::string> organisation_name;
 	std::vector<std::string> output_types;
+	std::optional<std::map<std::string, std::any>> per_request_limits;
+	std::map<std::string, std::any> pricing;
+	std::map<std::string, std::any> pricing_detail;
 	std::vector<std::map<std::string, std::any>> providers;
-	std::string release_date;
-	std::string status;
+	std::optional<std::string> release_date;
+	std::optional<std::string> retirement_date;
+	std::optional<std::string> status;
+	std::vector<std::string> supported_parameters;
+	std::vector<std::string> supported_params;
+	std::map<std::string, std::any> top_provider;
+	std::optional<std::string> top_provider_id;
 };
 
 using ModelId = std::any;
@@ -494,6 +510,12 @@ struct Provider {
 	std::optional<std::string> link;
 };
 
+struct ProviderOptions {
+	std::map<std::string, std::any> anthropic;
+	std::map<std::string, std::any> google;
+	std::map<std::string, std::any> openai;
+};
+
 struct ProviderRoutingOptions {
 	std::vector<std::string> ignore;
 	std::optional<bool> include_alpha;
@@ -541,69 +563,51 @@ struct RealtimeNotImplementedResponse {
 struct ReasoningConfig {
 	std::any effort;
 	std::optional<bool> enabled;
-	std::optional<bool> include_thoughts;
-	std::optional<bool> includeThoughts;
 	std::optional<int> max_tokens;
 	std::any summary;
 };
 
 struct ResponsesInputItem {
 	std::any content;
-	std::optional<std::any> phase;
 	std::any role;
 	std::string type;
 };
 
 struct ResponsesOutputItem {
 	std::vector<std::map<std::string, std::any>> content;
-	std::optional<std::any> phase;
 	std::string role;
 	std::string type;
 };
 
 struct ResponsesRequest {
 	std::optional<bool> background;
-	std::any conversation;
 	std::map<std::string, std::any> debug;
+	std::optional<bool> echo_upstream_request;
 	std::map<std::string, std::any> image_config;
-	std::map<std::string, std::any> imageConfig;
 	std::vector<std::string> include;
 	std::any input;
-	std::vector<std::map<std::string, std::any>> input_items;
 	std::string instructions;
-	std::optional<int> max_completion_tokens;
 	std::optional<int> max_output_tokens;
-	std::optional<int> max_tokens;
-	std::optional<int> max_tool_calls;
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::vector<std::string> modalities;
 	std::string model;
 	std::optional<bool> parallel_tool_calls;
 	std::string previous_response_id;
-	std::map<std::string, std::any> prompt;
-	std::string prompt_cache_key;
-	std::string prompt_cache_retention;
+	std::optional<std::string> prompt_cache_key;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
-	std::map<std::string, std::any> providerOptions;
 	std::map<std::string, std::any> reasoning;
-	std::vector<std::string> response_modalities;
-	std::vector<std::string> responseModalities;
-	std::string safety_identifier;
-	std::string service_tier;
-	std::string speed;
+	std::optional<std::string> safety_identifier;
+	std::any service_tier;
 	std::optional<bool> store;
 	std::optional<bool> stream;
-	std::map<std::string, std::any> stream_options;
 	std::optional<double> temperature;
 	std::map<std::string, std::any> text;
-	std::map<std::string, std::any> thinking;
 	std::any tool_choice;
 	std::vector<std::map<std::string, std::any>> tools;
-	std::optional<int> top_logprobs;
 	std::optional<double> top_p;
-	std::string truncation;
+	std::any truncation;
 	std::optional<bool> usage;
 	std::string user;
 };
@@ -650,18 +654,6 @@ struct TextContentPart {
 
 struct TextModerationInput {
 	std::string text;
-	std::any type;
-};
-
-struct ThinkingConfig {
-	std::optional<int> budget_tokens;
-	std::optional<int> budgetTokens;
-	std::any effort;
-	std::optional<bool> enabled;
-	std::optional<bool> include_thoughts;
-	std::optional<bool> includeThoughts;
-	std::optional<int> max_tokens;
-	std::optional<int> maxTokens;
 	std::any type;
 };
 

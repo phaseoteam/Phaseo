@@ -6,61 +6,18 @@ export interface AnthropicMessagesRequest {
     trace?: boolean;
     trace_level?: "summary" | "full";
   };
-  image_config?: {
-    aspect_ratio?: string;
-    aspectRatio?: string;
-    font_inputs?: {
-      font_url?: string;
-      text?: string;
-    }[];
-    fontInputs?: {
-      fontUrl?: string;
-      text?: string;
-    }[];
-    image_size?: "0.5K" | "1K" | "2K" | "4K";
-    imageSize?: "0.5K" | "1K" | "2K" | "4K";
-    include_rai_reason?: boolean;
-    includeRaiReason?: boolean;
-    reference_images?: {
-      [key: string]: unknown;
-    }[];
-    referenceImages?: {
-      [key: string]: unknown;
-    }[];
-    super_resolution_references?: string[];
-    superResolutionReferences?: string[];
-    [key: string]: unknown;
-  };
-  imageConfig?: {
-    aspect_ratio?: string;
-    aspectRatio?: string;
-    font_inputs?: {
-      font_url?: string;
-      text?: string;
-    }[];
-    fontInputs?: {
-      fontUrl?: string;
-      text?: string;
-    }[];
-    image_size?: "0.5K" | "1K" | "2K" | "4K";
-    imageSize?: "0.5K" | "1K" | "2K" | "4K";
-    include_rai_reason?: boolean;
-    includeRaiReason?: boolean;
-    reference_images?: {
-      [key: string]: unknown;
-    }[];
-    referenceImages?: {
-      [key: string]: unknown;
-    }[];
-    super_resolution_references?: string[];
-    superResolutionReferences?: string[];
-    [key: string]: unknown;
-  };
-  max_tokens?: number;
+  echo_upstream_request?: boolean;
+  max_tokens: number;
   messages: {
     content:
       | string
       | {
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
           content?: string;
           id?: string;
           input?: {};
@@ -77,10 +34,10 @@ export interface AnthropicMessagesRequest {
         }[];
     role: "user" | "assistant";
   }[];
+  meta?: boolean;
   metadata?: {
-    [key: string]: string;
+    [key: string]: unknown;
   };
-  modalities?: string[];
   model: string;
   provider?: {
     ignore?: string[];
@@ -88,23 +45,55 @@ export interface AnthropicMessagesRequest {
     only?: string[];
     order?: string[];
   };
-  response_modalities?: string[];
-  responseModalities?: string[];
-  stream?: boolean;
-  system?: string | {}[];
-  temperature?: number;
-  thinking?: {
-    budget_tokens?: number;
-    budgetTokens?: number;
-    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
-    enabled?: boolean;
-    include_thoughts?: boolean;
-    includeThoughts?: boolean;
-    max_tokens?: number;
-    maxTokens?: number;
-    type?: "enabled" | "disabled" | "adaptive";
+  provider_options?: {
+    anthropic?: {
+      cache_control?: {
+        scope?: string;
+        ttl?: string;
+        type?: string;
+        [key: string]: unknown;
+      };
+    };
+    google?: {
+      cache_control?: {
+        scope?: string;
+        ttl?: string;
+        type?: string;
+        [key: string]: unknown;
+      };
+      cache_ttl?: string;
+      cached_content?: string;
+    };
+    openai?: {
+      context_management?: {
+        compact_threshold?: number;
+        type: "compaction";
+      };
+      prompt_cache_retention?: string;
+    };
   };
-  tool_choice?: string | {};
+  reasoning?: {
+    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+    enabled?: boolean;
+    max_tokens?: number;
+    summary?: "auto" | "concise" | "detailed";
+  };
+  stop_sequences?: string[];
+  stream?: boolean;
+  system?:
+    | string
+    | {
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
+        text?: string;
+        type?: "text";
+      }[];
+  temperature?: number;
+  tool_choice?: {} | string;
   tools?: {
     description?: string;
     input_schema?: {};
@@ -112,4 +101,5 @@ export interface AnthropicMessagesRequest {
   }[];
   top_k?: number;
   top_p?: number;
+  usage?: boolean;
 }

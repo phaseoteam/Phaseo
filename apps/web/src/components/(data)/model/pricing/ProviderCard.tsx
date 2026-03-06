@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BadgeX, AlertTriangle } from "lucide-react";
+import { BadgeX, AlertTriangle, PauseCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
 	HoverCard,
@@ -108,10 +108,16 @@ export default function ProviderCard({
 	);
 	const hasPlanPricing = planRules.length > 0;
 	const planModelKeys = new Set(planRules.map((r) => r.model_key));
-	const matchingProviderModel = provider.provider_models.find((pm) =>
+	const matchingProviderModels = provider.provider_models.filter((pm) =>
 		planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
 	);
-	const isActiveGateway = matchingProviderModel?.is_active_gateway ?? false;
+	const matchingProviderModel = matchingProviderModels[0];
+	const hasDisabledPlanModel = matchingProviderModels.some(
+		(pm) => pm.capability_status === "disabled"
+	);
+	const isActiveGateway = matchingProviderModels.some(
+		(pm) => pm.is_active_gateway && pm.capability_status !== "disabled"
+	);
 
 	const leavingSoonRule = planRules
 		.filter((r) => {
@@ -125,7 +131,7 @@ export default function ProviderCard({
 				new Date(b.effective_to!).getTime()
 		)[0];
 
-	let status: "Active" | "Leaving Soon" | "Not Available";
+	let status: "Active" | "Leaving Soon" | "Not Active" | "Not Available";
 	let statusIcon: React.ElementType;
 	let statusClass: string;
 
@@ -137,6 +143,10 @@ export default function ProviderCard({
 		status = "Active";
 		statusIcon = AlertTriangle;
 		statusClass = "h-3.5 w-3.5 text-emerald-500";
+	} else if (hasDisabledPlanModel) {
+		status = "Not Active";
+		statusIcon = PauseCircle;
+		statusClass = "h-3.5 w-3.5 text-amber-500";
 	} else {
 		status = "Not Available";
 		statusIcon = BadgeX;
@@ -144,7 +154,7 @@ export default function ProviderCard({
 	}
 
 	const showPrimaryStatusBadge =
-		status === "Leaving Soon" || status === "Not Available";
+		status === "Leaving Soon" || status === "Not Active" || status === "Not Available";
 	const statusBadgeLabel =
 		status === "Leaving Soon" && leavingSoonRule?.effective_to
 			? `Leaving on ${formatLeavingDate(leavingSoonRule.effective_to, now)}`
@@ -157,6 +167,7 @@ export default function ProviderCard({
 		(pm) =>
 			pm.endpoint === "text.generate" &&
 			pm.is_active_gateway &&
+			pm.capability_status !== "disabled" &&
 			planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
 	);
 	const maxFrom = (values: Array<number | null | undefined>) => {
@@ -424,4 +435,3 @@ export default function ProviderCard({
 		</Card>
 	);
 }
-

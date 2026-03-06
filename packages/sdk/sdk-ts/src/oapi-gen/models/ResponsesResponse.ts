@@ -6,13 +6,11 @@ export interface ResponsesResponse {
   object?: string;
   output?: {
     content?: {}[];
-    phase?: "commentary" | "final_answer" | null;
     role?: string;
     type?: string;
   }[];
   output_items?: {
     content?: {}[];
-    phase?: "commentary" | "final_answer" | null;
     role?: string;
     type?: string;
   }[];

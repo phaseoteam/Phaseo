@@ -14,6 +14,7 @@ pub struct ActivityEntry {
 }
 
 pub struct AnthropicContentBlock {
+	pub cache_control: Option<HashMap<String, String>>,
 	pub content: Option<String>,
 	pub id: Option<String>,
 	pub input: Option<HashMap<String, String>>,
@@ -31,24 +32,24 @@ pub struct AnthropicMessage {
 
 pub struct AnthropicMessagesRequest {
 	pub debug: Option<HashMap<String, String>>,
-	pub image_config: Option<HashMap<String, String>>,
-	pub imageConfig: Option<HashMap<String, String>>,
-	pub max_tokens: Option<i64>,
+	pub echo_upstream_request: Option<bool>,
+	pub max_tokens: i64,
 	pub messages: Vec<HashMap<String, String>>,
+	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
-	pub modalities: Option<Vec<String>>,
 	pub model: String,
 	pub provider: Option<HashMap<String, String>>,
-	pub response_modalities: Option<Vec<String>>,
-	pub responseModalities: Option<Vec<String>>,
+	pub provider_options: Option<HashMap<String, String>>,
+	pub reasoning: Option<HashMap<String, String>>,
+	pub stop_sequences: Option<Vec<String>>,
 	pub stream: Option<bool>,
 	pub system: Option<String>,
 	pub temperature: Option<f64>,
-	pub thinking: Option<HashMap<String, String>>,
 	pub tool_choice: Option<String>,
 	pub tools: Option<Vec<HashMap<String, String>>>,
 	pub top_k: Option<i64>,
 	pub top_p: Option<f64>,
+	pub usage: Option<bool>,
 }
 
 pub struct AnthropicMessagesResponse {
@@ -152,6 +153,12 @@ pub struct BatchResponse {
 
 pub type BenchmarkId = JsonValue;
 
+pub struct CacheControl {
+	pub scope: Option<String>,
+	pub ttl: Option<String>,
+	pub r#type: Option<String>,
+}
+
 pub struct ChatChoice {
 	pub finish_reason: Option<String>,
 	pub index: Option<i64>,
@@ -160,37 +167,36 @@ pub struct ChatChoice {
 
 pub struct ChatCompletionsRequest {
 	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
 	pub frequency_penalty: Option<f64>,
 	pub image_config: Option<HashMap<String, String>>,
-	pub imageConfig: Option<HashMap<String, String>>,
 	pub logit_bias: Option<HashMap<String, String>>,
 	pub logprobs: Option<bool>,
 	pub max_completion_tokens: Option<i64>,
-	pub max_output_tokens: Option<i64>,
 	pub max_tokens: Option<i64>,
 	pub max_tool_calls: Option<i64>,
 	pub messages: Vec<HashMap<String, String>>,
 	pub meta: Option<bool>,
+	pub metadata: Option<HashMap<String, String>>,
 	pub modalities: Option<Vec<String>>,
 	pub model: String,
 	pub parallel_tool_calls: Option<bool>,
 	pub presence_penalty: Option<f64>,
+	pub prompt_cache_key: Option<Option<String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
 	pub response_format: Option<String>,
-	pub response_modalities: Option<Vec<String>>,
-	pub responseModalities: Option<Vec<String>>,
+	pub safety_identifier: Option<Option<String>>,
 	pub seed: Option<i64>,
 	pub service_tier: Option<String>,
-	pub speed: Option<String>,
+	pub stop: Option<String>,
+	pub store: Option<bool>,
 	pub stream: Option<bool>,
 	pub stream_options: Option<HashMap<String, String>>,
-	pub system: Option<String>,
 	pub temperature: Option<f64>,
-	pub thinking: Option<HashMap<String, String>>,
 	pub tool_choice: Option<String>,
 	pub tools: Option<Vec<HashMap<String, String>>>,
-	pub top_k: Option<i64>,
 	pub top_logprobs: Option<i64>,
 	pub top_p: Option<f64>,
 	pub usage: Option<bool>,
@@ -317,17 +323,11 @@ pub struct Image {
 
 pub struct ImageConfig {
 	pub aspect_ratio: Option<String>,
-	pub aspectRatio: Option<String>,
 	pub font_inputs: Option<Vec<HashMap<String, String>>>,
-	pub fontInputs: Option<Vec<HashMap<String, String>>>,
 	pub image_size: Option<String>,
-	pub imageSize: Option<String>,
 	pub include_rai_reason: Option<bool>,
-	pub includeRaiReason: Option<bool>,
 	pub reference_images: Option<Vec<HashMap<String, String>>>,
-	pub referenceImages: Option<Vec<HashMap<String, String>>>,
 	pub super_resolution_references: Option<Vec<String>>,
-	pub superResolutionReferences: Option<Vec<String>>,
 }
 
 pub struct ImageContentPart {
@@ -384,15 +384,31 @@ pub type MessageContentPart = JsonValue;
 
 pub struct Model {
 	pub aliases: Option<Vec<String>>,
+	pub architecture: Option<HashMap<String, String>>,
+	pub canonical_slug: Option<String>,
+	pub created: Option<Option<i64>>,
+	pub deprecation_date: Option<Option<String>>,
+	pub description: Option<String>,
 	pub endpoints: Option<Vec<String>>,
+	pub id: Option<String>,
 	pub input_types: Option<Vec<String>>,
 	pub model_id: Option<String>,
-	pub name: Option<String>,
-	pub organisation_id: Option<String>,
+	pub name: Option<Option<String>>,
+	pub organisation_colour: Option<Option<String>>,
+	pub organisation_id: Option<Option<String>>,
+	pub organisation_name: Option<Option<String>>,
 	pub output_types: Option<Vec<String>>,
+	pub per_request_limits: Option<Option<HashMap<String, String>>>,
+	pub pricing: Option<HashMap<String, String>>,
+	pub pricing_detail: Option<HashMap<String, String>>,
 	pub providers: Option<Vec<HashMap<String, String>>>,
-	pub release_date: Option<String>,
-	pub status: Option<String>,
+	pub release_date: Option<Option<String>>,
+	pub retirement_date: Option<Option<String>>,
+	pub status: Option<Option<String>>,
+	pub supported_parameters: Option<Vec<String>>,
+	pub supported_params: Option<Vec<String>>,
+	pub top_provider: Option<HashMap<String, String>>,
+	pub top_provider_id: Option<Option<String>>,
 }
 
 pub type ModelId = JsonValue;
@@ -490,6 +506,12 @@ pub struct Provider {
 	pub link: Option<Option<String>>,
 }
 
+pub struct ProviderOptions {
+	pub anthropic: Option<HashMap<String, String>>,
+	pub google: Option<HashMap<String, String>>,
+	pub openai: Option<HashMap<String, String>>,
+}
+
 pub struct ProviderRoutingOptions {
 	pub ignore: Option<Vec<String>>,
 	pub include_alpha: Option<bool>,
@@ -537,67 +559,49 @@ pub struct RealtimeNotImplementedResponse {
 pub struct ReasoningConfig {
 	pub effort: Option<String>,
 	pub enabled: Option<bool>,
-	pub include_thoughts: Option<bool>,
-	pub includeThoughts: Option<bool>,
 	pub max_tokens: Option<i64>,
 	pub summary: Option<String>,
 }
 
 pub struct ResponsesInputItem {
 	pub content: Option<String>,
-	pub phase: Option<Option<String>>,
 	pub role: Option<String>,
 	pub r#type: Option<String>,
 }
 
 pub struct ResponsesOutputItem {
 	pub content: Option<Vec<HashMap<String, String>>>,
-	pub phase: Option<Option<String>>,
 	pub role: Option<String>,
 	pub r#type: Option<String>,
 }
 
 pub struct ResponsesRequest {
 	pub background: Option<bool>,
-	pub conversation: Option<String>,
 	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
 	pub image_config: Option<HashMap<String, String>>,
-	pub imageConfig: Option<HashMap<String, String>>,
 	pub include: Option<Vec<String>>,
-	pub input: Option<String>,
-	pub input_items: Option<Vec<HashMap<String, String>>>,
+	pub input: String,
 	pub instructions: Option<String>,
-	pub max_completion_tokens: Option<i64>,
 	pub max_output_tokens: Option<i64>,
-	pub max_tokens: Option<i64>,
-	pub max_tool_calls: Option<i64>,
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub modalities: Option<Vec<String>>,
 	pub model: String,
 	pub parallel_tool_calls: Option<bool>,
 	pub previous_response_id: Option<String>,
-	pub prompt: Option<HashMap<String, String>>,
-	pub prompt_cache_key: Option<String>,
-	pub prompt_cache_retention: Option<String>,
+	pub prompt_cache_key: Option<Option<String>>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
-	pub providerOptions: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
-	pub response_modalities: Option<Vec<String>>,
-	pub responseModalities: Option<Vec<String>>,
-	pub safety_identifier: Option<String>,
+	pub safety_identifier: Option<Option<String>>,
 	pub service_tier: Option<String>,
-	pub speed: Option<String>,
 	pub store: Option<bool>,
 	pub stream: Option<bool>,
-	pub stream_options: Option<HashMap<String, String>>,
 	pub temperature: Option<f64>,
 	pub text: Option<HashMap<String, String>>,
-	pub thinking: Option<HashMap<String, String>>,
 	pub tool_choice: Option<String>,
 	pub tools: Option<Vec<HashMap<String, String>>>,
-	pub top_logprobs: Option<i64>,
 	pub top_p: Option<f64>,
 	pub truncation: Option<String>,
 	pub usage: Option<bool>,
@@ -647,18 +651,6 @@ pub struct TextContentPart {
 pub struct TextModerationInput {
 	pub text: String,
 	pub r#type: String,
-}
-
-pub struct ThinkingConfig {
-	pub budget_tokens: Option<i64>,
-	pub budgetTokens: Option<i64>,
-	pub effort: Option<String>,
-	pub enabled: Option<bool>,
-	pub include_thoughts: Option<bool>,
-	pub includeThoughts: Option<bool>,
-	pub max_tokens: Option<i64>,
-	pub maxTokens: Option<i64>,
-	pub r#type: Option<String>,
 }
 
 pub struct ToolCall {

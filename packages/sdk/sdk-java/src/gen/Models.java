@@ -15,6 +15,7 @@ public final class Models {
 	}
 
 	public static class AnthropicContentBlock {
+		public Object cache_control;
 		public String content;
 		public String id;
 		public Object input;
@@ -32,24 +33,24 @@ public final class Models {
 
 	public static class AnthropicMessagesRequest {
 		public Object debug;
-		public Object image_config;
-		public Object imageConfig;
+		public Boolean echo_upstream_request;
 		public Integer max_tokens;
 		public java.util.List<Object> messages;
+		public Boolean meta;
 		public Object metadata;
-		public java.util.List<String> modalities;
 		public String model;
 		public Object provider;
-		public java.util.List<String> response_modalities;
-		public java.util.List<String> responseModalities;
+		public Object provider_options;
+		public Object reasoning;
+		public java.util.List<String> stop_sequences;
 		public Boolean stream;
 		public Object system;
 		public Double temperature;
-		public Object thinking;
 		public Object tool_choice;
 		public java.util.List<Object> tools;
 		public Integer top_k;
 		public Double top_p;
+		public Boolean usage;
 	}
 
 	public static class AnthropicMessagesResponse {
@@ -154,6 +155,12 @@ public final class Models {
 	public static class BenchmarkId {
 	}
 
+	public static class CacheControl {
+		public String scope;
+		public String ttl;
+		public String type;
+	}
+
 	public static class ChatChoice {
 		public Object finish_reason;
 		public Integer index;
@@ -162,37 +169,36 @@ public final class Models {
 
 	public static class ChatCompletionsRequest {
 		public Object debug;
+		public Boolean echo_upstream_request;
 		public Double frequency_penalty;
 		public Object image_config;
-		public Object imageConfig;
 		public Object logit_bias;
 		public Boolean logprobs;
 		public Integer max_completion_tokens;
-		public Integer max_output_tokens;
 		public Integer max_tokens;
 		public Integer max_tool_calls;
 		public java.util.List<Object> messages;
 		public Boolean meta;
+		public Object metadata;
 		public java.util.List<String> modalities;
 		public String model;
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
+		public String prompt_cache_key;
 		public Object provider;
+		public Object provider_options;
 		public Object reasoning;
 		public Object response_format;
-		public java.util.List<String> response_modalities;
-		public java.util.List<String> responseModalities;
+		public String safety_identifier;
 		public Integer seed;
 		public Object service_tier;
-		public String speed;
+		public Object stop;
+		public Boolean store;
 		public Boolean stream;
 		public Object stream_options;
-		public String system;
 		public Double temperature;
-		public Object thinking;
 		public Object tool_choice;
 		public java.util.List<Object> tools;
-		public Integer top_k;
 		public Integer top_logprobs;
 		public Double top_p;
 		public Boolean usage;
@@ -320,17 +326,11 @@ public final class Models {
 
 	public static class ImageConfig {
 		public String aspect_ratio;
-		public String aspectRatio;
 		public java.util.List<Object> font_inputs;
-		public java.util.List<Object> fontInputs;
 		public Object image_size;
-		public Object imageSize;
 		public Boolean include_rai_reason;
-		public Boolean includeRaiReason;
 		public java.util.List<Object> reference_images;
-		public java.util.List<Object> referenceImages;
 		public java.util.List<String> super_resolution_references;
-		public java.util.List<String> superResolutionReferences;
 	}
 
 	public static class ImageContentPart {
@@ -388,15 +388,31 @@ public final class Models {
 
 	public static class Model {
 		public java.util.List<String> aliases;
+		public Object architecture;
+		public String canonical_slug;
+		public Integer created;
+		public String deprecation_date;
+		public String description;
 		public java.util.List<String> endpoints;
+		public String id;
 		public java.util.List<String> input_types;
 		public String model_id;
 		public String name;
+		public String organisation_colour;
 		public String organisation_id;
+		public String organisation_name;
 		public java.util.List<String> output_types;
+		public Object per_request_limits;
+		public Object pricing;
+		public Object pricing_detail;
 		public java.util.List<Object> providers;
 		public String release_date;
+		public String retirement_date;
 		public String status;
+		public java.util.List<String> supported_parameters;
+		public java.util.List<String> supported_params;
+		public Object top_provider;
+		public String top_provider_id;
 	}
 
 	public static class ModelId {
@@ -497,6 +513,12 @@ public final class Models {
 		public String link;
 	}
 
+	public static class ProviderOptions {
+		public Object anthropic;
+		public Object google;
+		public Object openai;
+	}
+
 	public static class ProviderRoutingOptions {
 		public java.util.List<String> ignore;
 		public Boolean include_alpha;
@@ -544,69 +566,51 @@ public final class Models {
 	public static class ReasoningConfig {
 		public Object effort;
 		public Boolean enabled;
-		public Boolean include_thoughts;
-		public Boolean includeThoughts;
 		public Integer max_tokens;
 		public Object summary;
 	}
 
 	public static class ResponsesInputItem {
 		public Object content;
-		public Object phase;
 		public Object role;
 		public String type;
 	}
 
 	public static class ResponsesOutputItem {
 		public java.util.List<Object> content;
-		public Object phase;
 		public String role;
 		public String type;
 	}
 
 	public static class ResponsesRequest {
 		public Boolean background;
-		public Object conversation;
 		public Object debug;
+		public Boolean echo_upstream_request;
 		public Object image_config;
-		public Object imageConfig;
 		public java.util.List<String> include;
 		public Object input;
-		public java.util.List<Object> input_items;
 		public String instructions;
-		public Integer max_completion_tokens;
 		public Integer max_output_tokens;
-		public Integer max_tokens;
-		public Integer max_tool_calls;
 		public Boolean meta;
 		public Object metadata;
 		public java.util.List<String> modalities;
 		public String model;
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
-		public Object prompt;
 		public String prompt_cache_key;
-		public String prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
-		public Object providerOptions;
 		public Object reasoning;
-		public java.util.List<String> response_modalities;
-		public java.util.List<String> responseModalities;
 		public String safety_identifier;
-		public String service_tier;
-		public String speed;
+		public Object service_tier;
 		public Boolean store;
 		public Boolean stream;
-		public Object stream_options;
 		public Double temperature;
 		public Object text;
-		public Object thinking;
 		public Object tool_choice;
 		public java.util.List<Object> tools;
-		public Integer top_logprobs;
 		public Double top_p;
-		public String truncation;
+		public Object truncation;
 		public Boolean usage;
 		public String user;
 	}
@@ -653,18 +657,6 @@ public final class Models {
 
 	public static class TextModerationInput {
 		public String text;
-		public Object type;
-	}
-
-	public static class ThinkingConfig {
-		public Integer budget_tokens;
-		public Integer budgetTokens;
-		public Object effort;
-		public Boolean enabled;
-		public Boolean include_thoughts;
-		public Boolean includeThoughts;
-		public Integer max_tokens;
-		public Integer maxTokens;
 		public Object type;
 	}
 

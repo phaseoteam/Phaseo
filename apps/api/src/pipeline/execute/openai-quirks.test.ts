@@ -25,6 +25,7 @@ describe("openai reasoning effort quirks", () => {
 		expectSupports("gpt-5.2-codex", ["none", "minimal", "low", "medium", "high", "xhigh"]);
 		expectSupports("gpt-5.3-codex", ["none", "minimal", "low", "medium", "high", "xhigh"]);
 		expect(validateOpenAIReasoningEffort("gpt-5.3-codex", "xhigh")).toBeNull();
+			expect(validateOpenAIReasoningEffort("gpt-5.3-codex", "extreme")).toContain("does not support");
 	});
 
 	it("supports gpt-5.3 base with xhigh and normalizes provider-prefixed model ids", () => {

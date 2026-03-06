@@ -67,27 +67,16 @@ const BetaOptionsSchema = z.object({
 
 const ImageConfigSchema = z.object({
     aspect_ratio: z.string().optional(),
-    aspectRatio: z.string().optional(),
     image_size: z.enum(["0.5K", "1K", "2K", "4K"]).optional(),
-    imageSize: z.enum(["0.5K", "1K", "2K", "4K"]).optional(),
     font_inputs: z.array(
         z.object({
             font_url: z.string().url(),
             text: z.string(),
         }),
     ).optional(),
-    fontInputs: z.array(
-        z.object({
-            fontUrl: z.string().url(),
-            text: z.string(),
-        }),
-    ).optional(),
     super_resolution_references: z.array(z.string()).optional(),
-    superResolutionReferences: z.array(z.string()).optional(),
     include_rai_reason: z.boolean().optional(),
-    includeRaiReason: z.boolean().optional(),
     reference_images: z.array(z.any()).optional(),
-    referenceImages: z.array(z.any()).optional(),
 }).catchall(
     z.union([
         z.string(),
@@ -117,14 +106,34 @@ const ResponseFormatSchema = z.union([
 const OpenAIContextManagementSchema = z.object({
 	type: z.literal("compaction"),
 	compact_threshold: z.number().optional(),
-	compactThreshold: z.number().optional(),
 }).passthrough();
 
+const CacheControlSchema = z.object({
+    type: z.string().optional(),
+    ttl: z.string().optional(),
+    scope: z.string().optional(),
+}).passthrough();
+
+const OpenAIProviderOptionsSchema = z.object({
+	context_management: OpenAIContextManagementSchema.optional(),
+	prompt_cache_retention: z.string().optional(),
+}).passthrough();
+
+const AnthropicProviderOptionsSchema = z.object({
+	cache_control: CacheControlSchema.optional(),
+}).passthrough();
+
+const GoogleProviderOptionsSchema = z.object({
+	cache_control: CacheControlSchema.optional(),
+	cached_content: z.string().optional(),
+	cache_ttl: z.string().optional(),
+}).passthrough();
+
+
 const ResponsesProviderOptionsSchema = z.object({
-	openai: z.object({
-		context_management: OpenAIContextManagementSchema.optional(),
-		contextManagement: OpenAIContextManagementSchema.optional(),
-	}).passthrough().optional(),
+	openai: OpenAIProviderOptionsSchema.optional(),
+	anthropic: AnthropicProviderOptionsSchema.optional(),
+	google: GoogleProviderOptionsSchema.optional(),
 }).passthrough();
 
 function isFileLike(value: unknown): boolean {
@@ -153,71 +162,38 @@ export type BatchRequest = z.infer<typeof BatchSchema>;
 // Responses schema (OAI Responses API)
 export const ResponsesSchema = z.object({
     model: z.string().min(1),
-    models: z.array(z.string()).optional(),
-    input: z.any().optional(),
-    input_items: z.array(z.any()).optional(),
-    conversation: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
+    input: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]),
+    background: z.boolean().optional(),
     include: z.array(z.string()).optional(),
-    instructions: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]).optional(),
+    instructions: z.string().optional(),
     max_output_tokens: z.number().int().positive().optional(),
-    max_completion_tokens: z.number().int().positive().optional(),
-    max_tool_calls: z.number().int().nonnegative().optional(),
-    max_tools_calls: z.number().int().nonnegative().optional(),
     metadata: z.record(z.string(), z.string()).optional(),
     parallel_tool_calls: z.boolean().optional(),
-    plugins: z.array(z.record(z.string(), z.any())).optional(),
-    session_id: z.string().max(128).optional(),
-    trace: z.record(z.string(), z.any()).optional(),
     previous_response_id: z.string().optional(),
-    frequency_penalty: z.number().min(-2).max(2).optional(),
-    presence_penalty: z.number().min(-2).max(2).optional(),
-    prompt: z.object({
-        id: z.string(),
-        variables: z.record(z.string(), z.any()).optional(),
-        version: z.string().optional(),
-    }).optional(),
-	prompt_cache_key: z.string().nullable().optional(),
-	prompt_cache_retention: z.string().optional(),
-	provider_options: ResponsesProviderOptionsSchema.optional(),
-	providerOptions: ResponsesProviderOptionsSchema.optional(),
-	modalities: z.array(z.string()).optional(),
-    response_modalities: z.array(z.string()).optional(),
-    responseModalities: z.array(z.string()).optional(),
-    image_config: ImageConfigSchema,
-    imageConfig: ImageConfigSchema,
     reasoning: z.object({
-        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh"]).nullable().optional(),
-        summary: z.string().nullable().optional(),
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+        summary: z.enum(["auto", "concise", "detailed"]).nullable().optional(),
         enabled: z.boolean().nullable().optional(),
         max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
-    thinking: z.object({
-        enabled: z.boolean().optional(),
-        include_thoughts: z.boolean().optional(),
-        includeThoughts: z.boolean().optional(),
-        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
-        max_tokens: z.number().int().nonnegative().optional(),
-        maxTokens: z.number().int().nonnegative().optional(),
-        budget_tokens: z.number().int().nonnegative().optional(),
-        budgetTokens: z.number().int().nonnegative().optional(),
-    }).optional(),
-    safety_identifier: z.string().nullable().optional(),
-    service_tier: z.string().optional(),
-    speed: z.string().optional(),
+
+    service_tier: z.enum(["auto", "default", "flex", "standard", "priority"]).optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
-    stream_options: z.record(z.string(), z.any()).optional(),
     n: z.never().optional(),
     temperature: z.number().min(0).max(2).optional(),
     text: z.record(z.string(), z.any()).optional(),
-    response_format: ResponseFormatSchema.optional(),
     tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
     tools: z.array(z.record(z.string(), z.any())).optional(),
-    top_logprobs: z.number().int().min(0).max(20).optional(),
     top_p: z.number().min(0).max(1).optional(),
-    truncation: z.string().optional(),
-    background: z.boolean().optional(),
+    truncation: z.enum(["auto", "disabled"]).optional(),
     user: z.string().optional(),
+    prompt_cache_key: z.string().nullable().optional(),
+    safety_identifier: z.string().nullable().optional(),
+    modalities: z.array(z.string()).optional(),
+    image_config: ImageConfigSchema,
+    provider_options: ResponsesProviderOptionsSchema.optional(),
+    usage: z.boolean().optional(),
     // Gateway-only flags (not forwarded upstream)
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
@@ -226,13 +202,6 @@ export const ResponsesSchema = z.object({
     provider: ProviderRoutingSchema,
 }).passthrough().transform((obj) => {
     const next: any = { ...obj };
-    if (next.max_output_tokens == null && next.max_completion_tokens != null) {
-        next.max_output_tokens = next.max_completion_tokens;
-    }
-    if (next.max_tool_calls == null && next.max_tools_calls != null) {
-        next.max_tool_calls = next.max_tools_calls;
-    }
-    delete next.max_tools_calls;
     if (!("prompt_cache_key" in next)) {
         next.prompt_cache_key = null;
     }
@@ -361,7 +330,6 @@ const ToolCallSchema = z.object({
 
 export const ChatCompletionsSchema = z.object({
     model: z.string().min(1),
-    system: z.string().optional(),
     messages: z.array(
         z.discriminatedUnion("role", [
             z.object({
@@ -395,33 +363,26 @@ export const ChatCompletionsSchema = z.object({
         ])
     ).min(1),
     reasoning: z.object({
-        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh"]).optional().default("medium"),
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional().default("medium"),
         summary: z.enum(["auto", "concise", "detailed"]).optional().default("auto"),
         enabled: z.boolean().optional(),
         max_tokens: z.number().int().nonnegative().optional(),
     }).optional(),
-    thinking: z.object({
-        enabled: z.boolean().optional(),
-        include_thoughts: z.boolean().optional(),
-        includeThoughts: z.boolean().optional(),
-        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
-        max_tokens: z.number().int().nonnegative().optional(),
-        maxTokens: z.number().int().nonnegative().optional(),
-        budget_tokens: z.number().int().nonnegative().optional(),
-        budgetTokens: z.number().int().nonnegative().optional(),
-    }).optional(),
+
+
     frequency_penalty: z.number().min(-2).max(2).optional(),
     logit_bias: z.record(z.string(), z.number()).optional(),
     max_completion_tokens: z.number().int().positive().optional(),
-    max_output_tokens: z.number().int().positive().optional(),
     max_tokens: z.number().int().positive().optional(),
     metadata: z.record(z.string(), z.string()).optional(),
+    usage: z.boolean().optional(),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     presence_penalty: z.number().min(-2).max(2).optional(),
     seed: z.number().int().min(-9223372036854776000).max(9223372036854776000).optional(),
+    store: z.boolean().optional(),
     stream: z.boolean().optional().default(false),
     stream_options: z.record(z.string(), z.any()).optional(),
     n: z.never().optional(),
@@ -441,28 +402,21 @@ export const ChatCompletionsSchema = z.object({
     parallel_tool_calls: z.boolean().optional().default(true),
     tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
 
-    top_k: z.number().int().positive().optional(),
     logprobs: z.boolean().optional().default(false),
     top_logprobs: z.number().int().min(0).max(20).optional(),
     top_p: z.number().min(0).max(1).optional(),
     stop: z.union([z.string(), z.array(z.string())]).optional(),
     response_format: ResponseFormatSchema.optional(),
     modalities: z.array(z.string()).optional(),
-    response_modalities: z.array(z.string()).optional(),
-    responseModalities: z.array(z.string()).optional(),
     image_config: ImageConfigSchema,
-    imageConfig: ImageConfigSchema,
     // This is used as the safety identifer/userid across providers
-    user_id: z.string().optional(),
     user: z.string().optional(),
+    user_id: z.string().optional(),
 
     service_tier: z.enum(["auto", "default", "flex", "standard", "priority"]).optional(),
-    speed: z.string().optional(),
-    route: z.union([z.string(), z.null()]).optional(),
-    session_id: z.string().max(128).optional(),
-    trace: z.record(z.string(), z.any()).optional(),
-    models: z.array(z.string()).optional(),
-    plugins: z.array(z.record(z.string(), z.any())).optional(),
+    prompt_cache_key: z.string().nullable().optional(),
+    provider_options: ResponsesProviderOptionsSchema.optional(),
+    safety_identifier: z.string().nullable().optional(),
     provider: ProviderRoutingSchema,
 }).passthrough().transform((obj) => {
     return obj;
@@ -474,10 +428,12 @@ export type ChatCompletionsRequest = z.infer<typeof ChatCompletionsSchema>;
 const AnthropicTextContentSchema = z.object({
     type: z.literal("text"),
     text: z.string(),
+    cache_control: CacheControlSchema.optional(),
 });
 
 const AnthropicImageContentSchema = z.object({
     type: z.literal("image"),
+    cache_control: CacheControlSchema.optional(),
     source: z.object({
         type: z.enum(["base64", "url"]),
         media_type: z.string().optional(),
@@ -531,54 +487,34 @@ export const AnthropicMessagesSchema = z.object({
             content: AnthropicMessageContentSchema,
         })
     ).min(1),
-    system: z.union([z.string(), z.array(AnthropicContentBlockSchema)]).optional(),
-    max_tokens: z.number().int().positive().optional(),
-    max_output_tokens: z.number().int().positive().optional(),
+    system: z.union([z.string(), z.array(AnthropicTextContentSchema)]).optional(),
+    max_tokens: z.number().int().positive(),
     temperature: z.number().min(0).max(1).optional(),
     top_p: z.number().min(0).max(1).optional(),
     top_k: z.number().int().positive().optional(),
     stream: z.boolean().optional().default(false),
-    n: z.never().optional(),
     tools: z.array(AnthropicToolSchema).optional(),
     tool_choice: AnthropicToolChoiceSchema.optional(),
-    metadata: z.record(z.string(), z.any()).optional(),
-    service_tier: z.string().optional(),
-    speed: z.string().optional(),
-    thinking: z.object({
-        type: z.enum(["enabled", "disabled", "adaptive"]),
-        budget_tokens: z.number().int().nonnegative().optional(),
-        effort: z.enum(["low", "medium", "high", "max", "xhigh"]).optional(),
-    }).optional(),
-    output_config: z.object({
-        effort: z.enum(["low", "medium", "high", "max", "xhigh"]).optional(),
-    }).optional(),
+    metadata: z.object({
+        user_id: z.string().optional(),
+    }).passthrough().optional(),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
+        enabled: z.boolean().optional(),
+        summary: z.enum(["auto", "concise", "detailed"]).optional(),
+        max_tokens: z.number().int().nonnegative().optional(),
     }).optional(),
-    modalities: z.array(z.string()).optional(),
-    response_modalities: z.array(z.string()).optional(),
-    responseModalities: z.array(z.string()).optional(),
-    image_config: ImageConfigSchema,
-    imageConfig: ImageConfigSchema,
+
     stop_sequences: z.array(z.string()).optional(),
+    provider_options: ResponsesProviderOptionsSchema.optional(),
+    usage: z.boolean().optional(),
     // Gateway-only flags (not forwarded upstream)
     meta: z.boolean().optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
-}).passthrough()
-    .refine((obj) => obj.max_tokens != null || obj.max_output_tokens != null, {
-        message: "max_tokens or max_output_tokens is required",
-        path: ["max_tokens"],
-    })
-    .transform((obj) => {
-        const next: any = { ...obj };
-        if (next.max_tokens == null && next.max_output_tokens != null) {
-            next.max_tokens = next.max_output_tokens;
-        }
-        return next;
-    });
+}).passthrough();
 
 export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesSchema>;
 
@@ -946,4 +882,3 @@ export function schemaFor(endpoint: Endpoint): z.ZodTypeAny | null {
             return null;
     }
 }
-

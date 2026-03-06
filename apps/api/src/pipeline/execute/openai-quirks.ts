@@ -60,7 +60,7 @@ export function getSupportedEfforts(model: string): string[] {
 	}
 
 	// Default for unknown models
-	return ["low", "medium", "high"];
+	return ["none", "minimal", "low", "medium", "high", "xhigh"];
 }
 
 /**

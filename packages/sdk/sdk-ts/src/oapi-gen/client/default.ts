@@ -54,61 +54,18 @@ export type CreateAnthropicMessageParams = {
       trace?: boolean;
       trace_level?: "summary" | "full";
     };
-    image_config?: {
-      aspect_ratio?: string;
-      aspectRatio?: string;
-      font_inputs?: {
-        font_url?: string;
-        text?: string;
-      }[];
-      fontInputs?: {
-        fontUrl?: string;
-        text?: string;
-      }[];
-      image_size?: "0.5K" | "1K" | "2K" | "4K";
-      imageSize?: "0.5K" | "1K" | "2K" | "4K";
-      include_rai_reason?: boolean;
-      includeRaiReason?: boolean;
-      reference_images?: {
-        [key: string]: unknown;
-      }[];
-      referenceImages?: {
-        [key: string]: unknown;
-      }[];
-      super_resolution_references?: string[];
-      superResolutionReferences?: string[];
-      [key: string]: unknown;
-    };
-    imageConfig?: {
-      aspect_ratio?: string;
-      aspectRatio?: string;
-      font_inputs?: {
-        font_url?: string;
-        text?: string;
-      }[];
-      fontInputs?: {
-        fontUrl?: string;
-        text?: string;
-      }[];
-      image_size?: "0.5K" | "1K" | "2K" | "4K";
-      imageSize?: "0.5K" | "1K" | "2K" | "4K";
-      include_rai_reason?: boolean;
-      includeRaiReason?: boolean;
-      reference_images?: {
-        [key: string]: unknown;
-      }[];
-      referenceImages?: {
-        [key: string]: unknown;
-      }[];
-      super_resolution_references?: string[];
-      superResolutionReferences?: string[];
-      [key: string]: unknown;
-    };
-    max_tokens?: number;
+    echo_upstream_request?: boolean;
+    max_tokens: number;
     messages: {
       content:
         | string
         | {
+            cache_control?: {
+              scope?: string;
+              ttl?: string;
+              type?: string;
+              [key: string]: unknown;
+            };
             content?: string;
             id?: string;
             input?: {};
@@ -125,10 +82,10 @@ export type CreateAnthropicMessageParams = {
           }[];
       role: "user" | "assistant";
     }[];
+    meta?: boolean;
     metadata?: {
-      [key: string]: string;
+      [key: string]: unknown;
     };
-    modalities?: string[];
     model: string;
     provider?: {
       ignore?: string[];
@@ -136,23 +93,55 @@ export type CreateAnthropicMessageParams = {
       only?: string[];
       order?: string[];
     };
-    response_modalities?: string[];
-    responseModalities?: string[];
-    stream?: boolean;
-    system?: string | {}[];
-    temperature?: number;
-    thinking?: {
-      budget_tokens?: number;
-      budgetTokens?: number;
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
-      enabled?: boolean;
-      include_thoughts?: boolean;
-      includeThoughts?: boolean;
-      max_tokens?: number;
-      maxTokens?: number;
-      type?: "enabled" | "disabled" | "adaptive";
+    provider_options?: {
+      anthropic?: {
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
+      };
+      google?: {
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
+        cache_ttl?: string;
+        cached_content?: string;
+      };
+      openai?: {
+        context_management?: {
+          compact_threshold?: number;
+          type: "compaction";
+        };
+        prompt_cache_retention?: string;
+      };
     };
-    tool_choice?: string | {};
+    reasoning?: {
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      enabled?: boolean;
+      max_tokens?: number;
+      summary?: "auto" | "concise" | "detailed";
+    };
+    stop_sequences?: string[];
+    stream?: boolean;
+    system?:
+      | string
+      | {
+          cache_control?: {
+            scope?: string;
+            ttl?: string;
+            type?: string;
+            [key: string]: unknown;
+          };
+          text?: string;
+          type?: "text";
+        }[];
+    temperature?: number;
+    tool_choice?: {} | string;
     tools?: {
       description?: string;
       input_schema?: {};
@@ -160,6 +149,7 @@ export type CreateAnthropicMessageParams = {
     }[];
     top_k?: number;
     top_p?: number;
+    usage?: boolean;
   };
 };
 
@@ -171,6 +161,12 @@ export async function createAnthropicMessage(
   args: CreateAnthropicMessageParams = {},
 ): Promise<{
   content?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     content?: string;
     id?: string;
     input?: {};
@@ -200,6 +196,12 @@ export async function createAnthropicMessage(
   const resolvedPath = "/messages";
   return client.request<{
     content?: {
+      cache_control?: {
+        scope?: string;
+        ttl?: string;
+        type?: string;
+        [key: string]: unknown;
+      };
       content?: string;
       id?: string;
       input?: {};
@@ -431,55 +433,20 @@ export type CreateChatCompletionParams = {
       trace?: boolean;
       trace_level?: "summary" | "full";
     };
+    echo_upstream_request?: boolean;
     frequency_penalty?: number;
     image_config?: {
       aspect_ratio?: string;
-      aspectRatio?: string;
       font_inputs?: {
         font_url?: string;
         text?: string;
       }[];
-      fontInputs?: {
-        fontUrl?: string;
-        text?: string;
-      }[];
       image_size?: "0.5K" | "1K" | "2K" | "4K";
-      imageSize?: "0.5K" | "1K" | "2K" | "4K";
       include_rai_reason?: boolean;
-      includeRaiReason?: boolean;
       reference_images?: {
         [key: string]: unknown;
       }[];
-      referenceImages?: {
-        [key: string]: unknown;
-      }[];
       super_resolution_references?: string[];
-      superResolutionReferences?: string[];
-      [key: string]: unknown;
-    };
-    imageConfig?: {
-      aspect_ratio?: string;
-      aspectRatio?: string;
-      font_inputs?: {
-        font_url?: string;
-        text?: string;
-      }[];
-      fontInputs?: {
-        fontUrl?: string;
-        text?: string;
-      }[];
-      image_size?: "0.5K" | "1K" | "2K" | "4K";
-      imageSize?: "0.5K" | "1K" | "2K" | "4K";
-      include_rai_reason?: boolean;
-      includeRaiReason?: boolean;
-      reference_images?: {
-        [key: string]: unknown;
-      }[];
-      referenceImages?: {
-        [key: string]: unknown;
-      }[];
-      super_resolution_references?: string[];
-      superResolutionReferences?: string[];
       [key: string]: unknown;
     };
     logit_bias?: {
@@ -487,7 +454,6 @@ export type CreateChatCompletionParams = {
     };
     logprobs?: boolean;
     max_completion_tokens?: number;
-    max_output_tokens?: number;
     max_tokens?: number;
     max_tool_calls?: number;
     messages: {
@@ -530,7 +496,7 @@ export type CreateChatCompletionParams = {
             type: "tool_call";
           }[];
       name?: string;
-      role: "system" | "user" | "assistant" | "tool";
+      role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
         function: {
@@ -544,21 +510,50 @@ export type CreateChatCompletionParams = {
       }[];
     }[];
     meta?: boolean;
+    metadata?: {
+      [key: string]: string;
+    };
     modalities?: string[];
     model: string;
     parallel_tool_calls?: boolean;
     presence_penalty?: number;
+    prompt_cache_key?: string | null;
     provider?: {
       ignore?: string[];
       include_alpha?: boolean;
       only?: string[];
       order?: string[];
     };
+    provider_options?: {
+      anthropic?: {
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
+      };
+      google?: {
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
+        cache_ttl?: string;
+        cached_content?: string;
+      };
+      openai?: {
+        context_management?: {
+          compact_threshold?: number;
+          type: "compaction";
+        };
+        prompt_cache_retention?: string;
+      };
+    };
     reasoning?: {
       effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
       enabled?: boolean;
-      include_thoughts?: boolean;
-      includeThoughts?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
     };
@@ -568,31 +563,18 @@ export type CreateChatCompletionParams = {
           schema?: {};
           type?: string;
         };
-    response_modalities?: string[];
-    responseModalities?: string[];
+    safety_identifier?: string | null;
     seed?: number;
     service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
-    speed?: string;
+    stop?: string | string[];
+    store?: boolean;
     stream?: boolean;
     stream_options?: {};
-    system?: string;
     temperature?: number;
-    thinking?: {
-      budget_tokens?: number;
-      budgetTokens?: number;
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
-      enabled?: boolean;
-      include_thoughts?: boolean;
-      includeThoughts?: boolean;
-      max_tokens?: number;
-      maxTokens?: number;
-      type?: "enabled" | "disabled" | "adaptive";
-    };
     tool_choice?: string | {};
     tools?: {
       type?: "function";
     }[];
-    top_k?: number;
     top_logprobs?: number;
     top_p?: number;
     usage?: boolean;
@@ -651,7 +633,7 @@ export async function createChatCompletion(
             type: "tool_call";
           }[];
       name?: string;
-      role: "system" | "user" | "assistant" | "tool";
+      role: "system" | "developer" | "user" | "assistant" | "tool";
       tool_call_id?: string;
       tool_calls?: {
         function: {
@@ -721,7 +703,7 @@ export async function createChatCompletion(
               type: "tool_call";
             }[];
         name?: string;
-        role: "system" | "user" | "assistant" | "tool";
+        role: "system" | "developer" | "user" | "assistant" | "tool";
         tool_call_id?: string;
         tool_calls?: {
           function: {
@@ -1418,7 +1400,6 @@ export type CreateResponseParams = {
   headers?: Record<string, never>;
   body?: {
     background?: boolean;
-    conversation?: string | {};
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -1426,77 +1407,32 @@ export type CreateResponseParams = {
       trace?: boolean;
       trace_level?: "summary" | "full";
     };
+    echo_upstream_request?: boolean;
     image_config?: {
       aspect_ratio?: string;
-      aspectRatio?: string;
       font_inputs?: {
         font_url?: string;
         text?: string;
       }[];
-      fontInputs?: {
-        fontUrl?: string;
-        text?: string;
-      }[];
       image_size?: "0.5K" | "1K" | "2K" | "4K";
-      imageSize?: "0.5K" | "1K" | "2K" | "4K";
       include_rai_reason?: boolean;
-      includeRaiReason?: boolean;
       reference_images?: {
         [key: string]: unknown;
       }[];
-      referenceImages?: {
-        [key: string]: unknown;
-      }[];
       super_resolution_references?: string[];
-      superResolutionReferences?: string[];
-      [key: string]: unknown;
-    };
-    imageConfig?: {
-      aspect_ratio?: string;
-      aspectRatio?: string;
-      font_inputs?: {
-        font_url?: string;
-        text?: string;
-      }[];
-      fontInputs?: {
-        fontUrl?: string;
-        text?: string;
-      }[];
-      image_size?: "0.5K" | "1K" | "2K" | "4K";
-      imageSize?: "0.5K" | "1K" | "2K" | "4K";
-      include_rai_reason?: boolean;
-      includeRaiReason?: boolean;
-      reference_images?: {
-        [key: string]: unknown;
-      }[];
-      referenceImages?: {
-        [key: string]: unknown;
-      }[];
-      super_resolution_references?: string[];
-      superResolutionReferences?: string[];
       [key: string]: unknown;
     };
     include?: string[];
-    input?:
+    input:
       | string
       | {
           content?: string | {}[] | {};
-          phase?: "commentary" | "final_answer" | null;
           role?: "user" | "assistant" | "system" | "developer";
           type?: string;
         }[]
       | {};
-    input_items?: {
-      content?: string | {}[] | {};
-      phase?: "commentary" | "final_answer" | null;
-      role?: "user" | "assistant" | "system" | "developer";
-      type?: string;
-    }[];
     instructions?: string;
-    max_completion_tokens?: number;
     max_output_tokens?: number;
-    max_tokens?: number;
-    max_tool_calls?: number;
     meta?: boolean;
     metadata?: {
       [key: string]: string;
@@ -1505,13 +1441,7 @@ export type CreateResponseParams = {
     model: string;
     parallel_tool_calls?: boolean;
     previous_response_id?: string;
-    prompt?: {
-      id?: string;
-      variables?: {};
-      version?: string;
-    };
-    prompt_cache_key?: string;
-    prompt_cache_retention?: string;
+    prompt_cache_key?: string | null;
     provider?: {
       ignore?: string[];
       include_alpha?: boolean;
@@ -1519,53 +1449,48 @@ export type CreateResponseParams = {
       order?: string[];
     };
     provider_options?: {
+      anthropic?: {
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
+      };
+      google?: {
+        cache_control?: {
+          scope?: string;
+          ttl?: string;
+          type?: string;
+          [key: string]: unknown;
+        };
+        cache_ttl?: string;
+        cached_content?: string;
+      };
       openai?: {
         context_management?: {
           compact_threshold?: number;
           type: "compaction";
         };
-      };
-    };
-    providerOptions?: {
-      openai?: {
-        contextManagement?: {
-          compactThreshold?: number;
-          type: "compaction";
-        };
+        prompt_cache_retention?: string;
       };
     };
     reasoning?: {
       effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
       enabled?: boolean;
       max_tokens?: number;
-      summary?: string;
+      summary?: "auto" | "concise" | "detailed";
     };
-    response_modalities?: string[];
-    responseModalities?: string[];
-    safety_identifier?: string;
-    service_tier?: string;
-    speed?: string;
+    safety_identifier?: string | null;
+    service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
     store?: boolean;
     stream?: boolean;
-    stream_options?: {};
     temperature?: number;
     text?: {};
-    thinking?: {
-      budget_tokens?: number;
-      budgetTokens?: number;
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
-      enabled?: boolean;
-      include_thoughts?: boolean;
-      includeThoughts?: boolean;
-      max_tokens?: number;
-      maxTokens?: number;
-      type?: "enabled" | "disabled" | "adaptive";
-    };
     tool_choice?: string | {};
     tools?: {}[];
-    top_logprobs?: number;
     top_p?: number;
-    truncation?: string;
+    truncation?: "auto" | "disabled";
     usage?: boolean;
     user?: string;
   };
@@ -1585,13 +1510,11 @@ export async function createResponse(
   object?: string;
   output?: {
     content?: {}[];
-    phase?: "commentary" | "final_answer" | null;
     role?: string;
     type?: string;
   }[];
   output_items?: {
     content?: {}[];
-    phase?: "commentary" | "final_answer" | null;
     role?: string;
     type?: string;
   }[];
@@ -1614,13 +1537,11 @@ export async function createResponse(
     object?: string;
     output?: {
       content?: {}[];
-      phase?: "commentary" | "final_answer" | null;
       role?: string;
       type?: string;
     }[];
     output_items?: {
       content?: {}[];
-      phase?: "commentary" | "final_answer" | null;
       role?: string;
       type?: string;
     }[];
@@ -5158,18 +5079,59 @@ export async function listModels(
   limit?: number;
   models?: {
     aliases?: string[];
+    architecture?: {
+      input_modalities?: string[];
+      instruct_type?: string | null;
+      modality?: string;
+      output_modalities?: string[];
+      tokenizer?: string | null;
+    };
+    canonical_slug?: string;
+    created?: number | null;
+    deprecation_date?: string | null;
+    description?: string;
     endpoints?: string[];
+    id?: string;
     input_types?: string[];
     model_id?: string;
-    name?: string;
-    organisation_id?: string;
+    name?: string | null;
+    organisation_colour?: string | null;
+    organisation_id?: string | null;
+    organisation_name?: string | null;
     output_types?: string[];
+    per_request_limits?: {
+      [key: string]: unknown;
+    } | null;
+    pricing?: {
+      completion?: string | null;
+      image?: string | null;
+      input_cache_read?: string | null;
+      input_cache_write?: string | null;
+      prompt?: string | null;
+      request?: string | null;
+      web_search?: string | null;
+    };
+    pricing_detail?: {
+      meters?: {
+        [key: string]: unknown;
+      };
+      pricing_plan?: string;
+    };
     providers?: {
       api_provider_id?: string;
       params?: string[];
     }[];
-    release_date?: string;
-    status?: string;
+    release_date?: string | null;
+    retirement_date?: string | null;
+    status?: string | null;
+    supported_parameters?: string[];
+    supported_params?: string[];
+    top_provider?: {
+      context_length?: number | null;
+      is_moderated?: boolean;
+      max_completion_tokens?: number | null;
+    };
+    top_provider_id?: string | null;
   }[];
   offset?: number;
   ok?: boolean;
@@ -5181,18 +5143,59 @@ export async function listModels(
     limit?: number;
     models?: {
       aliases?: string[];
+      architecture?: {
+        input_modalities?: string[];
+        instruct_type?: string | null;
+        modality?: string;
+        output_modalities?: string[];
+        tokenizer?: string | null;
+      };
+      canonical_slug?: string;
+      created?: number | null;
+      deprecation_date?: string | null;
+      description?: string;
       endpoints?: string[];
+      id?: string;
       input_types?: string[];
       model_id?: string;
-      name?: string;
-      organisation_id?: string;
+      name?: string | null;
+      organisation_colour?: string | null;
+      organisation_id?: string | null;
+      organisation_name?: string | null;
       output_types?: string[];
+      per_request_limits?: {
+        [key: string]: unknown;
+      } | null;
+      pricing?: {
+        completion?: string | null;
+        image?: string | null;
+        input_cache_read?: string | null;
+        input_cache_write?: string | null;
+        prompt?: string | null;
+        request?: string | null;
+        web_search?: string | null;
+      };
+      pricing_detail?: {
+        meters?: {
+          [key: string]: unknown;
+        };
+        pricing_plan?: string;
+      };
       providers?: {
         api_provider_id?: string;
         params?: string[];
       }[];
-      release_date?: string;
-      status?: string;
+      release_date?: string | null;
+      retirement_date?: string | null;
+      status?: string | null;
+      supported_parameters?: string[];
+      supported_params?: string[];
+      top_provider?: {
+        context_length?: number | null;
+        is_moderated?: boolean;
+        max_completion_tokens?: number | null;
+      };
+      top_provider_id?: string | null;
     }[];
     offset?: number;
     ok?: boolean;
