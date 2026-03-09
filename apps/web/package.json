@@ -68,7 +68,7 @@
 		"@vercel/og": "^0.6.4",
 		"@xyflow/react": "^12.10.1",
 		"ai": "^6.0.105",
-		"ajv": "^8.17.1",
+		"ajv": "^8.18.0",
 		"ajv-formats": "^2.1.1",
 		"cheerio": "^1.1.2",
 		"class-variance-authority": "^0.7.1",
