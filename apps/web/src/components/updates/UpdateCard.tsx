@@ -42,6 +42,10 @@ type Props = {
 	isReleaseToday?: boolean;
 	accentClass?: string | null;
 	className?: string;
+	compact?: boolean;
+	hideFooterLink?: boolean;
+	metaPlacement?: "footer" | "header";
+	showAccentDot?: boolean;
 };
 
 export default function UpdateCard({
@@ -57,8 +61,18 @@ export default function UpdateCard({
 	isReleaseToday = false,
 	accentClass,
 	className,
+	compact = false,
+	hideFooterLink = false,
+	metaPlacement = "footer",
+	showAccentDot = true,
 }: Props) {
 	const isModelRelease = badges.some((b) => b.label === "Release");
+	const showHeaderTime = metaPlacement === "header" && Boolean(dateIso);
+	const showFooterMeta =
+		metaPlacement === "footer" &&
+		(Boolean(dateIso) || (Boolean(accentClass) && showAccentDot));
+	const showFooterLink = !hideFooterLink;
+	const showFooter = showFooterMeta || showFooterLink;
 
 	return (
 		<Card
@@ -70,23 +84,33 @@ export default function UpdateCard({
 				className
 			)}
 		>
-			<CardHeader className="space-y-3 p-4">
-				<div className="flex flex-wrap items-center gap-2">
-					{badges.map((badge) => {
-						const Icon = badge.icon;
-						return (
-							<span
-								key={`${id}-${badge.label}`}
-								className={cn(
-									"inline-flex items-center gap-1 rounded-full",
-									badge.className
-								)}
-							>
-								{Icon ? <Icon className="h-3.5 w-3.5" /> : null}
-								{badge.label}
-							</span>
-						);
-					})}
+			<CardHeader className={cn("space-y-3 p-4", compact && "space-y-2.5 p-3")}>
+				<div className={cn("flex gap-2", showHeaderTime ? "items-start justify-between" : "flex-wrap items-center")}>
+					<div className="flex flex-wrap items-center gap-2">
+						{badges.map((badge) => {
+							const Icon = badge.icon;
+							return (
+								<span
+									key={`${id}-${badge.label}`}
+									className={cn(
+										"inline-flex items-center gap-1 rounded-full",
+										badge.className
+									)}
+								>
+									{Icon ? <Icon className="h-3.5 w-3.5" /> : null}
+									{badge.label}
+								</span>
+							);
+						})}
+					</div>
+					{showHeaderTime ? (
+						<div className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+							<TimeDisplay
+								dateIso={dateIso as string}
+								isModelRelease={isModelRelease}
+							/>
+						</div>
+					) : null}
 				</div>
 
 				<div className="flex items-center gap-3 min-w-0">
@@ -148,31 +172,44 @@ export default function UpdateCard({
 				</div>
 			</CardHeader>
 
-			<CardFooter className="mt-auto flex items-center justify-between border-t border-zinc-200/60 p-4 text-xs text-zinc-500 dark:border-zinc-800/60 dark:text-zinc-400">
-				<div className="flex items-center gap-2">
-					{accentClass ? (
-						<span
-							className={cn("h-2 w-2 rounded-full", accentClass)}
-							aria-hidden="true"
-						/>
-					) : null}
-					{dateIso ? (
-						<TimeDisplay
-							dateIso={dateIso}
-							isModelRelease={isModelRelease}
-						/>
-					) : null}
-				</div>
-
-				<Link
-					href={link.href}
-					className="inline-flex items-center gap-1 font-semibold text-zinc-900 transition hover:text-zinc-600 dark:text-zinc-50 dark:hover:text-zinc-200"
-					target={link.external ? "_blank" : undefined}
-					rel={link.external ? "noopener noreferrer" : undefined}
+			{showFooter ? (
+				<CardFooter
+					className={cn(
+						"mt-auto flex items-center justify-between border-t border-zinc-200/60 p-4 text-xs text-zinc-500 dark:border-zinc-800/60 dark:text-zinc-400",
+						compact && "p-3",
+						!showFooterMeta && "justify-end",
+						!showFooterLink && "justify-start"
+					)}
 				>
-					{link.cta ?? "Open"}
-				</Link>
-			</CardFooter>
+					{showFooterMeta ? (
+						<div className="flex items-center gap-2">
+							{accentClass && showAccentDot ? (
+								<span
+									className={cn("h-2 w-2 rounded-full", accentClass)}
+									aria-hidden="true"
+								/>
+							) : null}
+							{dateIso ? (
+								<TimeDisplay
+									dateIso={dateIso}
+									isModelRelease={isModelRelease}
+								/>
+							) : null}
+						</div>
+					) : null}
+
+					{showFooterLink ? (
+						<Link
+							href={link.href}
+							className="inline-flex items-center gap-1 font-semibold text-zinc-900 transition hover:text-zinc-600 dark:text-zinc-50 dark:hover:text-zinc-200"
+							target={link.external ? "_blank" : undefined}
+							rel={link.external ? "noopener noreferrer" : undefined}
+						>
+							{link.cta ?? "Open"}
+						</Link>
+					) : null}
+				</CardFooter>
+			) : null}
 		</Card>
 	);
 }

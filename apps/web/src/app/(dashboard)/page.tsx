@@ -5,6 +5,9 @@ import type { Metadata } from "next";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
 import HomeOpenSourceSection from "@/components/landingPage/Home/HomeOpenSourceSection";
+import HomeModelUpdatesSection, {
+	HomeModelUpdatesSectionFallback,
+} from "@/components/landingPage/Home/HomeModelUpdatesSection";
 import ExploreModelsProviderTicker from "@/components/landingPage/Home/ExploreModelsProviderTicker";
 import HomeQuickstartSection from "@/components/landingPage/Home/HomeQuickstartSection";
 import HomeReliabilitySection from "@/components/landingPage/Home/HomeReliabilitySection";
@@ -148,6 +151,9 @@ export default function Page() {
 
 				<HomeReliabilitySection />
 
+				<Suspense fallback={<HomeModelUpdatesSectionFallback />}>
+					<HomeModelUpdatesSection />
+				</Suspense>
 
 				<HomeOpenSourceSection />
 			</div>
