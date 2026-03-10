@@ -1,0 +1,22 @@
+{
+  "model_id": "google/gemini-embedding-2-preview-2026-03-10",
+  "organisation_id": "google",
+  "name": "Gemini Embedding 2 Preview",
+  "status": "Available",
+  "previous_model_id": "google/gemini-embedding-001-2025-05-20",
+  "announced_date": "2026-03-10T00:00:00",
+  "release_date": "2026-03-10T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,audio,video",
+  "output_types": "embeddings",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-embedding-2/"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

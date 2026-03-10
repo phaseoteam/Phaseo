@@ -253,5 +253,26 @@
         ]
       }
     ]
+  },
+  {
+    "api_model_id": "google/gemini-embedding-2-preview",
+    "provider_api_model_id": "google-vertex:google/gemini-embedding-2-preview",
+    "provider_model_slug": "gemini-embedding-2-preview",
+    "internal_model_id": "google/gemini-embedding-2-preview-2026-03-10",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio,video",
+    "output_modalities": "embedding",
+    "context_length": 8192,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-10T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]
