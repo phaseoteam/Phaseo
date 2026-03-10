@@ -75,15 +75,10 @@ function parseOffsetParam(raw: string | null): number {
 function parsePathKeyId(url: URL): string | null {
 	const segments = url.pathname.split("/").filter(Boolean);
 	const candidate = segments.at(-1);
-	if (!candidate || candidate === "keys" || candidate === "key") {
+	if (!candidate || candidate === "keys") {
 		return null;
 	}
 	return candidate;
-}
-
-function parseQueryKeyId(url: URL): string | null {
-	const id = url.searchParams.get("id")?.trim();
-	return id ? id : null;
 }
 
 function normalizeScopesInput(scopes: unknown): { ok: true; value: string } | { ok: false; message: string } {
@@ -233,7 +228,7 @@ async function handleListKeys(req: Request) {
 		const supabase = getSupabaseAdmin();
 
 		const { data: keys, error } = await supabase
-			.from("provisioning_keys")
+			.from("management_keys")
 			.select("id, name, prefix, status, scopes, created_at, last_used_at")
 			.eq("team_id", teamId)
 			.order("created_at", { ascending: false })
@@ -244,7 +239,7 @@ async function handleListKeys(req: Request) {
 		}
 
 		const { count, error: countError } = await supabase
-			.from("provisioning_keys")
+			.from("management_keys")
 			.select("*", { count: "exact", head: true })
 			.eq("team_id", teamId);
 
@@ -382,7 +377,7 @@ async function handleCreateKey(req: Request) {
 			};
 
 			const { data, error } = await supabase
-				.from("provisioning_keys")
+				.from("management_keys")
 				.insert(insertObj)
 				.select("id, name, prefix, status, scopes, created_at")
 				.maybeSingle();
@@ -440,7 +435,7 @@ async function handleGetKey(req: Request) {
 		const supabase = getSupabaseAdmin();
 
 		const { data, error } = await supabase
-			.from("provisioning_keys")
+			.from("management_keys")
 			.select("id, team_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked")
 			.eq("id", keyId)
 			.eq("team_id", auth.value.teamId)
@@ -452,64 +447,6 @@ async function handleGetKey(req: Request) {
 
 		if (!data) {
 			return json({ ok: false, error: "Key not found" }, 404);
-		}
-
-		return json(
-			{
-				ok: true,
-				key: {
-					id: data.id,
-					team_id: data.team_id,
-					name: data.name,
-					prefix: data.prefix,
-					status: data.status,
-					scopes: data.scopes,
-					created_by: data.created_by,
-					created_at: data.created_at,
-					last_used_at: data.last_used_at,
-					soft_blocked: data.soft_blocked,
-				},
-			},
-			200,
-			{ "Cache-Control": "no-store" }
-		);
-	} catch (error: any) {
-		return json(
-			{ ok: false, error: "failed", message: String(error?.message ?? error) },
-			500,
-			{ "Cache-Control": "no-store" }
-		);
-	}
-}
-
-async function handleGetKeyAlias(req: Request) {
-	const auth = await guardAuth(req, { useKvCache: false });
-	if (!auth.ok) {
-		return (auth as GuardErr).response;
-	}
-
-	const url = new URL(req.url);
-	const keyId = parseQueryKeyId(url);
-	if (!keyId) {
-		return json({ ok: false, error: "key ID is required" }, 400, { "Cache-Control": "no-store" });
-	}
-
-	try {
-		const supabase = getSupabaseAdmin();
-
-		const { data, error } = await supabase
-			.from("provisioning_keys")
-			.select("id, team_id, name, prefix, status, scopes, created_by, created_at, last_used_at, soft_blocked")
-			.eq("id", keyId)
-			.eq("team_id", auth.value.teamId)
-			.maybeSingle();
-
-		if (error) {
-			throw new Error(error.message || "Failed to fetch key");
-		}
-
-		if (!data) {
-			return json({ ok: false, error: "Key not found" }, 404, { "Cache-Control": "no-store" });
 		}
 
 		return json(
@@ -560,7 +497,7 @@ async function handleUpdateKey(req: Request) {
 		const supabase = getSupabaseAdmin();
 
 		const { data: existing, error: fetchError } = await supabase
-			.from("provisioning_keys")
+			.from("management_keys")
 			.select("id")
 			.eq("id", keyId)
 			.eq("team_id", auth.value.teamId)
@@ -594,7 +531,7 @@ async function handleUpdateKey(req: Request) {
 		}
 
 		const { error } = await supabase
-			.from("provisioning_keys")
+			.from("management_keys")
 			.update(updateObj)
 			.eq("id", keyId)
 			.eq("team_id", auth.value.teamId);
@@ -640,7 +577,7 @@ async function handleDeleteKey(req: Request) {
 		const supabase = getSupabaseAdmin();
 
 		const { data: existing, error: fetchError } = await supabase
-			.from("provisioning_keys")
+			.from("management_keys")
 			.select("id, name")
 			.eq("id", keyId)
 			.eq("team_id", auth.value.teamId)
@@ -655,7 +592,7 @@ async function handleDeleteKey(req: Request) {
 		}
 
 		const { error } = await supabase
-			.from("provisioning_keys")
+			.from("management_keys")
 			.delete()
 			.eq("id", keyId)
 			.eq("team_id", auth.value.teamId);
@@ -681,20 +618,12 @@ async function handleDeleteKey(req: Request) {
 	}
 }
 
-export const provisioningRoutes = new Hono<Env>();
+export const managementRoutes = new Hono<Env>();
 
-provisioningRoutes.get("/keys", withRuntime(handleListKeys));
-provisioningRoutes.post("/keys", withRuntime(handleCreateKey));
-provisioningRoutes.get("/keys/:id", withRuntime(handleGetKey));
-provisioningRoutes.patch("/keys/:id", withRuntime(handleUpdateKey));
-provisioningRoutes.delete("/keys/:id", withRuntime(handleDeleteKey));
-
-// Canonical naming moving forward.
-export const managementRoutes = provisioningRoutes;
-
-export const keyAliasRoutes = new Hono<Env>();
-keyAliasRoutes.get("/keys", withRuntime(handleListKeys));
-keyAliasRoutes.post("/keys", withRuntime(handleCreateKey));
-keyAliasRoutes.get("/key", withRuntime(handleGetKeyAlias));
+managementRoutes.get("/keys", withRuntime(handleListKeys));
+managementRoutes.post("/keys", withRuntime(handleCreateKey));
+managementRoutes.get("/keys/:id", withRuntime(handleGetKey));
+managementRoutes.patch("/keys/:id", withRuntime(handleUpdateKey));
+managementRoutes.delete("/keys/:id", withRuntime(handleDeleteKey));
 
 

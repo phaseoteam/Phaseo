@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { makeKeyV2, hmacSecret } from '@/lib/keygen';
 import { invalidateGatewayKeyCache } from '@/lib/gateway/invalidateKeyCache';
+import { enforceTeamKeyLimit } from "@/lib/server/teamLimits";
 import {
     requireActingUser,
     requireAuthenticatedUser,
@@ -33,6 +34,7 @@ export async function createApiKeyAction(
     const { supabase, user } = await requireAuthenticatedUser();
     requireActingUser(creatorUserId, user.id);
     await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+    await enforceTeamKeyLimit(supabase as any, teamId);
     const { kid, secret, plaintext, prefix } = makeKeyV2();
 
     const pepper = process.env.KEY_PEPPER!;
@@ -126,14 +128,15 @@ export async function deleteApiKeyAction(id: string, confirmName?: string) {
         if (keyRow.name !== confirmName) throw new Error("Confirmation name does not match")
     }
 
+    // Invalidate gateway key cache before deletion while the key row still exists.
+    await invalidateGatewayKeyCache(id);
+
     const { error } = await supabase
         .from("keys")
         .delete()
         .eq("id", id)
         .eq("team_id", keyRow.team_id)
     if (error) throw error
-
-    await invalidateGatewayKeyCache(id);
 
     revalidatePath("/settings/keys")
     return { success: true }
@@ -175,6 +178,8 @@ export async function updateKeyLimitsAction(id: string, payload: KeyLimitPayload
         .eq("id", id)
         .eq("team_id", keyRow.team_id);
     if (error) throw error;
+
+    await invalidateGatewayKeyCache(id);
 
     revalidatePath("/settings/keys");
     return { success: true };

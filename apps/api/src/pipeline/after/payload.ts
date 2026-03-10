@@ -83,11 +83,16 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): Any
         : Math.floor(Date.now() / 1000);
     const now = Math.floor(Date.now() / 1000);
     const status = raw?.status ?? deriveResponsesStatus(ir);
-    const usage = raw?.usage ?? (ir?.usage ? encodeResponsesUsage(ir.usage) : undefined);
+    const rawUsage = raw?.usage && typeof raw.usage === "object" ? raw.usage : undefined;
+    const irUsage = ir?.usage ? encodeResponsesUsage(ir.usage) : undefined;
+    // IR usage is authoritative for canonical token mapping.
+    // Keep raw non-token fields by layering canonical IR usage over raw usage.
+    const usage = irUsage ? { ...(rawUsage ?? {}), ...irUsage } : rawUsage;
     const hasRawOutput = Array.isArray(raw?.output) || Array.isArray(raw?.output_items);
-    const output = hasRawOutput
+    const outputRaw = hasRawOutput
         ? (Array.isArray(raw?.output) ? raw.output : raw?.output_items)
         : (ir ? buildResponsesOutput(ir, ctx.requestId) : []);
+    const output = backfillAssistantPhaseFromIr(outputRaw, ir);
     const resolvedId = ctx.requestId ?? raw?.id ?? (ctx.requestId ? `resp_${ctx.requestId.replace(/^req_/, "")}` : ctx.requestId);
     // Separate native response ID (from response body) and upstream request ID (from headers)
     const nativeResponseId = raw?.id ?? raw?.nativeResponseId ?? null;
@@ -129,6 +134,30 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): Any
         metadata: raw?.metadata ?? request.metadata ?? {},
         nativeResponseId,
     };
+}
+
+function backfillAssistantPhaseFromIr(outputRaw: any, ir?: IRChatResponse): any[] {
+    const outputItems = Array.isArray(outputRaw) ? outputRaw : [];
+    if (!ir || !Array.isArray(ir.choices) || ir.choices.length === 0) return outputItems;
+
+    const phases = ir.choices.map((choice) => choice?.message?.phase);
+    if (!phases.some((phase) => phase !== undefined && phase !== null)) {
+        return outputItems;
+    }
+
+    let assistantMessageIndex = 0;
+    return outputItems.map((item) => {
+        if (!item || typeof item !== "object") return item;
+        const type = String(item.type ?? "").toLowerCase();
+        const role = String(item.role ?? "").toLowerCase();
+        if (type !== "message" || role !== "assistant") return item;
+
+        const fallbackPhase = phases[assistantMessageIndex];
+        assistantMessageIndex += 1;
+        if (item.phase !== undefined && item.phase !== null) return item;
+        if (fallbackPhase === undefined || fallbackPhase === null) return item;
+        return { ...item, phase: fallbackPhase };
+    });
 }
 
 function resolveClientModel(
@@ -447,7 +476,11 @@ function buildChatCompletionsPayload(
         }
         return [];
     })();
-    const usageRaw = payload?.usage ?? (ir?.usage ? encodeChatUsage(ir.usage) : undefined);
+    const payloadUsage = payload?.usage && typeof payload.usage === "object" ? payload.usage : undefined;
+    const irUsage = ir?.usage ? encodeChatUsage(ir.usage) : undefined;
+    // IR usage is authoritative for canonical token mapping.
+    // Keep payload non-token fields by layering canonical IR usage over payload usage.
+    const usageRaw = irUsage ? { ...(payloadUsage ?? {}), ...irUsage } : payloadUsage;
     const usage = usageRaw ? presentUsageForClient(usageRaw, { endpoint: "chat.completions" }) : undefined;
 
     const body: any = {

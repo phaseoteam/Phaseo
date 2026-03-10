@@ -412,7 +412,8 @@ export function clearRuntime() {
 
 export function ensureRuntimeForBackground(): () => void {
     if (runtimeState) {
-        return () => { };
+        configureRuntime(runtimeState.bindings);
+        return () => clearRuntime();
     }
     if (!lastBindingsSnapshot) {
         throw new Error("Gateway runtime not configured");

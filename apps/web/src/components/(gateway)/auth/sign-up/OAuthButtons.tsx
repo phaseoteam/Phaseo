@@ -26,7 +26,7 @@ const META: Record<Provider, ProviderMeta> = {
 	gitlab: { label: "GitLab", light: "/social/gitlab.svg" },
 };
 
-export default function OAuthButtons() {
+export default function OAuthButtons({ returnUrl }: { returnUrl?: string }) {
 	return (
 		<div className="grid gap-4">
 			<div className="flex items-center gap-2">
@@ -41,6 +41,9 @@ export default function OAuthButtons() {
 					return (
 						<form action={handleOAuthRedirect} key={id}>
 							<input type="hidden" name="provider" value={id} />
+							{returnUrl ? (
+								<input type="hidden" name="returnUrl" value={returnUrl} />
+							) : null}
 							<Button
 								type="submit"
 								variant="outline"

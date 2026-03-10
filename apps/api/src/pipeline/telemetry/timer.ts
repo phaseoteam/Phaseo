@@ -3,7 +3,7 @@
 // Why: Consistent latency metrics across the pipeline.
 // How: Records timestamps and computes durations.
 
-export type TimingSnapshot = Record<string, number>; // ms (1 decimal)
+export type TimingSnapshot = Record<string, number>; // ms (3 decimals)
 
 export class Timer {
     private marks = new Map<string, number>();
@@ -68,10 +68,10 @@ export class Timer {
         }
     }
 
-    /** Server-Timing header value (e.g., "total;dur=12.3, parse_json;dur=0.8") */
+    /** Server-Timing header value (e.g., "total;dur=12.345, parse_json;dur=0.812") */
     serverTiming(): string {
         return [...this.spans.entries()]
-            .map(([key, dur]) => `${toToken(key)};dur=${dur.toFixed(1)}`)
+            .map(([key, dur]) => `${toToken(key)};dur=${dur.toFixed(3)}`)
             .join(", ");
     }
 
@@ -80,10 +80,10 @@ export class Timer {
         return this.serverTiming();
     }
 
-    /** JSON snapshot of spans (ms, 1 decimal). Keys are as-recorded. */
+    /** JSON snapshot of spans (ms, 3 decimals). Keys are as-recorded. */
     snapshot(): TimingSnapshot {
         const out: TimingSnapshot = {};
-        for (const [k, v] of this.spans) out[k] = round1(v);
+        for (const [k, v] of this.spans) out[k] = round3(v);
         return out;
     }
 
@@ -113,8 +113,8 @@ export class Timer {
     }
 }
 
-function round1(n: number) {
-    return Math.round(n * 10) / 10;
+function round3(n: number) {
+    return Math.round(n * 1000) / 1000;
 }
 function sanitize(s: string) {
     return s.replace(/[^A-Za-z0-9._-]/g, "_");

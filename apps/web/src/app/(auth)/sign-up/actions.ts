@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 const cookieOpts = {
     path: '/',
@@ -12,16 +12,55 @@ const cookieOpts = {
     maxAge: 60 * 60 * 24 * 180, // 6 months
 }
 
+function stripTrailingSlash(value: string): string {
+    return value.replace(/\/+$/, '')
+}
+
+async function resolveAuthOrigin(): Promise<string> {
+    const envWebsiteUrl = stripTrailingSlash(
+        String(process.env.NEXT_PUBLIC_WEBSITE_URL ?? '').trim()
+    )
+    const headerStore = await headers()
+    const originHeader = headerStore.get('origin')?.trim()
+    const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
+    const fallbackProto =
+        host && /(^localhost|^127\.0\.0\.1)/i.test(host) ? 'http' : 'https'
+    const hostOrigin = host ? `${fallbackProto}://${host}` : null
+    const isDev = process.env.NODE_ENV !== 'production'
+
+    if (isDev) {
+        if (
+            originHeader &&
+            /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(originHeader)
+        ) {
+            return stripTrailingSlash(originHeader)
+        }
+        if (hostOrigin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostOrigin)) {
+            return stripTrailingSlash(hostOrigin)
+        }
+    }
+
+    if (envWebsiteUrl) return envWebsiteUrl
+    if (originHeader) return stripTrailingSlash(originHeader)
+
+    if (hostOrigin) return stripTrailingSlash(hostOrigin)
+
+    return 'http://localhost:3000'
+}
+
 export async function handleOAuthRedirect(formData: FormData) {
     const supabase = await createClient()
     const provider = String(formData.get('provider') ?? 'google').toLowerCase()
+    const authOrigin = await resolveAuthOrigin()
+    const callbackBase = `${authOrigin}/auth/callback`;
+    const redirectTo = callbackBase;
 
     // Provisional hint; callback will overwrite with the authoritative provider if needed
     await (await cookies()).set('auth_provider', provider, cookieOpts)
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: provider as any,
-        options: { redirectTo: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/auth/callback` },
+        options: { redirectTo },
     })
 
     if (error || !data?.url) redirect('/error?message=Authentication failed')
@@ -32,7 +71,9 @@ export async function handleEmailSignup(formData: FormData) {
     const supabase = await createClient()
     const email = String(formData.get('email') ?? '')
     const password = String(formData.get('password') ?? '')
-    const callbackUrl = `${process.env.NEXT_PUBLIC_WEBSITE_URL}/auth/callback`
+    const authOrigin = await resolveAuthOrigin()
+    const callbackBase = `${authOrigin}/auth/callback`;
+    const callbackUrl = callbackBase;
 
     // Supabase signUp may return "User already registered" for duplicate emails.
     const { data, error } = await supabase.auth.signUp({

@@ -13,12 +13,12 @@ import {
 	TooltipTrigger,
 	TooltipContent,
 } from "@/components/ui/tooltip";
-import ProvisioningKeyUsageItem from "./ProvisioningKeyUsageItem";
-import EditProvisioningKeyItem from "./EditProvisioningKeyItem";
-import DeleteProvisioningKeyItem from "./DeleteProvisioningKeyItem";
-import ProvisioningKeyLimitsItem from "./ProvisioningKeyLimitsItem";
+import ManagementKeyUsageItem from "./ManagementKeyUsageItem";
+import EditManagementKeyItem from "./EditManagementKeyItem";
+import DeleteManagementKeyItem from "./DeleteManagementKeyItem";
+import ManagementKeyLimitsItem from "./ManagementKeyLimitsItem";
 
-export default function ProvisioningKeysPanel({ teamsWithKeys }: any) {
+export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 	const sortedTeams = useMemo(() => {
 		if (!Array.isArray(teamsWithKeys)) return teamsWithKeys;
 		const withKeys: any[] = [];
@@ -120,10 +120,10 @@ export default function ProvisioningKeysPanel({ teamsWithKeys }: any) {
 													side="bottom"
 													align="end"
 												>
-													<ProvisioningKeyUsageItem k={k} />
-													<EditProvisioningKeyItem k={k} />
-													<ProvisioningKeyLimitsItem k={k} />
-													<DeleteProvisioningKeyItem k={k} />
+													<ManagementKeyUsageItem k={k} />
+													<EditManagementKeyItem k={k} />
+													<ManagementKeyLimitsItem k={k} />
+													<DeleteManagementKeyItem k={k} />
 												</DropdownMenuContent>
 											</DropdownMenu>
 										</div>
@@ -137,3 +137,4 @@ export default function ProvisioningKeysPanel({ teamsWithKeys }: any) {
 		</div>
 	);
 }
+

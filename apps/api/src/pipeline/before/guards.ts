@@ -274,8 +274,16 @@ export function makeMeta(input: {
     debug?: DebugOptions;
     providerCapabilitiesBeta?: boolean;
     beta?: RequestBetaOptions;
+    beforeContextMs?: number | null;
+    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | null;
+    beforeContextKeyVersionMs?: number | null;
+    beforeContextCacheReadMs?: number | null;
+    beforeContextRpcMs?: number | null;
+    beforeContextEnrichMs?: number | null;
+    beforeContextCacheWriteMs?: number | null;
+    beforeContextFallbackRemap?: boolean | null;
 }): RequestMeta {
-    const { referer, appTitle } = readAttributionHeaders(input.req);
+    const { referer, appTitle, appId, appName } = readAttributionHeaders(input.req);
     const debugHeader = input.req.headers.get("x-gateway-debug") ?? input.req.headers.get("x-ai-stats-debug");
     const debugEnabled = (normalizeReturnFlag(debugHeader) || Boolean(input.debug?.enabled)) && isDebugAllowed();
     const userAgent = input.req.headers.get("user-agent");
@@ -314,8 +322,18 @@ export function makeMeta(input: {
         startedAtMs: Date.now(),
         keySource: "gateway",
         byokKeyId: null,
+        beforeContextMs: input.beforeContextMs ?? undefined,
+        beforeContextCacheStatus: input.beforeContextCacheStatus ?? undefined,
+        beforeContextKeyVersionMs: input.beforeContextKeyVersionMs ?? undefined,
+        beforeContextCacheReadMs: input.beforeContextCacheReadMs ?? undefined,
+        beforeContextRpcMs: input.beforeContextRpcMs ?? undefined,
+        beforeContextEnrichMs: input.beforeContextEnrichMs ?? undefined,
+        beforeContextCacheWriteMs: input.beforeContextCacheWriteMs ?? undefined,
+        beforeContextFallbackRemap: input.beforeContextFallbackRemap ?? undefined,
         referer,
         appTitle,
+        appId,
+        appName,
         requestMethod: input.req.method ?? null,
         requestUrl,
         requestPath,

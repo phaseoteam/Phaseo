@@ -1,9 +1,10 @@
 import { permanentRedirect } from "next/navigation";
 
 export const metadata = {
-	title: "Provisioning Keys - Settings",
+	title: "Management API Keys - Settings",
 };
 
-export default async function ProvisioningKeysPage() {
+export default async function ProvisioningKeysAliasPage() {
 	permanentRedirect("/settings/management-api-keys");
 }
+

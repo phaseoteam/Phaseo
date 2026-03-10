@@ -401,7 +401,9 @@ export async function handleError({
     }
     headers.set("X-Gateway-Error-Attribution", attribution);
 
-    const attributionHeaders = req ? readAttributionHeaders(req) : { referer: null, appTitle: null };
+    const attributionHeaders = req
+        ? readAttributionHeaders(req)
+        : { referer: null, appTitle: null, appId: null, appName: null };
     const requestMeta = (() => {
         if (!req) {
             return {
@@ -559,6 +561,29 @@ export async function handleError({
     })();
     const errorDetailsJson = buildErrorDetails(body, ctx);
     const internalLatencyMs = ctx ? (ctx as any)?.timing?.internal_latency_ms ?? null : null;
+    const beforeTimingMs = (() => {
+        if (!ctx) return null;
+        const fromMeta = (ctx as any)?.meta?.before_ms;
+        if (typeof fromMeta === "number" && Number.isFinite(fromMeta)) return fromMeta;
+        const nested = (ctx as any)?.timing?.before?.total_ms;
+        if (typeof nested === "number" && Number.isFinite(nested)) return nested;
+        const flat = (ctx as any)?.timing?.before_start;
+        return typeof flat === "number" && Number.isFinite(flat) ? flat : null;
+    })();
+    const executeTimingMs = (() => {
+        if (!ctx) return null;
+        const nested = (ctx as any)?.timing?.execute?.total_ms;
+        if (typeof nested === "number" && Number.isFinite(nested)) return nested;
+        const flat = (ctx as any)?.timing?.adapter_start;
+        return typeof flat === "number" && Number.isFinite(flat) ? flat : null;
+    })();
+    const executeAdapterMs = (() => {
+        if (!ctx) return null;
+        const nested = (ctx as any)?.timing?.execute?.adapter_ms;
+        if (typeof nested === "number" && Number.isFinite(nested)) return nested;
+        const flat = (ctx as any)?.timing?.adapter_roundtrip_ms;
+        return typeof flat === "number" && Number.isFinite(flat) ? flat : null;
+    })();
     const providerFromAttempts = (() => {
         const attempts = ctx ? (ctx as any)?.attemptErrors : null;
         if (Array.isArray(attempts) && attempts.length > 0) {
@@ -578,13 +603,17 @@ export async function handleError({
         model: ctx?.model ?? body?.model,
         appTitle: ctx?.meta?.appTitle ?? body?.meta?.appTitle ?? attributionHeaders.appTitle ?? null,
         referer: ctx?.meta?.referer ?? body?.meta?.referer ?? attributionHeaders.referer ?? null,
+        appId: ctx?.meta?.appId ?? body?.meta?.appId ?? attributionHeaders.appId ?? null,
+        appName: ctx?.meta?.appName ?? body?.meta?.appName ?? attributionHeaders.appName ?? null,
         statusCode,
         errorCode: `${attribution}:${errCode}`,
         errorMessage: description ?? fallbackDescription,
         before: ctx ? (ctx as any)?.timing?.before ?? null : body?.timing?.before ?? null,
         execute: ctx ? (ctx as any)?.timing?.execute ?? null : null,
-        latencyMs: ctx ? Math.round(((ctx as any)?.timing?.before?.total_ms ?? 0) + ((ctx as any)?.timing?.execute?.total_ms ?? 0)) : (body?.timing?.before?.total_ms ? Math.round(body.timing.before.total_ms) : null),
-        generationMs: ctx ? ((ctx as any)?.timing?.execute?.adapter_ms ? Math.round((ctx as any).timing.execute.adapter_ms) : null) : null,
+        latencyMs: ctx
+            ? Math.round((beforeTimingMs ?? 0) + (executeTimingMs ?? 0))
+            : (body?.timing?.before?.total_ms ? Math.round(body.timing.before.total_ms) : null),
+        generationMs: ctx ? (executeAdapterMs ? Math.round(executeAdapterMs) : null) : null,
         internalLatencyMs,
         byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
         keyId: ctx?.meta?.apiKeyId ?? null,

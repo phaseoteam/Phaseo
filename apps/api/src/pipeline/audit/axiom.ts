@@ -440,23 +440,18 @@ export function buildAxiomEvent(a: AxiomArgs) {
         // ====================================================================
         // TEAM ENRICHMENT (Wide Event Context - "What type of user am I dealing with?")
         // ====================================================================
-        team_tier: a.teamEnrichment?.tier ?? null,
-        team_created_at: a.teamEnrichment?.created_at ?? null,
-        team_account_age_days: a.teamEnrichment?.account_age_days ?? null,
-        team_balance_nanos: a.teamEnrichment?.balance_nanos ?? null,
-        team_balance_usd: a.teamEnrichment?.balance_usd ?? null,
-        team_balance_is_low: a.teamEnrichment?.balance_is_low ?? null,
-        team_total_requests: a.teamEnrichment?.total_requests ?? null,
-        team_total_spend_nanos: a.teamEnrichment?.total_spend_nanos ?? null,
-        team_total_spend_usd: a.teamEnrichment?.total_spend_usd ?? null,
-        team_spend_24h_nanos: a.teamEnrichment?.spend_24h_nanos ?? null,
-        team_spend_24h_usd: a.teamEnrichment?.spend_24h_usd ?? null,
-        team_spend_7d_nanos: a.teamEnrichment?.spend_7d_nanos ?? null,
-        team_spend_7d_usd: a.teamEnrichment?.spend_7d_usd ?? null,
-        team_spend_30d_nanos: a.teamEnrichment?.spend_30d_nanos ?? null,
-        team_spend_30d_usd: a.teamEnrichment?.spend_30d_usd ?? null,
-        team_requests_1h: a.teamEnrichment?.requests_1h ?? null,
-        team_requests_24h: a.teamEnrichment?.requests_24h ?? null,
+	        team_tier: a.teamEnrichment?.tier ?? null,
+	        team_created_at: a.teamEnrichment?.created_at ?? null,
+	        team_account_age_days: a.teamEnrichment?.account_age_days ?? null,
+	        team_balance_usd: a.teamEnrichment?.balance_usd ?? null,
+	        team_balance_is_low: a.teamEnrichment?.balance_is_low ?? null,
+	        team_total_requests: a.teamEnrichment?.total_requests ?? null,
+	        team_total_spend_usd: a.teamEnrichment?.total_spend_usd ?? null,
+	        team_spend_24h_usd: a.teamEnrichment?.spend_24h_usd ?? null,
+	        team_spend_7d_usd: a.teamEnrichment?.spend_7d_usd ?? null,
+	        team_spend_30d_usd: a.teamEnrichment?.spend_30d_usd ?? null,
+	        team_requests_1h: a.teamEnrichment?.requests_1h ?? null,
+	        team_requests_24h: a.teamEnrichment?.requests_24h ?? null,
 
         // ====================================================================
         // KEY ENRICHMENT (API Key Context)

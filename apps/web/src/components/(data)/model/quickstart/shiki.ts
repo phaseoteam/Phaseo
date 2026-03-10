@@ -1,11 +1,11 @@
 // src/lib/shiki.ts
 import { cache } from "react";
 import {
+    codeToTokensWithThemes,
     createHighlighter,
     bundledThemes,
     bundledLanguages,
     type Highlighter,
-    type ThemeRegistration,
 } from "shiki";
 import { transformerColorizedBrackets } from "@shikijs/colorized-brackets";
 
@@ -56,7 +56,7 @@ export async function codeToHtml(
         lang,
         theme,
         transformers: [
-            transformerColorizedBrackets(), // <- magic here
+            transformerColorizedBrackets(),
         ],
 
     });
@@ -70,3 +70,15 @@ export async function codeToHtmlBoth(code: string, lang: ShikiLang) {
     ]);
     return { light, dark };
 }
+
+export async function codeToTokensBoth(code: string, lang: ShikiLang) {
+    return codeToTokensWithThemes(code, {
+        lang,
+        themes: {
+            light: LIGHT,
+            dark: DARK,
+        },
+    });
+}
+
+export type CodeTokensWithThemesResult = Awaited<ReturnType<typeof codeToTokensBoth>>;

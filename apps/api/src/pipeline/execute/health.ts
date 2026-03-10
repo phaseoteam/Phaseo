@@ -77,6 +77,39 @@ const field = (provider: string, metric: string) => `${provider}::${metric}`;
 
 const HEALTH_STATE_TTL_SECONDS = 24 * 60 * 60;
 const HALF_STATE_TTL_SECONDS = HEALTH_CONSTANTS.HALF_OPEN_TEST_SECS;
+const HEALTH_L1_TTL_MS = 1_000;
+
+type L1StateEntry = {
+    map: Record<string, string>;
+    expiresAtMs: number;
+};
+
+const l1State = new Map<string, L1StateEntry>();
+const pendingBackgroundSaves = new Map<string, { map: Record<string, string>; ttlSeconds: number }>();
+const activeBackgroundSave = new Set<string>();
+const keyUpdateQueues = new Map<string, Array<() => void>>();
+
+async function withKeyUpdateLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    const queue = keyUpdateQueues.get(key);
+    if (queue) {
+        await new Promise<void>((resolve) => queue.push(resolve));
+    } else {
+        keyUpdateQueues.set(key, []);
+    }
+
+    try {
+        return await fn();
+    } finally {
+        const activeQueue = keyUpdateQueues.get(key);
+        if (!activeQueue) return;
+        const next = activeQueue.shift();
+        if (next) {
+            next();
+        } else {
+            keyUpdateQueues.delete(key);
+        }
+    }
+}
 
 type BreakerPersistPayload = {
 	endpoint: Endpoint;
@@ -151,43 +184,206 @@ function normalizeMap(input: unknown): Record<string, string> {
     return out;
 }
 
-async function loadMapByKey(key: string): Promise<Record<string, string>> {
-    try {
-        const raw = await getCache().get(key, "text");
-        if (!raw) return {};
-        try {
-            return normalizeMap(JSON.parse(raw));
-        } catch {
-            return {};
-        }
-    } catch {
-        // Fail open to in-memory defaults when KV is unavailable.
-        return {};
-    }
+function isHalfStateKey(key: string): boolean {
+    return key.includes(":half:");
 }
 
-async function saveMap(key: string, map: Record<string, string>, ttlSeconds = HEALTH_STATE_TTL_SECONDS) {
+function isHealthStateKey(key: string): boolean {
+    return key.startsWith("gw:health:") && !isHalfStateKey(key);
+}
+
+function providerFromFieldKey(fieldKey: string): string | null {
+    const sep = fieldKey.indexOf("::");
+    if (sep <= 0) return null;
+    return fieldKey.slice(0, sep);
+}
+
+function collectProviderFields(map: Record<string, string>): Map<string, string[]> {
+    const out = new Map<string, string[]>();
+    for (const key of Object.keys(map)) {
+        const provider = providerFromFieldKey(key);
+        if (!provider) continue;
+        const existing = out.get(provider);
+        if (existing) {
+            existing.push(key);
+        } else {
+            out.set(provider, [key]);
+        }
+    }
+    return out;
+}
+
+function mergeHealthStateMaps(existing: Record<string, string>, candidate: Record<string, string>): Record<string, string> {
+    const merged: Record<string, string> = { ...existing };
+    const existingByProvider = collectProviderFields(existing);
+    const candidateByProvider = collectProviderFields(candidate);
+    const providers = new Set<string>([
+        ...existingByProvider.keys(),
+        ...candidateByProvider.keys(),
+    ]);
+
+    for (const provider of providers) {
+        const existingTs = asNum(existing[field(provider, "last_updated")], 0);
+        const candidateTs = asNum(candidate[field(provider, "last_updated")], 0);
+        const useCandidate = candidateTs >= existingTs;
+        const primary = useCandidate ? candidate : existing;
+        const secondary = useCandidate ? existing : candidate;
+        const keys = new Set<string>([
+            ...(existingByProvider.get(provider) ?? []),
+            ...(candidateByProvider.get(provider) ?? []),
+        ]);
+
+        for (const key of keys) {
+            const selected = primary[key] ?? secondary[key];
+            if (selected === undefined) {
+                delete merged[key];
+            } else {
+                merged[key] = String(selected);
+            }
+        }
+    }
+
+    // Preserve non-provider fields with candidate precedence.
+    for (const key of new Set([...Object.keys(existing), ...Object.keys(candidate)])) {
+        if (providerFromFieldKey(key)) continue;
+        const selected = candidate[key] ?? existing[key];
+        if (selected === undefined) {
+            delete merged[key];
+        } else {
+            merged[key] = String(selected);
+        }
+    }
+
+    return merged;
+}
+
+function mergeHalfStateMaps(existing: Record<string, string>, candidate: Record<string, string>): Record<string, string> {
+    const merged: Record<string, string> = { ...existing, ...candidate };
+    merged.ok = String(Math.max(asNum(existing.ok, 0), asNum(candidate.ok, 0)));
+    merged.cnt = String(Math.max(asNum(existing.cnt, 0), asNum(candidate.cnt, 0)));
+    merged.p = String(asNum(candidate.p ?? existing.p, HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO));
+    return merged;
+}
+
+async function persistMapWithMerge(
+    key: string,
+    candidateMap: Record<string, string>,
+    ttlSeconds: number,
+) {
     try {
-        await getCache().put(key, JSON.stringify(map), { expirationTtl: ttlSeconds });
+        let mapToWrite = { ...candidateMap };
+        const raw = await getCache().get(key, "text");
+        if (raw) {
+            try {
+                const existing = normalizeMap(JSON.parse(raw));
+                if (isHealthStateKey(key)) {
+                    mapToWrite = mergeHealthStateMaps(existing, mapToWrite);
+                } else if (isHalfStateKey(key)) {
+                    mapToWrite = mergeHalfStateMaps(existing, mapToWrite);
+                } else {
+                    mapToWrite = { ...existing, ...mapToWrite };
+                }
+            } catch {
+                // Ignore malformed existing payload; candidate map is authoritative.
+            }
+        }
+        await getCache().put(key, JSON.stringify(mapToWrite), { expirationTtl: ttlSeconds });
+        l1State.set(key, { map: { ...mapToWrite }, expiresAtMs: Date.now() + HEALTH_L1_TTL_MS });
     } catch {
         // Ignore KV write failures.
     }
 }
 
+async function loadMapByKey(key: string): Promise<Record<string, string>> {
+    const now = Date.now();
+    const l1 = l1State.get(key);
+    if (l1 && l1.expiresAtMs > now) {
+        return { ...l1.map };
+    }
+    if (l1 && l1.expiresAtMs <= now) {
+        l1State.delete(key);
+    }
+    try {
+        const raw = await getCache().get(key, "text");
+        if (!raw) {
+            const empty: Record<string, string> = {};
+            l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+            return { ...empty };
+        }
+        try {
+            const normalized = normalizeMap(JSON.parse(raw));
+            l1State.set(key, { map: { ...normalized }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+            return { ...normalized };
+        } catch {
+            const empty: Record<string, string> = {};
+            l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+            return { ...empty };
+        }
+    } catch {
+        // Fail open to in-memory defaults when KV is unavailable.
+        const empty: Record<string, string> = {};
+        l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+        return { ...empty };
+    }
+}
+
+function queueBackgroundSave(key: string) {
+    if (activeBackgroundSave.has(key)) return;
+    activeBackgroundSave.add(key);
+
+    dispatchBackground((async () => {
+        try {
+            while (true) {
+                const pending = pendingBackgroundSaves.get(key);
+                if (!pending) return;
+                pendingBackgroundSaves.delete(key);
+                await persistMapWithMerge(key, pending.map, pending.ttlSeconds);
+            }
+        } finally {
+            activeBackgroundSave.delete(key);
+            if (pendingBackgroundSaves.has(key)) {
+                queueBackgroundSave(key);
+            }
+        }
+    })());
+}
+
+type SaveMapMode = "sync" | "background";
+
+async function saveMap(
+    key: string,
+    map: Record<string, string>,
+    ttlSeconds = HEALTH_STATE_TTL_SECONDS,
+    mode: SaveMapMode = "sync"
+) {
+    const normalized = normalizeMap(map);
+    l1State.set(key, { map: { ...normalized }, expiresAtMs: Date.now() + HEALTH_L1_TTL_MS });
+    if (mode === "background") {
+        pendingBackgroundSaves.set(key, { map: { ...normalized }, ttlSeconds });
+        queueBackgroundSave(key);
+        return;
+    }
+    await persistMapWithMerge(key, normalized, ttlSeconds);
+}
+
 async function updateMap(
     key: string,
     updater: (map: Record<string, string>) => Record<string, string> | void,
-    ttlSeconds = HEALTH_STATE_TTL_SECONDS
+    ttlSeconds = HEALTH_STATE_TTL_SECONDS,
+    mode: SaveMapMode = "sync",
 ): Promise<Record<string, string>> {
-    const map = await loadMapByKey(key);
-    const before = JSON.stringify(map);
-    const next = updater(map);
-    const updated: Record<string, string> = next && typeof next === "object" ? next : map;
-    const after = JSON.stringify(updated);
-    if (after !== before) {
-        await saveMap(key, updated, ttlSeconds);
-    }
-    return updated;
+    return withKeyUpdateLock(key, async () => {
+        const current = await loadMapByKey(key);
+        const before = JSON.stringify(current);
+        const working = { ...current };
+        const next = updater(working);
+        const updated = normalizeMap(next && typeof next === "object" ? next : working);
+        const after = JSON.stringify(updated);
+        if (after !== before) {
+            await saveMap(key, updated, ttlSeconds, mode);
+        }
+        return updated;
+    });
 }
 
 function readNumber<T extends keyof typeof NUMERIC_DEFAULTS>(
@@ -265,15 +461,12 @@ async function loadHalfMap(endpoint: Endpoint, provider: string, model: string):
     return loadMapByKey(key);
 }
 
-async function saveHalfMap(endpoint: Endpoint, provider: string, model: string, map: Record<string, string>) {
-    const key = HEALTH_KEYS.half(endpoint, model, provider);
-    await saveMap(key, map, HALF_STATE_TTL_SECONDS);
-}
-
 async function deleteHalf(endpoint: Endpoint, provider: string, model: string) {
     const key = HEALTH_KEYS.half(endpoint, model, provider);
     try {
         await getCache().delete(key);
+        l1State.delete(key);
+        pendingBackgroundSaves.delete(key);
     } catch {
         // Ignore KV delete failures.
     }
@@ -303,32 +496,40 @@ export async function readHealthMany(
 }
 
 async function openBreaker(endpoint: Endpoint, provider: string, model: string) {
-    const map = await loadStateMap(endpoint, model);
-    const now = Date.now();
-    const attempts = readNumber(map, provider, "breaker_attempts") + 1;
-    const base = readConfig(map, provider, "base_open_secs");
-    const maxs = readConfig(map, provider, "max_open_secs");
-    const duration = Math.min(base * Math.pow(2, Math.max(0, attempts - 1)), maxs);
-    await setHealthFields(endpoint, model, {
-        [breakerField(provider)]: "open",
-        [field(provider, "breaker_attempts")]: attempts,
-        [field(provider, "breaker_until_ms")]: now + duration * 1000,
+    const key = HEALTH_KEYS.health(endpoint, model);
+    let breakerUntilMs = 0;
+    await updateMap(key, (map) => {
+        const now = Date.now();
+        const attempts = readNumber(map, provider, "breaker_attempts") + 1;
+        const base = readConfig(map, provider, "base_open_secs");
+        const maxs = readConfig(map, provider, "max_open_secs");
+        const duration = Math.min(base * Math.pow(2, Math.max(0, attempts - 1)), maxs);
+        breakerUntilMs = now + duration * 1000;
+        map[breakerField(provider)] = "open";
+        map[field(provider, "breaker_attempts")] = String(attempts);
+        map[field(provider, "breaker_until_ms")] = String(breakerUntilMs);
+        map[field(provider, "last_updated")] = String(now);
+        return map;
     });
     persistBreakerState({
         endpoint,
         provider,
         model,
         breaker: "open",
-        breakerUntilMs: now + duration * 1000,
+        breakerUntilMs,
         reason: "open_breaker",
     });
 }
 
 async function closeBreaker(endpoint: Endpoint, provider: string, model: string) {
-    await setHealthFields(endpoint, model, {
-        [breakerField(provider)]: "closed",
-        [field(provider, "breaker_attempts")]: 0,
-        [field(provider, "breaker_until_ms")]: 0,
+    const key = HEALTH_KEYS.health(endpoint, model);
+    await updateMap(key, (map) => {
+        const now = Date.now();
+        map[breakerField(provider)] = "closed";
+        map[field(provider, "breaker_attempts")] = "0";
+        map[field(provider, "breaker_until_ms")] = "0";
+        map[field(provider, "last_updated")] = String(now);
+        return map;
     });
     persistBreakerState({
         endpoint,
@@ -342,12 +543,13 @@ async function closeBreaker(endpoint: Endpoint, provider: string, model: string)
 }
 
 async function ensureHalfOpen(endpoint: Endpoint, provider: string, model: string) {
-    const map = await loadHalfMap(endpoint, provider, model);
-    const next = { ...map };
-    if (!("p" in next)) next.p = String(HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO);
-    if (!("ok" in next)) next.ok = "0";
-    if (!("cnt" in next)) next.cnt = "0";
-    await saveHalfMap(endpoint, provider, model, next);
+    const key = HEALTH_KEYS.half(endpoint, model, provider);
+    await updateMap(key, (map) => {
+        if (!("p" in map)) map.p = String(HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO);
+        if (!("ok" in map)) map.ok = "0";
+        if (!("cnt" in map)) map.cnt = "0";
+        return map;
+    }, HALF_STATE_TTL_SECONDS);
 }
 
 async function readHalf(endpoint: Endpoint, provider: string, model: string) {
@@ -361,14 +563,15 @@ async function readHalf(endpoint: Endpoint, provider: string, model: string) {
 }
 
 async function incrHalf(endpoint: Endpoint, provider: string, model: string, ok: boolean) {
-    const map = await loadHalfMap(endpoint, provider, model);
-    const next = { ...map };
-    const cnt = asNum(next.cnt, 0) + 1;
-    const okCount = asNum(next.ok, 0) + (ok ? 1 : 0);
-    next.cnt = String(cnt);
-    next.ok = String(okCount);
-    if (!("p" in next)) next.p = String(HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO);
-    await saveHalfMap(endpoint, provider, model, next);
+    const key = HEALTH_KEYS.half(endpoint, model, provider);
+    await updateMap(key, (map) => {
+        const cnt = asNum(map.cnt, 0) + 1;
+        const okCount = asNum(map.ok, 0) + (ok ? 1 : 0);
+        map.cnt = String(cnt);
+        map.ok = String(okCount);
+        if (!("p" in map)) map.p = String(HEALTH_CONSTANTS.HALF_OPEN_PROBE_RATIO);
+        return map;
+    }, HALF_STATE_TTL_SECONDS);
 }
 
 function allowSample(teamId: string, requestId: string, p: number) {
@@ -396,7 +599,10 @@ export async function admitThroughBreaker(
 
         if (state === "open") {
             if (now >= snapshot.breaker_until_ms) {
-                await setHealthFields(endpoint, model, { [breakerField(provider)]: "half_open" });
+                await setHealthFields(endpoint, model, {
+                    [breakerField(provider)]: "half_open",
+                    [field(provider, "last_updated")]: now,
+                });
                 persistBreakerState({
                     endpoint,
                     provider,
@@ -428,7 +634,10 @@ export async function admitThroughBreaker(
     if (state === "open") {
         if (now >= until) {
             state = "half_open";
-            await setHealthFields(endpoint, model, { [breakerField(provider)]: "half_open" });
+            await setHealthFields(endpoint, model, {
+                [breakerField(provider)]: "half_open",
+                [field(provider, "last_updated")]: now,
+            });
             persistBreakerState({
                 endpoint,
                 provider,
@@ -494,14 +703,16 @@ export async function maybeOpenOnRecentErrors(
 export async function onCallStart(endpoint: Endpoint, provider: string, model: string) {
     const key = HEALTH_KEYS.health(endpoint, model);
     await updateMap(key, (map) => {
+        const now = Date.now();
         const inflightField = field(provider, "inflight");
         const currentInflight = asNum(map[inflightField], 0);
         const inflight = currentInflight + 1;
         const softCap = Math.max(CONFIG_DEFAULTS.load_soft_cap, 1);
         map[inflightField] = String(inflight);
         map[field(provider, "current_load")] = String(Math.min(1, inflight / softCap));
+        map[field(provider, "last_updated")] = String(now);
         return map;
-    });
+    }, HEALTH_STATE_TTL_SECONDS, "background");
 }
 
 export async function onCallEnd(
@@ -583,5 +794,5 @@ export async function onCallEnd(
         map[field(provider, "base_open_secs")] = String(readConfig(map, provider, "base_open_secs"));
         map[field(provider, "max_open_secs")] = String(readConfig(map, provider, "max_open_secs"));
         return map;
-    });
+    }, HEALTH_STATE_TTL_SECONDS, "background");
 }

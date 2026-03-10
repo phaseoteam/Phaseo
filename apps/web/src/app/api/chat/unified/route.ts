@@ -1,4 +1,8 @@
 import { NextRequest } from "next/server";
+import {
+	ChatGatewayAuthError,
+	resolveChatGatewayContext,
+} from "@/lib/server/chatGatewayAuth";
 
 type SupportedEndpoint =
 	| "responses"
@@ -9,7 +13,6 @@ type SupportedEndpoint =
 
 type UnifiedPlaygroundRequest = {
 	baseUrl?: string;
-	apiKey?: string;
 	endpoint?: SupportedEndpoint;
 	requestBody?: Record<string, unknown>;
 	appHeaders?: Record<string, string>;
@@ -27,6 +30,12 @@ const ALLOWED_APP_HEADERS = new Set([
 	"x-app-id",
 	"x-app-name",
 ]);
+const CANONICAL_CHAT_APP_HEADERS: Record<string, string> = {
+	"x-app-id": "ai-stats-chat",
+	"x-app-name": "AI Stats Chat",
+	"x-title": "AI Stats Chat",
+	"http-referer": "https://ai-stats.phaseo.app/chat",
+};
 
 type UpstreamCause = {
 	code?: string;
@@ -158,44 +167,41 @@ export async function POST(request: NextRequest) {
 	}
 
 	const gatewayBaseUrl = trimTrailingSlashes(GATEWAY_BASE_URL);
-	const requestedBaseUrl =
-		typeof payload.baseUrl === "string"
-			? trimTrailingSlashes(payload.baseUrl)
-			: "";
-	const apiKey = payload.apiKey?.trim() ?? "";
-	const endpoint = payload.endpoint;
+	const endpoint = isSupportedEndpoint(payload.endpoint)
+		? payload.endpoint
+		: "responses";
 	const requestBody = payload.requestBody ?? {};
-	const appHeaders = sanitizeAppHeaders(payload.appHeaders);
+	const appHeaders = {
+		...sanitizeAppHeaders(payload.appHeaders),
+		...CANONICAL_CHAT_APP_HEADERS,
+	};
 	const debug = Boolean(payload.debug);
 	const poll = payload.poll ?? null;
 
-	if (requestedBaseUrl && requestedBaseUrl !== gatewayBaseUrl) {
+	// Ignore user-provided baseUrl here. This route always targets the
+	// canonical gateway origin configured by the server.
+
+	let gatewayApiKey = "";
+	try {
+		const auth = await resolveChatGatewayContext();
+		gatewayApiKey = auth.apiKey;
+	} catch (error) {
+		if (error instanceof ChatGatewayAuthError) {
+			return new Response(
+				JSON.stringify({ error: error.code, message: error.message }),
+				{
+					status: error.status,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
 		return new Response(
 			JSON.stringify({
-				error: "Custom baseUrl is not supported for this route.",
+				error: "chat_auth_failed",
+				message: "Unable to authenticate this chat request.",
 			}),
 			{
-				status: 400,
-				headers: { "Content-Type": "application/json" },
-			},
-		);
-	}
-
-	if (!apiKey) {
-		return new Response(
-			JSON.stringify({ error: "Missing apiKey." }),
-			{
-				status: 400,
-				headers: { "Content-Type": "application/json" },
-			},
-		);
-	}
-
-	if (!isSupportedEndpoint(endpoint)) {
-		return new Response(
-			JSON.stringify({ error: "Unsupported endpoint." }),
-			{
-				status: 400,
+				status: 500,
 				headers: { "Content-Type": "application/json" },
 			},
 		);
@@ -234,7 +240,7 @@ export async function POST(request: NextRequest) {
 					method: "GET",
 					headers: {
 						...appHeaders,
-						Authorization: `Bearer ${apiKey}`,
+						Authorization: `Bearer ${gatewayApiKey}`,
 						...(debug ? { "x-gateway-debug": "true" } : {}),
 					},
 				},
@@ -249,7 +255,7 @@ export async function POST(request: NextRequest) {
 				headers: {
 					"Content-Type": "application/json",
 					...appHeaders,
-					Authorization: `Bearer ${apiKey}`,
+					Authorization: `Bearer ${gatewayApiKey}`,
 					...(debug ? { "x-gateway-debug": "true" } : {}),
 					...(streamRequested ? { Accept: "text/event-stream" } : {}),
 				},

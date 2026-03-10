@@ -173,7 +173,7 @@ export async function beforeRequest(
         "music.generate",
     ]);
     const providerEnablementDropped: ProviderEnablementDiagnostics["dropped"] = [];
-    const enabledProviders = filteredProviders.filter((provider) => {
+    let enabledProviders = filteredProviders.filter((provider) => {
         if (executorManagedCapabilities.has(normalizedCapability)) {
             if (testingModeEnabled) {
                 const hasAdapter = Boolean(adapterFor(provider.providerId, endpoint));
@@ -203,13 +203,25 @@ export async function beforeRequest(
         }
         return hasAdapter;
     });
+    const missingPricingProviders = enabledProviders
+        .filter((provider) => !provider.pricingCard)
+        .map((provider) => provider.providerId);
+    if (missingPricingProviders.length) {
+        for (const providerId of missingPricingProviders) {
+            providerEnablementDropped.push({
+                providerId,
+                reason: "pricing_missing",
+            });
+        }
+        enabledProviders = enabledProviders.filter((provider) => Boolean(provider.pricingCard));
+    }
     const providerEnablementDiagnostics: ProviderEnablementDiagnostics = {
         capability: normalizedCapability,
         providersBefore: filteredProviders.map((provider) => provider.providerId),
         providersAfter: enabledProviders.map((provider) => provider.providerId),
         dropped: providerEnablementDropped,
     };
-    if (providerEnablementDropped.length > 0 || enabledProviders.length === 0) {
+    if ((providerEnablementDropped.length > 0 || enabledProviders.length === 0) && (debugEnabled || enabledProviders.length === 0)) {
         console.log("[gateway] provider enablement", {
             requestId,
             model: resolvedModel || model,
@@ -230,6 +242,13 @@ export async function beforeRequest(
                 team_id: teamId,
                 provider_enablement: providerEnablementDiagnostics,
                 provider_candidate_diagnostics: candidateDiagnostics,
+                reason: missingPricingProviders.length > 0
+                    ? "pricing_not_configured"
+                    : "no_enabled_providers",
+                missing_pricing_providers:
+                    missingPricingProviders.length > 0
+                        ? missingPricingProviders
+                        : undefined,
             }),
         };
     }
@@ -271,6 +290,7 @@ export async function beforeRequest(
             trace_level: traceLevel ?? (debugTrace ? "full" : undefined),
         }
         : undefined;
+    const contextTelemetry = context.contextTelemetry ?? null;
     const meta: RequestMeta = makeMeta({
         apiKeyId,
         apiKeyRef,
@@ -282,14 +302,16 @@ export async function beforeRequest(
         debug,
         providerCapabilitiesBeta: betaCapabilities,
         beta,
+        beforeContextMs: contextTelemetry?.totalMs ?? null,
+        beforeContextCacheStatus: contextTelemetry?.cacheStatus ?? null,
+        beforeContextKeyVersionMs: contextTelemetry?.keyVersionMs ?? null,
+        beforeContextCacheReadMs: contextTelemetry?.cacheReadMs ?? null,
+        beforeContextRpcMs: contextTelemetry?.rpcMs ?? null,
+        beforeContextEnrichMs: contextTelemetry?.enrichMs ?? null,
+        beforeContextCacheWriteMs: contextTelemetry?.cacheWriteMs ?? null,
+        beforeContextFallbackRemap: contextTelemetry?.fallbackRemap ?? null,
     });
-    const requestPath = (() => {
-        try {
-            return new URL(req.url).pathname;
-        } catch {
-            return null;
-        }
-    })();
+    const requestPath = meta.requestPath ?? null;
 
     const ctx: PipelineContext = {
         endpoint,

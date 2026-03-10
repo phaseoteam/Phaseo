@@ -37,6 +37,8 @@ export type RequestMeta = {
     apiKeyKid: string;            // Raw kid from token
     referer?: string | null;
     appTitle?: string | null;
+    appId?: string | null;
+    appName?: string | null;
     requestMethod?: string | null;
     requestUrl?: string | null;
     requestPath?: string | null;
@@ -63,6 +65,15 @@ export type RequestMeta = {
     throughput_tps?: number;      // Tokens per second
     generation_ms?: number;       // Provider processing time
     latency_ms?: number;          // End-to-end request time
+    before_ms?: number;           // Gateway preflight ("before" stage) latency
+    beforeContextMs?: number;     // Context fetch + enrichment latency inside before
+    beforeContextCacheStatus?: "hit" | "miss" | "bypass";
+    beforeContextKeyVersionMs?: number;
+    beforeContextCacheReadMs?: number;
+    beforeContextRpcMs?: number;
+    beforeContextEnrichMs?: number;
+    beforeContextCacheWriteMs?: number;
+    beforeContextFallbackRemap?: boolean;
     returnMeta?: boolean;         // Should meta block be returned to caller
     providerCapabilitiesBeta?: boolean;
 };

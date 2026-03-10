@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import upsertLinearCustomer from "@/lib/linear";
+import { userHasPaidTeamAccess } from "@/lib/server/teamLimits";
 import crypto from "crypto";
 
 function makeSlug(name: string) {
@@ -114,6 +115,15 @@ export async function createTeamAction(name: string, userId: string) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user?.id) throw new Error("Unauthorized");
     if (user.id !== userId) throw new Error("Unauthorized");
+
+    const admin = createAdminClient();
+    const hasPaidTeamAccess = await userHasPaidTeamAccess(admin as any, userId);
+    if (!hasPaidTeamAccess) {
+        throw new Error(
+            "Additional team workspaces unlock after your first credit deposit. Free accounts can use the personal team only."
+        );
+    }
+
     const baseSlug = makeSlug(name);
 
     const { data, error } = await supabase

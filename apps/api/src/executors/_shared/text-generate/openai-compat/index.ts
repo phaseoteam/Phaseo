@@ -59,9 +59,9 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 
 		const payload: Record<string, any> = {
 			...requestPayload,
-			stream: Boolean(args.ir.stream),
+			stream: true,
 		};
-		if (targetRoute === "chat" && payload.stream === true) {
+		if (targetRoute === "chat") {
 			payload.stream_options = {
 				...(payload.stream_options ?? {}),
 				include_usage: true,
@@ -222,8 +222,8 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 			mappedRequest,
 			rawResponse,
 			timing: {
-				latencyMs: firstByteMs,
-				generationMs: totalMs,
+				latencyMs: firstByteMs ?? totalMs,
+				generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
 			},
 		};
 	}
@@ -1629,10 +1629,115 @@ function isChatCompletionResponse(payload: any): boolean {
 	return payload.choices.some((choice: any) => choice?.message || choice?.delta);
 }
 
+function parseUsageNumber(value: unknown): number | undefined {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim() !== "") {
+		const parsed = Number(value);
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return undefined;
+}
+
+function mergeUsageDetails(prev: any, next: any): any {
+	if (!prev || typeof prev !== "object") return next;
+	if (!next || typeof next !== "object") return prev;
+	const merged: Record<string, any> = { ...prev, ...next };
+	const keys = new Set<string>([
+		...Object.keys(prev),
+		...Object.keys(next),
+	]);
+	for (const key of keys) {
+		const prevValue = parseUsageNumber(prev[key]);
+		const nextValue = parseUsageNumber(next[key]);
+		if (prevValue == null && nextValue == null) continue;
+		if (prevValue == null) {
+			merged[key] = nextValue;
+			continue;
+		}
+		if (nextValue == null) {
+			merged[key] = prevValue;
+			continue;
+		}
+		merged[key] = Math.max(prevValue, nextValue);
+	}
+	return merged;
+}
+
+function mergeUsageSnapshots(prev: any, next: any): any {
+	if (!prev || typeof prev !== "object") return next;
+	if (!next || typeof next !== "object") return prev;
+
+	const merged: Record<string, any> = { ...prev, ...next };
+	const numericFields = [
+		"prompt_tokens",
+		"completion_tokens",
+		"total_tokens",
+		"input_tokens",
+		"output_tokens",
+		"input_text_tokens",
+		"output_text_tokens",
+	];
+	for (const field of numericFields) {
+		const prevValue = parseUsageNumber(prev[field]);
+		const nextValue = parseUsageNumber(next[field]);
+		if (prevValue == null && nextValue == null) continue;
+		if (prevValue == null) {
+			merged[field] = nextValue;
+			continue;
+		}
+		if (nextValue == null) {
+			merged[field] = prevValue;
+			continue;
+		}
+		merged[field] = Math.max(prevValue, nextValue);
+	}
+
+	const detailFields = [
+		"input_tokens_details",
+		"output_tokens_details",
+		"prompt_tokens_details",
+		"completion_tokens_details",
+	];
+	for (const field of detailFields) {
+		merged[field] = mergeUsageDetails(prev[field], next[field]);
+		if (!merged[field] || typeof merged[field] !== "object") {
+			delete merged[field];
+		}
+	}
+
+	const inputTokens = parseUsageNumber(merged.input_tokens) ?? parseUsageNumber(merged.prompt_tokens) ?? 0;
+	const outputTokens = parseUsageNumber(merged.output_tokens) ?? parseUsageNumber(merged.completion_tokens) ?? 0;
+	const minTotal = inputTokens + outputTokens;
+	const mergedTotal = parseUsageNumber(merged.total_tokens);
+	if (mergedTotal == null || mergedTotal < minTotal) {
+		merged.total_tokens = minTotal;
+	}
+
+	// Reconcile conflicting aliases only when both aliases are already present.
+	// Do not synthesize new alias fields into raw upstream payloads.
+	const inputAliasA = parseUsageNumber(merged.input_tokens);
+	const inputAliasB = parseUsageNumber(merged.prompt_tokens);
+	if (inputAliasA != null && inputAliasB != null) {
+		const canonical = Math.max(inputAliasA, inputAliasB);
+		merged.input_tokens = canonical;
+		merged.prompt_tokens = canonical;
+	}
+
+	const outputAliasA = parseUsageNumber(merged.output_tokens);
+	const outputAliasB = parseUsageNumber(merged.completion_tokens);
+	if (outputAliasA != null && outputAliasB != null) {
+		const canonical = Math.max(outputAliasA, outputAliasB);
+		merged.output_tokens = canonical;
+		merged.completion_tokens = canonical;
+	}
+
+	return merged;
+}
+
 function accumulateChatCompletion(finalResponse: any, payload: any): any {
 	if (!payload || !Array.isArray(payload?.choices)) {
 		if (payload?.usage && finalResponse) {
-			finalResponse.usage = payload.usage;
+			finalResponse.usage = mergeUsageSnapshots(finalResponse.usage, payload.usage);
 		}
 		return finalResponse;
 	}
@@ -1721,7 +1826,7 @@ function accumulateChatCompletion(finalResponse: any, payload: any): any {
 	}
 
 	if (payload?.usage) {
-		response.usage = payload.usage;
+		response.usage = mergeUsageSnapshots(response.usage, payload.usage);
 	}
 
 	return response;

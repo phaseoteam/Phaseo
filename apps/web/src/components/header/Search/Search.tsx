@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
 	CommandDialog,
@@ -20,7 +20,14 @@ import type { SearchData } from "@/lib/fetchers/search/getSearchData";
 
 interface Props {
 	className?: string;
+	initialData?: SearchData | null;
 }
+
+type SearchableItem = {
+	id: string;
+	title: string;
+	searchKeywords: string[];
+};
 
 let cachedSearchData: SearchData | null = null;
 let searchDataRequest: Promise<SearchData> | null = null;
@@ -51,50 +58,84 @@ async function fetchSearchData(): Promise<SearchData> {
 	return searchDataRequest;
 }
 
-export default function Search({ className }: Props) {
-	const router = useRouter();
+function getMatchScore(item: SearchableItem, term: string): number {
+	const itemId = item.id.toLowerCase();
+	const itemTitle = item.title.toLowerCase();
 
+	if (itemId === term) return 1000;
+	if (itemTitle === term) return 900;
+	if (itemTitle.startsWith(term)) return 800;
+	if (itemId.startsWith(term)) return 700;
+	if (itemId.includes(term)) return 600;
+	if (itemTitle.includes(term)) return 500;
+	if (item.searchKeywords.some((keyword) => keyword.toLowerCase().includes(term))) {
+		return 400;
+	}
+
+	return 0;
+}
+
+function filterAndSort<T extends SearchableItem>(items: T[], term: string): T[] {
+	if (!term) return [];
+
+	return items
+		.map((item) => ({ item, score: getMatchScore(item, term) }))
+		.filter(({ score }) => score > 0)
+		.sort((left, right) => {
+			if (right.score !== left.score) {
+				return right.score - left.score;
+			}
+
+			return left.item.title.localeCompare(right.item.title);
+		})
+		.map(({ item }) => item)
+		.slice(0, 50);
+}
+
+export default function Search({ className, initialData = null }: Props) {
+	const router = useRouter();
+	const listRef = useRef<HTMLDivElement>(null);
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const [searchData, setSearchData] = useState<SearchData | null>(cachedSearchData);
+	const [searchData, setSearchData] = useState<SearchData | null>(
+		initialData ?? cachedSearchData
+	);
 	const [isLoadingSearchData, setIsLoadingSearchData] = useState(false);
 	const [searchDataError, setSearchDataError] = useState<string | null>(null);
-	const listRef = React.useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!initialData) return;
+		cachedSearchData = initialData;
+		setSearchData(initialData);
+	}, [initialData]);
 
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
-			const mod = event.metaKey || event.ctrlKey;
-			if (!mod) return;
-			if (event.key.toLowerCase() === "k") {
-				event.preventDefault();
-				setOpen((value) => !value);
-			}
+			const hasModifier = event.metaKey || event.ctrlKey;
+			if (!hasModifier || event.key.toLowerCase() !== "k") return;
+
+			event.preventDefault();
+			setOpen((value) => !value);
 		}
 
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, []);
 
-	// Scroll to top when search query changes
 	useEffect(() => {
 		if (listRef.current) {
 			listRef.current.scrollTop = 0;
 		}
 	}, [query]);
 
-	// Reset query when dialog closes
-	const handleOpenChange = (newOpen: boolean) => {
-		setOpen(newOpen);
-	};
-
-	// Keep dialog lifecycle state synchronized regardless of how it was opened/closed.
 	useEffect(() => {
-		if (open) {
-			setSearchDataError(null);
+		if (!open) {
+			setQuery("");
+			setIsLoadingSearchData(false);
 			return;
 		}
-		setQuery("");
-		setIsLoadingSearchData(false);
+
+		setSearchDataError(null);
 	}, [open]);
 
 	useEffect(() => {
@@ -130,87 +171,44 @@ export default function Search({ className }: Props) {
 	const hasQuery = query.trim().length > 0;
 	const searchTerm = query.trim().toLowerCase();
 
-	// Calculate match score for an item (higher = better match)
-	const getMatchScore = (item: { id: string; title: string; searchKeywords: string[] }, term: string): number => {
-		const itemId = item.id.toLowerCase();
-		const itemTitle = item.title.toLowerCase();
+	const orderedCategories = useMemo(() => {
+		if (!hasQuery || !searchData) return [];
 
-		// Exact ID match (score: 1000)
-		if (itemId === term) return 1000;
+		const models = filterAndSort(searchData.models, searchTerm);
+		const organisations = filterAndSort(searchData.organisations, searchTerm);
+		const benchmarks = filterAndSort(searchData.benchmarks, searchTerm);
+		const providers = filterAndSort(searchData.apiProviders, searchTerm);
+		const plans = filterAndSort(searchData.subscriptionPlans, searchTerm);
+		const countries = filterAndSort(searchData.countries, searchTerm);
 
-		// Exact title match (score: 900)
-		if (itemTitle === term) return 900;
-
-		// Title starts with term (score: 800)
-		if (itemTitle.startsWith(term)) return 800;
-
-		// ID starts with term (score: 700)
-		if (itemId.startsWith(term)) return 700;
-
-		// ID contains term (score: 600)
-		if (itemId.includes(term)) return 600;
-
-		// Title contains term (score: 500)
-		if (itemTitle.includes(term)) return 500;
-
-		// Keyword match (score: 400)
-		if (item.searchKeywords.some(k => k.toLowerCase().includes(term))) return 400;
-
-		return 0;
-	};
-
-	// Filter and sort function that prioritizes exact matches
-	const filterAndSort = <T extends { id: string; title: string; searchKeywords: string[] }>(
-		items: T[],
-		term: string
-	): T[] => {
-		if (!term) return [];
-
-		// Filter and score items
-		const scored = items
-			.map(item => ({ item, score: getMatchScore(item, term) }))
-			.filter(({ score }) => score > 0);
-
-		// Sort by score (descending), then alphabetically
-		return scored
-			.sort((a, b) => {
-				if (b.score !== a.score) return b.score - a.score;
-				return a.item.title.localeCompare(b.item.title);
-			})
-			.map(({ item }) => item)
-			.slice(0, 50);
-	};
-
-	// Filter and sort data based on search query
-	const modelsToShow = hasQuery && searchData ? filterAndSort(searchData.models, searchTerm) : [];
-	const orgsToShow = hasQuery && searchData ? filterAndSort(searchData.organisations, searchTerm) : [];
-	const benchmarksToShow = hasQuery && searchData ? filterAndSort(searchData.benchmarks, searchTerm) : [];
-	const providersToShow = hasQuery && searchData ? filterAndSort(searchData.apiProviders, searchTerm) : [];
-	const plansToShow = hasQuery && searchData ? filterAndSort(searchData.subscriptionPlans, searchTerm) : [];
-	const countriesToShow = hasQuery && searchData ? filterAndSort(searchData.countries, searchTerm) : [];
-
-	// Calculate best match score for each category to determine section order
-	const categoryScores = [
-		{ name: 'models', items: modelsToShow, score: modelsToShow.length > 0 ? getMatchScore(modelsToShow[0], searchTerm) : 0 },
-		{ name: 'organisations', items: orgsToShow, score: orgsToShow.length > 0 ? getMatchScore(orgsToShow[0], searchTerm) : 0 },
-		{ name: 'benchmarks', items: benchmarksToShow, score: benchmarksToShow.length > 0 ? getMatchScore(benchmarksToShow[0], searchTerm) : 0 },
-		{ name: 'providers', items: providersToShow, score: providersToShow.length > 0 ? getMatchScore(providersToShow[0], searchTerm) : 0 },
-		{ name: 'plans', items: plansToShow, score: plansToShow.length > 0 ? getMatchScore(plansToShow[0], searchTerm) : 0 },
-		{ name: 'countries', items: countriesToShow, score: countriesToShow.length > 0 ? getMatchScore(countriesToShow[0], searchTerm) : 0 },
-	].sort((a, b) => b.score - a.score); // Sort categories by best match score
+		return [
+			{ name: "models", items: models, score: models.length ? getMatchScore(models[0], searchTerm) : 0 },
+			{ name: "organisations", items: organisations, score: organisations.length ? getMatchScore(organisations[0], searchTerm) : 0 },
+			{ name: "benchmarks", items: benchmarks, score: benchmarks.length ? getMatchScore(benchmarks[0], searchTerm) : 0 },
+			{ name: "providers", items: providers, score: providers.length ? getMatchScore(providers[0], searchTerm) : 0 },
+			{ name: "plans", items: plans, score: plans.length ? getMatchScore(plans[0], searchTerm) : 0 },
+			{ name: "countries", items: countries, score: countries.length ? getMatchScore(countries[0], searchTerm) : 0 },
+		]
+			.filter((category) => category.items.length > 0)
+			.sort((left, right) => right.score - left.score);
+	}, [hasQuery, searchData, searchTerm]);
 
 	return (
-		<div className={cn("flex items-center gap-2", className)}>
+		<div className={cn("flex items-center", className)}>
 			<button
 				type="button"
 				onClick={() => setOpen(true)}
-				className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/60 dark:text-zinc-300 dark:hover:bg-zinc-800"
+				className="relative flex h-10 w-full items-center rounded-lg border border-zinc-200 bg-white pl-10 pr-16 text-left text-sm text-zinc-500 shadow-none transition-[border-color,box-shadow] hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-700"
 				aria-label="Open search"
 			>
-				<SearchIcon className="size-4" />
+				<SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
+				<span className="truncate">Search...</span>
+				<span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-zinc-200 px-1.5 py-0.5 text-[11px] font-medium text-zinc-500 lg:inline-flex dark:border-zinc-800 dark:text-zinc-400">
+					Ctrl K
+				</span>
 			</button>
 
-			<CommandDialog open={open} onOpenChange={handleOpenChange}>
+			<CommandDialog open={open} onOpenChange={setOpen}>
 				<DialogTitle className="sr-only">Search</DialogTitle>
 				<CommandInput
 					value={query}
@@ -221,7 +219,7 @@ export default function Search({ className }: Props) {
 				<CommandList ref={listRef} className="max-h-[60vh] lg:max-h-[70vh]">
 					<CommandEmpty className="py-12">
 						<div className="flex flex-col items-center gap-3">
-							<div className="size-12 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+							<div className="flex size-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
 								<SearchIcon className="size-6 text-zinc-400" />
 							</div>
 							<div className="text-center">
@@ -230,7 +228,7 @@ export default function Search({ className }: Props) {
 										<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
 											Loading search index...
 										</p>
-										<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+										<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
 											This only loads once per session.
 										</p>
 									</>
@@ -239,7 +237,7 @@ export default function Search({ className }: Props) {
 										<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
 											{searchDataError}
 										</p>
-										<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+										<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
 											Close and reopen search to retry.
 										</p>
 									</>
@@ -248,8 +246,8 @@ export default function Search({ className }: Props) {
 										<p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
 											No results found
 										</p>
-										<p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-											Try different keywords or check your spelling
+										<p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+											Try different keywords or check your spelling.
 										</p>
 									</>
 								)}
@@ -257,8 +255,7 @@ export default function Search({ className }: Props) {
 						</div>
 					</CommandEmpty>
 
-					{/* Quick Actions - Always visible when no query */}
-					{!hasQuery && curatedGroups[0] && (
+					{!hasQuery && curatedGroups[0] ? (
 						<>
 							<CommandGroup heading={curatedGroups[0].label}>
 								{curatedGroups[0].items.map((item) => (
@@ -266,7 +263,7 @@ export default function Search({ className }: Props) {
 										key={item.id}
 										value={item.href}
 										onSelect={() => handleSelect(item.href)}
-										className="flex items-center gap-3 px-3 py-2.5 cursor-pointer"
+										className="flex items-center gap-3 px-3 py-2.5"
 									>
 										<Sparkles className="size-[18px] shrink-0 text-zinc-400" />
 										<span className="text-sm font-medium">{item.title}</span>
@@ -275,51 +272,48 @@ export default function Search({ className }: Props) {
 							</CommandGroup>
 							<CommandSeparator />
 						</>
-					)}
+					) : null}
 
-					{/* Dynamically ordered search results */}
-					{hasQuery && categoryScores.map((category, index) => {
-						if (category.items.length === 0) return null;
+					{hasQuery ? (
+						orderedCategories.map((category, index) => {
+							const categoryConfig = {
+								models: { heading: "Models", type: undefined },
+								organisations: { heading: "Organisations", type: undefined },
+								benchmarks: { heading: "Benchmarks", type: "benchmark" as const },
+								providers: { heading: "API providers", type: undefined },
+								plans: { heading: "Subscription plans", type: undefined },
+								countries: { heading: "Countries", type: undefined },
+							}[category.name as "models" | "organisations" | "benchmarks" | "providers" | "plans" | "countries"];
 
-						const categoryConfig = {
-							models: { heading: 'Models', type: undefined },
-							organisations: { heading: 'Organisations', type: undefined },
-							benchmarks: { heading: 'Benchmarks', type: 'benchmark' as const },
-							providers: { heading: 'API Providers', type: undefined },
-							plans: { heading: 'Subscription Plans', type: undefined },
-							countries: { heading: 'Countries', type: undefined },
-						}[category.name];
+							const visibleGroupCount = orderedCategories.length;
+							const isLast = index === visibleGroupCount - 1;
 
-						if (!categoryConfig) return null;
-
-						const isLast = index === categoryScores.filter(c => c.items.length > 0).length - 1;
-
-						return (
-							<Fragment key={category.name}>
-								<CommandGroup heading={categoryConfig.heading}>
-									{category.items.map((item: any) => (
-										<SearchRowItem
-											key={item.id}
-											{...item}
-											keywords={item.searchKeywords}
-											onSelect={handleSelect}
-											type={categoryConfig.type}
-										/>
-									))}
-								</CommandGroup>
-								{!isLast && <CommandSeparator />}
-							</Fragment>
-						);
-					})}
-
-					{/* Featured items when no query */}
-					{!hasQuery && (
+							return (
+								<Fragment key={category.name}>
+									<CommandGroup heading={categoryConfig.heading}>
+										{category.items.map((item: any) => (
+											<SearchRowItem
+												key={item.id}
+												{...item}
+												keywords={item.searchKeywords}
+												onSelect={handleSelect}
+												type={categoryConfig.type}
+											/>
+										))}
+									</CommandGroup>
+									{!isLast ? <CommandSeparator /> : null}
+								</Fragment>
+							);
+						})
+					) : (
 						<>
 							{curatedGroups.slice(1).map((group) => {
-								// Determine the type for each group
-								const itemType = group.type === 'featured-benchmarks' ? 'benchmark' :
-								                 group.type === 'featured-comparisons' ? 'comparison' :
-								                 'default';
+								const itemType =
+									group.type === "featured-benchmarks"
+										? "benchmark"
+										: group.type === "featured-comparisons"
+											? "comparison"
+											: "default";
 
 								return (
 									<Fragment key={group.type}>
@@ -336,7 +330,7 @@ export default function Search({ className }: Props) {
 													flagIso={item.flagIso}
 													leftLogoId={item.leftLogoId}
 													rightLogoId={item.rightLogoId}
-													keywords={[item.title, item.subtitle || ''].filter(Boolean)}
+													keywords={[item.title, item.subtitle || ""].filter(Boolean)}
 													onSelect={handleSelect}
 													type={itemType}
 												/>
@@ -352,3 +346,4 @@ export default function Search({ className }: Props) {
 		</div>
 	);
 }
+

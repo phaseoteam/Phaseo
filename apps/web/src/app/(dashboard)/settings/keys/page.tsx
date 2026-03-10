@@ -8,6 +8,7 @@ import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Button } from "@/components/ui/button";
+import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 
 const QUICKSTART_DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
 
@@ -39,7 +40,8 @@ async function KeysContent() {
 	const { data: apiKeys } = await supabase
 		.from("keys")
 		.select("*")
-		.eq("team_id", initialTeamId);
+		.eq("team_id", initialTeamId)
+		.neq("name", CHAT_MANAGED_KEY_NAME);
 
 	const usageByKey = new Map<
 		string,

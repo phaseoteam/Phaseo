@@ -341,7 +341,7 @@ export function withCors(
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
         "Access-Control-Allow-Headers":
-            "Authorization,Content-Type,x-title,http-referer,x-gateway-debug,X-AIStats-Strictness,x-aistats-cache-revalidate",
+            "Authorization,Content-Type,x-title,http-referer,x-app-id,x-app-name,x-gateway-debug,X-AIStats-Strictness,x-aistats-cache-revalidate",
         "Access-Control-Max-Age": "86400",
     };
 

@@ -138,7 +138,10 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                                 rawResponse: message,
                                 timing: {
                                         latencyMs: firstFrameMs ?? undefined,
-                                        generationMs: totalMs ?? undefined,
+                                        generationMs:
+						typeof firstFrameMs === "number" && typeof totalMs === "number"
+							? Math.max(0, totalMs - firstFrameMs)
+							: totalMs ?? undefined,
                                 },
                         };
                 }

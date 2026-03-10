@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import GuardrailsSettingsClient from "@/components/(gateway)/settings/guardrails/GuardrailsSettingsClient";
@@ -55,6 +56,7 @@ async function GuardrailsSettingsContent() {
 			.from("keys")
 			.select("id, name, prefix, status, created_at")
 			.eq("team_id", teamId)
+			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.order("created_at", { ascending: false }),
 		supabase
 			.from("team_guardrails")

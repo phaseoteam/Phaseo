@@ -1,0 +1,72 @@
+---
+title: "Google: Nano Banana 1 to Nano Banana 2"
+description: "What actually changes when image workflows move from Nano Banana 1 to Nano Banana 2."
+---
+
+# Google: Nano Banana 1 to Nano Banana 2
+
+Use this guide when you are replacing an older Nano Banana workflow with Nano Banana 2.
+
+Nano Banana 2 is not only a quality upgrade. Google positions it as a production-ready image model with broader control over output format, resolution, and fidelity.
+
+## What changed
+
+- Nano Banana 2 adds explicit control over aspect ratios
+- output resolutions now range from `512px` to `4K`
+- subject consistency is improved across generations and edits
+- instruction following is stronger
+- text rendering and translation inside images are better
+- visual fidelity is higher while generation remains fast
+
+## What to change in your integration
+
+### 1. Re-check output assumptions
+
+If downstream code assumes a fixed image size, aspect ratio, or crop behavior, update it before rollout. Nano Banana 2 is more flexible, which means older assumptions become easier to violate.
+
+### 2. Update product presets
+
+Revisit:
+
+- social aspect-ratio presets
+- default resolution choices
+- edit and inpaint workflows
+- UI labels that describe available image sizes
+
+### 3. Re-tune prompts for image editing
+
+Because instruction following is stronger, prompts that used to over-specify composition, text, or style may now be unnecessarily rigid. Re-test with shorter prompts and compare results.
+
+## What to test
+
+### Output quality
+
+- vertical, square, and widescreen aspect ratios
+- low versus high resolution outputs
+- subject consistency across iterative edits
+- text rendering, signage, captions, and translated text inside images
+
+### Workflow compatibility
+
+- file handling for larger resolutions
+- timeout behavior on higher-fidelity generations
+- moderation or human-review pass rate
+- downstream resizing and asset-processing assumptions
+
+### Product metrics
+
+- end-to-end generation latency
+- usable-output rate
+- retry rate
+- cost per approved asset
+
+## Rollout advice
+
+1. Split testing by aspect ratio and resolution rather than treating this as a single migration.
+2. Validate your asset pipeline on the largest output size you plan to support.
+3. Sample real production prompts, especially edits and text-in-image requests.
+4. Roll out default preset changes separately from the model swap if your UI exposes image options to users.
+
+## Sources
+
+- [Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/)

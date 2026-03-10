@@ -59,6 +59,26 @@ function toNum(value: any) {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function readTimingMetric(
+    ctx: PipelineContext | undefined,
+    key: string,
+): number | null {
+    const timing = (ctx as any)?.timing;
+    if (!timing || typeof timing !== "object") return null;
+    const value = timing[key];
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function resolveBeforeLatencyMs(ctx: PipelineContext | undefined): number | null {
+    const fromMeta = toNum(ctx?.meta?.before_ms);
+    if (fromMeta !== null) return fromMeta;
+
+    const nested = toNum((ctx as any)?.timing?.before?.total_ms);
+    if (nested !== null) return nested;
+
+    return readTimingMetric(ctx, "before_start");
+}
+
 function usageSummary(usage: any) {
     if (!usage || typeof usage !== "object") return {};
     const input = usage.input_tokens ?? usage.prompt_tokens ?? usage.input_text_tokens ?? null;
@@ -222,6 +242,15 @@ type AttemptSignals = {
     lastAttempt: Record<string, unknown> | null;
 };
 
+type UpstreamErrorSummary = {
+    code: string | null;
+    type: string | null;
+    param: string | null;
+    message: string | null;
+    status: number | null;
+    raw: unknown;
+};
+
 function getRoutingDiagnosticsFromArgs(args: EventArgs): any {
     const fromCtx = (args.ctx as any)?.routingDiagnostics;
     if (fromCtx && typeof fromCtx === "object") return fromCtx;
@@ -317,6 +346,80 @@ function extractAttemptSignals(args: EventArgs): AttemptSignals {
     };
 }
 
+function asObject(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    return value as Record<string, unknown>;
+}
+
+function asString(value: unknown): string | null {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function asNumber(value: unknown): number | null {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim().length > 0) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+}
+
+export function extractUpstreamErrorSummary(args: EventArgs): UpstreamErrorSummary | null {
+    const sources = [
+        args.errorDetails,
+        args.providerResponse,
+    ];
+
+    for (const source of sources) {
+        const root = asObject(source);
+        if (!root) continue;
+
+        const errObj = asObject(root.error) ?? root;
+        const code =
+            asString(errObj.code) ??
+            asString((root as any).error_code) ??
+            asString((root as any).code) ??
+            null;
+        const type =
+            asString(errObj.type) ??
+            asString((root as any).error_type) ??
+            asString((root as any).type) ??
+            null;
+        const param =
+            asString(errObj.param) ??
+            asString((root as any).param) ??
+            null;
+        const message =
+            asString(errObj.message) ??
+            asString((root as any).error) ??
+            asString((root as any).message) ??
+            asString((root as any).error_description) ??
+            asString((root as any)?.errors?.[0]?.message) ??
+            asString((root as any).description) ??
+            null;
+        const status =
+            asNumber(errObj.status) ??
+            asNumber((root as any).status) ??
+            asNumber((root as any).status_code) ??
+            asNumber(args.result?.upstream?.status) ??
+            asNumber(args.statusCode) ??
+            null;
+
+        if (code || type || param || message || status !== null) {
+            return {
+                code,
+                type,
+                param,
+                message,
+                status,
+                raw: root,
+            };
+        }
+    }
+
+    return null;
+}
+
 export async function emitGatewayRequestEvent(args: EventArgs) {
     const releaseRuntime = ensureRuntimeForBackground();
     try {
@@ -353,6 +456,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const sanitizedProviderEnablement = sanitizeForAxiom((ctx as any)?.providerEnablementDiagnostics ?? null);
         const sanitizedProviderCandidateBuild = sanitizeForAxiom((ctx as any)?.providerCandidateBuildDiagnostics ?? null);
         const requestedParams = Array.isArray(ctx?.requestedParams) ? ctx.requestedParams : [];
+        const upstreamError = extractUpstreamErrorSummary(args);
         const modelRequested = (() => {
             const fromCtxBody = (ctx?.rawBody as any)?.model;
             if (typeof fromCtxBody === "string" && fromCtxBody.length > 0) return fromCtxBody;
@@ -363,6 +467,25 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             return null;
         })();
         const modelResolved = args.model ?? ctx?.model ?? null;
+        const mappingSnapshot = sanitizeForAxiom({
+            protocol: args.protocolOverride ?? ctx?.protocol ?? null,
+            endpoint: args.endpoint ?? ctx?.endpoint ?? null,
+            model_requested: modelRequested,
+            model_resolved: modelResolved,
+            provider: args.result?.provider ?? args.provider ?? null,
+            mapped_request: sanitizedUpstreamRequest,
+            gateway_request: sanitizedGatewayRequest,
+            gateway_response: sanitizedGatewayResponse,
+            provider_response: sanitizedProviderResponse,
+            provider_response_headers: sanitizedProviderResponseHeaders,
+            requested_params: requestedParams,
+            param_routing_diagnostics: sanitizedParamRoutingDiagnostics,
+            routing_snapshot: sanitizedRoutingSnapshot,
+            routing_diagnostics: sanitizedRoutingDiagnostics,
+            attempt_errors: sanitizedAttemptErrors,
+            provider_enablement_diagnostics: sanitizedProviderEnablement,
+            provider_candidate_build_diagnostics: sanitizedProviderCandidateBuild,
+        });
         const providerCandidates = Array.isArray(ctx?.providers)
             ? ctx.providers.map((provider) => ({
                 provider_id: provider.providerId ?? null,
@@ -400,9 +523,21 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         });
         const mediaCounts = countMediaFromContext(ctx);
         const resolvedErrorType = classifyErrorType(args);
+        const beforeLatencyMs = resolveBeforeLatencyMs(ctx);
+        const beforeLatencyBudgetMsRaw = Number((bindings as any)?.GATEWAY_BEFORE_BUDGET_MS ?? 15);
+        const beforeLatencyBudgetMs =
+            Number.isFinite(beforeLatencyBudgetMsRaw) && beforeLatencyBudgetMsRaw > 0
+                ? beforeLatencyBudgetMsRaw
+                : 15;
+        const beforeLatencyOverBudget =
+            beforeLatencyMs === null ? null : beforeLatencyMs > beforeLatencyBudgetMs;
 
         const event = {
+            event_schema_version: "2026-03-10.1",
+            observability_mode: "single_wide_event",
             event_type: "gateway.request",
+            event_emitted_at: new Date().toISOString(),
+            request_stage: args.success ? "after" : (args.errorStage ?? null),
             request_id: requestId,
             generation_id: requestId,
             team_id: teamId,
@@ -432,15 +567,13 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             gate_key_reason: keyGate?.reason ?? null,
             gate_key_limit_ok: keyLimitGate?.ok ?? null,
             gate_key_limit_reason: keyLimitGate?.reason ?? null,
-            gate_credit_ok: creditGate?.ok ?? null,
-            gate_credit_reason: creditGate?.reason ?? null,
-            gate_credit_balance_nanos: creditGate?.balanceNanos ?? null,
-            team_tier: (ctx?.teamEnrichment as any)?.tier ?? null,
-            team_balance_nanos: (ctx?.teamEnrichment as any)?.balance_nanos ?? null,
-            team_balance_usd: toNum((ctx?.teamEnrichment as any)?.balance_usd),
-            team_spend_24h_nanos: toNum((ctx?.teamEnrichment as any)?.spend_24h_nanos),
-            team_spend_24h_usd: toNum((ctx?.teamEnrichment as any)?.spend_24h_usd),
-            key_daily_limit_pct: toNum((ctx?.keyEnrichment as any)?.daily_limit_pct),
+	            gate_credit_ok: creditGate?.ok ?? null,
+	            gate_credit_reason: creditGate?.reason ?? null,
+	            gate_credit_balance_nanos: creditGate?.balanceNanos ?? null,
+	            team_tier: (ctx?.teamEnrichment as any)?.tier ?? null,
+	            team_balance_usd: toNum((ctx?.teamEnrichment as any)?.balance_usd),
+	            team_spend_24h_usd: toNum((ctx?.teamEnrichment as any)?.spend_24h_usd),
+	            key_daily_limit_pct: toNum((ctx?.keyEnrichment as any)?.daily_limit_pct),
             location: args.edgeColo ?? ctx?.meta?.edgeColo ?? null,
             edge_city: args.edgeCity ?? ctx?.meta?.edgeCity ?? null,
             edge_country: args.edgeCountry ?? ctx?.meta?.edgeCountry ?? null,
@@ -494,6 +627,20 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             attempt_errors_json: stringifyForAxiom(sanitizedAttemptErrors),
             provider_enablement_diagnostics_json: stringifyForAxiom(sanitizedProviderEnablement),
             provider_candidate_build_diagnostics_json: stringifyForAxiom(sanitizedProviderCandidateBuild),
+            before_latency_ms: beforeLatencyMs,
+            before_latency_budget_ms: beforeLatencyBudgetMs,
+            before_latency_over_budget: beforeLatencyOverBudget,
+            before_context_ms: toNum(ctx?.meta?.beforeContextMs),
+            before_context_cache_status: ctx?.meta?.beforeContextCacheStatus ?? null,
+            before_context_key_version_ms: toNum(ctx?.meta?.beforeContextKeyVersionMs),
+            before_context_cache_read_ms: toNum(ctx?.meta?.beforeContextCacheReadMs),
+            before_context_rpc_ms: toNum(ctx?.meta?.beforeContextRpcMs),
+            before_context_enrich_ms: toNum(ctx?.meta?.beforeContextEnrichMs),
+            before_context_cache_write_ms: toNum(ctx?.meta?.beforeContextCacheWriteMs),
+            before_context_fallback_remap: ctx?.meta?.beforeContextFallbackRemap ?? null,
+            execute_total_ms: toNum((ctx as any)?.timing?.execute?.total_ms),
+            execute_adapter_ms: toNum((ctx as any)?.timing?.execute?.adapter_ms),
+            after_total_ms: toNum((ctx as any)?.timing?.after?.total_ms),
             latency_ms: toNum(ctx?.meta?.latency_ms),
             generation_ms: toNum(ctx?.meta?.generation_ms),
             internal_latency_ms: toNum((ctx as any)?.timing?.internal_latency_ms),
@@ -514,7 +661,14 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             provider_status_code: args.result?.upstream?.status ?? args.statusCode ?? null,
             provider_status_text: args.result?.upstream?.statusText ?? null,
             provider_url: args.result?.upstream?.url ?? null,
+            upstream_error_code: upstreamError?.code ?? null,
+            upstream_error_type: upstreamError?.type ?? null,
+            upstream_error_param: upstreamError?.param ?? null,
+            upstream_error_message: upstreamError?.message ?? null,
+            upstream_error_status: upstreamError?.status ?? null,
+            upstream_error_json: stringifyForAxiom(sanitizeForAxiom(upstreamError?.raw ?? null)),
             gateway_response_redacted_json: stringifyForAxiom(sanitizedGatewayResponse),
+            mapping_snapshot_json: stringifyForAxiom(mappingSnapshot),
             generation_context_json: stringifyForAxiom(generationContext),
             transform_has_upstream_request: Boolean(args.mappedRequest ?? args.result?.mappedRequest),
             env: bindings.NODE_ENV ?? null,

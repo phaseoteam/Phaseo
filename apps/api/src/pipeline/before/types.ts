@@ -180,6 +180,17 @@ export type KeyEnrichment = {
     daily_limit_pct: number | null;
 };
 
+export type ContextFetchTelemetry = {
+    cacheStatus: "hit" | "miss" | "bypass";
+    totalMs: number;
+    keyVersionMs?: number | null;
+    cacheReadMs?: number | null;
+    rpcMs?: number | null;
+    enrichMs?: number | null;
+    cacheWriteMs?: number | null;
+    fallbackRemap?: boolean;
+};
+
 /**
  * Complete context data returned from the gateway RPC
  * Includes team info, gate checks, providers, and pricing
@@ -198,6 +209,7 @@ export type GatewayContextData = {
     keyEnrichment?: KeyEnrichment | null;
     teamSettings?: TeamSettings | null;
     testingMode?: boolean;
+    contextTelemetry?: ContextFetchTelemetry;
 };
 
 /**
@@ -267,7 +279,7 @@ export type ProviderEnablementDiagnostics = {
     providersAfter: string[];
     dropped: Array<{
         providerId: string;
-        reason: "capability_disabled" | "adapter_missing";
+        reason: "capability_disabled" | "adapter_missing" | "pricing_missing";
     }>;
 };
 

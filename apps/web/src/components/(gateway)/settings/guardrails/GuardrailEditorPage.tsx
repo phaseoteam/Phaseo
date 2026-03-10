@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import GuardrailEditorPageClient from "./GuardrailEditorPageClient";
 
 type ProviderOption = { id: string; name: string };
@@ -38,6 +39,7 @@ export default async function GuardrailEditorPage(props: {
 			.from("keys")
 			.select("id, name, prefix, status, created_at")
 			.eq("team_id", teamId)
+			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.order("created_at", { ascending: false }),
 		supabase
 			.from("data_api_providers")

@@ -3,13 +3,14 @@
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { makeKeyV2, hmacSecret } from "@/lib/keygen";
+import { enforceTeamKeyLimit } from "@/lib/server/teamLimits";
 import {
 	requireActingUser,
 	requireAuthenticatedUser,
 	requireTeamMembership,
 } from "@/utils/serverActionAuth";
 
-export type ProvisioningKeyLimitPayload = {
+export type ManagementKeyLimitPayload = {
 	dailyRequests?: number | null;
 	weeklyRequests?: number | null;
 	monthlyRequests?: number | null;
@@ -19,20 +20,20 @@ export type ProvisioningKeyLimitPayload = {
 	softBlocked?: boolean;
 };
 
-export type CreateProvisioningKeyInput = {
+export type CreateManagementKeyInput = {
 	name: string;
 	creatorUserId: string;
 	teamId: string;
 	scopes?: string;
 };
 
-export type UpdateProvisioningKeyInput = {
+export type UpdateManagementKeyInput = {
 	name?: string;
 	paused?: boolean;
 };
 
-export async function createProvisioningKeyAction(
-	input: CreateProvisioningKeyInput
+export async function createManagementKeyAction(
+	input: CreateManagementKeyInput
 ) {
 	const { name, creatorUserId, teamId, scopes = "[]" } = input;
 
@@ -49,6 +50,7 @@ export async function createProvisioningKeyAction(
 	const { supabase, user } = await requireAuthenticatedUser();
 	requireActingUser(creatorUserId, user.id);
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
+	await enforceTeamKeyLimit(supabase as any, teamId);
 
 	// Generate secure key
 	const { kid, secret, plaintext, prefix } = makeKeyV2();
@@ -74,7 +76,7 @@ export async function createProvisioningKeyAction(
 	};
 
 	const { data, error } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.insert(insertObj)
 		.select("id, created_at")
 		.maybeSingle();
@@ -94,9 +96,9 @@ export async function createProvisioningKeyAction(
 	};
 }
 
-export async function updateProvisioningKeyAction(
+export async function updateManagementKeyAction(
 	id: string,
-	updates: UpdateProvisioningKeyInput
+	updates: UpdateManagementKeyInput
 ) {
 	if (!id || typeof id !== "string") {
 		throw new Error("Valid key ID is required");
@@ -104,7 +106,7 @@ export async function updateProvisioningKeyAction(
 
 	const { supabase, user } = await requireAuthenticatedUser();
 	const { data: keyRow, error: keyErr } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.select("team_id")
 		.eq("id", id)
 		.maybeSingle();
@@ -130,7 +132,7 @@ export async function updateProvisioningKeyAction(
 	}
 
 	const { error } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.update(updateObj)
 		.eq("id", id)
 		.eq("team_id", keyRow.team_id);
@@ -145,9 +147,9 @@ export async function updateProvisioningKeyAction(
 	return { success: true };
 }
 
-export async function updateProvisioningKeyLimitsAction(
+export async function updateManagementKeyLimitsAction(
 	id: string,
-	payload: ProvisioningKeyLimitPayload
+	payload: ManagementKeyLimitPayload
 ) {
 	if (!id || typeof id !== "string") {
 		throw new Error("Valid key ID is required");
@@ -155,7 +157,7 @@ export async function updateProvisioningKeyLimitsAction(
 
 	const { supabase, user } = await requireAuthenticatedUser();
 	const { data: keyRow, error: keyErr } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.select("team_id")
 		.eq("id", id)
 		.maybeSingle();
@@ -179,7 +181,7 @@ export async function updateProvisioningKeyLimitsAction(
 	}
 
 	const { error } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.update(updateObj)
 		.eq("id", id)
 		.eq("team_id", keyRow.team_id);
@@ -196,7 +198,7 @@ export async function updateProvisioningKeyLimitsAction(
 	return { success: true };
 }
 
-export async function deleteProvisioningKeyAction(
+export async function deleteManagementKeyAction(
 	id: string,
 	confirmName?: string
 ) {
@@ -206,7 +208,7 @@ export async function deleteProvisioningKeyAction(
 
 	const { supabase, user } = await requireAuthenticatedUser();
 	const { data: keyRow, error: keyErr } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.select("team_id, name")
 		.eq("id", id)
 		.maybeSingle();
@@ -224,7 +226,7 @@ export async function deleteProvisioningKeyAction(
 	}
 
 	const { error } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.delete()
 		.eq("id", id)
 		.eq("team_id", keyRow.team_id);
@@ -239,7 +241,7 @@ export async function deleteProvisioningKeyAction(
 	return { success: true };
 }
 
-export async function getProvisioningKeyById(id: string) {
+export async function getManagementKeyById(id: string) {
 	if (!id || typeof id !== "string") {
 		throw new Error("Valid key ID is required");
 	}
@@ -247,7 +249,7 @@ export async function getProvisioningKeyById(id: string) {
 	const { supabase, user } = await requireAuthenticatedUser();
 
 	const { data, error } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.select("*")
 		.eq("id", id)
 		.maybeSingle();
@@ -263,7 +265,7 @@ export async function getProvisioningKeyById(id: string) {
 	return data;
 }
 
-export async function listProvisioningKeysByTeam(teamId: string) {
+export async function listManagementKeysByTeam(teamId: string) {
 	if (!teamId || typeof teamId !== "string") {
 		throw new Error("Valid team ID is required");
 	}
@@ -272,7 +274,7 @@ export async function listProvisioningKeysByTeam(teamId: string) {
 	await requireTeamMembership(supabase, user.id, teamId, ["owner", "admin"]);
 
 	const { data, error } = await supabase
-		.from("provisioning_keys")
+		.from("management_keys")
 		.select("*")
 		.eq("team_id", teamId)
 		.order("created_at", { ascending: false });
@@ -284,3 +286,4 @@ export async function listProvisioningKeysByTeam(teamId: string) {
 
 	return data;
 }
+

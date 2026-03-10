@@ -5,7 +5,7 @@ import { useState } from "react";
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
 
-export function SignUp() {
+export function SignUp({ returnUrl }: { returnUrl?: string }) {
 	const [emailFlowActive, setEmailFlowActive] = useState(false);
 
 	return (
@@ -19,11 +19,14 @@ export function SignUp() {
 				aria-hidden={emailFlowActive}
 			>
 				<div className="overflow-hidden">
-					<OAuthButtons />
+					<OAuthButtons returnUrl={returnUrl} />
 				</div>
 			</div>
 
-			<EmailPassword onEmailFlowChange={setEmailFlowActive} />
+			<EmailPassword
+				onEmailFlowChange={setEmailFlowActive}
+				returnUrl={returnUrl}
+			/>
 		</div>
 	);
 }

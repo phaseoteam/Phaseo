@@ -15,11 +15,11 @@ import {
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Edit2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { updateProvisioningKeyAction } from "@/app/(dashboard)/settings/provisioning-keys/actions";
+import { updateManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-export default function EditProvisioningKeyItem({ k }: any) {
+export default function EditManagementKeyItem({ k }: any) {
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState(k.name || "");
 	const [paused, setPaused] = useState(k.status !== "active");
@@ -28,7 +28,7 @@ export default function EditProvisioningKeyItem({ k }: any) {
 	async function onSave(e?: React.FormEvent) {
 		e?.preventDefault();
 		setLoading(true);
-		const promise = updateProvisioningKeyAction(k.id, { name, paused });
+		const promise = updateManagementKeyAction(k.id, { name, paused });
 		try {
 			await toast.promise(promise, {
 				loading: "Saving management API key...",
@@ -95,3 +95,4 @@ export default function EditProvisioningKeyItem({ k }: any) {
 		</Dialog>
 	);
 }
+

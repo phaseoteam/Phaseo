@@ -16,18 +16,18 @@
  *   - appTitle: a caller-provided app title (via custom header), if available
  */
 export function readAttributionHeaders(req: Request) {
-    // Convert the Headers object (iterable) into a plain JS object for easy access
-    const headers = Object.fromEntries(req.headers);
-
-    // "Referer" header can appear as "http-referer" (some proxies add this).
-    // If neither is present, we store null.
-    const referer = headers["http-referer"] ?? null;
+    // "Referer" may appear as "http-referer" in some proxy/client setups.
+    const referer = req.headers.get("http-referer") ?? req.headers.get("referer") ?? null;
 
     // Custom header: "x-title" lets an app send a human-readable name.
     // Optional: useful for showing which app made a request in logs/dashboards.
-    const appTitle = headers["x-title"] ?? null;
+    const appTitle = req.headers.get("x-title") ?? null;
+
+    // Stable app identity for attribution dedupe.
+    const appId = req.headers.get("x-app-id") ?? null;
+    const appName = req.headers.get("x-app-name") ?? null;
 
     // Return structured attribution metadata
-    return { referer, appTitle };
+    return { referer, appTitle, appId, appName };
 }
 

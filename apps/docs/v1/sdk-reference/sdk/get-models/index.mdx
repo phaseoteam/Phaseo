@@ -1,51 +1,50 @@
 ---
 title: "Get Models (SDK)"
 api: "GET /gateway/models"
-description: "Fetch catalogue models using the SDKs."
+description: "Fetch gateway-native models using the SDKs."
 playground: "none"
 ---
 
-Use the SDKs to call the `/gateway/models` endpoint. TypeScript and Python are production-ready; other SDKs are in preview.
+Use the SDKs to call `/gateway/models`. The response mirrors the live gateway catalogue: public model IDs, public endpoint names like `chat.completions`, provider availability, supported params, and pricing.
 
 <CodeGroup dropdown>
 ```ts TypeScript
 import { AIStats } from "@ai-stats/ts-sdk";
 
 const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
-const res = await client.getModels({ limit: 5 });
+const res = await client.getModels({ limit: 5, privacy_scope: "shared" });
 console.log(res.models);
-
 ````
 
 ```python Python
 from ai_stats import AIStats
 
 client = AIStats(api_key="YOUR_KEY")
-resp = client.get_models({"limit": 5})
+resp = client.get_models({"limit": 5, "privacy_scope": "shared"})
 print(resp.models)
 ````
 
 ```csharp C# (preview)
 var client = new AiStatsSdk.Client("YOUR_KEY");
-var res = client.GetModels(limit: 5);
+var res = client.GetModels(limit: 5, privacyScope: "shared");
 Console.WriteLine(res.Models.Count);
 ```
 
 ```go Go (preview)
 client := aistats.New("YOUR_KEY", "https://api.phaseo.app/v1")
-resp, _, _ := client.GetModels(context.Background(), nil)
+resp, _, _ := client.GetModels(context.Background(), map[string]any{"privacy_scope": "shared"})
 fmt.Println(resp.Models)
 ```
 
 ```php PHP (preview)
 $client = new \AIStats\Sdk\Client('YOUR_KEY');
-$resp = $client->getModels(['limit' => 5]);
+$resp = $client->getModels(['limit' => 5, 'privacy_scope' => 'shared']);
 echo count($resp->getModels());
 ```
 
 ```ruby Ruby (preview)
 client = AIStatsSdk::Client.new(api_key: "YOUR_KEY")
-resp = client.get_models(limit: 5)
+resp = client.get_models(limit: 5, privacy_scope: "shared")
 puts resp.models.length
 ```
 

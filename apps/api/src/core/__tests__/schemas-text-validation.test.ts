@@ -62,6 +62,45 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	it("accepts phase on assistant message items in responses input", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-5.4",
+			input: [{
+				type: "message",
+				role: "assistant",
+				phase: "final_answer",
+				content: [{ type: "output_text", text: "answer" }],
+			}],
+		});
+		expect(parsed.success).toBe(true);
+	});
+
+	it("rejects phase on non-assistant message items in responses input", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-5.4",
+			input: [{
+				type: "message",
+				role: "user",
+				phase: "commentary",
+				content: [{ type: "input_text", text: "hello" }],
+			}],
+		});
+		expect(parsed.success).toBe(false);
+	});
+
+	it("rejects invalid assistant phase values in responses input", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-5.4",
+			input: [{
+				type: "message",
+				role: "assistant",
+				phase: "draft",
+				content: [{ type: "output_text", text: "answer" }],
+			}],
+		});
+		expect(parsed.success).toBe(false);
+	});
+
 	it("accepts global beta flags", () => {
 		const chatParsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",

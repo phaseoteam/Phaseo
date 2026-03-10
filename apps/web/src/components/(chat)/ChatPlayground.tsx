@@ -105,6 +105,35 @@ type ChatUser = {
 const CHAT_BETA_ISSUES_HREF =
 	"https://github.com/AI-Stats/AI-Stats/issues/new/choose";
 
+const canonicalizeModelKey = (value: string) =>
+	value
+		.toLowerCase()
+		.replace(/[._]+/g, "-")
+		.replace(/[^a-z0-9/-]+/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/\/+/g, "/")
+		.replace(/-\//g, "/")
+		.replace(/\/-/g, "/")
+		.replace(/^\/|\/$/g, "")
+		.replace(/^-+|-+$/g, "");
+
+const DATE_SUFFIX_RE = /-\d{4}-\d{2}-\d{2}$/;
+
+const stripModelDateSuffix = (value: string) =>
+	value.replace(DATE_SUFFIX_RE, "");
+
+const isFeaturedModelId = (modelId: string) => {
+	const canonicalModelId = canonicalizeModelKey(
+		stripModelDateSuffix(modelId)
+	);
+	return FEATURED_MODEL_IDS.some((featuredModelId) => {
+		const canonicalFeaturedId = canonicalizeModelKey(
+			stripModelDateSuffix(featuredModelId)
+		);
+		return canonicalModelId === canonicalFeaturedId;
+	});
+};
+
 function ChatPlaygroundContent({
 	models,
 	modelParam,
@@ -116,7 +145,6 @@ function ChatPlaygroundContent({
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [isSending, setIsSending] = useState(false);
 	const [, setError] = useState<string | null>(null);
-	const [apiKey, setApiKey] = useState("");
 	const [baseUrl, setBaseUrl] = useState(BASE_URL);
 	const [authUser, setAuthUser] = useState<ChatUser | null>(null);
 	const [userRole, setUserRole] = useState<string | null>(null);
@@ -264,10 +292,9 @@ function ChatPlaygroundContent({
 		const grouped = new Map<string, ModelOption[]>();
 		const comingSoon = new Map<string, ModelOption[]>();
 		for (const option of options) {
-			const isFeatured = FEATURED_MODEL_IDS.includes(option.modelId);
+			const isFeatured = isFeaturedModelId(option.modelId);
 			if (isFeatured && option.gatewayStatus === "active") {
 				featured.push(option);
-				continue;
 			}
 			if (option.gatewayStatus === "inactive") {
 				const list = comingSoon.get(option.orgId) ?? [];
@@ -365,7 +392,6 @@ function ChatPlaygroundContent({
 
 	const isAuthenticated = Boolean(authUser);
 	const isAdmin = userRole === "admin";
-	const hasApiKey = apiKey.trim().length > 0;
 	const shouldDebug = debugEnabled && isAdmin;
 
 	const handleDebugChange = useCallback((value: boolean) => {
@@ -1250,7 +1276,6 @@ function ChatPlaygroundContent({
 					},
 					body: JSON.stringify({
 						baseUrl: base,
-						apiKey: apiKey.trim(),
 						...(useUnifiedRoute ? { endpoint } : {}),
 						requestBody,
 						appHeaders: APP_HEADERS,
@@ -1368,7 +1393,6 @@ function ChatPlaygroundContent({
 									},
 									body: JSON.stringify({
 										baseUrl: base,
-										apiKey: apiKey.trim(),
 										endpoint,
 										poll: { resourceId },
 										appHeaders: APP_HEADERS,
@@ -1915,7 +1939,6 @@ function ChatPlaygroundContent({
 			}
 		},
 		[
-			apiKey,
 			baseUrl,
 			isUnified,
 			personalization,
@@ -1950,11 +1973,6 @@ function ChatPlaygroundContent({
 			if (!content.trim() && payload.attachments.length === 0) return;
 			if (!isAuthenticated) {
 				setError("Sign in to start chatting.");
-				return;
-			}
-			if (!apiKey.trim()) {
-				setError("Add an API key in settings before sending.");
-				setSettingsOpen(true);
 				return;
 			}
 			if (!activeThread.modelId) {
@@ -2120,7 +2138,6 @@ function ChatPlaygroundContent({
 		},
 		[
 			activeThread,
-			apiKey,
 			buildThreadForModel,
 			executeCompletion,
 			getPrimaryCapabilityForModel,
@@ -2141,11 +2158,6 @@ function ChatPlaygroundContent({
 			if (!nextContent) return;
 			if (!isAuthenticated) {
 				setError("Sign in to start chatting.");
-				return;
-			}
-			if (!apiKey.trim()) {
-				setError("Add an API key in settings before sending.");
-				setSettingsOpen(true);
 				return;
 			}
 
@@ -2241,7 +2253,6 @@ function ChatPlaygroundContent({
 		},
 		[
 			activeThread,
-			apiKey,
 			applyMessageUpdate,
 			buildThreadForModel,
 			executeCompletion,
@@ -2287,11 +2298,6 @@ function ChatPlaygroundContent({
 				setError("Sign in to start chatting.");
 				return;
 			}
-			if (!apiKey.trim()) {
-				setError("Add an API key in settings before sending.");
-				setSettingsOpen(true);
-				return;
-			}
 			const messageIndex = activeThread.messages.findIndex(
 				(message) => message.id === messageId,
 			);
@@ -2326,7 +2332,6 @@ function ChatPlaygroundContent({
 		},
 		[
 			activeThread,
-			apiKey,
 			buildThreadForModel,
 			executeCompletion,
 			isAuthenticated,
@@ -3060,9 +3065,7 @@ function ChatPlaygroundContent({
 					}
 					settingsOpen={settingsOpen}
 					onSettingsOpenChange={setSettingsOpen}
-					apiKey={apiKey}
 					baseUrl={baseUrl}
-					onApiKeyChange={setApiKey}
 					onBaseUrlChange={setBaseUrl}
 					onSaveSettings={handleSaveSettings}
 					personalization={personalization}
@@ -3107,7 +3110,7 @@ function ChatPlaygroundContent({
 						<p className="text-xs text-muted-foreground">
 							Try the unified chat experience for multimodal endpoints and side-by-side model comparisons.{" "}
 							<Link
-								href="/chat/unified"
+								href="/chat"
 								className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-primary"
 							>
 								Open unified playground
@@ -3146,7 +3149,6 @@ function ChatPlaygroundContent({
 					onSelectVariant={handleSelectVariant}
 					orgNameById={orgNameById}
 					isAuthenticated={isAuthenticated}
-					hasApiKey={hasApiKey}
 					accentColor={personalization.accentColor}
 					selectedOrgId={selectedOrgId}
 					selectedModelId={activeThread?.modelId ?? ""}

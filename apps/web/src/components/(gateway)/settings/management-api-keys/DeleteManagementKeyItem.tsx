@@ -14,11 +14,11 @@ import {
 } from "@/components/ui/dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2, ShieldAlert } from "lucide-react";
-import { deleteProvisioningKeyAction } from "@/app/(dashboard)/settings/provisioning-keys/actions";
+import { deleteManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 
-export default function DeleteProvisioningKeyItem({ k }: any) {
+export default function DeleteManagementKeyItem({ k }: any) {
 	const [open, setOpen] = useState(false);
 	const [confirm, setConfirm] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ export default function DeleteProvisioningKeyItem({ k }: any) {
 		e?.preventDefault();
 		if (confirm !== k.name) return;
 		setLoading(true);
-		const promise = deleteProvisioningKeyAction(k.id, confirm);
+		const promise = deleteManagementKeyAction(k.id, confirm);
 		try {
 			await toast.promise(promise, {
 				loading: `Deleting management API key...`,
@@ -98,3 +98,4 @@ export default function DeleteProvisioningKeyItem({ k }: any) {
 		</Dialog>
 	);
 }
+

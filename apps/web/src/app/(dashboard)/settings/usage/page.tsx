@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
@@ -124,6 +125,7 @@ async function UsageSettingsContent({
 		.from("keys")
 		.select("id,name,prefix")
 		.eq("team_id", teamId)
+		.neq("name", CHAT_MANAGED_KEY_NAME)
 		.order("created_at", { ascending: true });
 	const availableKeys: ApiKeyOption[] = (keyRows ?? []).map((row: any) => ({
 		id: row.id,

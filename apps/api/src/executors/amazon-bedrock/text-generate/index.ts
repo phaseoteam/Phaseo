@@ -160,7 +160,11 @@ async function executeBedrockConverse(
 					rawResponse: json,
 					timing: {
 						latencyMs: typeof json?.metrics?.latencyMs === "number" ? json.metrics.latencyMs : undefined,
-						generationMs: Date.now() - upstreamStartMs,
+						generationMs: (() => {
+							const totalMs = Math.max(0, Date.now() - upstreamStartMs);
+							const latencyMs = typeof json?.metrics?.latencyMs === "number" ? json.metrics.latencyMs : null;
+							return latencyMs === null ? totalMs : Math.max(0, totalMs - latencyMs);
+						})(),
 					},
 				};
 			}
@@ -225,7 +229,10 @@ async function executeBedrockConverse(
 			rawResponse,
 			timing: {
 				latencyMs: firstByteMs ?? undefined,
-				generationMs: totalMs ?? undefined,
+				generationMs:
+					typeof firstByteMs === "number" && typeof totalMs === "number"
+						? Math.max(0, totalMs - firstByteMs)
+						: totalMs ?? undefined,
 			},
 		};
 	}
@@ -461,7 +468,10 @@ async function executeBedrockOpenAI(
 			rawResponse,
 			timing: {
 				latencyMs: firstByteMs ?? undefined,
-				generationMs: totalMs ?? undefined,
+				generationMs:
+					typeof firstByteMs === "number" && typeof totalMs === "number"
+						? Math.max(0, totalMs - firstByteMs)
+						: totalMs ?? undefined,
 			},
 		};
 	}
@@ -490,7 +500,7 @@ async function executeBedrockOpenAI(
 		rawResponse: json,
 		timing: {
 			latencyMs: Date.now() - upstreamStartMs,
-			generationMs: Date.now() - upstreamStartMs,
+			generationMs: 0,
 		},
 	};
 }

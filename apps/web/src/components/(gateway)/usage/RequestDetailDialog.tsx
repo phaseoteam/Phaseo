@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
 	Dialog,
 	DialogContent,
@@ -166,7 +167,18 @@ export default function RequestDetailDialog({
 								<Field
 									icon={AppWindow}
 									label="App"
-									value={appName ?? request.app_id ?? "-"}
+									value={
+										request.app_id ? (
+											<Link
+												href={`/apps/${encodeURIComponent(request.app_id)}`}
+												className="underline decoration-transparent hover:decoration-current transition-colors duration-200 hover:text-primary"
+											>
+												{appName ?? "Unknown app"}
+											</Link>
+										) : (
+											appName ?? "Unknown app"
+										)
+									}
 								/>
 							) : null}
 						</Section>

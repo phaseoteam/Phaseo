@@ -202,6 +202,34 @@ function buildTransformSnapshot(
 	};
 }
 
+function timingMetric(ctx: PipelineContext, key: string): number {
+    const timing = (ctx as any)?.timing;
+    if (!timing || typeof timing !== "object") return 0;
+    const value = timing[key];
+    return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function resolveBeforeMs(ctx: PipelineContext): number {
+    const fromMeta = ctx.meta.before_ms;
+    if (typeof fromMeta === "number" && Number.isFinite(fromMeta)) return fromMeta;
+    const nested = (ctx as any)?.timing?.before?.total_ms;
+    if (typeof nested === "number" && Number.isFinite(nested)) return nested;
+    return timingMetric(ctx, "before_start");
+}
+
+function resolveExecuteTotalMs(ctx: PipelineContext): number {
+    const nested = (ctx as any)?.timing?.execute?.total_ms;
+    if (typeof nested === "number" && Number.isFinite(nested)) return nested;
+    return timingMetric(ctx, "adapter_start");
+}
+
+function resolveExecuteAdapterMs(ctx: PipelineContext): number | null {
+    const nested = (ctx as any)?.timing?.execute?.adapter_ms;
+    if (typeof nested === "number" && Number.isFinite(nested)) return nested;
+    const flat = timingMetric(ctx, "adapter_roundtrip_ms");
+    return flat > 0 ? flat : null;
+}
+
 export async function handleFailureAudit(
     ctx: PipelineContext,
     result: RequestResult,
@@ -211,9 +239,9 @@ export async function handleFailureAudit(
     errorMessage: string,
     errorDetails?: unknown
 ) {
-    const beforeMs = (ctx as any)?.timing?.before?.total_ms ?? 0;
-    const execMs = (ctx as any)?.timing?.execute?.total_ms ?? 0;
-    const genMs = (ctx as any)?.timing?.execute?.adapter_ms ?? null;
+    const beforeMs = resolveBeforeMs(ctx);
+    const execMs = resolveExecuteTotalMs(ctx);
+    const genMs = resolveExecuteAdapterMs(ctx);
     const internalLatencyMs = (ctx as any)?.timing?.internal_latency_ms ?? null;
 
     // Use meta values if available, otherwise fall back to timing calculations
@@ -284,6 +312,8 @@ export async function handleFailureAudit(
             keyId: ctx.meta.apiKeyId,
             appTitle: ctx.meta.appTitle ?? null,
             referer: ctx.meta.referer ?? null,
+            appId: ctx.meta.appId ?? null,
+            appName: ctx.meta.appName ?? null,
             requestMethod: ctx.meta.requestMethod ?? null,
             requestPath: ctx.meta.requestPath ?? ctx.requestPath ?? null,
             requestUrl: ctx.meta.requestUrl ?? null,
@@ -297,6 +327,10 @@ export async function handleFailureAudit(
             edgeAsn: ctx.meta.edgeAsn ?? null,
             extraJson,
         });
+    } catch (auditErr) {
+        console.error("auditFailure failed", auditErr);
+    }
+    try {
         await emitGatewayRequestEvent({
             ctx,
             result,
@@ -311,8 +345,8 @@ export async function handleFailureAudit(
             providerResponse: errorDetails ?? result.rawResponse ?? null,
             gatewayResponse: gatewayFailurePayload,
         });
-    } catch (auditErr) {
-        console.error("auditFailure failed", auditErr);
+    } catch (eventErr) {
+        console.error("emitGatewayRequestEvent (failure) failed", eventErr);
     }
 }
 
@@ -331,13 +365,16 @@ export async function handleSuccessAudit(
 ) {
     const byok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const execTiming = (ctx as any)?.timing?.execute ?? {};
+    const beforeMs = resolveBeforeMs(ctx);
+    const execTotalMs = resolveExecuteTotalMs(ctx);
+    const execAdapterMs = resolveExecuteAdapterMs(ctx);
     const internalLatencyMs = (ctx as any)?.timing?.internal_latency_ms ?? null;
 
     // Use meta values if available, otherwise fall back to timing calculations
-    const generationMs = ctx.meta.generation_ms ?? Math.round(execTiming?.adapter_ms ?? result.generationTimeMs ?? 0);
+    const generationMs = ctx.meta.generation_ms ?? Math.round(execAdapterMs ?? execTiming?.adapter_ms ?? result.generationTimeMs ?? 0);
     const latencyMs = ctx.meta.latency_ms ?? (isStream
-        ? Math.round(execTiming?.total_ms ?? 0) + Math.round((ctx as any)?.timing?.before?.total_ms ?? 0)
-        : Math.round(execTiming?.total_ms ?? generationMs));
+        ? Math.round(execTotalMs) + Math.round(beforeMs)
+        : Math.round(execTotalMs || generationMs));
 
     // Enrich usage with multimodal signals visible at the gateway layer (e.g., image/audio/video inputs).
     const usageWithMultimodal = enrichUsageWithMultimodal(ctx, result, usagePriced);
@@ -403,7 +440,6 @@ export async function handleSuccessAudit(
     const routingContext = extractRoutingContext(ctx, result);
 
     try {
-        console.log(`[audit] storing model_id="${ctx.model}" requestId=${ctx.requestId}`);
         await auditSuccess({
             requestId: ctx.requestId,
             teamId: ctx.teamId,
@@ -415,6 +451,8 @@ export async function handleSuccessAudit(
             nativeResponseId: nativeResponseId ?? null,
             appTitle: ctx.meta.appTitle ?? null,
             referer: ctx.meta.referer ?? null,
+            appId: ctx.meta.appId ?? null,
+            appName: ctx.meta.appName ?? null,
             requestMethod: ctx.meta.requestMethod ?? null,
             requestPath: ctx.meta.requestPath ?? ctx.requestPath ?? null,
             requestUrl: ctx.meta.requestUrl ?? null,
@@ -444,6 +482,10 @@ export async function handleSuccessAudit(
             requestEnrichment,
             routingContext,
         });
+    } catch (auditErr) {
+        console.error("auditSuccess failed", auditErr);
+    }
+    try {
         await emitGatewayRequestEvent({
             ctx,
             result,
@@ -460,8 +502,8 @@ export async function handleSuccessAudit(
             providerResponse: result.rawResponse ?? null,
             gatewayResponse: gatewayResponse ?? null,
         });
-    } catch (auditErr) {
-        console.error("auditSuccess failed", auditErr);
+    } catch (eventErr) {
+        console.error("emitGatewayRequestEvent (success) failed", eventErr);
     }
 }
 

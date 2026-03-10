@@ -67,8 +67,10 @@ export default function CreateKeyDialog({
 				JSON.stringify([]) // default empty scopes
 			);
 			setPlainKey(res?.plaintext ?? null);
-		} catch {
-			// swallow for now; could display UI error
+		} catch (err: any) {
+			const message =
+				err?.message ?? "Could not create API key right now. Please try again.";
+			toast.error(message);
 		} finally {
 			setLoading(false);
 		}

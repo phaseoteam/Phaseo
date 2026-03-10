@@ -1439,7 +1439,6 @@
     "openai:text.generate:openai-gpt-5.2-codex",
     "openai:batch:openai-gpt-5.2-pro",
     "openai:text.generate:openai-gpt-5.2-pro",
-    "openai:text.generate:openai-gpt-5.3",
     "openai:text.generate:openai-gpt-5.3-chat",
     "openai:text.generate:openai-gpt-5.3-codex",
     "openai:batch:openai-gpt-5.4",

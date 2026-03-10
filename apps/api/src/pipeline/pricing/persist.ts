@@ -5,6 +5,17 @@ import Stripe from "stripe";
 
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "../../runtime/env";
 
+type ChargeRpcResult = {
+    status: string;
+    auto_top_up_amount_nanos: number;
+    auto_top_up_account_id: string | null;
+    stripe_customer_id: string | null;
+    applied?: boolean;
+    already_applied?: boolean;
+};
+
+let chargeOnceRpcAvailable: boolean | null = null;
+
 function getStripe(): Stripe {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
     if (!key) throw new Error("Stripe secret key missing");
@@ -25,6 +36,48 @@ async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): 
         limit: 1,
     });
     return methods.data?.[0]?.id ?? null;
+}
+
+function normalizeChargeRpcResult(data: any): ChargeRpcResult | null {
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row !== "object") return null;
+    const amountRaw = Number((row as any).auto_top_up_amount_nanos ?? 0);
+    return {
+        status: String((row as any).status ?? "unknown"),
+        auto_top_up_amount_nanos: Number.isFinite(amountRaw) ? amountRaw : 0,
+        auto_top_up_account_id:
+            typeof (row as any).auto_top_up_account_id === "string"
+                ? (row as any).auto_top_up_account_id
+                : null,
+        stripe_customer_id:
+            typeof (row as any).stripe_customer_id === "string"
+                ? (row as any).stripe_customer_id
+                : null,
+        applied: (row as any).applied === true,
+        already_applied: (row as any).already_applied === true,
+    };
+}
+
+function isMissingRpcFunction(error: any, functionName: string): boolean {
+    const message = String(error?.message ?? "");
+    const details = String(error?.details ?? "");
+    return (
+        message.includes(functionName) ||
+        details.includes(functionName) ||
+        message.includes("Could not find the function")
+    );
+}
+
+function isChargeOnceRpcIncompatible(error: any): boolean {
+    const code = String(error?.code ?? "");
+    const message = String(error?.message ?? "").toLowerCase();
+    const details = String(error?.details ?? "").toLowerCase();
+    if (code === "42703") return true;
+    return (
+        (message.includes("v_result") && message.includes("status")) ||
+        (details.includes("v_result") && details.includes("status")) ||
+        message.includes("has no field")
+    );
 }
 
 // src/lib/gateway/pricing/persist.ts
@@ -56,14 +109,40 @@ export async function recordUsageAndCharge(args: {
             // Continue with wallet flow if team billing state cannot be read.
         }
 
-        const { data, error } = await supabase.rpc('deduct_and_check_top_up', {
-            p_team_id: args.teamId,
-            p_cost_nanos: args.cost_nanos
-        });
+        let chargeResult: ChargeRpcResult | null = null;
+        if (chargeOnceRpcAvailable !== false) {
+            const onceRpc = await supabase.rpc("gateway_deduct_and_check_top_up_once", {
+                p_team_id: args.teamId,
+                p_request_id: args.requestId,
+                p_cost_nanos: args.cost_nanos,
+            });
+            if (onceRpc.error) {
+                if (
+                    !isMissingRpcFunction(onceRpc.error, "gateway_deduct_and_check_top_up_once") &&
+                    !isChargeOnceRpcIncompatible(onceRpc.error)
+                ) {
+                    throw onceRpc.error;
+                }
+                chargeOnceRpcAvailable = false;
+            } else {
+                chargeOnceRpcAvailable = true;
+                chargeResult = normalizeChargeRpcResult(onceRpc.data);
+            }
+        }
 
-        if (error) throw error;
+        if (!chargeResult) {
+            const fallbackRpc = await supabase.rpc("deduct_and_check_top_up", {
+                p_team_id: args.teamId,
+                p_cost_nanos: args.cost_nanos,
+            });
+            if (fallbackRpc.error) throw fallbackRpc.error;
+            chargeResult = normalizeChargeRpcResult(fallbackRpc.data);
+        }
 
-        if (data.status === 'top_up_required') {
+        if (!chargeResult) return;
+        if (chargeResult.already_applied) return;
+
+        if (chargeResult.status === "top_up_required") {
             // Trigger auto-recharge
             // NOTE: The amount charged is the raw auto_top_up_amount
             // The Stripe webhook will:
@@ -72,18 +151,18 @@ export async function recordUsageAndCharge(args: {
             // 3. Credit wallet with net amount (after tier-based fee deduction)
             const stripe = getStripe();
             const minTopUpNanos = 10 * 1_000_000_000;
-            if (data.auto_top_up_amount_nanos < minTopUpNanos) {
+            if (chargeResult.auto_top_up_amount_nanos < minTopUpNanos) {
                 console.error("[auto-recharge] Skipped: auto top-up amount below $10", {
                     teamId: args.teamId,
-                    amount_nanos: data.auto_top_up_amount_nanos,
+                    amount_nanos: chargeResult.auto_top_up_amount_nanos,
                 });
                 return;
             }
-            const amount_cents = Math.round(data.auto_top_up_amount_nanos / 10_000_000); // since 1 cent = 10,000,000 nanos
+            const amount_cents = Math.round(chargeResult.auto_top_up_amount_nanos / 10_000_000); // since 1 cent = 10,000,000 nanos
             const paymentMethod =
-                data.auto_top_up_account_id ??
-                (data.stripe_customer_id
-                    ? await resolveDefaultPaymentMethod(stripe, data.stripe_customer_id)
+                chargeResult.auto_top_up_account_id ??
+                (chargeResult.stripe_customer_id
+                    ? await resolveDefaultPaymentMethod(stripe, chargeResult.stripe_customer_id)
                     : null);
             if (!paymentMethod) {
                 console.error("[auto-recharge] Skipped: no payment method available", {
@@ -95,7 +174,7 @@ export async function recordUsageAndCharge(args: {
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount_cents,
                 currency: 'usd',
-                customer: data.stripe_customer_id,
+                customer: chargeResult.stripe_customer_id,
                 payment_method: paymentMethod,
                 off_session: true,
                 confirm: true,

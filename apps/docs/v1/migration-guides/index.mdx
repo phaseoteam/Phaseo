@@ -1,56 +1,51 @@
 ---
 title: "Migration Guides"
-description: "Guides to help you migrate between different versions of the AI Stats API and SDKs, or migrate from other platforms."
+description: "Guides for moving between platforms or upgrading from one model to a newer model."
 ---
 
 # Migration Guides
 
-Welcome to the AI Stats migration guides. These guides provide step-by-step instructions to help you migrate your integrations, whether upgrading between versions of the AI Stats API and SDKs or migrating from other AI platforms and gateways.
+AI Stats migration guides cover two different upgrade problems:
 
-## Types of migration guides
+- moving from one platform or gateway to AI Stats
+- moving from an older model release to a newer model on the same platform
 
-We provide two main categories of migration guides:
+## 1. Model migrations
 
-### 1. AI Stats breaking changes
+Use model migrations when the integration stays broadly the same but the model changes underneath it.
 
-These guides help you upgrade between different versions of the AI Stats platform when we introduce breaking changes. They cover:
+These guides focus on:
 
--   **Breaking changes**: Updates that may require code modifications
--   **New features**: How to take advantage of new capabilities
--   **Deprecated functionality**: What to replace and how
--   **Best practices**: Recommendations for smooth upgrades
+- request parameter changes
+- prompt and reasoning behavior shifts
+- structured output and tool-calling differences
+- rollout, fallback, and rollback strategy
 
-Each guide includes:
+Current model migration guides:
 
--   Overview of changes
--   Detailed migration steps
--   Code examples
--   Troubleshooting tips
+- [Anthropic: Claude Opus 4.5 to 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
+- [Anthropic: Claude Sonnet 4.5 to 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
+- [OpenAI: Migrating to GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
+- [Google: Migrating to Gemini 3 and 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
+- [Google: Nano Banana 1 to Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
 
-### 2. Migrating from other platforms
+## 2. Platform migrations
 
-These guides help you migrate your existing integrations from other AI platforms, SDKs, and gateways to AI Stats. We currently provide guides for:
+Use platform migrations when you are changing SDKs, providers, or gateways and need to map your current integration onto AI Stats.
 
--   [OpenAI SDK Migration](./from-openai.mdx)
--   [Anthropic SDK Migration](./from-anthropic.mdx)
--   [OpenRouter Migration](./from-openrouter.mdx)
--   [Vercel AI Gateway Migration](./from-vercel.mdx)
--   [LiteLLM Migration](./from-litellm.mdx)
--   [Cloudflare AI Gateway Migration](./from-cloudflare.mdx)
--   [Helicone AI Gateway Migration](./from-helicone.mdx)
+Current platform migration guides:
 
-## Integrations and compatibility
-
-If you are not migrating but want to connect a tool directly, start with the [Integrations overview](../guides/integrations/index.mdx).
+- [OpenAI SDK Migration](./from-openai.mdx)
+- [Anthropic SDK Migration](./from-anthropic.mdx)
+- [OpenRouter Migration](./from-openrouter.mdx)
+- [Vercel AI Gateway Migration](./from-vercel.mdx)
+- [LiteLLM Migration](./from-litellm.mdx)
+- [Cloudflare AI Gateway Migration](./from-cloudflare.mdx)
+- [Helicone AI Gateway Migration](./from-helicone.mdx)
 
 ## How to use these guides
 
-1. **Identify your migration type**: Determine if you're upgrading AI Stats versions or migrating from another platform.
-2. **Find the relevant guide**: Select the migration guide that matches your scenario.
-3. **Follow the steps sequentially**: Execute the changes in the order provided.
-4. **Test thoroughly**: Verify your integration works after migration.
-5. **Refer to the API reference**: Use the updated API documentation for implementation details.
-
-## Available AI Stats breaking change guides
-
-No breaking change migration guides are currently available. They will be added here as needed for future version upgrades.
+1. Identify whether you are changing the platform, the model, or both.
+2. Start with the guide that matches the riskiest part of the migration.
+3. Update request shape before comparing output quality.
+4. Run production-like evals before shifting live traffic.

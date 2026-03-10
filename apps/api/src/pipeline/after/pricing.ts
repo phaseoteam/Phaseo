@@ -8,6 +8,7 @@ import type { PriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult } from "../execute";
 import { deriveCachePricingContext } from "../pricing/cache-context";
+import { getBaseModel } from "../execute/utils";
 
 function derivePricingPlan(body: any, usage: any): string {
     const explicit = typeof body?.pricing_plan === "string" ? body.pricing_plan.trim().toLowerCase() : "";
@@ -38,7 +39,7 @@ export async function loadProviderPricing(
         let card = ctx.pricing?.[result.provider] ?? null;
 
         if (!card) {
-            const baseModel = ctx.model.split(":")[0];
+            const baseModel = getBaseModel(ctx.model);
             card = await loadPriceCard(result.provider, baseModel, ctx.capability);
         }
 

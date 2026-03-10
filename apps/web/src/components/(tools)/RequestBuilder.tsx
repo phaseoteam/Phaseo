@@ -202,7 +202,7 @@ export default function RequestBuilder({ models }: RequestBuilderProps) {
 		const escapedJson = escapeForSingleQuotedShell(json);
 		return `curl -X POST "${BASE_URL}/chat/completions" \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer YOUR_GATEWAY_KEY" \\
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
   -d '${escapedJson}'`;
 	};
 
@@ -215,7 +215,7 @@ export default function RequestBuilder({ models }: RequestBuilderProps) {
 		return `const response = await fetch("${BASE_URL}/chat/completions", {
     method: "POST",
     headers: {
-        "Authorization": "Bearer YOUR_GATEWAY_KEY",
+        "Authorization": \`Bearer \${process.env.AI_STATS_API_KEY!}\`,
         "Content-Type": "application/json",
     },
     body: JSON.stringify(
@@ -238,11 +238,12 @@ console.log(data.choices?.[0]?.message?.content);`;
 			.map((line) => `    ${line}`)
 			.join("\n");
 
-		return `import requests
+		return `import os
+import requests
 
 url = "${BASE_URL}/chat/completions"
 headers = {
-    "Authorization": "Bearer YOUR_GATEWAY_KEY",
+    "Authorization": f"Bearer {os.environ['AI_STATS_API_KEY']}",
     "Content-Type": "application/json",
 }
 data = ${pythonJson}

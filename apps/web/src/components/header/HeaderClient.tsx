@@ -7,7 +7,7 @@ import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import TeamSwitcher from "./TeamSwitcher";
-import { createClient } from "@/utils/supabase/client"; // client SDK is fine here
+import { createClient } from "@/utils/supabase/client";
 import {
 	Drawer,
 	DrawerTrigger,
@@ -43,29 +43,19 @@ export default function HeaderClient({
 			if (error) console.error("Sign out error", error);
 		} finally {
 			router.push("/");
-			router.refresh(); // ensure AuthControls re-renders
+			router.refresh();
 		}
 	}
 
 	const navLink = (href: string, label: string) => (
 		<DrawerClose asChild key={href}>
-			<Button asChild variant="ghost" className="text-md rounded-lg">
+			<Button asChild variant="ghost" className="justify-start rounded-lg text-md">
 				<Link
 					href={href}
 					prefetch={false}
 					className={cn(
 						"text-sm font-medium transition-colors hover:text-primary",
-						// For the root path ('/'), only mark active on exact match.
-						// For other paths, match when pathname === href or when the pathname
-						// starts with the href followed by a slash, which avoids marking
-						// the link active for partial prefixes (e.g. '/models' vs '/modelx').
-						(() => {
-							if (href === "/") return pathname === "/";
-							return (
-								pathname === href ||
-								pathname.startsWith(href + "/")
-							);
-						})()
+						pathname === href || pathname.startsWith(href + "/")
 							? "text-blue-500"
 							: "text-foreground"
 					)}
@@ -77,12 +67,10 @@ export default function HeaderClient({
 	);
 
 	const navLinks = [
-		navLink("/", "Home"),
-		navLink("/compare", "Comparisons"),
-		navLink("/organisations", "Organisations"),
 		navLink("/models", "Models"),
-		navLink("/benchmarks", "Benchmarks"),
-		navLink("/api-providers", "API Providers"),
+		navLink("/api-providers", "Providers"),
+		navLink("/rankings", "Rankings"),
+		navLink("/chat", "Chat"),
 	];
 
 	if (variant === "mobile") {
@@ -96,10 +84,8 @@ export default function HeaderClient({
 				<DrawerContent>
 					<DrawerTitle className="sr-only">Navigation menu</DrawerTitle>
 					<div className="pt-4">
-						<nav className="flex flex-col gap-2 px-6 pb-4">
-							{navLinks}
-						</nav>
-						<div className="px-6 py-4 mt-auto border-t">
+						<nav className="flex flex-col gap-2 px-6 pb-4">{navLinks}</nav>
+						<div className="mt-auto border-t px-6 py-4">
 							{isLoggedIn ? (
 								<div className="flex justify-end">
 									<TeamSwitcher
@@ -111,9 +97,9 @@ export default function HeaderClient({
 									/>
 								</div>
 							) : (
-								<Link href="/sign-in" prefetch={false} className="w-full block">
+								<Link href="/sign-in" prefetch={false} className="block w-full">
 									<Button
-										className="w-full rounded-lg text-xs px-4 py-2 font-semibold"
+										className="w-full rounded-lg px-4 py-2 text-xs font-semibold"
 										variant="outline"
 									>
 										Sign In
@@ -127,7 +113,6 @@ export default function HeaderClient({
 		);
 	}
 
-	// desktop: only auth controls; nav lives in MainNav
 	return (
 		<div className="flex items-center gap-4">
 			{isLoggedIn ? (
@@ -142,7 +127,7 @@ export default function HeaderClient({
 				<Link href="/sign-in" prefetch={false}>
 					<Button
 						variant="outline"
-						className="rounded-lg text-xs px-4 py-2 font-semibold"
+						className="rounded-lg px-4 py-2 text-xs font-semibold"
 					>
 						Sign In
 					</Button>
@@ -151,3 +136,6 @@ export default function HeaderClient({
 		</div>
 	);
 }
+
+
+

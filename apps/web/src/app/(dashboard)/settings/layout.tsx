@@ -1,6 +1,7 @@
 import SettingsPageSkeleton from "@/components/(gateway)/settings/SettingsPageSkeleton";
 import SettingsSidebar from "@/components/(gateway)/settings/Sidebar";
 import SettingsTopTabsServer from "@/components/(gateway)/settings/SettingsTopTabsServer";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import {
@@ -26,6 +27,9 @@ export default async function SettingsLayout({
 }) {
 	const supabase = await createClient();
 	const { data: authData } = await supabase.auth.getUser();
+	if (!authData.user) {
+		redirect("/sign-in");
+	}
 	const userId = authData.user?.id ?? null;
 	const teamId = await getTeamIdFromCookie();
 	let showBroadcast = false;

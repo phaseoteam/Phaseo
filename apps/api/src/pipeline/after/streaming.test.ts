@@ -277,4 +277,46 @@ describe("passthroughWithPricing", () => {
 		expect(text).toContain("event: response.output_text.delta");
 		expect(text).toContain("event: response.completed");
 	});
+
+	it("does not block stream completion on async final usage work", async () => {
+		const usageCalls: Array<any> = [];
+		let resolveFinalUsage: (() => void) | null = null;
+		const finalUsageDone = new Promise<void>((resolve) => {
+			resolveFinalUsage = resolve;
+		});
+		const upstream = makeSseResponse([
+			{
+				event: "response.completed",
+				data: {
+					response: {
+						id: "resp_async",
+						object: "response",
+						status: "completed",
+						usage: { input_tokens: 5, output_tokens: 3, total_tokens: 8 },
+					},
+				},
+			},
+		]);
+
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx: baseCtx(),
+			provider: "openai",
+			priceCard: null,
+			onFinalUsage: async (usage) => {
+				usageCalls.push(usage);
+				await finalUsageDone;
+			},
+		});
+
+		const drained = await Promise.race([
+			drain(response).then(() => "drained"),
+			new Promise<string>((resolve) => setTimeout(() => resolve("timeout"), 25)),
+		]);
+		expect(drained).toBe("drained");
+		expect(usageCalls).toHaveLength(1);
+
+		resolveFinalUsage?.();
+		await finalUsageDone;
+	});
 });

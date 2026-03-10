@@ -20,6 +20,7 @@ turbo-*.log
 /guides/
 # /supabase
 guides/private/
+/apps/api/docs/internal/
 /apps/api/reports
 /reports
 /scripts/model-discovery/state/

@@ -139,6 +139,9 @@ export const logoManifest = {
 		light: "/logos/inception_light.svg",
 		dark: "/logos/inception_dark.svg",
 	},
+	inceptron: {
+		color: "/logos/inceptron.svg",
+	},
 	inclusionai: {
 		color: "/logos/inclusionai.svg",
 	},
@@ -188,6 +191,9 @@ export const logoManifest = {
 	"nebius-token-factory": {
 		light: "/logos/nebius-token-factory_light.svg",
 		dark: "/logos/nebius-token-factory_dark.svg",
+	},
+	nextbit: {
+		color: "/logos/nextbit.svg",
 	},
 	nous: {
 		light: "/logos/nous_light.svg",

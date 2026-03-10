@@ -1,0 +1,79 @@
+---
+title: "Google: Migrating to Gemini 3 and 3.1"
+description: "The API and behavior changes to review when upgrading existing Gemini integrations to Gemini 3 or Gemini 3.1."
+---
+
+# Google: Migrating to Gemini 3 and 3.1
+
+Use this guide when you are moving older Gemini traffic onto:
+
+- `google/gemini-3-pro-preview`
+- `google/gemini-3-flash-preview`
+- `google/gemini-3.1-pro-preview`
+- `google/gemini-3.1-flash-lite-preview`
+
+Gemini 3 introduced real API-level changes around reasoning control and multimodal handling. Gemini 3.1 then raised the baseline again, especially for more complex reasoning-heavy tasks.
+
+## What changed
+
+- Gemini 3 introduced `thinking_level` as the main control for reasoning depth
+- Gemini 3 added `media_resolution` for multimodal vision handling
+- Gemini 3 uses Thought Signatures to preserve reasoning context across calls
+- in stricter workflows, missing Thought Signatures can produce degraded quality or `400` errors
+- Gemini 3.1 Pro is positioned as the stronger reasoning upgrade for complex tasks and agentic workflows
+
+## What to change in your integration
+
+### 1. Re-map reasoning controls
+
+If your app exposes a generic reasoning knob, map it carefully for Gemini 3 routes. In OpenAI-compatible flows, `reasoning_effort` maps conceptually to Gemini `thinking_level`, but the behavior is not one-to-one and needs retesting.
+
+### 2. Handle Thought Signatures correctly
+
+If you use the official Gemini SDKs and standard chat history, signatures are usually handled for you. If you build lower-level request flows, especially around function calling or image generation and editing, make sure the returned signatures are preserved and sent back exactly as required.
+
+### 3. Revisit prompt style
+
+Gemini 3 guidance favors more direct prompts and parameter-driven control rather than longer prompt scaffolding. If your current prompts are heavily compensating for older model behavior, simplify them and re-evaluate.
+
+### 4. Tune multimodal settings
+
+If your routes include images, documents, or mixed media, re-test `media_resolution` settings instead of assuming older defaults still fit.
+
+## What to test
+
+### Prompt and reasoning behavior
+
+- concise prompts versus heavily scaffolded prompts
+- step-by-step reasoning tasks
+- long-context synthesis
+- agent-style workflows that depend on maintaining reasoning continuity
+
+### Response handling
+
+- signature preservation across turns
+- function-calling success rate
+- schema pass rate
+- empty, partial, or malformed outputs after changing thinking controls
+
+### Production metrics
+
+- latency at each `thinking_level`
+- token usage and cost
+- multimodal route performance under different `media_resolution` settings
+- task success when comparing Gemini 3 versus Gemini 3.1 Pro
+
+## Rollout advice
+
+Treat Gemini 3 and Gemini 3.1 as separate migrations.
+
+1. First migrate the request shape and signature handling.
+2. Then re-run prompt and schema evaluations on Gemini 3.
+3. Promote Gemini 3.1 Pro separately for the routes that need deeper reasoning.
+4. Keep a simpler or cheaper fallback path for high-volume workloads.
+
+## Sources
+
+- [Gemini 3 developer guide](https://ai.google.dev/gemini-api/docs/gemini-3)
+- [New Gemini API updates for Gemini 3](https://developers.googleblog.com/en/new-gemini-api-updates-for-gemini-3/)
+- [Gemini 3.1 Pro announcement](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)

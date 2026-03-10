@@ -1,0 +1,32 @@
+---
+title: "Model Migrations"
+description: "Model-specific upgrade guides for moving production traffic from an older model release to a newer one."
+---
+
+# Model Migrations
+
+Use these guides when you are staying on the same platform but upgrading the model itself.
+
+These pages focus on the changes that usually break real integrations first:
+
+- request parameter changes
+- prompt and reasoning behavior shifts
+- structured output and tool-calling regressions
+- rollout, fallback, and rollback strategy
+
+## Available guides
+
+- [Anthropic: Claude Opus 4.5 to 4.6](./anthropic-claude-opus-4-5-to-4-6.mdx)
+- [Anthropic: Claude Sonnet 4.5 to 4.6](./anthropic-claude-sonnet-4-5-to-4-6.mdx)
+- [OpenAI: Migrating to GPT-5.4](./openai-migrating-to-gpt-5-4.mdx)
+- [Google: Migrating to Gemini 3 and 3.1](./google-migrating-to-gemini-3-and-3-1.mdx)
+- [Google: Nano Banana 1 to Nano Banana 2](./google-nano-banana-1-to-nano-banana-2.mdx)
+
+## How to use this section
+
+1. Start with the guide for the exact model family you are upgrading.
+2. Update the request shape before testing output quality.
+3. Re-run prompt and schema evaluations on production-like prompts.
+4. Shift traffic gradually with explicit fallback and rollback rules.
+
+If you are changing providers, SDKs, or gateways rather than just the model, use the [Migration Guides](../migration-guides/index.mdx) section instead.

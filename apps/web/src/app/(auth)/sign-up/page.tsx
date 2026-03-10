@@ -6,6 +6,11 @@ import KeyModels from "@/components/landingPage/Auth/KeyModels";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SignUp } from "@/components/(gateway)/auth/sign-up/SignUp";
+import { sanitizeReturnUrl } from "@/lib/auth/return-url";
+
+type SignUpPageProps = {
+	searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export const metadata: Metadata = {
 	title: "Sign Up",
@@ -13,7 +18,18 @@ export const metadata: Metadata = {
 		"Create an AI Stats account to access the Gateway, configure model routing, review performance analytics, and manage billing across personal and team workspaces.",
 };
 
-export default function Page() {
+export default async function Page({ searchParams }: SignUpPageProps) {
+	const params = (await searchParams) ?? {};
+	const returnUrlParam = Array.isArray(params.returnUrl)
+		? params.returnUrl[0]
+		: params.returnUrl;
+	const sanitizedReturnUrl = sanitizeReturnUrl(
+		typeof returnUrlParam === "string" ? returnUrlParam : null,
+		"/"
+	);
+	const returnUrl = sanitizedReturnUrl.startsWith("/oauth/consent?")
+		? sanitizedReturnUrl
+		: undefined;
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">
 			{/* LEFT COL */}
@@ -33,7 +49,7 @@ export default function Page() {
 				<div className="flex flex-1 items-center justify-center">
 					<div className="mx-auto w-full max-w-xs">
 						<Suspense fallback={<div>Loading…</div>}>
-							<SignUp />
+							<SignUp returnUrl={returnUrl} />
 						</Suspense>
 					</div>
 				</div>

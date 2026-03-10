@@ -46,17 +46,19 @@ function normaliseUrl(u?: string | null): string | null {
     if (!u) return null;
     try {
         const href = new URL(u);
-        return href.toString();
+        const path = (href.pathname || "/").replace(/\/+$/, "");
+        return `${href.protocol}//${href.host}${path}`;
     } catch {
-        // If not a valid URL, store as-is (you made url NOT NULL, so fall back later)
-        return u;
+        return null;
     }
 }
 
 function hostFromUrl(u?: string | null): string | null {
     if (!u) return null;
     try {
-        return new URL(u).host || null;
+        const parsed = new URL(u);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+        return parsed.host || null;
     } catch {
         return null;
     }
@@ -67,14 +69,33 @@ function slugify(s?: string | null): string | null {
     return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-/** Stable key for (team_id, app_key) */
-function deriveAppKey(appTitle?: string | null, referer?: string | null): string | null {
-    const host = hostFromUrl(referer);
-    const title = slugify(appTitle ?? "");
-    if (title && host) return `${title}@${host}`;
-    if (title) return title;
-    if (host) return `@${host}`;
-    return null;
+function normalizeAppId(input?: string | null): string | null {
+    const value = String(input ?? "").trim().toLowerCase();
+    if (!value) return null;
+    const normalized = value
+        .replace(/[^a-z0-9._:-]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 64);
+    return normalized || null;
+}
+
+function deriveIdentityUrl(appTitle?: string | null, referer?: string | null, appId?: string | null, appName?: string | null): string {
+    const normalizedUrl = normaliseUrl(referer);
+    if (normalizedUrl) return normalizedUrl;
+
+    const normalizedAppId = normalizeAppId(appId);
+    if (normalizedAppId) return `app://id/${normalizedAppId}`;
+
+    const title = slugify(appName ?? appTitle ?? "");
+    if (title) return `app://title/${title}`;
+
+    return "about:blank";
+}
+
+/** Stable key for app attribution rows. */
+function deriveAppKey(identityUrl: string): string {
+    return identityUrl;
 }
 
 /** Upsert (team_id, app_key) → api_apps.id, updating title/url/meta/last_seen */
@@ -82,37 +103,92 @@ export async function ensureAppId(args: {
     teamId: string;
     appTitle?: string | null;
     referer?: string | null;
+    appId?: string | null;
+    appName?: string | null;
 }): Promise<string | null> {
     const supabase = svc();
-    const app_key = deriveAppKey(args.appTitle, args.referer);
-    if (!app_key) return null;
-
-    const url = normaliseUrl(args.referer) ?? "about:blank";
-    const title = args.appTitle ?? hostFromUrl(args.referer) ?? "Unknown";
+    const normalizedAppId = normalizeAppId(args.appId);
+    const identityUrl = deriveIdentityUrl(args.appTitle, args.referer, args.appId, args.appName);
+    const app_key = deriveAppKey(identityUrl);
+    const title =
+        args.appName ??
+        args.appTitle ??
+        hostFromUrl(identityUrl) ??
+        (normalizedAppId ? `App ${normalizedAppId}` : "Unknown");
     const nowIso = new Date().toISOString();
 
     const payload = {
         team_id: args.teamId,
         app_key,
         title,
-        url,
+        url: identityUrl,
         is_active: true,
         last_seen: nowIso,
         updated_at: nowIso,
-        meta: { referer: args.referer ?? null, appTitle: args.appTitle ?? null },
+        meta: {
+            referer: args.referer ?? null,
+            appTitle: args.appTitle ?? null,
+            appId: normalizedAppId ?? null,
+            appName: args.appName ?? null,
+            identityUrl,
+        },
     };
 
-    const { data, error } = await supabase
+    const findExistingId = async (): Promise<string | null> => {
+        const { data, error } = await supabase
+            .from("api_apps")
+            .select("id")
+            .eq("team_id", args.teamId)
+            .eq("app_key", app_key)
+            .order("last_seen", { ascending: false })
+            .limit(1);
+        if (error) {
+            console.error("ensureAppId lookup error:", error);
+            return null;
+        }
+        const first = Array.isArray(data) ? data[0] : null;
+        return typeof first?.id === "string" ? first.id : null;
+    };
+
+    const existingId = await findExistingId();
+    if (existingId) {
+        const { error: updateError } = await supabase
+            .from("api_apps")
+            .update({
+                title: payload.title,
+                url: payload.url,
+                is_active: true,
+                last_seen: nowIso,
+                updated_at: nowIso,
+                meta: payload.meta,
+            })
+            .eq("id", existingId)
+            .eq("team_id", args.teamId);
+        if (updateError) {
+            console.error("ensureAppId update error:", updateError);
+        }
+        return existingId;
+    }
+
+    const { data: inserted, error: insertError } = await supabase
         .from("api_apps")
-        .upsert(payload, { onConflict: "team_id,app_key" })
+        .insert(payload)
         .select("id")
         .single();
 
-    if (error) {
-        console.error("ensureAppId upsert error:", error);
-        return null;
+    if (!insertError && inserted?.id) {
+        return inserted.id;
     }
-    return data?.id ?? null;
+
+    if (insertError) {
+        const code = String((insertError as { code?: unknown } | null)?.code ?? "");
+        if (code === "23505") {
+            const racedId = await findExistingId();
+            if (racedId) return racedId;
+        }
+        console.error("ensureAppId insert error:", insertError);
+    }
+    return null;
 }
 
 /** Insert or upsert a generation row (idempotent on team_id+request_id). */

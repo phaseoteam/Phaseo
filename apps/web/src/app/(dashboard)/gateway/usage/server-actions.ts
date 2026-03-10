@@ -40,6 +40,9 @@ export interface RequestRow {
 	model_id: string | null;
 	provider: string | null;
 	app_id: string | null;
+	app_key: string | null;
+	app_title: string | null;
+	app_image_url: string | null;
 	usage: any;
 	cost_nanos: number | null;
 	generation_ms: number | null;
@@ -94,6 +97,12 @@ export async function fetchPaginatedRequests(
 			model_id,
 			provider,
 			app_id,
+			app:api_apps!gateway_requests_app_id_fkey (
+				id,
+				app_key,
+				title,
+				image_url
+			),
 			usage,
 			cost_nanos,
 			generation_ms,
@@ -136,24 +145,94 @@ export async function fetchPaginatedRequests(
 	query = query.range(offset, offset + pageSize - 1);
 
 	const { data, error, count } = await query;
-
+	let rows = data as any[] | null;
+	let totalCount = count ?? 0;
 	if (error) {
-		console.error("Error fetching paginated requests:", error);
-		return {
-			data: [],
-			total: 0,
-			page: params.page,
-			pageSize,
-			totalPages: 0,
-		};
+		console.error("Error fetching paginated requests (with app join):", error);
+		// Fallback: retry without api_apps embedded relation.
+		let fallback = supabase
+			.from("gateway_requests")
+			.select(
+				`
+				request_id,
+				created_at,
+				model_id,
+				provider,
+				app_id,
+				usage,
+				cost_nanos,
+				generation_ms,
+				latency_ms,
+				finish_reason,
+				success,
+				status_code,
+				error_code,
+				error_message,
+				key_id,
+				throughput
+			`,
+				{ count: "exact" },
+			)
+			.eq("team_id", teamId)
+			.gte("created_at", params.timeRange.from)
+			.lte("created_at", params.timeRange.to);
+
+		if (params.modelFilter) fallback = fallback.eq("model_id", params.modelFilter);
+		if (params.providerFilter) fallback = fallback.eq("provider", params.providerFilter);
+		if (params.keyFilter) fallback = fallback.eq("key_id", params.keyFilter);
+		if (params.statusFilter === "success") fallback = fallback.eq("success", true);
+		else if (params.statusFilter === "error") fallback = fallback.eq("success", false);
+
+		fallback = fallback
+			.order(sortColumn, { ascending: params.sortDirection === "asc" })
+			.range(offset, offset + pageSize - 1);
+
+		const {
+			data: fallbackData,
+			error: fallbackError,
+			count: fallbackCount,
+		} = await fallback;
+		if (fallbackError) {
+			console.error("Error fetching paginated requests (fallback):", fallbackError);
+			return {
+				data: [],
+				total: 0,
+				page: params.page,
+				pageSize,
+				totalPages: 0,
+			};
+		}
+		rows = (fallbackData as any[]) ?? [];
+		totalCount = fallbackCount ?? 0;
 	}
 
 	return {
-		data: (data as RequestRow[]) || [],
-		total: count || 0,
+		data:
+			(rows ?? []).map((row) => {
+				const appRow = Array.isArray(row?.app) ? row.app[0] : row?.app;
+				const appTitle =
+					typeof appRow?.title === "string" && appRow.title.trim().length > 0
+						? appRow.title.trim()
+						: null;
+				const appKey =
+					typeof appRow?.app_key === "string" && appRow.app_key.trim().length > 0
+						? appRow.app_key.trim()
+						: null;
+				const appImageUrl =
+					typeof appRow?.image_url === "string" && appRow.image_url.trim().length > 0
+						? appRow.image_url.trim()
+						: null;
+				return {
+					...row,
+					app_title: appTitle,
+					app_key: appKey,
+					app_image_url: appImageUrl,
+				} as RequestRow;
+			}) ?? [],
+		total: totalCount,
 		page: params.page,
 		pageSize,
-		totalPages: Math.ceil((count || 0) / pageSize),
+		totalPages: Math.ceil((totalCount || 0) / pageSize),
 	};
 }
 

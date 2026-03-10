@@ -1,0 +1,76 @@
+---
+title: "Anthropic: Claude Opus 4.5 to 4.6"
+description: "The concrete API and behavior changes to review when upgrading from Claude Opus 4.5 to Claude Opus 4.6."
+---
+
+# Anthropic: Claude Opus 4.5 to 4.6
+
+Use this guide when you are moving from `anthropic/claude-opus-4.5` to `anthropic/claude-opus-4.6`.
+
+Claude Opus 4.6 is not just a model-ID swap. Anthropic's migration guidance includes request-shape changes, removed beta flags, and stricter behavior around prefills.
+
+## What changed
+
+- assistant prefills are no longer supported on Claude 4.6 models and now return `400`
+- structured output moved from `output_format` to `output_config.format`
+- adaptive thinking is now handled through `output_config.effort`
+- older beta headers should be removed
+- Opus 4.6 specifically no longer needs the `interleaved-thinking-2025-05-14` beta header
+- Opus 4.6 adds a 1M-token context window in beta and improves long-running coding and agentic tasks
+
+## What to change in your integration
+
+### 1. Remove assistant prefills
+
+If you were forcing JSON or a response prefix by partially pre-seeding the assistant turn, that pattern now breaks on 4.6. Move that control into:
+
+- clearer system instructions
+- examples in the user or system prompt
+- structured outputs through `output_config.format`
+
+### 2. Migrate structured outputs
+
+If you still send `output_format`, update the request body to use `output_config.format` instead.
+
+### 3. Review thinking configuration
+
+If you were depending on older thinking betas, migrate to the current `effort` setting inside `output_config` and retest latency-sensitive routes.
+
+### 4. Remove stale beta flags
+
+Audit hard-coded beta headers in SDK wrappers, middleware, and gateway presets. Leaving obsolete flags in place creates noisy failures during rollout.
+
+## What to test
+
+### Prompt behavior
+
+- long coding and refactor prompts
+- multi-step research or document workflows
+- prompts that previously depended on assistant prefills
+- long-context tasks if you plan to use the 1M-token beta window
+
+### Contracts and tools
+
+- schema pass rate after moving to `output_config.format`
+- tool-call argument quality on multi-step agent tasks
+- retry behavior when the model refuses or reformats output
+- regression handling in code-review and debugging workflows
+
+### Operations
+
+- median and p95 latency with the new thinking settings
+- token consumption on longer runs
+- timeout rate on large-context tasks
+- success rate versus Opus 4.5 on your production eval set
+
+## Safe rollout
+
+1. Remove prefills and migrate structured output config before any traffic shift.
+2. Shadow Opus 4.6 on production prompts that matter to you.
+3. Canary traffic with Opus 4.5 still configured as a fallback.
+4. Promote only after schema pass rate, latency, and task completion stay stable.
+
+## Sources
+
+- [Anthropic migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Introducing Claude Opus 4.6](https://www.anthropic.com/news/claude-opus-4-6)

@@ -20,7 +20,7 @@ import {
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
-export default function ProvisioningKeyUsageItem({ k }: any) {
+export default function ManagementKeyUsageItem({ k }: any) {
 	const [open, setOpen] = useState(false);
 
 	const usage = k.usage || { requests: 0, costNanos: 0 };
@@ -77,3 +77,4 @@ export default function ProvisioningKeyUsageItem({ k }: any) {
 		</>
 	);
 }
+

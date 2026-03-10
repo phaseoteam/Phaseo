@@ -20,6 +20,7 @@ type PasswordChecks = {
 
 type EmailPasswordProps = {
 	onEmailFlowChange?: (active: boolean) => void;
+	returnUrl?: string;
 };
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -31,7 +32,10 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 	);
 }
 
-export default function EmailPassword({ onEmailFlowChange }: EmailPasswordProps) {
+export default function EmailPassword({
+	onEmailFlowChange,
+	returnUrl,
+}: EmailPasswordProps) {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
@@ -102,6 +106,9 @@ export default function EmailPassword({ onEmailFlowChange }: EmailPasswordProps)
 			</div>
 
 			<form action={handleEmailSignup} onSubmit={handleSubmit} className="grid gap-3">
+				{returnUrl ? (
+					<input type="hidden" name="returnUrl" value={returnUrl} />
+				) : null}
 				<div className="grid gap-3">
 					<Label htmlFor="email">Email</Label>
 					<Input
@@ -189,7 +196,10 @@ export default function EmailPassword({ onEmailFlowChange }: EmailPasswordProps)
 
 			<div className="text-center text-sm">
 				Already have an account?{" "}
-				<Link href="/sign-in" className="underline underline-offset-4">
+				<Link
+					href={returnUrl ? `/sign-in?returnUrl=${encodeURIComponent(returnUrl)}` : "/sign-in"}
+					className="underline underline-offset-4"
+				>
 					Sign in
 				</Link>
 			</div>

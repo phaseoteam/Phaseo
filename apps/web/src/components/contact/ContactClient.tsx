@@ -68,10 +68,10 @@ type IssueOption = {
 const METHODS: ContactMethod[] = [
 	{
 		key: "support",
-		title: "Support form",
-		description: "Private request routed directly to me.",
+		title: "Talk to a human",
+		description: "Private support request. You get a direct reply from the founder.",
 		href: "#support-form",
-		badge: "Private",
+		badge: "Founder",
 		icon: Inbox,
 	},
 	{
@@ -111,7 +111,8 @@ const ISSUE_OPTIONS: IssueOption[] = [
 	{
 		value: "billing",
 		label: "Billing or account issue",
-		helper: "Use the support form so we can handle sensitive details privately.",
+		helper:
+			"Use the support form so we can handle sensitive details privately with a direct human reply.",
 		recommendationKey: "support",
 		icon: Inbox,
 	},
@@ -125,7 +126,8 @@ const ISSUE_OPTIONS: IssueOption[] = [
 	{
 		value: "data",
 		label: "Data or metrics issue",
-		helper: "Use the support form and share request IDs or examples.",
+		helper:
+			"Use the support form and share request IDs or examples for a direct human review.",
 		recommendationKey: "support",
 		icon: LineChart,
 	},
@@ -146,7 +148,7 @@ const ISSUE_OPTIONS: IssueOption[] = [
 	{
 		value: "general",
 		label: "General question",
-		helper: "Submit the support form and we will route it quickly.",
+		helper: "Submit the support form to get a direct human response.",
 		recommendationKey: "support",
 		icon: LifeBuoy,
 	},
@@ -255,7 +257,7 @@ export function ContactClient({
 
 			const ok = await toast.promise(sendPromise, {
 				loading: "Sending request...",
-				success: "Request sent. We'll reply by email.",
+				success: "Request sent. You will get a direct human reply by email.",
 				error: (err) =>
 					err instanceof Error ? err.message : "Unable to submit request",
 			});
@@ -278,10 +280,14 @@ export function ContactClient({
 		<div className="container mx-auto py-10 space-y-8">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div className="space-y-2">
+					<Badge variant="secondary" className="w-fit">
+						Talk to a human
+					</Badge>
 					<h1 className="text-3xl font-semibold">Contact</h1>
 					<p className="text-muted-foreground max-w-2xl">
 						Tell us what you need and we will route you to the fastest channel.
-						The support form creates a private support request.
+						If you use the support form, your request goes directly to me, the
+						founder, for a human response.
 					</p>
 				</div>
 				<div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
@@ -298,8 +304,8 @@ export function ContactClient({
 				<CardHeader className="pb-4">
 					<CardTitle className="text-base">Choose a channel</CardTitle>
 					<CardDescription>
-						Pick the fastest way to get help. We will guide you to the right
-						place.
+						Pick the fastest way to get help. The support form always gets a
+						human response.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -433,11 +439,11 @@ export function ContactClient({
 
 			<Card className="border border-border/60" id="support-form">
 				<CardHeader className="pb-4">
-					<CardTitle className="text-base">Submit a support request</CardTitle>
+					<CardTitle className="text-base">Talk to a human</CardTitle>
 					<CardDescription>
-						We will reply within 30 minutes when I am available. Otherwise
-						replies may be delayed - please be patient and I will get back to you
-						ASAP.
+						You will get a direct human response from me by email. I usually
+						reply within 30 minutes when I am available, and I will always
+						follow up as soon as possible.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>

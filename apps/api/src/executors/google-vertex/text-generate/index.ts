@@ -5,15 +5,17 @@
 import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
-import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { irToAnthropicMessages, anthropicMessagesToIR } from "@executors/anthropic/text-generate";
+import { createAnthropicToResponsesStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { transformStream as transformGoogleGeminiStream } from "@executors/google-ai-studio/text-generate";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey } from "@providers/keys";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
+import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "@executors/google/shared/usage-fallback";
 import { getBindings } from "@/runtime/env";
 import { withNormalizedReasoning } from "@executors/google/text-generate/normalize-reasoning";
 import { irPartsToGeminiParts } from "@executors/google/shared/media";
@@ -57,22 +59,19 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	if (route.family === "anthropic") {
 		payload = irToAnthropicMessages(irRequest, args.maxOutputTokens);
 		payload.anthropic_version = "vertex-2023-10-16";
+		payload.stream = true;
 		endpoint = `${apiBase}/publishers/anthropic/models/${encodeURIComponent(route.modelForPath)}:rawPredict`;
 	} else if (route.family === "gemini") {
 		const normalizedIr = withNormalizedReasoning(irRequest, args.capabilityParams, route.modelForPath);
 		payload = await irToGemini(normalizedIr, route.modelForPath);
-		endpoint = irRequest.stream
-			? `${apiBase}/publishers/google/models/${encodeURIComponent(route.modelForPath)}:streamGenerateContent?alt=sse`
-			: `${apiBase}/publishers/google/models/${encodeURIComponent(route.modelForPath)}:generateContent`;
+		endpoint = `${apiBase}/publishers/google/models/${encodeURIComponent(route.modelForPath)}:streamGenerateContent?alt=sse`;
 	} else {
 		payload = irToOpenAIChat(irRequest, route.modelForPayload, args.providerId, args.capabilityParams);
-		payload.stream = Boolean(irRequest.stream);
-		if (payload.stream === true) {
-			payload.stream_options = {
-				...(payload.stream_options ?? {}),
-				include_usage: true,
-			};
-		}
+		payload.stream = true;
+		payload.stream_options = {
+			...(payload.stream_options ?? {}),
+			include_usage: true,
+		};
 		endpoint = `${apiBase}/endpoints/openapi/chat/completions`;
 	}
 
@@ -111,9 +110,37 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
-	if (irRequest.stream && res.body) {
-		if (route.family === "gemini") {
-			const stream = transformGoogleGeminiStream(res.body, args);
+	const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+	const isJsonResponse = contentType.includes("application/json") && !contentType.includes("text/event-stream");
+
+	if (res.body && !isJsonResponse) {
+		if (irRequest.stream) {
+			const stream = (() => {
+				if (route.family === "gemini") {
+					return transformGoogleGeminiStream(res.body!, args);
+				}
+				if (route.family === "openapi_chat") {
+					return resolveStreamForProtocol(
+						new Response(res.body!, {
+							status: res.status,
+							headers: res.headers,
+						}),
+						args,
+						"chat",
+					);
+				}
+				const responsesStream = res.body!.pipeThrough(
+					createAnthropicToResponsesStreamTransformer(args.requestId, model),
+				);
+				return resolveStreamForProtocol(
+					new Response(responsesStream, {
+						status: res.status,
+						headers: res.headers,
+					}),
+					args,
+					"responses",
+				);
+			})();
 			return {
 				kind: "stream",
 				stream,
@@ -130,30 +157,68 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			};
 		}
 
-		if (route.family === "openapi_chat") {
-			const stream = resolveStreamForProtocol(
-				new Response(res.body, {
-					status: res.status,
-					headers: res.headers,
-				}),
-				args,
-				"chat",
+		const bufferingStream = (() => {
+			if (route.family === "gemini") {
+				const bufferingArgs = {
+					...args,
+					endpoint: "chat.completions",
+					protocol: "openai.chat.completions",
+				} as ExecutorExecuteArgs;
+				return transformGoogleGeminiStream(res.body!, bufferingArgs);
+			}
+			if (route.family === "openapi_chat") {
+				return res.body!;
+			}
+			return res.body!.pipeThrough(
+				createAnthropicToResponsesStreamTransformer(args.requestId, model),
 			);
-			return {
-				kind: "stream",
-				stream,
-				usageFinalizer: async () => null,
-				bill,
-				upstream: res,
-				keySource: keyInfo.source,
-				byokKeyId: keyInfo.byokId,
-				mappedRequest,
-				timing: {
-					latencyMs: undefined,
-					generationMs: undefined,
-				},
-			};
+		})();
+		const routeForBuffer = route.family === "anthropic" ? "responses" : "chat";
+		const transformedResponse = new Response(bufferingStream, {
+			status: res.status,
+			headers: res.headers,
+		});
+		const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(
+			transformedResponse,
+			args,
+			routeForBuffer,
+			upstreamStartMs,
+		);
+		if (route.family === "gemini") {
+			const fallback = applyGoogleOutputTokenFallback(ir);
+			if (fallback.applied) {
+				applyOpenAIUsageFallback(
+					(rawResponse as any)?.usage,
+					ir.usage?.inputTokens ?? 0,
+					ir.usage?.outputTokens ?? 0,
+					ir.usage?.totalTokens ?? 0,
+				);
+			}
 		}
+
+		const usageMeters = normalizeTextUsageForPricing(ir?.usage ?? usage);
+		if (usageMeters) {
+			const priced = computeBill(usageMeters, args.pricingCard);
+			bill.cost_cents = priced.pricing.total_cents;
+			bill.currency = priced.pricing.currency;
+			bill.usage = priced;
+		}
+		bill.finish_reason = ir?.choices?.[0]?.finishReason ?? null;
+
+		return {
+			kind: "completed",
+			ir,
+			bill,
+			upstream: res,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+			rawResponse,
+			timing: {
+				latencyMs: firstByteMs ?? totalMs,
+				generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+			},
+		};
 	}
 
 	const json = await res.json();
@@ -162,6 +227,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		ir = anthropicMessagesToIR(json, args.requestId, model, args.providerId);
 	} else if (route.family === "gemini") {
 		ir = geminiToIR(json, args.requestId, model, args.providerId);
+		applyGoogleOutputTokenFallback(ir);
 	} else {
 		ir = openAIChatToIR(json, args.requestId, model, args.providerId);
 	}
@@ -212,7 +278,7 @@ function finalizeResult(input: {
 			mappedRequest,
 			timing: {
 				latencyMs: Date.now() - upstreamStartMs,
-				generationMs: Date.now() - upstreamStartMs,
+				generationMs: 0,
 			},
 		};
 	}
@@ -236,8 +302,8 @@ function finalizeResult(input: {
 		mappedRequest,
 		rawResponse,
 		timing: {
-			latencyMs: undefined,
-			generationMs: Date.now() - upstreamStartMs,
+			latencyMs: Date.now() - upstreamStartMs,
+			generationMs: 0,
 		},
 	};
 }

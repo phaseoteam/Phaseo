@@ -104,6 +104,7 @@ export async function auditSuccess(args: {
     stream: boolean; byok: boolean;
     nativeResponseId?: string | null;
     appTitle?: string | null; referer?: string | null;
+    appId?: string | null; appName?: string | null;
     requestMethod?: string | null;
     requestPath?: string | null;
     requestUrl?: string | null;
@@ -131,7 +132,23 @@ export async function auditSuccess(args: {
     try {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
-        const appId = await ensureAppId({ teamId: args.teamId, appTitle: args.appTitle ?? null, referer: args.referer ?? null });
+        const appId = await ensureAppId({
+            teamId: args.teamId,
+            appTitle: args.appTitle ?? null,
+            referer: args.referer ?? null,
+            appId: args.appId ?? null,
+            appName: args.appName ?? null,
+        });
+        if (!appId) {
+            console.error("[audit] ensureAppId returned null", {
+                requestId: args.requestId,
+                teamId: args.teamId,
+                appTitle: args.appTitle ?? null,
+                referer: args.referer ?? null,
+                appIdHeader: args.appId ?? null,
+                appNameHeader: args.appName ?? null,
+            });
+        }
         const row = buildSupaRow({
             requestId: args.requestId,
             teamId: args.teamId,
@@ -190,6 +207,8 @@ type AuditFailureBefore = {
     keyId?: string | null;
     appTitle?: string | null;
     referer?: string | null;
+    appId?: string | null;
+    appName?: string | null;
     requestMethod?: string | null;
     requestPath?: string | null;
     requestUrl?: string | null;
@@ -221,6 +240,8 @@ type AuditFailureExecute = {
     keyId?: string | null;
     appTitle?: string | null;
     referer?: string | null;
+    appId?: string | null;
+    appName?: string | null;
     requestMethod?: string | null;
     requestPath?: string | null;
     requestUrl?: string | null;
@@ -243,6 +264,15 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         };
 
         if (args.stage === "before") {
+            const resolvedAppId = args.teamId
+                ? await ensureAppId({
+                    teamId: args.teamId,
+                    appTitle: args.appTitle ?? null,
+                    referer: args.referer ?? null,
+                    appId: args.appId ?? null,
+                    appName: args.appName ?? null,
+                })
+                : null;
             const row = buildSupaRow({
                 requestId: args.requestId,
                 teamId: args.teamId ?? null,
@@ -256,6 +286,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 success: false,
                 errorCode: args.errorCode,
             errorMessage: args.errorMessage ?? null,
+            appId: resolvedAppId,
             latencyMs: args.latencyMs ?? null,
             generationMs: null,
             usage: {},
@@ -283,6 +314,13 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
         }
 
         // stage === "execute"
+        const resolvedAppId = await ensureAppId({
+            teamId: args.teamId,
+            appTitle: args.appTitle ?? null,
+            referer: args.referer ?? null,
+            appId: args.appId ?? null,
+            appName: args.appName ?? null,
+        });
         const row = buildSupaRow({
             requestId: args.requestId,
             teamId: args.teamId,
@@ -296,6 +334,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             success: false,
             errorCode: args.errorCode,
             errorMessage: args.errorMessage ?? null,
+            appId: resolvedAppId,
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
             usage: {},

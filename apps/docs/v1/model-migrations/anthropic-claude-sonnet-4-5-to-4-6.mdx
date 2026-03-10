@@ -1,0 +1,68 @@
+---
+title: "Anthropic: Claude Sonnet 4.5 to 4.6"
+description: "The concrete API and behavior changes to review when upgrading from Claude Sonnet 4.5 to Claude Sonnet 4.6."
+---
+
+# Anthropic: Claude Sonnet 4.5 to 4.6
+
+Use this guide when you are moving from `anthropic/claude-sonnet-4.5` to `anthropic/claude-sonnet-4.6`.
+
+Sonnet 4.6 shares the same migration mechanics as the broader Claude 4.6 line, but it also changes the performance profile enough that prompt and routing assumptions should be revalidated.
+
+## What changed
+
+- assistant prefills are no longer supported on Claude 4.6 models and return `400`
+- structured output moved from `output_format` to `output_config.format`
+- adaptive thinking is now configured through `output_config.effort`
+- outdated beta headers should be removed
+- Sonnet 4.6 is a full upgrade across coding, computer use, long-context reasoning, agent planning, and instruction following
+- Sonnet 4.6 adds a 1M-token context window in beta
+
+## What to change in your integration
+
+### 1. Stop using assistant prefills
+
+If your existing Sonnet 4.5 prompts start the assistant with a JSON prefix, XML tag, or formatting stub, remove that pattern before rollout.
+
+### 2. Move structured output config
+
+Replace `output_format` usage with `output_config.format` and rerun any schema or parser tests.
+
+### 3. Re-tune effort and latency expectations
+
+If you use Sonnet for interactive routes, benchmark different `effort` levels before making 4.6 the default. The model is stronger, but the best setting depends on your latency budget.
+
+## What to test
+
+### Output behavior
+
+- instruction-following on formatting-sensitive prompts
+- agent planning quality on multi-step tasks
+- coding, refactor, and review prompts
+- long-context retrieval and summarization
+
+### Contract stability
+
+- JSON and schema validation pass rate
+- tool argument completeness
+- finish reasons and empty-output handling
+- routes that formerly relied on prefills for stable formatting
+
+### Production metrics
+
+- latency by effort level
+- task success versus Sonnet 4.5
+- timeout and retry rates
+- cost per successful task
+
+## Safe rollout
+
+1. Remove prefills and update structured output config first.
+2. Evaluate Sonnet 4.6 on your current production prompt set.
+3. Canary traffic with Sonnet 4.5 or another stable route as fallback.
+4. Increase traffic only after quality and contract stability hold.
+
+## Sources
+
+- [Anthropic migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Introducing Claude Sonnet 4.6](https://www.anthropic.com/news/claude-sonnet-4-6)

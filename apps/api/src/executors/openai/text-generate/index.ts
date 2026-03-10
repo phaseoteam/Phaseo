@@ -692,14 +692,12 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 			? irToOpenAICompletions(irWithRequestMetadata, modelForRouting)
 			: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams));
 
-	if (irWithRequestMetadata.stream) {
-		requestPayload.stream = true;
-		if (route === "chat") {
-			requestPayload.stream_options = {
-				...(requestPayload.stream_options ?? {}),
-				include_usage: true,
-			};
-		}
+	requestPayload.stream = true;
+	if (route === "chat") {
+		requestPayload.stream_options = {
+			...(requestPayload.stream_options ?? {}),
+			include_usage: true,
+		};
 	}
 	const sanitized = sanitizeOpenAICompatRequest({
 		providerId: args.providerId,
@@ -770,28 +768,24 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		};
 	}
 
-	const json = await res.json().catch(() => null);
-	const ir = json
-		? (route === "responses"
-			? openAIResponsesToIR(json, args.requestId, irWithRequestMetadata.model, args.providerId)
-			: (route === "legacy_completions"
-				? openAICompletionsToIR(json, args.requestId, irWithRequestMetadata.model, args.providerId)
-				: openAIChatToIR(json, args.requestId, irWithRequestMetadata.model, args.providerId)))
-		: undefined;
+	const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(
+		res,
+		args,
+		route,
+		upstreamStartMs,
+	);
 
 	if (ir) {
-		(ir as any).rawResponse = json;
+		(ir as any).rawResponse = rawResponse;
 	}
 
-	const usageMeters = normalizeTextUsageForPricing(json?.usage);
+	const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage);
 	if (usageMeters) {
 		const priced = computeBill(usageMeters, args.pricingCard);
 		bill.cost_cents = priced.pricing.total_cents;
 		bill.currency = priced.pricing.currency;
 		bill.usage = priced;
 	}
-
-	const totalMs = Math.max(0, Date.now() - upstreamStartMs);
 
 	return {
 		kind: "completed",
@@ -801,10 +795,10 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		keySource: keyInfo.source,
 		byokKeyId: keyInfo.byokId,
 		mappedRequest,
-		rawResponse: json ?? null,
+		rawResponse,
 		timing: {
-			latencyMs: totalMs,
-			generationMs: totalMs,
+			latencyMs: firstByteMs ?? totalMs,
+			generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
 		},
 	};
 }

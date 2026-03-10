@@ -14,10 +14,11 @@ import { computeBill } from "@pipeline/pricing/engine";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
-import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { withNormalizedReasoning } from "./normalize-reasoning";
 import { irPartsToGeminiParts } from "../../google/shared/media";
 import { resolveGoogleModelCandidates } from "../../google/shared/model";
+import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback } from "../../google/shared/usage-fallback";
 import {
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
@@ -388,9 +389,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const upstreamStartMs = meta.upstreamStartMs ?? Date.now();
 
 	const makeEndpoint = (candidateModel: string) =>
-		ir.stream
-			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
-			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
+		`${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`;
 
 	try {
 		const doRequest = async (candidateModel: string) => {
@@ -431,23 +430,82 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			};
 		}
 
-		// Handle streaming
-		if (ir.stream && response.body) {
+		const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+		const isJsonResponse = contentType.includes("application/json") && !contentType.includes("text/event-stream");
+
+		if (response.body && !isJsonResponse) {
+			if (ir.stream) {
+				const transformedStream = transformStream(response.body, args);
+				return {
+					kind: "stream",
+					stream: transformedStream,
+					bill: { cost_cents: 0, currency: "USD" },
+					upstream: response,
+					keySource: keyInfo.source,
+					byokKeyId: keyInfo.byokId,
+					mappedRequest,
+					usageFinalizer: async () => null,
+				};
+			}
+
+			const bufferingArgs = {
+				...args,
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+			} as ExecutorExecuteArgs;
+			const transformedStream = transformStream(response.body, bufferingArgs);
+			const transformedResponse = new Response(transformedStream, {
+				status: response.status,
+				headers: response.headers,
+			});
+			const { ir: irResponse, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(
+				transformedResponse,
+				args,
+				"chat",
+				upstreamStartMs,
+			);
+			const fallback = applyGoogleOutputTokenFallback(irResponse);
+			if (fallback.applied) {
+				applyOpenAIUsageFallback(
+					(rawResponse as any)?.usage,
+					irResponse.usage?.inputTokens ?? 0,
+					irResponse.usage?.outputTokens ?? 0,
+					irResponse.usage?.totalTokens ?? 0,
+				);
+			}
+
+			const bill: any = {
+				cost_cents: 0,
+				currency: "USD",
+			};
+
+			const usageMeters = normalizeTextUsageForPricing(irResponse?.usage ?? usage);
+			if (usageMeters && pricingCard) {
+				const priced = computeBill(usageMeters, pricingCard);
+				bill.cost_cents = priced.pricing.total_cents;
+				bill.currency = priced.pricing.currency;
+				bill.usage = priced;
+			}
+
 			return {
-				kind: "stream",
-				stream: response.body,
-				bill: { cost_cents: 0, currency: "USD" },
+				kind: "completed",
+				ir: irResponse,
 				upstream: response,
+				bill,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				mappedRequest,
-				usageFinalizer: async () => null,
+				rawResponse,
+				timing: {
+					latencyMs: firstByteMs ?? totalMs,
+					generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
+				},
 			};
 		}
 
-		// Non-streaming response
 		const data = await response.json();
 		const irResponse = geminiToIR(data, requestId, model, providerId);
+		applyGoogleOutputTokenFallback(irResponse);
 
 		// Calculate pricing
 		const bill: any = {
@@ -474,8 +532,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
 			timing: {
-				latencyMs: undefined,
-				generationMs: totalMs,
+				latencyMs: totalMs,
+				generationMs: 0,
 			},
 		};
 	} catch (error: any) {

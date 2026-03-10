@@ -6,6 +6,7 @@ import KeyModels from "@/components/landingPage/Auth/KeyModels";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Login } from "@/components/(gateway)/auth/Login";
+import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 
 type SignInPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -23,6 +24,16 @@ export default async function Page({ searchParams }: SignInPageProps) {
 	const signupNotice = signup === "exists" || signup === "check-email" ? signup : null;
 	const authErrorParam = Array.isArray(params.error) ? params.error[0] : params.error;
 	const authError = typeof authErrorParam === "string" ? authErrorParam : null;
+	const returnUrlParam = Array.isArray(params.returnUrl)
+		? params.returnUrl[0]
+		: params.returnUrl;
+	const sanitizedReturnUrl = sanitizeReturnUrl(
+		typeof returnUrlParam === "string" ? returnUrlParam : null,
+		"/"
+	);
+	const returnUrl = sanitizedReturnUrl.startsWith("/oauth/consent?")
+		? sanitizedReturnUrl
+		: undefined;
 
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">
@@ -43,7 +54,11 @@ export default async function Page({ searchParams }: SignInPageProps) {
 				<div className="flex flex-1 items-center justify-center">
 					<div className="mx-auto w-full max-w-xs">
 						<Suspense fallback={<div>Loading…</div>}>
-							<Login signupNotice={signupNotice} authError={authError} />
+							<Login
+								signupNotice={signupNotice}
+								authError={authError}
+								returnUrl={returnUrl}
+							/>
 						</Suspense>
 					</div>
 				</div>

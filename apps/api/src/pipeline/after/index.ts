@@ -20,6 +20,7 @@ import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { getBaseModel } from "../execute/utils";
+import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 import {
     maybeWriteStickyRoutingFromUsage,
     resolveCacheAwareRoutingPreference,
@@ -90,6 +91,89 @@ function normalizeWavChunkSizesIfNeeded(bytes: Uint8Array): Uint8Array {
 	const dataPayloadStart = dataChunkOffset + 8;
 	patchedView.setUint32(dataSizeOffset, Math.max(0, patched.length - dataPayloadStart), true);
 	return patched;
+}
+
+function dispatchNonStreamSuccessSideEffects(args: {
+    ctx: PipelineContext;
+    result: RequestResult;
+    usageForBilling: any;
+    usageForSticky: any;
+    totalCents: number;
+    totalNanos: number;
+    currency: string;
+    finishReason: string | null;
+    nativeResponseId: string | null;
+    gatewayPayload: any;
+    cacheAwareRoutingEnabled: boolean;
+}) {
+    const {
+        ctx,
+        result,
+        usageForBilling,
+        usageForSticky,
+        totalCents,
+        totalNanos,
+        currency,
+        finishReason,
+        nativeResponseId,
+        gatewayPayload,
+        cacheAwareRoutingEnabled,
+    } = args;
+
+    let releaseRuntime: () => void = () => { };
+    try {
+        releaseRuntime = ensureRuntimeForBackground();
+    } catch (error) {
+        console.error("[gateway] failed to initialize runtime for non-stream side-effects", {
+            requestId: ctx.requestId,
+            endpoint: ctx.endpoint,
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+    dispatchBackground((async () => {
+        try {
+            try {
+                await maybeWriteStickyRoutingFromUsage({
+                    teamId: ctx.teamId,
+                    endpoint: ctx.endpoint,
+                    model: getBaseModel(ctx.model),
+                    body: ctx.body,
+                    providerId: result.provider,
+                    usage: usageForSticky,
+                    enabled: cacheAwareRoutingEnabled,
+                });
+            } catch (error) {
+                console.warn("[gateway] sticky routing write failed", {
+                    endpoint: ctx.endpoint,
+                    model: ctx.model,
+                    provider: result.provider,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+
+            await handleSuccessAudit(
+                ctx,
+                result,
+                false,
+                usageForBilling,
+                totalCents,
+                totalNanos,
+                currency,
+                finishReason,
+                result.upstream.status,
+                nativeResponseId,
+                gatewayPayload,
+            );
+
+            await recordUsageAndChargeOnce({
+                ctx,
+                costNanos: totalNanos,
+                endpoint: ctx.endpoint,
+            });
+        } finally {
+            releaseRuntime();
+        }
+    })());
 }
 
 export async function finalizeRequest(args: {
@@ -249,27 +333,6 @@ async function handleNonStreamResponse(
             ? ctx.teamSettings.cacheAwareRoutingEnabled
             : true
     );
-    await ctx.timer.span("after_write_sticky_routing", async () => {
-        try {
-            await maybeWriteStickyRoutingFromUsage({
-                teamId: ctx.teamId,
-                endpoint: ctx.endpoint,
-                model: getBaseModel(ctx.model),
-                body: ctx.body,
-                providerId: result.provider,
-                usage: shapedUsageFinal,
-                enabled: cacheAwareRoutingEnabled,
-            });
-        } catch (error) {
-            console.warn("[gateway] sticky routing write failed", {
-                endpoint: ctx.endpoint,
-                model: ctx.model,
-                provider: result.provider,
-                error: error instanceof Error ? error.message : String(error),
-            });
-        }
-    });
-
     // Extract finish reason and normalize it for consistent storage
     const finishReason = await ctx.timer.span("after_extract_finish_reason", () => {
         const rawFinishReason = extractFinishReason(payload);
@@ -277,30 +340,18 @@ async function handleNonStreamResponse(
     });
 
     const nativeResponseId = payload.nativeResponseId ?? null;
-
-    // Audit success
-    await ctx.timer.span("after_audit_success", () =>
-        handleSuccessAudit(
-            ctx,
-            result,
-            false, // isStream
-            payload.usage,
-            totalCentsFinal,
-            totalNanosFinal,
-            currencyFinal,
-            finishReason,
-            result.upstream.status,
-            nativeResponseId ?? null,
-            payload,
-        )
-    );
-    // Record usage and charge wallet
-    await ctx.timer.span("after_record_usage_charge", async () => {
-        await recordUsageAndChargeOnce({
-            ctx,
-            costNanos: totalNanosFinal,
-            endpoint: ctx.endpoint,
-        });
+    dispatchNonStreamSuccessSideEffects({
+        ctx,
+        result,
+        usageForBilling: payload.usage,
+        usageForSticky: shapedUsageFinal,
+        totalCents: totalCentsFinal,
+        totalNanos: totalNanosFinal,
+        currency: currencyFinal,
+        finishReason,
+        nativeResponseId,
+        gatewayPayload: payload,
+        cacheAwareRoutingEnabled,
     });
 
     const includeMeta = ctx.meta.returnMeta ?? false;

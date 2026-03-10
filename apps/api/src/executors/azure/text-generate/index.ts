@@ -98,8 +98,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		mappedRequest,
 		rawResponse,
 		timing: {
-			latencyMs: firstByteMs,
-			generationMs: totalMs,
+			latencyMs: firstByteMs ?? totalMs,
+			generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
 		},
 	};
 }

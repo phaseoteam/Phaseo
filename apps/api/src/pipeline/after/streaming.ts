@@ -85,7 +85,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     };
 
     let finalUsageSettled = false;
-    const finalizeUsage = async (usage: any, reason: "complete" | "aborted") => {
+    const finalizeUsage = (usage: any, reason: "complete" | "aborted") => {
         if (finalUsageSettled) return;
         finalUsageSettled = true;
 
@@ -100,25 +100,25 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             });
         }
 
-        try {
-            if (firstFrameAt !== null && typeof ctx.meta.generation_ms !== "number") {
-                ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
-            }
-            await onFinalUsage(usage, {
+        if (firstFrameAt !== null && typeof ctx.meta.generation_ms !== "number") {
+            ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
+        }
+        void Promise.resolve(
+            onFinalUsage(usage, {
                 aborted: reason === "aborted",
                 sawFinalUsage: reason === "complete",
-            });
-        } catch (err) {
+            }),
+        ).catch((err) => {
             console.error("passthroughWithPricing onFinalUsage error:", err, {
                 requestId: ctx.requestId,
                 teamId: ctx.teamId,
             });
-        }
+        });
     };
 
     (async () => {
         if (!reader) {
-            await finalizeUsage(null, "aborted");
+            finalizeUsage(null, "aborted");
             try { await writer.close(); } catch { }
             return;
         }
@@ -232,10 +232,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (isFinalSnapshot) {
                         sawFinalUsage = true;
                         if (typeof ctx.meta.generation_ms !== "number") {
-                            if (typeof ctx.meta.upstreamStartMs === "number") {
-                                ctx.meta.generation_ms = Math.round(Date.now() - ctx.meta.upstreamStartMs);
-                            } else if (firstFrameAt !== null) {
+                            if (firstFrameAt !== null) {
                                 ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
+                            } else if (typeof ctx.meta.upstreamStartMs === "number") {
+                                ctx.meta.generation_ms = Math.round(Date.now() - ctx.meta.upstreamStartMs);
                             }
                         }
                     }
@@ -262,7 +262,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         if (onFinalSnapshot) {
                             try { onFinalSnapshot(finalSnapshotFromEvents ?? json); } catch { }
                         }
-                        await finalizeUsage(usageCandidate ?? lastSeenUsage, "complete");    
+                        finalizeUsage(usageCandidate ?? lastSeenUsage, "complete");
                     }
 
                     for (const outbound of outboundFrames) {
@@ -276,7 +276,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             }
         } finally {
             if (!sawFinalUsage) {
-                await finalizeUsage(lastSeenUsage, "aborted");
+                finalizeUsage(lastSeenUsage, "aborted");
             }
             if (!downstreamClosed) {
                 try { await writer.close(); } catch { }

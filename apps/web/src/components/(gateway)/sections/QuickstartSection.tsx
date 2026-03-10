@@ -358,13 +358,13 @@ function buildSnippets(
 	return {
 		curl: `curl -s -X POST "${BASE_URL}${config.path}" \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: YOUR_GATEWAY_KEY" \\
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \\
   -d '${escapedJson}'`,
 		typescript: `const response = await fetch("${BASE_URL}${config.path}", {
     method: "POST",
     headers: {
         "Content-Type": "application/json",
-        "X-API-Key": process.env.AI_STATS_GATEWAY_KEY!,
+        "Authorization": \`Bearer \${process.env.AI_STATS_API_KEY!}\`,
     },
     body: JSON.stringify(
 ${tsJson}
@@ -383,7 +383,7 @@ response = requests.post(
     "${BASE_URL}${config.path}",
     headers={
         "Content-Type": "application/json",
-        "X-API-Key": "YOUR_GATEWAY_KEY",
+        "Authorization": "Bearer YOUR_API_KEY",
     },
     json=${pythonJson}
 )
@@ -393,7 +393,7 @@ print(response.json())`,
 		"typescript-sdk": `import { AIStats } from "@ai-stats/ts-sdk";
 
 const client = new AIStats({
-    apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_GATEWAY_KEY",
+    apiKey: process.env.AI_STATS_API_KEY ?? "YOUR_API_KEY",
 });
 
 const response = await client.${jsMethod}(
@@ -404,7 +404,7 @@ console.log(response);`,
 		"python-sdk": `from ai_stats import AIStats
 
 async def main():
-    async with AIStats(api_key="YOUR_GATEWAY_KEY") as client:
+    async with AIStats(api_key="YOUR_API_KEY") as client:
         response = await client.${pyMethod}(
 ${pythonLiteral}
         )

@@ -49,6 +49,28 @@ export default function UsageTableFilters({
 		defaultValue: "all",
 	});
 
+	React.useEffect(() => {
+		if (!modelFilter) return;
+		if (!models.includes(modelFilter)) {
+			setModelFilter("");
+		}
+	}, [modelFilter, models, setModelFilter]);
+
+	React.useEffect(() => {
+		if (!providerFilter) return;
+		if (!providers.includes(providerFilter)) {
+			setProviderFilter("");
+		}
+	}, [providerFilter, providers, setProviderFilter]);
+
+	React.useEffect(() => {
+		if (!keyFilter) return;
+		const valid = apiKeys.some((k) => k.id === keyFilter);
+		if (!valid) {
+			setKeyFilter("");
+		}
+	}, [keyFilter, apiKeys, setKeyFilter]);
+
 	const hasFilters =
 		modelFilter || providerFilter || keyFilter || statusFilter !== "all";
 

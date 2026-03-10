@@ -16,26 +16,15 @@ function normalizeUrl(input?: string | null): string | null {
     }
 }
 
-function normaliseUrl(u?: string | null): string | null {
-    if (!u) return null;
-    try { return new URL(u).toString(); } catch { return u; }
-}
 function hostFromUrl(u?: string | null): string | null {
     if (!u) return null;
-    try { return new URL(u).host || null; } catch { return null; }
-}
-
-function deriveAppKey(appTitle?: string | null, referer?: string | null): string | null {
-    const host = hostFromUrl(referer);
-    const title = slugify(appTitle ?? "");
-    if (title && host) return `${title}@${host}`;
-    if (title) return title;
-    if (host) return `@${host}`;
-    return null;
-}
-
-function hostOf(input?: string | null): string {
-    try { return input ? new URL(input).host.replace(/^www\./, "") : ""; } catch { return ""; }
+    try {
+        const parsed = new URL(u);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+        return parsed.host || null;
+    } catch {
+        return null;
+    }
 }
 
 function slugify(s?: string | null): string {
@@ -48,103 +37,144 @@ function slugify(s?: string | null): string {
         .replace(/^-+|-+$/g, "")
         .slice(0, 40);
 }
-function rand6() { return Math.random().toString(36).slice(2, 8); }
 
-async function findByUrl(teamId: string, urlNorm: string) {
-    const supabase = getSupabaseAdmin();
-    const { data } = await supabase
-        .from("data_api_apps").select("id").eq("team_id", teamId).eq("url", urlNorm).maybeSingle();
-    return data as { id: string } | null;
+function normalizeAppId(input?: string | null): string | null {
+    const value = String(input ?? "").trim().toLowerCase();
+    if (!value) return null;
+    const normalized = value
+        .replace(/[^a-z0-9._:-]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 64);
+    return normalized || null;
 }
 
-async function findByTitle(teamId: string, title: string) {
-    const supabase = getSupabaseAdmin();
-    const { data } = await supabase
-        .from("data_api_apps").select("id").eq("team_id", teamId).ilike("title", title).maybeSingle();
-    return data as { id: string } | null;
+function deriveIdentityUrl(args: {
+    referer?: string | null;
+    appId?: string | null;
+    appTitle?: string | null;
+    appName?: string | null;
+}): string {
+    const urlFromReferer = normalizeUrl(args.referer);
+    if (urlFromReferer) return urlFromReferer;
+
+    const normalizedAppId = normalizeAppId(args.appId);
+    if (normalizedAppId) return `app://id/${normalizedAppId}`;
+
+    const titleSlug = slugify(args.appName ?? args.appTitle ?? "");
+    if (titleSlug) return `app://title/${titleSlug}`;
+
+    return "about:blank";
 }
 
-async function upsertByKey(teamId: string, appKey: string, title: string, urlNorm: string | null) {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-        .from("data_api_apps")
-        .upsert([{
-            team_id: teamId,
-            app_key: appKey,
-            title,
-            url: urlNorm ?? "",
-            last_seen: new Date().toISOString(),
-        }], { onConflict: "team_id,app_key" })
-        .select("id")
-        .single();
-    if (error) { console.error("[apps] upsert failed", error); return null; }
-    return (data?.id as string) ?? null;
+function deriveAppKey(identityUrl: string): string {
+    return identityUrl;
 }
 
 /**
- * Resolve or create an app row for (team, title, referer).
- * No header key needed yet. Used *only* in logging.
+ * Resolve or create an app row for logging.
  */
 export async function resolveAppIdForLogging(args: {
     teamId: string;
     appTitle?: string | null;
     referer?: string | null;
+    appId?: string | null;
+    appName?: string | null;
 }): Promise<string | null> {
-    const title = (args.appTitle ?? "").trim();
-    const urlNorm = normalizeUrl(args.referer);
-    const host = hostOf(urlNorm);
-
-    // 1) match by URL
-    if (urlNorm) {
-        const found = await findByUrl(args.teamId, urlNorm);
-        if (found?.id) return found.id;
-    }
-    // 2) match by Title
-    if (title) {
-        const found = await findByTitle(args.teamId, title);
-        if (found?.id) return found.id;
-    }
-
-    // 3) create with generated key (title-host-rand)
-    const base = [slugify(title) || "app", slugify(host) || "host"].join("-");
-    const genKey = `${base}-${rand6()}`;
-    const id = await upsertByKey(args.teamId, genKey, title || base, urlNorm);
-    return id;
+    return ensureAppId(args);
 }
 
 export async function ensureAppId(params: {
     teamId: string;
     appTitle?: string | null;
     referer?: string | null;
+    appId?: string | null;
+    appName?: string | null;
 }): Promise<string | null> {
-    const { teamId, appTitle, referer } = params;
-    const app_key = deriveAppKey(appTitle, referer);
-    if (!app_key) return null;
+    const { teamId, appTitle, referer, appId, appName } = params;
+    const normalizedAppId = normalizeAppId(appId);
+    const identityUrl = deriveIdentityUrl({ referer, appId, appTitle, appName });
+    const app_key = deriveAppKey(identityUrl);
 
     const supabase = getSupabaseAdmin();
     const nowIso = new Date().toISOString();
+    const inferredTitle =
+        appName ??
+        appTitle ??
+        hostFromUrl(identityUrl) ??
+        (normalizedAppId ? `App ${normalizedAppId}` : "Unknown");
     const payload = {
         team_id: teamId,
         app_key,
-        title: appTitle ?? hostFromUrl(referer) ?? "Unknown",
-        url: normaliseUrl(referer) ?? "about:blank",
+        title: inferredTitle,
+        url: identityUrl,
         is_active: true,
         last_seen: nowIso,
         updated_at: nowIso,
-        meta: { referer: referer ?? null, appTitle: appTitle ?? null },
+        meta: {
+            referer: referer ?? null,
+            appTitle: appTitle ?? null,
+            appId: normalizedAppId ?? null,
+            appName: appName ?? null,
+            identityUrl,
+        },
     };
 
-    const { data, error } = await supabase
+    const findExistingId = async (): Promise<string | null> => {
+        const { data, error } = await supabase
+            .from("api_apps")
+            .select("id")
+            .eq("team_id", teamId)
+            .eq("app_key", app_key)
+            .order("last_seen", { ascending: false })
+            .limit(1);
+        if (error) {
+            console.error("ensureAppId lookup error:", error);
+            return null;
+        }
+        const first = Array.isArray(data) ? data[0] : null;
+        return typeof first?.id === "string" ? first.id : null;
+    };
+
+    const existingId = await findExistingId();
+    if (existingId) {
+        const { error: updateError } = await supabase
+            .from("api_apps")
+            .update({
+                title: payload.title,
+                url: payload.url,
+                is_active: true,
+                last_seen: nowIso,
+                updated_at: nowIso,
+                meta: payload.meta,
+            })
+            .eq("id", existingId)
+            .eq("team_id", teamId);
+        if (updateError) {
+            console.error("ensureAppId update error:", updateError);
+        }
+        return existingId;
+    }
+
+    const { data: inserted, error: insertError } = await supabase
         .from("api_apps")
-        .upsert(payload, { onConflict: "team_id,app_key" })
+        .insert(payload)
         .select("id")
         .single();
 
-    if (error) {
-        console.error("ensureAppId error:", error);
-        return null;
+    if (!insertError && inserted?.id) {
+        return inserted.id;
     }
-    return data?.id ?? null;
+
+    if (insertError) {
+        const code = String((insertError as { code?: unknown } | null)?.code ?? "");
+        if (code === "23505") {
+            const racedId = await findExistingId();
+            if (racedId) return racedId;
+        }
+        console.error("ensureAppId insert error:", insertError);
+    }
+    return null;
 }
 
 

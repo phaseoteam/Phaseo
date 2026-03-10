@@ -83,6 +83,7 @@ describe("executeOpenAICompat", () => {
 			stream: false,
 		};
 
+		let capturedBody: any = null;
 		const mock = installFetchMock([{
 			match: (url) => url === "https://api.alibaba.example/api/v2/apps/protocols/compatible-mode/v1/responses",
 			response: jsonResponse({
@@ -97,6 +98,9 @@ describe("executeOpenAICompat", () => {
 				}],
 				usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
 			}),
+			onRequest: (call) => {
+				capturedBody = call.bodyJson;
+			},
 		}]);
 
 		const result = await executeOpenAICompat(args);
@@ -108,6 +112,7 @@ describe("executeOpenAICompat", () => {
 		expect(mock.calls[0]?.url).toBe(
 			"https://api.alibaba.example/api/v2/apps/protocols/compatible-mode/v1/responses",
 		);
+		expect(capturedBody?.stream).toBe(true);
 	});
 });
 

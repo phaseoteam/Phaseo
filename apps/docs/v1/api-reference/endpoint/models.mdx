@@ -2,30 +2,42 @@
 title: "Models (Beta)"
 badge: "Beta"
 openapi: "GET /gateway/models"
-description: "Browse gateway-servable models from the API provider model catalogue."
+description: "Browse gateway-native models currently servable through AI Stats Gateway."
 ---
+
+Returns the public gateway catalogue for models that are currently routable. The response is gateway-native: model IDs, endpoint names, providers, supported params, and pricing are derived from gateway tables rather than the internal model metadata catalogue.
+
+Notes:
+- `endpoints` use public names like `chat.completions`, `responses`, and `messages`.
+- `organisation` filters by the prefix in the public model ID, for example `anthropic` in `anthropic/claude-3-haiku`.
+- `privacy_scope=shared` is supported today. `privacy_scope=team` is reserved and currently returns `501`.
+
 ### Response
 
 ```json
 {
   "ok": true,
+  "privacy_scope": "shared",
   "limit": 50,
   "offset": 0,
-  "total": 123,
+  "total": 99,
   "models": [
     {
-      "id": "openai/gpt-4o-mini",
-      "canonical_slug": "openai/gpt-4o-mini",
-      "model_id": "openai/gpt-4o-mini",
-      "name": "GPT-4o Mini",
-      "description": "GPT-4o Mini via AI Stats Gateway. Supports chat/completions, responses.",
-      "created": 1721260800,
-      "release_date": "2024-07-18",
+      "id": "anthropic/claude-3-haiku",
+      "canonical_slug": "anthropic/claude-3-haiku",
+      "model_id": "anthropic/claude-3-haiku",
+      "name": "anthropic/claude-3-haiku",
+      "description": "anthropic/claude-3-haiku via AI Stats Gateway. Supports chat.completions, messages, responses.",
+      "created": null,
+      "release_date": null,
+      "deprecation_date": null,
+      "retirement_date": null,
       "status": "active",
-      "organisation_id": "openai",
-      "organisation_name": "OpenAI",
-      "aliases": ["gpt-4o-mini"],
-      "endpoints": ["chat/completions", "responses"],
+      "organisation_id": "anthropic",
+      "organisation_name": null,
+      "organisation_colour": null,
+      "aliases": [],
+      "endpoints": ["chat.completions", "messages", "responses"],
       "input_types": ["text"],
       "output_types": ["text"],
       "architecture": {
@@ -37,30 +49,64 @@ description: "Browse gateway-servable models from the API provider model catalog
       },
       "providers": [
         {
-          "api_provider_id": "openai",
-          "params": ["temperature", "max_tokens"]
+          "api_provider_id": "anthropic",
+          "is_active_gateway": true,
+          "params": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ]
         }
       ],
-      "supported_params": ["temperature", "max_tokens"],
-      "supported_parameters": ["temperature", "max_tokens"],
-      "top_provider_id": "openai",
+      "supported_params": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_parameters": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "top_provider_id": null,
       "top_provider": {
         "context_length": null,
         "max_completion_tokens": null,
         "is_moderated": false
       },
       "pricing": {
-        "prompt": "0.00000015",
-        "completion": "0.0000006",
+        "prompt": null,
+        "completion": null,
         "request": null,
         "image": null,
-        "input_cache_read": "0.00000003",
+        "input_cache_read": null,
         "input_cache_write": null,
         "web_search": null
+      },
+      "pricing_detail": {
+        "pricing_plan": "standard",
+        "meters": {}
       },
       "per_request_limits": null
     }
   ]
 }
 ```
-

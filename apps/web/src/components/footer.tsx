@@ -14,6 +14,7 @@ import {
 	Database,
 	Activity,
 	DollarSign,
+	Calculator,
 	Handshake,
 	LifeBuoy,
 } from "lucide-react";
@@ -40,7 +41,7 @@ export default function Footer() {
 					<div className="grid grid-cols-2 gap-x-4 gap-y-5 lg:hidden">
 						<div className="flex flex-col items-start gap-2">
 							<span className="pl-2 text-sm font-semibold">
-								Social
+								Community
 							</span>
 							<div className="flex w-full flex-col gap-1">
 								<Button
@@ -153,7 +154,7 @@ export default function Footer() {
 
 						<div className="flex flex-col items-start gap-2">
 							<span className="pl-2 text-sm font-semibold">
-								Explore
+								Platform
 							</span>
 							<div className="flex w-full flex-col gap-1">
 								<Button
@@ -216,10 +217,10 @@ export default function Footer() {
 								>
 									<Link
 										href="/tools/pricing-calculator"
-										aria-label="Pricing Calculator"
+										aria-label="Model Pricing Calculator"
 									>
-										<DollarSign className="h-4 w-4" />
-										<span className="text-xs">Pricing Calculator</span>
+										<Calculator className="h-4 w-4" />
+										<span className="text-xs">Model Pricing Calculator</span>
 									</Link>
 								</Button>
 								<Button
@@ -240,7 +241,7 @@ export default function Footer() {
 
 						<div className="flex flex-col items-start gap-2">
 							<span className="pl-2 text-sm font-semibold">
-								More
+								Support
 							</span>
 							<div className="flex w-full flex-col gap-1">
 								<Button
@@ -248,9 +249,9 @@ export default function Footer() {
 									variant="ghost"
 									className="h-8 w-full justify-start px-2"
 								>
-									<Link href="/contribute" aria-label="Contributors">
+									<Link href="/contribute" aria-label="Contribute">
 										<FilePlus className="h-4 w-4" />
-										<span className="text-xs">Contributors</span>
+										<span className="text-xs">Contribute</span>
 									</Link>
 								</Button>
 								<Button
@@ -260,10 +261,10 @@ export default function Footer() {
 								>
 									<Link
 										href="/monitor"
-										aria-label="Database Monitor"
+										aria-label="Database monitor"
 									>
 										<Database className="h-4 w-4" />
-										<span className="text-xs">DB Monitor</span>
+										<span className="text-xs">Database monitor</span>
 									</Link>
 								</Button>
 								<Button
@@ -272,7 +273,7 @@ export default function Footer() {
 									className="h-8 w-full justify-start px-2"
 								>
 									<Link
-										href="https://ai-stats-status.stpg.dev/"
+										href="https://ai-stats.instatus.com/"
 										target="_blank"
 										rel="noopener noreferrer"
 										aria-label="Status"
@@ -319,10 +320,10 @@ export default function Footer() {
 										href="https://docs.ai-stats.phaseo.app/v1/changelog"
 										target="_blank"
 										rel="noopener noreferrer"
-										aria-label="Announcements"
+										aria-label="Changelog"
 									>
 										<Megaphone className="h-4 w-4" />
-										<span className="text-xs">Announcements</span>
+										<span className="text-xs">Changelog</span>
 									</Link>
 								</Button>
 								<Button
@@ -355,7 +356,7 @@ export default function Footer() {
 					{/* --- Desktop: Social --- */}
 					<div className="hidden lg:flex flex-col items-start gap-2">
 						<span className="pl-2 text-sm font-semibold">
-							Social
+							Community
 						</span>
 						<div className="flex flex-col gap-1">
 							<Button
@@ -470,7 +471,7 @@ export default function Footer() {
 					{/* <div className="hidden sm:flex flex-col items-center justify-center"> */}
 					<div className="hidden lg:flex flex-col items-start gap-2">
 						<span className="pl-2 text-sm font-semibold">
-							Explore
+							Platform
 						</span>
 						<div className="flex flex-col gap-1">
 							<Button
@@ -533,10 +534,10 @@ export default function Footer() {
 							>
 								<Link
 									href="/tools/pricing-calculator"
-									aria-label="Pricing Calculator"
+									aria-label="Model Pricing Calculator"
 								>
-									<DollarSign className="h-4 w-4" />
-									<span className="text-xs">Pricing Calculator</span>
+									<Calculator className="h-4 w-4" />
+									<span className="text-xs">Model Pricing Calculator</span>
 								</Link>
 							</Button>
 							<Button
@@ -557,7 +558,7 @@ export default function Footer() {
 
 					{/* --- Desktop: Actions (Contribute, Sources, Theme) --- */}
 					<div className="hidden lg:flex flex-col items-start gap-2">
-						<span className="pl-2 text-sm font-semibold">More</span>
+						<span className="pl-2 text-sm font-semibold">Support</span>
 						<div className="flex flex-col gap-1">
 							{/* Contribute */}
 							<Button
@@ -568,10 +569,10 @@ export default function Footer() {
 								<Link
 									href="/contribute"
 									rel="noopener noreferrer"
-									aria-label="Contributors"
+									aria-label="Contribute"
 								>
 									<FilePlus className="h-4 w-4" />
-									<span className="text-xs">Contributors</span>
+									<span className="text-xs">Contribute</span>
 								</Link>
 							</Button>
 
@@ -583,10 +584,10 @@ export default function Footer() {
 							>
 								<Link
 									href="/monitor"
-									aria-label="Database Monitor"
+									aria-label="Database monitor"
 								>
 									<Database className="h-4 w-4" />
-									<span className="text-xs">DB Monitor</span>
+									<span className="text-xs">Database monitor</span>
 								</Link>
 							</Button>
 
@@ -597,7 +598,7 @@ export default function Footer() {
 								className="w-fit py-1 px-2 h-7"
 							>
 								<Link
-									href="https://ai-stats-status.stpg.dev/"
+									href="https://ai-stats.instatus.com/"
 									target="_blank"
 									rel="noopener noreferrer"
 									aria-label="Status"
@@ -646,10 +647,10 @@ export default function Footer() {
 									href="https://docs.ai-stats.phaseo.app/v1/changelog"
 									target="_blank"
 									rel="noopener noreferrer"
-									aria-label="Announcements"
+									aria-label="Changelog"
 								>
 									<Megaphone className="h-4 w-4" />
-									<span className="text-xs">Announcements</span>
+									<span className="text-xs">Changelog</span>
 								</Link>
 							</Button>
 							<Button
@@ -697,3 +698,7 @@ export default function Footer() {
 		</footer>
 	);
 }
+
+
+
+

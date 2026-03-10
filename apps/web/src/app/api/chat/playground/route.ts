@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
+import {
+	ChatGatewayAuthError,
+	resolveChatGatewayContext,
+} from "@/lib/server/chatGatewayAuth";
 
 type PlaygroundRequest = {
     baseUrl?: string;
-    apiKey?: string;
     requestBody?: Record<string, unknown>;
     appHeaders?: Record<string, string>;
     debug?: boolean;
@@ -15,6 +18,12 @@ const ALLOWED_APP_HEADERS = new Set([
     "x-app-id",
     "x-app-name",
 ]);
+const CANONICAL_CHAT_APP_HEADERS: Record<string, string> = {
+    "x-app-id": "ai-stats-chat",
+    "x-app-name": "AI Stats Chat",
+    "x-title": "AI Stats Chat",
+    "http-referer": "https://ai-stats.phaseo.app/chat",
+};
 
 function trimTrailingSlashes(value: string): string {
     let out = value.trim();
@@ -83,38 +92,43 @@ export async function POST(request: NextRequest) {
     }
 
     const gatewayBaseUrl = trimTrailingSlashes(GATEWAY_BASE_URL);
-    const requestedBaseUrl =
-        typeof payload.baseUrl === "string"
-            ? trimTrailingSlashes(payload.baseUrl)
-            : "";
-    const apiKey = payload.apiKey?.trim() ?? "";
     const requestBody = payload.requestBody ?? {};
-    const appHeaders = sanitizeAppHeaders(payload.appHeaders);
+    const appHeaders = {
+        ...sanitizeAppHeaders(payload.appHeaders),
+        ...CANONICAL_CHAT_APP_HEADERS,
+    };
     const debug = Boolean(payload.debug);
     const streamRequested =
         (requestBody as { stream?: unknown }).stream === true;
 
-    if (requestedBaseUrl && requestedBaseUrl !== gatewayBaseUrl) {
-        return new Response(
-            JSON.stringify({
-                error: "Custom baseUrl is not supported for this route.",
-            }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            },
-        );
-    }
+    // Ignore user-provided baseUrl here. This route always targets the
+    // canonical gateway origin configured by the server.
 
-    if (!apiKey) {
-        return new Response(
-            JSON.stringify({ error: "Missing apiKey." }),
-            {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-            }
-        );
-    }
+	let gatewayApiKey = "";
+	try {
+		const auth = await resolveChatGatewayContext();
+		gatewayApiKey = auth.apiKey;
+	} catch (error) {
+		if (error instanceof ChatGatewayAuthError) {
+			return new Response(
+				JSON.stringify({ error: error.code, message: error.message }),
+				{
+					status: error.status,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
+		return new Response(
+			JSON.stringify({
+				error: "chat_auth_failed",
+				message: "Unable to authenticate this chat request.",
+			}),
+			{
+				status: 500,
+				headers: { "Content-Type": "application/json" },
+			},
+		);
+	}
 
     let upstream: Response;
     try {
@@ -123,7 +137,7 @@ export async function POST(request: NextRequest) {
             headers: {
                 "Content-Type": "application/json",
                 ...appHeaders,
-                Authorization: `Bearer ${apiKey}`,
+                Authorization: `Bearer ${gatewayApiKey}`,
                 ...(debug ? { "x-gateway-debug": "true" } : {}),
                 ...(streamRequested ? { Accept: "text/event-stream" } : {}),
             },

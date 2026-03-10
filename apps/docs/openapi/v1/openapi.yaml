@@ -28,11 +28,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
+                $ref: '#/components/schemas/HealthCheckResponse'
   /gateway/models:
     get:
       x-beta: true
@@ -79,6 +75,15 @@ paths:
             type: array
             items:
               type: string
+        - name: privacy_scope
+          in: query
+          description: Response privacy scope. shared is supported today; team is reserved and returns not implemented.
+          schema:
+            type: string
+            enum:
+              - shared
+              - team
+            default: shared
         - name: limit
           in: query
           description: Limit the number of results
@@ -94,39 +99,38 @@ paths:
             type: integer
             default: 0
             minimum: 0
+            maximum: 5000
       responses:
         '200':
           description: List of models
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  limit:
-                    type: integer
-                  offset:
-                    type: integer
-                  total:
-                    type: integer
-                  models:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Model'
+                $ref: '#/components/schemas/GatewayModelsResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  error:
-                    type: string
-                  message:
-                    type: string
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: privacy_scope=team is reserved for future support
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelsPrivacyScopeNotImplementedResponse'
   /providers:
     get:
       x-beta: true
@@ -672,6 +676,12 @@ paths:
             schema:
               $ref: '#/components/schemas/FileUploadRequest'
       responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '501':
           description: Files endpoint is not implemented yet
           content:
@@ -686,6 +696,12 @@ paths:
       summary: List files
       description: Placeholder endpoint. File listing is not implemented yet.
       responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '501':
           description: Files endpoint is not implemented yet
           content:
@@ -708,6 +724,12 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '501':
           description: Files endpoint is not implemented yet
           content:
@@ -729,6 +751,12 @@ paths:
             schema:
               $ref: '#/components/schemas/BatchRequest'
       responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '501':
           description: Batch endpoint is not implemented yet
           content:
@@ -751,6 +779,18 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '501':
           description: Batch endpoint is not implemented yet
           content:
@@ -782,14 +822,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  status:
-                    type: string
-                  message:
-                    type: string
+                $ref: '#/components/schemas/AnalyticsNotImplementedResponse'
+        '400':
+          description: Missing access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsAccessTokenRequiredResponse'
   /credits:
     get:
       x-beta: true
@@ -928,7 +967,7 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: listProvisioningKeys
+      operationId: listManagementKeys
       summary: List management API keys
       description: Returns all management API keys for a team.
       parameters:
@@ -958,26 +997,15 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  limit:
-                    type: integer
-                    example: 50
-                  offset:
-                    type: integer
-                    example: 0
-                  total:
-                    type: integer
-                    example: 3
-                  keys:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ProvisioningKey'
-        '400':
-          description: Bad request
+                $ref: '#/components/schemas/ManagementKeyListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
           content:
             application/json:
               schema:
@@ -992,7 +1020,7 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: createProvisioningKey
+      operationId: createManagementKey
       summary: Create management API key
       description: Creates a new management API key.
       requestBody:
@@ -1000,47 +1028,22 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                  description: Name for the key.
-                team_id:
-                  type: string
-                  description: Team scope for internal callers.
-                created_by:
-                  type: string
-                  description: Creator user ID for internal callers.
-                scopes:
-                  oneOf:
-                    - type: string
-                    - type: array
-                      items:
-                        type: string
-                status:
-                  type: string
-                  enum:
-                    - active
-                    - disabled
-                    - revoked
-                soft_blocked:
-                  type: boolean
+              $ref: '#/components/schemas/ManagementKeyCreateRequest'
       responses:
         '201':
           description: Management API key created
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  key:
-                    $ref: '#/components/schemas/ProvisioningKeyWithValue'
+                $ref: '#/components/schemas/ManagementKeyCreateResponse'
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1068,7 +1071,7 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: getProvisioningKey
+      operationId: getManagementKey
       summary: Get management API key
       description: Returns details of a specific management API key.
       parameters:
@@ -1084,13 +1087,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  key:
-                    $ref: '#/components/schemas/ProvisioningKeyDetail'
+                $ref: '#/components/schemas/ManagementKeyDetailResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Key not found
           content:
@@ -1107,7 +1116,7 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: updateProvisioningKey
+      operationId: updateManagementKey
       summary: Update management API key
       description: Updates the name, status, or blocked state of a management API key.
       parameters:
@@ -1122,37 +1131,22 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: New name for the key
-                status:
-                  type: string
-                  enum:
-                    - active
-                    - disabled
-                    - revoked
-                  description: New status for the key
-                soft_blocked:
-                  type: boolean
-                  description: Whether to temporarily block the key
+              $ref: '#/components/schemas/ManagementKeyUpdateRequest'
       responses:
         '200':
           description: Key updated successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Key updated successfully
+                $ref: '#/components/schemas/ManagementKeyUpdateResponse'
         '400':
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1173,7 +1167,7 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: deleteProvisioningKey
+      operationId: deleteManagementKey
       summary: Delete management API key
       description: Permanently deletes a management API key.
       parameters:
@@ -1189,13 +1183,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
+                $ref: '#/components/schemas/ManagementKeyDeleteResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Key not found
           content:
@@ -1434,168 +1434,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /provisioning/keys:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: listProvisioningKeysAlias
-      summary: List provisioning keys
-      description: Alias of management keys endpoint.
-      parameters:
-        - name: team_id
-          in: query
-          description: The team ID to query
-          schema:
-            type: string
-        - name: limit
-          in: query
-          description: Maximum number of keys to return
-          schema:
-            type: integer
-            default: 50
-            minimum: 1
-            maximum: 250
-        - name: offset
-          in: query
-          description: Pagination offset
-          schema:
-            type: integer
-            default: 0
-            minimum: 0
-      responses:
-        '200':
-          description: List of provisioning keys
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  keys:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ProvisioningKey'
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createProvisioningKeyAlias
-      summary: Create provisioning key
-      description: Alias of management key create endpoint.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                team_id:
-                  type: string
-                created_by:
-                  type: string
-                scopes:
-                  oneOf:
-                    - type: string
-                    - type: array
-                      items:
-                        type: string
-                status:
-                  type: string
-                  enum:
-                    - active
-                    - disabled
-                    - revoked
-                soft_blocked:
-                  type: boolean
-      responses:
-        '201':
-          description: Provisioning key created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  key:
-                    $ref: '#/components/schemas/ProvisioningKeyWithValue'
-  /provisioning/keys/{id}:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: getProvisioningKeyAlias
-      summary: Get provisioning key
-      description: Alias of management key details endpoint.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Provisioning key details
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
-    patch:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: updateProvisioningKeyAlias
-      summary: Update provisioning key
-      description: Alias of management key update endpoint.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-      responses:
-        '200':
-          description: Provisioning key updated
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
-    delete:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: deleteProvisioningKeyAlias
-      summary: Delete provisioning key
-      description: Alias of management key delete endpoint.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Provisioning key deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
   /keys/{id}/invalidate:
     post:
       x-beta: true
@@ -1617,10 +1455,15 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/KeyInvalidateResponse'
         '400':
           description: Invalid key ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1708,6 +1551,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     get:
       x-beta: true
       tags:
@@ -1737,6 +1586,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /oauth-clients/{client_id}:
     get:
       x-beta: true
@@ -1759,8 +1614,20 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: OAuth app not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
           content:
             application/json:
               schema:
@@ -1799,8 +1666,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: OAuth app not found
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
           content:
             application/json:
               schema:
@@ -1826,8 +1699,20 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: OAuth app not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
           content:
             application/json:
               schema:
@@ -1854,8 +1739,20 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: OAuth app not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
           content:
             application/json:
               schema:
@@ -2001,6 +1898,12 @@ paths:
             schema:
               $ref: '#/components/schemas/BatchRequest'
       responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '501':
           description: Batch endpoint is not implemented yet
           content:
@@ -2022,6 +1925,18 @@ paths:
           schema:
             type: string
       responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '501':
           description: Batch endpoint is not implemented yet
           content:
@@ -2303,102 +2218,6 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ModelId'
-  /keys:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: listProvisioningKeysLegacy
-      summary: List keys (legacy alias)
-      description: Legacy alias of /management/keys.
-      responses:
-        '200':
-          description: Keys list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  keys:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ProvisioningKey'
-    post:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: createProvisioningKeyLegacy
-      summary: Create key (legacy alias)
-      description: Legacy alias of /management/keys create.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                team_id:
-                  type: string
-                created_by:
-                  type: string
-                scopes:
-                  oneOf:
-                    - type: string
-                    - type: array
-                      items:
-                        type: string
-                status:
-                  type: string
-                  enum:
-                    - active
-                    - disabled
-                    - revoked
-                soft_blocked:
-                  type: boolean
-      responses:
-        '201':
-          description: Created key
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  key:
-                    $ref: '#/components/schemas/ProvisioningKeyWithValue'
-  /key:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: getProvisioningKeyLegacy
-      summary: Get key (legacy alias)
-      description: Legacy alias of /management/keys/{id} using query parameter id.
-      parameters:
-        - name: id
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Key information
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  key:
-                    $ref: '#/components/schemas/ProvisioningKeyDetail'
 tags:
   - name: Gateway
     description: Core AI Stats Gateway operations.
@@ -2572,6 +2391,8 @@ components:
             properties:
               api_provider_id:
                 type: string
+              is_active_gateway:
+                type: boolean
               params:
                 type: array
                 items:
@@ -5296,21 +5117,172 @@ components:
         - zebralogic
     ErrorResponse:
       type: object
+      required:
+        - error
       properties:
         ok:
           type: boolean
           example: false
         error:
-          type: string
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
           example: error_type
         message:
           type: string
           example: Human-readable error message
+        description:
+          type: string
+          example: Additional error details.
+      additionalProperties: true
+    HealthCheckResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: ok
+      additionalProperties: false
+    GatewayModelsResponse:
+      type: object
+      required:
+        - ok
+        - privacy_scope
+        - limit
+        - offset
+        - total
+        - models
+      properties:
+        ok:
+          type: boolean
+          example: true
+        privacy_scope:
+          type: string
+          enum:
+            - shared
+            - team
+          example: shared
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 250
+          example: 50
+        offset:
+          type: integer
+          minimum: 0
+          maximum: 5000
+          example: 0
+        total:
+          type: integer
+          minimum: 0
+          example: 128
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+      additionalProperties: false
+    InvalidRequestResponse:
+      type: object
+      required:
+        - ok
+        - error
+        - message
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - false
+          example: false
+        error:
+          type: string
+          example: invalid_request
+        message:
+          type: string
+          example: Invalid request parameters.
+        max_offset:
+          type: integer
+          minimum: 0
+      additionalProperties: true
+    ModelsPrivacyScopeNotImplementedResponse:
+      type: object
+      required:
+        - ok
+        - error
+        - code
+        - message
+        - privacy_scope
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - false
+          example: false
+        error:
+          type: string
+          enum:
+            - not_implemented
+          example: not_implemented
+        code:
+          type: string
+          enum:
+            - models_privacy_scope_not_implemented
+        message:
+          type: string
+        privacy_scope:
+          type: string
+          enum:
+            - team
+      additionalProperties: true
+    AnalyticsNotImplementedResponse:
+      type: object
+      required:
+        - ok
+        - status
+        - message
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+          example: true
+        status:
+          type: string
+          enum:
+            - not_implemented
+          example: not_implemented
+        message:
+          type: string
+          example: Analytics aggregation coming soon
+      additionalProperties: false
+    AnalyticsAccessTokenRequiredResponse:
+      type: object
+      required:
+        - ok
+        - error
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - false
+          example: false
+        error:
+          type: string
+          enum:
+            - access_token_required
+          example: access_token_required
+      additionalProperties: false
     RealtimeNotImplementedResponse:
       type: object
+      required:
+        - error
       properties:
         error:
           type: object
+          required:
+            - type
+            - message
           properties:
             type:
               type: string
@@ -5318,11 +5290,17 @@ components:
             message:
               type: string
               example: realtime is not implemented yet
+          additionalProperties: false
+      additionalProperties: false
     NotImplementedResponse:
       type: object
       description: >-
         Placeholder response for endpoints that are routed but not implemented
         yet.
+      required:
+        - status_code
+        - error
+        - description
       properties:
         status_code:
           type: integer
@@ -5474,3 +5452,174 @@ components:
         soft_blocked:
           type: boolean
           example: false
+    ManagementKeyCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name for the key.
+        team_id:
+          type: string
+          description: Team scope for internal callers.
+        created_by:
+          type: string
+          description: Creator user ID for internal callers.
+        scopes:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+            - revoked
+        soft_blocked:
+          type: boolean
+      additionalProperties: false
+    ManagementKeyUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: New name for the key
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+            - revoked
+          description: New status for the key
+        soft_blocked:
+          type: boolean
+          description: Whether to temporarily block the key
+      additionalProperties: false
+    ManagementKeyListResponse:
+      type: object
+      required:
+        - ok
+        - limit
+        - offset
+        - total
+        - keys
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 250
+        offset:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProvisioningKey'
+      additionalProperties: false
+    ManagementKeyCreateResponse:
+      type: object
+      required:
+        - ok
+        - key
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        key:
+          $ref: '#/components/schemas/ProvisioningKeyWithValue'
+      additionalProperties: false
+    ManagementKeyDetailResponse:
+      type: object
+      required:
+        - ok
+        - key
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        key:
+          $ref: '#/components/schemas/ProvisioningKeyDetail'
+      additionalProperties: false
+    ManagementKeyUpdateResponse:
+      type: object
+      required:
+        - ok
+        - message
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        message:
+          type: string
+          example: Key updated successfully
+      additionalProperties: false
+    ManagementKeyDeleteResponse:
+      type: object
+      required:
+        - ok
+        - message
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        message:
+          type: string
+      additionalProperties: false
+    KeyInvalidateResponse:
+      type: object
+      required:
+        - ok
+        - key
+        - cache_version
+        - message
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+        key:
+          type: object
+          required:
+            - id
+            - team_id
+          properties:
+            id:
+              type: string
+            kid:
+              type: string
+              nullable: true
+            team_id:
+              type: string
+            status:
+              type: string
+              nullable: true
+          additionalProperties: false
+        cache_version:
+          type: object
+          required:
+            - id
+            - kid
+          properties:
+            id:
+              type: integer
+            kid:
+              type: integer
+              nullable: true
+          additionalProperties: false
+        message:
+          type: string
+      additionalProperties: false

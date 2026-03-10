@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
-import CreateProvisioningKeyDialog from "@/components/(gateway)/settings/provisioning-keys/CreateProvisioningKeyDialog";
-import ProvisioningKeysPanel from "@/components/(gateway)/settings/provisioning-keys/ProvisioningKeysPanel";
+import CreateManagementKeyDialog from "@/components/(gateway)/settings/management-api-keys/CreateManagementKeyDialog";
+import ManagementKeysPanel from "@/components/(gateway)/settings/management-api-keys/ManagementKeysPanel";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -45,8 +45,8 @@ async function ManagementApiKeysContent() {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	const { data: provisioningKeys } = await supabase
-		.from("provisioning_keys")
+	const { data: managementKeys } = await supabase
+		.from("management_keys")
 		.select("*");
 
 	const { data: teamUsers } = await supabase
@@ -69,7 +69,7 @@ async function ManagementApiKeysContent() {
 		}
 	}
 
-	const keysArray = (provisioningKeys ?? []).map((k: any) => ({ ...k }));
+	const keysArray = (managementKeys ?? []).map((k: any) => ({ ...k }));
 
 	const teamsWithKeys = teams.map((t) => ({
 		...t,
@@ -85,14 +85,14 @@ async function ManagementApiKeysContent() {
 				meta={<Badge variant="outline">Beta</Badge>}
 				description="Manage elevated keys for automated team and key management."
 				actions={
-					<CreateProvisioningKeyDialog
+					<CreateManagementKeyDialog
 						currentUserId={user?.id}
 						currentTeamId={initialTeamId}
 						teams={teams}
 					/>
 				}
 			/>
-			<ProvisioningKeysPanel
+			<ManagementKeysPanel
 				teamsWithKeys={teamsWithKeys}
 				initialTeamId={initialTeamId}
 				currentUserId={user?.id}
@@ -100,3 +100,4 @@ async function ManagementApiKeysContent() {
 		</div>
 	);
 }
+

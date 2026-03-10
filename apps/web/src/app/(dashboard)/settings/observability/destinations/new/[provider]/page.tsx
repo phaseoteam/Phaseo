@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { getTeamIdFromCookie } from "@/utils/teamCookie";
+import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import BroadcastDestinationCreateClient from "@/components/(gateway)/settings/observability/BroadcastDestinationCreateClient";
 import { getDestinationById } from "@/components/(gateway)/settings/observability/destinationCatalog";
 
@@ -44,6 +45,7 @@ export default async function NewBroadcastDestinationPage({
 			.from("keys")
 			.select("id, name, prefix")
 			.eq("team_id", teamId)
+			.neq("name", CHAT_MANAGED_KEY_NAME)
 			.order("created_at", { ascending: false }),
 		supabase
 			.from("data_api_providers")

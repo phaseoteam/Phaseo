@@ -34,14 +34,18 @@ export function sanitizeRequestHeaders(req: Request, opts: SanitizeOptions = {})
     });
 
     const bodyAllowed = !["GET", "HEAD"].includes(req.method.toUpperCase());
-
-    return new Request(req.url, {
+    const init: any = {
         method: req.method,
         headers,
-        body: bodyAllowed ? req.body : undefined,
         redirect: req.redirect,
         cf: (req as any).cf,
-    });
+    };
+    if (bodyAllowed && req.body) {
+        init.body = req.body;
+        // Node/Undici requires `duplex` when forwarding stream bodies.
+        init.duplex = "half";
+    }
+    return new Request(req.url, init);
 }
 
 

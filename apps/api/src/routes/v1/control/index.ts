@@ -16,7 +16,7 @@ import { organisationsRoutes } from "./organisations";
 import { providersRoutes } from "./providers";
 import { creditsRoutes } from "./credits";
 import { activityRoutes } from "./credits";
-import { managementRoutes, provisioningRoutes } from "./provisioning";
+import { managementRoutes } from "./management";
 import { keysRoutes } from "./keys";
 import oauthClientsRoutes from "./oauth-clients";
 
@@ -33,7 +33,6 @@ platformRouter.route("/pricing", pricingRoutes);
 platformRouter.route("/credits", creditsRoutes);
 platformRouter.route("/activity", activityRoutes);
 platformRouter.route("/management", managementRoutes);
-platformRouter.route("/provisioning", provisioningRoutes);
 platformRouter.route("/keys", keysRoutes);
 platformRouter.route("/oauth-clients", oauthClientsRoutes);
 platformRouter.route("/", placeholdersRoutes);

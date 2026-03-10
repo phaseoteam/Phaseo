@@ -53,7 +53,6 @@ export default function ModelsDisplay({
 				<div className="flex items-center w-full md:w-auto">
 					<h1 className="font-bold text-xl mb-2 md:mb-0">Models</h1>
 
-					{/* Mobile: tabs next to the title (align with the Models text) */}
 					<div className="ml-2 md:hidden">
 						<div className="inline-flex rounded-md overflow-hidden border bg-background">
 							<Tooltip>
@@ -61,9 +60,7 @@ export default function ModelsDisplay({
 									<Button
 										size="sm"
 										asChild
-										variant={
-											!isTable ? "default" : "outline"
-										}
+										variant={!isTable ? "default" : "outline"}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 									>
 										<Link
@@ -84,9 +81,7 @@ export default function ModelsDisplay({
 								<TooltipTrigger asChild>
 									<Button
 										size="sm"
-										variant={
-											isTable ? "default" : "outline"
-										}
+										variant={isTable ? "default" : "outline"}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 										asChild
 									>
@@ -110,11 +105,7 @@ export default function ModelsDisplay({
 								<TooltipTrigger asChild>
 									<Button
 										size="sm"
-										variant={
-											isCollections
-												? "default"
-												: "outline"
-										}
+										variant={isCollections ? "default" : "outline"}
 										className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
 										asChild
 									>
@@ -149,7 +140,6 @@ export default function ModelsDisplay({
 						style={{ minWidth: 0 }}
 					/>
 				</div>
-				{/* Desktop tabs next to search */}
 				<div className="hidden md:flex items-center">
 					<div className="inline-flex rounded-md overflow-hidden border bg-background">
 						<Tooltip>

@@ -16,13 +16,13 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Settings, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import {
-	updateProvisioningKeyLimitsAction,
-	ProvisioningKeyLimitPayload,
-} from "@/app/(dashboard)/settings/provisioning-keys/actions";
-type KeyLimitPayload = ProvisioningKeyLimitPayload;
+	updateManagementKeyLimitsAction,
+	ManagementKeyLimitPayload,
+} from "@/app/(dashboard)/settings/management-api-keys/actions";
+type KeyLimitPayload = ManagementKeyLimitPayload;
 import { Label } from "@/components/ui/label";
 
-export default function ProvisioningKeyLimitsItem({ k }: any) {
+export default function ManagementKeyLimitsItem({ k }: any) {
 	const [open, setOpen] = useState(false);
 	const [dailyRequests, setDailyRequests] = useState(
 		k.daily_limit_requests?.toString() || ""
@@ -45,7 +45,7 @@ export default function ProvisioningKeyLimitsItem({ k }: any) {
 			monthlyRequests: monthlyRequests ? parseInt(monthlyRequests, 10) : null,
 		};
 
-		const promise = updateProvisioningKeyLimitsAction(k.id, payload);
+		const promise = updateManagementKeyLimitsAction(k.id, payload);
 		try {
 			await toast.promise(promise, {
 				loading: "Saving limits...",
@@ -129,3 +129,4 @@ export default function ProvisioningKeyLimitsItem({ k }: any) {
 		</Dialog>
 	);
 }
+

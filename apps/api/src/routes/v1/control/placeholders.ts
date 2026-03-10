@@ -7,7 +7,6 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@/pipeline/before/guards";
 import { json, withRuntime } from "../../utils";
-import { keyAliasRoutes } from "./provisioning";
 
 const KNOWN_ENDPOINTS = [
 	"chat/completions",
@@ -67,6 +66,5 @@ async function handleListEndpoints(req: Request) {
 export const placeholdersRoutes = new Hono<Env>();
 
 placeholdersRoutes.get("/endpoints", withRuntime(handleListEndpoints));
-placeholdersRoutes.route("/", keyAliasRoutes);
 
 

@@ -62,7 +62,8 @@ export default function CodeBlock({
 				</span>
 				<CopyButton
 					content={code}
-					className="bg-primary/10 text-black hover:bg-primary/20 dark:bg-primary-foreground/10 dark:text-white dark:hover:bg-primary-foreground/20"
+					variant="outline"
+					className="border-zinc-200/80 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
 				/>
 			</div>
 			<Separator />

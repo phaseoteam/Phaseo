@@ -131,6 +131,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const code = url.searchParams.get('code')
     const type = url.searchParams.get('type')
+    const returnUrl = "/";
 
     const supabaseUser = await createClient();
 
@@ -209,7 +210,7 @@ export async function GET(request: Request) {
         // Ignore onboarding redirect issues and continue to default destination.
     }
 
-    return NextResponse.redirect(new URL('/', url));
+    return NextResponse.redirect(new URL(returnUrl, url));
 
 
 }

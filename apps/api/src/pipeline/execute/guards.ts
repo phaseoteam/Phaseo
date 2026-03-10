@@ -94,10 +94,14 @@ export async function guardAllFailed(
         upstream_error_message:
             typeof entry?.upstream_error_message === "string"
                 ? entry.upstream_error_message
-                : null,
+                : (typeof entry?.message === "string" ? entry.message : null),
         upstream_error_description:
             typeof entry?.upstream_error_description === "string"
                 ? entry.upstream_error_description
+                : null,
+        retryable:
+            typeof entry?.retryable === "boolean"
+                ? entry.retryable
                 : null,
     }));
     const routingDiagnostics = (ctx as any)?.routingDiagnostics ?? null;

@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({ request })
+    const pathname = request.nextUrl.pathname
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,8 +24,8 @@ export async function updateSession(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Because the matcher only hits /settings/*, this only protects those routes.
-    if (!user) {
+    // Keep strict auth-gate behavior for settings pages only.
+    if (!user && pathname.startsWith('/settings')) {
         const url = request.nextUrl.clone()
         url.pathname = '/sign-in'
         url.searchParams.set('redirectTo', request.nextUrl.pathname + request.nextUrl.search)

@@ -1,0 +1,72 @@
+---
+title: "OpenAI: Migrating to GPT-5.4"
+description: "What materially changes when you move existing OpenAI traffic onto GPT-5.4."
+---
+
+# OpenAI: Migrating to GPT-5.4
+
+Use this guide when you are moving existing traffic onto `openai/gpt-5.4`.
+
+This usually means replacing older OpenAI routes such as GPT-4.1, GPT-5, or an earlier GPT-5.x release.
+
+GPT-5.4 is less about a brand-new request shape and more about updated reasoning controls, vision handling, and tool use. As of March 10, 2026, OpenAI's official GPT-5.4 docs emphasize `reasoning.effort`, improved computer use, and higher-fidelity image input. They do not document a GPT-5.4-specific `phase` parameter.
+
+## What changed
+
+- `reasoning.effort` supports `none`, `low`, `medium`, `high`, and `xhigh`
+- GPT-5.4 introduces `original` image input detail for full-fidelity visual perception
+- the updated `computer` tool is the official path for GPT-5.4 computer-use workflows
+- GPT-5.4 improves long-horizon tool use, large-context work, and professional document workflows
+
+## What to change in your integration
+
+### 1. Review reasoning settings
+
+If you are coming from GPT-4.1 or an earlier GPT-5 variant, do not assume your previous reasoning defaults are still the best choice. Re-test routes at the effort level that matches their latency budget:
+
+- `none` or `low` for low-latency routes
+- `medium` or `high` for most structured tasks
+- `xhigh` for deeply reasoned or agentic workflows
+
+### 2. Revisit vision pipelines
+
+If your workflow depends on dense screenshots, documents, or UI localization, test the new `original` image detail level. This changes both fidelity and cost characteristics.
+
+### 3. Re-check computer-use routes
+
+If you are migrating browser or desktop automation tasks, update them to the current `computer` tool path and retest step completion end to end.
+
+## What to test
+
+### Prompt compatibility
+
+- long system prompts
+- extraction and classification prompts
+- format-sensitive outputs
+- prompts that previously needed retries to stay on task
+
+### Tools and structured outputs
+
+- schema adherence at each effort level
+- tool selection quality
+- argument completeness
+- stability of computer-use flows across multiple steps
+
+### Vision and operations
+
+- screenshot and document understanding with `high` versus `original` detail
+- latency and token usage under realistic load
+- retry and timeout rate
+- cost per successful task versus the model you are replacing
+
+## Safe rollout
+
+1. Benchmark GPT-5.4 with the exact effort levels you intend to use.
+2. If you use images, test `original` detail separately because it changes both quality and cost.
+3. Shadow production prompts before switching any default route.
+4. Promote gradually with an older OpenAI model or alternate provider still available as fallback.
+
+## Sources
+
+- [Introducing GPT-5.4](https://openai.com/index/introducing-gpt-5-4/)
+- [GPT-5.4 model docs](https://developers.openai.com/api/docs/models/gpt-5.4)

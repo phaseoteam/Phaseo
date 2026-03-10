@@ -9,6 +9,7 @@ import { contextSchema } from "./schemas";
 import type {
     ByokKeyMeta,
     CapabilityRoutingStatus,
+    ContextFetchTelemetry,
     GatewayContextData,
     GatewayProviderSnapshot,
     ProviderRolloutStatus,
@@ -25,11 +26,14 @@ const PRESET_CACHE_PREFIX = "gateway:preset";
 const STATIC_TTL_MIN = 300;  // 5 minutes
 const STATIC_TTL_MAX = 900;  // 15 minutes
 const DYNAMIC_TTL_MIN = 60;  // 1 minute (KV minimum)
-const DYNAMIC_TTL_MAX = 180; // 3 minutes
+const DYNAMIC_TTL_MAX = 300; // 5 minutes
 const PRESET_TTL = 120;      // 2 minutes
+const BALANCE_TTL_CAP_USD = 250;
+const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
 
 const MIN_TTL_SECONDS = 60;  // Cloudflare KV minimum
 const MAX_TTL_SECONDS = 900; // 15 minutes
+const contextInflight = new Map<string, Promise<GatewayContextData>>();
 
 /**
  * Clamp TTL to valid range for Cloudflare Workers KV
@@ -38,6 +42,10 @@ const MAX_TTL_SECONDS = 900; // 15 minutes
  */
 function clampTtl(value: number): number {
     return Math.max(MIN_TTL_SECONDS, Math.min(MAX_TTL_SECONDS, Math.floor(value)));
+}
+
+function round3(value: number): number {
+    return Math.round(value * 1000) / 1000;
 }
 
 function toUnixSeconds(date: Date): number {
@@ -72,6 +80,34 @@ function bucketPressureScore(bucket?: {
     return ratios.length ? Math.max(...ratios) : 0;
 }
 
+function finiteNumber(value: unknown): number | null {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+}
+
+function resolveBalanceUsd(context: GatewayContextData): number | null {
+    const enriched = finiteNumber(context.teamEnrichment?.balance_usd);
+    if (enriched !== null) return Math.max(0, enriched);
+    const nanos = finiteNumber(context.credit?.balanceNanos);
+    if (nanos === null) return null;
+    return Math.max(0, nanos / 1_000_000_000);
+}
+
+/**
+ * Map wallet balance to TTL with a fast drop-off near low balances.
+ * - 0 USD => 60s
+ * - 250+ USD => 300s
+ * - Uses logarithmic normalization + power curve for steeper lower-tier decay.
+ */
+export function computeBalanceAwareTtlSeconds(balanceUsd: number): number {
+    if (!Number.isFinite(balanceUsd) || balanceUsd <= 0) return DYNAMIC_TTL_MIN;
+    const cappedBalance = Math.min(balanceUsd, BALANCE_TTL_CAP_USD);
+    const normalized = Math.log1p(cappedBalance) / Math.log1p(BALANCE_TTL_CAP_USD);
+    const weighted = Math.pow(normalized, 2);
+    const ttl = DYNAMIC_TTL_MIN + weighted * (DYNAMIC_TTL_MAX - DYNAMIC_TTL_MIN);
+    return clampTtl(ttl);
+}
+
 /**
  * Compute adaptive TTL for dynamic data (key limits, buckets)
  * Respects Cloudflare KV 60s minimum TTL
@@ -79,9 +115,16 @@ function bucketPressureScore(bucket?: {
 function computeAdaptiveTtlForDynamic(context: GatewayContextData): number {
     let ttl = DYNAMIC_TTL_MAX;
 
-    // If key or limits are not OK, use shorter TTL
-    if (!context.key.ok || !context.keyLimit.ok) {
+    // If key, limits, or credit are not OK, revalidate aggressively.
+    if (!context.key.ok || !context.keyLimit.ok || !context.credit.ok) {
         return DYNAMIC_TTL_MIN;
+    }
+
+    // Credit balance curve: high balances can tolerate longer cache windows,
+    // while low balances quickly move to short TTL.
+    const balanceUsd = resolveBalanceUsd(context);
+    if (balanceUsd !== null) {
+        ttl = Math.min(ttl, computeBalanceAwareTtlSeconds(balanceUsd));
     }
 
     const buckets = context.keyLimit.buckets ?? null;
@@ -96,12 +139,13 @@ function computeAdaptiveTtlForDynamic(context: GatewayContextData): number {
         if (!bucket) continue;
         const pressure = bucketPressureScore(bucket);
 
-        // High pressure = shorter TTL (but respect 60s minimum)
+        // High pressure = shorter TTL (but respect 60s minimum).
         if (pressure >= 0.95) ttl = Math.min(ttl, 60);
         else if (pressure >= 0.9) ttl = Math.min(ttl, 75);
         else if (pressure >= 0.8) ttl = Math.min(ttl, 90);
         else if (pressure >= 0.6) ttl = Math.min(ttl, 120);
-        else ttl = Math.min(ttl, 180);
+        else if (pressure >= 0.4) ttl = Math.min(ttl, 180);
+        else ttl = Math.min(ttl, DYNAMIC_TTL_MAX);
 
         const windowEnd = parseWindowEnd(bucketName, bucket.windowStart);
         if (windowEnd) {
@@ -120,15 +164,124 @@ function computeAdaptiveTtlForDynamic(context: GatewayContextData): number {
  * Uses longer TTL since this data changes infrequently
  */
 function computeStaticTtl(): number {
-    // Static data can be cached for 5-15 minutes
-    // Use 10 minutes as default for good balance
-    return 600; // 10 minutes
+    // Static data can be cached for 5-15 minutes.
+    // Use midpoint default and keep tunable via constants.
+    return Math.floor((STATIC_TTL_MIN + STATIC_TTL_MAX) / 2);
 }
 
-function isContextLike(value: unknown): value is GatewayContextData {
+type DynamicContextCacheEntry = Pick<
+    GatewayContextData,
+    "teamId" | "key" | "keyLimit" | "credit" | "teamEnrichment" | "keyEnrichment" | "teamSettings"
+>;
+type StaticContextCacheEntry = Pick<
+    GatewayContextData,
+    "teamId" | "resolvedModel" | "preset" | "providers" | "pricing" | "testingMode"
+>;
+
+function isDynamicContextLike(value: unknown): value is DynamicContextCacheEntry {
     if (!value || typeof value !== "object") return false;
-    const ctx = value as GatewayContextData;
-    return Boolean(ctx.teamId && ctx.key && ctx.keyLimit && ctx.credit && ctx.providers);
+    const ctx = value as DynamicContextCacheEntry;
+    return Boolean(ctx.teamId && ctx.key && ctx.keyLimit && ctx.credit);
+}
+
+function isStaticContextLike(value: unknown): value is StaticContextCacheEntry {
+    if (!value || typeof value !== "object") return false;
+    const ctx = value as StaticContextCacheEntry;
+    return Boolean(ctx.teamId && Array.isArray(ctx.providers) && ctx.pricing && typeof ctx.pricing === "object");
+}
+
+function mergeCachedContext(args: {
+    dynamic: DynamicContextCacheEntry;
+    static: StaticContextCacheEntry;
+    endpoint: string;
+}): GatewayContextData {
+    return {
+        teamId: args.dynamic.teamId,
+        endpoint: args.endpoint as any,
+        resolvedModel: args.static.resolvedModel ?? null,
+        preset: args.static.preset ?? null,
+        key: args.dynamic.key,
+        keyLimit: args.dynamic.keyLimit,
+        credit: args.dynamic.credit,
+        providers: args.static.providers ?? [],
+        pricing: args.static.pricing ?? {},
+        teamEnrichment: args.dynamic.teamEnrichment ?? null,
+        keyEnrichment: args.dynamic.keyEnrichment ?? null,
+        teamSettings: args.dynamic.teamSettings ?? null,
+        testingMode: Boolean(args.static.testingMode),
+    };
+}
+
+function splitContextForCache(value: GatewayContextData): {
+    dynamic: DynamicContextCacheEntry;
+    static: StaticContextCacheEntry;
+} {
+    return {
+        dynamic: {
+            teamId: value.teamId,
+            key: value.key,
+            keyLimit: value.keyLimit,
+            credit: value.credit,
+            teamEnrichment: value.teamEnrichment ?? null,
+            keyEnrichment: value.keyEnrichment ?? null,
+            teamSettings: value.teamSettings ?? null,
+        },
+        static: {
+            teamId: value.teamId,
+            resolvedModel: value.resolvedModel ?? null,
+            preset: value.preset ?? null,
+            providers: value.providers ?? [],
+            pricing: value.pricing ?? {},
+            testingMode: Boolean(value.testingMode),
+        },
+    };
+}
+
+function cloneGatewayContextData(value: GatewayContextData): GatewayContextData {
+    return {
+        ...value,
+        key: value.key ? { ...value.key } : value.key,
+        keyLimit: value.keyLimit
+            ? {
+                ...value.keyLimit,
+                buckets: value.keyLimit.buckets
+                    ? {
+                        daily: value.keyLimit.buckets.daily ? { ...value.keyLimit.buckets.daily } : undefined,
+                        weekly: value.keyLimit.buckets.weekly ? { ...value.keyLimit.buckets.weekly } : undefined,
+                        monthly: value.keyLimit.buckets.monthly ? { ...value.keyLimit.buckets.monthly } : undefined,
+                    }
+                    : value.keyLimit.buckets ?? null,
+            }
+            : value.keyLimit,
+        credit: value.credit ? { ...value.credit } : value.credit,
+        providers: (value.providers ?? []).map((provider) => ({
+            ...provider,
+            byokMeta: Array.isArray(provider.byokMeta) ? [...provider.byokMeta] : [],
+            inputModalities: Array.isArray(provider.inputModalities)
+                ? [...provider.inputModalities]
+                : provider.inputModalities ?? null,
+            outputModalities: Array.isArray(provider.outputModalities)
+                ? [...provider.outputModalities]
+                : provider.outputModalities ?? null,
+            capabilityParams: provider.capabilityParams
+                ? { ...provider.capabilityParams }
+                : {},
+        })),
+        pricing: { ...(value.pricing ?? {}) },
+        teamEnrichment: value.teamEnrichment ? { ...value.teamEnrichment } : value.teamEnrichment ?? null,
+        keyEnrichment: value.keyEnrichment ? { ...value.keyEnrichment } : value.keyEnrichment ?? null,
+        teamSettings: value.teamSettings ? { ...value.teamSettings } : value.teamSettings ?? null,
+        contextTelemetry: value.contextTelemetry ? { ...value.contextTelemetry } : value.contextTelemetry,
+    };
+}
+
+function trackContextInflight(cacheKey: string, promise: Promise<GatewayContextData>): void {
+    while (contextInflight.size >= CONTEXT_INFLIGHT_MAX_ENTRIES) {
+        const oldest = contextInflight.keys().next().value;
+        if (!oldest) break;
+        contextInflight.delete(oldest);
+    }
+    contextInflight.set(cacheKey, promise);
 }
 
 function normalizeProviderStatus(
@@ -647,327 +800,284 @@ export async function fetchGatewayContext(args: {
 }): Promise<GatewayContextData> {
     const supabase = getSupabaseAdmin();
     const cache = getCache();
-    const versionToken = await keyVersionToken("id", args.apiKeyId);
-
+    const fetchStartedAt = performance.now();
+    const telemetry: ContextFetchTelemetry = {
+        cacheStatus: args.disableCache ? "bypass" : "miss",
+        totalMs: 0,
+        keyVersionMs: null,
+        cacheReadMs: null,
+        rpcMs: null,
+        enrichMs: null,
+        cacheWriteMs: null,
+        fallbackRemap: false,
+    };
     // Check if model is a preset
     const isPreset = args.model.startsWith("@");
+    const shouldUseCache = !args.disableCache;
+    const needsVersionToken = shouldUseCache;
+    let versionToken = "v0";
+    if (needsVersionToken) {
+        const keyVersionStartedAt = performance.now();
+        versionToken = await keyVersionToken("id", args.apiKeyId, {
+            useL1Cache: true,
+            l1TtlMs: 1000,
+        });
+        telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
+    }
     const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";
-    const cacheKey = isPreset
+    const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.apiKeyId}:${versionToken}`;
+    const staticCacheKey = isPreset
         ? `${PRESET_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.model}:${args.endpoint}`
-        : `${CONTEXT_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
+        : `${STATIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.teamId}:${args.endpoint}:${args.model}`;
+    const compositionCacheKey = `${CONTEXT_CACHE_PREFIX}:compose:${testingModeCacheSegment}:${args.teamId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
 
-    // Try cache first
-    if (!args.disableCache) {
+    // Try split cache first (parallel read of dynamic and static segments).
+    if (shouldUseCache) {
+        const cacheReadStartedAt = performance.now();
         try {
-            const cached = await cache.get(cacheKey, "text");
-            if (cached) {
-                const parsed = JSON.parse(cached);
-                if (isContextLike(parsed)) {
-                    return parsed;
+            const [dynamicCachedRaw, staticCachedRaw] = await Promise.all([
+                cache.get(dynamicCacheKey, "text"),
+                cache.get(staticCacheKey, "text"),
+            ]);
+            telemetry.cacheReadMs = round3(performance.now() - cacheReadStartedAt);
+            if (dynamicCachedRaw && staticCachedRaw) {
+                const dynamicParsed = JSON.parse(dynamicCachedRaw);
+                const staticParsed = JSON.parse(staticCachedRaw);
+                if (isDynamicContextLike(dynamicParsed) && isStaticContextLike(staticParsed)) {
+                    const merged = mergeCachedContext({
+                        dynamic: dynamicParsed,
+                        static: staticParsed,
+                        endpoint: args.endpoint,
+                    });
+                    return {
+                        ...merged,
+                        contextTelemetry: {
+                            ...telemetry,
+                            cacheStatus: "hit",
+                            totalMs: round3(performance.now() - fetchStartedAt),
+                        },
+                    };
                 }
             }
         } catch {
+            telemetry.cacheReadMs = round3(performance.now() - cacheReadStartedAt);
             // ignore cache read failures
         }
     }
 
-    async function fetchParsedContext(model: string): Promise<GatewayContextData> {
-        const { data, error } = await supabase.rpc("gateway_fetch_request_context", {
-            team_id: args.teamId,
-            model,
-            endpoint: args.endpoint,
-            api_key_id: args.apiKeyId,
-        });
-
-        if (error) throw new Error(`gateway_context_rpc_error:${error.message ?? "unknown"}`);
-        const payload = Array.isArray(data) ? (data.length ? data[0] : null) : data;
-        if (!payload) throw new Error("gateway_context_rpc_empty");
-
-        try {
-            return contextSchema.parse(payload);
-        } catch (e) {
-            console.error("[context.ts] Zod parsing error:", e);
-            console.error("[context.ts] Payload that failed:", payload);
-            throw e;
+    const inflightKey = shouldUseCache ? compositionCacheKey : null;
+    if (inflightKey) {
+        const inflight = contextInflight.get(inflightKey);
+        if (inflight) {
+            return inflight.then((value) => cloneGatewayContextData(value));
         }
     }
 
-    let parsed = await fetchParsedContext(args.model);
-
-    // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
-    // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
-    const noProviders = (parsed.providers ?? []).length === 0;
-    const unresolved = (parsed.resolvedModel ?? args.model) === args.model;
-    if (noProviders && unresolved) {
-        const remappedModel = await resolveProviderScopedModelToApiModel({
-            model: args.model,
-            endpoint: args.endpoint,
-        });
-        if (remappedModel && remappedModel !== args.model) {
-            parsed = await fetchParsedContext(remappedModel);
-        }
-    }
-
-    parsed = await backfillProviderModalities({
-        parsed,
-        requestedModel: args.model,
-    });
-
-    if (args.includeTestingMode) {
-        try {
-            const testingProviders = await fetchTestingProviderSnapshots({
-                teamId: args.teamId,
-                model: parsed.resolvedModel ?? args.model,
-                requestedModel: args.model,
+    const dbLoader = (async (): Promise<GatewayContextData> => {
+        async function fetchParsedContext(model: string): Promise<GatewayContextData> {
+            const { data, error } = await supabase.rpc("gateway_fetch_request_context", {
+                team_id: args.teamId,
+                model,
                 endpoint: args.endpoint,
-                existingProviders: parsed.providers ?? [],
+                api_key_id: args.apiKeyId,
             });
-            if (testingProviders.length) {
-                parsed.providers = [...(parsed.providers ?? []), ...testingProviders];
+
+            if (error) throw new Error(`gateway_context_rpc_error:${error.message ?? "unknown"}`);
+            const payload = Array.isArray(data) ? (data.length ? data[0] : null) : data;
+            if (!payload) throw new Error("gateway_context_rpc_empty");
+
+            try {
+                return contextSchema.parse(payload);
+            } catch (e) {
+                console.error("[context.ts] Zod parsing error:", e);
+                console.error("[context.ts] Payload that failed:", payload);
+                throw e;
             }
-        } catch {
-            // Keep public provider list if testing-mode enrichment fails.
         }
-    }
 
-    // Enrich with team settings + provider rollout statuses.
-    parsed.teamSettings = {
-        routingMode: null,
-        byokFallbackEnabled: null,
-        betaChannelEnabled: false,
-        cacheAwareRoutingEnabled: null,
-        billingMode: "wallet",
-    };
-
-    try {
-        const providerIds = Array.from(
-            new Set(
-                (parsed.providers ?? [])
-                    .map((provider) => provider.providerId)
-                    .filter((id): id is string => Boolean(id))
-            )
-        );
-
-        const providerStatusQuery = providerIds.length
-            ? supabase
-                  .from("data_api_providers")
-                  .select("api_provider_id,status,routing_status")
-                  .in("api_provider_id", providerIds)
-            : Promise.resolve({ data: [], error: null } as any);
-
-        const modelCandidates = Array.from(
-            new Set(
-                [parsed.resolvedModel, args.model]
-                    .map((value) => String(value ?? "").trim())
-                    .filter(Boolean)
-            )
-        );
-
-        const modelStatusByKey = new Map<string, { status: RoutingStatus; sortTs: number }>();
-        const setModelStatus = (row: any) => {
-            const providerId = typeof row?.provider_id === "string" ? row.provider_id : null;
-            if (!providerId) return;
-            const providerModelSlug =
-                row?.provider_model_slug === null || row?.provider_model_slug === undefined
-                    ? ""
-                    : String(row.provider_model_slug);
-            const key = `${providerId}::${providerModelSlug}`;
-            const sortTs = toMillis(row?.effective_from);
-            const existing = modelStatusByKey.get(key);
-            if (existing && existing.sortTs > sortTs) return;
-            modelStatusByKey.set(key, {
-                status: normalizeRoutingStatus(row?.routing_status),
-                sortTs,
-            });
+        let rpcTotalMs = 0;
+        const fetchParsedContextMeasured = async (model: string) => {
+            const rpcStartedAt = performance.now();
+            const value = await fetchParsedContext(model);
+            rpcTotalMs += performance.now() - rpcStartedAt;
+            return value;
         };
 
-        const modelStatusQueries =
-            providerIds.length && modelCandidates.length
-                ? await Promise.all([
-                      supabase
-                          .from("data_api_provider_models")
-                          .select("provider_api_model_id,provider_id,provider_model_slug,routing_status,effective_from,effective_to")
-                          .in("provider_id", providerIds)
-                          .in("api_model_id", modelCandidates),
-                      supabase
-                          .from("data_api_provider_models")
-                          .select("provider_api_model_id,provider_id,provider_model_slug,routing_status,effective_from,effective_to")
-                          .in("provider_id", providerIds)
-                          .in("internal_model_id", modelCandidates),
-                  ])
-                : ([
-                      { data: [], error: null },
-                      { data: [], error: null },
-                  ] as const);
+        let parsed = await fetchParsedContextMeasured(args.model);
 
-        const modelStatusNowMs = Date.now();
-        for (const result of modelStatusQueries) {
-            if (result?.error) continue;
-            for (const row of result.data ?? []) {
-                if (!isWithinEffectiveWindow(row?.effective_from, row?.effective_to, modelStatusNowMs)) continue;
-                setModelStatus(row);
+        // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
+        // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
+        const noProviders = (parsed.providers ?? []).length === 0;
+        const unresolved = (parsed.resolvedModel ?? args.model) === args.model;
+        if (noProviders && unresolved) {
+            const remappedModel = await resolveProviderScopedModelToApiModel({
+                model: args.model,
+                endpoint: args.endpoint,
+            });
+            if (remappedModel && remappedModel !== args.model) {
+                telemetry.fallbackRemap = true;
+                parsed = await fetchParsedContextMeasured(remappedModel);
             }
         }
 
-        const providerModelById = new Map<string, { providerId: string; providerModelSlug: string }>();
-        for (const result of modelStatusQueries) {
-            if (result?.error) continue;
-            for (const row of result.data ?? []) {
-                const providerApiModelId = typeof row?.provider_api_model_id === "string" ? row.provider_api_model_id : null;
-                const providerId = typeof row?.provider_id === "string" ? row.provider_id : null;
-                if (!providerApiModelId || !providerId) continue;
-                if (!isWithinEffectiveWindow(row?.effective_from, row?.effective_to, modelStatusNowMs)) continue;
-                providerModelById.set(providerApiModelId, {
-                    providerId,
-                    providerModelSlug:
-                        row?.provider_model_slug === null || row?.provider_model_slug === undefined
-                            ? ""
-                            : String(row.provider_model_slug),
-                });
-            }
-        }
-
-        const capabilityStatusByKey = new Map<string, { status: CapabilityRoutingStatus; sortTs: number }>();
-        const providerApiModelIds = Array.from(providerModelById.keys());
-        if (providerApiModelIds.length) {
-            const { data: capabilityRows, error: capabilityError } = await supabase
-                .from("data_api_provider_model_capabilities")
-                .select("provider_api_model_id,status,updated_at,created_at")
-                .eq("capability_id", args.endpoint)
-                .in("status", [...ROUTABLE_CAPABILITY_STATUSES_WITH_TESTING])
-                .in("provider_api_model_id", providerApiModelIds);
-            if (!capabilityError) {
-                for (const row of capabilityRows ?? []) {
-                    const providerApiModelId = typeof row?.provider_api_model_id === "string" ? row.provider_api_model_id : null;
-                    if (!providerApiModelId) continue;
-                    const providerModel = providerModelById.get(providerApiModelId);
-                    if (!providerModel) continue;
-                    const key = `${providerModel.providerId}::${providerModel.providerModelSlug}`;
-                    const sortTs = Math.max(toMillis(row?.updated_at), toMillis(row?.created_at));
-                    const existing = capabilityStatusByKey.get(key);
-                    if (existing && existing.sortTs > sortTs) continue;
-                    capabilityStatusByKey.set(key, {
-                        status: normalizeCapabilityStatus(row?.status),
-                        sortTs,
-                    });
-                }
-            }
-        }
-
-        const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
-            supabase
-                .from("team_settings")
-                .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,cache_aware_routing_enabled")
-                .eq("team_id", args.teamId)
-                .maybeSingle(),
-            providerStatusQuery,
-            supabase
-                .from("teams")
-                .select("billing_mode")
-                .eq("id", args.teamId)
-                .maybeSingle(),
-        ]);
-
-        if (!settingsResult?.error) {
-            const rawBillingMode = String(teamResult?.data?.billing_mode ?? "wallet")
-                .trim()
-                .toLowerCase();
-            const billingMode =
-                rawBillingMode === "invoice" ? "invoice" : "wallet";
-            parsed.teamSettings = {
-                routingMode: settingsResult.data?.routing_mode ?? null,
-                byokFallbackEnabled:
-                    settingsResult.data?.byok_fallback_enabled ?? null,
-                betaChannelEnabled:
-                    settingsResult.data?.beta_channel_enabled ?? false,
-                cacheAwareRoutingEnabled:
-                    settingsResult.data?.cache_aware_routing_enabled ?? null,
-                billingMode,
-            };
-        }
-
-        const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
-        const routingStatusByProvider = new Map<string, RoutingStatus>();
-        if (!providerStatusResult?.error) {
-            for (const row of providerStatusResult.data ?? []) {
-                if (!row?.api_provider_id) continue;
-                rolloutStatusByProvider.set(
-                    row.api_provider_id,
-                    normalizeProviderStatus(row.status),
-                );
-                routingStatusByProvider.set(
-                    row.api_provider_id,
-                    normalizeRoutingStatus(row.routing_status),
-                );
-            }
-        }
-
-        parsed.providers = (parsed.providers ?? []).map((provider) => {
-            const modelKey = `${provider.providerId}::${provider.providerModelSlug ?? ""}`;
-            const capabilityStatus = capabilityStatusByKey.get(modelKey)?.status ?? normalizeCapabilityStatus(provider.capabilityStatus);
-            return {
-                ...provider,
-                providerStatus: rolloutStatusByProvider.get(provider.providerId) ?? "active",
-                providerRoutingStatus:
-                    routingStatusByProvider.get(provider.providerId) ??
-                    normalizeRoutingStatus(provider.providerRoutingStatus) ??
-                    "active",
-                modelRoutingStatus:
-                    modelStatusByKey.get(modelKey)?.status ??
-                    normalizeRoutingStatus(provider.modelRoutingStatus) ??
-                    "active",
-                capabilityStatus,
-            };
+        telemetry.rpcMs = round3(rpcTotalMs);
+        const enrichStartedAt = performance.now();
+        parsed = await backfillProviderModalities({
+            parsed,
+            requestedModel: args.model,
         });
-    } catch {
-        // Keep defaults if enrichment fails, never block request path.
-    }
-    parsed.testingMode = Boolean(args.includeTestingMode);
 
-    // Compute adaptive TTL based on data characteristics
-    if (!args.disableCache) {
-        try {
-            let ttl: number;
-
-        if (isPreset) {
-            // Presets: use fixed TTL (config changes infrequently)
-            ttl = PRESET_TTL;
-        } else {
-            // Regular models: compute adaptive TTL for dynamic data
-            // Static data (providers/pricing) would ideally be cached separately
-            // but for now we use adaptive TTL that favors longer caching
-            const dynamicTtl = computeAdaptiveTtlForDynamic(parsed);
-
-            // If limits are healthy, use longer TTL closer to static tier
-            // If limits are stressed, use shorter TTL for more frequent updates
-            if (!parsed.keyLimit.ok) {
-                ttl = DYNAMIC_TTL_MIN;
-            } else {
-                const buckets = parsed.keyLimit.buckets;
-                const maxPressure = Math.max(
-                    bucketPressureScore(buckets?.daily),
-                    bucketPressureScore(buckets?.weekly),
-                    bucketPressureScore(buckets?.monthly)
-                );
-
-                // Low pressure -> cache longer (providers/pricing don't change often)
-                // High pressure -> cache shorter (limits need frequent updates)
-                if (maxPressure < 0.3) {
-                    ttl = Math.min(STATIC_TTL_MIN, dynamicTtl * 3);
-                } else {
-                    ttl = dynamicTtl;
+        if (args.includeTestingMode) {
+            try {
+                const testingProviders = await fetchTestingProviderSnapshots({
+                    teamId: args.teamId,
+                    model: parsed.resolvedModel ?? args.model,
+                    requestedModel: args.model,
+                    endpoint: args.endpoint,
+                    existingProviders: parsed.providers ?? [],
+                });
+                if (testingProviders.length) {
+                    parsed.providers = [...(parsed.providers ?? []), ...testingProviders];
                 }
+            } catch {
+                // Keep public provider list if testing-mode enrichment fails.
             }
         }
 
-            ttl = clampTtl(ttl);
-            await cache.put(cacheKey, JSON.stringify(parsed), { expirationTtl: ttl });
+        // Enrich with team settings + provider rollout statuses.
+        parsed.teamSettings = {
+            routingMode: null,
+            byokFallbackEnabled: null,
+            betaChannelEnabled: false,
+            cacheAwareRoutingEnabled: null,
+            billingMode: "wallet",
+        };
+
+        try {
+            const providerIds = Array.from(
+                new Set(
+                    (parsed.providers ?? [])
+                        .map((provider) => provider.providerId)
+                        .filter((id): id is string => Boolean(id))
+                )
+            );
+
+            const providerStatusQuery = providerIds.length
+                ? supabase
+                      .from("data_api_providers")
+                      .select("api_provider_id,status,routing_status")
+                      .in("api_provider_id", providerIds)
+                : Promise.resolve({ data: [], error: null } as any);
+
+            const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
+                supabase
+                    .from("team_settings")
+                    .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,cache_aware_routing_enabled")
+                    .eq("team_id", args.teamId)
+                    .maybeSingle(),
+                providerStatusQuery,
+                supabase
+                    .from("teams")
+                    .select("billing_mode")
+                    .eq("id", args.teamId)
+                    .maybeSingle(),
+            ]);
+
+            if (!settingsResult?.error) {
+                const rawBillingMode = String(teamResult?.data?.billing_mode ?? "wallet")
+                    .trim()
+                    .toLowerCase();
+                const billingMode =
+                    rawBillingMode === "invoice" ? "invoice" : "wallet";
+                parsed.teamSettings = {
+                    routingMode: settingsResult.data?.routing_mode ?? null,
+                    byokFallbackEnabled:
+                        settingsResult.data?.byok_fallback_enabled ?? null,
+                    betaChannelEnabled:
+                        settingsResult.data?.beta_channel_enabled ?? false,
+                    cacheAwareRoutingEnabled:
+                        settingsResult.data?.cache_aware_routing_enabled ?? null,
+                    billingMode,
+                };
+            }
+
+            const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
+            const routingStatusByProvider = new Map<string, RoutingStatus>();
+            if (!providerStatusResult?.error) {
+                for (const row of providerStatusResult.data ?? []) {
+                    if (!row?.api_provider_id) continue;
+                    rolloutStatusByProvider.set(
+                        row.api_provider_id,
+                        normalizeProviderStatus(row.status),
+                    );
+                    routingStatusByProvider.set(
+                        row.api_provider_id,
+                        normalizeRoutingStatus(row.routing_status),
+                    );
+                }
+            }
+
+            parsed.providers = (parsed.providers ?? []).map((provider) => {
+                return {
+                    ...provider,
+                    providerStatus:
+                        rolloutStatusByProvider.get(provider.providerId) ??
+                        normalizeProviderStatus(provider.providerStatus) ??
+                        "active",
+                    providerRoutingStatus:
+                        routingStatusByProvider.get(provider.providerId) ??
+                        normalizeRoutingStatus(provider.providerRoutingStatus) ??
+                        "active",
+                    modelRoutingStatus:
+                        normalizeRoutingStatus(provider.modelRoutingStatus) ??
+                        "active",
+                    capabilityStatus:
+                        normalizeCapabilityStatus(provider.capabilityStatus) ??
+                        "active",
+                };
+            });
         } catch {
-            // ignore cache write failures
+            // Keep defaults if enrichment fails, never block request path.
         }
+        parsed.testingMode = Boolean(args.includeTestingMode);
+        telemetry.enrichMs = round3(performance.now() - enrichStartedAt);
+
+        parsed.endpoint = args.endpoint as any;
+
+        // Compute adaptive TTLs and write split cache entries.
+        if (shouldUseCache) {
+            const cacheWriteStartedAt = performance.now();
+            try {
+                const split = splitContextForCache(parsed);
+                const dynamicTtl = clampTtl(computeAdaptiveTtlForDynamic(parsed));
+                const staticTtl = clampTtl(isPreset ? PRESET_TTL : computeStaticTtl());
+                await Promise.all([
+                    cache.put(dynamicCacheKey, JSON.stringify(split.dynamic), { expirationTtl: dynamicTtl }),
+                    cache.put(staticCacheKey, JSON.stringify(split.static), { expirationTtl: staticTtl }),
+                ]);
+            } catch {
+                // ignore cache write failures
+            } finally {
+                telemetry.cacheWriteMs = round3(performance.now() - cacheWriteStartedAt);
+            }
+        }
+
+        telemetry.totalMs = round3(performance.now() - fetchStartedAt);
+        parsed.contextTelemetry = telemetry;
+        return parsed;
+    })();
+
+    if (inflightKey) {
+        trackContextInflight(inflightKey, dbLoader);
     }
 
-    return parsed;
+    try {
+        return await dbLoader;
+    } finally {
+        if (inflightKey && contextInflight.get(inflightKey) === dbLoader) {
+            contextInflight.delete(inflightKey);
+        }
+    }
 }
 
 

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	Tooltip,
 	TooltipContent,
@@ -34,6 +35,7 @@ import {
 	XCircle,
 	Download,
 	Eye,
+	AppWindow,
 } from "lucide-react";
 import {
 	fetchPaginatedRequests,
@@ -84,6 +86,21 @@ function getModelDetailsHref(modelId: string | null): string | null {
 	if (!organisationId || modelParts.length === 0) return null;
 	const routeModelId = modelParts.join("/");
 	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(routeModelId)}`;
+}
+
+function normalizeNonEmpty(value: string | null | undefined): string | null {
+	if (typeof value !== "string") return null;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : null;
+}
+
+function isAiStatsChatApp(row: RequestRow): boolean {
+	const key = normalizeNonEmpty(row.app_key)?.toLowerCase();
+	if (!key) return false;
+	return (
+		key === "ai-stats-chat@ai-stats.phaseo.app" ||
+		key === "https://ai-stats.phaseo.app/chat"
+	);
 }
 
 export default function UnifiedRequestsTable({
@@ -282,12 +299,17 @@ export default function UnifiedRequestsTable({
 				const providerLabel = row.provider
 					? providerNames.get(row.provider) || row.provider
 					: "-";
+				const appTitle = normalizeNonEmpty(row.app_title);
+				const mappedAppName = normalizeNonEmpty(
+					row.app_id ? appNames.get(row.app_id) : null,
+				);
+				const appLabel = appTitle ?? mappedAppName ?? "-";
 				return {
 					Timestamp: new Date(row.created_at).toLocaleString(),
 					Model: getModelDisplayName(row.model_id, modelMetadata),
 					"Model ID": row.model_id || "-",
 					Provider: providerLabel,
-					App: appNames.get(row.app_id || "") || "-",
+					App: appLabel,
 					Usage: usageSummary,
 					"Input Tokens": formatUsageNumber(inputTokens),
 					"Output Tokens": formatUsageNumber(outputTokens),
@@ -368,6 +390,7 @@ export default function UnifiedRequestsTable({
 									<SortIcon field="provider" />
 								</Button>
 							</TableHead>
+							<TableHead>App</TableHead>
 							<TableHead className="text-right">
 								<Button
 									variant="ghost"
@@ -411,7 +434,7 @@ export default function UnifiedRequestsTable({
 						{data.length === 0 && !loading ? (
 							<TableRow>
 								<TableCell
-									colSpan={8}
+									colSpan={9}
 									className="text-center py-8 text-muted-foreground"
 								>
 									No requests found
@@ -436,6 +459,9 @@ export default function UnifiedRequestsTable({
 													</TableCell>
 													<TableCell>
 														<div className="h-5 bg-muted rounded w-20" />
+													</TableCell>
+													<TableCell>
+														<div className="h-5 bg-muted rounded w-24" />
 													</TableCell>
 													<TableCell className="text-right">
 														<div className="h-4 bg-muted rounded w-24 ml-auto" />
@@ -468,6 +494,16 @@ export default function UnifiedRequestsTable({
 										: undefined;
 									const providerLabel = row.provider
 										? providerNames.get(row.provider) || row.provider
+										: null;
+									const appTitle = normalizeNonEmpty(row.app_title);
+									const mappedAppName = normalizeNonEmpty(
+										row.app_id ? appNames.get(row.app_id) : null,
+									);
+									const appLabel = row.app_id
+										? appTitle ?? mappedAppName ?? "Unknown app"
+										: null;
+									const appHref = row.app_id
+										? `/apps/${encodeURIComponent(row.app_id)}`
 										: null;
 									const modelLabel = getModelDisplayName(row.model_id, modelMetadata);
 
@@ -605,6 +641,48 @@ export default function UnifiedRequestsTable({
 													</Badge>
 												)}
 											</TableCell>
+											<TableCell className="py-2">
+												{row.app_id ? (
+													<Link
+														href={appHref!}
+														className="underline decoration-transparent hover:decoration-current transition-colors duration-200 hover:text-primary"
+													>
+														<Badge
+															variant="outline"
+															className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
+														>
+															{isAiStatsChatApp(row) ? (
+																<Logo
+																	id="ai-stats"
+																	width={14}
+																	height={14}
+																	className="flex-shrink-0"
+																/>
+															) : (
+																<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
+																	{row.app_image_url ? (
+																		<AvatarImage
+																			src={row.app_image_url}
+																			alt={appLabel ?? "App"}
+																			className="object-cover"
+																		/>
+																	) : null}
+																	<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
+																		<AppWindow className="h-3 w-3" />
+																	</AvatarFallback>
+																</Avatar>
+															)}
+															<span className="truncate">
+																{appLabel}
+															</span>
+														</Badge>
+													</Link>
+												) : (
+													<Badge variant="outline">
+														-
+													</Badge>
+												)}
+											</TableCell>
 											<TableCell className="py-2 text-right">
 												<Tooltip>
 													<TooltipTrigger asChild>
@@ -730,7 +808,9 @@ export default function UnifiedRequestsTable({
 				request={selectedRequest}
 				appName={
 					selectedRequest?.app_id
-						? appNames.get(selectedRequest.app_id)
+						? normalizeNonEmpty(selectedRequest.app_title) ??
+							normalizeNonEmpty(appNames.get(selectedRequest.app_id)) ??
+							"Unknown app"
 						: null
 				}
 			/>

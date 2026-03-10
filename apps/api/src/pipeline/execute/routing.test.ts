@@ -336,6 +336,40 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.stickyRouting.enabled).toBe(false);
 		expect(result.diagnostics.stickyRouting.applied).toBe(false);
 	});
+
+	it("deprioritizes providers with open circuit breakers when other options exist", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				breaker: "open",
+				breaker_until_ms: Date.now() + 60_000,
+			}),
+			anthropic: health("anthropic", {
+				breaker: "closed",
+				breaker_until_ms: 0,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai" }),
+				candidate({ providerId: "anthropic" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini:fast",
+				teamId: "team_123",
+				testingMode: false,
+			}
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["anthropic"]);
+		const breakerStage = result.diagnostics.filterStages.find((stage) => stage.stage === "health_breaker");
+		expect(breakerStage?.beforeCount).toBe(2);
+		expect(breakerStage?.afterCount).toBe(1);
+		expect(breakerStage?.droppedProviders).toEqual([
+			{ providerId: "openai", reason: "breaker_open" },
+		]);
+	});
 });
 
 

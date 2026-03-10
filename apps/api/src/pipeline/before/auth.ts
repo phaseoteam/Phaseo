@@ -8,6 +8,9 @@ import { keyVersionToken } from "@/core/kv";
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
 const KEY_CACHE_TTL_SECONDS = 60;
+const KEY_VERSION_L1_TTL_MS = 1_000;
+const KEY_LOOKUP_L1_TTL_MS = 1_000;
+const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
 
 /* -------------------- Web Crypto HMAC helpers -------------------- */
 
@@ -156,6 +159,49 @@ type KeyRow = {
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
+type KeyLookupL1Value = Exclude<CachedKeyLookup, null>;
+type KeyLookupL1Entry = {
+    value: KeyLookupL1Value;
+    expiresAt: number;
+};
+const keyLookupL1Cache = new Map<string, KeyLookupL1Entry>();
+
+function keyLookupL1Key(kid: string, versionToken: string): string {
+    return `${kid}:${versionToken}`;
+}
+
+function readKeyLookupL1(kid: string, versionToken: string): KeyLookupL1Value | null {
+    const key = keyLookupL1Key(kid, versionToken);
+    const entry = keyLookupL1Cache.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt <= Date.now()) {
+        keyLookupL1Cache.delete(key);
+        return null;
+    }
+    return entry.value;
+}
+
+function pruneKeyLookupL1(nowMs: number): void {
+    for (const [key, entry] of keyLookupL1Cache.entries()) {
+        if (entry.expiresAt <= nowMs) {
+            keyLookupL1Cache.delete(key);
+        }
+    }
+    while (keyLookupL1Cache.size >= KEY_LOOKUP_L1_MAX_ENTRIES) {
+        const oldest = keyLookupL1Cache.keys().next().value;
+        if (!oldest) break;
+        keyLookupL1Cache.delete(oldest);
+    }
+}
+
+function writeKeyLookupL1(kid: string, versionToken: string, value: KeyLookupL1Value): void {
+    const now = Date.now();
+    pruneKeyLookupL1(now);
+    keyLookupL1Cache.set(keyLookupL1Key(kid, versionToken), {
+        value,
+        expiresAt: now + KEY_LOOKUP_L1_TTL_MS,
+    });
+}
 
 function isValidKidFormat(kid: string): boolean {
     // Generated keys are base62 (12 chars); allow a wider safe range for compatibility.
@@ -164,14 +210,24 @@ function isValidKidFormat(kid: string): boolean {
 
 async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
     try {
-        const versionToken = await keyVersionToken("kid", kid);
+        const versionToken = await keyVersionToken("kid", kid, {
+            useL1Cache: true,
+            l1TtlMs: KEY_VERSION_L1_TTL_MS,
+        });
+        const l1 = readKeyLookupL1(kid, versionToken);
+        if (l1 !== null) return l1;
         const cached = await getCache().get(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, "json");
         if (!cached || typeof cached !== "object") return null;
         const marker = cached as { missing?: unknown };
-        if (marker.missing === true) return "missing";
+        if (marker.missing === true) {
+            writeKeyLookupL1(kid, versionToken, "missing");
+            return "missing";
+        }
         const row = cached as Partial<KeyRow>;
         if (!row.id || !row.team_id || !row.status || !row.hash) return null;
-        return row as KeyRow;
+        const value = row as KeyRow;
+        writeKeyLookupL1(kid, versionToken, value);
+        return value;
     } catch {
         // Fail open to DB lookup when KV is unavailable.
         return null;
@@ -179,13 +235,20 @@ async function getCachedKey(kid: string): Promise<CachedKeyLookup> {
 }
 
 async function cacheKey(kid: string, row: KeyRow) {
+    let versionToken: string | null = null;
     try {
-        const versionToken = await keyVersionToken("kid", kid);
+        versionToken = await keyVersionToken("kid", kid, {
+            useL1Cache: true,
+            l1TtlMs: KEY_VERSION_L1_TTL_MS,
+        });
         await getCache().put(`${KEY_CACHE_PREFIX}:${kid}:${versionToken}`, JSON.stringify(row), {
             expirationTtl: KEY_CACHE_TTL_SECONDS,
         });
     } catch {
         // Ignore KV write failures.
+    }
+    if (versionToken) {
+        writeKeyLookupL1(kid, versionToken, row);
     }
 }
 

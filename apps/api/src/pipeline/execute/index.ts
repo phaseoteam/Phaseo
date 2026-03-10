@@ -72,6 +72,7 @@ function shouldFallbackFromByok(status: number | null | undefined): boolean {
 }
 
 const ATTEMPT_PREVIEW_LIMIT = 320;
+const MAX_RETRYABLE_EXECUTOR_RETRIES = 1;
 
 function truncateAttemptText(value: unknown, limit = ATTEMPT_PREVIEW_LIMIT): string | null {
 	if (typeof value !== "string") return null;
@@ -425,17 +426,36 @@ async function attemptProviderWithIR(
 				},
 			}) as ExecutorExecuteArgs;
 
-		let executorResult = await executor(buildExecutorArgs(false, candidate.byokMeta || []));
+		const executeWithRetry = async () => {
+			let lastErr: unknown = null;
+			for (let retryAttempt = 0; retryAttempt <= MAX_RETRYABLE_EXECUTOR_RETRIES; retryAttempt += 1) {
+				try {
+					let nextResult = await executor(buildExecutorArgs(false, candidate.byokMeta || []));
+					if (
+						allowByokFallback &&
+						nextResult.keySource === "byok" &&
+						!nextResult.upstream.ok &&
+						shouldFallbackFromByok(nextResult.upstream.status)
+					) {
+						(nextResult as any).fallbackAttempted = true;
+						nextResult = await executor(buildExecutorArgs(true, []));
+					}
+					return nextResult;
+				} catch (err) {
+					lastErr = err;
+					const retryable = (err as any)?.retryable === true;
+					const hasRetryLeft = retryAttempt < MAX_RETRYABLE_EXECUTOR_RETRIES;
+					if (!retryable || !hasRetryLeft) {
+						throw err;
+					}
+					// Short jitter-free backoff for transient transport faults.
+					await new Promise((resolve) => setTimeout(resolve, 120));
+				}
+			}
+			throw (lastErr instanceof Error ? lastErr : new Error("executor_retry_exhausted"));
+		};
 
-		if (
-			allowByokFallback &&
-			executorResult.keySource === "byok" &&
-			!executorResult.upstream.ok &&
-			shouldFallbackFromByok(executorResult.upstream.status)
-		) {
-			(executorResult as any).fallbackAttempted = true;
-			executorResult = await executor(buildExecutorArgs(true, []));
-		}
+		const executorResult = await executeWithRetry();
 
 		if (executorResult.timing) {
 			if (typeof executorResult.timing.latencyMs === "number") {
@@ -506,6 +526,7 @@ async function attemptProviderWithIR(
 				upstream_payload_preview: upstreamFailure.payload_preview,
 				...upstreamSummary,
 			});
+			return { ok: false };
 		}
 
 		// Build result
@@ -548,11 +569,23 @@ async function attemptProviderWithIR(
 		return { ok: true, result };
 	} catch (err) {
 		console.error(`Executor execution failed for ${candidate.providerId}:`, err);
+		const message = err instanceof Error ? err.message : String(err);
+		const stackPreview = truncateAttemptText(
+			err instanceof Error ? err.stack : null,
+			ATTEMPT_PREVIEW_LIMIT * 3,
+		);
 		attemptErrors.push({
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
-			type: "error",
-			message: err instanceof Error ? err.message : String(err),
+			model: baseModel,
+			provider_model_slug: providerModelSlug ?? null,
+			attempt_number: attemptErrors.length + 1,
+			type: (err as any)?.retryable === true ? "retryable_error" : "error",
+			retryable: (err as any)?.retryable === true,
+			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
+			upstream_error_message: message,
+			upstream_error_description: stackPreview,
+			message,
 		});
 		const endToEndMs = Math.round(timing.timer.elapsed("request_start"));
 		await onCallEnd(ctx.endpoint, {

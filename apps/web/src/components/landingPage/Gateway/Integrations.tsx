@@ -51,7 +51,7 @@ const CODE_SNIPPETS = [
 
 const client = new OpenAI({
   apiKey: process.env.AI_STATS_API_KEY!,
-  baseURL: "https://gateway.ai-stats.phaseo.app/v1"
+  baseURL: "https://api.phaseo.app/v1"
 });
 
 const response = await client.chat.completions.create({
@@ -67,7 +67,7 @@ const response = await client.chat.completions.create({
 		language: "bash",
 		description:
 			"Call the Gateway directly over HTTP with your API key and model ID.",
-		code: `curl https://gateway.ai-stats.phaseo.app/v1/chat/completions \\
+		code: `curl https://api.phaseo.app/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer $AI_STATS_API_KEY" \\
   -d '{
@@ -90,7 +90,7 @@ const response = await client.chat.completions.create({
 
 const client = new Anthropic({
   apiKey: process.env.AI_STATS_API_KEY!,
-  baseURL: "https://gateway.ai-stats.phaseo.app/v1"
+  baseURL: "https://api.phaseo.app/v1"
 });
 
 const message = await client.messages.create({

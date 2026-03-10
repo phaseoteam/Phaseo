@@ -6,8 +6,8 @@ import type { IRChatRequest, IRReasoning } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { computeBill } from "@pipeline/pricing/engine";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
-import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
+import { irToOpenAIResponses } from "@executors/_shared/text-generate/openai-compat/transform";
+import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { getProviderQuirks } from "@executors/_shared/text-generate/openai-compat/quirks";
 import { sanitizeOpenAICompatRequest } from "@executors/_shared/text-generate/openai-compat/provider-policy";
 import {
@@ -304,13 +304,11 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		args.capabilityParams,
 	);
 
-	if (irRequest.stream) {
-		requestPayload.stream = true;
-		requestPayload.stream_options = {
-			...(requestPayload.stream_options ?? {}),
-			include_usage: true,
-		};
-	}
+	requestPayload.stream = true;
+	requestPayload.stream_options = {
+		...(requestPayload.stream_options ?? {}),
+		include_usage: true,
+	};
 
 	if (quirks.transformRequest) {
 		quirks.transformRequest({
@@ -430,24 +428,25 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		};
 	}
 
-	const json = await res.json().catch(() => null);
-	if (json && typeof json === "object") {
-		quirks.normalizeResponse?.({ response: json, ir: irRequest });
-
+	const { ir, usage, rawResponse, firstByteMs, totalMs } = await bufferStreamToIR(
+		res,
+		args,
+		"responses",
+		upstreamStartMs,
+	);
+	if (rawResponse && typeof rawResponse === "object") {
+		quirks.normalizeResponse?.({ response: rawResponse, ir: irRequest });
 		const bindings = getBindings();
 		if (bindings.XAI_DEBUG_USAGE === "1") {
-			console.log("[x-ai][usage-debug] raw usage:", (json as any).usage ?? null);
+			console.log("[x-ai][usage-debug] raw usage:", (rawResponse as any).usage ?? null);
 		}
 	}
 
-	const ir = json
-		? openAIResponsesToIR(json, args.requestId, irRequest.model, args.providerId)
-		: undefined;
 	if (ir) {
-		(ir as any).rawResponse = json;
+		(ir as any).rawResponse = rawResponse;
 	}
 
-	const usageMetersBase = normalizeTextUsageForPricing(json?.usage);
+	const usageMetersBase = normalizeTextUsageForPricing((rawResponse as any)?.usage ?? usage);
 	const usageMeters = usageMetersBase
 		? { ...usageMetersBase, requests: usageMetersBase.requests ?? 1 }
 		: {
@@ -465,8 +464,6 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		bill.usage = priced;
 	}
 
-	const totalMs = Math.max(0, Date.now() - upstreamStartMs);
-
 	return {
 		kind: "completed",
 		ir,
@@ -475,10 +472,10 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		keySource: keyInfo.source,
 		byokKeyId: keyInfo.byokId,
 		mappedRequest,
-		rawResponse: json ?? null,
+		rawResponse: rawResponse ?? null,
 		timing: {
-			latencyMs: totalMs,
-			generationMs: totalMs,
+			latencyMs: firstByteMs ?? totalMs,
+			generationMs: firstByteMs === null ? 0 : Math.max(0, totalMs - firstByteMs),
 		},
 	};
 }

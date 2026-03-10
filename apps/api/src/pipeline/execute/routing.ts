@@ -397,8 +397,14 @@ export async function routeProviders(
         testingMode?: boolean;
         requestId?: string | null;
         cacheAwareRouting?: boolean;
+        meta?: {
+            debug?: {
+                enabled?: boolean;
+            };
+        };
     }
 ): Promise<{ ranked: RoutedCandidate[]; diagnostics: RoutingDiagnostics }> {
+    const debugEnabled = Boolean(ctx.meta?.debug?.enabled);
     const { base, priority, strict } = parsePriority(ctx.model);
     const mode = normalizeRoutingMode(ctx.routingMode);
     const preset = applyRoutingMode(PRESETS[priority], mode);
@@ -569,7 +575,7 @@ export async function routeProviders(
 
     if (!poolCandidates.length) {
         const diagnostics = buildDiagnostics(0);
-        console.log("[gateway] provider pool empty", {
+        console.warn("[gateway] provider pool empty", {
             model: ctx.model,
             endpoint: ctx.endpoint,
             diagnostics,
@@ -610,19 +616,21 @@ export async function routeProviders(
                 })),
         });
     }
-    console.log("[gateway] provider pool", {
-        model: ctx.model,
-        endpoint: ctx.endpoint,
-        candidates: candidates.length,
-        poolCandidates: poolCandidates.length,
-        viable: viable.length,
-        openBreakers: healths.filter(
-            (entry) =>
-                entry.h.breaker === "open" &&
-                (entry.h.breaker_until_ms ?? 0) > now
-        ).length,
-        filterStages,
-    });
+    if (debugEnabled) {
+        console.log("[gateway] provider pool", {
+            model: ctx.model,
+            endpoint: ctx.endpoint,
+            candidates: candidates.length,
+            poolCandidates: poolCandidates.length,
+            viable: viable.length,
+            openBreakers: healths.filter(
+                (entry) =>
+                    entry.h.breaker === "open" &&
+                    (entry.h.breaker_until_ms ?? 0) > now
+            ).length,
+            filterStages,
+        });
+    }
 
     const latP50s = pool.map(v => v.h.lat_ewma_60s);
     const latTail = pool.map(v => Math.max(v.h.lat_ewma_300s, v.h.lat_ewma_60s * 1.6));

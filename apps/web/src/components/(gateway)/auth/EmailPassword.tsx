@@ -19,7 +19,7 @@ function SubmitButton() {
 	);
 }
 
-export default function EmailPassword() {
+export default function EmailPassword({ returnUrl }: { returnUrl?: string }) {
 	const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 	const [showPassword, setShowPassword] = React.useState(false);
 	const [password, setPassword] = React.useState("");
@@ -35,6 +35,9 @@ export default function EmailPassword() {
 			</div>
 
 			<form action={handlePasswordSignIn} className="grid gap-3">
+				{returnUrl ? (
+					<input type="hidden" name="returnUrl" value={returnUrl} />
+				) : null}
 				<div className="grid gap-3">
 					<Label htmlFor="email">Email</Label>
 					<Input
@@ -90,7 +93,10 @@ export default function EmailPassword() {
 
 			<div className="text-center text-sm">
 				Don&apos;t have an account?{" "}
-				<Link href="/sign-up" className="underline underline-offset-4">
+				<Link
+					href={returnUrl ? `/sign-up?returnUrl=${encodeURIComponent(returnUrl)}` : "/sign-up"}
+					className="underline underline-offset-4"
+				>
 					Sign up
 				</Link>
 			</div>

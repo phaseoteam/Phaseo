@@ -34,7 +34,10 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 
         timing.timer.mark("before_start");
         const pre = await beforeRequest(req, endpoint, timing.timer, schema);
-        timing.timer.end("before_start");
+        const beforeMsRaw = timing.timer.end("before_start");
+        const beforeMs = typeof beforeMsRaw === "number"
+            ? Math.round(beforeMsRaw * 1000) / 1000
+            : null;
 
         // If before failed, log and return error immediately
         if (!pre.ok) {
@@ -47,6 +50,10 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
                 auditFailure,
                 req,
             });
+        }
+
+        if (beforeMs !== null) {
+            pre.ctx.meta.before_ms = beforeMs;
         }
 
         try {

@@ -136,6 +136,41 @@ const ResponsesProviderOptionsSchema = z.object({
 	google: GoogleProviderOptionsSchema.optional(),
 }).passthrough();
 
+const OPENAI_ASSISTANT_PHASE_VALUES = new Set(["commentary", "final_answer"]);
+
+function validateResponsesInputAssistantPhase(input: unknown, ctx: z.RefinementCtx): void {
+    if (!Array.isArray(input)) return;
+    for (let idx = 0; idx < input.length; idx += 1) {
+        const item = input[idx] as any;
+        if (!item || typeof item !== "object") continue;
+        const phase = item.phase;
+        if (phase === undefined || phase === null) continue;
+
+        const role = typeof item.role === "string" ? item.role : undefined;
+        const itemType = typeof item.type === "string" ? item.type : undefined;
+        const isMessageItem =
+            itemType === "message" ||
+            (itemType === undefined && role && ("content" in item));
+
+        if (!isMessageItem || role !== "assistant") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["input", idx, "phase"],
+                message: "phase is only allowed on assistant message items",
+            });
+            continue;
+        }
+
+        if (typeof phase !== "string" || !OPENAI_ASSISTANT_PHASE_VALUES.has(phase)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["input", idx, "phase"],
+                message: "phase must be one of: commentary, final_answer",
+            });
+        }
+    }
+}
+
 function isFileLike(value: unknown): boolean {
     if (!value || typeof value !== "object") return false;
     const candidate = value as { arrayBuffer?: unknown; stream?: unknown };
@@ -200,7 +235,9 @@ export const ResponsesSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
-}).passthrough().transform((obj) => {
+}).passthrough().superRefine((obj, ctx) => {
+    validateResponsesInputAssistantPhase((obj as any).input, ctx);
+}).transform((obj) => {
     const next: any = { ...obj };
     if (!("prompt_cache_key" in next)) {
         next.prompt_cache_key = null;

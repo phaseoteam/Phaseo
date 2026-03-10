@@ -355,6 +355,7 @@ describe("openai text executor HTTP mode", () => {
 
 		expect(result.kind).toBe("completed");
 		expect(mock.calls).toHaveLength(1);
-		expect(mock.calls[0]?.bodyJson?.reasoning).toEqual({ effort: "medium" });
+		expect(mock.calls[0]?.bodyJson?.stream).toBe(true);
+		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({ effort: "medium" });
 	});
 });

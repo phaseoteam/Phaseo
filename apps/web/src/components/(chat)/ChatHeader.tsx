@@ -166,9 +166,7 @@ type ChatHeaderProps = {
 	onOpenModelSettings: () => void;
 	settingsOpen: boolean;
 	onSettingsOpenChange: (open: boolean) => void;
-	apiKey: string;
 	baseUrl: string;
-	onApiKeyChange: (value: string) => void;
 	onBaseUrlChange: (value: string) => void;
 	onSaveSettings: () => void;
 	personalization: PersonalizationSettings;
@@ -211,9 +209,7 @@ export function ChatHeader({
 	onOpenModelSettings,
 	settingsOpen,
 	onSettingsOpenChange,
-	apiKey,
 	baseUrl,
-	onApiKeyChange,
 	onBaseUrlChange,
 	onSaveSettings,
 	personalization,
@@ -1123,22 +1119,6 @@ export function ChatHeader({
 													Connection details for
 													sending chat requests.
 												</p>
-											</div>
-											<div className="grid gap-2">
-												<Label htmlFor="api-key">
-													API key
-												</Label>
-												<Input
-													id="api-key"
-													type="password"
-													value={apiKey}
-													onChange={(event) =>
-														onApiKeyChange(
-															event.target.value
-														)
-													}
-													placeholder="sk-..."
-												/>
 											</div>
 											<div className="grid gap-2">
 												<Label htmlFor="base-url">

@@ -190,14 +190,32 @@
 								"expanded": false,
 								"pages": [
 									"v1/migration-guides/index",
-									"v1/migration-guides/from-openai",
-									"v1/migration-guides/from-anthropic",
-									"v1/migration-guides/from-openrouter",
-									"v1/migration-guides/from-vercel",
-									"v1/migration-guides/from-cloudflare",
-									"v1/migration-guides/from-helicone",
-									"v1/migration-guides/from-litellm",
-									"v1/migration-guides/assistant"
+									{
+										"group": "Model Migrations",
+										"expanded": false,
+										"pages": [
+											"v1/model-migrations/index",
+											"v1/model-migrations/anthropic-claude-opus-4-5-to-4-6",
+											"v1/model-migrations/anthropic-claude-sonnet-4-5-to-4-6",
+											"v1/model-migrations/openai-migrating-to-gpt-5-4",
+											"v1/model-migrations/google-migrating-to-gemini-3-and-3-1",
+											"v1/model-migrations/google-nano-banana-1-to-nano-banana-2"
+										]
+									},
+									{
+										"group": "Platform Migrations",
+										"expanded": false,
+										"pages": [
+											"v1/migration-guides/from-openai",
+											"v1/migration-guides/from-anthropic",
+											"v1/migration-guides/from-openrouter",
+											"v1/migration-guides/from-vercel",
+											"v1/migration-guides/from-cloudflare",
+											"v1/migration-guides/from-helicone",
+											"v1/migration-guides/from-litellm",
+											"v1/migration-guides/assistant"
+										]
+									}
 								]
 							},
 							{

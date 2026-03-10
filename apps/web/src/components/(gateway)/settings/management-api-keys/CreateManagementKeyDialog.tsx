@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CopyButton } from "@/components/ui/copy-button";
-import { createProvisioningKeyAction } from "@/app/(dashboard)/settings/provisioning-keys/actions";
+import { createManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -24,7 +24,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
-export default function CreateProvisioningKeyDialog({
+export default function CreateManagementKeyDialog({
 	currentUserId,
 	currentTeamId,
 	teams,
@@ -58,14 +58,18 @@ export default function CreateProvisioningKeyDialog({
 			setLoading(true);
 			const teamArg =
 				selectedTeamId === null ? "" : (selectedTeamId as string);
-			const res: any = await createProvisioningKeyAction({
+			const res: any = await createManagementKeyAction({
 				name,
 				creatorUserId: currentUserId as string,
 				teamId: teamArg,
 				scopes: JSON.stringify([])
 			});
 			setPlainKey(res?.plaintext ?? null);
-		} catch {
+		} catch (err: any) {
+			const message =
+				err?.message ??
+				"Could not create management API key right now. Please try again.";
+			toast.error(message);
 		} finally {
 			setLoading(false);
 		}
@@ -205,3 +209,4 @@ export default function CreateProvisioningKeyDialog({
 		</Dialog>
 	);
 }
+

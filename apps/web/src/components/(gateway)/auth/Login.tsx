@@ -25,9 +25,11 @@ function normalizeAuthError(message: string | null): string | null {
 export async function Login({
 	signupNotice = null,
 	authError = null,
+	returnUrl,
 }: {
 	signupNotice?: SignupNotice;
 	authError?: string | null;
+	returnUrl?: string;
 }) {
 	let lastProvider: Provider | null = null;
 	try {
@@ -90,8 +92,8 @@ export async function Login({
 				</Item>
 			) : null}
 
-			<OAuthButtons />
-			<EmailPassword />
+			<OAuthButtons returnUrl={returnUrl} />
+			<EmailPassword returnUrl={returnUrl} />
 		</div>
 	);
 }
