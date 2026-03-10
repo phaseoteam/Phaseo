@@ -160,6 +160,19 @@ def createImageEdit(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
+def createManagementKey(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/management/keys"
+	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
+
+
 def createModeration(
 	client: Client,
 	*,
@@ -196,45 +209,6 @@ def createOcr(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/ocr"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createProvisioningKey(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/management/keys"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createProvisioningKeyAlias(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/provisioning/keys"
-	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
-
-
-def createProvisioningKeyLegacy(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/keys"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -368,20 +342,7 @@ def createVideoAlias(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-def deleteOAuthClient(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get("client_id", "")}"
-	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
-
-
-def deleteProvisioningKey(
+def deleteManagementKey(
 	client: Client,
 	*,
 	path: Optional[Dict[str, Any]] = None,
@@ -394,7 +355,7 @@ def deleteProvisioningKey(
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
-def deleteProvisioningKeyAlias(
+def deleteOAuthClient(
 	client: Client,
 	*,
 	path: Optional[Dict[str, Any]] = None,
@@ -403,7 +364,7 @@ def deleteProvisioningKeyAlias(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/provisioning/keys/{path.get("id", "")}"
+	resolved_path = f"/oauth-clients/{path.get("client_id", "")}"
 	return client.request("DELETE", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -524,6 +485,19 @@ def getGeneration(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def getManagementKey(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = f"/management/keys/{path.get("id", "")}"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def getMusicGeneration(
 	client: Client,
 	*,
@@ -573,45 +547,6 @@ def getProviderDerankStatus(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/health/providers/{path.get("provider_id", "")}/derank"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def getProvisioningKey(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/management/keys/{path.get("id", "")}"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def getProvisioningKeyAlias(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/provisioning/keys/{path.get("id", "")}"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def getProvisioningKeyLegacy(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/key"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -745,6 +680,19 @@ def listFiles(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def listManagementKeys(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/management/keys"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def listModels(
 	client: Client,
 	*,
@@ -807,45 +755,6 @@ def listProviders(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/providers"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def listProvisioningKeys(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/management/keys"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def listProvisioningKeysAlias(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/provisioning/keys"
-	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
-
-
-def listProvisioningKeysLegacy(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = "/keys"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -914,20 +823,7 @@ def retrieveFile(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
-def updateOAuthClient(
-	client: Client,
-	*,
-	path: Optional[Dict[str, Any]] = None,
-	query: Optional[Dict[str, Any]] = None,
-	headers: Optional[Dict[str, str]] = None,
-	body: Optional[Any] = None,
-) -> Dict[str, Any]:
-	path = path or {}
-	resolved_path = f"/oauth-clients/{path.get("client_id", "")}"
-	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
-
-
-def updateProvisioningKey(
+def updateManagementKey(
 	client: Client,
 	*,
 	path: Optional[Dict[str, Any]] = None,
@@ -940,7 +836,7 @@ def updateProvisioningKey(
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
-def updateProvisioningKeyAlias(
+def updateOAuthClient(
 	client: Client,
 	*,
 	path: Optional[Dict[str, Any]] = None,
@@ -949,7 +845,7 @@ def updateProvisioningKeyAlias(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = f"/provisioning/keys/{path.get("id", "")}"
+	resolved_path = f"/oauth-clients/{path.get("client_id", "")}"
 	return client.request("PATCH", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -966,4 +862,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "createAnthropicMessage", "createAudioRealtimeCallPlaceholder", "createAudioRealtimeClientSecretsPlaceholder", "createAudioRealtimeSessionPlaceholder", "createAudioRealtimeSessionsPlaceholder", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOAuthClient", "createOcr", "createProvisioningKey", "createProvisioningKeyAlias", "createProvisioningKeyLegacy", "createRealtimeCallPlaceholder", "createRealtimeClientSecretsPlaceholder", "createRealtimeSessionPlaceholder", "createRealtimeSessionsPlaceholder", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteOAuthClient", "deleteProvisioningKey", "deleteProvisioningKeyAlias", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getAudioRealtimeCallPlaceholder", "getCredits", "getGeneration", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getProvisioningKey", "getProvisioningKeyAlias", "getProvisioningKeyLegacy", "getRealtimeCallPlaceholder", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "listProvisioningKeys", "listProvisioningKeysAlias", "listProvisioningKeysLegacy", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateOAuthClient", "updateProvisioningKey", "updateProvisioningKeyAlias", "uploadFile"]
+operations___all__ = ["calculatePricing", "createAnthropicMessage", "createAudioRealtimeCallPlaceholder", "createAudioRealtimeClientSecretsPlaceholder", "createAudioRealtimeSessionPlaceholder", "createAudioRealtimeSessionsPlaceholder", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createManagementKey", "createModeration", "createOAuthClient", "createOcr", "createRealtimeCallPlaceholder", "createRealtimeClientSecretsPlaceholder", "createRealtimeSessionPlaceholder", "createRealtimeSessionsPlaceholder", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "deleteManagementKey", "deleteOAuthClient", "deleteVideo", "deleteVideoAlias", "generateMusic", "generateMusicAlias", "getActivity", "getAnalytics", "getAudioRealtimeCallPlaceholder", "getCredits", "getGeneration", "getManagementKey", "getMusicGeneration", "getMusicGenerationAlias", "getOAuthClient", "getProviderDerankStatus", "getRealtimeCallPlaceholder", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "healthz", "invalidateGatewayKeyCache", "listDataModels", "listEndpoints", "listFiles", "listManagementKeys", "listModels", "listOAuthClients", "listOrganisations", "listPricingModels", "listProviders", "openResponsesWebSocket", "regenerateOAuthClientSecret", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "updateManagementKey", "updateOAuthClient", "uploadFile"]

@@ -75,6 +75,12 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/management/keys"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createModeration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/moderations"
@@ -90,24 +96,6 @@ module AiStats
       def self.createOcr(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/ocr"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createProvisioningKey(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/management/keys"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createProvisioningKeyAlias(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/provisioning/keys"
-        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.createProvisioningKeyLegacy(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/keys"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -171,21 +159,15 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.deleteOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/oauth-clients/#{path["client_id"]}"
-        client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.deleteProvisioningKey(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.deleteManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/management/keys/#{path["id"]}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.deleteProvisioningKeyAlias(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.deleteOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/provisioning/keys/#{path["id"]}"
+        resolved_path = "/oauth-clients/#{path["client_id"]}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -243,6 +225,12 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.getManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/management/keys/#{path["id"]}"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.getMusicGeneration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/music/generate/#{path["music_id"]}"
@@ -264,24 +252,6 @@ module AiStats
       def self.getProviderDerankStatus(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/health/providers/#{path["provider_id"]}/derank"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.getProvisioningKey(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/management/keys/#{path["id"]}"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.getProvisioningKeyAlias(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/provisioning/keys/#{path["id"]}"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.getProvisioningKeyLegacy(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/key"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -345,6 +315,12 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listManagementKeys(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/management/keys"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/gateway/models"
@@ -372,24 +348,6 @@ module AiStats
       def self.listProviders(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/providers"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.listProvisioningKeys(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/management/keys"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.listProvisioningKeysAlias(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/provisioning/keys"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.listProvisioningKeysLegacy(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/keys"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -423,21 +381,15 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.updateOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/oauth-clients/#{path["client_id"]}"
-        client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
-      def self.updateProvisioningKey(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.updateManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/management/keys/#{path["id"]}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.updateProvisioningKeyAlias(client, path: nil, query: nil, headers: nil, body: nil)
+      def self.updateOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/provisioning/keys/#{path["id"]}"
+        resolved_path = "/oauth-clients/#{path["client_id"]}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 

@@ -66,6 +66,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createManagementKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/management/keys";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createModeration(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/moderations";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -78,21 +83,6 @@ public final class Operations {
 
 	public static Object createOcr(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/ocr";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createProvisioningKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/management/keys";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createProvisioningKeyAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/provisioning/keys";
-		return client.request("POST", resolvedPath, query, headers, body);
-	}
-
-	public static Object createProvisioningKeyLegacy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/keys";
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
@@ -146,18 +136,13 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Object deleteOAuthClient(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/oauth-clients/" + (path != null && path.containsKey("client_id") ? path.get("client_id") : "");
-		return client.request("DELETE", resolvedPath, query, headers, body);
-	}
-
-	public static Object deleteProvisioningKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+	public static Object deleteManagementKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/management/keys/" + (path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
-	public static Object deleteProvisioningKeyAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/provisioning/keys/" + (path != null && path.containsKey("id") ? path.get("id") : "");
+	public static Object deleteOAuthClient(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/oauth-clients/" + (path != null && path.containsKey("client_id") ? path.get("client_id") : "");
 		return client.request("DELETE", resolvedPath, query, headers, body);
 	}
 
@@ -206,6 +191,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object getManagementKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/management/keys/" + (path != null && path.containsKey("id") ? path.get("id") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object getMusicGeneration(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/music/generate/" + (path != null && path.containsKey("music_id") ? path.get("music_id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -223,21 +213,6 @@ public final class Operations {
 
 	public static Object getProviderDerankStatus(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/health/providers/" + (path != null && path.containsKey("provider_id") ? path.get("provider_id") : "") + "/derank";
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Object getProvisioningKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/management/keys/" + (path != null && path.containsKey("id") ? path.get("id") : "");
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Object getProvisioningKeyAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/provisioning/keys/" + (path != null && path.containsKey("id") ? path.get("id") : "");
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Object getProvisioningKeyLegacy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/key";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -291,6 +266,11 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listManagementKeys(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/management/keys";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/gateway/models";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -313,21 +293,6 @@ public final class Operations {
 
 	public static Object listProviders(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/providers";
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Object listProvisioningKeys(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/management/keys";
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Object listProvisioningKeysAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/provisioning/keys";
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Object listProvisioningKeysLegacy(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/keys";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -356,18 +321,13 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object updateOAuthClient(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/oauth-clients/" + (path != null && path.containsKey("client_id") ? path.get("client_id") : "");
-		return client.request("PATCH", resolvedPath, query, headers, body);
-	}
-
-	public static Object updateProvisioningKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+	public static Object updateManagementKey(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/management/keys/" + (path != null && path.containsKey("id") ? path.get("id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 
-	public static Object updateProvisioningKeyAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/provisioning/keys/" + (path != null && path.containsKey("id") ? path.get("id") : "");
+	public static Object updateOAuthClient(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/oauth-clients/" + (path != null && path.containsKey("client_id") ? path.get("client_id") : "");
 		return client.request("PATCH", resolvedPath, query, headers, body);
 	}
 

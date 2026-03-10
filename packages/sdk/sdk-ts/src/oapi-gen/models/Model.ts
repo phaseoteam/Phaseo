@@ -40,6 +40,7 @@ export interface Model {
   };
   providers?: {
     api_provider_id?: string;
+    is_active_gateway?: boolean;
     params?: string[];
   }[];
   release_date?: string | null;

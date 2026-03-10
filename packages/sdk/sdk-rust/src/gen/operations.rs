@@ -65,6 +65,11 @@ pub fn createImageEdit<T: Transport>(client: &Client<T>, path: &HashMap<String, 
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createManagementKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/management/keys");
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createModeration<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/moderations");
 	client.request("POST", &resolved_path, body)
@@ -77,21 +82,6 @@ pub fn createOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String
 
 pub fn createOcr<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/ocr");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createProvisioningKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/management/keys");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createProvisioningKeyAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/provisioning/keys");
-	client.request("POST", &resolved_path, body)
-}
-
-pub fn createProvisioningKeyLegacy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/keys");
 	client.request("POST", &resolved_path, body)
 }
 
@@ -145,18 +135,13 @@ pub fn createVideoAlias<T: Transport>(client: &Client<T>, path: &HashMap<String,
 	client.request("POST", &resolved_path, body)
 }
 
-pub fn deleteOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/oauth-clients/{}", path.get("client_id").cloned().unwrap_or_default());
-	client.request("DELETE", &resolved_path, body)
-}
-
-pub fn deleteProvisioningKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+pub fn deleteManagementKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/management/keys/{}", path.get("id").cloned().unwrap_or_default());
 	client.request("DELETE", &resolved_path, body)
 }
 
-pub fn deleteProvisioningKeyAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/provisioning/keys/{}", path.get("id").cloned().unwrap_or_default());
+pub fn deleteOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/oauth-clients/{}", path.get("client_id").cloned().unwrap_or_default());
 	client.request("DELETE", &resolved_path, body)
 }
 
@@ -205,6 +190,11 @@ pub fn getGeneration<T: Transport>(client: &Client<T>, path: &HashMap<String, St
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn getManagementKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/management/keys/{}", path.get("id").cloned().unwrap_or_default());
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn getMusicGeneration<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/music/generate/{}", path.get("music_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
@@ -222,21 +212,6 @@ pub fn getOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, S
 
 pub fn getProviderDerankStatus<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/health/providers/{}/derank", path.get("provider_id").cloned().unwrap_or_default());
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn getProvisioningKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/management/keys/{}", path.get("id").cloned().unwrap_or_default());
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn getProvisioningKeyAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/provisioning/keys/{}", path.get("id").cloned().unwrap_or_default());
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn getProvisioningKeyLegacy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/key");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -290,6 +265,11 @@ pub fn listFiles<T: Transport>(client: &Client<T>, path: &HashMap<String, String
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn listManagementKeys<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/management/keys");
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn listModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/gateway/models");
 	client.request("GET", &resolved_path, body)
@@ -312,21 +292,6 @@ pub fn listPricingModels<T: Transport>(client: &Client<T>, path: &HashMap<String
 
 pub fn listProviders<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/providers");
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn listProvisioningKeys<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/management/keys");
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn listProvisioningKeysAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/provisioning/keys");
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn listProvisioningKeysLegacy<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/keys");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -355,18 +320,13 @@ pub fn retrieveFile<T: Transport>(client: &Client<T>, path: &HashMap<String, Str
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn updateOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/oauth-clients/{}", path.get("client_id").cloned().unwrap_or_default());
-	client.request("PATCH", &resolved_path, body)
-}
-
-pub fn updateProvisioningKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+pub fn updateManagementKey<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/management/keys/{}", path.get("id").cloned().unwrap_or_default());
 	client.request("PATCH", &resolved_path, body)
 }
 
-pub fn updateProvisioningKeyAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = format!("/provisioning/keys/{}", path.get("id").cloned().unwrap_or_default());
+pub fn updateOAuthClient<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/oauth-clients/{}", path.get("client_id").cloned().unwrap_or_default());
 	client.request("PATCH", &resolved_path, body)
 }
 

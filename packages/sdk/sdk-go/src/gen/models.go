@@ -11,6 +11,17 @@ type ActivityEntry struct {
 	Usage *map[string]interface{} `json:"usage,omitempty"`
 }
 
+type AnalyticsAccessTokenRequiredResponse struct {
+	Error string `json:"error"`
+	Ok string `json:"ok"`
+}
+
+type AnalyticsNotImplementedResponse struct {
+	Message string `json:"message"`
+	Ok string `json:"ok"`
+	Status string `json:"status"`
+}
+
 type AnthropicContentBlock struct {
 	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Content *string `json:"content,omitempty"`
@@ -411,7 +422,8 @@ type EmbeddingsResponse struct {
 }
 
 type ErrorResponse struct {
-	Error *string `json:"error,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Error interface{} `json:"error"`
 	Message *string `json:"message,omitempty"`
 	Ok *bool `json:"ok,omitempty"`
 }
@@ -430,6 +442,15 @@ type FileResponse struct {
 type FileUploadRequest struct {
 	File interface{} `json:"file"`
 	Purpose string `json:"purpose"`
+}
+
+type GatewayModelsResponse struct {
+	Limit int `json:"limit"`
+	Models []map[string]interface{} `json:"models"`
+	Offset int `json:"offset"`
+	Ok bool `json:"ok"`
+	PrivacyScope string `json:"privacy_scope"`
+	Total int `json:"total"`
 }
 
 type GenerationResponse struct {
@@ -454,6 +475,10 @@ type GenerationResponse struct {
 	TeamId *string `json:"team_id,omitempty"`
 	Throughput *float64 `json:"throughput,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+type HealthCheckResponse struct {
+	Status string `json:"status"`
 }
 
 type Image struct {
@@ -516,9 +541,66 @@ type ImagesGenerationResponse struct {
 	Data *[]map[string]interface{} `json:"data,omitempty"`
 }
 
+type InvalidRequestResponse struct {
+	Error string `json:"error"`
+	MaxOffset *int `json:"max_offset,omitempty"`
+	Message string `json:"message"`
+	Ok string `json:"ok"`
+}
+
+type KeyInvalidateResponse struct {
+	CacheVersion map[string]interface{} `json:"cache_version"`
+	Key map[string]interface{} `json:"key"`
+	Message string `json:"message"`
+	Ok string `json:"ok"`
+}
+
 type ListFilesResponse struct {
 	Data *[]map[string]interface{} `json:"data,omitempty"`
 	Object *string `json:"object,omitempty"`
+}
+
+type ManagementKeyCreateRequest struct {
+	CreatedBy *string `json:"created_by,omitempty"`
+	Name string `json:"name"`
+	Scopes interface{} `json:"scopes,omitempty"`
+	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	Status *string `json:"status,omitempty"`
+	TeamId *string `json:"team_id,omitempty"`
+}
+
+type ManagementKeyCreateResponse struct {
+	Key map[string]interface{} `json:"key"`
+	Ok string `json:"ok"`
+}
+
+type ManagementKeyDeleteResponse struct {
+	Message string `json:"message"`
+	Ok string `json:"ok"`
+}
+
+type ManagementKeyDetailResponse struct {
+	Key map[string]interface{} `json:"key"`
+	Ok string `json:"ok"`
+}
+
+type ManagementKeyListResponse struct {
+	Keys []map[string]interface{} `json:"keys"`
+	Limit int `json:"limit"`
+	Offset int `json:"offset"`
+	Ok string `json:"ok"`
+	Total int `json:"total"`
+}
+
+type ManagementKeyUpdateRequest struct {
+	Name *string `json:"name,omitempty"`
+	SoftBlocked *bool `json:"soft_blocked,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
+type ManagementKeyUpdateResponse struct {
+	Message string `json:"message"`
+	Ok string `json:"ok"`
 }
 
 type MessageContentPart = interface{}
@@ -1396,6 +1478,14 @@ const (
 )
 
 
+type ModelsPrivacyScopeNotImplementedResponse struct {
+	Code string `json:"code"`
+	Error string `json:"error"`
+	Message string `json:"message"`
+	Ok string `json:"ok"`
+	PrivacyScope string `json:"privacy_scope"`
+}
+
 type ModerationCategories struct {
 	Harassment *bool `json:"harassment,omitempty"`
 	HarassmentThreatening *bool `json:"harassment/threatening,omitempty"`
@@ -1460,9 +1550,9 @@ type MusicGenerateResponse struct {
 }
 
 type NotImplementedResponse struct {
-	Description *string `json:"description,omitempty"`
-	Error *string `json:"error,omitempty"`
-	StatusCode *int `json:"status_code,omitempty"`
+	Description string `json:"description"`
+	Error string `json:"error"`
+	StatusCode int `json:"status_code"`
 }
 
 type OcrRequest struct {
@@ -1582,7 +1672,7 @@ type ProvisioningKeyWithValue struct {
 }
 
 type RealtimeNotImplementedResponse struct {
-	Error *map[string]interface{} `json:"error,omitempty"`
+	Error map[string]interface{} `json:"error"`
 }
 
 type ReasoningConfig struct {

@@ -32,6 +32,29 @@ public sealed class ActivityEntry
 
 }
 
+public sealed class AnalyticsAccessTokenRequiredResponse
+{
+	[JsonPropertyName("error")]
+	public string Error { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+}
+
+public sealed class AnalyticsNotImplementedResponse
+{
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+	[JsonPropertyName("status")]
+	public string Status { get; set; }
+
+}
+
 public sealed class AnthropicContentBlock
 {
 	[JsonPropertyName("cache_control")]
@@ -669,8 +692,11 @@ public sealed class EmbeddingsResponse
 
 public sealed class ErrorResponse
 {
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
 	[JsonPropertyName("error")]
-	public string? Error { get; set; }
+	public object Error { get; set; }
 
 	[JsonPropertyName("message")]
 	public string? Message { get; set; }
@@ -715,6 +741,28 @@ public sealed class FileUploadRequest
 
 	[JsonPropertyName("purpose")]
 	public string Purpose { get; set; }
+
+}
+
+public sealed class GatewayModelsResponse
+{
+	[JsonPropertyName("limit")]
+	public int Limit { get; set; }
+
+	[JsonPropertyName("models")]
+	public List<Dictionary<string, object>> Models { get; set; }
+
+	[JsonPropertyName("offset")]
+	public int Offset { get; set; }
+
+	[JsonPropertyName("ok")]
+	public bool Ok { get; set; }
+
+	[JsonPropertyName("privacy_scope")]
+	public string PrivacyScope { get; set; }
+
+	[JsonPropertyName("total")]
+	public int Total { get; set; }
 
 }
 
@@ -782,6 +830,13 @@ public sealed class GenerationResponse
 
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
+public sealed class HealthCheckResponse
+{
+	[JsonPropertyName("status")]
+	public string Status { get; set; }
 
 }
 
@@ -925,6 +980,38 @@ public sealed class ImagesGenerationResponse
 
 }
 
+public sealed class InvalidRequestResponse
+{
+	[JsonPropertyName("error")]
+	public string Error { get; set; }
+
+	[JsonPropertyName("max_offset")]
+	public int? MaxOffset { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+}
+
+public sealed class KeyInvalidateResponse
+{
+	[JsonPropertyName("cache_version")]
+	public Dictionary<string, object> CacheVersion { get; set; }
+
+	[JsonPropertyName("key")]
+	public Dictionary<string, object> Key { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+}
+
 public sealed class ListFilesResponse
 {
 	[JsonPropertyName("data")]
@@ -932,6 +1019,100 @@ public sealed class ListFilesResponse
 
 	[JsonPropertyName("object")]
 	public string? Object { get; set; }
+
+}
+
+public sealed class ManagementKeyCreateRequest
+{
+	[JsonPropertyName("created_by")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("name")]
+	public string Name { get; set; }
+
+	[JsonPropertyName("scopes")]
+	public object? Scopes { get; set; }
+
+	[JsonPropertyName("soft_blocked")]
+	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("team_id")]
+	public string? TeamId { get; set; }
+
+}
+
+public sealed class ManagementKeyCreateResponse
+{
+	[JsonPropertyName("key")]
+	public Dictionary<string, object> Key { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+}
+
+public sealed class ManagementKeyDeleteResponse
+{
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+}
+
+public sealed class ManagementKeyDetailResponse
+{
+	[JsonPropertyName("key")]
+	public Dictionary<string, object> Key { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+}
+
+public sealed class ManagementKeyListResponse
+{
+	[JsonPropertyName("keys")]
+	public List<Dictionary<string, object>> Keys { get; set; }
+
+	[JsonPropertyName("limit")]
+	public int Limit { get; set; }
+
+	[JsonPropertyName("offset")]
+	public int Offset { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+	[JsonPropertyName("total")]
+	public int Total { get; set; }
+
+}
+
+public sealed class ManagementKeyUpdateRequest
+{
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("soft_blocked")]
+	public bool? SoftBlocked { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+}
+
+public sealed class ManagementKeyUpdateResponse
+{
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
 
 }
 
@@ -1020,6 +1201,25 @@ public sealed class Model
 }
 
 public sealed class ModelId { }
+
+public sealed class ModelsPrivacyScopeNotImplementedResponse
+{
+	[JsonPropertyName("code")]
+	public string Code { get; set; }
+
+	[JsonPropertyName("error")]
+	public string Error { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("ok")]
+	public string Ok { get; set; }
+
+	[JsonPropertyName("privacy_scope")]
+	public string PrivacyScope { get; set; }
+
+}
 
 public sealed class ModerationCategories
 {
@@ -1178,13 +1378,13 @@ public sealed class MusicGenerateResponse
 public sealed class NotImplementedResponse
 {
 	[JsonPropertyName("description")]
-	public string? Description { get; set; }
+	public string Description { get; set; }
 
 	[JsonPropertyName("error")]
-	public string? Error { get; set; }
+	public string Error { get; set; }
 
 	[JsonPropertyName("status_code")]
-	public int? StatusCode { get; set; }
+	public int StatusCode { get; set; }
 
 }
 
@@ -1353,7 +1553,7 @@ public sealed class ProvisioningKeyWithValue
 public sealed class RealtimeNotImplementedResponse
 {
 	[JsonPropertyName("error")]
-	public Dictionary<string, object>? Error { get; set; }
+	public Dictionary<string, object> Error { get; set; }
 
 }
 

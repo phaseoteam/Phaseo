@@ -1,5 +1,11 @@
 export interface ErrorResponse {
-  error?: string;
+  description?: string;
+  error:
+    | string
+    | {
+        [key: string]: unknown;
+      };
   message?: string;
   ok?: boolean;
+  [key: string]: unknown;
 }

@@ -931,6 +931,60 @@ export async function createImageEdit(
   });
 }
 
+export type CreateManagementKeyParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    created_by?: string;
+    name: string;
+    scopes?: string | string[];
+    soft_blocked?: boolean;
+    status?: "active" | "disabled" | "revoked";
+    team_id?: string;
+  };
+};
+
+/**
+ * Creates a new management API key.
+ */
+export async function createManagementKey(
+  client: Client,
+  args: CreateManagementKeyParams = {},
+): Promise<{
+  key: {
+    created_at?: string;
+    id?: string;
+    key?: string;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    status?: "active" | "disabled" | "revoked";
+  };
+  ok: true;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/management/keys";
+  return client.request<{
+    key: {
+      created_at?: string;
+      id?: string;
+      key?: string;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      status?: "active" | "disabled" | "revoked";
+    };
+    ok: true;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateModerationParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -1123,168 +1177,6 @@ export async function createOcr(
   const resolvedPath = "/ocr";
   return client.request<{
     [key: string]: unknown;
-  }>({
-    method: "POST",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type CreateProvisioningKeyParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    created_by?: string;
-    name: string;
-    scopes?: string | string[];
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
-    team_id?: string;
-  };
-};
-
-/**
- * Creates a new management API key.
- */
-export async function createProvisioningKey(
-  client: Client,
-  args: CreateProvisioningKeyParams = {},
-): Promise<{
-  key?: {
-    created_at?: string;
-    id?: string;
-    key?: string;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  };
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/management/keys";
-  return client.request<{
-    key?: {
-      created_at?: string;
-      id?: string;
-      key?: string;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    };
-    ok?: boolean;
-  }>({
-    method: "POST",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type CreateProvisioningKeyAliasParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    created_by?: string;
-    name: string;
-    scopes?: string | string[];
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
-    team_id?: string;
-  };
-};
-
-/**
- * Alias of management key create endpoint.
- */
-export async function createProvisioningKeyAlias(
-  client: Client,
-  args: CreateProvisioningKeyAliasParams = {},
-): Promise<{
-  key?: {
-    created_at?: string;
-    id?: string;
-    key?: string;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  };
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/provisioning/keys";
-  return client.request<{
-    key?: {
-      created_at?: string;
-      id?: string;
-      key?: string;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    };
-    ok?: boolean;
-  }>({
-    method: "POST",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type CreateProvisioningKeyLegacyParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    created_by?: string;
-    name: string;
-    scopes?: string | string[];
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
-    team_id?: string;
-  };
-};
-
-/**
- * Legacy alias of /management/keys create.
- */
-export async function createProvisioningKeyLegacy(
-  client: Client,
-  args: CreateProvisioningKeyLegacyParams = {},
-): Promise<{
-  key?: {
-    created_at?: string;
-    id?: string;
-    key?: string;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  };
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/keys";
-  return client.request<{
-    key?: {
-      created_at?: string;
-      id?: string;
-      key?: string;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    };
-    ok?: boolean;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -1860,6 +1752,39 @@ export async function createVideoAlias(
   });
 }
 
+export type DeleteManagementKeyParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Permanently deletes a management API key.
+ */
+export async function deleteManagementKey(
+  client: Client,
+  args: DeleteManagementKeyParams = {},
+): Promise<{
+  message: string;
+  ok: true;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    message: string;
+    ok: true;
+  }>({
+    method: "DELETE",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type DeleteOAuthClientParams = {
   path?: {
     client_id: string;
@@ -1880,70 +1805,6 @@ export async function deleteOAuthClient(
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}`;
-  return client.request<{
-    [key: string]: unknown;
-  }>({
-    method: "DELETE",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type DeleteProvisioningKeyParams = {
-  path?: {
-    id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Permanently deletes a management API key.
- */
-export async function deleteProvisioningKey(
-  client: Client,
-  args: DeleteProvisioningKeyParams = {},
-): Promise<{
-  message?: string;
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
-  return client.request<{
-    message?: string;
-    ok?: boolean;
-  }>({
-    method: "DELETE",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type DeleteProvisioningKeyAliasParams = {
-  path?: {
-    id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Alias of management key delete endpoint.
- */
-export async function deleteProvisioningKeyAlias(
-  client: Client,
-  args: DeleteProvisioningKeyAliasParams = {},
-): Promise<{
-  [key: string]: unknown;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
     [key: string]: unknown;
   }>({
@@ -2401,16 +2262,16 @@ export async function getAnalytics(
   client: Client,
   args: GetAnalyticsParams = {},
 ): Promise<{
-  message?: string;
-  ok?: boolean;
-  status?: string;
+  message: string;
+  ok: true;
+  status: "not_implemented";
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/analytics";
   return client.request<{
-    message?: string;
-    ok?: boolean;
-    status?: string;
+    message: string;
+    ok: true;
+    status: "not_implemented";
   }>({
     method: "POST",
     path: resolvedPath,
@@ -2567,6 +2428,61 @@ export async function getGeneration(
   });
 }
 
+export type GetManagementKeyParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns details of a specific management API key.
+ */
+export async function getManagementKey(
+  client: Client,
+  args: GetManagementKeyParams = {},
+): Promise<{
+  key: {
+    created_at?: string;
+    created_by?: string;
+    id?: string;
+    last_used_at?: string | null;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    soft_blocked?: boolean;
+    status?: "active" | "disabled" | "revoked";
+    team_id?: string;
+  };
+  ok: true;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    key: {
+      created_at?: string;
+      created_by?: string;
+      id?: string;
+      last_used_at?: string | null;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      soft_blocked?: boolean;
+      status?: "active" | "disabled" | "revoked";
+      team_id?: string;
+    };
+    ok: true;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type GetMusicGenerationParams = {
   path?: {
     music_id: string;
@@ -2686,147 +2602,6 @@ export async function getProviderDerankStatus(
   const resolvedPath = `/health/providers/${encodeURIComponent(String(path?.provider_id))}/derank`;
   return client.request<{
     [key: string]: unknown;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type GetProvisioningKeyParams = {
-  path?: {
-    id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Returns details of a specific management API key.
- */
-export async function getProvisioningKey(
-  client: Client,
-  args: GetProvisioningKeyParams = {},
-): Promise<{
-  key?: {
-    created_at?: string;
-    created_by?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
-    team_id?: string;
-  };
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
-  return client.request<{
-    key?: {
-      created_at?: string;
-      created_by?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      soft_blocked?: boolean;
-      status?: "active" | "disabled" | "revoked";
-      team_id?: string;
-    };
-    ok?: boolean;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type GetProvisioningKeyAliasParams = {
-  path?: {
-    id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Alias of management key details endpoint.
- */
-export async function getProvisioningKeyAlias(
-  client: Client,
-  args: GetProvisioningKeyAliasParams = {},
-): Promise<{
-  [key: string]: unknown;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
-  return client.request<{
-    [key: string]: unknown;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type GetProvisioningKeyLegacyParams = {
-  path?: Record<string, never>;
-  query?: {
-    id: string;
-  };
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Legacy alias of /management/keys/{id} using query parameter id.
- */
-export async function getProvisioningKeyLegacy(
-  client: Client,
-  args: GetProvisioningKeyLegacyParams = {},
-): Promise<{
-  key?: {
-    created_at?: string;
-    created_by?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
-    team_id?: string;
-  };
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/key";
-  return client.request<{
-    key?: {
-      created_at?: string;
-      created_by?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      soft_blocked?: boolean;
-      status?: "active" | "disabled" | "revoked";
-      team_id?: string;
-    };
-    ok?: boolean;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -3029,12 +2804,12 @@ export async function healthz(
   client: Client,
   args: HealthzParams = {},
 ): Promise<{
-  status?: string;
+  status: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/health";
   return client.request<{
-    status?: string;
+    status: string;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -3060,12 +2835,34 @@ export async function invalidateGatewayKeyCache(
   client: Client,
   args: InvalidateGatewayKeyCacheParams = {},
 ): Promise<{
-  [key: string]: unknown;
+  cache_version: {
+    id: number;
+    kid: number | null;
+  };
+  key: {
+    id: string;
+    kid?: string | null;
+    status?: string | null;
+    team_id: string;
+  };
+  message: string;
+  ok: true;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/keys/${encodeURIComponent(String(path?.id))}/invalidate`;
   return client.request<{
-    [key: string]: unknown;
+    cache_version: {
+      id: number;
+      kid: number | null;
+    };
+    key: {
+      id: string;
+      kid?: string | null;
+      status?: string | null;
+      team_id: string;
+    };
+    message: string;
+    ok: true;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -4970,6 +4767,63 @@ export async function listFiles(
   });
 }
 
+export type ListManagementKeysParams = {
+  path?: Record<string, never>;
+  query?: {
+    limit?: number;
+    offset?: number;
+    team_id?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns all management API keys for a team.
+ */
+export async function listManagementKeys(
+  client: Client,
+  args: ListManagementKeysParams = {},
+): Promise<{
+  keys: {
+    created_at?: string;
+    id?: string;
+    last_used_at?: string | null;
+    name?: string;
+    prefix?: string;
+    scopes?: string;
+    status?: "active" | "disabled" | "revoked";
+  }[];
+  limit: number;
+  offset: number;
+  ok: true;
+  total: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/management/keys";
+  return client.request<{
+    keys: {
+      created_at?: string;
+      id?: string;
+      last_used_at?: string | null;
+      name?: string;
+      prefix?: string;
+      scopes?: string;
+      status?: "active" | "disabled" | "revoked";
+    }[];
+    limit: number;
+    offset: number;
+    ok: true;
+    total: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListModelsParams = {
   path?: Record<string, never>;
   query?: {
@@ -5064,6 +4918,7 @@ export type ListModelsParams = {
       | "z-ai"[];
     output_types?: string[];
     params?: string[];
+    privacy_scope?: "shared" | "team";
   };
   headers?: Record<string, never>;
   body?: never;
@@ -5076,8 +4931,8 @@ export async function listModels(
   client: Client,
   args: ListModelsParams = {},
 ): Promise<{
-  limit?: number;
-  models?: {
+  limit: number;
+  models: {
     aliases?: string[];
     architecture?: {
       input_modalities?: string[];
@@ -5119,6 +4974,7 @@ export async function listModels(
     };
     providers?: {
       api_provider_id?: string;
+      is_active_gateway?: boolean;
       params?: string[];
     }[];
     release_date?: string | null;
@@ -5133,15 +4989,16 @@ export async function listModels(
     };
     top_provider_id?: string | null;
   }[];
-  offset?: number;
-  ok?: boolean;
-  total?: number;
+  offset: number;
+  ok: boolean;
+  privacy_scope: "shared" | "team";
+  total: number;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/gateway/models";
   return client.request<{
-    limit?: number;
-    models?: {
+    limit: number;
+    models: {
       aliases?: string[];
       architecture?: {
         input_modalities?: string[];
@@ -5183,6 +5040,7 @@ export async function listModels(
       };
       providers?: {
         api_provider_id?: string;
+        is_active_gateway?: boolean;
         params?: string[];
       }[];
       release_date?: string | null;
@@ -5197,9 +5055,10 @@ export async function listModels(
       };
       top_provider_id?: string | null;
     }[];
-    offset?: number;
-    ok?: boolean;
-    total?: number;
+    offset: number;
+    ok: boolean;
+    privacy_scope: "shared" | "team";
+    total: number;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -5387,161 +5246,6 @@ export async function listProviders(
   });
 }
 
-export type ListProvisioningKeysParams = {
-  path?: Record<string, never>;
-  query?: {
-    limit?: number;
-    offset?: number;
-    team_id?: string;
-  };
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Returns all management API keys for a team.
- */
-export async function listProvisioningKeys(
-  client: Client,
-  args: ListProvisioningKeysParams = {},
-): Promise<{
-  keys?: {
-    created_at?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  }[];
-  limit?: number;
-  offset?: number;
-  ok?: boolean;
-  total?: number;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/management/keys";
-  return client.request<{
-    keys?: {
-      created_at?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    }[];
-    limit?: number;
-    offset?: number;
-    ok?: boolean;
-    total?: number;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type ListProvisioningKeysAliasParams = {
-  path?: Record<string, never>;
-  query?: {
-    limit?: number;
-    offset?: number;
-    team_id?: string;
-  };
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Alias of management keys endpoint.
- */
-export async function listProvisioningKeysAlias(
-  client: Client,
-  args: ListProvisioningKeysAliasParams = {},
-): Promise<{
-  keys?: {
-    created_at?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  }[];
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/provisioning/keys";
-  return client.request<{
-    keys?: {
-      created_at?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    }[];
-    ok?: boolean;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type ListProvisioningKeysLegacyParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Legacy alias of /management/keys.
- */
-export async function listProvisioningKeysLegacy(
-  client: Client,
-  args: ListProvisioningKeysLegacyParams = {},
-): Promise<{
-  keys?: {
-    created_at?: string;
-    id?: string;
-    last_used_at?: string | null;
-    name?: string;
-    prefix?: string;
-    scopes?: string;
-    status?: "active" | "disabled" | "revoked";
-  }[];
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/keys";
-  return client.request<{
-    keys?: {
-      created_at?: string;
-      id?: string;
-      last_used_at?: string | null;
-      name?: string;
-      prefix?: string;
-      scopes?: string;
-      status?: "active" | "disabled" | "revoked";
-    }[];
-    ok?: boolean;
-  }>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
 export type OpenResponsesWebSocketParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -5695,6 +5399,43 @@ export async function retrieveFile(
   });
 }
 
+export type UpdateManagementKeyParams = {
+  path?: {
+    id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    name?: string;
+    soft_blocked?: boolean;
+    status?: "active" | "disabled" | "revoked";
+  };
+};
+
+/**
+ * Updates the name, status, or blocked state of a management API key.
+ */
+export async function updateManagementKey(
+  client: Client,
+  args: UpdateManagementKeyParams = {},
+): Promise<{
+  message: string;
+  ok: true;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
+  return client.request<{
+    message: string;
+    ok: true;
+  }>({
+    method: "PATCH",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type UpdateOAuthClientParams = {
   path?: {
     client_id: string;
@@ -5717,76 +5458,6 @@ export async function updateOAuthClient(
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/oauth-clients/${encodeURIComponent(String(path?.client_id))}`;
-  return client.request<{
-    [key: string]: unknown;
-  }>({
-    method: "PATCH",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type UpdateProvisioningKeyParams = {
-  path?: {
-    id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    name?: string;
-    soft_blocked?: boolean;
-    status?: "active" | "disabled" | "revoked";
-  };
-};
-
-/**
- * Updates the name, status, or blocked state of a management API key.
- */
-export async function updateProvisioningKey(
-  client: Client,
-  args: UpdateProvisioningKeyParams = {},
-): Promise<{
-  message?: string;
-  ok?: boolean;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/management/keys/${encodeURIComponent(String(path?.id))}`;
-  return client.request<{
-    message?: string;
-    ok?: boolean;
-  }>({
-    method: "PATCH",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type UpdateProvisioningKeyAliasParams = {
-  path?: {
-    id: string;
-  };
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: {
-    [key: string]: unknown;
-  };
-};
-
-/**
- * Alias of management key update endpoint.
- */
-export async function updateProvisioningKeyAlias(
-  client: Client,
-  args: UpdateProvisioningKeyAliasParams = {},
-): Promise<{
-  [key: string]: unknown;
-}> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = `/provisioning/keys/${encodeURIComponent(String(path?.id))}`;
   return client.request<{
     [key: string]: unknown;
   }>({

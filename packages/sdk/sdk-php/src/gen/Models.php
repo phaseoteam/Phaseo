@@ -15,6 +15,19 @@ class ActivityEntry
 	public $usage;
 }
 
+class AnalyticsAccessTokenRequiredResponse
+{
+	public $error;
+	public $ok;
+}
+
+class AnalyticsNotImplementedResponse
+{
+	public $message;
+	public $ok;
+	public $status;
+}
+
 class AnthropicContentBlock
 {
 	public $cache_control;
@@ -298,6 +311,7 @@ class EmbeddingsResponse
 
 class ErrorResponse
 {
+	public $description;
 	public $error;
 	public $message;
 	public $ok;
@@ -319,6 +333,16 @@ class FileUploadRequest
 {
 	public $file;
 	public $purpose;
+}
+
+class GatewayModelsResponse
+{
+	public $limit;
+	public $models;
+	public $offset;
+	public $ok;
+	public $privacy_scope;
+	public $total;
 }
 
 class GenerationResponse
@@ -344,6 +368,11 @@ class GenerationResponse
 	public $team_id;
 	public $throughput;
 	public $usage;
+}
+
+class HealthCheckResponse
+{
+	public $status;
 }
 
 class Image
@@ -414,10 +443,76 @@ class ImagesGenerationResponse
 	public $data;
 }
 
+class InvalidRequestResponse
+{
+	public $error;
+	public $max_offset;
+	public $message;
+	public $ok;
+}
+
+class KeyInvalidateResponse
+{
+	public $cache_version;
+	public $key;
+	public $message;
+	public $ok;
+}
+
 class ListFilesResponse
 {
 	public $data;
 	public $object;
+}
+
+class ManagementKeyCreateRequest
+{
+	public $created_by;
+	public $name;
+	public $scopes;
+	public $soft_blocked;
+	public $status;
+	public $team_id;
+}
+
+class ManagementKeyCreateResponse
+{
+	public $key;
+	public $ok;
+}
+
+class ManagementKeyDeleteResponse
+{
+	public $message;
+	public $ok;
+}
+
+class ManagementKeyDetailResponse
+{
+	public $key;
+	public $ok;
+}
+
+class ManagementKeyListResponse
+{
+	public $keys;
+	public $limit;
+	public $offset;
+	public $ok;
+	public $total;
+}
+
+class ManagementKeyUpdateRequest
+{
+	public $name;
+	public $soft_blocked;
+	public $status;
+}
+
+class ManagementKeyUpdateResponse
+{
+	public $message;
+	public $ok;
 }
 
 class MessageContentPart { }
@@ -453,6 +548,15 @@ class Model
 }
 
 class ModelId { }
+
+class ModelsPrivacyScopeNotImplementedResponse
+{
+	public $code;
+	public $error;
+	public $message;
+	public $ok;
+	public $privacy_scope;
+}
 
 class ModerationCategories
 {

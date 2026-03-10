@@ -14,6 +14,17 @@ public final class Models {
 		public Object usage;
 	}
 
+	public static class AnalyticsAccessTokenRequiredResponse {
+		public Object error;
+		public Object ok;
+	}
+
+	public static class AnalyticsNotImplementedResponse {
+		public String message;
+		public Object ok;
+		public Object status;
+	}
+
 	public static class AnthropicContentBlock {
 		public Object cache_control;
 		public String content;
@@ -273,7 +284,8 @@ public final class Models {
 	}
 
 	public static class ErrorResponse {
-		public String error;
+		public String description;
+		public Object error;
 		public String message;
 		public Boolean ok;
 	}
@@ -292,6 +304,15 @@ public final class Models {
 	public static class FileUploadRequest {
 		public Object file;
 		public String purpose;
+	}
+
+	public static class GatewayModelsResponse {
+		public Integer limit;
+		public java.util.List<Object> models;
+		public Integer offset;
+		public Boolean ok;
+		public Object privacy_scope;
+		public Integer total;
 	}
 
 	public static class GenerationResponse {
@@ -316,6 +337,10 @@ public final class Models {
 		public String team_id;
 		public Double throughput;
 		public Object usage;
+	}
+
+	public static class HealthCheckResponse {
+		public String status;
 	}
 
 	public static class Image {
@@ -378,9 +403,66 @@ public final class Models {
 		public java.util.List<Object> data;
 	}
 
+	public static class InvalidRequestResponse {
+		public String error;
+		public Integer max_offset;
+		public String message;
+		public Object ok;
+	}
+
+	public static class KeyInvalidateResponse {
+		public Object cache_version;
+		public Object key;
+		public String message;
+		public Object ok;
+	}
+
 	public static class ListFilesResponse {
 		public java.util.List<Object> data;
 		public String object;
+	}
+
+	public static class ManagementKeyCreateRequest {
+		public String created_by;
+		public String name;
+		public Object scopes;
+		public Boolean soft_blocked;
+		public Object status;
+		public String team_id;
+	}
+
+	public static class ManagementKeyCreateResponse {
+		public Object key;
+		public Object ok;
+	}
+
+	public static class ManagementKeyDeleteResponse {
+		public String message;
+		public Object ok;
+	}
+
+	public static class ManagementKeyDetailResponse {
+		public Object key;
+		public Object ok;
+	}
+
+	public static class ManagementKeyListResponse {
+		public java.util.List<Object> keys;
+		public Integer limit;
+		public Integer offset;
+		public Object ok;
+		public Integer total;
+	}
+
+	public static class ManagementKeyUpdateRequest {
+		public String name;
+		public Boolean soft_blocked;
+		public Object status;
+	}
+
+	public static class ManagementKeyUpdateResponse {
+		public String message;
+		public Object ok;
 	}
 
 	public static class MessageContentPart {
@@ -416,6 +498,14 @@ public final class Models {
 	}
 
 	public static class ModelId {
+	}
+
+	public static class ModelsPrivacyScopeNotImplementedResponse {
+		public Object code;
+		public Object error;
+		public String message;
+		public Object ok;
+		public Object privacy_scope;
 	}
 
 	public static class ModerationCategories {

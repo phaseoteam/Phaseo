@@ -13,6 +13,17 @@ pub struct ActivityEntry {
 	pub usage: Option<HashMap<String, String>>,
 }
 
+pub struct AnalyticsAccessTokenRequiredResponse {
+	pub error: String,
+	pub ok: String,
+}
+
+pub struct AnalyticsNotImplementedResponse {
+	pub message: String,
+	pub ok: String,
+	pub status: String,
+}
+
 pub struct AnthropicContentBlock {
 	pub cache_control: Option<HashMap<String, String>>,
 	pub content: Option<String>,
@@ -270,7 +281,8 @@ pub struct EmbeddingsResponse {
 }
 
 pub struct ErrorResponse {
-	pub error: Option<String>,
+	pub description: Option<String>,
+	pub error: String,
 	pub message: Option<String>,
 	pub ok: Option<bool>,
 }
@@ -289,6 +301,15 @@ pub struct FileResponse {
 pub struct FileUploadRequest {
 	pub file: String,
 	pub purpose: String,
+}
+
+pub struct GatewayModelsResponse {
+	pub limit: i64,
+	pub models: Vec<HashMap<String, String>>,
+	pub offset: i64,
+	pub ok: bool,
+	pub privacy_scope: String,
+	pub total: i64,
 }
 
 pub struct GenerationResponse {
@@ -313,6 +334,10 @@ pub struct GenerationResponse {
 	pub team_id: Option<String>,
 	pub throughput: Option<Option<f64>>,
 	pub usage: Option<Option<HashMap<String, String>>>,
+}
+
+pub struct HealthCheckResponse {
+	pub status: String,
 }
 
 pub struct Image {
@@ -375,9 +400,66 @@ pub struct ImagesGenerationResponse {
 	pub data: Option<Vec<HashMap<String, String>>>,
 }
 
+pub struct InvalidRequestResponse {
+	pub error: String,
+	pub max_offset: Option<i64>,
+	pub message: String,
+	pub ok: String,
+}
+
+pub struct KeyInvalidateResponse {
+	pub cache_version: HashMap<String, String>,
+	pub key: HashMap<String, String>,
+	pub message: String,
+	pub ok: String,
+}
+
 pub struct ListFilesResponse {
 	pub data: Option<Vec<HashMap<String, String>>>,
 	pub object: Option<String>,
+}
+
+pub struct ManagementKeyCreateRequest {
+	pub created_by: Option<String>,
+	pub name: String,
+	pub scopes: Option<String>,
+	pub soft_blocked: Option<bool>,
+	pub status: Option<String>,
+	pub team_id: Option<String>,
+}
+
+pub struct ManagementKeyCreateResponse {
+	pub key: HashMap<String, String>,
+	pub ok: String,
+}
+
+pub struct ManagementKeyDeleteResponse {
+	pub message: String,
+	pub ok: String,
+}
+
+pub struct ManagementKeyDetailResponse {
+	pub key: HashMap<String, String>,
+	pub ok: String,
+}
+
+pub struct ManagementKeyListResponse {
+	pub keys: Vec<HashMap<String, String>>,
+	pub limit: i64,
+	pub offset: i64,
+	pub ok: String,
+	pub total: i64,
+}
+
+pub struct ManagementKeyUpdateRequest {
+	pub name: Option<String>,
+	pub soft_blocked: Option<bool>,
+	pub status: Option<String>,
+}
+
+pub struct ManagementKeyUpdateResponse {
+	pub message: String,
+	pub ok: String,
 }
 
 pub type MessageContentPart = JsonValue;
@@ -412,6 +494,14 @@ pub struct Model {
 }
 
 pub type ModelId = JsonValue;
+
+pub struct ModelsPrivacyScopeNotImplementedResponse {
+	pub code: String,
+	pub error: String,
+	pub message: String,
+	pub ok: String,
+	pub privacy_scope: String,
+}
 
 pub struct ModerationCategories {
 	pub harassment: Option<bool>,
@@ -477,9 +567,9 @@ pub struct MusicGenerateResponse {
 }
 
 pub struct NotImplementedResponse {
-	pub description: Option<String>,
-	pub error: Option<String>,
-	pub status_code: Option<i64>,
+	pub description: String,
+	pub error: String,
+	pub status_code: i64,
 }
 
 pub struct OcrRequest {
@@ -553,7 +643,7 @@ pub struct ProvisioningKeyWithValue {
 }
 
 pub struct RealtimeNotImplementedResponse {
-	pub error: Option<HashMap<String, String>>,
+	pub error: HashMap<String, String>,
 }
 
 pub struct ReasoningConfig {

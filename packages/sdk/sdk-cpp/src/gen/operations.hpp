@@ -64,6 +64,11 @@ inline Response CreateImageEdit(Client& client, const std::map<std::string, std:
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/management/keys";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateModeration(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/moderations";
 	return client.request("POST", resolved_path, body);
@@ -76,21 +81,6 @@ inline Response CreateOAuthClient(Client& client, const std::map<std::string, st
 
 inline Response CreateOcr(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/ocr";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateProvisioningKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/management/keys";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateProvisioningKeyAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/provisioning/keys";
-	return client.request("POST", resolved_path, body);
-}
-
-inline Response CreateProvisioningKeyLegacy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/keys";
 	return client.request("POST", resolved_path, body);
 }
 
@@ -144,18 +134,13 @@ inline Response CreateVideoAlias(Client& client, const std::map<std::string, std
 	return client.request("POST", resolved_path, body);
 }
 
-inline Response DeleteOAuthClient(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{});
-	return client.request("DELETE", resolved_path, body);
-}
-
-inline Response DeleteProvisioningKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+inline Response DeleteManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
-inline Response DeleteProvisioningKeyAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/provisioning/keys/" + (path.count("id") ? path.at("id") : std::string{});
+inline Response DeleteOAuthClient(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -204,6 +189,11 @@ inline Response GetGeneration(Client& client, const std::map<std::string, std::s
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response GetManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response GetMusicGeneration(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/music/generate/" + (path.count("music_id") ? path.at("music_id") : std::string{});
 	return client.request("GET", resolved_path, body);
@@ -221,21 +211,6 @@ inline Response GetOAuthClient(Client& client, const std::map<std::string, std::
 
 inline Response GetProviderDerankStatus(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/health/providers/" + (path.count("provider_id") ? path.at("provider_id") : std::string{}) + "/derank";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response GetProvisioningKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response GetProvisioningKeyAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/provisioning/keys/" + (path.count("id") ? path.at("id") : std::string{});
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response GetProvisioningKeyLegacy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/key";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -289,6 +264,11 @@ inline Response ListFiles(Client& client, const std::map<std::string, std::strin
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListManagementKeys(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/management/keys";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response ListModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/gateway/models";
 	return client.request("GET", resolved_path, body);
@@ -311,21 +291,6 @@ inline Response ListPricingModels(Client& client, const std::map<std::string, st
 
 inline Response ListProviders(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/providers";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response ListProvisioningKeys(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/management/keys";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response ListProvisioningKeysAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/provisioning/keys";
-	return client.request("GET", resolved_path, body);
-}
-
-inline Response ListProvisioningKeysLegacy(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/keys";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -354,18 +319,13 @@ inline Response RetrieveFile(Client& client, const std::map<std::string, std::st
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response UpdateOAuthClient(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{});
-	return client.request("PATCH", resolved_path, body);
-}
-
-inline Response UpdateProvisioningKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+inline Response UpdateManagementKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/management/keys/" + (path.count("id") ? path.at("id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 
-inline Response UpdateProvisioningKeyAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/provisioning/keys/" + (path.count("id") ? path.at("id") : std::string{});
+inline Response UpdateOAuthClient(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/oauth-clients/" + (path.count("client_id") ? path.at("client_id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

@@ -17,6 +17,17 @@ struct ActivityEntry {
 	std::map<std::string, std::any> usage;
 };
 
+struct AnalyticsAccessTokenRequiredResponse {
+	std::any error;
+	std::any ok;
+};
+
+struct AnalyticsNotImplementedResponse {
+	std::string message;
+	std::any ok;
+	std::any status;
+};
+
 struct AnthropicContentBlock {
 	std::map<std::string, std::any> cache_control;
 	std::string content;
@@ -274,7 +285,8 @@ struct EmbeddingsResponse {
 };
 
 struct ErrorResponse {
-	std::string error;
+	std::string description;
+	std::any error;
 	std::string message;
 	std::optional<bool> ok;
 };
@@ -293,6 +305,15 @@ struct FileResponse {
 struct FileUploadRequest {
 	std::any file;
 	std::string purpose;
+};
+
+struct GatewayModelsResponse {
+	int limit;
+	std::vector<std::map<std::string, std::any>> models;
+	int offset;
+	bool ok;
+	std::any privacy_scope;
+	int total;
 };
 
 struct GenerationResponse {
@@ -317,6 +338,10 @@ struct GenerationResponse {
 	std::string team_id;
 	std::optional<double> throughput;
 	std::optional<std::map<std::string, std::any>> usage;
+};
+
+struct HealthCheckResponse {
+	std::string status;
 };
 
 struct Image {
@@ -379,9 +404,66 @@ struct ImagesGenerationResponse {
 	std::vector<std::map<std::string, std::any>> data;
 };
 
+struct InvalidRequestResponse {
+	std::string error;
+	std::optional<int> max_offset;
+	std::string message;
+	std::any ok;
+};
+
+struct KeyInvalidateResponse {
+	std::map<std::string, std::any> cache_version;
+	std::map<std::string, std::any> key;
+	std::string message;
+	std::any ok;
+};
+
 struct ListFilesResponse {
 	std::vector<std::map<std::string, std::any>> data;
 	std::string object;
+};
+
+struct ManagementKeyCreateRequest {
+	std::string created_by;
+	std::string name;
+	std::any scopes;
+	std::optional<bool> soft_blocked;
+	std::any status;
+	std::string team_id;
+};
+
+struct ManagementKeyCreateResponse {
+	std::map<std::string, std::any> key;
+	std::any ok;
+};
+
+struct ManagementKeyDeleteResponse {
+	std::string message;
+	std::any ok;
+};
+
+struct ManagementKeyDetailResponse {
+	std::map<std::string, std::any> key;
+	std::any ok;
+};
+
+struct ManagementKeyListResponse {
+	std::vector<std::map<std::string, std::any>> keys;
+	int limit;
+	int offset;
+	std::any ok;
+	int total;
+};
+
+struct ManagementKeyUpdateRequest {
+	std::string name;
+	std::optional<bool> soft_blocked;
+	std::any status;
+};
+
+struct ManagementKeyUpdateResponse {
+	std::string message;
+	std::any ok;
 };
 
 using MessageContentPart = std::any;
@@ -416,6 +498,14 @@ struct Model {
 };
 
 using ModelId = std::any;
+
+struct ModelsPrivacyScopeNotImplementedResponse {
+	std::any code;
+	std::any error;
+	std::string message;
+	std::any ok;
+	std::any privacy_scope;
+};
 
 struct ModerationCategories {
 	std::optional<bool> harassment;
@@ -483,7 +573,7 @@ struct MusicGenerateResponse {
 struct NotImplementedResponse {
 	std::string description;
 	std::string error;
-	std::optional<int> status_code;
+	int status_code;
 };
 
 struct OcrRequest {
