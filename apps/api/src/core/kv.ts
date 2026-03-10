@@ -15,6 +15,7 @@ export function getKv() {
 
 const KEY_VERSION_PREFIX = "gateway:keyver";
 const KEY_VERSION_L1_CACHE_TTL_MS = 1000;
+const KEY_VERSION_L1_CACHE_MAX_ENTRIES = 2000;
 type KeyVersionL1Entry = {
     version: number;
     expiresAt: number;
@@ -38,10 +39,22 @@ function readKeyVersionL1(scope: "kid" | "id", value: string): number | null {
 
 function writeKeyVersionL1(scope: "kid" | "id", value: string, version: number, ttlMs = KEY_VERSION_L1_CACHE_TTL_MS): void {
     if (!Number.isFinite(ttlMs) || ttlMs <= 0) return;
+    const now = Date.now();
+    // Opportunistically sweep expired entries to keep memory bounded.
+    for (const [entryKey, entry] of keyVersionL1Cache) {
+        if (entry.expiresAt <= now) {
+            keyVersionL1Cache.delete(entryKey);
+        }
+    }
     keyVersionL1Cache.set(keyVersionKey(scope, value), {
         version,
-        expiresAt: Date.now() + ttlMs,
+        expiresAt: now + ttlMs,
     });
+    while (keyVersionL1Cache.size > KEY_VERSION_L1_CACHE_MAX_ENTRIES) {
+        const oldestKey = keyVersionL1Cache.keys().next().value;
+        if (oldestKey === undefined) break;
+        keyVersionL1Cache.delete(oldestKey);
+    }
 }
 
 export async function getJson<T>(key: string): Promise<T | null> {

@@ -71,7 +71,6 @@ export async function createManagementKeyAction(
 		status: "active",
 		scopes,
 		created_by: creatorUserId,
-		is_provisioning: true,
 		created_at: new Date().toISOString(),
 	};
 

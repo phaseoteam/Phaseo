@@ -15,6 +15,8 @@ type ChargeRpcResult = {
 };
 
 let chargeOnceRpcAvailable: boolean | null = null;
+let chargeOnceRpcRetryAfterMs = 0;
+const CHARGE_ONCE_RPC_RETRY_BACKOFF_MS = 60_000;
 
 function getStripe(): Stripe {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
@@ -110,7 +112,10 @@ export async function recordUsageAndCharge(args: {
         }
 
         let chargeResult: ChargeRpcResult | null = null;
-        if (chargeOnceRpcAvailable !== false) {
+        const now = Date.now();
+        const shouldTryChargeOnceRpc =
+            chargeOnceRpcAvailable !== false || now >= chargeOnceRpcRetryAfterMs;
+        if (shouldTryChargeOnceRpc) {
             const onceRpc = await supabase.rpc("gateway_deduct_and_check_top_up_once", {
                 p_team_id: args.teamId,
                 p_request_id: args.requestId,
@@ -124,8 +129,10 @@ export async function recordUsageAndCharge(args: {
                     throw onceRpc.error;
                 }
                 chargeOnceRpcAvailable = false;
+                chargeOnceRpcRetryAfterMs = now + CHARGE_ONCE_RPC_RETRY_BACKOFF_MS;
             } else {
                 chargeOnceRpcAvailable = true;
+                chargeOnceRpcRetryAfterMs = 0;
                 chargeResult = normalizeChargeRpcResult(onceRpc.data);
             }
         }
