@@ -16,34 +16,42 @@ function stripTrailingSlash(value: string): string {
     return value.replace(/\/+$/, '')
 }
 
+function configuredAuthOrigins(): string[] {
+    const candidates = [
+        String(process.env.NEXT_PUBLIC_WEBSITE_URL ?? '').trim(),
+        String(process.env.WEBSITE_URL ?? '').trim(),
+    ]
+        .map((value) => stripTrailingSlash(value))
+        .filter(Boolean)
+    return [...new Set(candidates)]
+}
+
 async function resolveAuthOrigin(): Promise<string> {
-    const envWebsiteUrl = stripTrailingSlash(
-        String(process.env.NEXT_PUBLIC_WEBSITE_URL ?? '').trim()
-    )
+    const configuredOrigins = configuredAuthOrigins()
+    const isDev = process.env.NODE_ENV !== 'production'
+
+    if (!isDev) {
+        if (configuredOrigins.length > 0) return configuredOrigins[0]!
+        throw new Error(
+            'NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) must be set for auth redirects in production.'
+        )
+    }
+
     const headerStore = await headers()
     const originHeader = headerStore.get('origin')?.trim()
     const host = headerStore.get('x-forwarded-host') ?? headerStore.get('host')
-    const fallbackProto =
-        host && /(^localhost|^127\.0\.0\.1)/i.test(host) ? 'http' : 'https'
+    const fallbackProto = 'http'
     const hostOrigin = host ? `${fallbackProto}://${host}` : null
-    const isDev = process.env.NODE_ENV !== 'production'
 
-    if (isDev) {
-        if (
-            originHeader &&
-            /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(originHeader)
-        ) {
-            return stripTrailingSlash(originHeader)
-        }
-        if (hostOrigin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostOrigin)) {
-            return stripTrailingSlash(hostOrigin)
-        }
+    if (
+        originHeader &&
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(originHeader)
+    ) {
+        return stripTrailingSlash(originHeader)
     }
-
-    if (envWebsiteUrl) return envWebsiteUrl
-    if (originHeader) return stripTrailingSlash(originHeader)
-
-    if (hostOrigin) return stripTrailingSlash(hostOrigin)
+    if (hostOrigin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(hostOrigin)) {
+        return stripTrailingSlash(hostOrigin)
+    }
 
     return 'http://localhost:3000'
 }
