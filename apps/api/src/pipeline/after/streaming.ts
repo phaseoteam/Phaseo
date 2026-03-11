@@ -14,6 +14,7 @@ import {
 	encodeUnifiedStreamEvent,
 	type StreamProtocol,
 } from "@protocols/stream/encode";
+import { dispatchBackground } from "@/runtime/env";
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -103,17 +104,19 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         if (firstFrameAt !== null && typeof ctx.meta.generation_ms !== "number") {
             ctx.meta.generation_ms = Math.round(performance.now() - firstFrameAt);
         }
-        void Promise.resolve(
-            onFinalUsage(usage, {
-                aborted: reason === "aborted",
-                sawFinalUsage: reason === "complete",
+        dispatchBackground(
+            Promise.resolve(
+                onFinalUsage(usage, {
+                    aborted: reason === "aborted",
+                    sawFinalUsage: reason === "complete",
+                }),
+            ).catch((err) => {
+                console.error("passthroughWithPricing onFinalUsage error:", err, {
+                    requestId: ctx.requestId,
+                    teamId: ctx.teamId,
+                });
             }),
-        ).catch((err) => {
-            console.error("passthroughWithPricing onFinalUsage error:", err, {
-                requestId: ctx.requestId,
-                teamId: ctx.teamId,
-            });
-        });
+        );
     };
 
     (async () => {
