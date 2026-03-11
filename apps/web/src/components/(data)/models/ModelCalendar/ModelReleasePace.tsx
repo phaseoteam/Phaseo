@@ -261,7 +261,12 @@ export default function ModelReleasePace({
 							strokeDasharray="5 5"
 						/>
 						<ChartLegend
-							content={<ChartLegendContent />}
+							content={(props) => (
+								<ChartLegendContent
+									payload={props.payload}
+									verticalAlign={props.verticalAlign}
+								/>
+							)}
 							verticalAlign="bottom"
 						/>
 						<ChartTooltip content={<ReleaseTooltip />} />

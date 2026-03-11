@@ -166,7 +166,12 @@ export default function ModelSuccessChart({
 							/>
 							<ChartLegend
 								verticalAlign="top"
-								content={<ChartLegendContent />}
+								content={(props) => (
+									<ChartLegendContent
+										payload={props.payload}
+										verticalAlign={props.verticalAlign}
+									/>
+								)}
 							/>
 							<Line
 								type="monotone"
