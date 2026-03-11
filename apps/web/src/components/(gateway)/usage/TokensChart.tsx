@@ -109,9 +109,10 @@ export default function TokensChart({
 									fill={colors.fill}
 									stroke={colors.stroke}
 									strokeWidth={0.8}
-									onClick={(data) => {
-										if (onBarClick && data.bucket) {
-											onBarClick(data.bucket as string);
+									onClick={(_, index) => {
+										const bucket = data[index]?.bucket;
+										if (onBarClick && bucket) {
+											onBarClick(bucket);
 										}
 									}}
 									style={{ cursor: onBarClick ? "pointer" : "default" }}
