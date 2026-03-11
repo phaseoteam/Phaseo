@@ -61,10 +61,14 @@ export default function OpenVsClosedCard({
 								color: "rgba(244, 244, 245, 0.85)",
 								fontWeight: 600,
 							}}
-							formatter={(value: number, name) => [
-								`${Math.round(value * 100)}% share`,
-								name,
-							]}
+							formatter={(value, name) => {
+								const numericValue =
+									typeof value === "number" ? value : Number(value ?? 0);
+								return [
+									`${Math.round(numericValue * 100)}% share`,
+									String(name ?? ""),
+								];
+							}}
 						/>
 						<defs>
 							<linearGradient id="openFill" x1="0" y1="0" x2="0" y2="1">

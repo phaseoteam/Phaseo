@@ -118,10 +118,15 @@ export default function OrgsOverTimeCard({
 								color: "rgba(244, 244, 245, 0.85)",
 								fontWeight: 600,
 							}}
-							formatter={(value: number, name: string) => [
-								`${value} releases`,
-								LABELS[name] ?? name,
-							]}
+							formatter={(value, name) => {
+								const numericValue =
+									typeof value === "number" ? value : Number(value ?? 0);
+								const nameKey = String(name ?? "");
+								return [
+									`${numericValue} releases`,
+									LABELS[nameKey] ?? nameKey,
+								];
+							}}
 						/>
 						<Legend />
 						{keys.map((key) => (

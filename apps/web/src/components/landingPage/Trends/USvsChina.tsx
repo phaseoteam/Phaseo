@@ -66,10 +66,11 @@ export default function USvsChinaCard({
 								color: "rgba(244, 244, 245, 0.85)",
 								fontWeight: 600,
 							}}
-							formatter={(value: number, name) => [
-								`${Math.round(value * 100)}%`,
-								name,
-							]}
+							formatter={(value, name) => {
+								const numericValue =
+									typeof value === "number" ? value : Number(value ?? 0);
+								return [`${Math.round(numericValue * 100)}%`, String(name ?? "")];
+							}}
 						/>
 						<Legend />
 						<Line
