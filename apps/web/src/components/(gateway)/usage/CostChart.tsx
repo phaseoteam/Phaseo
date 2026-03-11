@@ -109,9 +109,11 @@ export default function CostChart({
 									fill={colors.fill}
 									stroke={colors.stroke}
 									strokeWidth={0.8}
-									onClick={(data) => {
-										if (onBarClick && data.bucket) {
-											onBarClick(data.bucket as string);
+									onClick={(_, index) => {
+										if (!onBarClick || typeof index !== "number") return;
+										const bucket = data[index]?.bucket;
+										if (typeof bucket === "string") {
+											onBarClick(bucket);
 										}
 									}}
 									style={{ cursor: onBarClick ? "pointer" : "default" }}
