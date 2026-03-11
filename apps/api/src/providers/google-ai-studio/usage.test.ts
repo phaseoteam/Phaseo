@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { googleUsageMetadataToIRUsage } from "./usage";
+import { googleUsageMetadataToIRUsage, normalizeGoogleUsage } from "./usage";
 
 describe("googleUsageMetadataToIRUsage", () => {
 	it("maps multimodal candidates token details into IR _ext usage fields", () => {
@@ -36,5 +36,29 @@ describe("googleUsageMetadataToIRUsage", () => {
 		expect(usage?.totalTokens).toBe(21);
 		expect(usage?._ext?.inputImageTokens).toBe(3);
 		expect(usage?._ext?.outputImageTokens).toBe(11);
+	});
+});
+
+describe("normalizeGoogleUsage", () => {
+	it("maps cached token details to cached_read meters and flags subset semantics", () => {
+		const usage = normalizeGoogleUsage({
+			promptTokenCount: 120,
+			cachedContentTokenCount: 30,
+			promptTokensDetails: [{ modality: "TEXT", tokenCount: 120 }],
+			cacheTokensDetails: [{ modality: "TEXT", tokenCount: 30 }],
+		});
+
+		expect(usage?.input_text_tokens).toBe(120);
+		expect(usage?.cached_read_text_tokens).toBe(30);
+		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBe(true);
+	});
+
+	it("maps cached image token details to cached_read_image_tokens", () => {
+		const usage = normalizeGoogleUsage({
+			promptTokenCount: 20,
+			cacheTokensDetails: [{ modality: "IMAGE", tokenCount: 7 }],
+		});
+
+		expect(usage?.cached_read_image_tokens).toBe(7);
 	});
 });

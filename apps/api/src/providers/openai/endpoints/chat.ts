@@ -303,6 +303,7 @@ function normalizeUsage(usage: any | null | undefined): GatewayUsage | undefined
         };
     }
     if (typeof usage.input_tokens_details?.cached_tokens === "number") {
+        normalized.cached_read_tokens_are_subset_of_input = true;
         normalized.cached_read_text_tokens = usage.input_tokens_details.cached_tokens;
     }
     if (typeof usage.output_tokens_details?.reasoning_tokens === "number") {

@@ -37,6 +37,13 @@ type VertexModelRoute = {
 	modelForPayload: string;
 };
 
+function usageNormalizationOptionsForRoute(route: VertexModelRoute): { cachedReadTokensAreSubsetOfInput?: boolean } | undefined {
+	if (route.family === "gemini") {
+		return { cachedReadTokensAreSubsetOfInput: true };
+	}
+	return undefined;
+}
+
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
 	return cherryPickIRParams(ir, args.capabilityParams);
 }
@@ -196,7 +203,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			}
 		}
 
-		const usageMeters = normalizeTextUsageForPricing(ir?.usage ?? usage);
+		const usageMeters = normalizeTextUsageForPricing(
+			ir?.usage ?? usage,
+			usageNormalizationOptionsForRoute(route),
+		);
 		if (usageMeters) {
 			const priced = computeBill(usageMeters, args.pricingCard);
 			bill.cost_cents = priced.pricing.total_cents;
@@ -241,6 +251,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		mappedRequest,
 		rawResponse: json,
 		upstreamStartMs,
+		route,
 	});
 }
 
@@ -253,8 +264,9 @@ function finalizeResult(input: {
 	mappedRequest?: string;
 	rawResponse: any;
 	upstreamStartMs: number;
+	route: VertexModelRoute;
 }): ExecutorResult {
-	const { args, ir, bill, res, keyInfo, mappedRequest, rawResponse, upstreamStartMs } = input;
+	const { args, ir, bill, res, keyInfo, mappedRequest, rawResponse, upstreamStartMs, route } = input;
 	const irRequest = args.ir as IRChatRequest;
 
 	if (irRequest.stream) {
@@ -283,7 +295,7 @@ function finalizeResult(input: {
 		};
 	}
 
-	const usageMeters = normalizeTextUsageForPricing(ir.usage);
+	const usageMeters = normalizeTextUsageForPricing(ir.usage, usageNormalizationOptionsForRoute(route));
 	if (usageMeters) {
 		const priced = computeBill(usageMeters, args.pricingCard);
 		bill.cost_cents = priced.pricing.total_cents;

@@ -25,13 +25,13 @@ type UsageMetadata = {
 
 type UsageShape = Record<string, number>;
 
-const modalityToMeter: Record<string, { input: string; output: string }> = {
-    MODALITY_UNSPECIFIED: { input: "input_text_tokens", output: "output_text_tokens" },
-    TEXT: { input: "input_text_tokens", output: "output_text_tokens" },
-    IMAGE: { input: "input_image_tokens", output: "output_image_tokens" },
-    VIDEO: { input: "input_video_tokens", output: "output_video_tokens" },
-    AUDIO: { input: "input_audio_tokens", output: "output_audio_tokens" },
-    DOCUMENT: { input: "input_text_tokens", output: "output_text_tokens" },
+const modalityToMeter: Record<string, { input: string; output: string; cached: string }> = {
+    MODALITY_UNSPECIFIED: { input: "input_text_tokens", output: "output_text_tokens", cached: "cached_read_text_tokens" },
+    TEXT: { input: "input_text_tokens", output: "output_text_tokens", cached: "cached_read_text_tokens" },
+    IMAGE: { input: "input_image_tokens", output: "output_image_tokens", cached: "cached_read_image_tokens" },
+    VIDEO: { input: "input_video_tokens", output: "output_video_tokens", cached: "cached_read_video_tokens" },
+    AUDIO: { input: "input_audio_tokens", output: "output_audio_tokens", cached: "cached_read_audio_tokens" },
+    DOCUMENT: { input: "input_text_tokens", output: "output_text_tokens", cached: "cached_read_text_tokens" },
 };
 
 function applyModalityCounts(target: UsageShape, items: ModalityTokenCount[] | undefined, kind: "input" | "output") {
@@ -39,6 +39,16 @@ function applyModalityCounts(target: UsageShape, items: ModalityTokenCount[] | u
     for (const entry of items) {
         const meter = modalityToMeter[entry.modality ?? "TEXT"];
         const key = meter?.[kind];
+        if (!key) continue;
+        target[key] = (target[key] ?? 0) + (entry.tokenCount ?? 0);
+    }
+}
+
+function applyCachedModalityCounts(target: UsageShape, items: ModalityTokenCount[] | undefined) {
+    if (!Array.isArray(items)) return;
+    for (const entry of items) {
+        const meter = modalityToMeter[entry.modality ?? "TEXT"];
+        const key = meter?.cached;
         if (!key) continue;
         target[key] = (target[key] ?? 0) + (entry.tokenCount ?? 0);
     }
@@ -54,14 +64,17 @@ export function normalizeGoogleUsage(meta: UsageMetadata | undefined): UsageShap
 
     // Aggregate details by modality first.
     applyModalityCounts(usage, meta.promptTokensDetails, "input");
-    applyModalityCounts(usage, meta.cacheTokensDetails, "input");
+    applyCachedModalityCounts(usage, meta.cacheTokensDetails);
     applyModalityCounts(usage, meta.toolUsePromptTokensDetails, "input");
     applyModalityCounts(usage, meta.candidatesTokensDetails, "output");
 
     // Fallback to coarse counts if detailed modalities absent.
     if (meta.promptTokenCount != null) usage.input_text_tokens = usage.input_text_tokens ?? meta.promptTokenCount;
     if (meta.toolUsePromptTokenCount != null) usage.input_text_tokens = (usage.input_text_tokens ?? 0) + meta.toolUsePromptTokenCount;
-    if (meta.cachedContentTokenCount != null) usage.cached_read_text_tokens = meta.cachedContentTokenCount;
+    if (meta.cachedContentTokenCount != null) usage.cached_read_text_tokens = usage.cached_read_text_tokens ?? meta.cachedContentTokenCount;
+    if (typeof usage.cached_read_text_tokens === "number" && usage.cached_read_text_tokens > 0) {
+        (usage as Record<string, any>).cached_read_tokens_are_subset_of_input = true;
+    }
 
     if (meta.candidatesTokenCount != null) usage.output_text_tokens = usage.output_text_tokens ?? meta.candidatesTokenCount;
     if (meta.thoughtsTokenCount != null) usage.reasoning_tokens = meta.thoughtsTokenCount;

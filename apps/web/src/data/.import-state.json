@@ -11174,7 +11174,7 @@
       }
     },
     "src/data/models/x-ai/grok-4-20-2026-02-17/model.json": {
-      "hash": "5ee5d92c366f51f28af74a7c00dd8069",
+      "hash": "ab91e01528a4570efa0e4e013e1c7a53",
       "meta": {
         "model_id": "x-ai/grok-4-20-2026-02-17",
         "organisation_id": "x-ai",

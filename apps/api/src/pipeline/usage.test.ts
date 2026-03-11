@@ -73,7 +73,80 @@ describe("shapeUsageForClient", () => {
 
 		expect(shaped.cached_read_text_tokens).toBe(45);
 		expect(shaped.cached_write_text_tokens).toBe(12);
+		expect(shaped.input_text_tokens).toBe(100);
 		expect(shaped.input_tokens_details.cached_tokens).toBe(45);
 		expect(shaped.output_tokens_details.cached_tokens).toBe(12);
+	});
+
+	it("does not assume cached reads are subset without provider or explicit hint", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 123,
+			output_tokens: 9,
+			total_tokens: 132,
+			input_text_tokens: 123,
+			input_tokens_details: {
+				cached_tokens: 64,
+			},
+		});
+
+		expect(shaped.input_text_tokens).toBe(123);
+		expect(shaped.cached_read_text_tokens).toBe(64);
+	});
+
+	it("derives uncached input_text_tokens for known subset providers", () => {
+		const shaped = shapeUsageForClient({
+			_provider_id: "x-ai",
+			input_tokens: 123,
+			output_tokens: 9,
+			total_tokens: 132,
+			input_text_tokens: 123,
+			input_tokens_details: {
+				cached_tokens: 64,
+			},
+		});
+
+		expect(shaped.input_text_tokens).toBe(59);
+		expect(shaped.cached_read_text_tokens).toBe(64);
+	});
+
+	it("derives uncached input_text_tokens for google providers", () => {
+		const shaped = shapeUsageForClient({
+			_provider_id: "google-ai-studio",
+			input_tokens: 200,
+			output_tokens: 10,
+			total_tokens: 210,
+			cached_read_text_tokens: 150,
+		});
+
+		expect(shaped.input_text_tokens).toBe(50);
+		expect(shaped.cached_read_text_tokens).toBe(150);
+	});
+
+	it("allows providers to opt out of cached-read subtraction", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 123,
+			output_tokens: 9,
+			total_tokens: 132,
+			input_text_tokens: 123,
+			cached_read_text_tokens: 64,
+			cached_read_tokens_are_subset_of_input: false,
+		});
+
+		expect(shaped.input_text_tokens).toBe(123);
+		expect(shaped.cached_read_text_tokens).toBe(64);
+	});
+
+	it("honors explicit cached-read subset hint", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 123,
+			output_tokens: 9,
+			total_tokens: 132,
+			input_text_tokens: 123,
+			cached_read_text_tokens: 64,
+			cached_read_tokens_are_subset_of_input: true,
+		});
+
+		expect(shaped.input_text_tokens).toBe(59);
+		expect(shaped.cached_read_text_tokens).toBe(64);
 	});
 });

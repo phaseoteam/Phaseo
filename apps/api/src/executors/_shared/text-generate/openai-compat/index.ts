@@ -31,6 +31,7 @@ import {
 } from "./retry-policy";
 
 const RESPONSES_CHAT_FALLBACK_BLOCKLIST = new Set<string>(["alibaba-cloud"]);
+const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 0;
 
 export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	// Use upstream start time from pipeline (set before executor is called)
@@ -113,7 +114,7 @@ export async function executeOpenAICompat(args: ExecutorExecuteArgs): Promise<Ex
 	let mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestBody : undefined;
 
 	let adaptiveRetryCount = 0;
-	while (!res.ok && adaptiveRetryCount < 3) {
+	while (!res.ok && adaptiveRetryCount < OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES) {
 		const { errorText, errorPayload } = await readErrorPayload(res);
 
 		// Some providers advertise OpenAI compatibility but don't implement /responses yet.

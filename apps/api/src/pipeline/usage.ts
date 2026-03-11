@@ -19,6 +19,14 @@ const pickNumber = (obj: any, path: string): number | undefined => {
     return typeof cur === "number" ? cur : undefined;
 };
 
+const CACHED_READ_SUBSET_PROVIDERS = new Set([
+    "x-ai",
+    "openai",
+    "google",
+    "google-ai-studio",
+    "google-vertex",
+]);
+
 /**
  * Shape usage for client-facing responses:
  * - Prefer OpenAI-style keys (input_tokens, output_tokens, total_tokens)
@@ -111,6 +119,17 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
         pickNumber(base, "output_tokens_details.cached_tokens") ??
         pickNumber(base, "cache_creation_input_tokens");
     const reasoningTokens = pickNumber(base, "reasoning_tokens") ?? pickNumber(base, "output_tokens_details.reasoning_tokens");
+    const cachedReadIsSubsetHint = ((): boolean => {
+        const explicit = (base as any).cached_read_tokens_are_subset_of_input;
+        if (explicit === false) return false;
+        if (explicit === true) return true;
+        const providerHintRaw =
+            (base as any)._provider_id ??
+            (base as any).provider_id ??
+            (base as any).provider;
+        const providerHint = typeof providerHintRaw === "string" ? providerHintRaw.toLowerCase() : "";
+        return CACHED_READ_SUBSET_PROVIDERS.has(providerHint);
+    })();
 
     // Multimodal signals (prefer tokenized meters, then detail fields, then count-based fallbacks).
     const inputImageTokens =
@@ -169,7 +188,15 @@ export function shapeUsageForClient(usage: any, ctx?: { endpoint?: Endpoint; bod
     }
 
     // Preserve legacy fields for billing/past consumers
-    base.input_text_tokens = pickNumber(base, "input_text_tokens") ?? tokensIn;
+    const inputTextExplicit = pickNumber(base, "input_text_tokens");
+    const inputTextFromCanonical =
+        cachedReadIsSubsetHint && cachedRead !== undefined
+            ? Math.max(0, tokensIn - cachedRead)
+            : tokensIn;
+    base.input_text_tokens =
+        inputTextExplicit !== undefined && (!cachedReadIsSubsetHint || inputTextExplicit !== tokensIn)
+            ? inputTextExplicit
+            : inputTextFromCanonical;
     base.output_text_tokens = pickNumber(base, "output_text_tokens") ?? tokensOut;
     if (cachedRead !== undefined) base.cached_read_text_tokens = cachedRead;
     if (cachedWrite !== undefined) base.cached_write_text_tokens = cachedWrite;

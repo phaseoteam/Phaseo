@@ -200,7 +200,9 @@ async function createOpenAIResponsesWebSocketStream(args: {
 			finish_reason: finishReason ?? args.initialBill.finish_reason ?? null,
 		};
 
-		const usageMeters = normalizeTextUsageForPricing(finalResponsePayload?.usage);
+		const usageMeters = normalizeTextUsageForPricing(finalResponsePayload?.usage, {
+			cachedReadTokensAreSubsetOfInput: true,
+		});
 		if (usageMeters) {
 			const priced = computeBill(usageMeters, args.executorArgs.pricingCard);
 			bill.cost_cents = priced.pricing.total_cents;
@@ -693,6 +695,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 			: irToOpenAIChat(irWithRequestMetadata, modelForRouting, args.providerId, args.capabilityParams));
 
 	requestPayload.stream = true;
+	requestPayload.store = false;
 	if (route === "chat") {
 		requestPayload.stream_options = {
 			...(requestPayload.stream_options ?? {}),
@@ -779,7 +782,9 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		(ir as any).rawResponse = rawResponse;
 	}
 
-	const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage);
+	const usageMeters = normalizeTextUsageForPricing(usage ?? ir?.usage, {
+		cachedReadTokensAreSubsetOfInput: true,
+	});
 	if (usageMeters) {
 		const priced = computeBill(usageMeters, args.pricingCard);
 		bill.cost_cents = priced.pricing.total_cents;

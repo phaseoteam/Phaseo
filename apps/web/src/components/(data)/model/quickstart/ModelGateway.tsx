@@ -28,6 +28,9 @@ export default function ModelGateway({ metadata }: ModelGatewayProps) {
 					<Quickstart
 						modelId={metadata.modelId}
 						aliases={metadata.aliases}
+						apiModelIds={metadata.apiModelIds}
+						primaryModelIdentifier={metadata.primaryModelIdentifier}
+						acceptedModelIdentifiers={metadata.acceptedModelIdentifiers}
 						endpoint={endpoint}
 						supportedEndpoints={supportedEndpoints}
 					/>

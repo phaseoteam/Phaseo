@@ -29,6 +29,9 @@ import { useEffect, useMemo, useState } from "react";
 interface QuickstartProps {
         modelId?: string;
         aliases?: string[];
+        apiModelIds?: string[];
+        primaryModelIdentifier?: string;
+        acceptedModelIdentifiers?: string[];
         endpoint?: string | null;
         supportedEndpoints?: string[];
 }
@@ -243,6 +246,9 @@ const OPENAI_METHODS: Record<string, { ts: string; py: string }> = {
 export default function Quickstart({
 	modelId,
 	aliases,
+	apiModelIds,
+	primaryModelIdentifier,
+	acceptedModelIdentifiers,
 	endpoint,
 	supportedEndpoints = [],
 }: QuickstartProps) {
@@ -362,7 +368,25 @@ export default function Quickstart({
                 }
         }, [supportsStreaming, streamingEnabled]);
 
-        const model = safeDecodeURIComponent(modelId) || "model_id_here";       
+        const decodedAcceptedIdentifiers = Array.from(
+                new Set([
+                        ...(acceptedModelIdentifiers?.map((identifier) =>
+                                safeDecodeURIComponent(identifier)
+                        ) ?? []),
+                        ...(apiModelIds?.map((identifier) =>
+                                safeDecodeURIComponent(identifier)
+                        ) ?? []),
+                        ...(aliases?.map((alias) =>
+                                safeDecodeURIComponent(alias)
+                        ) ?? []),
+                ])
+        ).filter(Boolean);
+
+        const model =
+                safeDecodeURIComponent(primaryModelIdentifier) ||
+                decodedAcceptedIdentifiers[0] ||
+                safeDecodeURIComponent(modelId) ||
+                "model_id_here";
         const endpointPath = resolveGatewayPath(selectedEndpoint);
         const endpointUrl = `${BASE_URL}${endpointPath}`;
         const payload = buildExamplePayload(selectedEndpoint, model);
@@ -386,7 +410,7 @@ export default function Quickstart({
         const aliasList = Array.from(
                 new Set([
                         model,
-                        ...(aliases?.map((alias) => safeDecodeURIComponent(alias)) ?? []),
+                        ...decodedAcceptedIdentifiers,
                 ])
         ).filter(Boolean);
         const streamingDiff = supportsStreaming
@@ -750,7 +774,7 @@ console.log(response);`
 					Quickstart
 				</CardTitle>
 				<CardDescription>
-					Use any of the identifiers below when calling our API.
+					Use any gateway-accepted identifier below when calling our API.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-6">

@@ -97,6 +97,53 @@ describe("enrichSuccessPayload model selection", () => {
 		expect(payload.usage.total_tokens).toBe(2702);
 	});
 
+	it("maps cached input as subset for pricing meters in responses usage", async () => {
+		const ctx: any = {
+			endpoint: "responses",
+			protocol: "openai.responses",
+			requestId: "req_test_cached_subset",
+			model: "x-ai/grok-4",
+			body: {},
+			meta: {},
+		};
+		const result: any = {
+			provider: "x-ai",
+			ir: {
+				choices: [{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [{ type: "text", text: "ok" }],
+					},
+					finishReason: "stop",
+				}],
+				usage: {
+					inputTokens: 123,
+					outputTokens: 9,
+					totalTokens: 132,
+					cachedInputTokens: 64,
+				},
+			},
+			rawResponse: {
+				id: "resp_cached_subset",
+				model: "grok-4",
+				output: [],
+				usage: {
+					input_tokens: 123,
+					output_tokens: 9,
+					total_tokens: 132,
+					input_tokens_details: { cached_tokens: 64 },
+				},
+			},
+		};
+
+		const payload = await enrichSuccessPayload(ctx, result);
+		expect(payload.usage.input_tokens).toBe(123);
+		expect(payload.usage.input_text_tokens).toBe(59);
+		expect(payload.usage.cached_read_text_tokens).toBe(64);
+		expect(payload.usage.cached_read_tokens_are_subset_of_input).toBe(true);
+	});
+
 	it("returns canonical API model id for responses payloads", async () => {
 		const ctx: any = {
 			endpoint: "responses",

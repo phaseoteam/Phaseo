@@ -31,6 +31,9 @@ export interface GatewayProviderModel {
 export interface ModelGatewayMetadata {
     modelId: string;
     aliases: string[];
+    apiModelIds: string[];
+    primaryModelIdentifier: string;
+    acceptedModelIdentifiers: string[];
     providers: GatewayProviderModel[];
     activeProviders: GatewayProviderModel[];
     inactiveProviders: GatewayProviderModel[];
@@ -88,6 +91,38 @@ export default async function getModelGatewayMetadata(
     const providerModelIds = (providerModels ?? [])
         .map((row) => row.provider_api_model_id)
         .filter((id): id is string => Boolean(id));
+
+    const apiModelStats = new Map<
+        string,
+        { activeCount: number; totalCount: number }
+    >();
+    for (const row of providerModels ?? []) {
+        const apiModelId = row.api_model_id?.trim();
+        if (!apiModelId) continue;
+        const current = apiModelStats.get(apiModelId) ?? {
+            activeCount: 0,
+            totalCount: 0,
+        };
+        current.totalCount += 1;
+        if (
+            row.is_active_gateway &&
+            isWithinEffectiveWindow(row.effective_from, row.effective_to)
+        ) {
+            current.activeCount += 1;
+        }
+        apiModelStats.set(apiModelId, current);
+    }
+    const apiModelIds = Array.from(apiModelStats.entries())
+        .sort((a, b) => {
+            if (a[1].activeCount !== b[1].activeCount) {
+                return b[1].activeCount - a[1].activeCount;
+            }
+            if (a[1].totalCount !== b[1].totalCount) {
+                return b[1].totalCount - a[1].totalCount;
+            }
+            return a[0].localeCompare(b[0]);
+        })
+        .map(([apiModelId]) => apiModelId);
 
 	const { data: caps, error: capsError } = await supabase
 		.from("data_api_provider_model_capabilities")
@@ -157,11 +192,13 @@ export default async function getModelGatewayMetadata(
 
     // console.log("[fetch] Fetching aliases for model", modelId);
 
+    const aliasLookupIds = Array.from(new Set([modelId, ...apiModelIds]));
     const { data: aliasesResponse, error: aliasesError } = await supabase
         .from("data_api_model_aliases")
-        .select("alias_slug")
-        .eq("api_model_id", modelId)
+        .select("api_model_id, alias_slug")
+        .in("api_model_id", aliasLookupIds)
         .eq("is_enabled", true)
+        .order("api_model_id", { ascending: true })
         .order("alias_slug", { ascending: true });
 
     // console.log("[fetch] aliasesResponse:", JSON.stringify(aliasesResponse, null, 2));
@@ -170,8 +207,17 @@ export default async function getModelGatewayMetadata(
         throw new Error(aliasesError.message ?? "Failed to load model aliases");
     }
 
-    const aliasRows = (aliasesResponse ?? []) as { alias_slug: string }[];
-    const aliases = aliasRows.map((alias) => alias.alias_slug);
+    const aliasRows = (aliasesResponse ?? []) as {
+        api_model_id: string;
+        alias_slug: string;
+    }[];
+    const aliases = Array.from(
+        new Set(
+            aliasRows
+                .map((alias) => alias.alias_slug?.trim())
+                .filter((alias): alias is string => Boolean(alias))
+        )
+    );
 
     // console.log("[fetch] Aliases for model", modelId, ":", aliases);
 
@@ -197,9 +243,18 @@ export default async function getModelGatewayMetadata(
             )
     );
 
+    const acceptedModelIdentifiers = Array.from(
+        new Set([...apiModelIds, ...aliases])
+    );
+    const primaryModelIdentifier =
+        acceptedModelIdentifiers[0] ?? modelId;
+
     return {
         modelId,
         aliases,
+        apiModelIds,
+        primaryModelIdentifier,
+        acceptedModelIdentifiers,
         providers,
         activeProviders,
         inactiveProviders,

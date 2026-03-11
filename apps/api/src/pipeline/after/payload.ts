@@ -218,11 +218,23 @@ function encodeResponsesUsage(usage: IRUsage) {
         outputDetails.output_videos = usage._ext.outputVideoTokens;
     }
 
+    const inputTextTokens = typeof usage.cachedInputTokens === "number"
+        ? Math.max(0, usage.inputTokens - usage.cachedInputTokens)
+        : usage.inputTokens;
     const out: any = {
         input_tokens: usage.inputTokens,
         output_tokens: usage.outputTokens,
         total_tokens: usage.totalTokens,
+        input_text_tokens: inputTextTokens,
+        output_text_tokens: usage.outputTokens,
     };
+    if (typeof usage.cachedInputTokens === "number") {
+        out.cached_read_text_tokens = usage.cachedInputTokens;
+        out.cached_read_tokens_are_subset_of_input = true;
+    }
+    if (typeof usage.reasoningTokens === "number") {
+        out.reasoning_tokens = usage.reasoningTokens;
+    }
     if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
     if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
     return out;
@@ -590,6 +602,9 @@ export function normalizeAnthropicUsage(raw: any, irUsage?: IRUsage) {
 }
 
 function encodeChatUsage(usage: IRUsage) {
+    const inputTextTokens = typeof usage.cachedInputTokens === "number"
+        ? Math.max(0, usage.inputTokens - usage.cachedInputTokens)
+        : usage.inputTokens;
     return {
         input_tokens: usage.inputTokens,
         output_tokens: usage.outputTokens,
@@ -612,9 +627,10 @@ function encodeChatUsage(usage: IRUsage) {
                     output_videos: usage._ext?.outputVideoTokens,
                 }
                 : undefined,
-        input_text_tokens: usage.inputTokens,
+        input_text_tokens: inputTextTokens,
         output_text_tokens: usage.outputTokens,
         cached_read_text_tokens: usage.cachedInputTokens,
+        cached_read_tokens_are_subset_of_input: usage.cachedInputTokens != null ? true : undefined,
         reasoning_tokens: usage.reasoningTokens,
         cached_write_text_tokens: usage._ext?.cachedWriteTokens,
     };

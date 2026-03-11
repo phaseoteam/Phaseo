@@ -72,7 +72,15 @@ function shouldFallbackFromByok(status: number | null | undefined): boolean {
 }
 
 const ATTEMPT_PREVIEW_LIMIT = 320;
-const MAX_RETRYABLE_EXECUTOR_RETRIES = 1;
+const MAX_RETRYABLE_EXECUTOR_RETRIES = 0;
+const SINGLE_PROVIDER_FAILURE_RETRIES = 1;
+
+function shouldRetrySingleProviderStatus(status: number | null | undefined): boolean {
+	const code = Number(status ?? 0);
+	if (!Number.isFinite(code)) return false;
+	if (code === 408 || code === 429) return true;
+	return code >= 500;
+}
 
 function truncateAttemptText(value: unknown, limit = ATTEMPT_PREVIEW_LIMIT): string | null {
 	if (typeof value !== "string") return null;
@@ -268,7 +276,14 @@ export async function doRequestWithIR(
 		const choice = ranked[attempt];
 
 		// Use IR-aware attempt function
-		const result = await attemptProviderWithIR(choice, ctx, ir, timing, baseModel);
+		const result = await attemptProviderWithIR(
+			choice,
+			ctx,
+			ir,
+			timing,
+			baseModel,
+			maxTries === 1,
+		);
 
 		if (result.ok) {
 			return result;
@@ -314,6 +329,7 @@ async function attemptProviderWithIR(
 		| IRMusicGenerateRequest,
 	timing: PipelineTiming,
 	baseModel: string,
+	allowSingleProviderRetry: boolean,
 ): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string }> {
 	const attemptErrors: Array<Record<string, unknown>> = ((ctx as any).attemptErrors ??= []);
 
@@ -432,7 +448,10 @@ async function attemptProviderWithIR(
 
 		const executeWithRetry = async () => {
 			let lastErr: unknown = null;
-			for (let retryAttempt = 0; retryAttempt <= MAX_RETRYABLE_EXECUTOR_RETRIES; retryAttempt += 1) {
+			const maxRetries = allowSingleProviderRetry
+				? SINGLE_PROVIDER_FAILURE_RETRIES
+				: MAX_RETRYABLE_EXECUTOR_RETRIES;
+			for (let retryAttempt = 0; retryAttempt <= maxRetries; retryAttempt += 1) {
 				try {
 					let nextResult = await executor(buildExecutorArgs(false, candidate.byokMeta || []));
 					if (
@@ -444,11 +463,20 @@ async function attemptProviderWithIR(
 						(nextResult as any).fallbackAttempted = true;
 						nextResult = await executor(buildExecutorArgs(true, []));
 					}
+					const shouldRetryStatus =
+						allowSingleProviderRetry &&
+						!nextResult.upstream.ok &&
+						shouldRetrySingleProviderStatus(nextResult.upstream.status);
+					const hasRetryLeft = retryAttempt < maxRetries;
+					if (shouldRetryStatus && hasRetryLeft) {
+						await new Promise((resolve) => setTimeout(resolve, 120));
+						continue;
+					}
 					return nextResult;
 				} catch (err) {
 					lastErr = err;
 					const retryable = (err as any)?.retryable === true;
-					const hasRetryLeft = retryAttempt < MAX_RETRYABLE_EXECUTOR_RETRIES;
+					const hasRetryLeft = retryAttempt < maxRetries;
 					if (!retryable || !hasRetryLeft) {
 						throw err;
 					}

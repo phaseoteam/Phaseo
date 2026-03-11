@@ -240,7 +240,9 @@ async function handleNonStreamResponse(
 ): Promise<Response> {
     // Enrich payload
     const payload = await ctx.timer.span("after_enrich_payload", () => enrichSuccessPayload(ctx, result));
-    const usageNormalized = payload?.usage ?? {};
+    const usageFromPayload = payload?.usage ?? null;
+    const usageFromBill = result.bill?.usage ?? null;
+    const usageNormalized = usageFromBill ?? usageFromPayload ?? {};
     const toolUsage = summarizeToolUsage({
         body: ctx.body,
         ir: result.ir,
@@ -254,7 +256,13 @@ async function handleNonStreamResponse(
 
     // Calculate pricing (with tier-based markup)
     const shapedUsage = attachToolUsageMetrics(
-        shapeUsageForClient(usageNormalized, { endpoint: ctx.endpoint, body: ctx.body }),
+        shapeUsageForClient(
+            {
+                ...(usageNormalized && typeof usageNormalized === "object" ? usageNormalized : {}),
+                _provider_id: result.provider,
+            },
+            { endpoint: ctx.endpoint, body: ctx.body }
+        ),
         toolUsage
     );
     const tier = ctx.teamEnrichment?.tier ?? 'basic';
@@ -291,6 +299,9 @@ async function handleNonStreamResponse(
     // console.log("[DEBUG handleNonStreamResponse] pricedUsage:", pricedUsage, "totalCents:", totalCents, "totalNanos:", totalNanos, "currency:", currency);
 
     const shapedUsageFinal = shapeUsageForClient(pricedUsageFinalRaw, { endpoint: ctx.endpoint, body: ctx.body });
+    if (shapedUsageFinal && typeof shapedUsageFinal === "object") {
+        delete (shapedUsageFinal as any)._provider_id;
+    }
 
     // Update payload with normalized usage
     payload.usage = shapedUsageFinal;

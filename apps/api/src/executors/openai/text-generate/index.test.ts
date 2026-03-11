@@ -90,6 +90,7 @@ describe("openai text executor HTTP mode", () => {
 		expect(mapped.model).toBe("openai/gpt-5-nano-2025-08-07");
 		expect(mapped.metadata?.aistats_request_id).toBe("req_openai_http_test");
 		expect(mapped.safety_identifier).toBe("req_openai_http_test");
+		expect(mock.calls[0]?.bodyJson?.store).toBe(false);
 	});
 
 	it("streams over HTTP responses endpoint when tools are present", async () => {
@@ -155,6 +156,7 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls).toHaveLength(1);
 		expect(mock.calls[0]?.headers.Upgrade).toBeUndefined();
 		expect(mock.calls[0]?.bodyJson?.stream).toBe(true);
+		expect(mock.calls[0]?.bodyJson?.store).toBe(false);
 		expect(result.kind).toBe("stream");
 		if (result.kind !== "stream") return;
 
@@ -357,5 +359,86 @@ describe("openai text executor HTTP mode", () => {
 		expect(mock.calls).toHaveLength(1);
 		expect(mock.calls[0]?.bodyJson?.stream).toBe(true);
 		expect(mock.calls[0]?.bodyJson?.reasoning).toMatchObject({ effort: "medium" });
+	});
+
+	it("prices cached input as subset (no double count)", async () => {
+		const pricingCard = {
+			provider: "openai",
+			model: "openai/gpt-5-nano",
+			endpoint: "responses",
+			currency: "USD",
+			rules: [
+				{
+					id: "in",
+					pricing_plan: "standard",
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "2",
+					currency: "USD",
+					match: [],
+					priority: 1,
+				},
+				{
+					id: "cached",
+					pricing_plan: "standard",
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0.2",
+					currency: "USD",
+					match: [],
+					priority: 1,
+				},
+				{
+					id: "out",
+					pricing_plan: "standard",
+					meter: "output_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "6",
+					currency: "USD",
+					match: [],
+					priority: 1,
+				},
+			],
+		} as any;
+
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.openai.com/v1/responses",
+			response: jsonResponse({
+				id: "resp_http_cached_1",
+				object: "response",
+				created_at: Math.floor(Date.now() / 1000),
+				model: "gpt-5-nano",
+				status: "completed",
+				output: [{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "ok" }],
+				}],
+				usage: {
+					input_tokens: 123,
+					output_tokens: 9,
+					total_tokens: 132,
+					input_tokens_details: { cached_tokens: 64 },
+				},
+			}, { status: 200 }),
+		}]);
+
+		const result = await executor({
+			...buildArgs(),
+			pricingCard,
+		});
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		expect(result.bill.usage?.pricing?.total_usd_str).toBe("0.0001848");
+		const lines = result.bill.usage?.pricing?.lines ?? [];
+		const byDim = new Map(lines.map((line: any) => [line.dimension, line]));
+		expect(byDim.get("input_text_tokens")?.quantity).toBe(59);
+		expect(byDim.get("cached_read_text_tokens")?.quantity).toBe(64);
+		expect(byDim.get("output_text_tokens")?.quantity).toBe(9);
 	});
 });
