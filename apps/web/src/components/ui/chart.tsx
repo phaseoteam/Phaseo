@@ -266,7 +266,7 @@ ChartTooltipContent.displayName = "ChartTooltip"
 const ChartLegend = RechartsPrimitive.Legend
 
 type ChartLegendContentProps = React.ComponentProps<"div"> & {
-  payload?: Array<{
+  payload?: ReadonlyArray<{
     value?: React.Key
     dataKey?: unknown
     color?: string
