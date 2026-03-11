@@ -4,8 +4,8 @@ import React from "react";
 
 interface EnhancedChartTooltipProps {
 	active?: boolean;
-	payload?: any[];
-	label?: string;
+	payload?: ReadonlyArray<any>;
+	label?: string | number;
 	format: (value: number) => string;
 	getColor: (key: string) => string;
 	activeKey?: string | null;
